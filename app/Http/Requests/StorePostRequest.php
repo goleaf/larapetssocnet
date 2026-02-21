@@ -30,7 +30,18 @@ class StorePostRequest extends FormRequest
             'location' => ['nullable', 'string', 'max:100'],
             'photos' => ['nullable', 'array', 'max:5'],
             'photos.*' => ['image', 'mimes:jpeg,png,webp,gif', 'max:5120'],
-            'video' => ['nullable', 'file', 'mimes:mp4,mov,webm', 'max:51200', 'prohibited_if:photos,true'],
+            'video' => [
+                'nullable',
+                'file',
+                'mimes:mp4,mov,webm',
+                'max:51200',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $photos = $this->file('photos', []);
+                    if ($value !== null && is_array($photos) && count($photos) > 0) {
+                        $fail('You cannot upload both photos and a video.');
+                    }
+                },
+            ],
         ];
     }
 
@@ -40,7 +51,6 @@ class StorePostRequest extends FormRequest
             'body.required_without_all' => 'Please write something or add a photo or video.',
             'photos.max' => 'You can upload up to 5 photos.',
             'video.max' => 'Video must be under 50MB.',
-            'video.prohibited_if' => 'You cannot upload both photos and a video.',
             'pet_id.exists' => 'That pet does not belong to you.',
         ];
     }

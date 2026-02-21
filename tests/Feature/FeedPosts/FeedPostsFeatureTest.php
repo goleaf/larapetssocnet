@@ -116,6 +116,41 @@ class FeedPostsFeatureTest extends TestCase
             ->assertJsonPath('data.current_reaction', 'wow');
     }
 
+    public function test_reaction_endpoint_accepts_all_supported_reaction_types(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::query()->create([
+            'user_id' => $user->id,
+            'body' => 'reactable-post-supported-types',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        foreach (['love', 'cute', 'funny', 'wow', 'sad', 'support'] as $type) {
+            $response = $this->actingAs($user)
+                ->postJson(route('posts.react', $post), ['type' => $type]);
+
+            $response
+                ->assertOk()
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('data.current_reaction', $type);
+        }
+    }
+
+    public function test_reaction_endpoint_rejects_invalid_reaction_type(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::query()->create([
+            'user_id' => $user->id,
+            'body' => 'reactable-post-invalid-type',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('posts.react', $post), ['type' => 'angry'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['type']);
+    }
+
     public function test_comments_support_one_level_replies_and_refresh_comments_count(): void
     {
         $author = User::factory()->create();

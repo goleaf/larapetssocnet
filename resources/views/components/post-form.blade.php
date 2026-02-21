@@ -52,6 +52,7 @@
             <div>
                 <label class="mb-1 block text-sm font-semibold" for="photos">Photos (up to 5)</label>
                 <input id="photos" type="file" name="photos[]" multiple accept="image/jpeg,image/png,image/webp,image/gif" class="w-full rounded-xl border border-[var(--ui-border)] p-2 text-sm" @change="onPhotos($event)">
+                <p x-show="photoError" class="mt-1 text-xs text-rose-600" x-text="photoError"></p>
                 <x-input-error :messages="$errors->get('photos')" class="mt-1" />
                 <x-input-error :messages="$errors->get('photos.*')" class="mt-1" />
             </div>
@@ -79,6 +80,7 @@ function postFormState() {
         body: @js((string) old('body', $post?->body ?? '')),
         remaining: 2000 - @js(strlen((string) old('body', $post?->body ?? ''))),
         photoCount: 0,
+        photoError: '',
         videoSelected: false,
         get typeBadge() {
             if (this.videoSelected) return '🎬 Video post';
@@ -86,7 +88,17 @@ function postFormState() {
             return '📝 Text post';
         },
         onPhotos(event) {
-            this.photoCount = event.target.files.length;
+            const maxPhotos = 5;
+            const count = event.target.files.length;
+            if (count > maxPhotos) {
+                this.photoError = `You can upload up to ${maxPhotos} photos.`;
+                event.target.value = '';
+                this.photoCount = 0;
+                return;
+            }
+
+            this.photoError = '';
+            this.photoCount = count;
             if (this.photoCount > 0) {
                 this.videoSelected = false;
             }
@@ -95,6 +107,7 @@ function postFormState() {
             this.videoSelected = event.target.files.length > 0;
             if (this.videoSelected) {
                 this.photoCount = 0;
+                this.photoError = '';
                 const photosInput = document.getElementById('photos');
                 if (photosInput) photosInput.value = '';
             }
