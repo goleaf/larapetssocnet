@@ -283,6 +283,7 @@ class PetController extends Controller
             'sex' => $validated['sex'] ?? ($validated['gender'] ?? null),
             'birth_date' => $validated['birth_date'] ?? ($validated['birthdate'] ?? null),
             'bio' => $validated['bio'] ?? null,
+            'personality_tags' => $this->normalizePersonalityTags($validated['personality_tags'] ?? null),
             'is_public' => $request->boolean('is_public'),
             'is_adoptable' => $request->boolean('is_adoptable') || $request->boolean('is_for_adoption'),
         ];
@@ -293,7 +294,6 @@ class PetController extends Controller
 
         $payload['is_public'] = $request->boolean('is_public');
         $payload['is_adoptable'] = $request->boolean('is_adoptable') || $request->boolean('is_for_adoption');
-        $payload['personality_tags'] = $this->normalizePersonalityTags($payload['personality_tags'] ?? null);
 
         if ($ownerColumn = $this->resolvePetOwnerColumn()) {
             $payload[$ownerColumn] = $request->user()?->getAuthIdentifier();

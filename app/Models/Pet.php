@@ -33,6 +33,7 @@ class Pet extends Model implements HasMedia
         'birth_date',
         'adopted_at',
         'bio',
+        'personality_tags',
         'color',
         'weight_kg',
         'is_public',
@@ -60,6 +61,7 @@ class Pet extends Model implements HasMedia
         return [
             'birth_date' => 'date',
             'adopted_at' => 'date',
+            'personality_tags' => 'array',
             'is_public' => 'boolean',
             'is_lost' => 'boolean',
             'is_adoptable' => 'boolean',

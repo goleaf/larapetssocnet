@@ -133,4 +133,34 @@ class PetFeatureTest extends TestCase
             ->assertSee('<img', false)
             ->assertDontSee('No gallery items yet.');
     }
+
+    public function test_pet_personality_tags_are_saved_and_visible_on_profile(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)
+            ->post(route('pets.store'), [
+                'name' => 'Taggy',
+                'species' => 'cat',
+                'breed' => 'Mixed',
+                'bio' => 'Personality test pet',
+                'is_public' => true,
+                'personality_tags' => 'playful, curious, affectionate',
+            ])
+            ->assertRedirect();
+
+        $pet = Pet::query()->where('name', 'Taggy')->firstOrFail();
+
+        $this->assertSame(
+            ['playful', 'curious', 'affectionate'],
+            $pet->personality_tags
+        );
+
+        $this->get(route('pets.show', ['slug' => $pet->getKey(), 'tab' => 'about']))
+            ->assertOk()
+            ->assertSee('Personality')
+            ->assertSee('playful')
+            ->assertSee('curious')
+            ->assertSee('affectionate');
+    }
 }

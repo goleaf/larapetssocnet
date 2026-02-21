@@ -2,6 +2,15 @@
     use Illuminate\Support\Carbon;
 
     $pet = $pet ?? null;
+    $personalityTagsValue = old('personality_tags');
+    if ($personalityTagsValue === null && $pet) {
+        $existingTags = $pet->personality_tags ?? [];
+        if (is_array($existingTags)) {
+            $personalityTagsValue = implode(', ', $existingTags);
+        } else {
+            $personalityTagsValue = (string) $existingTags;
+        }
+    }
 
     $birthdateValue = old('birth_date', old('birthdate'));
     if ($birthdateValue === null && $pet) {
@@ -61,6 +70,20 @@
         <x-input-label for="bio" value="Bio" />
         <textarea id="bio" name="bio" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('bio', $pet?->bio) }}</textarea>
         <x-input-error :messages="$errors->get('bio')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label for="personality_tags" value="Personality tags" />
+        <x-text-input
+            id="personality_tags"
+            name="personality_tags"
+            type="text"
+            class="mt-1 block w-full"
+            :value="$personalityTagsValue"
+            placeholder="playful, curious, friendly"
+        />
+        <p class="mt-1 text-xs text-gray-500">Comma-separated tags.</p>
+        <x-input-error :messages="$errors->get('personality_tags')" class="mt-2" />
     </div>
 
     <div>

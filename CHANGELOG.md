@@ -62,6 +62,8 @@
 - Added multi-pet tagging support on posts via `tagged_pets[]` in active post create/edit form.
 - Updated post requests/services to validate and persist `tagged_pets`, with `pet_id` fallback to first tagged pet.
 - Updated post show tagged-pets resolver to include `pet_id` fallback when `tagged_pets` is empty.
+- Added pet personality tags support with DB column, model casting, and create/edit form input.
+- Updated pet profile About tab to render saved personality tags as chips.
 
 ### Tests
 - Verified passing suites:

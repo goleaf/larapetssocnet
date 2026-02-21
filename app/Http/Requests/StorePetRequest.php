@@ -20,6 +20,7 @@ class StorePetRequest extends FormRequest
             'sex' => ['nullable', 'in:male,female,unknown'],
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
             'bio' => ['nullable', 'string', 'max:5000'],
+            'personality_tags' => ['nullable', 'string', 'max:500'],
             'is_public' => ['nullable', 'boolean'],
             'is_adoptable' => ['nullable', 'boolean'],
             'gallery_photos' => ['nullable', 'array', 'max:12'],
