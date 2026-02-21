@@ -51,6 +51,9 @@
 - Added unified reporting via polymorphic `reports` table for posts, comments, and users.
 - Added report routes and controller actions: `posts.report`, `comments.report`, `users.report`.
 - Updated post detail and profile actions UI to submit comment/user reports directly.
+- Updated pet profile create/edit flow to use Form Requests and policy authorization in `PetController`.
+- Updated pet profile form fields to align with persisted schema fields (`sex`, `birth_date`) and consistent adoption/public toggles.
+- Added pet edit authorization coverage: owner can edit, non-owner receives 403.
 
 ### Tests
 - Verified passing suites:
@@ -69,3 +72,4 @@
   - `tests/Feature/ProfileTest.php --filter="pin|pinned|profile posts tab shows pinned"`
   - `tests/Feature/FeedPosts/FeedPostsFeatureTest.php --filter="share|feed_post_card_renders_share_action"`
   - `tests/Feature/ReportFeatureTest.php`
+  - `tests/Feature/PetFeatureTest.php`

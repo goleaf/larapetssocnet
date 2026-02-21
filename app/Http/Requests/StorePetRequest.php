@@ -21,6 +21,7 @@ class StorePetRequest extends FormRequest
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
             'bio' => ['nullable', 'string', 'max:5000'],
             'is_public' => ['nullable', 'boolean'],
+            'is_adoptable' => ['nullable', 'boolean'],
         ];
     }
 }

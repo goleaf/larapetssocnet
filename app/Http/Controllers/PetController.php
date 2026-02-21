@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePetRequest;
+use App\Http\Requests\UpdatePetRequest;
 use App\Models\Pet;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
@@ -59,12 +61,16 @@ class PetController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Pet::class);
+
         return view('pets.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StorePetRequest $request): RedirectResponse
     {
-        $validated = $request->validate($this->petRules());
+        $this->authorize('create', Pet::class);
+
+        $validated = $request->validated();
 
         $payload = $this->normalizePetPayload($validated, $request);
 
@@ -78,19 +84,19 @@ class PetController extends Controller
     public function edit(Request $request, string $slug): View
     {
         $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->authorize('update', $pet);
 
         return view('pets.edit', [
             'pet' => $pet,
         ]);
     }
 
-    public function update(Request $request, string $slug): RedirectResponse
+    public function update(UpdatePetRequest $request, string $slug): RedirectResponse
     {
         $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->authorize('update', $pet);
 
-        $validated = $request->validate($this->petRules($pet));
+        $validated = $request->validated();
         $payload = $this->normalizePetPayload($validated, $request);
 
         $pet->update($payload);
@@ -103,7 +109,7 @@ class PetController extends Controller
     public function destroy(Request $request, string $slug): RedirectResponse
     {
         $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->authorize('delete', $pet);
 
         $pet->delete();
 
@@ -263,37 +269,25 @@ class PetController extends Controller
         return (int) $ownerId === (int) $user->getAuthIdentifier();
     }
 
-    protected function petRules(?Pet $pet = null): array
-    {
-        $slugRule = ['nullable', 'string', 'max:180', 'alpha_dash'];
-
-        if ($this->petTableHasColumn('slug')) {
-            $slugRule[] = 'unique:pets,slug'.($pet ? ','.$pet->getKey() : '');
-        }
-
-        return [
-            'name' => ['required', 'string', 'max:120'],
-            'slug' => $slugRule,
-            'species' => ['required', 'string', 'max:80'],
-            'breed' => ['nullable', 'string', 'max:120'],
-            'gender' => ['nullable', 'in:male,female,unknown'],
-            'birthdate' => ['nullable', 'date', 'before_or_equal:today'],
-            'weight' => ['nullable', 'numeric', 'min:0', 'max:500'],
-            'color' => ['nullable', 'string', 'max:80'],
-            'bio' => ['nullable', 'string', 'max:5000'],
-            'personality_tags' => ['nullable'],
-            'is_public' => ['nullable', 'boolean'],
-            'is_for_adoption' => ['nullable', 'boolean'],
-        ];
-    }
-
     protected function normalizePetPayload(array $validated, Request $request): array
     {
-        $payload = $validated;
+        $payload = [
+            'name' => $validated['name'] ?? null,
+            'species' => $validated['species'] ?? null,
+            'breed' => $validated['breed'] ?? null,
+            'sex' => $validated['sex'] ?? ($validated['gender'] ?? null),
+            'birth_date' => $validated['birth_date'] ?? ($validated['birthdate'] ?? null),
+            'bio' => $validated['bio'] ?? null,
+            'is_public' => $request->boolean('is_public'),
+            'is_adoptable' => $request->boolean('is_adoptable') || $request->boolean('is_for_adoption'),
+        ];
 
-        $payload['slug'] = $payload['slug'] ?? Str::slug($payload['name'] ?? 'pet-'.Str::random(6));
+        if ($this->petTableHasColumn('slug')) {
+            $payload['slug'] = $validated['slug'] ?? Str::slug($payload['name'] ?? 'pet-'.Str::random(6));
+        }
+
         $payload['is_public'] = $request->boolean('is_public');
-        $payload['is_for_adoption'] = $request->boolean('is_for_adoption');
+        $payload['is_adoptable'] = $request->boolean('is_adoptable') || $request->boolean('is_for_adoption');
         $payload['personality_tags'] = $this->normalizePersonalityTags($payload['personality_tags'] ?? null);
 
         if ($ownerColumn = $this->resolvePetOwnerColumn()) {
