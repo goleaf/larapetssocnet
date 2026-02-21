@@ -14,21 +14,31 @@ class FollowRequestController extends Controller
 
     public function index(Request $request): View
     {
-        $pendingRequests = $request->user()
+        $requests = $request->user()
             ->pendingFollowRequests()
             ->with('media')
-            ->paginate(24);
+            ->withCount(['acceptedFollowers', 'posts'])
+            ->latest('follows.created_at')
+            ->paginate(20);
 
-        return view('follow-requests.index', compact('pendingRequests'));
+        return view('follow-requests.index', compact('requests'));
     }
 
     public function approve(Request $request, User $user): JsonResponse
     {
+        if (! $request->user()->pendingFollowRequests()->where('users.id', $user->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No pending request found.',
+            ], 404);
+        }
+
         $this->followService->approve($request->user(), $user);
 
         return response()->json([
             'success' => true,
             'message' => "Approved @{$user->username}.",
+            'new_followers_count' => (int) $request->user()->fresh()->followers_count,
         ]);
     }
 

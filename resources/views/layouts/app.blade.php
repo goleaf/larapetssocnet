@@ -94,6 +94,8 @@
         if ($user && \Illuminate\Support\Facades\Schema::hasTable('users')) {
             $suggestedUsers = \App\Models\User::query()
                 ->whereKeyNot($user->getKey())
+                ->where('is_private', false)
+                ->where('is_banned', false)
                 ->orderByDesc('followers_count')
                 ->limit(3)
                 ->get(['id', 'name', 'username', 'avatar_path', 'followers_count']);
@@ -117,6 +119,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @stack('meta')
 
         <title>{{ $documentTitle }}</title>
 

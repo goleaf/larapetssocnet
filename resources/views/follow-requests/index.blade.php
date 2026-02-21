@@ -20,7 +20,7 @@
 
     <section class="shell-card p-5 dark:border-slate-700/60 dark:bg-slate-900/40">
         <div class="space-y-3">
-            @forelse ($pendingRequests as $requester)
+            @forelse ($requests as $requester)
                 <article class="flex items-center gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
                     <x-avatar :user="$requester" size="md" />
                     <div class="min-w-0 flex-1">
@@ -48,7 +48,7 @@
         </div>
 
         <div class="mt-4">
-            {{ $pendingRequests->links() }}
+            {{ $requests->links() }}
         </div>
     </section>
 </x-app-layout>

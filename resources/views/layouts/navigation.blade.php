@@ -95,6 +95,16 @@
                         @endif
                     </a>
                 @endif
+
+                @if ($user?->is_private && (int) ($user->follow_requests_count ?? 0) > 0 && Route::has('follow-requests.index'))
+                    <a
+                        href="{{ route('follow-requests.index') }}"
+                        class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                        aria-label="Open follow requests"
+                    >
+                        👥 {{ (int) $user->follow_requests_count }} request(s)
+                    </a>
+                @endif
             @endauth
 
             <button

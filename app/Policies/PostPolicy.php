@@ -9,14 +9,31 @@ class PostPolicy
 {
     public function view(?User $viewer, Post $post): bool
     {
-        if (! $post->author->canBeViewedBy($viewer)) {
+        $author = $post->author;
+
+        if ((bool) $author->is_banned) {
+            return false;
+        }
+
+        if ($viewer?->id === $author->id) {
+            return true;
+        }
+
+        if ($viewer?->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if ($viewer && ($viewer->hasBlocked($author) || $author->hasBlocked($viewer))) {
+            return false;
+        }
+
+        if ((bool) $author->is_private && ! ($viewer && $viewer->isFollowing($author))) {
             return false;
         }
 
         return match ($post->visibility) {
             Post::VISIBILITY_PRIVATE => $viewer?->id === $post->user_id,
-            Post::VISIBILITY_FOLLOWERS => $viewer?->id === $post->user_id
-                || ($viewer !== null && $viewer->isFollowing($post->author)),
+            Post::VISIBILITY_FOLLOWERS => $viewer !== null && $viewer->isFollowing($author),
             default => true,
         };
     }

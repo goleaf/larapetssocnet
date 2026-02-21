@@ -39,7 +39,7 @@ class FollowPolicy
         }
 
         if ((bool) $user->is_private) {
-            return $user->isFollowing($viewer);
+            return $viewer->isFollowing($user);
         }
 
         return true;

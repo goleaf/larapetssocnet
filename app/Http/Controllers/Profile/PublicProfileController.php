@@ -22,10 +22,15 @@ class PublicProfileController extends Controller
             ? $request->string('tab')->toString()
             : 'posts';
 
-        $canViewContent = ! $user->is_private
-            || ($viewer && ($viewer->id === $user->id || $viewer->isFollowing($user)));
+        $canViewContent = $user->canViewPosts($viewer);
 
-        $user->loadCount(['followers', 'following', 'pets']);
+        $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets']);
+
+        if (! $canViewContent && (bool) $user->is_private) {
+            return view('profile.private', [
+                'user' => $user,
+            ]);
+        }
 
         $pets = $tab === 'pets' && $canViewContent
             ? $user->pets()->latest()->get()

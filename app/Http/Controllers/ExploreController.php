@@ -19,6 +19,10 @@ class ExploreController extends Controller
             ->with(['user', 'hashtags'])
             ->published()
             ->where('visibility', Post::VISIBILITY_PUBLIC)
+            ->whereHas('author', fn ($authorQuery) => $authorQuery
+                ->where('is_private', false)
+                ->where('is_banned', false)
+            )
             ->notBlockedFor($viewer)
             ->when($type === 'photos', fn ($query) => $query->where('type', Post::TYPE_PHOTO))
             ->when($type === 'videos', fn ($query) => $query->where('type', Post::TYPE_VIDEO))

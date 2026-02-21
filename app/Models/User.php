@@ -425,7 +425,16 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeDiscoverable(Builder $query): Builder
     {
-        return $query->where(fn (Builder $subQuery) => $subQuery->whereNull('is_private')->orWhere('is_private', false));
+        return $query
+            ->where('is_private', false)
+            ->where('is_banned', false);
+    }
+
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query
+            ->where('is_private', false)
+            ->where('is_banned', false);
     }
 
     public function scopeActiveRecently(Builder $query, int $days = 30): Builder
@@ -532,6 +541,42 @@ class User extends Authenticatable implements HasMedia
     public function rejectFollowRequest(self $requester): void
     {
         app(FollowService::class)->reject($this, $requester);
+    }
+
+    public function makePrivate(): void
+    {
+        DB::transaction(function (): void {
+            $this->update(['is_private' => true]);
+        });
+    }
+
+    public function makePublic(): void
+    {
+        DB::transaction(function (): void {
+            $pending = Follow::query()
+                ->where('following_id', $this->getKey())
+                ->where('status', 'pending')
+                ->get();
+
+            if ($pending->isNotEmpty()) {
+                $requesterIds = $pending->pluck('follower_id')->unique()->values();
+
+                Follow::query()
+                    ->where('following_id', $this->getKey())
+                    ->where('status', 'pending')
+                    ->update(['status' => 'accepted']);
+
+                $this->increment('followers_count', $pending->count());
+                $this->updateQuietly(['follow_requests_count' => 0]);
+
+                self::query()->whereIn('id', $requesterIds)->get()->each(function (self $requester): void {
+                    $requester->increment('following_count');
+                    $requester->notify(new \App\Notifications\FollowRequestApproved($this));
+                });
+            }
+
+            $this->update(['is_private' => false]);
+        });
     }
 
     public function getMutualFollowers(self $other)
@@ -676,29 +721,17 @@ class User extends Authenticatable implements HasMedia
 
     public function canBeViewedBy(?self $viewer): bool
     {
-        if (! $viewer) {
-            return ! $this->is_private;
-        }
-
-        if ($viewer->hasBlockingRelationshipWith($this)) {
-            return false;
-        }
-
-        if (! $this->is_private) {
-            return true;
-        }
-
-        return $viewer->is($this) || $viewer->isFollowing($this) || $viewer->hasAnyRole(['admin', 'moderator']);
+        return $this->canViewProfile($viewer);
     }
 
     public function canViewFollowersList(?self $viewer): bool
     {
-        return $this->canBeViewedBy($viewer);
+        return $this->canSeeFollowersList($viewer);
     }
 
     public function canViewFollowingList(?self $viewer): bool
     {
-        return $this->canBeViewedBy($viewer);
+        return $this->canSeeFollowersList($viewer);
     }
 
     public function canView(Model $model): bool
@@ -708,6 +741,53 @@ class User extends Authenticatable implements HasMedia
         }
 
         return $model->canBeViewedBy($this);
+    }
+
+    public function canViewProfile(?self $viewer): bool
+    {
+        if ((bool) $this->is_banned) {
+            return false;
+        }
+
+        if (! $viewer) {
+            return ! (bool) $this->is_private;
+        }
+
+        if ($viewer->hasBlockingRelationshipWith($this)) {
+            return false;
+        }
+
+        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if (! (bool) $this->is_private) {
+            return true;
+        }
+
+        return $viewer->isFollowing($this);
+    }
+
+    public function canViewPosts(?self $viewer): bool
+    {
+        return $this->canViewProfile($viewer);
+    }
+
+    public function canSeeFollowersList(?self $viewer): bool
+    {
+        if (! $viewer) {
+            return ! (bool) $this->is_private;
+        }
+
+        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if (! (bool) $this->is_private) {
+            return true;
+        }
+
+        return $viewer->isFollowing($this);
     }
 
     public function updateAvatar(UploadedFile $file): void

@@ -13,6 +13,9 @@
 - Added follow test suites: `tests/Feature/FollowTest.php`, `tests/Feature/FollowRequestTest.php`, `tests/Unit/FollowServiceTest.php`.
 - Added baseline skill docs required for this feature (`skills/laravel.md`, `skills/sqlite.md`, `skills/blade.md`, `skills/alpine.md`, `skills/tailwind.md`, `skills/security.md`, `skills/forms.md`, `skills/policies.md`).
 - Added follow-specific skills: `skills/relations.md`, `skills/counters.md`, `skills/notifications.md`.
+- Added profile privacy toggle backend with `PrivacyService` and `PrivacyController` (`POST /settings/privacy/toggle`).
+- Added private-profile locked-state view: `resources/views/profile/private.blade.php` with `noindex,nofollow` meta.
+- Added privacy feature tests in `tests/Feature/PrivacyToggleTest.php`.
 
 ### Changed
 - Updated block relationships in `User` model to use the `blocks` table.
@@ -24,6 +27,13 @@
 - Updated social seeding follow graph to use `FollowService` and `CounterCacheService` rebuild.
 - Updated `skills/testing.md` with social-action testing guidance.
 - Updated routing to add dedicated follow/follow-request endpoints while keeping compatibility for existing follow/unfollow/profile flows.
+- Updated `User` privacy/follow access logic with `makePrivate()`, `makePublic()`, `canViewProfile()`, `canViewPosts()`, and discoverability scopes.
+- Updated profile rendering flow to show locked private state for non-authorized viewers.
+- Updated follow requests controller/view flow (`requests` dataset + pending validation on approve).
+- Updated account settings privacy UI to Alpine-powered async toggle with pending-request confirmation.
+- Updated navigation to show pending follow-requests badge for private accounts.
+- Updated explore/search discoverability filters to exclude private and banned users.
+- Updated `PostPolicy` and `FollowPolicy` checks for private-profile visibility semantics.
 
 ### Tests
 - Verified passing suites:
@@ -36,3 +46,4 @@
   - `tests/Unit/FollowServiceTest.php`
   - `tests/Feature/FollowFeatureTest.php`
   - `tests/Feature/ProfileTest.php --filter=\"followers can view private profile pets tab|blocking removes follows and prevents future follows until unblocked\"`
+  - `tests/Feature/PrivacyToggleTest.php`

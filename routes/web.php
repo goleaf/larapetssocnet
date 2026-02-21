@@ -20,6 +20,7 @@ use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostReportController;
+use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\SearchController;
@@ -151,6 +152,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::get('/settings/account', [AccountSettingsController::class, 'edit'])->name('settings.account.edit');
     Route::get('/settings/blocked', [BlockController::class, 'index'])->name('settings.blocked');
     Route::patch('/settings/account/privacy', [AccountSettingsController::class, 'updatePrivacy'])->name('settings.account.privacy');
+    Route::post('/settings/privacy/toggle', [PrivacyController::class, 'toggle'])->name('privacy.toggle');
     Route::delete('/settings/account', [AccountSettingsController::class, 'destroy'])->name('settings.account.destroy');
 
     Route::middleware('throttle:30,1')->group(function (): void {

@@ -36,9 +36,11 @@ class SearchController extends Controller
 
     private function searchByType(string $type, string $query): LengthAwarePaginator
     {
+        $viewer = request()->user();
+
         if ($query === '') {
             return match ($type) {
-                'users' => User::query()->latest()->paginate(15),
+                'users' => User::query()->discoverable()->notBlockedFor($viewer)->latest()->paginate(15),
                 'pets' => Pet::query()->latest()->paginate(15),
                 'posts' => Post::query()->latest()->paginate(15),
                 'groups' => Group::query()->latest()->paginate(15),
@@ -50,6 +52,8 @@ class SearchController extends Controller
 
         return match ($type) {
             'users' => User::query()
+                ->discoverable()
+                ->notBlockedFor($viewer)
                 ->where(function ($builder) use ($query): void {
                     $builder->where('name', 'like', "%{$query}%")
                         ->orWhere('username', 'like', "%{$query}%")

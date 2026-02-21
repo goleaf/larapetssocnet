@@ -1,5 +1,5 @@
 @props([
-    'user',
+    'user' => null,
     'followStatus' => 'none',
     'size' => 'md',
     'showRemove' => false,
@@ -13,6 +13,14 @@
     };
 @endphp
 
+@if ($user === null)
+    <button
+        type="button"
+        {{ $attributes->merge(['class' => "{$pad} btn-base btn-primary"]) }}
+    >
+        {{ $slot }}
+    </button>
+@else
 <div
     x-data="{
         status: '{{ $followStatus }}',
@@ -31,7 +39,7 @@
             return 'bg-emerald-500 hover:bg-emerald-600 text-white border border-transparent'
         },
         async perform(url, method = 'POST') {
-            if (this.loading || this.status === 'pending') return
+            if (this.loading) return
             this.loading = true
             const prev = this.status
             const prevCount = this.count
@@ -115,3 +123,4 @@
         </button>
     @endif
 </div>
+@endif

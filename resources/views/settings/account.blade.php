@@ -11,44 +11,112 @@
     <div class="space-y-5">
         <section class="shell-card p-6 dark:border-slate-700/60 dark:bg-slate-900/40">
             <h2 class="shell-title text-lg">Privacy</h2>
-            <p class="mt-1 text-sm shell-text-muted">Private accounts are visible only to followers you approve.</p>
+            <p class="mt-1 text-sm shell-text-muted">Control who can see your profile and content.</p>
 
-            <form method="POST" action="{{ route('settings.account.privacy') }}" class="mt-4 space-y-4" aria-label="Account privacy settings">
-                @csrf
-                @method('PATCH')
-
-                <input type="hidden" name="is_private" value="0">
-
-                <label for="is_private" class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] p-3 dark:border-slate-700/60 dark:bg-slate-900/30">
-                    <div>
-                        <p class="text-sm font-semibold">Private account</p>
-                        <p class="text-xs shell-text-muted">Only approved followers can view your profile content.</p>
+            <div
+                class="mt-4"
+                x-data="{
+                    isPrivate: {{ $user->is_private ? 'true' : 'false' }},
+                    loading: false,
+                    message: '',
+                    messageType: '',
+                    autoApproved: 0,
+                    showConfirm: false,
+                    pendingCount: {{ (int) $user->follow_requests_count }},
+                    async toggle() {
+                        if (this.loading) return
+                        if (this.isPrivate && this.pendingCount > 0) {
+                            this.showConfirm = true
+                            return
+                        }
+                        await this.executeToggle()
+                    },
+                    async executeToggle() {
+                        this.loading = true
+                        this.showConfirm = false
+                        try {
+                            const res = await fetch('{{ route('privacy.toggle') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            const data = await res.json()
+                            if (data.success) {
+                                this.isPrivate = data.is_private
+                                this.message = data.message
+                                this.messageType = 'success'
+                                this.autoApproved = data.auto_approved ?? 0
+                                this.pendingCount = this.isPrivate ? this.pendingCount : 0
+                            }
+                        } catch (e) {
+                            this.message = 'Something went wrong. Please try again.'
+                            this.messageType = 'error'
+                        }
+                        this.loading = false
+                    }
+                }"
+            >
+                <div class="flex items-start justify-between gap-4 rounded-xl border border-[var(--ui-border)] p-3 dark:border-slate-700/60 dark:bg-slate-900/30">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-semibold">Private account</p>
+                            <span
+                                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                                :class="isPrivate ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'"
+                                x-text="isPrivate ? 'Private' : 'Public'"
+                            ></span>
+                        </div>
+                        <p class="mt-1 text-xs shell-text-muted" x-show="!isPrivate">Anyone can see your profile and discover it in Explore/search.</p>
+                        <p class="mt-1 text-xs shell-text-muted" x-show="isPrivate">Only approved followers can see your profile content.</p>
                     </div>
 
-                    <span class="relative inline-flex h-7 w-12 shrink-0 items-center">
-                        <input
-                            id="is_private"
-                            type="checkbox"
-                            name="is_private"
-                            value="1"
-                            @checked(old('is_private', $user->is_private))
-                            class="peer sr-only"
-                            aria-label="Toggle private account"
-                        >
-                        <span class="h-7 w-12 rounded-full border border-[var(--ui-border)] bg-[color:var(--ui-surface-muted)] transition peer-checked:border-emerald-500 peer-checked:bg-emerald-500/20 dark:border-slate-700/60"></span>
-                        <span class="absolute left-1 h-5 w-5 rounded-full bg-white shadow transition peer-checked:left-6 dark:bg-slate-200"></span>
-                    </span>
-                </label>
-
-                <div class="flex items-center gap-3">
-                    <button type="submit" class="btn-base btn-primary">Save Privacy</button>
-                    @if (session('status') === 'privacy-updated')
-                        <p class="text-sm shell-text-muted">Privacy setting updated.</p>
-                    @endif
+                    <button
+                        type="button"
+                        role="switch"
+                        :aria-checked="isPrivate.toString()"
+                        aria-label="Toggle private account"
+                        :disabled="loading"
+                        @click="toggle"
+                        class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-60"
+                        :class="isPrivate ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'"
+                    >
+                        <span class="inline-block h-5 w-5 transform rounded-full bg-white transition" :class="isPrivate ? 'translate-x-6' : 'translate-x-1'"></span>
+                    </button>
                 </div>
-            </form>
 
-            <x-input-error :messages="$errors->get('is_private')" class="mt-2" />
+                <div
+                    x-show="showConfirm"
+                    x-transition
+                    class="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200"
+                >
+                    You have <strong x-text="pendingCount"></strong> pending request(s). Making your account public will auto-approve them.
+                    <div class="mt-2 flex gap-2">
+                        <button type="button" class="btn-base btn-primary px-3 py-2 text-xs" @click="executeToggle">Confirm</button>
+                        <button type="button" class="btn-base btn-ghost px-3 py-2 text-xs" @click="showConfirm = false">Cancel</button>
+                    </div>
+                </div>
+
+                <p
+                    x-show="message !== ''"
+                    class="mt-3 text-sm"
+                    :class="messageType === 'success' ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'"
+                >
+                    <span x-text="message"></span>
+                    <span x-show="autoApproved > 0">(<span x-text="autoApproved"></span> pending request(s) auto-approved.)</span>
+                </p>
+
+                @if ($user->is_private && $user->follow_requests_count > 0)
+                    <a
+                        href="{{ route('follow-requests.index') }}"
+                        class="mt-4 flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                    >
+                        <span>Pending follow requests: {{ $user->follow_requests_count }}</span>
+                        <span aria-hidden="true">→</span>
+                    </a>
+                @endif
+            </div>
         </section>
 
         <section class="shell-card p-6 dark:border-slate-700/60 dark:bg-slate-900/40" x-data="{ unblocking: null, notice: '' }">
