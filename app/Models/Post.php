@@ -217,13 +217,17 @@ class Post extends Model implements HasMedia
 
     public function scopeNotBlockedFor(Builder $query, ?User $viewer): Builder
     {
-        if (! $viewer) {
+        if (! $viewer || ! User::hasBlocksTable()) {
             return $query;
         }
 
-        $blockedIds = $viewer->blocking()->pluck('users.id')
-            ->merge($viewer->blockedBy()->pluck('users.id'))
-            ->unique();
+        $blockedIds = collect();
+
+        if (User::hasBlocksTable()) {
+            $blockedIds = $viewer->blocking()->pluck('users.id')
+                ->merge($viewer->blockedBy()->pluck('users.id'))
+                ->unique();
+        }
 
         if ($blockedIds->isEmpty()) {
             return $query;
@@ -241,10 +245,14 @@ class Post extends Model implements HasMedia
                 ->whereHas('author', fn (Builder $author) => $author->where('is_private', false)->where('is_banned', false));
         }
 
-        $acceptedFollowingIds = $viewer->following()->pluck('users.id');
-        $blockedIds = $viewer->blocking()->pluck('users.id')
-            ->merge($viewer->blockedBy()->pluck('users.id'))
-            ->unique();
+        $acceptedFollowingIds = $viewer->acceptedFollowing()->pluck('users.id');
+        $blockedIds = collect();
+
+        if (User::hasBlocksTable()) {
+            $blockedIds = $viewer->blocking()->pluck('users.id')
+                ->merge($viewer->blockedBy()->pluck('users.id'))
+                ->unique();
+        }
 
         return $query->where(function (Builder $visibilityQuery) use ($viewer, $acceptedFollowingIds, $blockedIds): void {
             $visibilityQuery
@@ -267,7 +275,7 @@ class Post extends Model implements HasMedia
 
     public function scopeForFeed(Builder $query, User $user): Builder
     {
-        $followingIds = $user->following()->pluck('users.id');
+        $followingIds = $user->acceptedFollowing()->pluck('users.id');
 
         return $query->visibleTo($user)
             ->where(function (Builder $feed) use ($user, $followingIds): void {

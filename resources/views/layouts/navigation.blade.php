@@ -25,7 +25,7 @@
             </svg>
         </button>
 
-        <a href="{{ Route::has('feed.index') ? route('feed.index') : url('/') }}" class="flex shrink-0 items-center gap-2">
+        <a href="{{ Auth::check() && Route::has('feed.index') ? route('feed.index') : (Route::has('explore.index') ? route('explore.index') : url('/')) }}" class="flex shrink-0 items-center gap-2">
             <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-lg" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">🐾</span>
             <span class="shell-title text-base sm:text-lg">{{ $appName }}</span>
             <span class="hidden text-xs font-semibold sm:inline text-gradient-brand">Social for pet lovers</span>
@@ -35,28 +35,8 @@
             <x-search-form :action="$searchTarget" class="w-full max-w-xl" placeholder="Search pets, posts, groups, events..." />
         </div>
 
-        <div class="hidden items-center gap-1 xl:flex">
-            @foreach (array_slice($desktopNav, 0, 4) as $item)
-                @php
-                    $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
-                    $isActive = $routeIsActive($item['patterns'] ?? []);
-                @endphp
-
-                <a href="{{ $href }}" class="shell-nav-link {{ $isActive ? 'active' : '' }} px-3 py-2 text-sm">
-                    <span aria-hidden="true">{{ $item['icon'] }}</span>
-                    <span>{{ $item['label'] }}</span>
-                </a>
-            @endforeach
-        </div>
-
         <div class="ms-auto flex items-center gap-2">
             @auth
-                @if (Route::has('posts.create'))
-                    <a href="{{ route('posts.create') }}" class="btn-base btn-primary hidden px-3 py-2 text-sm md:inline-flex">
-                        ✚ New Post
-                    </a>
-                @endif
-
                 @if (Route::has('messages.index'))
                     <a
                         href="{{ route('messages.index') }}"

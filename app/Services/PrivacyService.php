@@ -61,11 +61,15 @@ class PrivacyService
                 ->where('user_id', $viewer->id)
                 ->orWhere(function (Builder $public) use ($viewer): void {
                     $public->where('visibility', 'public')
-                        ->whereHas('author', fn (Builder $author) => $author
-                            ->where('is_private', false)
-                            ->where('is_banned', false)
-                            ->whereNotIn('id', $viewer->blocking()->pluck('users.id'))
-                        );
+                        ->whereHas('author', function (Builder $author) use ($viewer): void {
+                            $author
+                                ->where('is_private', false)
+                                ->where('is_banned', false);
+
+                            if (User::hasBlocksTable()) {
+                                $author->whereNotIn('id', $viewer->blocking()->pluck('users.id'));
+                            }
+                        });
                 })
                 ->orWhere(function (Builder $followers) use ($viewer): void {
                     $followers->whereIn('user_id', $viewer->acceptedFollowing()->pluck('users.id'))

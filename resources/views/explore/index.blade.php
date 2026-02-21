@@ -9,7 +9,9 @@
                 <p class="mt-1 text-sm shell-text-muted">Find photos, videos, trending topics, and new creators.</p>
             </div>
 
-            <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">✚ New Post</a>
+            @auth
+                <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">✚ New Post</a>
+            @endauth
         </div>
     </x-slot>
 

@@ -5,8 +5,15 @@
     $currentRoute = Route::currentRouteName();
     $user = Auth::user();
 
+    $isAuthenticated = $user !== null;
+
     $desktopNav = [
-        ['label' => 'Feed', 'icon' => '🏠', 'route' => 'feed.index', 'patterns' => ['feed.*', 'posts.*', 'saved.*']],
+        [
+            'label' => $isAuthenticated ? 'Feed' : 'Explore Feed',
+            'icon' => '🏠',
+            'route' => $isAuthenticated ? 'feed.index' : 'explore.index',
+            'patterns' => $isAuthenticated ? ['feed.*', 'posts.*', 'saved.*'] : ['explore.*', 'search.*', 'hashtags.*'],
+        ],
         ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*', 'hashtags.*']],
         ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'patterns' => ['pets.*', 'tips.*']],
         ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
@@ -15,7 +22,12 @@
     ];
 
     $mobileNav = [
-        ['label' => 'Home', 'icon' => '🏠', 'route' => 'feed.index', 'patterns' => ['feed.*', 'posts.*']],
+        [
+            'label' => 'Home',
+            'icon' => '🏠',
+            'route' => $isAuthenticated ? 'feed.index' : 'explore.index',
+            'patterns' => $isAuthenticated ? ['feed.*', 'posts.*'] : ['explore.*', 'search.*', 'hashtags.*'],
+        ],
         ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*']],
         ['label' => 'Post', 'icon' => '✚', 'route' => 'posts.create', 'patterns' => ['posts.create']],
         ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
@@ -51,6 +63,19 @@
 
         return false;
     };
+
+    $hideLeftRail = $routeIsActive([
+        'profile.show',
+        'profile.followers',
+        'profile.following',
+        'profile.edit',
+        'profile.update',
+        'settings.profile.*',
+        'pets.show',
+        'pets.edit',
+        'pets.update',
+        'pets.create',
+    ]);
 
     $trendingHashtags = collect();
     $upcomingEvents = collect();
@@ -168,7 +193,12 @@
                 </div>
             @endif
 
-            <div class="relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-5 px-4 pb-24 pt-5 sm:px-6 lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem] lg:gap-6 lg:px-8 lg:pb-8">
+            <div @class([
+                'relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-5 px-4 pb-24 pt-5 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',
+                'lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem]' => ! $hideLeftRail,
+                'lg:grid-cols-[minmax(0,1fr)_20rem]' => $hideLeftRail,
+            ])>
+                @unless ($hideLeftRail)
                 <aside class="hidden lg:block">
                     <div class="sticky top-24 space-y-4">
                         <section class="shell-panel p-4">
@@ -230,6 +260,7 @@
                         </section>
                     </div>
                 </aside>
+                @endunless
 
                 <main class="min-w-0 space-y-5">
                     @isset($header)

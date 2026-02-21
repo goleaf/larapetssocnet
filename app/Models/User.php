@@ -50,6 +50,7 @@ class User extends Authenticatable implements HasMedia
      * @var array<string, bool>
      */
     protected static array $usersColumnsCache = [];
+    protected static ?bool $hasBlocksTableCache = null;
 
     /**
      * @var list<string>
@@ -474,7 +475,7 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeNotBlockedFor(Builder $query, ?self $viewer): Builder
     {
-        if (! $viewer) {
+        if (! $viewer || ! static::hasBlocksTable()) {
             return $query;
         }
 
@@ -622,9 +623,15 @@ class User extends Authenticatable implements HasMedia
     {
         $excludeIds = $this->acceptedFollowing()
             ->pluck('users.id')
-            ->push($this->getKey())
-            ->merge($this->blocking()->pluck('users.id'))
-            ->merge($this->blockedBy()->pluck('users.id'))
+            ->push($this->getKey());
+
+        if (static::hasBlocksTable()) {
+            $excludeIds = $excludeIds
+                ->merge($this->blocking()->pluck('users.id'))
+                ->merge($this->blockedBy()->pluck('users.id'));
+        }
+
+        $excludeIds = $excludeIds
             ->unique();
 
         return self::query()
@@ -639,11 +646,19 @@ class User extends Authenticatable implements HasMedia
 
     public function hasBlocked(self $user): bool
     {
+        if (! static::hasBlocksTable()) {
+            return false;
+        }
+
         return $this->blocking()->whereKey($user->getKey())->exists();
     }
 
     public function isBlockedBy(self $user): bool
     {
+        if (! static::hasBlocksTable()) {
+            return false;
+        }
+
         return $this->blockedBy()->whereKey($user->getKey())->exists();
     }
 
@@ -683,16 +698,28 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeNotBlockedBy(Builder $query, self $user): Builder
     {
+        if (! static::hasBlocksTable()) {
+            return $query;
+        }
+
         return $query->whereNotIn('users.id', $user->blocking()->select('users.id'));
     }
 
     public function scopeNotBlocking(Builder $query, self $user): Builder
     {
+        if (! static::hasBlocksTable()) {
+            return $query;
+        }
+
         return $query->whereNotIn('users.id', $user->blockedBy()->select('users.id'));
     }
 
     public function scopeHasNoBlockRelationshipWith(Builder $query, self $user): Builder
     {
+        if (! static::hasBlocksTable()) {
+            return $query;
+        }
+
         $blockedIds = $user->blocking()->pluck('users.id');
         $blockerIds = $user->blockedBy()->pluck('users.id');
         $excludeIds = $blockedIds->merge($blockerIds)->unique();
@@ -904,6 +931,15 @@ class User extends Authenticatable implements HasMedia
         }
 
         return static::$usersColumnsCache[$column];
+    }
+
+    public static function hasBlocksTable(): bool
+    {
+        if (static::$hasBlocksTableCache === null) {
+            static::$hasBlocksTableCache = Schema::hasTable('blocks');
+        }
+
+        return static::$hasBlocksTableCache;
     }
 
     protected function avatarUrl(): Attribute
