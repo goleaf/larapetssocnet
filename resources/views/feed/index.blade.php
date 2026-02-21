@@ -1,34 +1,60 @@
+@section('title', 'Feed')
+
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Your Feed</h2>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <p class="shell-kicker">Home Feed</p>
+                <h1 class="shell-title text-2xl leading-tight">
+                    Welcome back,
+                    <span class="text-gradient-brand">{{ auth()->user()?->name ? explode(' ', auth()->user()->name)[0] : 'Pet Lover' }}</span>
+                </h1>
+                <p class="mt-1 text-sm shell-text-muted">Fresh posts from your network, newest first.</p>
+            </div>
+
             <div class="flex items-center gap-2">
-                <a href="{{ route('posts.create') }}" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">New Post</a>
-                <a href="{{ route('saved.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Saved</a>
-                <a href="{{ route('explore.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Explore</a>
+                <a href="{{ route('saved.index') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Saved</a>
+                <a href="{{ route('explore.index') }}" class="btn-base btn-secondary px-3 py-2 text-sm">Explore</a>
+                <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">✚ Create</a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-3xl space-y-4 px-4 sm:px-6 lg:px-8">
-            @if (session('status'))
-                <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                    {{ session('status') }}
-                </div>
-            @endif
+    <div class="space-y-4">
+        <section class="shell-panel p-4 sm:p-5">
+            <div class="flex items-start gap-3">
+                <x-avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="md" />
+                <div class="min-w-0 flex-1">
+                    <p class="shell-title text-sm">Share a pet update</p>
+                    <p class="mt-1 text-sm shell-text-muted">Photos, milestones, adoption updates, or quick check-ins.</p>
 
-            @forelse ($posts as $post)
-                @include('posts.partials.card', ['post' => $post])
-            @empty
-                <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
-                    Your feed is empty. Follow more people or create your first post.
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">Write Post</a>
+                        <a href="{{ route('posts.create') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Add Photos</a>
+                        <a href="{{ route('posts.create') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Tag Pet</a>
+                    </div>
                 </div>
-            @endforelse
-
-            <div>
-                {{ $posts->links() }}
             </div>
+        </section>
+
+        @if (session('status'))
+            <x-flash-message type="success" :message="session('status')" />
+        @endif
+
+        @forelse ($posts as $post)
+            @include('posts.partials.card', ['post' => $post])
+        @empty
+            <x-empty-state
+                icon="🧭"
+                title="No posts yet"
+                description="Follow more users or share your first pet moment to start the feed."
+                actionLabel="Create Post"
+                :actionHref="route('posts.create')"
+            />
+        @endforelse
+
+        <div class="shell-card p-3 sm:p-4">
+            {{ $posts->links() }}
         </div>
     </div>
 </x-app-layout>

@@ -1,22 +1,25 @@
 @php
     $appName = config('app.name', 'LaraPets');
+    $pageTitle = trim($__env->yieldContent('title'));
+    $documentTitle = $pageTitle !== '' ? "{$pageTitle} · {$appName}" : $appName;
     $currentRoute = Route::currentRouteName();
     $user = Auth::user();
 
     $desktopNav = [
-        ['label' => 'Feed', 'icon' => '🏠', 'route' => 'feed.index', 'href' => null],
-        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'href' => null],
-        ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'href' => null],
-        ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'href' => null],
-        ['label' => 'Marketplace', 'icon' => '🛍️', 'route' => 'marketplace.index', 'href' => null],
+        ['label' => 'Feed', 'icon' => '🏠', 'route' => 'feed.index', 'patterns' => ['feed.*', 'posts.*', 'saved.*']],
+        ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*', 'hashtags.*']],
+        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'patterns' => ['pets.*', 'tips.*']],
+        ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
+        ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'patterns' => ['events.*']],
+        ['label' => 'Marketplace', 'icon' => '🛍️', 'route' => 'marketplace.index', 'patterns' => ['marketplace.*', 'messages.*']],
     ];
 
     $mobileNav = [
-        ['label' => 'Home', 'icon' => '🏠', 'route' => 'feed.index', 'href' => null],
-        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'href' => null],
-        ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'href' => null],
-        ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'href' => null],
-        ['label' => 'Profile', 'icon' => '🙂', 'route' => 'settings.profile.edit', 'href' => null],
+        ['label' => 'Home', 'icon' => '🏠', 'route' => 'feed.index', 'patterns' => ['feed.*', 'posts.*']],
+        ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*']],
+        ['label' => 'Post', 'icon' => '✚', 'route' => 'posts.create', 'patterns' => ['posts.create']],
+        ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
+        ['label' => 'Profile', 'icon' => '🙂', 'route' => 'settings.profile.edit', 'patterns' => ['profile.*', 'settings.*']],
     ];
 
     $searchTarget = Route::has('search.index') ? route('search.index') : url('/');
@@ -35,11 +38,77 @@
         ]);
     }
 
-    $leftStats = [
-        ['label' => 'Pets Nearby', 'value' => '54'],
-        ['label' => 'Open Adoptions', 'value' => '12'],
-        ['label' => 'Active Groups', 'value' => '8'],
+    $routeIsActive = static function (array $patterns) use ($currentRoute): bool {
+        if (! $currentRoute) {
+            return false;
+        }
+
+        foreach ($patterns as $pattern) {
+            if (\Illuminate\Support\Str::is($pattern, $currentRoute)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    $trendingHashtags = collect();
+    $upcomingEvents = collect();
+    $suggestedUsers = collect();
+    $activeContests = collect();
+
+    $communityStats = [
+        ['label' => 'Members', 'value' => '--'],
+        ['label' => 'Pets', 'value' => '--'],
+        ['label' => 'Posts', 'value' => '--'],
     ];
+
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+            $communityStats[0]['value'] = number_format((int) \App\Models\User::query()->count());
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('pets')) {
+            $communityStats[1]['value'] = number_format((int) \App\Models\Pet::query()->count());
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('posts')) {
+            $communityStats[2]['value'] = number_format((int) \App\Models\Post::query()->count());
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('hashtags')) {
+            $trendingHashtags = \App\Models\Hashtag::query()
+                ->orderByDesc('posts_count')
+                ->limit(5)
+                ->get(['id', 'name', 'slug', 'posts_count']);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('events')) {
+            $upcomingEvents = \App\Models\Event::query()
+                ->where('start_at', '>=', now())
+                ->orderBy('start_at')
+                ->limit(2)
+                ->get(['id', 'title', 'start_at', 'location_text', 'attendees_count']);
+        }
+
+        if ($user && \Illuminate\Support\Facades\Schema::hasTable('users')) {
+            $suggestedUsers = \App\Models\User::query()
+                ->whereKeyNot($user->getKey())
+                ->orderByDesc('followers_count')
+                ->limit(3)
+                ->get(['id', 'name', 'username', 'avatar_path', 'followers_count']);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('contests')) {
+            $activeContests = \App\Models\Contest::query()
+                ->whereIn('status', ['active', 'voting'])
+                ->orderBy('ends_at')
+                ->limit(2)
+                ->get(['id', 'title', 'slug', 'status', 'ends_at', 'entries_count']);
+        }
+    } catch (\Throwable $exception) {
+        // Keep layout resilient when schema is in flux.
+    }
 @endphp
 
 <!DOCTYPE html>
@@ -49,7 +118,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ $appName }}</title>
+        <title>{{ $documentTitle }}</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap" rel="stylesheet" />
@@ -72,12 +141,18 @@
     </head>
     <body class="antialiased" x-data="appShell()">
         <div class="relative min-h-screen">
+            <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-[28rem] overflow-hidden">
+                <div class="absolute -left-16 top-12 h-72 w-72 rounded-full opacity-40 blur-3xl animate-float" style="background: color-mix(in srgb, var(--ui-primary) 30%, transparent);"></div>
+                <div class="absolute -right-16 top-0 h-80 w-80 rounded-full opacity-35 blur-3xl animate-float" style="background: color-mix(in srgb, var(--ui-accent) 26%, transparent); animation-delay: 800ms;"></div>
+            </div>
+
             @include('layouts.navigation', [
                 'appName' => $appName,
                 'searchTarget' => $searchTarget,
                 'desktopNav' => $desktopNav,
                 'currentRoute' => $currentRoute,
                 'user' => $user,
+                'routeIsActive' => $routeIsActive,
             ])
 
             @if ($flashMessages->isNotEmpty())
@@ -90,94 +165,149 @@
                 </div>
             @endif
 
-            <div class="mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 pb-24 pt-5 sm:px-6 lg:grid-cols-[16rem_minmax(0,1fr)_19rem] lg:gap-6 lg:px-8 lg:pb-8">
+            <div class="relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-5 px-4 pb-24 pt-5 sm:px-6 lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem] lg:gap-6 lg:px-8 lg:pb-8">
                 <aside class="hidden lg:block">
-                    <div class="shell-card sticky top-24 space-y-5 p-4">
-                        <div class="flex items-center gap-3">
-                            <x-avatar :name="$user?->name ?? 'Guest User'" :src="$user?->avatar_url" size="lg" />
-                            <div class="min-w-0">
-                                <p class="truncate shell-title text-sm">{{ $user?->name ?? 'Guest User' }}</p>
-                                <p class="truncate text-xs shell-text-muted">{{ $user?->email ?? 'community@larapets.test' }}</p>
+                    <div class="sticky top-24 space-y-4">
+                        <section class="shell-panel p-4">
+                            <div class="flex items-center gap-3">
+                                <x-avatar :name="$user?->name ?? 'Guest User'" :src="$user?->avatar_url" size="lg" />
+                                <div class="min-w-0">
+                                    <p class="truncate shell-title text-base">{{ $user?->name ?? 'Guest User' }}</p>
+                                    <p class="truncate text-xs shell-text-muted">{{ $user?->username ? '@'.$user->username : ($user?->email ?? 'community@larapets.test') }}</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <nav class="space-y-1" aria-label="Desktop Navigation">
-                            @foreach ($desktopNav as $item)
-                                @php
-                                    $href = ($item['route'] && Route::has($item['route']))
-                                        ? route($item['route'])
-                                        : ($item['href'] ?? '#');
-                                    $isActive = $item['route'] && $currentRoute
-                                        ? str_starts_with($currentRoute, $item['route'])
-                                        : false;
-                                @endphp
-
-                                <a href="{{ $href }}" class="shell-nav-link {{ $isActive ? 'active' : '' }}">
-                                    <span aria-hidden="true">{{ $item['icon'] }}</span>
-                                    <span>{{ $item['label'] }}</span>
-                                </a>
-                            @endforeach
-                        </nav>
-
-                        <div class="space-y-2">
-                            <p class="text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Community Snapshot</p>
-                            <div class="grid gap-2">
-                                @foreach ($leftStats as $stat)
-                                    <div class="shell-card-muted flex items-center justify-between px-3 py-2 text-sm">
-                                        <span class="shell-text-muted">{{ $stat['label'] }}</span>
-                                        <span class="font-bold" style="color: var(--ui-primary)">{{ $stat['value'] }}</span>
+                            <div class="mt-4 grid grid-cols-3 gap-2">
+                                @foreach ($communityStats as $stat)
+                                    <div class="rounded-xl border px-2 py-2 text-center" style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-surface) 90%, white 10%);">
+                                        <p class="shell-value text-sm">{{ $stat['value'] }}</p>
+                                        <p class="text-[0.62rem] font-semibold uppercase tracking-[0.08em] shell-text-muted">{{ $stat['label'] }}</p>
                                     </div>
                                 @endforeach
                             </div>
-                        </div>
+                        </section>
+
+                        <section class="shell-card p-4">
+                            <p class="shell-kicker">Navigate</p>
+                            <nav class="mt-2 space-y-1" aria-label="Desktop Navigation">
+                                @foreach ($desktopNav as $item)
+                                    @php
+                                        $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
+                                        $isActive = $routeIsActive($item['patterns'] ?? []);
+                                    @endphp
+
+                                    <a href="{{ $href }}" class="shell-nav-link {{ $isActive ? 'active' : '' }}">
+                                        <span aria-hidden="true">{{ $item['icon'] }}</span>
+                                        <span>{{ $item['label'] }}</span>
+                                    </a>
+                                @endforeach
+                            </nav>
+                        </section>
+
+                        <section class="shell-card p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                                <p class="shell-kicker">Trending Tags</p>
+                                <span class="chip">Live</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                @forelse ($trendingHashtags as $hashtag)
+                                    <a
+                                        href="{{ route('hashtags.show', $hashtag) }}"
+                                        class="hover-lift flex items-center justify-between rounded-xl border px-3 py-2"
+                                        style="border-color: var(--ui-border);"
+                                    >
+                                        <span class="text-sm font-semibold" style="color: var(--ui-text);">#{{ $hashtag->name }}</span>
+                                        <span class="text-xs shell-text-muted">{{ number_format((int) $hashtag->posts_count) }}</span>
+                                    </a>
+                                @empty
+                                    <p class="text-sm shell-text-muted">No trending hashtags yet.</p>
+                                @endforelse
+                            </div>
+                        </section>
                     </div>
                 </aside>
 
                 <main class="min-w-0 space-y-5">
                     @isset($header)
-                        <header class="shell-card p-4 sm:p-5">
+                        <header class="shell-card p-4 sm:p-5 animate-fade-up">
                             <div class="flex items-center justify-between gap-3">
-                                <div class="min-w-0">
-                                    {{ $header }}
-                                </div>
-                                <span class="chip">Wave 1 UI</span>
+                                <div class="min-w-0">{{ $header }}</div>
+                                <span class="chip">PetSocial</span>
                             </div>
                         </header>
                     @endisset
 
-                    <section class="space-y-5">
+                    <section class="space-y-5 animate-fade-up">
                         {{ $slot }}
                     </section>
                 </main>
 
                 <aside class="hidden lg:block">
                     <div class="sticky top-24 space-y-4">
-                        <x-user-card
-                            name="Mia Parker"
-                            headline="Volunteer · Downtown Shelter"
-                            bio="Coordinates weekend walks and adoption spotlights for senior dogs."
-                            followers="842"
-                            :following="true"
-                        />
+                        <section class="shell-card p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                                <p class="shell-kicker">Who To Follow</p>
+                                <a href="{{ Route::has('search.index') ? route('search.index', ['type' => 'users']) : '#' }}" class="text-xs font-semibold hover:underline" style="color: var(--ui-primary);">See all</a>
+                            </div>
 
-                        <x-group-card
-                            name="Weekend Dog Walkers"
-                            description="Friendly morning walks, route updates, and foster tips."
-                            members="128"
-                            privacy="Public"
-                            cta-label="Join Group"
-                            cta-href="#"
-                        />
+                            <div class="space-y-2.5">
+                                @forelse ($suggestedUsers as $suggested)
+                                    <a href="{{ route('profile.show', ['user' => $suggested]) }}" class="hover-lift flex items-center justify-between rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <x-avatar :name="$suggested->name" :src="$suggested->avatar_url" size="sm" />
+                                            <div class="min-w-0">
+                                                <p class="truncate text-sm font-semibold" style="color: var(--ui-text);">{{ $suggested->name }}</p>
+                                                <p class="truncate text-xs shell-text-muted">{{ $suggested->username ? '@'.$suggested->username : 'Pet lover' }}</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs shell-text-muted">{{ number_format((int) $suggested->followers_count) }}</span>
+                                    </a>
+                                @empty
+                                    <p class="text-sm shell-text-muted">Suggestions appear after activity grows.</p>
+                                @endforelse
+                            </div>
+                        </section>
 
-                        <x-event-card
-                            title="Adoption Picnic"
-                            starts-at="Sat · 10:00 AM"
-                            location="Riverfront Park"
-                            host="LaraPets Community"
-                            attendees="36"
-                            cta-label="RSVP"
-                            cta-href="#"
-                        />
+                        <section class="shell-card p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                                <p class="shell-kicker">Upcoming Events</p>
+                                <a href="{{ Route::has('events.index') ? route('events.index') : '#' }}" class="text-xs font-semibold hover:underline" style="color: var(--ui-primary);">Browse</a>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                @forelse ($upcomingEvents as $event)
+                                    <a href="{{ route('events.show', $event) }}" class="hover-lift block rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
+                                        <p class="line-clamp-1 text-sm font-semibold" style="color: var(--ui-text);">{{ $event->title }}</p>
+                                        <p class="mt-0.5 text-xs shell-text-muted">
+                                            {{ optional($event->start_at)->format('M j, g:i A') ?? 'Date TBD' }}
+                                            <span class="dot-divider"></span>
+                                            {{ $event->location_text ?: 'Online / TBD' }}
+                                        </p>
+                                    </a>
+                                @empty
+                                    <p class="text-sm shell-text-muted">No upcoming events scheduled.</p>
+                                @endforelse
+                            </div>
+                        </section>
+
+                        <section class="shell-card p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                                <p class="shell-kicker">Active Contests</p>
+                                <span class="chip">{{ $activeContests->count() }}</span>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                @forelse ($activeContests as $contest)
+                                    <a href="{{ Route::has('contests.index') ? route('contests.index') : '#' }}" class="hover-lift block rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
+                                        <p class="line-clamp-1 text-sm font-semibold" style="color: var(--ui-text);">{{ $contest->title }}</p>
+                                        <p class="mt-0.5 text-xs shell-text-muted">{{ ucfirst((string) $contest->status) }} · {{ number_format((int) $contest->entries_count) }} entries</p>
+                                    </a>
+                                @empty
+                                    <p class="text-sm shell-text-muted">No active contests right now.</p>
+                                @endforelse
+                            </div>
+                        </section>
                     </div>
                 </aside>
             </div>
@@ -208,17 +338,13 @@
                         </button>
                     </div>
 
-                    <x-search-form :action="$searchTarget" class="w-full" placeholder="Search on LaraPets" />
+                    <x-search-form :action="$searchTarget" class="w-full" placeholder="Search on {{ $appName }}" />
 
                     <nav class="space-y-1" aria-label="Mobile Navigation Drawer">
                         @foreach ($desktopNav as $item)
                             @php
-                                $href = ($item['route'] && Route::has($item['route']))
-                                    ? route($item['route'])
-                                    : ($item['href'] ?? '#');
-                                $isActive = $item['route'] && $currentRoute
-                                    ? str_starts_with($currentRoute, $item['route'])
-                                    : false;
+                                $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
+                                $isActive = $routeIsActive($item['patterns'] ?? []);
                             @endphp
 
                             <a href="{{ $href }}" class="shell-nav-link {{ $isActive ? 'active' : '' }}" @click="closeMenus">
@@ -234,18 +360,15 @@
                 <div class="shell-card flex items-center justify-between px-2 py-1.5">
                     @foreach ($mobileNav as $item)
                         @php
-                            $href = ($item['route'] && Route::has($item['route']))
-                                ? route($item['route'])
-                                : ($item['href'] ?? '#');
-                            $isActive = $item['route'] && $currentRoute
-                                ? str_starts_with($currentRoute, $item['route'])
-                                : false;
+                            $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
+                            $isActive = $routeIsActive($item['patterns'] ?? []);
+                            $isPrimaryAction = ($item['route'] ?? null) === 'posts.create';
                         @endphp
 
                         <a
                             href="{{ $href }}"
                             class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1 text-[0.65rem] font-semibold"
-                            style="color: {{ $isActive ? 'var(--ui-primary)' : 'var(--ui-text-muted)' }};"
+                            style="color: {{ $isPrimaryAction ? '#f8fafc' : ($isActive ? 'var(--ui-primary)' : 'var(--ui-text-muted)') }}; background: {{ $isPrimaryAction ? 'linear-gradient(135deg, var(--ui-primary), var(--ui-primary-strong))' : 'transparent' }};"
                         >
                             <span class="text-base" aria-hidden="true">{{ $item['icon'] }}</span>
                             <span class="truncate">{{ $item['label'] }}</span>

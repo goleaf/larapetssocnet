@@ -1,90 +1,100 @@
+@section('title', 'Conversation')
+
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800 leading-tight">Conversation</h2>
-                <p class="mt-1 text-sm text-gray-600">{{ $peer->name }}{{ $peer->username ? ' (@'.$peer->username.')' : '' }}</p>
+            <div class="flex items-center gap-3">
+                <x-avatar :src="$peer->avatar_url" :name="$peer->name" size="lg" />
+                <div>
+                    <p class="shell-kicker">Conversation</p>
+                    <h1 class="shell-title text-xl">{{ $peer->name }}</h1>
+                    <p class="text-sm shell-text-muted">{{ $peer->username ? '@'.$peer->username : 'Pet lover' }}</p>
+                </div>
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('messages.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to Inbox</a>
-                <a href="{{ route('marketplace.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Marketplace</a>
+                <a href="{{ route('messages.index') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Inbox</a>
+                <a href="{{ route('marketplace.index') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Marketplace</a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="mx-auto max-w-4xl space-y-4 px-4 sm:px-6 lg:px-8">
-            @if ($activeListing)
-                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm">
-                    <p class="font-semibold text-blue-900">Listing context</p>
-                    <p class="mt-1 text-blue-800">
-                        You are messaging about
-                        <a href="{{ route('marketplace.show', $activeListing) }}" class="font-semibold underline hover:no-underline">{{ $activeListing->title }}</a>.
-                    </p>
-                </div>
-            @endif
+    <div class="space-y-4">
+        @if ($activeListing)
+            <section class="shell-panel p-4">
+                <p class="shell-kicker">Listing Context</p>
+                <p class="mt-1 text-sm" style="color: var(--ui-text);">
+                    You are messaging about
+                    <a href="{{ route('marketplace.show', $activeListing) }}" class="font-semibold hover:underline" style="color: var(--ui-primary);">{{ $activeListing->title }}</a>.
+                </p>
+            </section>
+        @endif
 
-            @if (! $canSend && $restriction)
-                <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    {{ $restriction }}
-                </div>
-            @endif
+        @if (! $canSend && $restriction)
+            <x-flash-message type="warning" :message="$restriction" />
+        @endif
 
-            <div class="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                @if ($orderedMessages->isEmpty())
-                    <p class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">No messages yet.</p>
-                @else
+        <section class="shell-card p-4 sm:p-5">
+            @if ($orderedMessages->isEmpty())
+                <x-empty-state
+                    icon="🫶"
+                    title="No messages yet"
+                    description="Say hello to start the conversation."
+                />
+            @else
+                <div class="space-y-3 scrollbar-subtle max-h-[32rem] overflow-y-auto pr-1">
                     @foreach ($orderedMessages as $message)
                         @php
                             $outgoing = (int) $message->sender_user_id === (int) auth()->id();
                         @endphp
 
                         <div class="flex {{ $outgoing ? 'justify-end' : 'justify-start' }}">
-                            <div class="max-w-[85%] space-y-1 rounded-xl px-3 py-2 text-sm {{ $outgoing ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900' }}">
-                                <p class="whitespace-pre-line">{{ $message->body }}</p>
+                            <div
+                                class="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm"
+                                style="background: {{ $outgoing ? 'linear-gradient(135deg, var(--ui-primary), var(--ui-primary-strong))' : 'color-mix(in srgb, var(--ui-surface-muted) 78%, white 22%)' }}; color: {{ $outgoing ? '#f8fafc' : 'var(--ui-text)' }};"
+                            >
+                                <p class="whitespace-pre-line leading-6">{{ $message->body }}</p>
 
-                                <div class="flex items-center gap-2 text-[11px] {{ $outgoing ? 'text-blue-100' : 'text-gray-500' }}">
-                                    <span>{{ $message->created_at?->format('M j, Y g:i A') }}</span>
+                                <div class="mt-1.5 flex items-center gap-2 text-[11px] {{ $outgoing ? 'text-emerald-100' : 'shell-text-muted' }}">
+                                    <span>{{ $message->created_at?->format('M j, g:i A') }}</span>
 
                                     @if ($outgoing)
+                                        <span class="dot-divider"></span>
                                         <form method="POST" action="{{ route('messages.destroy', $message) }}" onsubmit="return confirm('Delete this message?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="font-semibold underline hover:no-underline">Delete</button>
+                                            <button type="submit" class="font-semibold underline decoration-dotted underline-offset-2 hover:no-underline">Delete</button>
                                         </form>
                                     @endif
                                 </div>
                             </div>
                         </div>
                     @endforeach
+                </div>
 
-                    <div>
-                        {{ $messages->links() }}
-                    </div>
-                @endif
-            </div>
-
-            @if ($canSend)
-                <form method="POST" action="{{ route('messages.store', ['peer' => $peer]) }}" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    @csrf
-
-                    @if ($activeListing)
-                        <input type="hidden" name="marketplace_listing_id" value="{{ $activeListing->getKey() }}">
-                    @endif
-
-                    <label for="body" class="block text-sm font-medium text-gray-700">Message</label>
-                    <textarea id="body" name="body" rows="4" required maxlength="5000"
-                        class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >{{ old('body') }}</textarea>
-                    <x-input-error :messages="$errors->get('body')" class="mt-2" />
-                    <x-input-error :messages="$errors->get('marketplace_listing_id')" class="mt-2" />
-
-                    <div class="mt-3 flex justify-end">
-                        <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Send Message</button>
-                    </div>
-                </form>
+                <div class="mt-4 shell-card-muted p-3">
+                    {{ $messages->links() }}
+                </div>
             @endif
-        </div>
+        </section>
+
+        @if ($canSend)
+            <form method="POST" action="{{ route('messages.store', ['peer' => $peer]) }}" class="shell-panel p-4 sm:p-5">
+                @csrf
+
+                @if ($activeListing)
+                    <input type="hidden" name="marketplace_listing_id" value="{{ $activeListing->getKey() }}">
+                @endif
+
+                <label for="body" class="shell-kicker">Reply</label>
+                <textarea id="body" name="body" rows="4" required maxlength="5000" class="form-textarea mt-2">{{ old('body') }}</textarea>
+                <x-input-error :messages="$errors->get('body')" class="mt-2" />
+                <x-input-error :messages="$errors->get('marketplace_listing_id')" class="mt-2" />
+
+                <div class="mt-3 flex justify-end">
+                    <button type="submit" class="btn-base btn-primary px-4 py-2 text-sm">Send Message</button>
+                </div>
+            </form>
+        @endif
     </div>
 </x-app-layout>

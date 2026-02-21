@@ -7,7 +7,7 @@
     'ctaHref' => '#',
 ])
 
-<article {{ $attributes->merge(['class' => 'shell-card p-4']) }}>
+<article {{ $attributes->merge(['class' => 'shell-card hover-lift p-4']) }}>
     <h3 class="shell-title text-base">{{ $name }}</h3>
 
     @if ($description)

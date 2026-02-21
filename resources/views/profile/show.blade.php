@@ -5,6 +5,8 @@
     $canInteract = auth()->check() && auth()->id() !== $profileUser->id;
 @endphp
 
+@section('title', $profileUser->name.' Profile')
+
 <x-app-layout>
     <x-slot name="header">
         <div>

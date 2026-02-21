@@ -1,62 +1,63 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Explore - {{ config('app.name', 'LaraPets') }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-gray-100 text-gray-900">
-    <header class="border-b border-gray-200 bg-white">
-        <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <a href="{{ route('explore.index') }}" class="text-lg font-semibold text-gray-900">{{ config('app.name', 'LaraPets') }}</a>
-            <nav class="flex items-center gap-2 text-sm">
-                @auth
-                    <a href="{{ route('feed.index') }}" class="rounded-lg px-3 py-2 hover:bg-gray-100">Feed</a>
-                    <a href="{{ route('saved.index') }}" class="rounded-lg px-3 py-2 hover:bg-gray-100">Saved</a>
-                    <a href="{{ route('posts.create') }}" class="rounded-lg bg-blue-600 px-3 py-2 font-semibold text-white hover:bg-blue-700">New Post</a>
-                @else
-                    <a href="{{ route('login') }}" class="rounded-lg px-3 py-2 hover:bg-gray-100">Login</a>
-                @endauth
-            </nav>
-        </div>
-    </header>
+@section('title', 'Explore')
 
-    <main class="py-8">
-        <div class="mx-auto max-w-5xl space-y-4 px-4 sm:px-6 lg:px-8">
-            <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                <form method="GET" action="{{ route('explore.index') }}" class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-                    <input
-                        type="text"
-                        name="q"
-                        value="{{ $search }}"
-                        class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                        placeholder="Search posts, users, hashtags, or location"
-                    >
-
-                    <select name="type" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                        <option value="all" @selected($type === 'all')>All</option>
-                        <option value="photos" @selected($type === 'photos')>Photos</option>
-                        <option value="videos" @selected($type === 'videos')>Videos</option>
-                        <option value="trending" @selected($type === 'trending')>Trending</option>
-                    </select>
-
-                    <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Apply</button>
-                </form>
-            </section>
-
-            @forelse ($posts as $post)
-                @include('posts.partials.card', ['post' => $post])
-            @empty
-                <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
-                    No public posts found.
-                </div>
-            @endforelse
-
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                {{ $posts->links() }}
+                <p class="shell-kicker">Discover</p>
+                <h1 class="shell-title text-2xl">Explore Public Posts</h1>
+                <p class="mt-1 text-sm shell-text-muted">Find photos, videos, trending topics, and new creators.</p>
             </div>
+
+            <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">✚ New Post</a>
         </div>
-    </main>
-</body>
-</html>
+    </x-slot>
+
+    <div class="space-y-4">
+        <section class="shell-panel p-4 sm:p-5">
+            <form method="GET" action="{{ route('explore.index') }}" class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ $search }}"
+                    class="form-input"
+                    placeholder="Search posts, users, hashtags, or location"
+                >
+
+                <select name="type" class="form-select sm:min-w-[10rem]">
+                    <option value="all" @selected($type === 'all')>All Posts</option>
+                    <option value="photos" @selected($type === 'photos')>Photos</option>
+                    <option value="videos" @selected($type === 'videos')>Videos</option>
+                    <option value="trending" @selected($type === 'trending')>Trending (48h)</option>
+                </select>
+
+                <button type="submit" class="btn-base btn-primary px-4 py-2 text-sm">Apply</button>
+            </form>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+                @foreach (['all' => 'All', 'photos' => 'Photos', 'videos' => 'Videos', 'trending' => 'Trending'] as $option => $label)
+                    <a
+                        href="{{ route('explore.index', array_merge(request()->except('page', 'type'), ['type' => $option])) }}"
+                        class="btn-base {{ $type === $option ? 'btn-primary' : 'btn-ghost' }} px-3 py-2 text-xs"
+                    >
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+        </section>
+
+        @forelse ($posts as $post)
+            @include('posts.partials.card', ['post' => $post])
+        @empty
+            <x-empty-state
+                icon="🔎"
+                title="No public posts found"
+                description="Try a different search term, media type, or check back soon for new activity."
+            />
+        @endforelse
+
+        <div class="shell-card p-3 sm:p-4">
+            {{ $posts->links() }}
+        </div>
+    </div>
+</x-app-layout>

@@ -1,3 +1,5 @@
+@section('title', 'Followers')
+
 <x-app-layout>
     <x-slot name="header">
         <div>
