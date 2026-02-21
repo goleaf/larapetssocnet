@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
-use App\Models\UserFollow;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,23 +12,9 @@ class FeedController extends Controller
     {
         $viewer = $request->user();
 
-        $followedUserIds = UserFollow::query()
-            ->select('following_id')
-            ->where('follower_id', $viewer->id);
-
         $posts = Post::query()
             ->with(['user', 'hashtags'])
-            ->published()
-            ->where(function ($query) use ($viewer, $followedUserIds): void {
-                $query
-                    ->where('user_id', $viewer->id)
-                    ->orWhere(function ($followedPostsQuery) use ($followedUserIds): void {
-                        $followedPostsQuery
-                            ->whereIn('user_id', $followedUserIds)
-                            ->whereIn('visibility', [Post::VISIBILITY_PUBLIC, Post::VISIBILITY_FOLLOWERS]);
-                    });
-            })
-            ->notBlockedFor($viewer)
+            ->forFeed($viewer)
             ->latest()
             ->paginate(15);
 
