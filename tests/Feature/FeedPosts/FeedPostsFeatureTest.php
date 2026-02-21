@@ -353,4 +353,20 @@ class FeedPostsFeatureTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('saved-but-now-private');
     }
+
+    public function test_feed_post_card_renders_share_action(): void
+    {
+        $viewer = User::factory()->create();
+
+        Post::query()->create([
+            'user_id' => $viewer->id,
+            'body' => 'shareable-post',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('feed.index'))
+            ->assertOk()
+            ->assertSee('Share');
+    }
 }

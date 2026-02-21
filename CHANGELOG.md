@@ -47,6 +47,7 @@
 - Updated saved posts page to use saved-entry pagination, show saved timestamps, and provide inline unsave actions.
 - Updated profile posts tab to render real posts with pinned-first ordering and owner pin/unpin controls.
 - Updated post pinning flow to support both web form redirects and JSON responses, and added explicit unpin route.
+- Updated post cards with a Share action that copies the post URL to clipboard (with browser fallback and copied state feedback).
 
 ### Tests
 - Verified passing suites:
@@ -63,3 +64,4 @@
   - `tests/Feature/UsernameTest.php`
   - `tests/Feature/FeedPosts/FeedPostsFeatureTest.php --filter=saved`
   - `tests/Feature/ProfileTest.php --filter="pin|pinned|profile posts tab shows pinned"`
+  - `tests/Feature/FeedPosts/FeedPostsFeatureTest.php --filter="share|feed_post_card_renders_share_action"`

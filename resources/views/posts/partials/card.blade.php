@@ -15,7 +15,7 @@
     ];
 @endphp
 
-<article id="post-{{ $post->id }}" class="shell-card hover-lift overflow-hidden p-4 sm:p-5" x-data="{ reaction: null, likes: {{ (int) $post->likes_count }}, busy: false, async react(type) { if (this.busy) return; this.busy = true; try { const res = await fetch(@js(route('posts.react', $post)), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' }, body: JSON.stringify({ type }) }); if (!res.ok) throw new Error('reaction failed'); const data = await res.json(); if (data?.success) { this.reaction = data.data.current_reaction; this.likes = data.data.likes_count; } } finally { this.busy = false; } } }">
+<article id="post-{{ $post->id }}" class="shell-card hover-lift overflow-hidden p-4 sm:p-5" x-data="{ reaction: null, likes: {{ (int) $post->likes_count }}, busy: false, shareCopied: false, async react(type) { if (this.busy) return; this.busy = true; try { const res = await fetch(@js(route('posts.react', $post)), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' }, body: JSON.stringify({ type }) }); if (!res.ok) throw new Error('reaction failed'); const data = await res.json(); if (data?.success) { this.reaction = data.data.current_reaction; this.likes = data.data.likes_count; } } finally { this.busy = false; } }, async sharePost() { const link = @js(route('posts.show', $post)); try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(link); } else { const input = document.createElement('input'); input.value = link; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input); } this.shareCopied = true; setTimeout(() => { this.shareCopied = false; }, 1800); } catch (_) {} } }">
     <header class="flex items-start justify-between gap-4">
         <div class="min-w-0 flex items-start gap-3">
             <a href="{{ route('profile.show', ['user' => $author]) }}" class="shrink-0">
@@ -123,6 +123,9 @@
             <a href="{{ route('posts.show', $post) }}" class="btn-base btn-ghost px-3 py-2 text-xs">View Thread</a>
             <a href="{{ route('posts.show', $post) }}#comments" class="btn-base btn-ghost px-3 py-2 text-xs">Comment</a>
             <a href="{{ route('posts.show', $post) }}" class="btn-base btn-secondary px-3 py-2 text-xs">React</a>
+            <button type="button" @click="sharePost()" class="btn-base btn-ghost px-3 py-2 text-xs" :class="{ 'btn-secondary': shareCopied }">
+                <span x-text="shareCopied ? 'Link Copied' : 'Share'"></span>
+            </button>
         </div>
     </footer>
 </article>
