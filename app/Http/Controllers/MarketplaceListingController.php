@@ -309,64 +309,12 @@ class MarketplaceListingController extends Controller
 
     private function isBlockedBetween(User $first, User $second): bool
     {
-        if (Schema::hasTable('blocks')
-            && Schema::hasColumn('blocks', 'blocker_user_id')
-            && Schema::hasColumn('blocks', 'blocked_user_id')) {
-            return DB::table('blocks')
-                ->where(function ($query) use ($first, $second): void {
-                    $query
-                        ->where('blocker_user_id', $first->getKey())
-                        ->where('blocked_user_id', $second->getKey());
-                })
-                ->orWhere(function ($query) use ($first, $second): void {
-                    $query
-                        ->where('blocker_user_id', $second->getKey())
-                        ->where('blocked_user_id', $first->getKey());
-                })
-                ->exists();
-        }
-
-        if (Schema::hasTable('user_blocks')
-            && Schema::hasColumn('user_blocks', 'blocker_id')
-            && Schema::hasColumn('user_blocks', 'blocked_id')) {
-            return DB::table('user_blocks')
-                ->where(function ($query) use ($first, $second): void {
-                    $query
-                        ->where('blocker_id', $first->getKey())
-                        ->where('blocked_id', $second->getKey());
-                })
-                ->orWhere(function ($query) use ($first, $second): void {
-                    $query
-                        ->where('blocker_id', $second->getKey())
-                        ->where('blocked_id', $first->getKey());
-                })
-                ->exists();
-        }
-
-        return false;
+        return $first->hasAnyBlockRelationshipWith($second);
     }
 
     private function isFollowing(User $follower, User $followed): bool
     {
-        if (Schema::hasTable('follows')
-            && Schema::hasColumn('follows', 'follower_user_id')
-            && Schema::hasColumn('follows', 'followed_user_id')) {
-            return DB::table('follows')
-                ->where('follower_user_id', $follower->getKey())
-                ->where('followed_user_id', $followed->getKey())
-                ->exists();
-        }
-
-        if (Schema::hasTable('user_follows')
-            && Schema::hasColumn('user_follows', 'follower_id')
-            && Schema::hasColumn('user_follows', 'following_id')) {
-            return DB::table('user_follows')
-                ->where('follower_id', $follower->getKey())
-                ->where('following_id', $followed->getKey())
-                ->exists();
-        }
-
-        return false;
+        return $follower->isFollowing($followed);
     }
 
     private function denyMessaging(Request $request, string $message, int $status): JsonResponse|RedirectResponse

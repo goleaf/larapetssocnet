@@ -4,6 +4,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\BlockController;
 use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\MarketplaceListingController;
 use App\Http\Controllers\MessageController;
@@ -149,13 +150,14 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/settings/profile', [ProfileSettingsController::class, 'update'])->name('settings.profile.update');
 
     Route::get('/settings/account', [AccountSettingsController::class, 'edit'])->name('settings.account.edit');
+    Route::get('/settings/blocked', [BlockController::class, 'index'])->name('settings.blocked');
     Route::patch('/settings/account/privacy', [AccountSettingsController::class, 'updatePrivacy'])->name('settings.account.privacy');
     Route::delete('/settings/account', [AccountSettingsController::class, 'destroy'])->name('settings.account.destroy');
 
     Route::post('/users/{user:username}/follow', [RelationshipController::class, 'follow'])->name('users.follow');
     Route::delete('/users/{user:username}/follow', [RelationshipController::class, 'unfollow'])->name('users.unfollow');
-    Route::post('/users/{user:username}/block', [RelationshipController::class, 'block'])->name('users.block');
-    Route::delete('/users/{user:username}/block', [RelationshipController::class, 'unblock'])->name('users.unblock');
+    Route::post('/users/{user:username}/block', [BlockController::class, 'block'])->name('users.block');
+    Route::delete('/users/{user:username}/block', [BlockController::class, 'unblock'])->name('users.unblock');
 
     Route::get('/marketplace/my-listings', [MarketplaceListingController::class, 'myListings'])->name('marketplace.my-listings');
     Route::get('/marketplace/create', [MarketplaceListingController::class, 'create'])->name('marketplace.create');

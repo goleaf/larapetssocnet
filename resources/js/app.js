@@ -79,6 +79,20 @@ window.dispatchFlash = window.uiHelpers.dispatchFlash;
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
+    Alpine.magic('post', () => async (url, data = {}) => {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+            },
+            body: JSON.stringify(data),
+        });
+
+        return response.json();
+    });
+
     Alpine.store('ui', {
         theme: applyTheme(getStoredTheme()),
 

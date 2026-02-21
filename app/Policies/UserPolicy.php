@@ -57,11 +57,15 @@ class UserPolicy
 
     public function block(User $actor, User $target): bool
     {
-        return ! $actor->is($target);
+        if ($actor->is($target)) {
+            return false;
+        }
+
+        return ! $target->hasAnyRole(['admin', 'moderator']);
     }
 
     public function unblock(User $actor, User $target): bool
     {
-        return ! $actor->is($target);
+        return $actor->hasBlocked($target);
     }
 }

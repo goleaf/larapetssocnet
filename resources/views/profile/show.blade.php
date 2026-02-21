@@ -98,16 +98,7 @@
                             <a href="{{ route('messages.conversation', ['peer' => $profileUser]) }}" class="btn-base btn-ghost px-4 py-2 text-sm" aria-label="Send a message to {{ $profileUser->name }}">
                                 Message
                             </a>
-
-                            <button
-                                type="button"
-                                class="btn-base btn-ghost px-4 py-2 text-sm"
-                                :disabled="busy"
-                                :aria-label="isBlocked ? 'Unblock {{ addslashes($profileUser->name) }}' : 'Block {{ addslashes($profileUser->name) }}'"
-                                @click="toggleBlock"
-                            >
-                                <span x-text="busy ? 'Saving...' : (isBlocked ? 'Unblock' : 'Block')"></span>
-                            </button>
+                            @include('profile._actions-dropdown', ['user' => $profileUser, 'isBlocked' => $isBlocked])
                         @elseif (! auth()->check() && Route::has('login'))
                             <a href="{{ route('login') }}" class="btn-base btn-primary px-4 py-2 text-sm" aria-label="Sign in to follow {{ $profileUser->name }}">
                                 Sign In to Follow

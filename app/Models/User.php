@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\NewFollower;
+use App\Services\BlockService;
 use App\Traits\HasCounterCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -338,25 +339,39 @@ class User extends Authenticatable implements HasMedia
     public function followers(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'user_follows', 'following_id', 'follower_id')
+            ->using(Follow::class)
             ->withTimestamps();
     }
 
     public function following(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'user_follows', 'follower_id', 'following_id')
+            ->using(Follow::class)
+            ->withTimestamps();
+    }
+
+    public function blocking(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
+            ->using(Block::class)
+            ->withTimestamps();
+    }
+
+    public function blockedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
+            ->using(Block::class)
             ->withTimestamps();
     }
 
     public function blockedUsers(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
-            ->withTimestamps();
+        return $this->blocking();
     }
 
     public function blockedByUsers(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
-            ->withTimestamps();
+        return $this->blockedBy();
     }
 
     public function badges(): BelongsToMany
@@ -405,15 +420,11 @@ class User extends Authenticatable implements HasMedia
         return $query
             ->whereNotIn(
                 'users.id',
-                UserBlock::query()
-                    ->select('blocked_id')
-                    ->where('blocker_id', $viewer->getKey())
+                $viewer->blocking()->select('users.id')
             )
             ->whereNotIn(
                 'users.id',
-                UserBlock::query()
-                    ->select('blocker_id')
-                    ->where('blocked_id', $viewer->getKey())
+                $viewer->blockedBy()->select('users.id')
             );
     }
 
@@ -512,12 +523,12 @@ class User extends Authenticatable implements HasMedia
 
     public function hasBlocked(self $user): bool
     {
-        return $this->blockedUsers()->whereKey($user->getKey())->exists();
+        return $this->blocking()->whereKey($user->getKey())->exists();
     }
 
     public function isBlockedBy(self $user): bool
     {
-        return $this->blockedByUsers()->whereKey($user->getKey())->exists();
+        return $this->blockedBy()->whereKey($user->getKey())->exists();
     }
 
     public function hasBlockingRelationshipWith(self $user): bool
@@ -537,77 +548,44 @@ class User extends Authenticatable implements HasMedia
 
     public function blockUser(self $user): bool
     {
-        if ($this->is($user)) {
-            return false;
-        }
+        app(BlockService::class)->block($this, $user);
 
-        return DB::transaction(function () use ($user): bool {
-            $this->lockUsersForRelationship($user);
-
-            $alreadyBlocked = UserBlock::query()
-                ->where('blocker_id', $this->getKey())
-                ->where('blocked_id', $user->getKey())
-                ->lockForUpdate()
-                ->exists();
-
-            if ($alreadyBlocked) {
-                return false;
-            }
-
-            $this->blockedUsers()->attach($user->getKey(), [
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $this->incrementCounter('blocked_users_count');
-            $user->incrementCounter('blocked_by_count');
-
-            $forwardDeleted = UserFollow::query()
-                ->where('follower_id', $this->getKey())
-                ->where('following_id', $user->getKey())
-                ->lockForUpdate()
-                ->delete();
-
-            if ($forwardDeleted > 0) {
-                $this->decrementCounter('following_count');
-                $user->decrementCounter('followers_count');
-            }
-
-            $reverseDeleted = UserFollow::query()
-                ->where('follower_id', $user->getKey())
-                ->where('following_id', $this->getKey())
-                ->lockForUpdate()
-                ->delete();
-
-            if ($reverseDeleted > 0) {
-                $user->decrementCounter('following_count');
-                $this->decrementCounter('followers_count');
-            }
-
-            return true;
-        });
+        return true;
     }
 
     public function unblockUser(self $user): bool
     {
-        return DB::transaction(function () use ($user): bool {
-            $this->lockUsersForRelationship($user);
+        app(BlockService::class)->unblock($this, $user);
 
-            $deleted = UserBlock::query()
-                ->where('blocker_id', $this->getKey())
-                ->where('blocked_id', $user->getKey())
-                ->lockForUpdate()
-                ->delete();
+        return true;
+    }
 
-            if ($deleted < 1) {
-                return false;
-            }
+    public function hasAnyBlockRelationship(self $user): bool
+    {
+        return $this->hasBlocked($user) || $this->isBlockedBy($user);
+    }
 
-            $this->decrementCounter('blocked_users_count');
-            $user->decrementCounter('blocked_by_count');
+    public function scopeNotBlockedBy(Builder $query, self $user): Builder
+    {
+        return $query->whereNotIn('users.id', $user->blocking()->select('users.id'));
+    }
 
-            return true;
-        });
+    public function scopeNotBlocking(Builder $query, self $user): Builder
+    {
+        return $query->whereNotIn('users.id', $user->blockedBy()->select('users.id'));
+    }
+
+    public function scopeHasNoBlockRelationshipWith(Builder $query, self $user): Builder
+    {
+        $blockedIds = $user->blocking()->pluck('users.id');
+        $blockerIds = $user->blockedBy()->pluck('users.id');
+        $excludeIds = $blockedIds->merge($blockerIds)->unique();
+
+        if ($excludeIds->isEmpty()) {
+            return $query;
+        }
+
+        return $query->whereNotIn('users.id', $excludeIds);
     }
 
     public function followPet(Pet $pet): bool
