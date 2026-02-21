@@ -31,7 +31,28 @@ class PetFeatureTest extends TestCase
 
         $this->get(route('pets.show', $pet->getKey()))
             ->assertOk()
-            ->assertSee('Mochi');
+            ->assertSee('Mochi')
+            ->assertSee('cat')
+            ->assertSee('Siamese')
+            ->assertSee('Playful rescue cat');
+    }
+
+    public function test_pet_profile_page_shows_age_when_birth_date_exists(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create([
+            'name' => 'Luna',
+            'species' => 'dog',
+            'breed' => 'Beagle',
+            'birth_date' => now()->subYears(4)->toDateString(),
+            'bio' => 'Very friendly',
+            'is_public' => true,
+        ]);
+
+        $this->get(route('pets.show', $pet->getKey()))
+            ->assertOk()
+            ->assertSee('Age:')
+            ->assertSee('years');
     }
 
     public function test_owner_can_edit_pet_profile(): void

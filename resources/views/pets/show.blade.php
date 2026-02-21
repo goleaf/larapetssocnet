@@ -10,8 +10,9 @@
         $personalityTags = is_array($decoded) ? $decoded : explode(',', $personalityTags);
     }
 
-    $birthdate = data_get($pet, 'birthdate');
+    $birthdate = data_get($pet, 'birth_date') ?? data_get($pet, 'birthdate');
     $birthdateLabel = null;
+    $ageLabel = data_get($pet, 'age_formatted');
 
     if ($birthdate instanceof \Illuminate\Support\CarbonInterface) {
         $birthdateLabel = $birthdate->toFormattedDateString();
@@ -20,6 +21,15 @@
             $birthdateLabel = Carbon::parse($birthdate)->toFormattedDateString();
         } catch (Throwable) {
             $birthdateLabel = $birthdate;
+        }
+    }
+
+    if (! $ageLabel && $birthdateLabel) {
+        try {
+            $years = Carbon::parse((string) $birthdate)->age;
+            $ageLabel = $years.' years';
+        } catch (Throwable) {
+            $ageLabel = null;
         }
     }
 
@@ -59,9 +69,12 @@
                 <div class="flex flex-wrap items-start justify-between gap-6">
                     <div class="space-y-2">
                         <div class="text-sm text-gray-500">{{ $pet->species ?? 'Unknown species' }} @if(!empty($pet->breed)) • {{ $pet->breed }} @endif</div>
+                        @if($ageLabel)
+                            <div class="text-sm text-gray-500">Age: {{ $ageLabel }}</div>
+                        @endif
                         <div class="text-sm text-gray-600">{{ $pet->bio ?: 'No bio yet.' }}</div>
                         <div class="flex flex-wrap gap-2">
-                            @if(!empty($pet->is_for_adoption))
+                            @if(!empty($pet->is_adoptable) || !empty($pet->is_for_adoption))
                                 <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Up for adoption</span>
                             @endif
                             @if(!empty($pet->is_public))
@@ -192,9 +205,10 @@
                                 <dl class="mt-2 space-y-2 text-sm text-gray-600">
                                     <div><dt class="inline font-medium text-gray-800">Species:</dt> {{ $pet->species ?? 'N/A' }}</div>
                                     <div><dt class="inline font-medium text-gray-800">Breed:</dt> {{ $pet->breed ?? 'N/A' }}</div>
-                                    <div><dt class="inline font-medium text-gray-800">Gender:</dt> {{ $pet->gender ?? 'N/A' }}</div>
+                                    <div><dt class="inline font-medium text-gray-800">Sex:</dt> {{ $pet->sex ?? $pet->gender ?? 'N/A' }}</div>
+                                    <div><dt class="inline font-medium text-gray-800">Age:</dt> {{ $ageLabel ?? 'N/A' }}</div>
                                     <div><dt class="inline font-medium text-gray-800">Birthdate:</dt> {{ $birthdateLabel ?? 'N/A' }}</div>
-                                    <div><dt class="inline font-medium text-gray-800">Weight:</dt> {{ $pet->weight ? $pet->weight.' kg' : 'N/A' }}</div>
+                                    <div><dt class="inline font-medium text-gray-800">Weight:</dt> {{ $pet->weight_kg ? $pet->weight_kg.' kg' : ($pet->weight ? $pet->weight.' kg' : 'N/A') }}</div>
                                     <div><dt class="inline font-medium text-gray-800">Color:</dt> {{ $pet->color ?? 'N/A' }}</div>
                                 </dl>
                             </div>

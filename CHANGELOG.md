@@ -54,6 +54,7 @@
 - Updated pet profile create/edit flow to use Form Requests and policy authorization in `PetController`.
 - Updated pet profile form fields to align with persisted schema fields (`sex`, `birth_date`) and consistent adoption/public toggles.
 - Added pet edit authorization coverage: owner can edit, non-owner receives 403.
+- Updated pet profile page header/about sections to explicitly display species, breed, age, and bio with correct field mapping.
 
 ### Tests
 - Verified passing suites:
