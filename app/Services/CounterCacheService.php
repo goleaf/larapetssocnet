@@ -17,14 +17,16 @@ class CounterCacheService
     {
         User::query()
             ->withCount([
-                'followers as computed_followers',
-                'following as computed_following',
+                'acceptedFollowers as computed_followers',
+                'acceptedFollowing as computed_following',
+                'pendingFollowRequests as computed_requests',
             ])
             ->chunkById(100, function ($users): void {
                 foreach ($users as $user) {
                     $user->updateQuietly([
                         'followers_count' => (int) $user->computed_followers,
                         'following_count' => (int) $user->computed_following,
+                        'follow_requests_count' => (int) $user->computed_requests,
                     ]);
                 }
             });

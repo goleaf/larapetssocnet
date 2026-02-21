@@ -3,6 +3,8 @@
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\FollowController;
+use App\Http\Controllers\FollowRequestController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\BlockController;
 use App\Http\Controllers\HashtagController;
@@ -19,7 +21,6 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostReportController;
 use App\Http\Controllers\Profile\PublicProfileController;
-use App\Http\Controllers\Profile\RelationshipController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Settings\AccountSettingsController;
@@ -152,8 +153,16 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/settings/account/privacy', [AccountSettingsController::class, 'updatePrivacy'])->name('settings.account.privacy');
     Route::delete('/settings/account', [AccountSettingsController::class, 'destroy'])->name('settings.account.destroy');
 
-    Route::post('/users/{user:username}/follow', [RelationshipController::class, 'follow'])->name('users.follow');
-    Route::delete('/users/{user:username}/follow', [RelationshipController::class, 'unfollow'])->name('users.unfollow');
+    Route::middleware('throttle:30,1')->group(function (): void {
+        Route::post('/users/{user:username}/follow', [FollowController::class, 'follow'])->name('users.follow');
+        Route::match(['POST', 'DELETE'], '/users/{user:username}/unfollow', [FollowController::class, 'unfollow'])->name('users.unfollow');
+        Route::delete('/users/{user:username}/follower', [FollowController::class, 'removeFollower'])->name('users.remove-follower');
+    });
+
+    Route::get('/follow-requests', [FollowRequestController::class, 'index'])->name('follow-requests.index');
+    Route::post('/follow-requests/{user:username}/approve', [FollowRequestController::class, 'approve'])->name('follow-requests.approve');
+    Route::post('/follow-requests/{user:username}/reject', [FollowRequestController::class, 'reject'])->name('follow-requests.reject');
+    Route::post('/follow-requests/approve-all', [FollowRequestController::class, 'approveAll'])->name('follow-requests.approve-all');
     Route::post('/users/{user:username}/block', [BlockController::class, 'block'])->name('users.block');
     Route::delete('/users/{user:username}/block', [BlockController::class, 'unblock'])->name('users.unblock');
 
@@ -173,7 +182,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
 
 Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');
 Route::get('/@{user:username}', [PublicProfileController::class, 'show'])->name('profile.show');
-Route::get('/@{user:username}/followers', [PublicProfileController::class, 'followers'])->name('profile.followers');
-Route::get('/@{user:username}/following', [PublicProfileController::class, 'following'])->name('profile.following');
+Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_]+');
+Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
 
 require __DIR__.'/auth.php';

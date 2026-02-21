@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
+use App\Services\CounterCacheService;
+use App\Services\FollowService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +16,8 @@ class SocialSeeder extends Seeder
      */
     public function run(): void
     {
-        $userIds = DB::table('users')->pluck('id')->all();
+        $users = User::query()->where('is_banned', false)->get();
+        $userIds = $users->pluck('id')->all();
         $petIds = DB::table('pets')->pluck('id')->all();
 
         if (count($userIds) < 2) {
@@ -21,54 +25,21 @@ class SocialSeeder extends Seeder
         }
 
         $faker = fake();
+        $followService = app(FollowService::class);
 
-        $follows = [];
-        $followKeys = [];
+        $users->each(function (User $user) use ($users, $followService): void {
+            $targets = $users
+                ->where('id', '!=', $user->id)
+                ->random(random_int(8, min(20, max($users->count() - 1, 1))));
 
-        foreach ($userIds as $followerId) {
-            $maxFollows = min(12, count($userIds) - 1);
-
-            if ($maxFollows < 1) {
-                continue;
-            }
-
-            $target = random_int(3, $maxFollows);
-            $createdForUser = 0;
-            $attempts = 0;
-
-            while ($createdForUser < $target && $attempts < $target * 10) {
-                $attempts++;
-                $followedId = $userIds[array_rand($userIds)];
-
-                if ($followedId === $followerId) {
-                    continue;
+            foreach ($targets as $target) {
+                try {
+                    $followService->follow($user, $target);
+                } catch (\Throwable) {
+                    // Skip invalid pairs (self, blocked, duplicates, banned).
                 }
-
-                $key = $followerId.':'.$followedId;
-
-                if (isset($followKeys[$key])) {
-                    continue;
-                }
-
-                $followKeys[$key] = true;
-                $createdAt = Carbon::instance($faker->dateTimeBetween('-90 days', 'now'));
-
-                $follows[] = [
-                    'follower_id' => $followerId,
-                    'following_id' => $followedId,
-                    'created_at' => $createdAt,
-                    'updated_at' => $createdAt,
-                ];
-
-                $createdForUser++;
             }
-        }
-
-        if ($follows !== []) {
-            foreach (array_chunk($follows, 500) as $chunk) {
-                DB::table('user_follows')->insertOrIgnore($chunk);
-            }
-        }
+        });
 
         $petFollows = [];
 
@@ -131,8 +102,7 @@ class SocialSeeder extends Seeder
             DB::table('user_blocks')->insertOrIgnore($blocks);
         }
 
-        DB::statement('UPDATE users SET following_count = (SELECT COUNT(*) FROM user_follows WHERE user_follows.follower_id = users.id)');
-        DB::statement('UPDATE users SET followers_count = (SELECT COUNT(*) FROM user_follows WHERE user_follows.following_id = users.id)');
+        app(CounterCacheService::class)->rebuildFollowCounts();
         DB::statement('UPDATE pets SET followers_count = (SELECT COUNT(*) FROM pet_followers WHERE pet_followers.pet_id = pets.id)');
     }
 

@@ -190,6 +190,7 @@ test('followers can view private profile pets tab', function (): void {
 
     $follower = User::factory()->create();
     $follower->follow($privateUser);
+    $privateUser->approveFollowRequest($follower);
 
     $request = Request::create(route('profile.show', ['user' => $privateUser, 'tab' => 'pets']), 'GET', [
         'tab' => 'pets',
@@ -229,9 +230,8 @@ test('users can follow and unfollow with counter updates', function (): void {
         ->postJson(route('users.follow', ['user' => $followed]))
         ->assertOk()
         ->assertJsonPath('success', true)
-        ->assertJsonPath('data.is_following', true)
-        ->assertJsonPath('data.followers_count', 1)
-        ->assertJsonPath('data.following_count', 1);
+        ->assertJsonPath('follow_status', 'following')
+        ->assertJsonPath('follower_count', 1);
 
     $follower->refresh();
     $followed->refresh();
@@ -243,9 +243,8 @@ test('users can follow and unfollow with counter updates', function (): void {
         ->deleteJson(route('users.unfollow', ['user' => $followed]))
         ->assertOk()
         ->assertJsonPath('success', true)
-        ->assertJsonPath('data.is_following', false)
-        ->assertJsonPath('data.followers_count', 0)
-        ->assertJsonPath('data.following_count', 0);
+        ->assertJsonPath('follow_status', 'none')
+        ->assertJsonPath('follower_count', 0);
 
     $follower->refresh();
     $followed->refresh();
@@ -280,13 +279,11 @@ test('blocking removes follows and prevents future follows until unblocked', fun
 
     $this->actingAs($actor)
         ->postJson(route('users.follow', ['user' => $other]))
-        ->assertStatus(422)
-        ->assertJsonPath('success', false);
+        ->assertStatus(403);
 
     $this->actingAs($other)
         ->postJson(route('users.follow', ['user' => $actor]))
-        ->assertStatus(422)
-        ->assertJsonPath('success', false);
+        ->assertStatus(403);
 
     $this->actingAs($actor)
         ->deleteJson(route('users.unblock', ['user' => $other]))
@@ -299,7 +296,7 @@ test('blocking removes follows and prevents future follows until unblocked', fun
         ->postJson(route('users.follow', ['user' => $other]))
         ->assertOk()
         ->assertJsonPath('success', true)
-        ->assertJsonPath('data.is_following', true);
+        ->assertJsonPath('follow_status', 'following');
 });
 
 test('blocked users cannot view each others profile', function (): void {

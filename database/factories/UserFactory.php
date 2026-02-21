@@ -71,6 +71,7 @@ class UserFactory extends Factory
             'interests_text' => implode(', ', fake()->words(fake()->numberBetween(3, 7))),
             'followers_count' => 0,
             'following_count' => 0,
+            'follow_requests_count' => 0,
             'following_pets_count' => 0,
             'pets_count' => 0,
             'posts_count' => 0,

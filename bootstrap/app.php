@@ -3,6 +3,9 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Exceptions\CannotFollowSelfException;
+use App\Exceptions\UserBannedException;
+use App\Exceptions\UserBlockedException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
@@ -21,5 +24,24 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (CannotFollowSelfException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->statusCode);
+        });
+
+        $exceptions->render(function (UserBlockedException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->statusCode);
+        });
+
+        $exceptions->render(function (UserBannedException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->statusCode);
+        });
     })->create();

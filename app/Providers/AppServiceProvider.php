@@ -20,6 +20,7 @@ use App\Policies\MarketplaceListingPolicy;
 use App\Policies\MessagePolicy;
 use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
+use App\Policies\FollowPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\ServiceProvider;
@@ -46,6 +47,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MarketplaceListing::class, MarketplaceListingPolicy::class);
         Gate::policy(Message::class, MessagePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
+        Gate::define('follow', [FollowPolicy::class, 'follow']);
+        Gate::define('unfollow', [FollowPolicy::class, 'unfollow']);
+        Gate::define('viewFollowers', [FollowPolicy::class, 'viewFollowers']);
+        Gate::define('viewFollowing', [FollowPolicy::class, 'viewFollowing']);
         Post::observe(PostObserver::class);
         EventFacade::listen(UserBlocked::class, RemoveFollowOnBlock::class);
         EventFacade::listen(UserBlocked::class, CancelPendingRequestsOnBlock::class);

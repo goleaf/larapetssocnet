@@ -1,48 +1,56 @@
-@section('title', 'Following')
+@section('title', '@'.$user->username.' — Following')
 
 <x-app-layout>
     <x-slot name="header">
         <div>
             <h1 class="shell-title text-xl">Following</h1>
-            <p class="mt-1 text-sm shell-text-muted">People {{ $profileUser->name }} follows</p>
+            <p class="mt-1 text-sm shell-text-muted">@{{ $user->username }} · {{ number_format((int) $user->following_count) }} following</p>
         </div>
     </x-slot>
 
     <section class="shell-card p-5 dark:border-slate-700/60 dark:bg-slate-900/40">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm shell-text-muted">Total: {{ number_format($following->total()) }}</p>
-            <a href="{{ route('profile.show', ['user' => $profileUser]) }}" class="btn-base btn-ghost px-3 py-2 text-sm" aria-label="Back to {{ $profileUser->name }} profile">
-                Back to Profile
-            </a>
-        </div>
+        <form method="GET" class="mb-4">
+            <input
+                type="search"
+                name="q"
+                value="{{ request('q') }}"
+                placeholder="Search following..."
+                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+            >
+        </form>
 
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-2">
             @forelse ($following as $followedUser)
-                @php
-                    $profileUrl = filled($followedUser->username) ? route('profile.show', ['user' => $followedUser]) : null;
-                @endphp
+                <article class="flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <a href="{{ route('profile.show', ['user' => $followedUser]) }}">
+                        <x-avatar :user="$followedUser" size="md" />
+                    </a>
 
-                <x-user-card
-                    :name="$followedUser->name"
-                    :username="$followedUser->username"
-                    :avatar="$followedUser->getFirstMediaUrl('avatar')"
-                    :followers="$followedUser->followers_count"
-                    :following="true"
-                    :profile-href="$profileUrl"
-                    :action-label="$profileUrl ? 'View Profile' : null"
-                    :action-href="$profileUrl"
-                />
+                    <div class="min-w-0 flex-1">
+                        <a href="{{ route('profile.show', ['user' => $followedUser]) }}" class="truncate font-semibold hover:underline">{{ $followedUser->name }}</a>
+                        <p class="text-xs shell-text-muted">@{{ $followedUser->username }}</p>
+                        @if ($followedUser->isFollowing($user))
+                            <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">Follows you</span>
+                        @endif
+                    </div>
+
+                    @auth
+                        @if (auth()->id() !== $followedUser->id)
+                            <x-follow-button
+                                :user="$followedUser"
+                                :follow-status="auth()->user()->getFollowStatus($followedUser)"
+                                size="sm"
+                            />
+                        @endif
+                    @endauth
+                </article>
             @empty
-                <x-empty-state
-                    icon="🧭"
-                    title="Not following anyone yet"
-                    description="Profiles followed by this user will appear here."
-                />
+                <x-empty-state icon="user-plus" title="Not following anyone yet" description="Profiles followed by this user will appear here." />
             @endforelse
         </div>
 
         <div class="mt-4">
-            {{ $following->links() }}
+            {{ $following->appends(request()->query())->links() }}
         </div>
     </section>
 </x-app-layout>

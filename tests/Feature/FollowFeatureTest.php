@@ -19,20 +19,21 @@ class FollowFeatureTest extends TestCase
             ->postJson(route('users.follow', $followed))
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.is_following', true);
+            ->assertJsonPath('follow_status', 'following');
 
-        $this->assertDatabaseHas('user_follows', [
+        $this->assertDatabaseHas('follows', [
             'follower_id' => $follower->getKey(),
             'following_id' => $followed->getKey(),
+            'status' => 'accepted',
         ]);
 
         $this->actingAs($follower)
-            ->deleteJson(route('users.unfollow', $followed))
+            ->postJson(route('users.unfollow', $followed))
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.is_following', false);
+            ->assertJsonPath('follow_status', 'none');
 
-        $this->assertDatabaseMissing('user_follows', [
+        $this->assertDatabaseMissing('follows', [
             'follower_id' => $follower->getKey(),
             'following_id' => $followed->getKey(),
         ]);

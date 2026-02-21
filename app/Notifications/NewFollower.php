@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Route;
 
 class NewFollower extends Notification
 {
@@ -25,11 +24,12 @@ class NewFollower extends Notification
     {
         return [
             'type' => 'new_follower',
-            'message' => $this->follower->name.' started following you.',
-            'route' => $this->resolveRoute(),
             'actor_id' => $this->follower->id,
             'actor_name' => $this->follower->name,
             'actor_username' => $this->follower->username,
+            'actor_avatar' => $this->follower->avatar_thumb,
+            'message' => "@{$this->follower->username} started following you.",
+            'action_url' => route('profile.show', $this->follower->username),
         ];
     }
 
@@ -38,12 +38,4 @@ class NewFollower extends Notification
         return $this->toDatabase($notifiable);
     }
 
-    protected function resolveRoute(): string
-    {
-        if (Route::has('profile.show')) {
-            return route('profile.show', ['user' => $this->follower]);
-        }
-
-        return url('/');
-    }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Notifications\NewFollower;
 use App\Services\BlockService;
+use App\Services\FollowService;
 use App\Traits\HasCounterCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -76,6 +76,7 @@ class User extends Authenticatable implements HasMedia
         'profile_photo_path',
         'followers_count',
         'following_count',
+        'follow_requests_count',
         'following_pets_count',
         'pets_count',
         'posts_count',
@@ -112,6 +113,7 @@ class User extends Authenticatable implements HasMedia
             'last_seen_at' => 'datetime',
             'followers_count' => 'integer',
             'following_count' => 'integer',
+            'follow_requests_count' => 'integer',
             'following_pets_count' => 'integer',
             'pets_count' => 'integer',
             'posts_count' => 'integer',
@@ -338,16 +340,36 @@ class User extends Authenticatable implements HasMedia
 
     public function followers(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_follows', 'following_id', 'follower_id')
+        return $this->belongsToMany(self::class, 'follows', 'following_id', 'follower_id')
             ->using(Follow::class)
-            ->withTimestamps();
+            ->withPivot(['status', 'created_at']);
     }
 
     public function following(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_follows', 'follower_id', 'following_id')
+        return $this->belongsToMany(self::class, 'follows', 'follower_id', 'following_id')
             ->using(Follow::class)
-            ->withTimestamps();
+            ->withPivot(['status', 'created_at']);
+    }
+
+    public function acceptedFollowers(): BelongsToMany
+    {
+        return $this->followers()->wherePivot('status', 'accepted');
+    }
+
+    public function acceptedFollowing(): BelongsToMany
+    {
+        return $this->following()->wherePivot('status', 'accepted');
+    }
+
+    public function pendingFollowRequests(): BelongsToMany
+    {
+        return $this->followers()->wherePivot('status', 'pending');
+    }
+
+    public function sentPendingRequests(): BelongsToMany
+    {
+        return $this->following()->wherePivot('status', 'pending');
     }
 
     public function blocking(): BelongsToMany
@@ -450,75 +472,94 @@ class User extends Authenticatable implements HasMedia
             ->notBlockedFor($viewer);
     }
 
+    public function scopeFollowedBy(Builder $query, self $user): Builder
+    {
+        return $query->whereIn('id', $user->acceptedFollowing()->pluck('users.id'));
+    }
+
+    public function scopeNotFollowedBy(Builder $query, self $user): Builder
+    {
+        return $query->whereNotIn(
+            'id',
+            $user->acceptedFollowing()->pluck('users.id')->push($user->getKey())
+        );
+    }
+
     public function isFollowing(self $user): bool
     {
-        return $this->following()->whereKey($user->getKey())->exists();
+        return $this->acceptedFollowing()->whereKey($user->getKey())->exists();
     }
 
     public function isFollowedBy(self $user): bool
     {
-        return $this->followers()->whereKey($user->getKey())->exists();
+        return $this->acceptedFollowers()->whereKey($user->getKey())->exists();
     }
 
-    public function follow(self $user): bool
+    public function hasRequestedFollow(self $user): bool
     {
-        if ($this->is($user) || $this->hasBlockingRelationshipWith($user)) {
-            return false;
-        }
-
-        return DB::transaction(function () use ($user): bool {
-            $this->lockUsersForRelationship($user);
-
-            $alreadyFollowing = UserFollow::query()
-                ->where('follower_id', $this->getKey())
-                ->where('following_id', $user->getKey())
-                ->lockForUpdate()
-                ->exists();
-
-            if ($alreadyFollowing) {
-                return false;
-            }
-
-            $this->following()->attach($user->getKey(), [
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $this->incrementCounter('following_count');
-            $user->incrementCounter('followers_count');
-
-            DB::afterCommit(function () use ($user): void {
-                $user->notify(new NewFollower($this));
-            });
-
-            return true;
-        });
+        return $this->sentPendingRequests()->whereKey($user->getKey())->exists();
     }
 
-    public function unfollow(self $user): bool
+    public function getFollowStatus(self $user): string
     {
-        if ($this->is($user)) {
-            return false;
-        }
+        $row = Follow::query()
+            ->where('follower_id', $this->getKey())
+            ->where('following_id', $user->getKey())
+            ->first();
 
-        return DB::transaction(function () use ($user): bool {
-            $this->lockUsersForRelationship($user);
+        return match ($row?->status) {
+            'accepted' => 'following',
+            'pending' => 'pending',
+            default => 'none',
+        };
+    }
 
-            $deleted = UserFollow::query()
-                ->where('follower_id', $this->getKey())
-                ->where('following_id', $user->getKey())
-                ->lockForUpdate()
-                ->delete();
+    public function follow(self $user): string
+    {
+        return app(FollowService::class)->follow($this, $user);
+    }
 
-            if ($deleted < 1) {
-                return false;
-            }
+    public function unfollow(self $user): void
+    {
+        app(FollowService::class)->unfollow($this, $user);
+    }
 
-            $this->decrementCounter('following_count');
-            $user->decrementCounter('followers_count');
+    public function approveFollowRequest(self $requester): void
+    {
+        app(FollowService::class)->approve($this, $requester);
+    }
 
-            return true;
-        });
+    public function rejectFollowRequest(self $requester): void
+    {
+        app(FollowService::class)->reject($this, $requester);
+    }
+
+    public function getMutualFollowers(self $other)
+    {
+        $myFollowerIds = $this->acceptedFollowers()->pluck('users.id');
+        $otherFollowerIds = $other->acceptedFollowers()->pluck('users.id');
+        $mutualIds = $myFollowerIds->intersect($otherFollowerIds)->take(5);
+
+        return self::query()->whereIn('id', $mutualIds)->with('media')->get();
+    }
+
+    public function getSuggestedUsersToFollow(int $limit = 6)
+    {
+        $excludeIds = $this->acceptedFollowing()
+            ->pluck('users.id')
+            ->push($this->getKey())
+            ->merge($this->blocking()->pluck('users.id'))
+            ->merge($this->blockedBy()->pluck('users.id'))
+            ->unique();
+
+        return self::query()
+            ->whereNotIn('id', $excludeIds)
+            ->where('is_banned', false)
+            ->where('is_private', false)
+            ->orderByDesc('followers_count')
+            ->limit($limit)
+            ->with('media')
+            ->get();
     }
 
     public function hasBlocked(self $user): bool

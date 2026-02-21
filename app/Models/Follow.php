@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class Follow extends Pivot
 {
-    protected $table = 'user_follows';
+    protected $table = 'follows';
 
     public $incrementing = false;
 
-    public $timestamps = true;
+    public $timestamps = false;
 
     /**
      * @var list<string>
@@ -27,7 +27,6 @@ class Follow extends Pivot
     {
         return [
             'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 
