@@ -165,6 +165,62 @@ class Post extends Model implements HasMedia
         $query->where('type', $type);
     }
 
+    public function scopeExplorable(Builder $query, ?User $viewer)
+    {
+        $query
+            ->where('visibility', self::VISIBILITY_PUBLIC)
+            ->whereHas('author', function (Builder $authorQuery): void {
+                $authorQuery
+                    ->where('is_private', false)
+                    ->where('is_banned', false);
+            });
+
+        if ($viewer) {
+            $blockedIds = $viewer->blocking()
+                ->pluck('users.id')
+                ->merge($viewer->blockedBy()->pluck('users.id'))
+                ->unique();
+
+            if ($blockedIds->isNotEmpty()) {
+                $query->whereNotIn('user_id', $blockedIds);
+            }
+        }
+
+        $query->whereNull('posts.deleted_at');
+    }
+
+    public function scopeTrending(Builder $query)
+    {
+        $query
+            ->where('created_at', '>=', now()->subHours(48))
+            ->where(function (Builder $scoreQuery): void {
+                $scoreQuery
+                    ->where('likes_count', '>', 0)
+                    ->orWhere('comments_count', '>', 0);
+            })
+            // Approved exception: computed ordering has no Eloquent equivalent.
+            ->orderByRaw('(likes_count + (comments_count * 2)) DESC, created_at DESC');
+    }
+
+    public function scopeTopRated(Builder $query)
+    {
+        $query
+            ->orderByDesc('likes_count')
+            ->orderByDesc('created_at');
+    }
+
+    public function scopeSearch(Builder $query, string $term)
+    {
+        $clean = Str::limit(trim($term), 100, '');
+
+        $query->where(function (Builder $searchQuery) use ($clean): void {
+            $searchQuery
+                ->where('body', 'like', "%{$clean}%")
+                ->orWhereHas('hashtags', fn (Builder $hashtagQuery) => $hashtagQuery->where('name', 'like', "%{$clean}%"))
+                ->orWhere('location', 'like', "%{$clean}%");
+        });
+    }
+
     public function scopePinned(Builder $query)
     {
         $query->where('is_pinned', true);

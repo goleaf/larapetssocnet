@@ -67,3 +67,24 @@ Blade usage:
 ```blade
 {{ $mySaved->has($post->id) }}
 ```
+
+## Explore Eager Load Set
+Explore uses the feed core eager loads, but guest pages do not need per-user reaction/save state.
+
+For guests:
+
+```php
+Post::with([
+    'author',
+    'author.media',
+    'pet',
+    'pet.media',
+    'media',
+    'hashtags',
+])->withCount(['comments', 'reactions']);
+```
+
+For authenticated users:
+- Use the same post eager load set.
+- Load `myReactions` in one query.
+- Load `mySaved` in one query.

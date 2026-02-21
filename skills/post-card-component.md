@@ -35,3 +35,16 @@
 - Use `diffForHumans()` for recent posts (< 7 days).
 - Use `format('M j, Y')` for older posts.
 - Provide full datetime in `title` attribute.
+
+## Explore Card Variants
+`x-post-card` with `context="explore"`:
+- Compact header (smaller spacing and avatar).
+- Body truncated to 200 chars.
+- Full media shown.
+- Reaction area visible but guest-gated.
+- No quick-comment section.
+
+`x-explore-photo-card`:
+- Image-only masonry card.
+- Hover overlay with author and counts.
+- Click navigates to post page.

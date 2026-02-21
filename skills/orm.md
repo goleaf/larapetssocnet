@@ -61,3 +61,9 @@ Use relationship `pluck` for followed IDs:
         ->push($user->id)
 )
 ```
+
+## Approved Raw Exception: Explore Trending
+`orderByRaw('(likes_count + (comments_count * 2)) DESC, created_at DESC')` is approved only in `Post::scopeTrending()`.
+
+Reason: computed column ordering has no direct Eloquent equivalent.
+All other raw expressions should be avoided and refactored to ORM-first patterns.
