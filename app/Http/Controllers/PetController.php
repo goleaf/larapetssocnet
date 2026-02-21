@@ -8,6 +8,8 @@ use App\Models\Pet;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -47,8 +49,24 @@ class PetController extends Controller
         }
 
         $healthLogs = collect();
+        $weightTrendData = [
+            'path' => null,
+            'points' => [],
+            'min' => null,
+            'max' => null,
+        ];
         if ($isOwner && method_exists($pet, 'healthLogs')) {
             $healthLogs = $pet->healthLogs()->latest('logged_at')->limit(12)->get();
+
+            $weightSeries = $pet->healthLogs()
+                ->where('log_type', 'weight')
+                ->whereNotNull('weight_kg')
+                ->orderBy('logged_at')
+                ->limit(30)
+                ->select(['logged_at', 'weight_kg'])
+                ->get();
+
+            $weightTrendData = $this->buildWeightTrendData($weightSeries);
         }
 
         return view('pets.show', [
@@ -59,6 +77,7 @@ class PetController extends Controller
             'posts' => $posts,
             'gallery' => $gallery,
             'healthLogs' => $healthLogs,
+            'weightTrendData' => $weightTrendData,
         ]);
     }
 
@@ -372,5 +391,63 @@ class PetController extends Controller
         foreach ((array) $request->file('gallery_photos', []) as $photo) {
             $pet->addMedia($photo)->toMediaCollection('gallery');
         }
+    }
+
+    protected function buildWeightTrendData(Collection $series): array
+    {
+        if ($series->isEmpty()) {
+            return [
+                'path' => null,
+                'points' => [],
+                'min' => null,
+                'max' => null,
+            ];
+        }
+
+        $values = $series->pluck('weight_kg')->map(static fn ($value) => (float) $value)->values();
+        $min = $values->min();
+        $max = $values->max();
+        $range = max($max - $min, 0.01);
+        $lastIndex = max($values->count() - 1, 1);
+
+        $points = $values->map(function (float $value, int $index) use ($min, $range, $lastIndex, $series) {
+            $x = ($index / $lastIndex) * 100;
+            $y = 100 - (($value - $min) / $range) * 100;
+
+            $rawLabel = data_get($series[$index], 'logged_at');
+            $label = null;
+
+            if ($rawLabel instanceof \Illuminate\Support\CarbonInterface) {
+                $label = $rawLabel->format('M j');
+            } elseif (is_string($rawLabel) && $rawLabel !== '') {
+                try {
+                    $label = Carbon::parse($rawLabel)->format('M j');
+                } catch (Throwable) {
+                    $label = $rawLabel;
+                }
+            }
+
+            return [
+                'x' => round($x, 2),
+                'y' => round($y, 2),
+                'label' => $label,
+                'value' => $value,
+            ];
+        })->all();
+
+        $path = collect($points)
+            ->map(function (array $point, int $index) {
+                $command = $index === 0 ? 'M' : 'L';
+
+                return sprintf('%s %s %s', $command, $point['x'], $point['y']);
+            })
+            ->implode(' ');
+
+        return [
+            'path' => $path,
+            'points' => $points,
+            'min' => $min,
+            'max' => $max,
+        ];
     }
 }

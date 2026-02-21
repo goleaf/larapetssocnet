@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Pet;
+use App\Models\PetHealthLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -191,5 +192,33 @@ class PetFeatureTest extends TestCase
             ->assertOk()
             ->assertSee($adoptable->name)
             ->assertDontSee($notAdoptable->name);
+    }
+
+    public function test_owner_health_tab_shows_weight_history_chart_when_weight_logs_exist(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+
+        PetHealthLog::query()->create([
+            'pet_id' => $pet->id,
+            'logged_by_user_id' => $owner->id,
+            'log_type' => 'weight',
+            'weight_kg' => 4.2,
+            'logged_at' => now()->subDays(3),
+        ]);
+
+        PetHealthLog::query()->create([
+            'pet_id' => $pet->id,
+            'logged_by_user_id' => $owner->id,
+            'log_type' => 'weight',
+            'weight_kg' => 4.6,
+            'logged_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('pets.show', ['slug' => $pet->getKey(), 'tab' => 'health']))
+            ->assertOk()
+            ->assertSee('Weight history')
+            ->assertSee('aria-label="Weight history chart"', false);
     }
 }
