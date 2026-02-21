@@ -13,6 +13,12 @@ class PetHealthLog extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public const TYPE_WEIGHT = 'weight';
+    public const TYPE_MEDICATION = 'medication';
+    public const TYPE_VACCINATION = 'vaccination';
+    public const TYPE_VACCINE_LEGACY = 'vaccine';
+    public const TYPE_VET_VISIT = 'vet_visit';
+
     /**
      * @var list<string>
      */
@@ -58,5 +64,20 @@ class PetHealthLog extends Model
         }
 
         return $query->where('log_type', $type);
+    }
+
+    public function getTypeLabelAttribute(): string
+    {
+        $type = $this->log_type === self::TYPE_VACCINE_LEGACY
+            ? self::TYPE_VACCINATION
+            : $this->log_type;
+
+        return match ($type) {
+            self::TYPE_WEIGHT => 'Weight',
+            self::TYPE_MEDICATION => 'Medication',
+            self::TYPE_VACCINATION => 'Vaccination',
+            self::TYPE_VET_VISIT => 'Vet Visit',
+            default => ucfirst(str_replace('_', ' ', (string) $type)),
+        };
     }
 }

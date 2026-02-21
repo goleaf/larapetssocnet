@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePetHealthLogRequest;
 use App\Models\Pet;
 use App\Models\PetHealthLog;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -10,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -66,21 +66,21 @@ class PetHealthLogController extends Controller
         ]);
     }
 
-    public function store(Request $request, string $slug): RedirectResponse
+    public function store(StorePetHealthLogRequest $request, string $slug): RedirectResponse
     {
         $pet = $this->resolvePet($slug);
         $this->ensureOwner($pet, $request->user());
 
-        $validated = $request->validate($this->rules());
+        $validated = $request->validated();
+        $type = $this->normalizeType((string) $validated['type']);
 
         $payload = $this->filterToExistingColumns('pet_health_logs', [
             'pet_id' => $pet->getKey(),
             'logged_by_user_id' => $request->user()?->getAuthIdentifier(),
-            'log_type' => $validated['type'],
+            'log_type' => $type,
             'title' => $validated['title'] ?? null,
             'notes' => $validated['notes'] ?? null,
-            'weight_kg' => $validated['type'] === 'weight' ? ($validated['value'] ?? null) : null,
-            'temperature_c' => $validated['type'] === 'temperature' ? ($validated['value'] ?? null) : null,
+            'weight_kg' => $type === 'weight' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
         ]);
 
@@ -104,20 +104,20 @@ class PetHealthLogController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $slug, string $healthLog): RedirectResponse
+    public function update(StorePetHealthLogRequest $request, string $slug, string $healthLog): RedirectResponse
     {
         $pet = $this->resolvePet($slug);
         $this->ensureOwner($pet, $request->user());
 
         $log = $this->resolveHealthLog($pet, $healthLog);
-        $validated = $request->validate($this->rules());
+        $validated = $request->validated();
+        $type = $this->normalizeType((string) $validated['type']);
 
         $payload = $this->filterToExistingColumns('pet_health_logs', [
-            'log_type' => $validated['type'],
+            'log_type' => $type,
             'title' => $validated['title'] ?? null,
             'notes' => $validated['notes'] ?? null,
-            'weight_kg' => $validated['type'] === 'weight' ? ($validated['value'] ?? null) : null,
-            'temperature_c' => $validated['type'] === 'temperature' ? ($validated['value'] ?? null) : null,
+            'weight_kg' => $type === 'weight' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
         ]);
 
@@ -139,17 +139,6 @@ class PetHealthLogController extends Controller
         return redirect()
             ->route('pets.health.index', $pet->slug ?? $pet->getKey())
             ->with('status', 'Health log deleted.');
-    }
-
-    protected function rules(): array
-    {
-        return [
-            'type' => ['required', Rule::in(['weight', 'temperature', 'medication', 'vaccine', 'vet_visit', 'note'])],
-            'value' => ['nullable', 'numeric', 'min:0'],
-            'title' => ['nullable', 'string', 'max:180'],
-            'notes' => ['nullable', 'string', 'max:3000'],
-            'logged_at' => ['required', 'date'],
-        ];
     }
 
     protected function buildTrendData(Collection $series): array
@@ -257,5 +246,10 @@ class PetHealthLogController extends Controller
         } catch (Throwable) {
             return $payload;
         }
+    }
+
+    protected function normalizeType(string $type): string
+    {
+        return $type === 'vaccine' ? 'vaccination' : $type;
     }
 }

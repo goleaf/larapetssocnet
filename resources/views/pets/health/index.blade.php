@@ -5,7 +5,21 @@
     $trendPath = data_get($trendData, 'path');
     $trendPoints = data_get($trendData, 'points', []);
 
-    $formatDate = static function ($value): string {
+        $typeLabel = static function ($type): string {
+            if ($type === 'vaccine') {
+                $type = 'vaccination';
+            }
+
+            return match ((string) $type) {
+                'weight' => 'Weight',
+                'medication' => 'Medication',
+                'vaccination' => 'Vaccination',
+                'vet_visit' => 'Vet Visit',
+                default => ucfirst(str_replace('_', ' ', (string) $type)),
+            };
+        };
+
+        $formatDate = static function ($value): string {
         if ($value instanceof \Illuminate\Support\CarbonInterface) {
             return $value->format('M j, Y');
         }
@@ -73,7 +87,7 @@
                     <div class="mt-3 space-y-3">
                         @forelse($upcomingLogs as $upcoming)
                             <div class="rounded-md bg-amber-50 p-3 text-sm">
-                                <div class="font-medium text-amber-800">{{ ucfirst(str_replace('_', ' ', (string) ($upcoming->log_type ?? 'entry'))) }}</div>
+                                <div class="font-medium text-amber-800">{{ $typeLabel($upcoming->log_type ?? 'entry') }}</div>
                                 <div class="text-amber-700">Logged {{ $formatDate($upcoming->logged_at) }}</div>
                                 @if(!empty($upcoming->notes))
                                     <div class="mt-1 text-amber-700">{{ \Illuminate\Support\Str::limit((string) $upcoming->notes, 80) }}</div>
@@ -106,7 +120,7 @@
                             <tbody class="divide-y divide-gray-100">
                                 @foreach($logs as $log)
                                     <tr>
-                                        <td class="px-3 py-2">{{ ucfirst(str_replace('_', ' ', (string) ($log->log_type ?? 'entry'))) }}</td>
+                                        <td class="px-3 py-2">{{ $typeLabel($log->log_type ?? 'entry') }}</td>
                                         <td class="px-3 py-2">
                                             @if(!is_null($log->weight_kg))
                                                 {{ $log->weight_kg }} kg

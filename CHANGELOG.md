@@ -68,6 +68,9 @@
 - Updated pet explore/adopt filtering and forms to use `is_adoptable` + `sex` field naming with legacy fallback.
 - Added adopt-page feature coverage to ensure only adoptable pets are listed.
 - Added dedicated adoption browse entry points in UI: desktop nav `Adopt` item and explore-page `Browse adoption` link.
+- Updated pet health logs to explicitly support requested categories: weight, vet visits, vaccinations, and medication.
+- Added health-log type normalization (`vaccine` → `vaccination`) and improved label rendering across pet profile and health index.
+- Added feature tests for health-log create/read/update/delete and owner-only access.
 
 ### Tests
 - Verified passing suites:
@@ -89,3 +92,4 @@
   - `tests/Feature/PetFeatureTest.php`
   - `tests/Feature/PetFollowFeatureTest.php`
   - `tests/Feature/PostTest.php`
+  - `tests/Feature/PetHealthLogFeatureTest.php`
