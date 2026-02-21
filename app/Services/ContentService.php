@@ -39,13 +39,13 @@ class ContentService
 
             // In a real scenario we might cache valid usernames inside a request, but we just link here.
             // Mentions point to /profile/{username}
-            return '<a href="/'.$username.'" class="mention">@'.$username.'</a>';
+            return '<a href="/@'.$username.'" class="mention">@'.$username.'</a>';
         }, $input);
     }
 
     private function linkHashtags(string $input): string
     {
-        return preg_replace('/#([a-zA-Z0-9_]{1,50})/u', '<a href="/tags/$1" class="hashtag">#$1</a>', $input);
+        return preg_replace('/#([a-zA-Z0-9_]{1,50})/u', '<a href="/hashtags/$1" class="hashtag">#$1</a>', $input);
     }
 
     private function linkUrls(string $input): string

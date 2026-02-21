@@ -7,10 +7,64 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\Report;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'reportable_type' => ['required', 'string', 'in:post,comment,user'],
+            'reportable_id' => ['required', 'integer', 'min:1'],
+            'reason' => ['required', 'string', 'max:100'],
+            'details' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $viewer = $request->user();
+        abort_unless($viewer !== null, 401);
+
+        $reportableType = match ($validated['reportable_type']) {
+            'post' => Post::class,
+            'comment' => Comment::class,
+            'user' => User::class,
+        };
+
+        $reportable = match ($validated['reportable_type']) {
+            'post' => Post::query()->findOrFail($validated['reportable_id']),
+            'comment' => Comment::query()->findOrFail($validated['reportable_id']),
+            'user' => User::query()->findOrFail($validated['reportable_id']),
+        };
+
+        if ((int) ($reportable->user_id ?? $reportable->id) === (int) $viewer->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot report your own content.',
+            ], 422);
+        }
+
+        Report::query()->updateOrCreate(
+            [
+                'reporter_user_id' => $viewer->id,
+                'reportable_type' => $reportableType,
+                'reportable_id' => (int) $validated['reportable_id'],
+            ],
+            [
+                'reason' => $validated['reason'],
+                'details' => $validated['details'] ?? null,
+                'status' => Report::STATUS_PENDING,
+                'reviewed_by_user_id' => null,
+                'reviewed_at' => null,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thank you. Your report has been received.',
+        ]);
+    }
+
     public function reportPost(StoreReportRequest $request, Post $post): RedirectResponse
     {
         $viewer = $request->user();
@@ -96,4 +150,3 @@ class ReportController extends Controller
         return back()->with('status', $successMessage);
     }
 }
-

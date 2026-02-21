@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('hashtags')) {
+            return;
+        }
+
         Schema::create('hashtags', function (Blueprint $table) {
             $table->id();
             $table->string('name', 50)->unique();

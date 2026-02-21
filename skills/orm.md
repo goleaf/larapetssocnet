@@ -67,3 +67,68 @@ Use relationship `pluck` for followed IDs:
 
 Reason: computed column ordering has no direct Eloquent equivalent.
 All other raw expressions should be avoided and refactored to ORM-first patterns.
+
+## Visibility Query Patterns
+- `Post::query()->visibleTo($viewer)` is the canonical visibility enforcement pattern.
+- Never duplicate visibility `where` clauses outside the scope in user-facing queries.
+- Keep visibility logic in ORM scopes and relationships only (no raw SQL).
+- Query flow should compose as:
+  - `Post::query()->visibleTo($viewer)->...`
+
+## SAVED POSTS ORM PATTERN
+
+Use relationship methods only:
+
+```php
+$user->savedPosts()->attach($post->id);
+$user->savedPosts()->detach($post->id);
+$user->savedPosts()->where('posts.id', $postId)->exists();
+```
+
+## POLYMORPHIC REACTION ORM PATTERN
+
+```php
+$post->reactions();
+$comment->reactions();
+$user->reactions();
+```
+
+Aggregate counts can use grouped selects where needed. Avoid per-item query loops.
+
+## REPORTING ORM PATTERN
+
+Use idempotent creation:
+
+```php
+Report::firstOrCreate([...], [...]);
+```
+
+## COMMENT THREADING ORM PATTERN
+
+- top-level: `whereNull('parent_id')`
+- replies: `where('parent_id', $id)`
+- never allow depth > 1 reply level
+
+## PET FOLLOW ORM PATTERN
+
+```php
+$user->petFollowing()->attach($pet->id);
+$user->petFollowing()->detach($pet->id);
+$user->petFollowing()->where('pet_id', $id)->exists();
+```
+
+## GROUP MEMBERSHIP ORM PATTERN
+
+```php
+$group->members()->attach($user->id, [
+    'role' => 'member',
+    'status' => 'accepted',
+]);
+
+$group->members()->updateExistingPivot($userId, [...]);
+$group->members()->detach($userId);
+```
+
+## HEALTH LOG ORM PATTERN
+
+Use standard hasMany patterns from `Pet -> healthLogs()` with typed scopes.

@@ -20,6 +20,8 @@ class PostController extends Controller
 
     public function show(Post $post)
     {
+        $this->authorize('view', $post);
+
         return view('posts.show', compact('post'));
     }
 
@@ -46,7 +48,7 @@ class PostController extends Controller
     {
         $this->posts->update($post, $request->validated());
 
-        return back()->with('success', 'Post updated successfully.');
+        return redirect()->route('posts.show', $post)->with('success', 'Post updated successfully.');
     }
 
     public function destroy(Post $post): RedirectResponse

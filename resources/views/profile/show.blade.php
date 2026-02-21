@@ -293,7 +293,7 @@
         @else
             <section class="space-y-4">
                 @forelse ($posts as $post)
-                    @include('posts.partials.card', ['post' => $post])
+                    <x-post-card :post="$post" context="profile" />
 
                     @if ($isOwner)
                         <div class="-mt-2 flex items-center justify-end gap-2">
@@ -318,6 +318,23 @@
                         description="No posts published yet."
                     />
                 @endforelse
+
+                @if ($isOwner && ($privateCount ?? 0) > 0)
+                    <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+                        <h3 class="mb-3 flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                            🔒 Private posts
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-800">
+                                {{ $privateCount }}
+                            </span>
+                        </h3>
+
+                        <div class="space-y-4">
+                            @foreach (($privatePosts ?? collect()) as $post)
+                                <x-post-card :post="$post" context="profile" />
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 @if (method_exists($posts, 'links'))
                     <div class="shell-card p-3 sm:p-4">

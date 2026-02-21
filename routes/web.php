@@ -61,7 +61,7 @@ Route::get('/events/{event}', [EventController::class, 'show'])
 Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])
     ->whereNumber('event')
     ->name('events.ics');
-Route::get('/hashtags/{hashtag}', [HashtagController::class, 'show'])->name('hashtags.show');
+Route::get('/hashtags/{hashtag:slug}', [HashtagController::class, 'show'])->name('hashtags.show');
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
 Route::get('/pets/{slug}', [PetController::class, 'show'])
@@ -96,9 +96,15 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         ->middleware('throttle:60,1')
         ->name('posts.react');
     Route::post('/posts/{post}/comments', [PostCommentController::class, 'store'])->name('posts.comments.store');
+    Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.store');
     Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');
+    Route::post('/comments/{comment}/react', [CommentReactionController::class, 'reactToComment'])
+        ->middleware('throttle:60,1')
+        ->name('comments.react');
     Route::patch('/posts/{post}/comments/{comment}', [PostCommentController::class, 'update'])->name('posts.comments.update');
     Route::delete('/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])->name('posts.comments.destroy');
+    Route::patch('/comments/{post}/{comment}', [PostCommentController::class, 'update'])->name('comments.update');
+    Route::delete('/comments/{post}/{comment}', [PostCommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
@@ -106,6 +112,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/posts/{post}/report', [ReportController::class, 'reportPost'])->name('posts.report');
     Route::post('/posts/{post}/comments/{comment}/report', [ReportController::class, 'reportComment'])->name('comments.report');
     Route::post('/users/{user:username}/report', [ReportController::class, 'reportUser'])->name('users.report');
+    Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 
     Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
     Route::post('/pets', [PetController::class, 'store'])->name('pets.store');

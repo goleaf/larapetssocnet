@@ -13,19 +13,20 @@
     </div>
 
     <!-- Visibility & Pet -->
-    <div class="flex gap-4 mb-4">
-        <div class="w-1/2">
-            <label for="visibility" class="block text-sm font-medium text-gray-700">Visibility</label>
-            <select name="visibility" id="visibility"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                <option value="public" @selected(old('visibility', $post?->visibility) == 'public')>Public</option>
-                <option value="followers" @selected(old('visibility', $post?->visibility) == 'followers')>Followers Only
-                </option>
-                <option value="private" @selected(old('visibility', $post?->visibility) == 'private')>Private</option>
-            </select>
+    <div class="mb-4 grid gap-4 md:grid-cols-2">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Visibility</label>
+            <div class="mt-1">
+                <x-visibility-selector
+                    :selected="old('visibility', $post?->visibility ?? 'public')"
+                    :showWarn="$post !== null"
+                    :postLikes="$post?->likes_count ?? 0"
+                    :postComments="$post?->comments_count ?? 0"
+                />
+            </div>
         </div>
 
-        <div class="w-1/2">
+        <div>
             <label for="pet_id" class="block text-sm font-medium text-gray-700">Associate with Pet (Optional)</label>
             <select name="pet_id" id="pet_id"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">

@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Post;
 use App\Services\BadgeService;
 use App\Services\HashtagService;
+use Illuminate\Support\Facades\Schema;
 
 class PostObserver
 {
@@ -28,10 +29,7 @@ class PostObserver
 
         $this->badges->checkAndAwardBadges($post->author);
 
-        activity()
-            ->causedBy($post->author)
-            ->performedOn($post)
-            ->log('created');
+        $this->logActivity('created', $post, $post->author);
     }
 
     /**
@@ -43,10 +41,7 @@ class PostObserver
             $this->hashtags->syncHashtags($post);
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($post)
-            ->log('updated');
+        $this->logActivity('updated', $post, auth()->user());
     }
 
     /**
@@ -62,9 +57,18 @@ class PostObserver
             $post->pet->decrement('posts_count');
         }
 
+        $this->logActivity('deleted', $post, auth()->user());
+    }
+
+    private function logActivity(string $description, Post $post, mixed $causer): void
+    {
+        if (! Schema::hasTable('activity_log')) {
+            return;
+        }
+
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy($causer)
             ->performedOn($post)
-            ->log('deleted');
+            ->log($description);
     }
 }

@@ -22,3 +22,21 @@ All uploads go through Spatie MediaLibrary.
 - Max file: 50MB
 - Max files: 1
 - No conversion, serve original.
+
+## PET MEDIA COLLECTIONS
+
+Pet media uses public disk.
+
+### Avatar
+- single file
+- max 5MB
+- conversions:
+  - `thumb` 80x80 webp
+  - `small` 150x150 webp
+  - `medium` 400x400 webp
+
+### Gallery
+- multiple files, max 30
+- conversions:
+  - `thumb` 150x150 webp
+  - `medium` width 800 webp

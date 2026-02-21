@@ -27,7 +27,7 @@
                     autocomplete="username"
                     x-model="val"
                     @input.debounce.400ms="check()"
-                    :class="{ 'border-emerald-500 focus:ring-emerald-500': status === 'ok', 'border-red-500 focus:ring-red-500': status === 'taken' }"
+                    x-bind:class="{ 'border-emerald-500 focus:ring-emerald-500': status === 'ok', 'border-red-500 focus:ring-red-500': status === 'taken' }"
                 />
                 <div class="mt-1 h-5 text-sm">
                     <span x-show="checking" class="text-gray-400">Checking...</span>

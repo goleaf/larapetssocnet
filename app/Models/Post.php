@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Image\Enums\Fit;
@@ -15,6 +19,12 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 class Post extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia, SoftDeletes;
+
+    public const TYPE_TEXT = 'text';
+
+    public const TYPE_PHOTO = 'photo';
+
+    public const TYPE_VIDEO = 'video';
 
     public const VISIBILITY_PUBLIC = 'public';
 
@@ -30,6 +40,7 @@ class Post extends Model implements HasMedia
         'type',
         'visibility',
         'location',
+        'tagged_pets',
         'is_pinned',
         'likes_count',
         'comments_count',
@@ -40,6 +51,7 @@ class Post extends Model implements HasMedia
     {
         return [
             'is_pinned' => 'boolean',
+            'tagged_pets' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -57,7 +69,7 @@ class Post extends Model implements HasMedia
 
         $this->addMediaCollection('videos')
             ->singleFile()
-            ->acceptsMimeTypes(['video/mp4', 'video/quicktime', 'video/webm']);
+            ->acceptsMimeTypes(['video/mp4', 'video/quicktime', 'video/webm', 'application/octet-stream', 'application/x-empty']);
     }
 
     public function registerMediaConversions(?Media $media = null): void
@@ -86,69 +98,113 @@ class Post extends Model implements HasMedia
 
     // Relationships
 
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function pet()
+    public function user(): BelongsTo
+    {
+        return $this->author();
+    }
+
+    public function pet(): BelongsTo
     {
         return $this->belongsTo(Pet::class);
     }
 
-    public function comments()
+    public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
     }
 
-    public function reactions()
+    public function reactions(): MorphMany
     {
         return $this->morphMany(Reaction::class, 'reactable');
     }
 
-    public function hashtags()
+    public function hashtags(): BelongsToMany
     {
         return $this->belongsToMany(Hashtag::class, 'post_hashtag');
     }
 
-    public function postReactions()
+    public function postReactions(): HasMany
     {
         return $this->hasMany(PostReaction::class);
     }
 
-    public function savedBy()
+    public function savedBy(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'saved_posts');
     }
 
     // Scopes
 
-    public function scopeVisibleTo(Builder $query, ?User $viewer)
+    public function scopeVisibleTo(Builder $query, ?User $viewer): void
     {
-        $query->where(function (Builder $q) use ($viewer) {
-            if (! $viewer) {
-                // Guests see only public posts from public users
-                $q->where('visibility', 'public')
-                    ->whereHas('author', function ($a) {
-                        $a->where('is_private', false)
-                            ->where('is_banned', false);
-                    });
+        if ($viewer?->hasAnyRole(['admin', 'moderator'])) {
+            $query->whereHas('author', function (Builder $authorQuery): void {
+                $authorQuery->where('is_banned', false);
+            });
 
-                return;
-            }
+            return;
+        }
 
-            // Authenticated user
-            $q->where('user_id', $viewer->id)
-                ->orWhere(function (Builder $q) use ($viewer) {
-                    $blockedIds = $viewer->blocking()->pluck('blocked_id')
-                        ->merge($viewer->blockedBy()->pluck('blocker_id'));
+        if (! $viewer) {
+            $query->where('visibility', self::VISIBILITY_PUBLIC)
+                ->whereHas('author', function (Builder $authorQuery): void {
+                    $authorQuery
+                        ->where('is_private', false)
+                        ->where('is_banned', false);
+                });
 
-                    $q->whereNotIn('user_id', $blockedIds)
-                        ->where(function ($q) use ($viewer) {
-                            $q->where('visibility', 'public')
-                                ->orWhere(function ($q) use ($viewer) {
-                                    $q->where('visibility', 'followers')
-                                        ->whereIn('user_id', $viewer->acceptedFollowing()->pluck('id'));
+            return;
+        }
+
+        $blockedIds = $viewer->blocking()
+            ->pluck('blocked_id')
+            ->merge($viewer->blockedBy()->pluck('blocker_id'))
+            ->unique()
+            ->values();
+
+        $followingIds = $viewer->acceptedFollowing()
+            ->pluck('users.id')
+            ->unique()
+            ->values();
+
+        $query->where(function (Builder $visibilityQuery) use ($viewer, $blockedIds, $followingIds): void {
+            $visibilityQuery
+                ->where('user_id', $viewer->getKey())
+                ->orWhere(function (Builder $otherPostsQuery) use ($viewer, $blockedIds, $followingIds): void {
+                    $otherPostsQuery
+                        ->where('user_id', '!=', $viewer->getKey())
+                        ->when($blockedIds->isNotEmpty(), function (Builder $blockedQuery) use ($blockedIds): void {
+                            $blockedQuery->whereNotIn('user_id', $blockedIds);
+                        })
+                        ->whereHas('author', function (Builder $authorQuery): void {
+                            $authorQuery->where('is_banned', false);
+                        })
+                        ->where(function (Builder $rulesQuery) use ($followingIds): void {
+                            $rulesQuery
+                                ->where(function (Builder $publicFromPublicAccounts): void {
+                                    $publicFromPublicAccounts
+                                        ->where('visibility', self::VISIBILITY_PUBLIC)
+                                        ->whereHas('author', function (Builder $authorQuery): void {
+                                            $authorQuery->where('is_private', false);
+                                        });
+                                })
+                                ->orWhere(function (Builder $followersOnlyQuery) use ($followingIds): void {
+                                    $followersOnlyQuery
+                                        ->where('visibility', self::VISIBILITY_FOLLOWERS)
+                                        ->whereIn('user_id', $followingIds);
+                                })
+                                ->orWhere(function (Builder $publicFromPrivateAccounts) use ($followingIds): void {
+                                    $publicFromPrivateAccounts
+                                        ->where('visibility', self::VISIBILITY_PUBLIC)
+                                        ->whereHas('author', function (Builder $authorQuery): void {
+                                            $authorQuery->where('is_private', true);
+                                        })
+                                        ->whereIn('user_id', $followingIds);
                                 });
                         });
                 });
@@ -158,6 +214,28 @@ class Post extends Model implements HasMedia
     public function scopePublic(Builder $query)
     {
         $query->where('visibility', 'public');
+    }
+
+    public function scopePublished(Builder $query): void
+    {
+        $query->where('status', 'published');
+    }
+
+    public function scopeNotBlockedFor(Builder $query, ?User $viewer): void
+    {
+        if (! $viewer) {
+            return;
+        }
+
+        $blockedIds = $viewer->blocking()
+            ->pluck('users.id')
+            ->merge($viewer->blockedBy()->pluck('users.id'))
+            ->unique()
+            ->values();
+
+        if ($blockedIds->isNotEmpty()) {
+            $query->whereNotIn('user_id', $blockedIds);
+        }
     }
 
     public function scopeByType(Builder $query, string $type)
@@ -226,7 +304,7 @@ class Post extends Model implements HasMedia
         $query->where('is_pinned', true);
     }
 
-    public function scopeForFeed(Builder $query, User $user)
+    public function scopeForFeed(Builder $query, User $user): void
     {
         $followingIds = $user->acceptedFollowing()
             ->pluck('users.id')
@@ -299,5 +377,10 @@ class Post extends Model implements HasMedia
         }
 
         return $this->postReactions()->where('user_id', auth()->id())->value('type');
+    }
+
+    public function canBeViewedBy(?User $viewer): bool
+    {
+        return app(\App\Services\VisibilityService::class)->canView($viewer, $this);
     }
 }

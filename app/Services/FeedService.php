@@ -31,7 +31,7 @@ class FeedService
                 'reactions',
             ])
             ->when(in_array($type, ['text', 'photo', 'video'], true), fn ($query) => $query->byType($type))
-            ->latest()
+            ->orderBy('created_at')
             ->paginate($perPage)
             ->withQueryString();
 

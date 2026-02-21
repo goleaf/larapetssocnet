@@ -25,13 +25,15 @@ class PostFactory extends Factory
      */
     public function definition(): array
     {
+        $body = $this->faker->paragraphs(3, true);
+
         return [
             'user_id' => User::factory(),
             'pet_id' => null,
-            'body' => $this->faker->paragraphs(3, true),
-            'body_html' => '<p>' . implode('</p><p>', $this->faker->paragraphs(3)) . '</p>',
+            'body' => $body,
+            'body_html' => '<p>'.e($body).'</p>',
             'type' => 'text',
-            'visibility' => $this->faker->randomElement(['public', 'followers', 'private']),
+            'visibility' => Post::VISIBILITY_PUBLIC,
             'location' => $this->faker->optional(0.3)->city(),
             'is_pinned' => false,
             'likes_count' => 0,

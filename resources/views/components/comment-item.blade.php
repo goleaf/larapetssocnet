@@ -25,7 +25,7 @@
                 <!-- React to Comment -->
                 @auth
                     <button @click="
-                            fetch('{{ route('comments.react', ['post' => $post, 'comment' => $comment]) }}', {
+                            fetch('{{ route('comments.react', $comment) }}', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -59,7 +59,7 @@
                 <!-- Admin / Owner Actions -->
                 @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->user()->hasRole('admin')))
                     <button @click="editing = !editing" class="hover:text-gray-900 transition">Edit</button>
-                    <form method="POST" action="{{ route('comments.destroy', ['post' => $post, 'comment' => $comment]) }}"
+                    <form method="POST" action="{{ route('posts.comments.destroy', ['post' => $post, 'comment' => $comment]) }}"
                         class="inline" onsubmit="return confirm('Delete comment?');">
                         @csrf @method('DELETE')
                         <button type="submit" class="hover:text-red-600 transition">Delete</button>
@@ -70,7 +70,7 @@
 
                 <!-- Nested Reply Form -->
                 <div x-show="showReply" x-cloak class="mt-3 w-full" style="display: none;">
-                    <form action="{{ route('comments.store', $post) }}" method="POST">
+                    <form action="{{ route('posts.comments.store', $post) }}" method="POST">
                         @csrf
                         <input type="hidden" name="parent_id" value="{{ $comment->id }}">
                         <textarea name="body" rows="2"
@@ -88,7 +88,7 @@
                 <!-- Nested Edit Form -->
                 @if(auth()->check() && auth()->id() === $comment->user_id)
                     <div x-show="editing" x-cloak class="mt-3 w-full" style="display: none;">
-                        <form action="{{ route('comments.update', ['post' => $post, 'comment' => $comment]) }}"
+                        <form action="{{ route('posts.comments.update', ['post' => $post, 'comment' => $comment]) }}"
                             method="POST">
                             @csrf @method('PATCH')
                             <textarea name="body" rows="2"

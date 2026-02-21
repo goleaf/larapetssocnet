@@ -225,7 +225,7 @@ class MessageController extends Controller
 
     private function isBlockedBetween(User $first, User $second): bool
     {
-        return $first->hasAnyBlockRelationshipWith($second);
+        return $first->hasBlockingRelationshipWith($second);
     }
 
     private function isFollowing(User $follower, User $followed): bool

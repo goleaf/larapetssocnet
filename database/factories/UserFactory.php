@@ -60,7 +60,7 @@ class UserFactory extends Factory
             'flags' => fake()->optional(0.1)->randomElement(['verified', 'staff', 'early_access']),
             'is_banned' => false,
             'ban_reason' => null,
-            'is_private' => fake()->boolean(15),
+            'is_private' => false,
             'privacy_display_email' => fake()->boolean(10),
             'privacy_display_location' => fake()->boolean(75),
             'privacy_display_birthdate' => fake()->boolean(20),

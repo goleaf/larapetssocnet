@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Services\VisibilityService;
 
 class PostPolicy
 {
@@ -14,7 +15,7 @@ class PostPolicy
 
     public function view(?User $user, Post $post): bool
     {
-        return Post::query()->where('id', $post->id)->visibleTo($user)->exists();
+        return app(VisibilityService::class)->canView($user, $post);
     }
 
     public function create(User $user): bool
@@ -35,5 +36,10 @@ class PostPolicy
     public function pin(User $user, Post $post): bool
     {
         return $user->id === $post->user_id;
+    }
+
+    public function report(User $user, Post $post): bool
+    {
+        return $user->id !== $post->user_id;
     }
 }

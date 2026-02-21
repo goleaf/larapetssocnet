@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('post_hashtag')) {
+            return;
+        }
+
         Schema::create('post_hashtag', function (Blueprint $table) {
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('hashtag_id')->constrained()->cascadeOnDelete();

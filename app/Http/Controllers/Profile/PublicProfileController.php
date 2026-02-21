@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Profile;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\VisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PublicProfileController extends Controller
 {
+    public function __construct(private readonly VisibilityService $visibilityService) {}
+
     public function show(Request $request, User $user): View|RedirectResponse
     {
         $redirect = $request->attributes->get('username_redirect');
@@ -64,11 +67,32 @@ class PublicProfileController extends Controller
                 ->with(['user', 'hashtags'])
                 ->published()
                 ->visibleTo($viewer)
+                ->where('visibility', '!=', Post::VISIBILITY_PRIVATE)
                 ->orderByDesc('is_pinned')
                 ->latest()
                 ->paginate(10)
                 ->withQueryString()
             : collect();
+
+        $privatePosts = collect();
+        $privateCount = 0;
+
+        if ($tab === 'posts' && $viewer && $viewer->is($user)) {
+            $privatePosts = Post::query()
+                ->where('user_id', $user->id)
+                ->where('visibility', Post::VISIBILITY_PRIVATE)
+                ->with(['user', 'hashtags'])
+                ->latest()
+                ->limit(10)
+                ->get()
+                ->filter(fn (Post $post): bool => $this->visibilityService->canViewOnProfile($viewer, $post))
+                ->values();
+
+            $privateCount = Post::query()
+                ->where('user_id', $user->id)
+                ->where('visibility', Post::VISIBILITY_PRIVATE)
+                ->count();
+        }
 
         return view('profile.show', [
             'profileUser' => $user,
@@ -77,6 +101,8 @@ class PublicProfileController extends Controller
             'pets' => $pets,
             'photos' => $photos,
             'posts' => $posts,
+            'privatePosts' => $privatePosts,
+            'privateCount' => $privateCount,
             'likes' => collect(),
             'isFollowing' => $viewer ? $viewer->isFollowing($user) : false,
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,

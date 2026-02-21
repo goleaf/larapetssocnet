@@ -23,12 +23,13 @@ class PostService
 
             $post = Post::create([
                 'user_id' => $author->id,
-                'pet_id' => $data['pet_id'] ?? null,
+                'pet_id' => $data['pet_id'] ?? ($data['tagged_pets'][0] ?? null),
                 'body' => $body,
                 'body_html' => $bodyHtml,
                 'type' => $type,
                 'visibility' => $data['visibility'] ?? 'public',
                 'location' => $data['location'] ?? null,
+                'tagged_pets' => $data['tagged_pets'] ?? null,
             ]);
 
             foreach ($photos as $photo) {
@@ -54,7 +55,8 @@ class PostService
                 'body_html' => $bodyHtml,
                 'visibility' => $data['visibility'] ?? $post->visibility,
                 'location' => $data['location'] ?? $post->location,
-                'pet_id' => $data['pet_id'] ?? $post->pet_id,
+                'pet_id' => $data['pet_id'] ?? ($data['tagged_pets'][0] ?? $post->pet_id),
+                'tagged_pets' => $data['tagged_pets'] ?? $post->tagged_pets,
             ]);
 
             return $post->fresh();
