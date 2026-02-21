@@ -27,12 +27,29 @@
                     <option value="{{ $pet->id }}" @selected((string) old('pet_id', $post?->pet_id) === (string) $pet->id)>{{ $pet->name }}</option>
                 @endforeach
             </select>
+            <x-input-error :messages="$errors->get('pet_id')" class="mt-1" />
         </div>
 
         <div>
             <label class="mb-1 block text-sm font-semibold" for="location">Location</label>
             <input id="location" name="location" type="text" maxlength="100" value="{{ old('location', $post?->location) }}" class="w-full rounded-xl border border-[var(--ui-border)] p-2.5 text-sm" placeholder="City or place">
         </div>
+    </div>
+
+    <div>
+        <label class="mb-1 block text-sm font-semibold" for="tagged_pets">Tagged pets</label>
+        @php
+            $selectedTaggedPets = old('tagged_pets', $post?->tagged_pets ?? []);
+            $selectedTaggedPets = is_array($selectedTaggedPets) ? array_map('intval', $selectedTaggedPets) : [];
+        @endphp
+        <select id="tagged_pets" name="tagged_pets[]" multiple class="w-full rounded-xl border border-[var(--ui-border)] p-2.5 text-sm">
+            @foreach ($pets as $pet)
+                <option value="{{ $pet->id }}" @selected(in_array((int) $pet->id, $selectedTaggedPets, true))>{{ $pet->name }}</option>
+            @endforeach
+        </select>
+        <p class="mt-1 text-xs shell-text-muted">Hold Cmd/Ctrl to select multiple pets.</p>
+        <x-input-error :messages="$errors->get('tagged_pets')" class="mt-1" />
+        <x-input-error :messages="$errors->get('tagged_pets.*')" class="mt-1" />
     </div>
 
     <div>

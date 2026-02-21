@@ -59,6 +59,9 @@
 - Updated pet gallery tab to render only `gallery` media collection items (excluding avatar/cover).
 - Refactored pet follow/unfollow to use ORM-only user methods (`followPet`/`unfollowPet`) and removed raw DB fallback logic.
 - Added dedicated pet follow feature tests for follow, unfollow, owner guard, and idempotency.
+- Added multi-pet tagging support on posts via `tagged_pets[]` in active post create/edit form.
+- Updated post requests/services to validate and persist `tagged_pets`, with `pet_id` fallback to first tagged pet.
+- Updated post show tagged-pets resolver to include `pet_id` fallback when `tagged_pets` is empty.
 
 ### Tests
 - Verified passing suites:
@@ -79,3 +82,4 @@
   - `tests/Feature/ReportFeatureTest.php`
   - `tests/Feature/PetFeatureTest.php`
   - `tests/Feature/PetFollowFeatureTest.php`
+  - `tests/Feature/PostTest.php`

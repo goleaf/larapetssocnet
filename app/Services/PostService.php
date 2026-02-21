@@ -24,16 +24,24 @@ class PostService
             $body = isset($data['body']) ? trim((string) $data['body']) : null;
             $bodyHtml = $body ? $this->content->process($body) : null;
             $type = $this->resolveType($photos, $video);
+            $taggedPets = collect($data['tagged_pets'] ?? [])
+                ->map(fn ($id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique()
+                ->values()
+                ->all();
+            $primaryPetId = $data['pet_id'] ?? ($taggedPets[0] ?? null);
 
             $post = Post::query()->create([
                 'user_id' => $author->id,
-                'pet_id' => $data['pet_id'] ?? null,
+                'pet_id' => $primaryPetId,
                 'body' => $body,
                 'body_html' => $bodyHtml,
                 'type' => $type,
                 'visibility' => $data['visibility'] ?? Post::VISIBILITY_PUBLIC,
                 'location' => $data['location'] ?? null,
                 'status' => 'published',
+                'tagged_pets' => $taggedPets,
             ]);
 
             foreach ($photos as $photo) {
@@ -56,13 +64,23 @@ class PostService
         return DB::transaction(function () use ($post, $data): Post {
             $body = array_key_exists('body', $data) ? trim((string) ($data['body'] ?? '')) : $post->body;
             $bodyHtml = filled((string) $body) ? $this->content->process((string) $body) : null;
+            $taggedPets = array_key_exists('tagged_pets', $data)
+                ? collect($data['tagged_pets'] ?? [])
+                    ->map(fn ($id): int => (int) $id)
+                    ->filter(fn (int $id): bool => $id > 0)
+                    ->unique()
+                    ->values()
+                    ->all()
+                : $post->tagged_pets;
+            $primaryPetId = $data['pet_id'] ?? (($taggedPets[0] ?? null) ?: $post->pet_id);
 
             $post->update([
                 'body' => $body,
                 'body_html' => $bodyHtml,
                 'visibility' => $data['visibility'] ?? $post->visibility,
                 'location' => $data['location'] ?? $post->location,
-                'pet_id' => $data['pet_id'] ?? $post->pet_id,
+                'pet_id' => $primaryPetId,
+                'tagged_pets' => $taggedPets,
             ]);
 
             return $post->fresh();

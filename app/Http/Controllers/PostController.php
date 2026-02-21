@@ -139,6 +139,10 @@ class PostController extends Controller
     {
         $petIds = collect($post->tagged_pets ?? [])->map(fn ($id): int => (int) $id)->filter()->values();
 
+        if ($petIds->isEmpty() && $post->pet_id) {
+            $petIds = collect([(int) $post->pet_id]);
+        }
+
         if ($petIds->isEmpty()) {
             return collect();
         }

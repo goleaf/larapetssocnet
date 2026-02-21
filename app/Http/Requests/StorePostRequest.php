@@ -15,9 +15,22 @@ class StorePostRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $taggedPets = $this->input('tagged_pets', []);
+        if (! is_array($taggedPets)) {
+            $taggedPets = [];
+        }
+
+        $taggedPets = collect($taggedPets)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
         $this->merge([
             'visibility' => $this->input('visibility', Post::VISIBILITY_PUBLIC),
             'pet_id' => $this->filled('pet_id') ? $this->input('pet_id') : null,
+            'tagged_pets' => $taggedPets,
         ]);
     }
 
@@ -26,6 +39,8 @@ class StorePostRequest extends FormRequest
         return [
             'body' => ['nullable', 'string', 'max:2000', 'required_without_all:photos,video'],
             'pet_id' => ['nullable', Rule::exists('pets', 'id')->where('user_id', $this->user()->id)],
+            'tagged_pets' => ['nullable', 'array', 'max:10'],
+            'tagged_pets.*' => ['integer', Rule::exists('pets', 'id')->where('user_id', $this->user()->id)],
             'visibility' => ['required', Rule::in([Post::VISIBILITY_PUBLIC, Post::VISIBILITY_FOLLOWERS, Post::VISIBILITY_PRIVATE])],
             'location' => ['nullable', 'string', 'max:100'],
             'photos' => ['nullable', 'array', 'max:5'],
@@ -52,6 +67,7 @@ class StorePostRequest extends FormRequest
             'photos.max' => 'You can upload up to 5 photos.',
             'video.max' => 'Video must be under 50MB.',
             'pet_id.exists' => 'That pet does not belong to you.',
+            'tagged_pets.*.exists' => 'One or more tagged pets do not belong to you.',
         ];
     }
 }
