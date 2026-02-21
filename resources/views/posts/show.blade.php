@@ -174,6 +174,12 @@
                                             @method('DELETE')
                                             <button type="submit" class="rounded-lg border border-red-300 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Delete</button>
                                         </form>
+                                    @else
+                                        <form method="POST" action="{{ route('comments.report', [$post, $comment]) }}">
+                                            @csrf
+                                            <input type="hidden" name="reason" value="other">
+                                            <button type="submit" class="rounded-lg border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">Report</button>
+                                        </form>
                                     @endif
                                 </div>
 
@@ -222,6 +228,14 @@
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="rounded-lg border border-red-300 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                @else
+                                                    <div class="mt-2">
+                                                        <form method="POST" action="{{ route('comments.report', [$post, $reply]) }}">
+                                                            @csrf
+                                                            <input type="hidden" name="reason" value="other">
+                                                            <button type="submit" class="rounded-lg border border-gray-300 px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50">Report</button>
                                                         </form>
                                                     </div>
                                                 @endif

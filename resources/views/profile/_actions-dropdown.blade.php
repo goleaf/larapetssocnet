@@ -21,7 +21,12 @@
         aria-label="Profile action menu"
     >
         <a href="{{ route('profile.show', ['user' => $user]) }}" class="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-emerald-500/10" role="menuitem">Copy profile link</a>
-        <a href="#" class="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-emerald-500/10" role="menuitem">Report user</a>
+        <form method="POST" action="{{ route('users.report', ['user' => $user]) }}">
+            @csrf
+            <input type="hidden" name="reason" value="other">
+            <input type="hidden" name="details" value="Reported from profile actions dropdown.">
+            <button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10" role="menuitem">Report user</button>
+        </form>
 
         <div class="my-1 border-t border-[var(--ui-border)] dark:border-slate-700/60"></div>
 
