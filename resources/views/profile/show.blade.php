@@ -291,11 +291,40 @@
                 description="Likes tab is ready for Wave 2 data integration."
             />
         @else
-            <x-empty-state
-                icon="📝"
-                title="No posts yet"
-                description="Posts tab is ready for Wave 2 feed integration."
-            />
+            <section class="space-y-4">
+                @forelse ($posts as $post)
+                    @include('posts.partials.card', ['post' => $post])
+
+                    @if ($isOwner)
+                        <div class="-mt-2 flex items-center justify-end gap-2">
+                            @if ($post->is_pinned)
+                                <form method="POST" action="{{ route('posts.unpin', $post) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-base btn-ghost px-3 py-2 text-xs">Unpin</button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('posts.pin', $post) }}">
+                                    @csrf
+                                    <button type="submit" class="btn-base btn-secondary px-3 py-2 text-xs">Pin to Profile</button>
+                                </form>
+                            @endif
+                        </div>
+                    @endif
+                @empty
+                    <x-empty-state
+                        icon="📝"
+                        title="No posts yet"
+                        description="No posts published yet."
+                    />
+                @endforelse
+
+                @if (method_exists($posts, 'links'))
+                    <div class="shell-card p-3 sm:p-4">
+                        {{ $posts->links() }}
+                    </div>
+                @endif
+            </section>
         @endif
     </div>
 </x-app-layout>

@@ -92,19 +92,43 @@ class PostController extends Controller
         return redirect()->route('profile.show', $request->user()->username)->with('success', 'Post deleted.');
     }
 
-    public function pin(Request $request, Post $post): JsonResponse
+    public function pin(Request $request, Post $post): JsonResponse|RedirectResponse
     {
         $this->authorize('pin', $post);
 
-        if ($post->is_pinned) {
+        $wasPinned = (bool) $post->is_pinned;
+
+        if ($wasPinned) {
             $this->postService->unpin($post);
         } else {
             $this->postService->pin($post);
         }
 
+        $isPinned = ! $wasPinned;
+
+        if (! $request->expectsJson()) {
+            return back()->with('status', $isPinned ? 'Post pinned on profile.' : 'Post unpinned.');
+        }
+
         return response()->json([
             'success' => true,
-            'is_pinned' => ! $post->is_pinned,
+            'is_pinned' => $isPinned,
+        ]);
+    }
+
+    public function unpin(Request $request, Post $post): JsonResponse|RedirectResponse
+    {
+        $this->authorize('pin', $post);
+
+        $this->postService->unpin($post);
+
+        if (! $request->expectsJson()) {
+            return back()->with('status', 'Post unpinned.');
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_pinned' => false,
         ]);
     }
 

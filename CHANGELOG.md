@@ -45,6 +45,8 @@
 - Updated profile settings and registration forms with live username availability checks.
 - Updated `TrackLastSeen` middleware to throttle writes to every 5 minutes.
 - Updated saved posts page to use saved-entry pagination, show saved timestamps, and provide inline unsave actions.
+- Updated profile posts tab to render real posts with pinned-first ordering and owner pin/unpin controls.
+- Updated post pinning flow to support both web form redirects and JSON responses, and added explicit unpin route.
 
 ### Tests
 - Verified passing suites:
@@ -60,3 +62,4 @@
   - `tests/Feature/PrivacyToggleTest.php`
   - `tests/Feature/UsernameTest.php`
   - `tests/Feature/FeedPosts/FeedPostsFeatureTest.php --filter=saved`
+  - `tests/Feature/ProfileTest.php --filter="pin|pinned|profile posts tab shows pinned"`

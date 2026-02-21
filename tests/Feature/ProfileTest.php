@@ -353,6 +353,29 @@ test('users cannot pin posts they do not own', function (): void {
         ->assertForbidden();
 });
 
+test('profile posts tab shows pinned post first', function (): void {
+    $user = User::factory()->create();
+    $olderPinned = Post::factory()->for($user)->create([
+        'body' => 'older pinned post',
+        'is_pinned' => true,
+        'created_at' => now()->subDay(),
+    ]);
+    $newerRegular = Post::factory()->for($user)->create([
+        'body' => 'newer regular post',
+        'is_pinned' => false,
+        'created_at' => now(),
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get(route('profile.show', ['user' => $user, 'tab' => 'posts']));
+
+    $response->assertOk();
+    $response->assertSeeInOrder([
+        $olderPinned->body,
+        $newerRegular->body,
+    ]);
+});
+
 test('mutual followers appear on both followers and following pages', function (): void {
     $alice = User::factory()->create([
         'name' => 'Alice User',

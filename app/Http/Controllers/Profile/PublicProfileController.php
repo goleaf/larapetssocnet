@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,13 +58,25 @@ class PublicProfileController extends Controller
                 ->merge($user->getMedia('cover'))
             : collect();
 
+        $posts = $tab === 'posts' && $canViewContent
+            ? Post::query()
+                ->where('user_id', $user->id)
+                ->with(['user', 'hashtags'])
+                ->published()
+                ->visibleTo($viewer)
+                ->orderByDesc('is_pinned')
+                ->latest()
+                ->paginate(10)
+                ->withQueryString()
+            : collect();
+
         return view('profile.show', [
             'profileUser' => $user,
             'tab' => $tab,
             'canViewContent' => $canViewContent,
             'pets' => $pets,
             'photos' => $photos,
-            'posts' => collect(),
+            'posts' => $posts,
             'likes' => collect(),
             'isFollowing' => $viewer ? $viewer->isFollowing($user) : false,
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,

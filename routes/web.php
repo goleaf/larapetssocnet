@@ -95,6 +95,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::delete('/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])->name('posts.comments.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
+    Route::delete('/posts/{post}/pin', [PostController::class, 'unpin'])->name('posts.unpin');
     Route::post('/posts/{post}/report', [PostReportController::class, 'store'])->name('posts.report');
 
     Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
