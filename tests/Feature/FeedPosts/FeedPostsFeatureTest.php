@@ -302,4 +302,55 @@ class FeedPostsFeatureTest extends TestCase
             'user_id' => $user->id,
         ]);
     }
+
+    public function test_saved_posts_page_shows_only_user_saved_posts(): void
+    {
+        $viewer = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $savedPost = Post::query()->create([
+            'user_id' => $otherUser->id,
+            'body' => 'saved-post-visible',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        $notSavedPost = Post::query()->create([
+            'user_id' => $otherUser->id,
+            'body' => 'not-saved-post-hidden',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        SavedPost::query()->create([
+            'post_id' => $savedPost->id,
+            'user_id' => $viewer->id,
+        ]);
+
+        $response = $this->actingAs($viewer)->get(route('saved.index'));
+
+        $response->assertOk();
+        $response->assertSee('saved-post-visible');
+        $response->assertDontSee('not-saved-post-hidden');
+    }
+
+    public function test_saved_posts_page_hides_saved_posts_with_private_visibility(): void
+    {
+        $viewer = User::factory()->create();
+        $author = User::factory()->create();
+
+        $privatePost = Post::query()->create([
+            'user_id' => $author->id,
+            'body' => 'saved-but-now-private',
+            'visibility' => Post::VISIBILITY_PRIVATE,
+        ]);
+
+        SavedPost::query()->create([
+            'post_id' => $privatePost->id,
+            'user_id' => $viewer->id,
+        ]);
+
+        $response = $this->actingAs($viewer)->get(route('saved.index'));
+
+        $response->assertOk();
+        $response->assertDontSee('saved-but-now-private');
+    }
 }

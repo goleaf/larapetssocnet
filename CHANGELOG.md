@@ -44,6 +44,7 @@
 - Updated profile route handling to support case-normalized canonical redirects and old-username 301 redirects.
 - Updated profile settings and registration forms with live username availability checks.
 - Updated `TrackLastSeen` middleware to throttle writes to every 5 minutes.
+- Updated saved posts page to use saved-entry pagination, show saved timestamps, and provide inline unsave actions.
 
 ### Tests
 - Verified passing suites:
@@ -58,3 +59,4 @@
   - `tests/Feature/ProfileTest.php --filter=\"followers can view private profile pets tab|blocking removes follows and prevents future follows until unblocked\"`
   - `tests/Feature/PrivacyToggleTest.php`
   - `tests/Feature/UsernameTest.php`
+  - `tests/Feature/FeedPosts/FeedPostsFeatureTest.php --filter=saved`
