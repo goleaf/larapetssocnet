@@ -52,6 +52,7 @@ class EventController extends Controller
                 'groups.name as group_name',
                 'groups.slug as group_slug',
                 'creators.name as creator_name',
+                "events.{$locationColumn} as event_location",
             ]);
 
         $this->applyEventVisibility($query, $viewer);
@@ -60,8 +61,11 @@ class EventController extends Controller
             $query->where(function ($searchQuery) use ($locationColumn, $search): void {
                 $searchQuery
                     ->where('events.title', 'like', "%{$search}%")
-                    ->orWhere('events.description', 'like', "%{$search}%")
-                    ->orWhere("events.{$locationColumn}", 'like', "%{$search}%");
+                    ->orWhere('events.description', 'like', "%{$search}%");
+
+                if ($locationColumn !== '') {
+                    $searchQuery->orWhere("events.{$locationColumn}", 'like', "%{$search}%");
+                }
             });
         }
 
