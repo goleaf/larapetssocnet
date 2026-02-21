@@ -57,6 +57,8 @@ class ProfileSettingsController extends Controller
             'website' => ['nullable', 'url', 'max:255'],
             'avatar' => ['nullable', 'image', 'max:10240'],
             'cover' => ['nullable', 'image', 'max:10240'],
+            'remove_avatar' => ['nullable', 'boolean'],
+            'remove_cover' => ['nullable', 'boolean'],
         ]);
 
         $username = $validated['username'] ?? '';
@@ -88,6 +90,14 @@ class ProfileSettingsController extends Controller
         }
 
         $user->save();
+
+        if ($request->boolean('remove_avatar')) {
+            $user->clearMediaCollection('avatar');
+        }
+
+        if ($request->boolean('remove_cover')) {
+            $user->clearMediaCollection('cover');
+        }
 
         if ($request->hasFile('avatar')) {
             $this->storeProfileImage($user, $request->file('avatar'), 'avatar');
