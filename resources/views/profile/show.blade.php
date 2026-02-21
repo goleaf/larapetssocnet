@@ -11,7 +11,24 @@
         : collect();
 @endphp
 
-@section('title', $profileUser->name.' Profile')
+@section('title', at_username($profileUser).' — PetSocial')
+@php
+    $metaDescription = $profileUser->bio ?: ($profileUser->name."'s profile on PetSocial");
+@endphp
+@push('meta')
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="{{ $profileUser->name }} ({{ at_username($profileUser) }})">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:url" content="{{ $profileUser->profile_url }}">
+    <meta property="profile:username" content="{{ $profileUser->username }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ $profileUser->name }} on PetSocial">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <link rel="canonical" href="{{ $profileUser->profile_url }}">
+    @if ($profileUser->is_private)
+        <meta name="robots" content="noindex, nofollow">
+    @endif
+@endpush
 
 <x-app-layout>
     <x-slot name="header">

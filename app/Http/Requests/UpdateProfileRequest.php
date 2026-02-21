@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Rules\NotReservedUsername;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -39,30 +40,8 @@ class UpdateProfileRequest extends FormRequest
                 'string',
                 'min:3',
                 'max:30',
-                'regex:/^(?![._])(?!.*[._]{2})[a-z0-9._]+(?<![._])$/',
-                Rule::notIn([
-                    'admin',
-                    'api',
-                    'auth',
-                    'dashboard',
-                    'events',
-                    'explore',
-                    'feed',
-                    'groups',
-                    'login',
-                    'logout',
-                    'marketplace',
-                    'messages',
-                    'notifications',
-                    'onboarding',
-                    'password',
-                    'pets',
-                    'profile',
-                    'register',
-                    'search',
-                    'settings',
-                    'tips',
-                ]),
+                'regex:/^[a-zA-Z0-9_]+$/',
+                new NotReservedUsername,
                 Rule::unique('users', 'username')->ignore($userId),
             ],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
@@ -87,8 +66,7 @@ class UpdateProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'username.regex' => 'Username may contain lowercase letters, numbers, dots, and underscores only.',
-            'username.not_in' => 'This username is reserved.',
+            'username.regex' => 'Username may contain letters, numbers, and underscores only.',
             'username.unique' => 'That username is already taken.',
             'country_code.alpha' => 'Country code must contain letters only.',
             'country_code.size' => 'Country code must be exactly 2 letters.',

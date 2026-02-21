@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\NotReservedUsername;
+use App\Services\UsernameService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
@@ -31,22 +32,19 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->merge([
-            'username' => (string) Str::of((string) $request->input('username'))
-                ->lower()
-                ->replaceMatches('/[^a-z0-9._]/', '')
-                ->trim('._'),
+            'username' => User::normalizeUsername((string) $request->input('username')),
         ]);
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['nullable', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9._]+$/', 'unique:'.User::class],
+            'username' => ['nullable', 'string', 'min:3', 'max:30', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:'.User::class, new NotReservedUsername],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $username = (string) $request->input('username');
         if ($username === '') {
-            $username = User::generateUniqueUsername((string) $request->input('name'));
+            $username = app(UsernameService::class)->generate((string) $request->input('name'));
         }
 
         $user = User::create([

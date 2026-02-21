@@ -4,13 +4,28 @@ namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PublicProfileController extends Controller
 {
-    public function show(Request $request, User $user): View
+    public function show(Request $request, User $user): View|RedirectResponse
     {
+        $redirect = $request->attributes->get('username_redirect');
+        if ($redirect) {
+            return redirect()
+                ->route('profile.show', ['user' => $redirect->user->username])
+                ->setStatusCode(301);
+        }
+
+        $rawUsername = (string) $request->attributes->get('username_raw', $user->username);
+        if ($rawUsername !== $user->username) {
+            return redirect()
+                ->route('profile.show', ['user' => $user->username])
+                ->setStatusCode(301);
+        }
+
         $viewer = $request->user();
 
         if ($viewer && ($viewer->hasBlocked($user) || $viewer->isBlockedBy($user))) {

@@ -57,6 +57,7 @@ class User extends Authenticatable implements HasMedia
     protected $fillable = [
         'name',
         'username',
+        'username_changed_at',
         'email',
         'password',
         'bio',
@@ -106,6 +107,7 @@ class User extends Authenticatable implements HasMedia
     {
         return [
             'email_verified_at' => 'datetime',
+            'username_changed_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
             'is_private' => 'boolean',
@@ -146,8 +148,8 @@ class User extends Authenticatable implements HasMedia
     {
         return (string) Str::of((string) $username)
             ->lower()
-            ->replaceMatches('/[^a-z0-9._]/', '')
-            ->trim('._');
+            ->replaceMatches('/[^a-z0-9_]/', '')
+            ->trim('_');
     }
 
     public static function generateUniqueUsername(string $seed): string
@@ -194,6 +196,29 @@ class User extends Authenticatable implements HasMedia
         }
 
         return ! $query->exists();
+    }
+
+    public function setUsernameAttribute(string $value): void
+    {
+        $this->attributes['username'] = strtolower(trim($value));
+    }
+
+    public function canChangeUsername(): bool
+    {
+        if (! $this->username_changed_at) {
+            return true;
+        }
+
+        return $this->username_changed_at->copy()->addDays(30)->isPast();
+    }
+
+    public function daysUntilUsernameChange(): int
+    {
+        if ($this->canChangeUsername()) {
+            return 0;
+        }
+
+        return (int) now()->diffInDays($this->username_changed_at->copy()->addDays(30), false);
     }
 
     public function registerMediaCollections(): void
@@ -285,6 +310,11 @@ class User extends Authenticatable implements HasMedia
     public function marketplaceListings(): HasMany
     {
         return $this->hasMany(MarketplaceListing::class);
+    }
+
+    public function usernameRedirects(): HasMany
+    {
+        return $this->hasMany(UsernameRedirect::class);
     }
 
     public function sentMessages(): HasMany
@@ -917,6 +947,16 @@ class User extends Authenticatable implements HasMedia
     protected function profilePhotoUrl(): Attribute
     {
         return Attribute::get(fn (): string => $this->firstMediaUrl(self::MEDIA_COLLECTION_PROFILE) ?: $this->avatar_url);
+    }
+
+    protected function profileUrl(): Attribute
+    {
+        return Attribute::get(fn (): string => route('profile.show', ['user' => $this->username]));
+    }
+
+    protected function atUsername(): Attribute
+    {
+        return Attribute::get(fn (): string => '@'.$this->username);
     }
 
     protected function bioHtml(): Attribute

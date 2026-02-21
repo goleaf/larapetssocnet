@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\ReservedUsername;
 use App\Models\User;
+use App\Services\UsernameService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Mews\Purifier\Facades\Purifier;
 
@@ -238,56 +238,36 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function usernameAvailable(Request $request): JsonResponse
+    public function usernameAvailable(Request $request, UsernameService $usernames): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'username' => [
-                'required',
-                'string',
-                'min:3',
-                'max:30',
-                'regex:/^(?![._])(?!.*[._]{2})[a-z0-9._]+(?<![._])$/',
-                Rule::notIn([
-                    'admin',
-                    'api',
-                    'auth',
-                    'dashboard',
-                    'events',
-                    'explore',
-                    'feed',
-                    'groups',
-                    'login',
-                    'logout',
-                    'marketplace',
-                    'messages',
-                    'notifications',
-                    'onboarding',
-                    'password',
-                    'pets',
-                    'profile',
-                    'register',
-                    'search',
-                    'settings',
-                    'tips',
-                ]),
-            ],
-        ]);
+        $normalizedUsername = strtolower(trim((string) $request->input('username')));
 
-        $normalizedUsername = User::normalizeUsername((string) $request->input('username'));
-
-        if ($validator->fails()) {
+        if (strlen($normalizedUsername) < 3 || strlen($normalizedUsername) > 30) {
             return response()->json([
                 'available' => false,
-                'username' => $normalizedUsername,
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => 'Username must be 3-30 characters.',
+            ]);
         }
 
-        $available = User::isUsernameAvailable($normalizedUsername, $request->user());
+        if (! preg_match('/^[a-zA-Z0-9_]+$/', $normalizedUsername)) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Only letters, numbers and underscores allowed.',
+            ]);
+        }
+
+        if (ReservedUsername::isReserved($normalizedUsername)) {
+            return response()->json([
+                'available' => false,
+                'message' => 'This username is reserved and cannot be used.',
+            ]);
+        }
+
+        $available = $usernames->isAvailable($normalizedUsername, $request->user()?->id);
 
         return response()->json([
             'available' => $available,
-            'username' => $normalizedUsername,
+            'message' => $available ? 'Username is available!' : 'Username is already taken.',
         ]);
     }
 

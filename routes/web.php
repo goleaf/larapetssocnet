@@ -21,6 +21,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostReportController;
 use App\Http\Controllers\PrivacyController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\SearchController;
@@ -66,6 +67,9 @@ Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
     ->where('tip', '^(?!create$).+')
     ->name('tips.show');
 Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
+Route::get('/api/username-available', [ProfileController::class, 'usernameAvailable'])
+    ->middleware('throttle:30,1')
+    ->name('api.username.available');
 
 Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
@@ -186,5 +190,6 @@ Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::c
 Route::get('/@{user:username}', [PublicProfileController::class, 'show'])->name('profile.show');
 Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
+Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
 
 require __DIR__.'/auth.php';

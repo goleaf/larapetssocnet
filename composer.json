@@ -17,6 +17,7 @@
         "spatie/laravel-sluggable": "^3.7"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^4",
         "fakerphp/faker": "^1.23",
         "laravel/boost": "^2.0",
         "laravel/breeze": "^2.3",
@@ -35,7 +36,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

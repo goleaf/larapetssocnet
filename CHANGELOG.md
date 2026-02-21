@@ -16,6 +16,12 @@
 - Added profile privacy toggle backend with `PrivacyService` and `PrivacyController` (`POST /settings/privacy/toggle`).
 - Added private-profile locked-state view: `resources/views/profile/private.blade.php` with `noindex,nofollow` meta.
 - Added privacy feature tests in `tests/Feature/PrivacyToggleTest.php`.
+- Added username domain models and service: `UsernameRedirect`, `ReservedUsername`, and `UsernameService`.
+- Added username support migrations: `username_changed_at`, `username_redirects`, and `reserved_usernames` tables.
+- Added reserved username config/seeder: `config/reserved_usernames.php` and `ReservedUsernameSeeder`.
+- Added reusable username helpers in `app/helpers.php`: `username_url()` and `at_username()`.
+- Added `MentionService` and integrated mention link parsing with `@username` profile URLs.
+- Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
 - Updated block relationships in `User` model to use the `blocks` table.
@@ -34,6 +40,10 @@
 - Updated navigation to show pending follow-requests badge for private accounts.
 - Updated explore/search discoverability filters to exclude private and banned users.
 - Updated `PostPolicy` and `FollowPolicy` checks for private-profile visibility semantics.
+- Updated username validation and normalization to underscore-only format (`[a-zA-Z0-9_]`) across registration and profile updates.
+- Updated profile route handling to support case-normalized canonical redirects and old-username 301 redirects.
+- Updated profile settings and registration forms with live username availability checks.
+- Updated `TrackLastSeen` middleware to throttle writes to every 5 minutes.
 
 ### Tests
 - Verified passing suites:
@@ -47,3 +57,4 @@
   - `tests/Feature/FollowFeatureTest.php`
   - `tests/Feature/ProfileTest.php --filter=\"followers can view private profile pets tab|blocking removes follows and prevents future follows until unblocked\"`
   - `tests/Feature/PrivacyToggleTest.php`
+  - `tests/Feature/UsernameTest.php`

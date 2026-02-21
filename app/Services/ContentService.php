@@ -2,17 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use Mews\Purifier\Purifier;
 
 class ContentService
 {
-    /**
-     * @var array<string, bool>
-     */
-    private array $mentionExistsCache = [];
-
-    public function __construct(private readonly Purifier $purifier) {}
+    public function __construct(
+        private readonly Purifier $purifier,
+        private readonly MentionService $mentions,
+    ) {}
 
     public function process(string $rawInput): string
     {
@@ -42,18 +39,7 @@ class ContentService
 
     private function linkMentions(string $input): string
     {
-        return (string) preg_replace_callback('/@([a-zA-Z0-9_]{3,30})/', function (array $matches): string {
-            $username = $matches[1];
-            $exists = $this->mentionExistsCache[$username] ??= User::query()->where('username', $username)->exists();
-
-            if (! $exists) {
-                return $matches[0];
-            }
-
-            $href = route('profile.show', ['user' => $username]);
-
-            return '<a href="'.$href.'" class="font-semibold text-emerald-600 hover:underline">@'.$username.'</a>';
-        }, $input);
+        return $this->mentions->parse($input);
     }
 
     private function linkHashtags(string $input): string

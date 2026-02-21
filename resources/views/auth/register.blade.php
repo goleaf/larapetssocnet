@@ -12,10 +12,30 @@
         <!-- Username -->
         <div class="mt-4">
             <x-input-label for="username" :value="__('Username (optional)')" />
-            <x-text-input id="username" class="block mt-1 w-full" type="text" name="username" :value="old('username')" autocomplete="username" />
-            <p class="mt-1 text-xs text-gray-500">
-                {{ __('If left empty, we will create one for you automatically.') }}
-            </p>
+            <div
+                class="relative mt-1"
+                x-data="{ val: @js(old('username', '')), status: null, message: '', checking: false, async check() { if (this.val.length < 3) { this.status = null; this.message = ''; return; } this.checking = true; const res = await fetch('{{ route('api.username.available') }}?username=' + encodeURIComponent(this.val)); const data = await res.json(); this.status = data.available ? 'ok' : 'taken'; this.message = data.message ?? ''; this.checking = false; } }"
+            >
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">@</span>
+                <x-text-input
+                    id="username"
+                    class="block w-full pl-7"
+                    type="text"
+                    name="username"
+                    :value="old('username')"
+                    maxlength="30"
+                    autocomplete="username"
+                    x-model="val"
+                    @input.debounce.400ms="check()"
+                    :class="{ 'border-emerald-500 focus:ring-emerald-500': status === 'ok', 'border-red-500 focus:ring-red-500': status === 'taken' }"
+                />
+                <div class="mt-1 h-5 text-sm">
+                    <span x-show="checking" class="text-gray-400">Checking...</span>
+                    <span x-show="status === 'ok'" class="text-emerald-600">✓ <span x-text="message"></span></span>
+                    <span x-show="status === 'taken'" class="text-red-600">✗ <span x-text="message"></span></span>
+                </div>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">{{ __('3–30 chars. Letters, numbers, underscores. If empty, one will be generated.') }}</p>
             <x-input-error :messages="$errors->get('username')" class="mt-2" />
         </div>
 

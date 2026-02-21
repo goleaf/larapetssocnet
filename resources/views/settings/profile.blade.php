@@ -40,9 +40,35 @@
 
                     <div>
                         <label for="username" class="mb-1 block text-sm font-semibold">Username</label>
-                        <input id="username" name="username" type="text" class="form-input" x-model="username" value="{{ old('username', $user->username) }}" aria-label="Your username" />
-                        <p class="mt-1 text-xs shell-text-muted">Use letters, numbers, dots, and underscores.</p>
-                        <x-input-error :messages="$errors->get('username')" class="mt-2" />
+                        @if (! $user->canChangeUsername())
+                            <div class="mt-1 flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-800">
+                                <span class="text-gray-400">@</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">{{ $user->username }}</span>
+                                <span class="ml-auto rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                                    Can change in {{ $user->daysUntilUsernameChange() }} days
+                                </span>
+                            </div>
+                            <input type="hidden" name="username" value="{{ $user->username }}">
+                            <p class="mt-1 text-xs shell-text-muted">Usernames can only be changed once every 30 days.</p>
+                        @else
+                            <div
+                                class="relative mt-1"
+                                x-data="{ original: @js($user->username), val: @js(old('username', $user->username)), status: 'original', checking: false, message: '', get isChanged(){ return this.val !== this.original; }, async check(){ if(!this.isChanged){ this.status='original'; return; } if(this.val.length < 3){ this.status='short'; return; } this.checking=true; const res=await fetch('{{ route('api.username.available') }}?username='+encodeURIComponent(this.val)); const data=await res.json(); this.status = data.available ? 'ok' : 'taken'; this.message = data.message ?? ''; this.checking=false; } }"
+                            >
+                                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-400">@</span>
+                                <input id="username" name="username" type="text" class="form-input block w-full pl-7" x-model="val" value="{{ old('username', $user->username) }}" maxlength="30" @input.debounce.500ms="check()" aria-label="Your username" />
+                                <div class="mt-1 h-5 text-sm">
+                                    <span x-show="checking" class="text-gray-400">Checking availability...</span>
+                                    <span x-show="status === 'ok'" class="text-emerald-600">✓ Available</span>
+                                    <span x-show="status === 'taken'" class="text-red-600">✗ Already taken</span>
+                                    <span x-show="status === 'original'" class="text-gray-400">Your current username</span>
+                                </div>
+                                <div x-show="status === 'ok'" class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                                    Changing your username keeps a redirect from your old URL for 90 days.
+                                </div>
+                            </div>
+                            <x-input-error :messages="$errors->get('username')" class="mt-2" />
+                        @endif
                     </div>
                 </div>
 

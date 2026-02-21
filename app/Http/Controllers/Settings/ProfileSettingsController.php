@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Exceptions\UsernameChangeCooldownException;
+use App\Exceptions\UsernameNotAvailableException;
+use App\Exceptions\UsernameReservedException;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\NotReservedUsername;
+use App\Services\UsernameService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -30,18 +35,19 @@ class ProfileSettingsController extends Controller
         $request->merge([
             'username' => (string) Str::of((string) $request->input('username'))
                 ->lower()
-                ->replaceMatches('/[^a-z0-9._]/', '')
-                ->trim('._'),
+                ->replaceMatches('/[^a-z0-9_]/', '')
+                ->trim('_'),
         ]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => [
-                'nullable',
+                'required',
                 'string',
                 'min:3',
                 'max:30',
-                'regex:/^[a-z0-9._]+$/',
+                'regex:/^[a-zA-Z0-9_]+$/',
+                new NotReservedUsername,
                 Rule::unique(User::class)->ignore($user->id),
             ],
             'email' => [
@@ -61,14 +67,11 @@ class ProfileSettingsController extends Controller
             'remove_cover' => ['nullable', 'boolean'],
         ]);
 
-        $username = $validated['username'] ?? '';
-        if ($username === '') {
-            $username = $user->username ?: User::generateUniqueUsername($validated['name']);
-        }
+        $username = $validated['username'];
 
+        $currentUsername = (string) $user->username;
         $payload = [
             'name' => $validated['name'],
-            'username' => $username,
             'email' => $validated['email'],
             'bio' => $validated['bio'] ?? null,
         ];
@@ -81,6 +84,20 @@ class ProfileSettingsController extends Controller
 
         if (Schema::hasColumn('users', 'website')) {
             $payload['website'] = $validated['website'] ?? null;
+        }
+
+        if (strtolower($username) !== strtolower($currentUsername)) {
+            try {
+                app(UsernameService::class)->change($user, $username);
+            } catch (UsernameChangeCooldownException $exception) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['username' => $exception->getMessage()]);
+            } catch (UsernameReservedException|UsernameNotAvailableException $exception) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['username' => $exception->getMessage()]);
+            }
         }
 
         $user->fill($payload);
