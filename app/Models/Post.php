@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -27,17 +28,11 @@ class Post extends Model implements HasMedia
     use SoftDeletes;
 
     public const VISIBILITY_PUBLIC = 'public';
-
     public const VISIBILITY_FOLLOWERS = 'followers';
-
     public const VISIBILITY_PRIVATE = 'private';
 
     public const TYPE_TEXT = 'text';
-
     public const TYPE_PHOTO = 'photo';
-
-    public const TYPE_IMAGE = self::TYPE_PHOTO;
-
     public const TYPE_VIDEO = 'video';
 
     /**
@@ -48,6 +43,7 @@ class Post extends Model implements HasMedia
         'pet_id',
         'group_id',
         'body',
+        'body_html',
         'visibility',
         'type',
         'status',
@@ -68,6 +64,9 @@ class Post extends Model implements HasMedia
     protected $appends = [
         'cover_photo_url',
         'excerpt',
+        'photo_urls',
+        'video_url',
+        'has_media',
     ];
 
     protected function casts(): array
@@ -76,6 +75,9 @@ class Post extends Model implements HasMedia
             'metadata' => 'array',
             'tagged_pets' => 'array',
             'published_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
             'is_pinned' => 'boolean',
             'likes_count' => 'integer',
             'comments_count' => 'integer',
@@ -87,18 +89,50 @@ class Post extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('photos')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
-        // Keep legacy collection for compatibility with older records.
-        $this->addMediaCollection('images')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+        $this->addMediaCollection('videos')
+            ->useDisk('public')
+            ->singleFile();
 
+        // legacy compatibility
         $this->addMediaCollection('video')->singleFile();
+        $this->addMediaCollection('images');
+    }
+
+    public function registerMediaConversions(?\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->fit(Fit::Crop, 150, 150)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections('photos')
+            ->nonQueued();
+
+        $this->addMediaConversion('medium')
+            ->width(800)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections('photos')
+            ->nonQueued();
+
+        $this->addMediaConversion('large')
+            ->width(1200)
+            ->format('webp')
+            ->quality(90)
+            ->performOnCollections('photos')
+            ->nonQueued();
+    }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->author();
     }
 
     public function pet(): BelongsTo
@@ -142,6 +176,16 @@ class Post extends Model implements HasMedia
             ->withTimestamps();
     }
 
+    public function savedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'saved_posts', 'post_id', 'user_id')->withTimestamps();
+    }
+
+    public function reactions(): MorphMany
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
+    }
+
     public function reports(): MorphMany
     {
         return $this->morphMany(Report::class, 'reportable');
@@ -150,13 +194,9 @@ class Post extends Model implements HasMedia
     public function scopePublished(Builder $query): Builder
     {
         return $query->where(function (Builder $subQuery): void {
-            $subQuery
-                ->whereNull('status')
-                ->orWhere('status', 'published');
+            $subQuery->whereNull('status')->orWhere('status', 'published');
         })->where(function (Builder $subQuery): void {
-            $subQuery
-                ->whereNull('published_at')
-                ->orWhere('published_at', '<=', now());
+            $subQuery->whereNull('published_at')->orWhere('published_at', '<=', now());
         });
     }
 
@@ -165,24 +205,14 @@ class Post extends Model implements HasMedia
         return $query->where('visibility', self::VISIBILITY_PUBLIC);
     }
 
-    public function scopeForFeed(Builder $query, ?User $viewer = null): Builder
+    public function scopeByType(Builder $query, string $type): Builder
     {
-        $query->published();
+        return $query->where('type', $type);
+    }
 
-        if (! $viewer) {
-            return $query->public();
-        }
-
-        return $query->where(function (Builder $subQuery) use ($viewer): void {
-            $subQuery
-                ->where('visibility', self::VISIBILITY_PUBLIC)
-                ->orWhere(function (Builder $followerQuery) use ($viewer): void {
-                    $followerQuery
-                        ->where('visibility', self::VISIBILITY_FOLLOWERS)
-                        ->whereIn('user_id', $viewer->following()->select('users.id'));
-                })
-                ->orWhere('user_id', $viewer->getKey());
-        });
+    public function scopePinned(Builder $query): Builder
+    {
+        return $query->where('is_pinned', true);
     }
 
     public function scopeNotBlockedFor(Builder $query, ?User $viewer): Builder
@@ -191,43 +221,59 @@ class Post extends Model implements HasMedia
             return $query;
         }
 
-        return $query
-            ->whereNotIn(
-                'user_id',
-                UserBlock::query()
-                    ->select('blocked_id')
-                    ->where('blocker_id', $viewer->id)
-            )
-            ->whereNotIn(
-                'user_id',
-                UserBlock::query()
-                    ->select('blocker_id')
-                    ->where('blocked_id', $viewer->id)
-            );
+        $blockedIds = $viewer->blocking()->pluck('users.id')
+            ->merge($viewer->blockedBy()->pluck('users.id'))
+            ->unique();
+
+        if ($blockedIds->isEmpty()) {
+            return $query;
+        }
+
+        return $query->whereNotIn('user_id', $blockedIds);
     }
 
     public function scopeVisibleTo(Builder $query, ?User $viewer): Builder
     {
+        $query->published();
+
         if (! $viewer) {
-            return $query
-                ->where('visibility', self::VISIBILITY_PUBLIC)
-                ->notBlockedFor($viewer);
+            return $query->where('visibility', self::VISIBILITY_PUBLIC)
+                ->whereHas('author', fn (Builder $author) => $author->where('is_private', false)->where('is_banned', false));
         }
 
-        $followingIds = $viewer->following()->select('users.id');
+        $acceptedFollowingIds = $viewer->following()->pluck('users.id');
+        $blockedIds = $viewer->blocking()->pluck('users.id')
+            ->merge($viewer->blockedBy()->pluck('users.id'))
+            ->unique();
 
-        return $query
-            ->where(function (Builder $visibilityQuery) use ($viewer, $followingIds): void {
-                $visibilityQuery
-                    ->where('user_id', $viewer->id)
-                    ->orWhere('visibility', self::VISIBILITY_PUBLIC)
-                    ->orWhere(function (Builder $followersQuery) use ($followingIds): void {
-                        $followersQuery
-                            ->where('visibility', self::VISIBILITY_FOLLOWERS)
-                            ->whereIn('user_id', $followingIds);
+        return $query->where(function (Builder $visibilityQuery) use ($viewer, $acceptedFollowingIds, $blockedIds): void {
+            $visibilityQuery
+                ->where('user_id', $viewer->id)
+                ->orWhere(function (Builder $publicOrFollowers) use ($acceptedFollowingIds, $blockedIds): void {
+                    if ($blockedIds->isNotEmpty()) {
+                        $publicOrFollowers->whereNotIn('user_id', $blockedIds);
+                    }
+
+                    $publicOrFollowers->where(function (Builder $allowed) use ($acceptedFollowingIds): void {
+                        $allowed->where('visibility', self::VISIBILITY_PUBLIC)
+                            ->orWhere(function (Builder $followers) use ($acceptedFollowingIds): void {
+                                $followers->where('visibility', self::VISIBILITY_FOLLOWERS)
+                                    ->whereIn('user_id', $acceptedFollowingIds);
+                            });
                     });
-            })
-            ->notBlockedFor($viewer);
+                });
+        });
+    }
+
+    public function scopeForFeed(Builder $query, User $user): Builder
+    {
+        $followingIds = $user->following()->pluck('users.id');
+
+        return $query->visibleTo($user)
+            ->where(function (Builder $feed) use ($user, $followingIds): void {
+                $feed->where('user_id', $user->id)
+                    ->orWhereIn('user_id', $followingIds);
+            });
     }
 
     public function canBeViewedBy(?User $viewer): bool
@@ -236,101 +282,67 @@ class Post extends Model implements HasMedia
             return $this->visibility === self::VISIBILITY_PUBLIC;
         }
 
-        if ($viewer->getKey() === $this->user_id) {
+        if ($viewer->id === $this->user_id) {
             return true;
         }
 
-        if ($this->user && ($viewer->hasBlocked($this->user) || $this->user->hasBlocked($viewer))) {
+        if ($viewer->hasBlockingRelationshipWith($this->author)) {
             return false;
         }
 
-        if ($this->visibility === self::VISIBILITY_PUBLIC) {
-            return true;
-        }
-
-        if ($this->visibility === self::VISIBILITY_FOLLOWERS) {
-            return $viewer->isFollowing($this->user);
-        }
-
-        return false;
-    }
-
-    public function syncHashtagsFromBody(): void
-    {
-        preg_match_all('/#([\pL\pN_]+)/u', (string) $this->body, $matches);
-
-        $names = collect($matches[1] ?? [])
-            ->map(fn (string $name): string => Str::lower($name))
-            ->filter()
-            ->unique()
-            ->values();
-
-        if ($names->isEmpty()) {
-            $this->hashtags()->detach();
-
-            return;
-        }
-
-        $hashtagIds = $names
-            ->map(fn (string $name): int => Hashtag::firstOrCreate(['name' => $name])->getKey());
-
-        $this->hashtags()->sync($hashtagIds->all());
-    }
-
-    public function updateTypeFromMedia(): void
-    {
-        $newType = self::TYPE_TEXT;
-
-        if ($this->getMedia('video')->isNotEmpty()) {
-            $newType = self::TYPE_VIDEO;
-        } elseif ($this->getMedia('photos')->isNotEmpty() || $this->getMedia('images')->isNotEmpty()) {
-            $newType = self::TYPE_PHOTO;
-        }
-
-        if ($this->type !== $newType) {
-            $this->updateQuietly(['type' => $newType]);
-        }
+        return match ($this->visibility) {
+            self::VISIBILITY_PRIVATE => false,
+            self::VISIBILITY_FOLLOWERS => $viewer->isFollowing($this->author),
+            default => true,
+        };
     }
 
     protected function coverPhotoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            $imageUrl = $this->getFirstMediaUrl('photos') ?: $this->getFirstMediaUrl('images');
-
-            if ($imageUrl !== '') {
-                return $imageUrl;
-            }
-
-            $videoUrl = $this->getFirstMediaUrl('video');
-
-            if ($videoUrl !== '') {
-                return $videoUrl;
-            }
-
-            return '';
+            return $this->getFirstMediaUrl('photos', 'medium')
+                ?: $this->getFirstMediaUrl('photos')
+                ?: $this->getFirstMediaUrl('videos')
+                ?: $this->getFirstMediaUrl('video')
+                ?: '';
         });
     }
 
     protected function excerpt(): Attribute
     {
-        return Attribute::get(fn (): string => Str::limit(strip_tags((string) $this->body), 140));
+        return Attribute::get(fn (): string => Str::limit(strip_tags((string) ($this->body_html ?? $this->body)), 150));
+    }
+
+    protected function photoUrls(): Attribute
+    {
+        return Attribute::get(fn (): array => $this->getMedia('photos')
+            ->map(fn ($m): array => [
+                'thumb' => $m->getUrl('thumb'),
+                'medium' => $m->getUrl('medium'),
+                'large' => $m->getUrl('large'),
+                'original' => $m->getUrl(),
+            ])->all());
+    }
+
+    protected function videoUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->getFirstMediaUrl('videos') ?: $this->getFirstMediaUrl('video') ?: null);
+    }
+
+    public function getHasMediaAttribute(): bool
+    {
+        return $this->hasMedia('photos') || $this->hasMedia('videos') || $this->hasMedia('video');
     }
 
     public function refreshLikesCount(): void
     {
         $count = $this->postReactions()->count();
-
-        $this->updateQuietly([
-            'likes_count' => $count,
-            'reactions_count' => $count,
-        ]);
+        $this->updateQuietly(['likes_count' => $count, 'reactions_count' => $count]);
     }
 
     public function refreshCommentsCount(): void
     {
-        $this->updateQuietly([
-            'comments_count' => $this->comments()->count(),
-        ]);
+        $this->updateQuietly(['comments_count' => $this->comments()->count()]);
     }
 
     /**
@@ -338,10 +350,6 @@ class Post extends Model implements HasMedia
      */
     public static function visibilityOptions(): Collection
     {
-        return collect([
-            self::VISIBILITY_PUBLIC,
-            self::VISIBILITY_FOLLOWERS,
-            self::VISIBILITY_PRIVATE,
-        ]);
+        return collect([self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS, self::VISIBILITY_PRIVATE]);
     }
 }

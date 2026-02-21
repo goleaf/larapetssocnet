@@ -9,6 +9,7 @@ use App\Models\MarketplaceListing;
 use App\Models\Message;
 use App\Models\Pet;
 use App\Models\Post;
+use App\Observers\PostObserver;
 use App\Events\UserBlocked;
 use App\Listeners\CancelPendingRequestsOnBlock;
 use App\Listeners\RemoveFollowOnBlock;
@@ -45,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MarketplaceListing::class, MarketplaceListingPolicy::class);
         Gate::policy(Message::class, MessagePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
+        Post::observe(PostObserver::class);
         EventFacade::listen(UserBlocked::class, RemoveFollowOnBlock::class);
         EventFacade::listen(UserBlocked::class, CancelPendingRequestsOnBlock::class);
     }

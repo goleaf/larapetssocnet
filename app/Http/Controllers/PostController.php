@@ -7,62 +7,47 @@ use App\Http\Requests\UpdatePostRequest;
 use App\Models\Pet;
 use App\Models\Post;
 use App\Models\SavedPost;
+use App\Services\PostService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PostController extends Controller
 {
+    public function __construct(private readonly PostService $postService) {}
+
     public function create(Request $request): View
     {
+        $this->authorize('create', Post::class);
+
         return view('posts.create', [
-            'post' => new Post([
-                'visibility' => Post::VISIBILITY_PUBLIC,
-            ]),
-            'pets' => $request->user()->pets()->orderBy('name')->get(['id', 'name']),
+            'post' => new Post(['visibility' => Post::VISIBILITY_PUBLIC]),
+            'pets' => $request->user()->pets()->orderBy('name')->get(['id', 'name', 'species']),
             'visibilityOptions' => Post::visibilityOptions(),
         ]);
     }
 
     public function store(StorePostRequest $request): RedirectResponse
     {
-        $viewer = $request->user();
-        $validated = $request->validated();
+        $post = $this->postService->create(
+            author: $request->user(),
+            data: $request->validated(),
+            video: $request->file('video'),
+            photos: $request->file('photos', []),
+        );
 
-        $post = DB::transaction(function () use ($validated, $viewer, $request): Post {
-            $post = Post::query()->create([
-                'user_id' => $viewer->id,
-                'body' => $validated['body'] ?? null,
-                'visibility' => $validated['visibility'],
-                'location' => $validated['location'] ?? null,
-                'tagged_pets' => $this->normalizedTaggedPets($validated['tagged_pets'] ?? []),
-                'type' => Post::TYPE_TEXT,
-            ]);
-
-            $this->syncMediaFromRequest($post, $request);
-            $post->syncHashtagsFromBody();
-            $post->updateTypeFromMedia();
-
-            return $post->refresh();
-        });
-
-        return redirect()
-            ->route('posts.show', $post)
-            ->with('status', 'Post created.');
+        return redirect()->route('posts.show', $post)->with('success', 'Post created!');
     }
 
     public function show(Request $request, Post $post): View
     {
-        $viewer = $request->user();
+        $this->authorize('view', $post);
 
-        abort_unless($post->canBeViewedBy($viewer), 403);
-
-        $post->load([
-            'user',
-            'hashtags',
-            'topLevelComments.user',
-            'topLevelComments.replies.user',
+        $post->loadMissing([
+            'author.media', 'pet.media', 'media', 'hashtags',
+            'reactions',
+            'comments' => fn ($q) => $q->whereNull('parent_id')->with(['user.media', 'reactions', 'replies.user.media'])->latest(),
         ]);
 
         $taggedPets = $this->resolveTaggedPets($post);
@@ -70,110 +55,57 @@ class PostController extends Controller
         $userReaction = null;
         $isSaved = false;
 
-        if ($viewer) {
-            $userReaction = $post->postReactions()
-                ->where('user_id', $viewer->id)
-                ->value('type');
-
-            $isSaved = SavedPost::query()
-                ->where('post_id', $post->id)
-                ->where('user_id', $viewer->id)
-                ->exists();
+        if ($request->user()) {
+            $userReaction = $post->postReactions()->where('user_id', $request->user()->id)->value('type');
+            $isSaved = SavedPost::query()->where('post_id', $post->id)->where('user_id', $request->user()->id)->exists();
         }
 
-        return view('posts.show', [
-            'post' => $post,
-            'taggedPets' => $taggedPets,
-            'userReaction' => $userReaction,
-            'isSaved' => $isSaved,
-        ]);
+        return view('posts.show', compact('post', 'taggedPets', 'userReaction', 'isSaved'));
     }
 
     public function edit(Request $request, Post $post): View
     {
-        abort_unless($post->user_id === $request->user()->id, 403);
+        $this->authorize('update', $post);
 
         return view('posts.edit', [
             'post' => $post,
-            'pets' => $request->user()->pets()->orderBy('name')->get(['id', 'name']),
+            'pets' => $request->user()->pets()->orderBy('name')->get(['id', 'name', 'species']),
             'visibilityOptions' => Post::visibilityOptions(),
         ]);
     }
 
     public function update(UpdatePostRequest $request, Post $post): RedirectResponse
     {
-        abort_unless($post->user_id === $request->user()->id, 403);
+        $this->authorize('update', $post);
 
-        $validated = $request->validated();
+        $this->postService->update($post, $request->validated());
 
-        DB::transaction(function () use ($post, $validated, $request): void {
-            $post->update([
-                'body' => $validated['body'] ?? null,
-                'visibility' => $validated['visibility'],
-                'location' => $validated['location'] ?? null,
-                'tagged_pets' => $this->normalizedTaggedPets($validated['tagged_pets'] ?? []),
-            ]);
-
-            $this->syncMediaFromRequest($post, $request, isUpdate: true);
-            $post->syncHashtagsFromBody();
-            $post->updateTypeFromMedia();
-        });
-
-        return redirect()
-            ->route('posts.show', $post)
-            ->with('status', 'Post updated.');
+        return redirect()->route('posts.show', $post)->with('success', 'Post updated.');
     }
 
     public function destroy(Request $request, Post $post): RedirectResponse
     {
-        abort_unless($post->user_id === $request->user()->id, 403);
+        $this->authorize('delete', $post);
 
-        $post->delete();
+        $this->postService->delete($post);
 
-        return redirect()
-            ->route('feed.index')
-            ->with('status', 'Post deleted.');
+        return redirect()->route('profile.show', $request->user()->username)->with('success', 'Post deleted.');
     }
 
-    private function syncMediaFromRequest(Post $post, Request $request, bool $isUpdate = false): void
+    public function pin(Request $request, Post $post): JsonResponse
     {
-        if ($isUpdate && $request->boolean('remove_photos')) {
-            $post->clearMediaCollection('photos');
-            $post->clearMediaCollection('images');
+        $this->authorize('pin', $post);
+
+        if ($post->is_pinned) {
+            $this->postService->unpin($post);
+        } else {
+            $this->postService->pin($post);
         }
 
-        if ($isUpdate && $request->boolean('remove_video')) {
-            $post->clearMediaCollection('video');
-        }
-
-        if ($request->hasFile('photos')) {
-            $post->clearMediaCollection('video');
-            $post->clearMediaCollection('photos');
-            $post->clearMediaCollection('images');
-
-            foreach ((array) $request->file('photos') as $photo) {
-                $post->addMedia($photo)->toMediaCollection('photos');
-            }
-        }
-
-        if ($request->hasFile('video')) {
-            $post->clearMediaCollection('photos');
-            $post->addMedia($request->file('video'))->toMediaCollection('video');
-        }
-    }
-
-    /**
-     * @param  array<int, mixed>  $taggedPets
-     * @return array<int, int>
-     */
-    private function normalizedTaggedPets(array $taggedPets): array
-    {
-        return collect($taggedPets)
-            ->map(fn ($id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
-            ->unique()
-            ->values()
-            ->all();
+        return response()->json([
+            'success' => true,
+            'is_pinned' => ! $post->is_pinned,
+        ]);
     }
 
     /**
@@ -181,18 +113,12 @@ class PostController extends Controller
      */
     private function resolveTaggedPets(Post $post)
     {
-        $petIds = collect($post->tagged_pets ?? [])
-            ->map(fn ($id): int => (int) $id)
-            ->filter()
-            ->values();
+        $petIds = collect($post->tagged_pets ?? [])->map(fn ($id): int => (int) $id)->filter()->values();
 
         if ($petIds->isEmpty()) {
             return collect();
         }
 
-        return Pet::query()
-            ->whereIn('id', $petIds)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        return Pet::query()->whereIn('id', $petIds)->orderBy('name')->get(['id', 'name']);
     }
 }

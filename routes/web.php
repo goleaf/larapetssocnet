@@ -14,7 +14,6 @@ use App\Http\Controllers\PetCareTipController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\PetFollowController;
 use App\Http\Controllers\PetHealthLogController;
-use App\Http\Controllers\PinnedPostController;
 use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostReactionController;
@@ -87,8 +86,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/posts/{post}/comments/{comment}', [PostCommentController::class, 'update'])->name('posts.comments.update');
     Route::delete('/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])->name('posts.comments.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
-    Route::post('/posts/{post}/pin', [PinnedPostController::class, 'pin'])->name('posts.pin');
-    Route::delete('/posts/{post}/pin', [PinnedPostController::class, 'unpin'])->name('posts.unpin');
+    Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
     Route::post('/posts/{post}/report', [PostReportController::class, 'store'])->name('posts.report');
 
     Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');

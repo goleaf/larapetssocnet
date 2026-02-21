@@ -19,3 +19,8 @@
 - `getBlockedUsers(User $user): LengthAwarePaginator`
 - `isBlocked(User $actor, User $target): bool`
 - `canInteract(User $actor, User $target): bool`
+
+## Observer vs Service
+- Services own core business logic, guards, transactions, and return values.
+- Observers own side effects (counter updates, logs, badge checks, hashtag sync).
+- Do not move core domain decisions into observers.

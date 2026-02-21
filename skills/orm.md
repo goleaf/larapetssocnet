@@ -30,3 +30,9 @@ All database interactions must go through Eloquent ORM or the Query Builder usin
 - `User::whereIn('id', $ids)->update(['following_count' => 0])`
 - `$user->blocking()->sync([])`
 - `UserFollow::where('follower_id', $id)->where(...)->first()`
+
+## MediaLibrary ORM patterns
+- Use `$model->addMedia($file)->toMediaCollection('collection')`.
+- Use `$model->getFirstMediaUrl('photos', 'medium')` and `$model->getMedia('photos')`.
+- Use `$model->hasMedia('photos')` for checks.
+- Never query the `media` table manually.

@@ -4,43 +4,44 @@ namespace App\Http\Requests;
 
 use App\Models\Post;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
+use Illuminate\Validation\Rule;
 
 class StorePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null && ! (bool) $this->user()->is_banned;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'visibility' => $this->input('visibility', Post::VISIBILITY_PUBLIC),
+            'pet_id' => $this->filled('pet_id') ? $this->input('pet_id') : null,
+        ]);
     }
 
     public function rules(): array
     {
         return [
-            'body' => ['nullable', 'string', 'max:5000'],
-            'visibility' => ['required', 'string', 'in:'.Post::visibilityOptions()->implode(',')],
-            'location' => ['nullable', 'string', 'max:255'],
-            'tagged_pets' => ['nullable', 'array', 'max:10'],
-            'tagged_pets.*' => ['integer', 'exists:pets,id'],
-            'photos' => ['nullable', 'array', 'max:10'],
-            'photos.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:10240'],
-            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'],
+            'body' => ['nullable', 'string', 'max:2000', 'required_without_all:photos,video'],
+            'pet_id' => ['nullable', Rule::exists('pets', 'id')->where('user_id', $this->user()->id)],
+            'visibility' => ['required', Rule::in([Post::VISIBILITY_PUBLIC, Post::VISIBILITY_FOLLOWERS, Post::VISIBILITY_PRIVATE])],
+            'location' => ['nullable', 'string', 'max:100'],
+            'photos' => ['nullable', 'array', 'max:5'],
+            'photos.*' => ['image', 'mimes:jpeg,png,webp,gif', 'max:5120'],
+            'video' => ['nullable', 'file', 'mimes:mp4,mov,webm', 'max:51200', 'prohibited_if:photos,true'],
         ];
     }
 
-    public function withValidator(Validator $validator): void
+    public function messages(): array
     {
-        $validator->after(function (Validator $validator): void {
-            $hasBody = filled((string) $this->input('body'));
-            $hasPhotos = $this->hasFile('photos');
-            $hasVideo = $this->hasFile('video');
-
-            if (! $hasBody && ! $hasPhotos && ! $hasVideo) {
-                $validator->errors()->add('body', 'Post body or media is required.');
-            }
-
-            if ($hasPhotos && $hasVideo) {
-                $validator->errors()->add('photos', 'Choose photos or a single video, not both.');
-            }
-        });
+        return [
+            'body.required_without_all' => 'Please write something or add a photo or video.',
+            'photos.max' => 'You can upload up to 5 photos.',
+            'video.max' => 'Video must be under 50MB.',
+            'video.prohibited_if' => 'You cannot upload both photos and a video.',
+            'pet_id.exists' => 'That pet does not belong to you.',
+        ];
     }
 }

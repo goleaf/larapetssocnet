@@ -72,9 +72,9 @@ class Hashtag extends Model
         });
     }
 
-    public function scopeTrending(Builder $query): Builder
+    public function scopeTrending(Builder $query, int $limit = 20): Builder
     {
-        return $query->orderByDesc('posts_count');
+        return $query->orderByDesc('posts_count')->limit($limit);
     }
 
     public function getRouteKeyName(): string

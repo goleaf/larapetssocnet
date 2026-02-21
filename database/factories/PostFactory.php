@@ -18,14 +18,20 @@ class PostFactory extends Factory
      */
     public function definition(): array
     {
+        $body = fake()->paragraph(fake()->numberBetween(1, 3));
+
         return [
             'user_id' => \App\Models\User::factory(),
             'pet_id' => null,
-            'body' => fake()->paragraph(fake()->numberBetween(1, 3)),
+            'body' => $body,
+            'body_html' => '<p>'.$body.'</p>',
+            'type' => 'text',
             'visibility' => fake()->randomElement(['public', 'followers', 'private']),
             'status' => 'published',
+            'likes_count' => 0,
             'comments_count' => 0,
             'reactions_count' => 0,
+            'shares_count' => 0,
             'published_at' => fake()->dateTimeBetween('-60 days', 'now'),
         ];
     }

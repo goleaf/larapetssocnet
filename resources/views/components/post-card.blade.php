@@ -1,63 +1,51 @@
 @props([
-    'userName' => 'Pet Lover',
-    'userHandle' => '@petlover',
-    'userAvatar' => null,
-    'postedAt' => 'Just now',
-    'content' => null,
-    'image' => null,
-    'likes' => 0,
-    'comments' => 0,
-    'shares' => 0,
-    'saves' => 0,
-    'reacted' => false,
-    'saved' => false,
-    'commentAction' => '#',
-    'showCommentForm' => false,
+    'post',
+    'showComments' => false,
+    'compact' => false,
 ])
-
-@php
-    $body = $content ?? trim((string) $slot);
-@endphp
 
 <article {{ $attributes->merge(['class' => 'shell-card overflow-hidden p-4 sm:p-5']) }}>
     <header class="flex items-start justify-between gap-3">
         <div class="flex min-w-0 items-center gap-3">
-            <x-avatar :src="$userAvatar" :name="$userName" size="md" />
-
+            <x-avatar :src="$post->author?->getFirstMediaUrl('avatar')" :name="$post->author?->name" size="md" />
             <div class="min-w-0">
-                <p class="truncate shell-title text-sm">{{ $userName }}</p>
-                <p class="truncate text-xs shell-text-muted">{{ $userHandle }} · {{ $postedAt }}</p>
+                <p class="truncate shell-title text-sm">{{ $post->author?->name }}</p>
+                <p class="truncate text-xs shell-text-muted">@{{ $post->author?->username }} · {{ optional($post->created_at)->diffForHumans() }}</p>
             </div>
         </div>
 
-        <button type="button" class="btn-base btn-ghost px-2 py-1.5 text-xs" aria-label="Post actions">
-            •••
-        </button>
+        @if ($post->is_pinned)
+            <span class="chip">📌 Pinned post</span>
+        @endif
     </header>
 
-    @if ($body)
-        <div class="mt-4 text-sm leading-6" style="color: var(--ui-text);">
-            {{ $body }}
+    @if ($post->body_html)
+        <div class="prose prose-sm mt-4 max-w-none">
+            {!! $post->body_html !!}
         </div>
     @endif
 
-    @if ($image)
-        <div class="mt-4 overflow-hidden rounded-xl border" style="border-color: var(--ui-border);">
-            <img src="{{ $image }}" alt="Post media" class="h-auto w-full object-cover" loading="lazy">
-        </div>
+    @if ($post->type === \App\Models\Post::TYPE_PHOTO)
+        <x-media-grid :post="$post" />
+    @elseif ($post->type === \App\Models\Post::TYPE_VIDEO)
+        <x-video-player :post="$post" />
+    @endif
+
+    @if ($post->location)
+        <p class="mt-3 text-xs shell-text-muted">📍 {{ $post->location }}</p>
     @endif
 
     <x-reaction-bar
         class="mt-4"
-        :likes="$likes"
-        :comments="$comments"
-        :shares="$shares"
-        :saves="$saves"
-        :reacted="$reacted"
-        :saved="$saved"
+        :likes="$post->likes_count"
+        :comments="$post->comments_count"
+        :shares="$post->shares_count"
+        :saves="0"
+        :reacted="false"
+        :saved="false"
     />
 
-    @if ($showCommentForm)
-        <x-comment-form class="mt-4" :action="$commentAction" compact />
+    @if ($showComments)
+        <x-comment-form class="mt-4" :action="route('posts.comments.store', $post)" compact />
     @endif
 </article>
