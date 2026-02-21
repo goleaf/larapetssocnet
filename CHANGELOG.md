@@ -67,6 +67,7 @@
 - Added `pets.is_adoptable` migration for consistent adoption flag support across environments.
 - Updated pet explore/adopt filtering and forms to use `is_adoptable` + `sex` field naming with legacy fallback.
 - Added adopt-page feature coverage to ensure only adoptable pets are listed.
+- Added dedicated adoption browse entry points in UI: desktop nav `Adopt` item and explore-page `Browse adoption` link.
 
 ### Tests
 - Verified passing suites:

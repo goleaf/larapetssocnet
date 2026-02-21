@@ -4,7 +4,10 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 Explore Pets
             </h2>
-            <a href="{{ route('pets.create') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Create pet profile</a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('pets.adopt') }}" class="text-sm text-emerald-600 hover:text-emerald-800">Browse adoption</a>
+                <a href="{{ route('pets.create') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Create pet profile</a>
+            </div>
         </div>
     </x-slot>
 

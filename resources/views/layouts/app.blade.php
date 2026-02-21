@@ -16,6 +16,7 @@
         ],
         ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*', 'hashtags.*']],
         ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'patterns' => ['pets.*', 'tips.*']],
+        ['label' => 'Adopt', 'icon' => '🏡', 'route' => 'pets.adopt', 'patterns' => ['pets.adopt']],
         ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
         ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'patterns' => ['events.*']],
         ['label' => 'Marketplace', 'icon' => '🛍️', 'route' => 'marketplace.index', 'patterns' => ['marketplace.*', 'messages.*']],
