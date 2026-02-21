@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Contracts\MediaService;
-use App\Services\SpatieMediaService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(MediaService::class, SpatieMediaService::class);
+        //
     }
 
     /**

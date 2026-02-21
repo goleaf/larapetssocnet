@@ -79,7 +79,7 @@
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
             @enderror
 
-            @if ($post->exists && $post->getMedia('photos')->isNotEmpty())
+            @if ($post->exists && ($post->getMedia('photos')->isNotEmpty() || $post->getMedia('images')->isNotEmpty()))
                 <label class="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
                     <input type="checkbox" name="remove_photos" value="1" class="rounded border-gray-300">
                     Remove existing photos

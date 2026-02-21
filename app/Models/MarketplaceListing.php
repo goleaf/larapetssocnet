@@ -13,14 +13,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 
 class MarketplaceListing extends Model implements HasMedia
 {
     use HasCounterCache;
     use HasFactory;
-    use HasSlug;
     use InteractsWithMedia;
     use SoftDeletes;
 
@@ -39,20 +36,15 @@ class MarketplaceListing extends Model implements HasMedia
         'user_id',
         'pet_id',
         'title',
-        'slug',
         'description',
-        'category',
+        'listing_type',
         'status',
         'price',
         'currency',
-        'is_negotiable',
-        'location',
-        'metadata',
-        'published_at',
-        'expires_at',
-        'cover_photo_path',
+        'location_text',
+        'contact_phone',
+        'contact_email',
         'views_count',
-        'favorites_count',
     ];
 
     /**
@@ -60,8 +52,6 @@ class MarketplaceListing extends Model implements HasMedia
      */
     protected $appends = [
         'cover_photo_url',
-        'avatar_url',
-        'profile_photo_url',
         'formatted_price',
     ];
 
@@ -69,26 +59,14 @@ class MarketplaceListing extends Model implements HasMedia
     {
         return [
             'price' => 'decimal:2',
-            'is_negotiable' => 'boolean',
-            'metadata' => 'array',
-            'published_at' => 'datetime',
-            'expires_at' => 'datetime',
             'views_count' => 'integer',
-            'favorites_count' => 'integer',
         ];
-    }
-
-    public function getSlugOptions(): SlugOptions
-    {
-        return SlugOptions::create()
-            ->generateSlugsFrom('title')
-            ->saveSlugsTo('slug');
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('images');
+        $this->addMediaCollection('gallery');
     }
 
     public function seller(): BelongsTo
@@ -123,11 +101,7 @@ class MarketplaceListing extends Model implements HasMedia
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where(function (Builder $subQuery): void {
-            $subQuery
-                ->whereNull('published_at')
-                ->orWhere('published_at', '<=', now());
-        });
+        return $query;
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
@@ -140,35 +114,22 @@ class MarketplaceListing extends Model implements HasMedia
             $subQuery
                 ->where('title', 'like', "%{$term}%")
                 ->orWhere('description', 'like', "%{$term}%")
-                ->orWhere('location', 'like', "%{$term}%");
+                ->orWhere('location_text', 'like', "%{$term}%");
         });
     }
 
-    public function scopeInCategory(Builder $query, ?string $category): Builder
+    public function scopeOfType(Builder $query, ?string $listingType): Builder
     {
-        if (! $category) {
+        if (! $listingType) {
             return $query;
         }
 
-        return $query->where('category', $category);
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
+        return $query->where('listing_type', $listingType);
     }
 
     public function isActive(): bool
     {
-        if ($this->status !== self::STATUS_ACTIVE) {
-            return false;
-        }
-
-        if ($this->expires_at && $this->expires_at->isPast()) {
-            return false;
-        }
-
-        return true;
+        return $this->status === self::STATUS_ACTIVE;
     }
 
     public function bumpViews(): void
@@ -185,24 +146,14 @@ class MarketplaceListing extends Model implements HasMedia
                 return $cover;
             }
 
-            $image = $this->getFirstMediaUrl('images');
+            $image = $this->getFirstMediaUrl('gallery');
 
             if ($image !== '') {
                 return $image;
             }
 
-            return (string) ($this->cover_photo_path ?: '');
+            return '';
         });
-    }
-
-    protected function avatarUrl(): Attribute
-    {
-        return Attribute::get(fn (): string => $this->cover_photo_url);
-    }
-
-    protected function profilePhotoUrl(): Attribute
-    {
-        return Attribute::get(fn (): string => $this->cover_photo_url);
     }
 
     protected function formattedPrice(): Attribute

@@ -32,18 +32,18 @@ return new class extends Migration
             $table->index(['is_public', 'created_at']);
         });
 
-        Schema::create('follows', function (Blueprint $table) {
+        Schema::create('user_follows', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('follower_user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('followed_user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('follower_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('following_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['follower_user_id', 'followed_user_id']);
-            $table->index(['followed_user_id', 'created_at']);
-            $table->index(['follower_user_id', 'created_at']);
+            $table->unique(['follower_id', 'following_id']);
+            $table->index(['following_id', 'created_at']);
+            $table->index(['follower_id', 'created_at']);
         });
 
-        Schema::create('pet_follows', function (Blueprint $table) {
+        Schema::create('pet_followers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('pet_id')->constrained()->cascadeOnDelete();
@@ -54,14 +54,14 @@ return new class extends Migration
             $table->index(['user_id', 'created_at']);
         });
 
-        Schema::create('blocks', function (Blueprint $table) {
+        Schema::create('user_blocks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('blocker_user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('blocked_user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('blocker_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('blocked_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['blocker_user_id', 'blocked_user_id']);
-            $table->index('blocked_user_id');
+            $table->unique(['blocker_id', 'blocked_id']);
+            $table->index('blocked_id');
         });
     }
 
@@ -70,9 +70,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('blocks');
-        Schema::dropIfExists('pet_follows');
-        Schema::dropIfExists('follows');
+        Schema::dropIfExists('user_blocks');
+        Schema::dropIfExists('pet_followers');
+        Schema::dropIfExists('user_follows');
         Schema::dropIfExists('pets');
     }
 };

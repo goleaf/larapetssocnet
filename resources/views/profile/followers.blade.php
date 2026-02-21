@@ -15,7 +15,10 @@
         <div class="space-y-3">
             @forelse ($followers as $follower)
                 <article class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
-                    <a href="{{ route('profile.show', ['user' => $follower]) }}" class="flex min-w-0 items-center gap-3">
+                    @php
+                        $followerProfileUrl = filled($follower->username) ? route('profile.show', ['user' => $follower]) : null;
+                    @endphp
+                    <a href="{{ $followerProfileUrl ?? '#' }}" class="flex min-w-0 items-center gap-3 {{ $followerProfileUrl ? '' : 'pointer-events-none opacity-70' }}">
                         <x-avatar :src="$follower->getFirstMediaUrl('avatar')" :name="$follower->name" size="md" />
                         <div class="min-w-0">
                             <p class="truncate font-semibold">{{ $follower->name }}</p>

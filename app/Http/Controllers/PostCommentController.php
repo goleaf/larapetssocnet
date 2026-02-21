@@ -50,6 +50,7 @@ class PostCommentController extends Controller
 
         $comment->update([
             'body' => $request->validated('body'),
+            'edited_at' => now(),
         ]);
 
         return back()->with('status', 'Comment updated.');
@@ -60,7 +61,22 @@ class PostCommentController extends Controller
         abort_unless($comment->post_id === $post->id, 404);
         abort_unless($comment->user_id === $request->user()->id, 403);
 
-        $comment->delete();
+        $commentIds = [$comment->id];
+
+        if ($comment->parent_id === null) {
+            $replyIds = Comment::query()
+                ->where('post_id', $post->id)
+                ->where('parent_id', $comment->id)
+                ->pluck('id')
+                ->all();
+
+            $commentIds = array_merge($commentIds, $replyIds);
+        }
+
+        Comment::query()
+            ->whereIn('id', $commentIds)
+            ->delete();
+
         $post->refreshCommentsCount();
 
         return back()->with('status', 'Comment deleted.');

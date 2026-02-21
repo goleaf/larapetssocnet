@@ -45,7 +45,7 @@
     @endif
 
     @php
-        $photos = $post->getMedia('photos');
+        $photos = collect($post->getMedia('photos'))->merge($post->getMedia('images'));
         $video = $post->getFirstMedia('video');
     @endphp
 

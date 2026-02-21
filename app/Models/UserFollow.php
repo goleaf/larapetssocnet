@@ -15,7 +15,7 @@ class UserFollow extends Model
      */
     protected $fillable = [
         'follower_id',
-        'followed_id',
+        'following_id',
     ];
 
     public function follower(): BelongsTo
@@ -23,8 +23,8 @@ class UserFollow extends Model
         return $this->belongsTo(User::class, 'follower_id');
     }
 
-    public function followed(): BelongsTo
+    public function following(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'followed_id');
+        return $this->belongsTo(User::class, 'following_id');
     }
 }

@@ -4,6 +4,11 @@
     $desktopNav ??= [];
     $currentRoute ??= Route::currentRouteName();
     $user ??= Auth::user();
+    $hasNotificationsTable = $user !== null
+        && \Illuminate\Support\Facades\Schema::hasTable('notifications');
+    $unreadNotificationsCount = $hasNotificationsTable
+        ? (int) $user->unreadNotifications()->count()
+        : 0;
 @endphp
 
 <nav class="sticky top-0 z-40 border-b surface-glass" style="border-color: var(--ui-border);">
@@ -48,6 +53,28 @@
         </div>
 
         <div class="ms-auto flex items-center gap-2">
+            @auth
+                @if (Route::has('notifications.index'))
+                    <a
+                        href="{{ route('notifications.index') }}"
+                        class="icon-button relative"
+                        title="Notifications"
+                        aria-label="Notifications"
+                    >
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+                            <path d="M10 3.4a4.2 4.2 0 0 1 4.2 4.2v2.2c0 .9.3 1.7.9 2.4l.8.9H4.1l.8-.9c.6-.7.9-1.5.9-2.4V7.6A4.2 4.2 0 0 1 10 3.4Z" stroke-linejoin="round" />
+                            <path d="M8.2 14.4a1.8 1.8 0 0 0 3.6 0" stroke-linecap="round" />
+                        </svg>
+
+                        @if ($unreadNotificationsCount > 0)
+                            <span class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[0.65rem] font-semibold leading-5 text-white">
+                                {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
+                            </span>
+                        @endif
+                    </a>
+                @endif
+            @endauth
+
             <button
                 type="button"
                 class="icon-button"

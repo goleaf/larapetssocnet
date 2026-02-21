@@ -46,6 +46,10 @@
 
             <div class="mt-4 space-y-3">
                 @forelse ($blockedUsers as $blockedUser)
+                    @php
+                        $canUnblock = filled($blockedUser->username);
+                        $unblockUrl = $canUnblock ? route('users.unblock', ['user' => $blockedUser]) : null;
+                    @endphp
                     <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
                         <div class="min-w-0">
                             <p class="truncate font-semibold">{{ $blockedUser->name }}</p>
@@ -54,10 +58,13 @@
                         <button
                             type="button"
                             class="btn-base btn-ghost px-3 py-2 text-xs"
-                            :disabled="unblocking === {{ $blockedUser->id }}"
+                            :disabled="!{{ $canUnblock ? 'true' : 'false' }} || unblocking === {{ $blockedUser->id }}"
                             @click="(async () => {
+                                if (!{{ $canUnblock ? 'true' : 'false' }}) {
+                                    return;
+                                }
                                 unblocking = {{ $blockedUser->id }};
-                                const response = await fetch('{{ route('users.unblock', ['user' => $blockedUser]) }}', {
+                                const response = await fetch('{{ $unblockUrl }}', {
                                     method: 'DELETE',
                                     headers: {
                                         'Accept': 'application/json',
@@ -71,7 +78,7 @@
                                 unblocking = null;
                             })()"
                         >
-                            Unblock
+                            {{ $canUnblock ? 'Unblock' : 'Unavailable' }}
                         </button>
                     </div>
                 @empty

@@ -14,11 +14,12 @@ class FeedController extends Controller
         $viewer = $request->user();
 
         $followedUserIds = UserFollow::query()
-            ->select('followed_id')
+            ->select('following_id')
             ->where('follower_id', $viewer->id);
 
         $posts = Post::query()
             ->with(['user', 'hashtags'])
+            ->published()
             ->where(function ($query) use ($viewer, $followedUserIds): void {
                 $query
                     ->where('user_id', $viewer->id)

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Contracts\MediaService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -64,14 +64,24 @@ class ProfileSettingsController extends Controller
             $username = $user->username ?: User::generateUniqueUsername($validated['name']);
         }
 
-        $user->fill([
+        $payload = [
             'name' => $validated['name'],
             'username' => $username,
             'email' => $validated['email'],
             'bio' => $validated['bio'] ?? null,
-            'location' => $validated['location'] ?? null,
-            'website' => $validated['website'] ?? null,
-        ]);
+        ];
+
+        if (Schema::hasColumn('users', 'location')) {
+            $payload['location'] = $validated['location'] ?? null;
+        } elseif (Schema::hasColumn('users', 'city')) {
+            $payload['city'] = $validated['location'] ?? null;
+        }
+
+        if (Schema::hasColumn('users', 'website')) {
+            $payload['website'] = $validated['website'] ?? null;
+        }
+
+        $user->fill($payload);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -88,17 +98,24 @@ class ProfileSettingsController extends Controller
         }
 
         return redirect()
-            ->route('settings.profile.edit')
+            ->route('profile.edit')
             ->with('status', 'profile-updated');
     }
 
     protected function storeProfileImage(User $user, UploadedFile $file, string $collection): void
     {
-        if (app()->bound(MediaService::class)) {
-            try {
-                app(MediaService::class)->storeUserImage($user, $file, $collection);
+        $mediaServiceContract = 'App\\Contracts\\MediaService';
 
-                return;
+        if (interface_exists($mediaServiceContract) && app()->bound($mediaServiceContract)) {
+            try {
+                $mediaService = app($mediaServiceContract);
+
+                if (method_exists($mediaService, 'storeUserImage')) {
+                    $mediaService->storeUserImage($user, $file, $collection);
+
+                    return;
+                }
+
             } catch (\Throwable) {
                 // Falls back to direct media handling below.
             }

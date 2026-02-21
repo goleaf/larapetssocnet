@@ -6,6 +6,7 @@ use App\Models\Group;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -52,7 +53,7 @@ class OnboardingController extends Controller
             $suggestedUsers = User::query()
                 ->whereKeyNot($user->id)
                 ->whereNotIn('id', $blockedUserIds)
-                ->whereDoesntHave('blockedUsers', fn ($query) => $query->where('blocked_id', $user->id))
+                ->whereDoesntHave('blockedUsers', fn ($query) => $query->whereKey($user->id))
                 ->withCount(['followers', 'following'])
                 ->orderByDesc('followers_count')
                 ->limit(8)
@@ -137,12 +138,24 @@ class OnboardingController extends Controller
             $followUserIds = $followUserIds->diff($blockedUserIds);
 
             if ($followUserIds->isNotEmpty()) {
-                $user->following()->syncWithoutDetaching($followUserIds->all());
+                User::query()
+                    ->whereIn('id', $followUserIds->all())
+                    ->each(fn (User $suggestedUser) => $user->follow($suggestedUser));
             }
 
             $joinGroupIds = collect($validated['join_group_ids'] ?? [])->unique()->values();
             if ($joinGroupIds->isNotEmpty()) {
-                $user->groups()->syncWithoutDetaching($joinGroupIds->all());
+                Group::query()
+                    ->whereIn('id', $joinGroupIds->all())
+                    ->each(function (Group $group) use ($user): void {
+                        if (method_exists($group, 'addMember')) {
+                            $group->addMember($user);
+
+                            return;
+                        }
+
+                        $user->groups()->syncWithoutDetaching([$group->id]);
+                    });
             }
         }
 
@@ -169,10 +182,13 @@ class OnboardingController extends Controller
     protected function moveToNextStep(User $user, int $step): RedirectResponse
     {
         if ($step >= 3) {
-            $user->forceFill([
-                'onboarding_step' => 4,
-                'onboarding_completed_at' => now(),
-            ])->save();
+            $payload = ['onboarding_step' => 'completed'];
+
+            if (Schema::hasColumn('users', 'onboarding_completed_at')) {
+                $payload['onboarding_completed_at'] = now();
+            }
+
+            $user->forceFill($payload)->save();
 
             return redirect()
                 ->route('dashboard')
@@ -182,7 +198,7 @@ class OnboardingController extends Controller
         $nextStep = $step + 1;
 
         $user->forceFill([
-            'onboarding_step' => max($user->onboarding_step ?? 1, $nextStep),
+            'onboarding_step' => (string) $nextStep,
         ])->save();
 
         return redirect()->route('onboarding.show', ['step' => $nextStep]);
@@ -190,12 +206,27 @@ class OnboardingController extends Controller
 
     protected function currentStep(User $user): int
     {
-        return max(1, min((int) ($user->onboarding_step ?? 1), 3));
+        $rawStep = (string) ($user->onboarding_step ?? '1');
+
+        if (is_numeric($rawStep)) {
+            return max(1, min((int) $rawStep, 3));
+        }
+
+        return match ($rawStep) {
+            'step2', 'pet' => 2,
+            'step3', 'social' => 3,
+            'completed', 'done' => 3,
+            default => 1,
+        };
     }
 
     protected function isCompleted(User $user): bool
     {
-        return $user->onboarding_completed_at !== null;
+        if (Schema::hasColumn('users', 'onboarding_completed_at') && $user->onboarding_completed_at !== null) {
+            return true;
+        }
+
+        return in_array((string) $user->onboarding_step, ['completed', 'done', '4'], true);
     }
 
     protected function normalizeStep(int $step): int

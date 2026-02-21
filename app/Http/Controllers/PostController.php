@@ -71,7 +71,7 @@ class PostController extends Controller
         $isSaved = false;
 
         if ($viewer) {
-            $userReaction = $post->reactions()
+            $userReaction = $post->postReactions()
                 ->where('user_id', $viewer->id)
                 ->value('type');
 
@@ -139,6 +139,7 @@ class PostController extends Controller
     {
         if ($isUpdate && $request->boolean('remove_photos')) {
             $post->clearMediaCollection('photos');
+            $post->clearMediaCollection('images');
         }
 
         if ($isUpdate && $request->boolean('remove_video')) {
@@ -148,6 +149,7 @@ class PostController extends Controller
         if ($request->hasFile('photos')) {
             $post->clearMediaCollection('video');
             $post->clearMediaCollection('photos');
+            $post->clearMediaCollection('images');
 
             foreach ((array) $request->file('photos') as $photo) {
                 $post->addMedia($photo)->toMediaCollection('photos');

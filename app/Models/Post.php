@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -33,7 +34,9 @@ class Post extends Model implements HasMedia
 
     public const TYPE_TEXT = 'text';
 
-    public const TYPE_IMAGE = 'image';
+    public const TYPE_PHOTO = 'photo';
+
+    public const TYPE_IMAGE = self::TYPE_PHOTO;
 
     public const TYPE_VIDEO = 'video';
 
@@ -49,9 +52,11 @@ class Post extends Model implements HasMedia
         'type',
         'status',
         'location',
+        'tagged_pets',
         'metadata',
         'published_at',
         'is_pinned',
+        'likes_count',
         'comments_count',
         'reactions_count',
         'shares_count',
@@ -69,8 +74,10 @@ class Post extends Model implements HasMedia
     {
         return [
             'metadata' => 'array',
+            'tagged_pets' => 'array',
             'published_at' => 'datetime',
             'is_pinned' => 'boolean',
+            'likes_count' => 'integer',
             'comments_count' => 'integer',
             'reactions_count' => 'integer',
             'shares_count' => 'integer',
@@ -79,7 +86,13 @@ class Post extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('images');
+        $this->addMediaCollection('photos')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+
+        // Keep legacy collection for compatibility with older records.
+        $this->addMediaCollection('images')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+
         $this->addMediaCollection('video')->singleFile();
     }
 
@@ -106,6 +119,21 @@ class Post extends Model implements HasMedia
     public function topLevelComments(): HasMany
     {
         return $this->comments()->whereNull('parent_id');
+    }
+
+    public function postReactions(): HasMany
+    {
+        return $this->hasMany(PostReaction::class);
+    }
+
+    public function saves(): HasMany
+    {
+        return $this->hasMany(SavedPost::class);
+    }
+
+    public function postReports(): HasMany
+    {
+        return $this->hasMany(PostReport::class);
     }
 
     public function hashtags(): BelongsToMany
@@ -155,6 +183,51 @@ class Post extends Model implements HasMedia
                 })
                 ->orWhere('user_id', $viewer->getKey());
         });
+    }
+
+    public function scopeNotBlockedFor(Builder $query, ?User $viewer): Builder
+    {
+        if (! $viewer) {
+            return $query;
+        }
+
+        return $query
+            ->whereNotIn(
+                'user_id',
+                UserBlock::query()
+                    ->select('blocked_id')
+                    ->where('blocker_id', $viewer->id)
+            )
+            ->whereNotIn(
+                'user_id',
+                UserBlock::query()
+                    ->select('blocker_id')
+                    ->where('blocked_id', $viewer->id)
+            );
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $viewer): Builder
+    {
+        if (! $viewer) {
+            return $query
+                ->where('visibility', self::VISIBILITY_PUBLIC)
+                ->notBlockedFor($viewer);
+        }
+
+        $followingIds = $viewer->following()->select('users.id');
+
+        return $query
+            ->where(function (Builder $visibilityQuery) use ($viewer, $followingIds): void {
+                $visibilityQuery
+                    ->where('user_id', $viewer->id)
+                    ->orWhere('visibility', self::VISIBILITY_PUBLIC)
+                    ->orWhere(function (Builder $followersQuery) use ($followingIds): void {
+                        $followersQuery
+                            ->where('visibility', self::VISIBILITY_FOLLOWERS)
+                            ->whereIn('user_id', $followingIds);
+                    });
+            })
+            ->notBlockedFor($viewer);
     }
 
     public function canBeViewedBy(?User $viewer): bool
@@ -210,8 +283,8 @@ class Post extends Model implements HasMedia
 
         if ($this->getMedia('video')->isNotEmpty()) {
             $newType = self::TYPE_VIDEO;
-        } elseif ($this->getMedia('images')->isNotEmpty()) {
-            $newType = self::TYPE_IMAGE;
+        } elseif ($this->getMedia('photos')->isNotEmpty() || $this->getMedia('images')->isNotEmpty()) {
+            $newType = self::TYPE_PHOTO;
         }
 
         if ($this->type !== $newType) {
@@ -222,7 +295,7 @@ class Post extends Model implements HasMedia
     protected function coverPhotoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            $imageUrl = $this->getFirstMediaUrl('images');
+            $imageUrl = $this->getFirstMediaUrl('photos') ?: $this->getFirstMediaUrl('images');
 
             if ($imageUrl !== '') {
                 return $imageUrl;
@@ -241,5 +314,34 @@ class Post extends Model implements HasMedia
     protected function excerpt(): Attribute
     {
         return Attribute::get(fn (): string => Str::limit(strip_tags((string) $this->body), 140));
+    }
+
+    public function refreshLikesCount(): void
+    {
+        $count = $this->postReactions()->count();
+
+        $this->updateQuietly([
+            'likes_count' => $count,
+            'reactions_count' => $count,
+        ]);
+    }
+
+    public function refreshCommentsCount(): void
+    {
+        $this->updateQuietly([
+            'comments_count' => $this->comments()->count(),
+        ]);
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public static function visibilityOptions(): Collection
+    {
+        return collect([
+            self::VISIBILITY_PUBLIC,
+            self::VISIBILITY_FOLLOWERS,
+            self::VISIBILITY_PRIVATE,
+        ]);
     }
 }

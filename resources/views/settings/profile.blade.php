@@ -45,11 +45,11 @@
                 </div>
             </div>
 
-            <div>
-                <label for="location" class="mb-1 block text-sm font-semibold">Location</label>
-                <input id="location" name="location" type="text" class="form-input" value="{{ old('location', $user->location) }}" />
-                <x-input-error :messages="$errors->get('location')" class="mt-2" />
-            </div>
+                <div>
+                    <label for="location" class="mb-1 block text-sm font-semibold">Location</label>
+                    <input id="location" name="location" type="text" class="form-input" value="{{ old('location', $user->location ?? $user->city) }}" />
+                    <x-input-error :messages="$errors->get('location')" class="mt-2" />
+                </div>
 
             <div>
                 <label for="bio" class="mb-1 block text-sm font-semibold">Bio</label>

@@ -13,6 +13,7 @@ class HashtagController extends Controller
     {
         $posts = Post::query()
             ->with(['user', 'hashtags'])
+            ->published()
             ->whereHas('hashtags', fn ($query) => $query->where('hashtags.id', $hashtag->id))
             ->visibleTo($request->user())
             ->latest()

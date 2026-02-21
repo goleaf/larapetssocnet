@@ -19,6 +19,7 @@ class SavedPostController extends Controller
             ->join('saved_posts', 'saved_posts.post_id', '=', 'posts.id')
             ->where('saved_posts.user_id', $viewer->id)
             ->with(['user', 'hashtags'])
+            ->published()
             ->visibleTo($viewer)
             ->orderByDesc('saved_posts.created_at')
             ->paginate(15);

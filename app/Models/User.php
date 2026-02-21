@@ -223,12 +223,27 @@ class User extends Authenticatable implements HasMedia
 
     public function sentMessages(): HasMany
     {
-        return $this->hasMany(Message::class, 'sender_id');
+        return $this->hasMany(Message::class, 'sender_user_id');
     }
 
     public function receivedMessages(): HasMany
     {
-        return $this->hasMany(Message::class, 'recipient_id');
+        return $this->hasMany(Message::class, 'recipient_user_id');
+    }
+
+    public function unreadMessagesCount(): int
+    {
+        return (int) $this->receivedMessages()
+            ->unread()
+            ->count();
+    }
+
+    public function unreadThreadsCount(): int
+    {
+        return (int) $this->receivedMessages()
+            ->unread()
+            ->distinct('sender_user_id')
+            ->count('sender_user_id');
     }
 
     public function filedReports(): HasMany

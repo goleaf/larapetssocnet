@@ -17,11 +17,10 @@ class Message extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'sender_id',
-        'recipient_id',
+        'sender_user_id',
+        'recipient_user_id',
         'marketplace_listing_id',
         'body',
-        'metadata',
         'sent_at',
         'read_at',
     ];
@@ -29,7 +28,6 @@ class Message extends Model
     protected function casts(): array
     {
         return [
-            'metadata' => 'array',
             'sent_at' => 'datetime',
             'read_at' => 'datetime',
         ];
@@ -37,12 +35,12 @@ class Message extends Model
 
     public function sender(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'sender_id');
+        return $this->belongsTo(User::class, 'sender_user_id');
     }
 
     public function recipient(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'recipient_id');
+        return $this->belongsTo(User::class, 'recipient_user_id');
     }
 
     public function listing(): BelongsTo
@@ -59,8 +57,8 @@ class Message extends Model
     {
         return $query->where(function (Builder $subQuery) use ($user): void {
             $subQuery
-                ->where('sender_id', $user->getKey())
-                ->orWhere('recipient_id', $user->getKey());
+                ->where('sender_user_id', $user->getKey())
+                ->orWhere('recipient_user_id', $user->getKey());
         });
     }
 
@@ -70,13 +68,13 @@ class Message extends Model
             $conversationQuery
                 ->where(function (Builder $subQuery) use ($firstUser, $secondUser): void {
                     $subQuery
-                        ->where('sender_id', $firstUser->getKey())
-                        ->where('recipient_id', $secondUser->getKey());
+                        ->where('sender_user_id', $firstUser->getKey())
+                        ->where('recipient_user_id', $secondUser->getKey());
                 })
                 ->orWhere(function (Builder $subQuery) use ($firstUser, $secondUser): void {
                     $subQuery
-                        ->where('sender_id', $secondUser->getKey())
-                        ->where('recipient_id', $firstUser->getKey());
+                        ->where('sender_user_id', $secondUser->getKey())
+                        ->where('recipient_user_id', $firstUser->getKey());
                 });
         });
     }
@@ -97,5 +95,10 @@ class Message extends Model
     public function isRead(): bool
     {
         return $this->read_at !== null;
+    }
+
+    public function isOwnedBy(User $user): bool
+    {
+        return (int) $this->sender_user_id === (int) $user->getKey();
     }
 }

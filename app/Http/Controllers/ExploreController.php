@@ -17,6 +17,7 @@ class ExploreController extends Controller
 
         $posts = Post::query()
             ->with(['user', 'hashtags'])
+            ->published()
             ->where('visibility', Post::VISIBILITY_PUBLIC)
             ->notBlockedFor($viewer)
             ->when($type === 'photos', fn ($query) => $query->where('type', Post::TYPE_PHOTO))
