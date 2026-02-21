@@ -36,3 +36,28 @@ All database interactions must go through Eloquent ORM or the Query Builder usin
 - Use `$model->getFirstMediaUrl('photos', 'medium')` and `$model->getMedia('photos')`.
 - Use `$model->hasMedia('photos')` for checks.
 - Never query the `media` table manually.
+
+## FEED QUERY ORM PATTERN
+The feed query must use only ORM relationships.
+
+Correct pattern:
+
+```php
+Post::with([...eager loads...])
+    ->withCount([...])
+    ->forFeed(auth()->user())
+    ->when($type, fn ($q) => $q->byType($type))
+    ->latest()
+    ->paginate(15);
+```
+
+Never join the follows table manually.
+Use relationship `pluck` for followed IDs:
+
+```php
+->whereIn('user_id',
+    $user->acceptedFollowing()
+        ->pluck('users.id')
+        ->push($user->id)
+)
+```

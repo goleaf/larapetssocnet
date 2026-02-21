@@ -12,6 +12,18 @@ class NewReaction extends Notification
 {
     use Queueable;
 
+    /**
+     * @var array<string, string>
+     */
+    private const REACTION_LABELS = [
+        'love' => 'love',
+        'cute' => 'cute',
+        'funny' => 'funny',
+        'wow' => 'wow',
+        'sad' => 'sad',
+        'support' => 'support',
+    ];
+
     public function __construct(
         public readonly User $reactor,
         public readonly Post $post,
@@ -48,7 +60,9 @@ class NewReaction extends Notification
     protected function formatMessage(): string
     {
         if (filled($this->reactionType)) {
-            return $this->reactor->name.' reacted ('.$this->reactionType.') to your post.';
+            $reactionLabel = self::REACTION_LABELS[$this->reactionType] ?? $this->reactionType;
+
+            return $this->reactor->name.' reacted ('.$reactionLabel.') to your post.';
         }
 
         return $this->reactor->name.' reacted to your post.';

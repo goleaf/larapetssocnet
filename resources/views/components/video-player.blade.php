@@ -1,7 +1,11 @@
-@props(['url'])
+@props(['post'])
 
-@if($url)
-    <div class="relative w-full bg-black flex justify-center max-h-[600px] overflow-hidden">
-        <video src="{{ $url }}" controls controlsList="nodownload" class="max-w-full max-h-[600px] object-contain"></video>
+@php
+    $videoUrl = $post->getFirstMediaUrl('videos');
+@endphp
+
+@if ($videoUrl)
+    <div class="bg-black">
+        <video src="{{ $videoUrl }}" controls class="max-h-[600px] w-full" aria-label="Video post by {{ $post->author->name }}"></video>
     </div>
 @endif

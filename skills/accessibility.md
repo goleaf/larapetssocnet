@@ -18,3 +18,12 @@
 
 ## Lists
 Use semantic `ul/li` for followers/blocked lists and clear labels on items.
+
+## FEED ACCESSIBILITY
+- Feed list: `<ul role="feed" aria-label="Your feed">`.
+- Each post: `<li aria-label="Post by {name}">`.
+- Time: `<time datetime="{{ ISO8601 }}">{{ diffForHumans }}</time>`.
+- Reaction buttons: use meaningful `aria-label` and `aria-pressed`.
+- Options dropdown trigger: `aria-haspopup="menu"` and `aria-expanded`.
+- Media images: alt text like `{{ author name }}'s photo`.
+- Videos: provide `aria-label` and consider captions support.

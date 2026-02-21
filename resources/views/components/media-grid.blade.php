@@ -1,19 +1,13 @@
-@props(['photos'])
+@props(['post'])
 
-@if(count($photos) > 0)
-    <div
-        class="grid gap-1 <?php    if (count($photos) == 1)
-            echo 'grid-cols-1';
-        elseif (count($photos) == 2)
-            echo 'grid-cols-2';
-        else
-            echo 'grid-cols-2 md:grid-cols-3'; ?>">
-        @foreach($photos as $photo)
-            <div class="relative w-full overflow-hidden" style="padding-top: 100%;">
-                <img src="{{ $photo['medium'] ?? $photo['original'] }}"
-                    class="absolute inset-0 w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    alt="Post photo" loading="lazy">
-            </div>
+@php
+    $photos = $post->getMedia('photos');
+@endphp
+
+@if ($photos->isNotEmpty())
+    <div class="grid grid-cols-2 gap-1">
+        @foreach ($photos as $photo)
+            <img src="{{ $photo->getUrl('medium') ?: $photo->getUrl() }}" alt="{{ $post->author->name }}'s photo" class="h-56 w-full object-cover" loading="lazy">
         @endforeach
     </div>
 @endif

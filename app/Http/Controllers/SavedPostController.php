@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\SavedPost;
-use Illuminate\Http\RedirectResponse;
+use App\Services\SavedPostService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SavedPostController extends Controller
 {
+    public function __construct(private readonly SavedPostService $savedPostService) {}
+
     public function index(Request $request): View
     {
         $viewer = $request->user();
@@ -18,8 +21,7 @@ class SavedPostController extends Controller
             ->where('user_id', $viewer->id)
             ->with([
                 'post' => fn ($query) => $query
-                    ->with(['user', 'hashtags'])
-                    ->published()
+                    ->with(['author', 'hashtags'])
                     ->visibleTo($viewer),
             ])
             ->latest()
@@ -30,27 +32,15 @@ class SavedPostController extends Controller
         ]);
     }
 
-    public function toggle(Request $request, Post $post): RedirectResponse
+    public function toggle(Request $request, Post $post): JsonResponse
     {
-        abort_unless($post->canBeViewedBy($request->user()), 403);
+        $this->authorize('view', $post);
 
-        $savedPost = SavedPost::query()
-            ->where('post_id', $post->id)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $saved = $this->savedPostService->toggle($request->user(), $post);
 
-        $message = 'Post saved.';
-
-        if ($savedPost) {
-            $savedPost->delete();
-            $message = 'Post removed from saved.';
-        } else {
-            SavedPost::query()->create([
-                'post_id' => $post->id,
-                'user_id' => $request->user()->id,
-            ]);
-        }
-
-        return back()->with('status', $message);
+        return response()->json([
+            'success' => true,
+            'saved' => $saved,
+        ]);
     }
 }

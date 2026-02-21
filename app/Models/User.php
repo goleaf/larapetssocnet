@@ -50,6 +50,7 @@ class User extends Authenticatable implements HasMedia
      * @var array<string, bool>
      */
     protected static array $usersColumnsCache = [];
+
     protected static ?bool $hasBlocksTableCache = null;
 
     /**
@@ -262,6 +263,12 @@ class User extends Authenticatable implements HasMedia
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function savedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'saved_posts', 'user_id', 'post_id')
+            ->withTimestamps();
     }
 
     public function comments(): HasMany

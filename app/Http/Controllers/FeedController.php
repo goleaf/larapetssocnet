@@ -2,24 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
+use App\Services\FeedService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FeedController extends Controller
 {
+    public function __construct(private FeedService $feed) {}
+
     public function index(Request $request): View
     {
-        $viewer = $request->user();
+        $type = in_array($request->string('type')->toString(), ['text', 'photo', 'video'], true)
+            ? $request->string('type')->toString()
+            : null;
 
-        $posts = Post::query()
-            ->with(['user', 'hashtags'])
-            ->forFeed($viewer)
-            ->latest()
-            ->paginate(15);
-
-        return view('feed.index', [
-            'posts' => $posts,
+        $user = $request->user()->loadCount([
+            'posts',
+            'acceptedFollowers as followers_count',
+            'acceptedFollowing as following_count',
         ]);
+
+        $feedData = $this->feed->getFeed(
+            user: $request->user(),
+            type: $type,
+            perPage: 15,
+        );
+
+        $sidebarData = $this->feed->getSidebarData($request->user());
+
+        return view('feed.index', array_merge(
+            $feedData,
+            $sidebarData,
+            compact('user', 'type'),
+        ));
     }
 }

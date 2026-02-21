@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Controllers\BlockController;
+use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowRequestController;
 use App\Http\Controllers\GroupController;
-use App\Http\Controllers\BlockController;
 use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\MarketplaceListingController;
 use App\Http\Controllers\MessageController;
@@ -17,13 +18,12 @@ use App\Http\Controllers\PetController;
 use App\Http\Controllers\PetFollowController;
 use App\Http\Controllers\PetHealthLogController;
 use App\Http\Controllers\PostCommentController;
-use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\PostController;
-use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PrivacyController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Profile\PublicProfileController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReactionController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Settings\AccountSettingsController;
@@ -31,7 +31,11 @@ use App\Http\Controllers\Settings\ProfileSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    if (auth()->check()) {
+        return redirect()->route('feed.index');
+    }
+
+    return redirect()->route('explore.index');
 });
 
 Route::get('/dashboard', function () {
@@ -88,11 +92,14 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
 
-    Route::post('/posts/{post}/react', [PostReactionController::class, 'react'])->name('posts.react');
+    Route::post('/posts/{post}/react', [ReactionController::class, 'react'])
+        ->middleware('throttle:60,1')
+        ->name('posts.react');
     Route::post('/posts/{post}/comments', [PostCommentController::class, 'store'])->name('posts.comments.store');
     Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');
     Route::patch('/posts/{post}/comments/{comment}', [PostCommentController::class, 'update'])->name('posts.comments.update');
     Route::delete('/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])->name('posts.comments.destroy');
+    Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
     Route::delete('/posts/{post}/pin', [PostController::class, 'unpin'])->name('posts.unpin');

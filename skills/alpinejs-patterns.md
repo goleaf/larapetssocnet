@@ -17,3 +17,11 @@ Create reusable Alpine helper/magic for CSRF-safe JSON requests.
 
 ## Transitions
 Use `x-transition` for show/hide, item removal/addition, and error/success banners.
+
+## FEED INTERACTIONS
+- Post options dropdown: support click-outside to close.
+- Read-more: `x-data="{ expanded: false }"` with toggle.
+- Reaction bar: optimistic UI and revert on error.
+- Save toggle: optimistic UI and revert on error.
+- Share action: `navigator.clipboard.writeText()` with fallback.
+- Fire `window` `CustomEvent`s so other UI pieces can react without reload.

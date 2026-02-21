@@ -16,6 +16,12 @@ class Post extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia, SoftDeletes;
 
+    public const VISIBILITY_PUBLIC = 'public';
+
+    public const VISIBILITY_FOLLOWERS = 'followers';
+
+    public const VISIBILITY_PRIVATE = 'private';
+
     protected $fillable = [
         'user_id',
         'pet_id',
@@ -120,7 +126,7 @@ class Post extends Model implements HasMedia
     public function scopeVisibleTo(Builder $query, ?User $viewer)
     {
         $query->where(function (Builder $q) use ($viewer) {
-            if (!$viewer) {
+            if (! $viewer) {
                 // Guests see only public posts from public users
                 $q->where('visibility', 'public')
                     ->whereHas('author', function ($a) {
@@ -166,11 +172,19 @@ class Post extends Model implements HasMedia
 
     public function scopeForFeed(Builder $query, User $user)
     {
-        $query->visibleTo($user)
-            ->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhereIn('user_id', $user->acceptedFollowing()->pluck('id'));
-            });
+        $followingIds = $user->acceptedFollowing()
+            ->pluck('users.id')
+            ->push($user->getKey())
+            ->unique();
+
+        $query
+            ->whereIn('user_id', $followingIds)
+            ->where(function (Builder $visibilityQuery) use ($user): void {
+                $visibilityQuery
+                    ->where('user_id', $user->getKey())
+                    ->orWhereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
+            })
+            ->whereNull('posts.deleted_at');
     }
 
     // Accessors
@@ -188,7 +202,7 @@ class Post extends Model implements HasMedia
     public function getPhotoUrlsAttribute(): array
     {
         return $this->getMedia('photos')
-            ->map(fn($m) => [
+            ->map(fn ($m) => [
                 'thumb' => $m->getUrl('thumb'),
                 'medium' => $m->getUrl('medium'),
                 'large' => $m->getUrl('large'),
@@ -218,11 +232,11 @@ class Post extends Model implements HasMedia
 
     public function getCurrentUserReactionAttribute(): ?string
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return null;
         }
 
-        // Avoid N+1 issues by checking if relation is loaded, 
+        // Avoid N+1 issues by checking if relation is loaded,
         // otherwise default to a direct query (or null if we're listing).
         if ($this->relationLoaded('postReactions')) {
             return $this->postReactions->firstWhere('user_id', auth()->id())?->type;
