@@ -57,6 +57,8 @@
 - Updated pet profile page header/about sections to explicitly display species, breed, age, and bio with correct field mapping.
 - Added pet photo gallery uploads on create/edit (`gallery_photos[]`) with validation (max 12 images, 5MB each).
 - Updated pet gallery tab to render only `gallery` media collection items (excluding avatar/cover).
+- Refactored pet follow/unfollow to use ORM-only user methods (`followPet`/`unfollowPet`) and removed raw DB fallback logic.
+- Added dedicated pet follow feature tests for follow, unfollow, owner guard, and idempotency.
 
 ### Tests
 - Verified passing suites:
@@ -76,3 +78,4 @@
   - `tests/Feature/FeedPosts/FeedPostsFeatureTest.php --filter="share|feed_post_card_renders_share_action"`
   - `tests/Feature/ReportFeatureTest.php`
   - `tests/Feature/PetFeatureTest.php`
+  - `tests/Feature/PetFollowFeatureTest.php`
