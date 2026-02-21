@@ -1,18 +1,19 @@
-@props(['post'])
+@props(['photos'])
 
-@php
-    $photos = $post->getMedia('photos');
-@endphp
-
-@if ($photos->isNotEmpty())
-    <div class="mt-3 grid gap-2 {{ $photos->count() === 1 ? 'grid-cols-1' : 'grid-cols-2' }}">
-        @foreach ($photos->take(5) as $index => $photo)
-            <figure class="relative overflow-hidden rounded-xl">
-                <img loading="lazy" src="{{ $photo->getUrl('medium') ?: $photo->getUrl() }}" alt="Post photo {{ $index + 1 }}" class="h-64 w-full object-cover">
-                @if ($index === 4 && $photos->count() > 5)
-                    <figcaption class="absolute inset-0 grid place-items-center bg-black/50 text-xl font-semibold text-white">+{{ $photos->count() - 5 }}</figcaption>
-                @endif
-            </figure>
+@if(count($photos) > 0)
+    <div
+        class="grid gap-1 <?php    if (count($photos) == 1)
+            echo 'grid-cols-1';
+        elseif (count($photos) == 2)
+            echo 'grid-cols-2';
+        else
+            echo 'grid-cols-2 md:grid-cols-3'; ?>">
+        @foreach($photos as $photo)
+            <div class="relative w-full overflow-hidden" style="padding-top: 100%;">
+                <img src="{{ $photo['medium'] ?? $photo['original'] }}"
+                    class="absolute inset-0 w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    alt="Post photo" loading="lazy">
+            </div>
         @endforeach
     </div>
 @endif

@@ -8,37 +8,37 @@ use Illuminate\Support\Str;
 
 class HashtagService
 {
-    public function __construct(private readonly CounterCacheService $counterCacheService) {}
-
     public function syncHashtags(Post $post): void
     {
-        $tags = collect($this->extract((string) $post->body));
+        $tags = $this->extract($post->body ?? '');
 
-        $ids = $tags->map(function (string $tag): int {
-            return (int) Hashtag::query()->firstOrCreate(
-                ['name' => Str::lower($tag)],
+        $ids = collect($tags)->map(function ($tag) {
+            return Hashtag::firstOrCreate(
+                ['name' => strtolower($tag)],
                 ['slug' => Str::slug($tag)]
-            )->getKey();
+            )->id;
         });
 
         $old = $post->hashtags()->pluck('hashtags.id');
         $attach = $ids->diff($old);
         $detach = $old->diff($ids);
 
-        $post->hashtags()->sync($ids->all());
+        $post->hashtags()->sync($ids);
 
-        Hashtag::query()->whereIn('id', $attach)->get()->each(fn (Hashtag $h) => $h->increment('posts_count'));
-        Hashtag::query()->whereIn('id', $detach)->get()->each(fn (Hashtag $h) => $this->counterCacheService->safeDecrement($h, 'posts_count'));
+        if ($attach->isNotEmpty()) {
+            Hashtag::whereIn('id', $attach)->increment('posts_count');
+        }
+
+        if ($detach->isNotEmpty()) {
+            Hashtag::whereIn('id', $detach)->decrement('posts_count');
+        }
     }
 
-    /**
-     * @return array<int, string>
-     */
     public function extract(string $text): array
     {
-        preg_match_all('/#([a-zA-Z0-9_]{1,50})/u', $text, $matches);
+        preg_match_all('/#([a-zA-Z0-9_]{1,50})/u', $text, $m);
 
-        return array_values(array_unique(array_map('strtolower', $matches[1] ?? [])));
+        return array_unique(array_map('strtolower', $m[1] ?? []));
     }
 
     public function detachAll(Post $post): void
@@ -46,6 +46,8 @@ class HashtagService
         $hashtags = $post->hashtags()->get();
         $post->hashtags()->detach();
 
-        $hashtags->each(fn (Hashtag $hashtag) => $this->counterCacheService->safeDecrement($hashtag, 'posts_count'));
+        $hashtags->each(function ($h) {
+            $h->decrement('posts_count');
+        });
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Post;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,7 +11,12 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PostFactory extends Factory
 {
-    protected $model = \App\Models\Post::class;
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var class-string<\Illuminate\Database\Eloquent\Model>
+     */
+    protected $model = Post::class;
 
     /**
      * Define the model's default state.
@@ -18,21 +25,18 @@ class PostFactory extends Factory
      */
     public function definition(): array
     {
-        $body = fake()->paragraph(fake()->numberBetween(1, 3));
-
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'pet_id' => null,
-            'body' => $body,
-            'body_html' => '<p>'.$body.'</p>',
+            'body' => $this->faker->paragraphs(3, true),
+            'body_html' => '<p>' . implode('</p><p>', $this->faker->paragraphs(3)) . '</p>',
             'type' => 'text',
-            'visibility' => fake()->randomElement(['public', 'followers', 'private']),
-            'status' => 'published',
+            'visibility' => $this->faker->randomElement(['public', 'followers', 'private']),
+            'location' => $this->faker->optional(0.3)->city(),
+            'is_pinned' => false,
             'likes_count' => 0,
             'comments_count' => 0,
-            'reactions_count' => 0,
             'shares_count' => 0,
-            'published_at' => fake()->dateTimeBetween('-60 days', 'now'),
         ];
     }
 }

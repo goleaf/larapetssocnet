@@ -10,38 +10,25 @@ use Illuminate\Support\Facades\DB;
 class PostService
 {
     public function __construct(
-        private readonly ContentService $content,
-        private readonly HashtagService $hashtags,
+        private ContentService $content,
+        private HashtagService $hashtags
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @param  array<int, UploadedFile>  $photos
-     */
     public function create(User $author, array $data, ?UploadedFile $video, array $photos): Post
     {
-        return DB::transaction(function () use ($author, $data, $video, $photos): Post {
-            $body = isset($data['body']) ? trim((string) $data['body']) : null;
+        return DB::transaction(function () use ($author, $data, $video, $photos) {
+            $body = $data['body'] ?? null;
             $bodyHtml = $body ? $this->content->process($body) : null;
             $type = $this->resolveType($photos, $video);
-            $taggedPets = collect($data['tagged_pets'] ?? [])
-                ->map(fn ($id): int => (int) $id)
-                ->filter(fn (int $id): bool => $id > 0)
-                ->unique()
-                ->values()
-                ->all();
-            $primaryPetId = $data['pet_id'] ?? ($taggedPets[0] ?? null);
 
-            $post = Post::query()->create([
+            $post = Post::create([
                 'user_id' => $author->id,
-                'pet_id' => $primaryPetId,
+                'pet_id' => $data['pet_id'] ?? null,
                 'body' => $body,
                 'body_html' => $bodyHtml,
                 'type' => $type,
-                'visibility' => $data['visibility'] ?? Post::VISIBILITY_PUBLIC,
+                'visibility' => $data['visibility'] ?? 'public',
                 'location' => $data['location'] ?? null,
-                'status' => 'published',
-                'tagged_pets' => $taggedPets,
             ]);
 
             foreach ($photos as $photo) {
@@ -52,35 +39,22 @@ class PostService
                 $post->addMedia($video)->toMediaCollection('videos');
             }
 
-            return $post->fresh();
+            return $post;
         });
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
     public function update(Post $post, array $data): Post
     {
-        return DB::transaction(function () use ($post, $data): Post {
-            $body = array_key_exists('body', $data) ? trim((string) ($data['body'] ?? '')) : $post->body;
-            $bodyHtml = filled((string) $body) ? $this->content->process((string) $body) : null;
-            $taggedPets = array_key_exists('tagged_pets', $data)
-                ? collect($data['tagged_pets'] ?? [])
-                    ->map(fn ($id): int => (int) $id)
-                    ->filter(fn (int $id): bool => $id > 0)
-                    ->unique()
-                    ->values()
-                    ->all()
-                : $post->tagged_pets;
-            $primaryPetId = $data['pet_id'] ?? (($taggedPets[0] ?? null) ?: $post->pet_id);
+        return DB::transaction(function () use ($post, $data) {
+            $body = $data['body'] ?? $post->body;
+            $bodyHtml = $body ? $this->content->process($body) : null;
 
             $post->update([
                 'body' => $body,
                 'body_html' => $bodyHtml,
                 'visibility' => $data['visibility'] ?? $post->visibility,
                 'location' => $data['location'] ?? $post->location,
-                'pet_id' => $primaryPetId,
-                'tagged_pets' => $taggedPets,
+                'pet_id' => $data['pet_id'] ?? $post->pet_id,
             ]);
 
             return $post->fresh();
@@ -89,15 +63,17 @@ class PostService
 
     public function delete(Post $post): void
     {
-        DB::transaction(fn () => $post->delete());
+        DB::transaction(function () use ($post) {
+            $post->delete();
+        });
     }
 
     public function pin(Post $post): void
     {
-        DB::transaction(function () use ($post): void {
-            $post->author->posts()->where('is_pinned', true)->get()->each(
-                fn (Post $p) => $p->updateQuietly(['is_pinned' => false])
-            );
+        DB::transaction(function () use ($post) {
+            $post->author->posts()
+                ->where('is_pinned', true)
+                ->update(['is_pinned' => false]);
 
             $post->updateQuietly(['is_pinned' => true]);
         });
@@ -108,19 +84,15 @@ class PostService
         $post->updateQuietly(['is_pinned' => false]);
     }
 
-    /**
-     * @param  array<int, UploadedFile>  $photos
-     */
     private function resolveType(array $photos, ?UploadedFile $video): string
     {
         if ($video) {
-            return Post::TYPE_VIDEO;
+            return 'video';
+        }
+        if (! empty($photos)) {
+            return 'photo';
         }
 
-        if ($photos !== []) {
-            return Post::TYPE_PHOTO;
-        }
-
-        return Post::TYPE_TEXT;
+        return 'text';
     }
 }

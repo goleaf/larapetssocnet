@@ -1,13 +1,7 @@
-@props(['post'])
+@props(['url'])
 
-@php
-    $video = $post->getFirstMedia('videos') ?? $post->getFirstMedia('video');
-@endphp
-
-@if ($video)
-    <div class="mt-3 overflow-hidden rounded-xl border border-[var(--ui-border)]">
-        <video controls preload="metadata" playsinline class="w-full max-h-[500px]" poster="{{ $post->getFirstMediaUrl('photos', 'thumb') }}">
-            <source src="{{ $video->getUrl() }}" type="{{ $video->mime_type ?? 'video/mp4' }}">
-        </video>
+@if($url)
+    <div class="relative w-full bg-black flex justify-center max-h-[600px] overflow-hidden">
+        <video src="{{ $url }}" controls controlsList="nodownload" class="max-w-full max-h-[600px] object-contain"></video>
     </div>
 @endif
