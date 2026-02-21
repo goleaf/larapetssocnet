@@ -12,14 +12,14 @@
         }
     }
 
-    $nextDueValue = old('next_due_at');
-    if ($nextDueValue === null && $log) {
-        $rawNextDueAt = data_get($log, 'next_due_at');
+    $logType = old('type', $log->log_type ?? 'weight');
 
-        if ($rawNextDueAt instanceof \Illuminate\Support\CarbonInterface) {
-            $nextDueValue = $rawNextDueAt->toDateString();
-        } elseif (is_string($rawNextDueAt)) {
-            $nextDueValue = substr($rawNextDueAt, 0, 10);
+    $value = old('value');
+    if ($value === null && $log) {
+        $value = data_get($log, 'weight_kg');
+
+        if ($value === null) {
+            $value = data_get($log, 'temperature_c');
         }
     }
 @endphp
@@ -29,12 +29,12 @@
         <div>
             <x-input-label for="type" value="Type" />
             <select id="type" name="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                <option value="weight" @selected(old('type', $log->type ?? 'weight') === 'weight')>Weight</option>
-                <option value="temperature" @selected(old('type', $log->type ?? '') === 'temperature')>Temperature</option>
-                <option value="medication" @selected(old('type', $log->type ?? '') === 'medication')>Medication</option>
-                <option value="vaccine" @selected(old('type', $log->type ?? '') === 'vaccine')>Vaccine</option>
-                <option value="vet_visit" @selected(old('type', $log->type ?? '') === 'vet_visit')>Vet visit</option>
-                <option value="note" @selected(old('type', $log->type ?? '') === 'note')>General note</option>
+                <option value="weight" @selected($logType === 'weight')>Weight</option>
+                <option value="temperature" @selected($logType === 'temperature')>Temperature</option>
+                <option value="medication" @selected($logType === 'medication')>Medication</option>
+                <option value="vaccine" @selected($logType === 'vaccine')>Vaccine</option>
+                <option value="vet_visit" @selected($logType === 'vet_visit')>Vet visit</option>
+                <option value="note" @selected($logType === 'note')>General note</option>
             </select>
             <x-input-error :messages="$errors->get('type')" class="mt-2" />
         </div>
@@ -46,21 +46,15 @@
         </div>
 
         <div>
-            <x-input-label for="value" value="Value" />
-            <x-text-input id="value" name="value" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="old('value', $log->value ?? null)" />
+            <x-input-label for="value" value="Value (optional)" />
+            <x-text-input id="value" name="value" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="$value" />
             <x-input-error :messages="$errors->get('value')" class="mt-2" />
         </div>
 
         <div>
-            <x-input-label for="unit" value="Unit" />
-            <x-text-input id="unit" name="unit" type="text" class="mt-1 block w-full" :value="old('unit', $log->unit ?? null)" placeholder="kg, °C, ml..." />
-            <x-input-error :messages="$errors->get('unit')" class="mt-2" />
-        </div>
-
-        <div class="sm:col-span-2">
-            <x-input-label for="next_due_at" value="Next due date (optional)" />
-            <x-text-input id="next_due_at" name="next_due_at" type="date" class="mt-1 block w-full" :value="$nextDueValue" />
-            <x-input-error :messages="$errors->get('next_due_at')" class="mt-2" />
+            <x-input-label for="title" value="Title (optional)" />
+            <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old('title', $log->title ?? null)" />
+            <x-input-error :messages="$errors->get('title')" class="mt-2" />
         </div>
 
         <div class="sm:col-span-2">

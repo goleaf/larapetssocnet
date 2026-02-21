@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 class UserSeeder extends Seeder
 {
     public const DEFAULT_ADMIN_EMAIL = 'admin@larapetssocnet.test';
+
     public const DEFAULT_MODERATOR_EMAIL = 'mod@larapetssocnet.test';
 
     private const TARGET_USER_COUNT = 62;
@@ -88,7 +89,7 @@ class UserSeeder extends Seeder
         $modelMorphKey = $columnNames['model_morph_key'] ?? 'model_id';
 
         $roleIds = DB::table($rolesTable)
-            ->whereIn('name', ['admin', 'moderator', 'user'])
+            ->whereIn('name', ['admin', 'moderator', 'member'])
             ->pluck('id', 'name');
 
         if ($roleIds->isEmpty()) {
@@ -103,7 +104,7 @@ class UserSeeder extends Seeder
         $rows = [];
 
         foreach ($users as $userId) {
-            $roleId = $roleIds['user'] ?? null;
+            $roleId = $roleIds['member'] ?? null;
 
             if ($userId === $adminUserId) {
                 $roleId = $roleIds['admin'] ?? $roleId;

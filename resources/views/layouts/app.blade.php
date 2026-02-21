@@ -4,22 +4,22 @@
     $user = Auth::user();
 
     $desktopNav = [
-        ['label' => 'Feed', 'icon' => '🏠', 'route' => 'dashboard', 'href' => null],
-        ['label' => 'Pets', 'icon' => '🐾', 'route' => null, 'href' => '#'],
-        ['label' => 'Groups', 'icon' => '👥', 'route' => null, 'href' => '#'],
-        ['label' => 'Events', 'icon' => '📅', 'route' => null, 'href' => '#'],
-        ['label' => 'Marketplace', 'icon' => '🛍️', 'route' => null, 'href' => '#'],
+        ['label' => 'Feed', 'icon' => '🏠', 'route' => 'feed.index', 'href' => null],
+        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'href' => null],
+        ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'href' => null],
+        ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'href' => null],
+        ['label' => 'Marketplace', 'icon' => '🛍️', 'route' => 'marketplace.index', 'href' => null],
     ];
 
     $mobileNav = [
-        ['label' => 'Home', 'icon' => '🏠', 'route' => 'dashboard', 'href' => null],
-        ['label' => 'Pets', 'icon' => '🐾', 'route' => null, 'href' => '#'],
-        ['label' => 'Groups', 'icon' => '👥', 'route' => null, 'href' => '#'],
-        ['label' => 'Events', 'icon' => '📅', 'route' => null, 'href' => '#'],
-        ['label' => 'Profile', 'icon' => '🙂', 'route' => 'profile.edit', 'href' => null],
+        ['label' => 'Home', 'icon' => '🏠', 'route' => 'feed.index', 'href' => null],
+        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'href' => null],
+        ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'href' => null],
+        ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'href' => null],
+        ['label' => 'Profile', 'icon' => '🙂', 'route' => 'settings.profile.edit', 'href' => null],
     ];
 
-    $searchTarget = Route::has('dashboard') ? route('dashboard') : url('/');
+    $searchTarget = Route::has('search.index') ? route('search.index') : url('/');
 
     $flashMessages = collect([
         ['type' => 'success', 'message' => session('success')],
@@ -196,7 +196,7 @@
                     x-transition:leave-end="-translate-x-full"
                 >
                     <div class="flex items-center justify-between">
-                        <a href="{{ Route::has('dashboard') ? route('dashboard') : url('/') }}" class="flex items-center gap-2">
+                        <a href="{{ Route::has('feed.index') ? route('feed.index') : url('/') }}" class="flex items-center gap-2">
                             <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-lg" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">🐾</span>
                             <span class="shell-title text-base">{{ $appName }}</span>
                         </a>

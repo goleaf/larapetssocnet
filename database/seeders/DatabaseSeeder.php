@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            BadgeSeeder::class,
             UserSeeder::class,
             PetSeeder::class,
             SocialSeeder::class,
@@ -24,6 +25,7 @@ class DatabaseSeeder extends Seeder
             EventSeeder::class,
             MarketplaceSeeder::class,
             HealthSeeder::class,
+            ContestSeeder::class,
         ]);
     }
 }

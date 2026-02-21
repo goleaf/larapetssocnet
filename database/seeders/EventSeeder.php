@@ -52,7 +52,7 @@ class EventSeeder extends Seeder
 
             $status = $startAt->isPast() ? 'completed' : 'scheduled';
 
-            if (!$startAt->isPast() && random_int(1, 100) <= 12) {
+            if (! $startAt->isPast() && random_int(1, 100) <= 12) {
                 $status = 'cancelled';
             }
 

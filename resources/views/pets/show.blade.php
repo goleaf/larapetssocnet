@@ -168,10 +168,12 @@
                             <div class="mt-4 space-y-3">
                                 @foreach($healthLogs as $log)
                                     <div class="rounded-lg border border-gray-200 p-4 text-sm">
-                                        <div class="font-medium text-gray-900">{{ ucfirst(str_replace('_', ' ', (string) ($log->type ?? 'entry'))) }}</div>
+                                        <div class="font-medium text-gray-900">{{ ucfirst(str_replace('_', ' ', (string) ($log->log_type ?? 'entry'))) }}</div>
                                         <div class="text-gray-600">
-                                            @if(!is_null($log->value))
-                                                {{ $log->value }} {{ $log->unit }}
+                                            @if(!is_null($log->weight_kg))
+                                                {{ $log->weight_kg }} kg
+                                            @elseif(!is_null($log->temperature_c))
+                                                {{ $log->temperature_c }} °C
                                             @endif
                                             @if(!empty($log->notes))
                                                 • {{ \Illuminate\Support\Str::limit((string) $log->notes, 120) }}

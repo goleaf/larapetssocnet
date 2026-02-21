@@ -18,23 +18,21 @@ class PetHealthLog extends Model
      */
     protected $fillable = [
         'pet_id',
-        'user_id',
-        'type',
+        'logged_by_user_id',
+        'log_type',
         'title',
         'notes',
+        'weight_kg',
+        'temperature_c',
         'logged_at',
-        'next_due_at',
-        'metadata',
-        'is_critical',
     ];
 
     protected function casts(): array
     {
         return [
             'logged_at' => 'datetime',
-            'next_due_at' => 'datetime',
-            'metadata' => 'array',
-            'is_critical' => 'boolean',
+            'weight_kg' => 'decimal:2',
+            'temperature_c' => 'decimal:1',
         ];
     }
 
@@ -45,17 +43,12 @@ class PetHealthLog extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'logged_by_user_id');
     }
 
     public function scopeRecent(Builder $query): Builder
     {
         return $query->latest('logged_at');
-    }
-
-    public function scopeCritical(Builder $query): Builder
-    {
-        return $query->where('is_critical', true);
     }
 
     public function scopeOfType(Builder $query, ?string $type): Builder
@@ -64,18 +57,6 @@ class PetHealthLog extends Model
             return $query;
         }
 
-        return $query->where('type', $type);
-    }
-
-    public function scopeDueSoon(Builder $query, int $days = 7): Builder
-    {
-        return $query
-            ->whereNotNull('next_due_at')
-            ->where('next_due_at', '<=', now()->addDays($days));
-    }
-
-    public function isDue(): bool
-    {
-        return $this->next_due_at !== null && $this->next_due_at->isPast();
+        return $query->where('log_type', $type);
     }
 }

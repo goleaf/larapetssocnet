@@ -6,15 +6,13 @@ return [
      * The disk on which to store added files and derived images by default. Choose
      * one or more of the disks you've configured in config/filesystems.php.
      */
-    'disk_name' => 'public',
+    'disk_name' => env('MEDIA_DISK', 'public'),
 
     /*
      * The maximum file size of an item in bytes.
      * Adding a larger file will result in an exception.
      */
-    // Global guardrail set to 50MB so video uploads are allowed.
-    // Image-specific 10MB limits are enforced at validation level.
-    'max_file_size' => 1024 * 1024 * 50, // 50MB
+    'max_file_size' => 1024 * 1024 * 50, // 50MB (video upper bound; image validation stays request-level)
 
     /*
      * This queue connection will be used to generate derived and responsive images.

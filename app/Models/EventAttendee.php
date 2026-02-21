@@ -19,15 +19,12 @@ class EventAttendee extends Model
         'user_id',
         'status',
         'responded_at',
-        'checked_in_at',
-        'notes',
     ];
 
     protected function casts(): array
     {
         return [
             'responded_at' => 'datetime',
-            'checked_in_at' => 'datetime',
         ];
     }
 
@@ -54,26 +51,5 @@ class EventAttendee extends Model
     public function scopeDeclined(Builder $query): Builder
     {
         return $query->where('status', Event::ATTENDEE_DECLINED);
-    }
-
-    public function scopeCheckedIn(Builder $query): Builder
-    {
-        return $query->whereNotNull('checked_in_at');
-    }
-
-    public function hasCheckedIn(): bool
-    {
-        return $this->checked_in_at !== null;
-    }
-
-    public function markCheckedIn(): void
-    {
-        if ($this->checked_in_at) {
-            return;
-        }
-
-        $this->forceFill([
-            'checked_in_at' => now(),
-        ])->save();
     }
 }

@@ -29,18 +29,24 @@ class PetHealthLogController extends Controller
             ->withQueryString();
 
         $upcomingLogs = (clone $logsQuery)
-            ->whereNotNull('next_due_at')
-            ->whereDate('next_due_at', '>=', now()->toDateString())
-            ->orderBy('next_due_at')
+            ->where('log_type', 'vaccine')
+            ->orderByDesc('logged_at')
             ->limit(10)
             ->get();
 
         $trendSeries = (clone $logsQuery)
-            ->where('type', 'weight')
-            ->whereNotNull('value')
+            ->where('log_type', 'weight')
+            ->whereNotNull('weight_kg')
             ->orderBy('logged_at')
-            ->limit(30)
-            ->get(['logged_at', 'value']);
+            ->limit(30);
+
+        if (Schema::hasColumn('pet_health_logs', 'title')) {
+            $trendSeries->select(['logged_at', 'weight_kg', 'title']);
+        } else {
+            $trendSeries->select(['logged_at', 'weight_kg']);
+        }
+
+        $trendSeries = $trendSeries->get();
 
         return view('pets.health.index', [
             'pet' => $pet,
@@ -69,12 +75,13 @@ class PetHealthLogController extends Controller
 
         $payload = $this->filterToExistingColumns('pet_health_logs', [
             'pet_id' => $pet->getKey(),
-            'type' => $validated['type'],
-            'value' => $validated['value'] ?? null,
-            'unit' => $validated['unit'] ?? null,
+            'logged_by_user_id' => $request->user()?->getAuthIdentifier(),
+            'log_type' => $validated['type'],
+            'title' => $validated['title'] ?? null,
             'notes' => $validated['notes'] ?? null,
+            'weight_kg' => $validated['type'] === 'weight' ? ($validated['value'] ?? null) : null,
+            'temperature_c' => $validated['type'] === 'temperature' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
-            'next_due_at' => $validated['next_due_at'] ?? null,
         ]);
 
         PetHealthLog::query()->create($payload);
@@ -106,12 +113,12 @@ class PetHealthLogController extends Controller
         $validated = $request->validate($this->rules());
 
         $payload = $this->filterToExistingColumns('pet_health_logs', [
-            'type' => $validated['type'],
-            'value' => $validated['value'] ?? null,
-            'unit' => $validated['unit'] ?? null,
+            'log_type' => $validated['type'],
+            'title' => $validated['title'] ?? null,
             'notes' => $validated['notes'] ?? null,
+            'weight_kg' => $validated['type'] === 'weight' ? ($validated['value'] ?? null) : null,
+            'temperature_c' => $validated['type'] === 'temperature' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
-            'next_due_at' => $validated['next_due_at'] ?? null,
         ]);
 
         $log->update($payload);
@@ -139,10 +146,9 @@ class PetHealthLogController extends Controller
         return [
             'type' => ['required', Rule::in(['weight', 'temperature', 'medication', 'vaccine', 'vet_visit', 'note'])],
             'value' => ['nullable', 'numeric', 'min:0'],
-            'unit' => ['nullable', 'string', 'max:20'],
+            'title' => ['nullable', 'string', 'max:180'],
             'notes' => ['nullable', 'string', 'max:3000'],
             'logged_at' => ['required', 'date'],
-            'next_due_at' => ['nullable', 'date', 'after_or_equal:today'],
         ];
     }
 
@@ -157,7 +163,7 @@ class PetHealthLogController extends Controller
             ];
         }
 
-        $values = $series->pluck('value')->map(static fn ($value) => (float) $value)->values();
+        $values = $series->pluck('weight_kg')->map(static fn ($value) => (float) $value)->values();
         $min = $values->min();
         $max = $values->max();
         $range = max($max - $min, 0.01);
@@ -208,7 +214,7 @@ class PetHealthLogController extends Controller
     {
         return Pet::query()
             ->where('slug', $slug)
-            ->orWhereKey($slug)
+            ->orWhere('id', $slug)
             ->firstOrFail();
     }
 

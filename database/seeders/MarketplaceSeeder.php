@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 class MarketplaceSeeder extends Seeder
 {
     private const TARGET_LISTING_COUNT = 90;
+
     private const TARGET_MESSAGE_COUNT = 700;
+
     private const TARGET_REPORT_COUNT = 85;
 
     /**

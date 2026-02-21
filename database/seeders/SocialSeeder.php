@@ -80,12 +80,12 @@ class SocialSeeder extends Seeder
                 foreach ($this->pickRandomUnique($petIds, $target) as $petId) {
                     $createdAt = Carbon::instance($faker->dateTimeBetween('-90 days', 'now'));
 
-                $petFollows[] = [
-                    'user_id' => $userId,
-                    'pet_id' => $petId,
-                    'created_at' => $createdAt,
-                    'updated_at' => $createdAt,
-                ];
+                    $petFollows[] = [
+                        'user_id' => $userId,
+                        'pet_id' => $petId,
+                        'created_at' => $createdAt,
+                        'updated_at' => $createdAt,
+                    ];
                 }
             }
         }

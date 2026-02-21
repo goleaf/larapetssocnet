@@ -29,18 +29,16 @@ class Group extends Model implements HasMedia
      * @var list<string>
      */
     protected $fillable = [
-        'owner_id',
+        'owner_user_id',
         'name',
         'slug',
         'description',
         'rules',
-        'is_private',
-        'is_verified',
+        'privacy',
         'avatar_path',
-        'cover_photo_path',
+        'cover_image_path',
         'members_count',
         'posts_count',
-        'events_count',
     ];
 
     /**
@@ -55,11 +53,8 @@ class Group extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'is_private' => 'boolean',
-            'is_verified' => 'boolean',
             'members_count' => 'integer',
             'posts_count' => 'integer',
-            'events_count' => 'integer',
         ];
     }
 
@@ -78,7 +73,7 @@ class Group extends Model implements HasMedia
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, 'owner_user_id');
     }
 
     public function memberships(): HasMany
@@ -93,9 +88,11 @@ class Group extends Model implements HasMedia
             ->withTimestamps();
     }
 
-    public function posts(): HasMany
+    public function posts(): BelongsToMany
     {
-        return $this->hasMany(Post::class);
+        return $this->belongsToMany(Post::class, 'group_posts', 'group_id', 'post_id')
+            ->withPivot('added_by_user_id')
+            ->withTimestamps();
     }
 
     public function events(): HasMany
@@ -105,12 +102,16 @@ class Group extends Model implements HasMedia
 
     public function scopePublic(Builder $query): Builder
     {
-        return $query->where(fn (Builder $subQuery) => $subQuery->whereNull('is_private')->orWhere('is_private', false));
+        return $query->where(function (Builder $subQuery): void {
+            $subQuery
+                ->whereNull('privacy')
+                ->orWhere('privacy', 'public');
+        });
     }
 
     public function scopePrivate(Builder $query): Builder
     {
-        return $query->where('is_private', true);
+        return $query->whereIn('privacy', ['private', 'secret']);
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
@@ -227,7 +228,7 @@ class Group extends Model implements HasMedia
                 return $mediaUrl;
             }
 
-            return (string) ($this->cover_photo_path ?: $this->avatar_url);
+            return (string) ($this->cover_image_path ?: $this->avatar_url);
         });
     }
 

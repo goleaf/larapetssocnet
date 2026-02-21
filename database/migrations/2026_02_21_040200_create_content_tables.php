@@ -28,8 +28,8 @@ return new class extends Migration
             $table->string('type')->default('text');
             $table->string('status')->default('published');
             $table->string('location')->nullable();
-            $table->json('tagged_pets')->nullable();
-            $table->json('metadata')->nullable();
+            $table->text('tagged_pets')->nullable();
+            $table->text('metadata')->nullable();
             $table->boolean('is_pinned')->default(false);
             $table->unsignedInteger('likes_count')->default(0);
             $table->unsignedInteger('comments_count')->default(0);

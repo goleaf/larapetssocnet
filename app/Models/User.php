@@ -184,7 +184,7 @@ class User extends Authenticatable implements HasMedia
 
     public function ownedGroups(): HasMany
     {
-        return $this->hasMany(Group::class, 'owner_id');
+        return $this->hasMany(Group::class, 'owner_user_id');
     }
 
     public function groupMemberships(): HasMany
@@ -201,7 +201,7 @@ class User extends Authenticatable implements HasMedia
 
     public function createdEvents(): HasMany
     {
-        return $this->hasMany(Event::class, 'creator_id');
+        return $this->hasMany(Event::class, 'creator_user_id');
     }
 
     public function eventAttendances(): HasMany
@@ -248,22 +248,23 @@ class User extends Authenticatable implements HasMedia
 
     public function filedReports(): HasMany
     {
-        return $this->hasMany(Report::class, 'reporter_id');
+        return $this->hasMany(Report::class, 'reporter_user_id');
     }
 
     public function reportsAgainst(): HasMany
     {
-        return $this->hasMany(Report::class, 'reported_user_id');
+        return $this->hasMany(Report::class, 'reportable_id')
+            ->where('reportable_type', self::class);
     }
 
     public function resolvedReports(): HasMany
     {
-        return $this->hasMany(Report::class, 'resolved_by');
+        return $this->hasMany(Report::class, 'reviewed_by_user_id');
     }
 
     public function petHealthLogs(): HasMany
     {
-        return $this->hasMany(PetHealthLog::class);
+        return $this->hasMany(PetHealthLog::class, 'logged_by_user_id');
     }
 
     public function petsHealthLogs(): HasManyThrough
@@ -295,6 +296,18 @@ class User extends Authenticatable implements HasMedia
             ->withTimestamps();
     }
 
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'badge_user')
+            ->withPivot('awarded_at')
+            ->withTimestamps();
+    }
+
+    public function contestEntries(): HasMany
+    {
+        return $this->hasMany(ContestEntry::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         if (! $term) {
@@ -305,7 +318,8 @@ class User extends Authenticatable implements HasMedia
             $subQuery
                 ->where('name', 'like', "%{$term}%")
                 ->orWhere('username', 'like', "%{$term}%")
-                ->orWhere('email', 'like', "%{$term}%");
+                ->orWhere('email', 'like', "%{$term}%")
+                ->orWhere('city', 'like', "%{$term}%");
         });
     }
 

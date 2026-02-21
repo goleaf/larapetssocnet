@@ -243,7 +243,7 @@ class PetController extends Controller
     {
         return Pet::query()
             ->where('slug', $slug)
-            ->orWhereKey($slug)
+            ->orWhere('id', $slug)
             ->firstOrFail();
     }
 

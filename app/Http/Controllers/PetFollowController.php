@@ -59,7 +59,7 @@ class PetFollowController extends Controller
     {
         return Pet::query()
             ->where('slug', $slug)
-            ->orWhereKey($slug)
+            ->orWhere('id', $slug)
             ->firstOrFail();
     }
 

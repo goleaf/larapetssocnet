@@ -1,6 +1,6 @@
 @php
     $appName ??= config('app.name', 'LaraPets');
-    $searchTarget ??= Route::has('dashboard') ? route('dashboard') : url('/');
+    $searchTarget ??= Route::has('search.index') ? route('search.index') : url('/');
     $desktopNav ??= [];
     $currentRoute ??= Route::currentRouteName();
     $user ??= Auth::user();
@@ -25,7 +25,7 @@
             </svg>
         </button>
 
-        <a href="{{ Route::has('dashboard') ? route('dashboard') : url('/') }}" class="flex shrink-0 items-center gap-2">
+        <a href="{{ Route::has('feed.index') ? route('feed.index') : url('/') }}" class="flex shrink-0 items-center gap-2">
             <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-lg" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">🐾</span>
             <span class="shell-title text-base sm:text-lg">{{ $appName }}</span>
         </a>

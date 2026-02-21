@@ -9,6 +9,10 @@ use App\Http\Controllers\MarketplaceListingController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\PetCareTipController;
+use App\Http\Controllers\PetController;
+use App\Http\Controllers\PetFollowController;
+use App\Http\Controllers\PetHealthLogController;
 use App\Http\Controllers\PinnedPostController;
 use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\PostController;
@@ -17,6 +21,7 @@ use App\Http\Controllers\PostReportController;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Http\Controllers\Profile\RelationshipController;
 use App\Http\Controllers\SavedPostController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Settings\AccountSettingsController;
 use App\Http\Controllers\Settings\ProfileSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -29,7 +34,14 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/banned', function () {
+    return response()->view('errors.banned', [], 403);
+})->name('banned');
+
+Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
+Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
+Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
 Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
 Route::get('/groups/{group}', [GroupController::class, 'show'])
     ->where('group', '^(?!create$).+')
@@ -44,8 +56,16 @@ Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])
 Route::get('/hashtags/{hashtag}', [HashtagController::class, 'show'])->name('hashtags.show');
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
+Route::get('/pets/{slug}', [PetController::class, 'show'])
+    ->where('slug', '^(?!create$).+')
+    ->name('pets.show');
+Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
+Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
+    ->where('tip', '^(?!create$).+')
+    ->name('tips.show');
+Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
     Route::get('/saved', [SavedPostController::class, 'index'])->name('saved.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -69,6 +89,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/pin', [PinnedPostController::class, 'pin'])->name('posts.pin');
     Route::delete('/posts/{post}/pin', [PinnedPostController::class, 'unpin'])->name('posts.unpin');
     Route::post('/posts/{post}/report', [PostReportController::class, 'store'])->name('posts.report');
+
+    Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
+    Route::post('/pets', [PetController::class, 'store'])->name('pets.store');
+    Route::get('/pets/{slug}/edit', [PetController::class, 'edit'])->name('pets.edit');
+    Route::patch('/pets/{slug}', [PetController::class, 'update'])->name('pets.update');
+    Route::delete('/pets/{slug}', [PetController::class, 'destroy'])->name('pets.destroy');
+    Route::post('/pets/{slug}/follow', [PetFollowController::class, 'store'])->name('pets.follow');
+    Route::delete('/pets/{slug}/follow', [PetFollowController::class, 'destroy'])->name('pets.unfollow');
+
+    Route::get('/pets/{slug}/health', [PetHealthLogController::class, 'index'])->name('pets.health.index');
+    Route::get('/pets/{slug}/health/create', [PetHealthLogController::class, 'create'])->name('pets.health.create');
+    Route::post('/pets/{slug}/health', [PetHealthLogController::class, 'store'])->name('pets.health.store');
+    Route::get('/pets/{slug}/health/{healthLog}/edit', [PetHealthLogController::class, 'edit'])->name('pets.health.edit');
+    Route::patch('/pets/{slug}/health/{healthLog}', [PetHealthLogController::class, 'update'])->name('pets.health.update');
+    Route::delete('/pets/{slug}/health/{healthLog}', [PetHealthLogController::class, 'destroy'])->name('pets.health.destroy');
+
+    Route::get('/tips/create', [PetCareTipController::class, 'create'])->name('tips.create');
+    Route::post('/tips', [PetCareTipController::class, 'store'])->name('tips.store');
+    Route::get('/tips/{tip}/edit', [PetCareTipController::class, 'edit'])->name('tips.edit');
+    Route::patch('/tips/{tip}', [PetCareTipController::class, 'update'])->name('tips.update');
+    Route::delete('/tips/{tip}', [PetCareTipController::class, 'destroy'])->name('tips.destroy');
 
     Route::get('/onboarding/{step}', [OnboardingController::class, 'show'])
         ->whereNumber('step')
@@ -98,6 +139,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/events/{event}', [EventController::class, 'update'])->name('events.update');
     Route::patch('/events/{event}/cancel', [EventController::class, 'cancel'])->name('events.cancel');
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
+    Route::post('/events/{event}/attend', [EventController::class, 'rsvp'])->name('events.attend');
 
     Route::get('/profile', [ProfileSettingsController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileSettingsController::class, 'update'])->name('profile.update');

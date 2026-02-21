@@ -177,7 +177,7 @@ class PetCareTipController extends Controller
     {
         return PetCareTip::query()
             ->where('slug', $tip)
-            ->orWhereKey($tip)
+            ->orWhere('id', $tip)
             ->firstOrFail();
     }
 

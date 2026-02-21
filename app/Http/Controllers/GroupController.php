@@ -521,7 +521,7 @@ class GroupController extends Controller
         }
 
         if (ctype_digit($group)) {
-            $query->orWhereKey((int) $group);
+            $query->orWhere('id', (int) $group);
             $hasConstraint = true;
         }
 

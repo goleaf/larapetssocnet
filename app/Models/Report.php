@@ -24,38 +24,31 @@ class Report extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'reporter_id',
-        'reported_user_id',
+        'reporter_user_id',
         'reportable_type',
         'reportable_id',
         'reason',
         'details',
         'status',
-        'resolved_by',
-        'resolved_at',
-        'resolution_notes',
+        'reviewed_by_user_id',
+        'reviewed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'resolved_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
     public function reporter(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reporter_id');
-    }
-
-    public function reportedUser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'reported_user_id');
+        return $this->belongsTo(User::class, 'reporter_user_id');
     }
 
     public function resolver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'resolved_by');
+        return $this->belongsTo(User::class, 'reviewed_by_user_id');
     }
 
     public function reportable(): MorphTo
@@ -81,9 +74,9 @@ class Report extends Model
     {
         $this->forceFill([
             'status' => self::STATUS_RESOLVED,
-            'resolved_by' => $resolver->getKey(),
-            'resolved_at' => now(),
-            'resolution_notes' => $notes,
+            'reviewed_by_user_id' => $resolver->getKey(),
+            'reviewed_at' => now(),
+            'details' => $notes ?: $this->details,
         ]);
 
         return $this->save();

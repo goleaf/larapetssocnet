@@ -15,14 +15,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 
 class Event extends Model implements HasMedia
 {
     use HasCounterCache;
     use HasFactory;
-    use HasSlug;
     use InteractsWithMedia;
     use SoftDeletes;
 
@@ -41,21 +38,15 @@ class Event extends Model implements HasMedia
      */
     protected $fillable = [
         'group_id',
-        'creator_id',
+        'creator_user_id',
         'title',
-        'slug',
         'description',
-        'location',
-        'timezone',
-        'starts_at',
-        'ends_at',
-        'is_online',
-        'is_private',
-        'capacity',
+        'location_text',
+        'start_at',
+        'end_at',
         'status',
-        'cover_photo_path',
+        'cover_image_path',
         'attendees_count',
-        'interested_count',
     ];
 
     /**
@@ -70,21 +61,10 @@ class Event extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'starts_at' => 'datetime',
-            'ends_at' => 'datetime',
-            'is_online' => 'boolean',
-            'is_private' => 'boolean',
-            'capacity' => 'integer',
+            'start_at' => 'datetime',
+            'end_at' => 'datetime',
             'attendees_count' => 'integer',
-            'interested_count' => 'integer',
         ];
-    }
-
-    public function getSlugOptions(): SlugOptions
-    {
-        return SlugOptions::create()
-            ->generateSlugsFrom('title')
-            ->saveSlugsTo('slug');
     }
 
     public function registerMediaCollections(): void
@@ -100,7 +80,7 @@ class Event extends Model implements HasMedia
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'creator_id');
+        return $this->belongsTo(User::class, 'creator_user_id');
     }
 
     public function attendees(): HasMany
@@ -111,7 +91,7 @@ class Event extends Model implements HasMedia
     public function attendingUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'event_attendees', 'event_id', 'user_id')
-            ->withPivot(['status', 'responded_at', 'checked_in_at'])
+            ->withPivot(['status', 'responded_at'])
             ->withTimestamps();
     }
 
@@ -122,17 +102,12 @@ class Event extends Model implements HasMedia
 
     public function scopeUpcoming(Builder $query): Builder
     {
-        return $query->where('starts_at', '>=', now())->orderBy('starts_at');
+        return $query->where('start_at', '>=', now())->orderBy('start_at');
     }
 
     public function scopePast(Builder $query): Builder
     {
-        return $query->where('starts_at', '<', now())->orderByDesc('starts_at');
-    }
-
-    public function scopePublic(Builder $query): Builder
-    {
-        return $query->where(fn (Builder $subQuery) => $subQuery->whereNull('is_private')->orWhere('is_private', false));
+        return $query->where('start_at', '<', now())->orderByDesc('start_at');
     }
 
     public function scopePublished(Builder $query): Builder
@@ -150,32 +125,28 @@ class Event extends Model implements HasMedia
             $subQuery
                 ->where('title', 'like', "%{$term}%")
                 ->orWhere('description', 'like', "%{$term}%")
-                ->orWhere('location', 'like', "%{$term}%");
+                ->orWhere('location_text', 'like', "%{$term}%");
         });
     }
 
     public function getRouteKeyName(): string
     {
-        return 'slug';
+        return 'id';
     }
 
     public function isUpcoming(): bool
     {
-        return $this->starts_at !== null && $this->starts_at->isFuture();
+        return $this->start_at !== null && $this->start_at->isFuture();
     }
 
     public function isPast(): bool
     {
-        return $this->starts_at !== null && $this->starts_at->isPast();
+        return $this->start_at !== null && $this->start_at->isPast();
     }
 
     public function isFull(): bool
     {
-        if (! $this->capacity || $this->capacity <= 0) {
-            return false;
-        }
-
-        return (int) ($this->attendees_count ?? 0) >= $this->capacity;
+        return false;
     }
 
     public function respond(User $user, string $status = self::ATTENDEE_GOING): EventAttendee
@@ -261,7 +232,7 @@ class Event extends Model implements HasMedia
     {
         return match ($status) {
             self::ATTENDEE_GOING => 'attendees_count',
-            self::ATTENDEE_INTERESTED => 'interested_count',
+            self::ATTENDEE_INTERESTED => null,
             default => null,
         };
     }
@@ -275,7 +246,7 @@ class Event extends Model implements HasMedia
                 return $mediaUrl;
             }
 
-            return (string) ($this->cover_photo_path ?: '');
+            return (string) ($this->cover_image_path ?: '');
         });
     }
 

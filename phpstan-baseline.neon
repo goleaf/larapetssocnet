@@ -1,0 +1,2791 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Contracts\\\\Auth\\\\Guard\\:\\:logout\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/AuthenticatedSessionController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Auth\\\\AuthenticatedSessionController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/AuthenticatedSessionController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Http\\\\Request\\:\\:\\$password\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/ConfirmablePasswordController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Auth\\\\ConfirmablePasswordController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/ConfirmablePasswordController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Http\\\\Request\\:\\:\\$password\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/NewPasswordController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Auth\\\\NewPasswordController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/NewPasswordController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Auth\\\\PasswordResetLinkController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/PasswordResetLinkController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Http\\\\Request\\:\\:\\$email\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/RegisteredUserController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Http\\\\Request\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/RegisteredUserController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Http\\\\Request\\:\\:\\$password\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/RegisteredUserController.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\User\\:\\:create\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/RegisteredUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Auth\\\\RegisteredUserController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Auth/RegisteredUserController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$group_id\\.$#"
+			count: 4
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$role\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Cannot call method delete\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Cannot call method forceFill\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:applyEventVisibility\\(\\) has parameter \\$query with no type specified\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:downloadIcs\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:eventValidationRules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:filterToExistingColumns\\(\\) has parameter \\$payload with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:filterToExistingColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:groupsUserCanCreateEventsIn\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EventController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Parameter \\#1 \\$event of method App\\\\Http\\\\Controllers\\\\EventController\\:\\:eventMaxAttendees\\(\\) expects App\\\\Models\\\\Event, stdClass given\\.$#"
+			count: 1
+			path: app/Http/Controllers/EventController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Post\\>\\:\\:published\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExploreController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ExploreController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExploreController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Post\\>\\:\\:published\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/FeedController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FeedController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/FeedController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$joined_at\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$role\\.$#"
+			count: 6
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$status\\.$#"
+			count: 4
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user_id\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Support\\\\Optional\\:\\:\\$role\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:with\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:applyDiscoveryVisibility\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:applyIndexFilters\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:applyIndexSort\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:filterToExistingColumns\\(\\) has parameter \\$payload with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:filterToExistingColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Parameter \\#1 \\$query of method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:applyDiscoveryVisibility\\(\\) expects Illuminate\\\\Database\\\\Eloquent\\\\Builder, Illuminate\\\\Database\\\\Query\\\\Builder given\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Parameter \\#1 \\$query of method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:applyIndexFilters\\(\\) expects Illuminate\\\\Database\\\\Eloquent\\\\Builder, Illuminate\\\\Database\\\\Query\\\\Builder given\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Parameter \\#1 \\$query of method App\\\\Http\\\\Controllers\\\\GroupController\\:\\:applyIndexSort\\(\\) expects Illuminate\\\\Database\\\\Eloquent\\\\Builder, Illuminate\\\\Database\\\\Query\\\\Builder given\\.$#"
+			count: 1
+			path: app/Http/Controllers/GroupController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Hashtag\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Controllers/HashtagController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Post\\>\\:\\:published\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/HashtagController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HashtagController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/HashtagController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$seller\\.$#"
+			count: 2
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$user_id\\.$#"
+			count: 7
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$is_private\\.$#"
+			count: 1
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\MarketplaceListing\\>\\:\\:search\\(\\)\\.$#"
+			count: 2
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MarketplaceListingController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MarketplaceListingController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MarketplaceListingController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MarketplaceListingController\\:\\:myListings\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MarketplaceListingController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MarketplaceListingController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$body\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$marketplace_listing_id\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$recipient\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$recipient_user_id\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$sender\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$sender_user_id\\.$#"
+			count: 2
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$sent_at\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$is_private\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Message\\>\\:\\:between\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Message\\>\\:\\:forUser\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:with\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Support\\\\Optional\\:\\:toIso8601String\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MessageController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MessageController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/MessageController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Notifications\\\\DatabaseNotification\\:\\:\\$created_at\\.$#"
+			count: 5
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Notifications\\\\DatabaseNotification\\:\\:\\$data\\.$#"
+			count: 1
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Notifications\\\\DatabaseNotification\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Notifications\\\\DatabaseNotification\\:\\:\\$read_at\\.$#"
+			count: 2
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Notifications\\\\DatabaseNotification\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\NotificationController\\:\\:groupForIndex\\(\\) has parameter \\$notifications with generic class Illuminate\\\\Pagination\\\\LengthAwarePaginator but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\NotificationController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$interests_text\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$onboarding_completed_at\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$onboarding_step\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:whereDoesntHave\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\OnboardingController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\RedirectResponse\\|Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Parameter \\#1 \\$callback of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:each\\(\\) expects callable\\(stdClass, int\\)\\: mixed, Closure\\(App\\\\Models\\\\Group\\)\\: void given\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Parameter \\#1 \\$callback of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:each\\(\\) expects callable\\(stdClass, int\\)\\: mixed, Closure\\(App\\\\Models\\\\User\\)\\: mixed given\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Unable to resolve the template type TKey in call to function collect$#"
+			count: 3
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Unable to resolve the template type TValue in call to function collect$#"
+			count: 3
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: "#^Call to protected method increment\\(\\) of class Illuminate\\\\Database\\\\Eloquent\\\\Model\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:filterToExistingColumns\\(\\) has parameter \\$payload with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:filterToExistingColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetCareTipController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetCareTipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:adopt\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:explore\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:filterToExistingColumns\\(\\) has parameter \\$payload with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:filterToExistingColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:normalizePersonalityTags\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:normalizePetPayload\\(\\) has parameter \\$validated with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:normalizePetPayload\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:petRules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetController.php
+
+		-
+			message: "#^Call to method format\\(\\) on an unknown class Illuminate\\\\Support\\\\CarbonInterface\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Class Illuminate\\\\Support\\\\CarbonInterface not found\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:buildTrendData\\(\\) has parameter \\$series with generic class Illuminate\\\\Support\\\\Collection but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:buildTrendData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:filterToExistingColumns\\(\\) has parameter \\$payload with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:filterToExistingColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PetHealthLogController\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Return type of call to function collect contains unresolvable type\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Return type of call to method Illuminate\\\\Support\\\\Collection\\<int,array\\<string, mixed\\>\\>\\:\\:all\\(\\) contains unresolvable type\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Return type of call to method Illuminate\\\\Support\\\\Collection\\<int,float\\>\\:\\:map\\(\\) contains unresolvable type\\.$#"
+			count: 1
+			path: app/Http/Controllers/PetHealthLogController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user_id\\.$#"
+			count: 2
+			path: app/Http/Controllers/PinnedPostController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$id\\.$#"
+			count: 2
+			path: app/Http/Controllers/PostCommentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$parent_id\\.$#"
+			count: 2
+			path: app/Http/Controllers/PostCommentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$post_id\\.$#"
+			count: 2
+			path: app/Http/Controllers/PostCommentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$user_id\\.$#"
+			count: 2
+			path: app/Http/Controllers/PostCommentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 5
+			path: app/Http/Controllers/PostCommentController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user_id\\.$#"
+			count: 3
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PostController\\:\\:create\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PostController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PostController\\:\\:resolveTaggedPets\\(\\) should return Illuminate\\\\Support\\\\Collection\\<int, App\\\\Models\\\\Pet\\> but returns Illuminate\\\\Support\\\\Collection\\<int, stdClass\\>\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PostController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Unable to resolve the template type TKey in call to function collect$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Unable to resolve the template type TValue in call to function collect$#"
+			count: 1
+			path: app/Http/Controllers/PostController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 3
+			path: app/Http/Controllers/PostReactionController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$likes_count\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostReactionController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\PostReaction\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostReactionController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostReportController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user_id\\.$#"
+			count: 1
+			path: app/Http/Controllers/PostReportController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/PublicProfileController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$is_private\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/PublicProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Profile\\\\PublicProfileController\\:\\:followers\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/PublicProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Profile\\\\PublicProfileController\\:\\:following\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/PublicProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Profile\\\\PublicProfileController\\:\\:show\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/PublicProfileController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$followers_count\\.$#"
+			count: 2
+			path: app/Http/Controllers/Profile/RelationshipController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 4
+			path: app/Http/Controllers/Profile/RelationshipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Profile\\\\RelationshipController\\:\\:errorResponse\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/RelationshipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Profile\\\\RelationshipController\\:\\:successResponse\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Controllers/Profile/RelationshipController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 2
+			path: app/Http/Controllers/SavedPostController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:with\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/SavedPostController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SavedPostController\\:\\:index\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/SavedPostController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SearchController\\:\\:__invoke\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SearchController\\:\\:searchByType\\(\\) return type with generic interface Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Settings\\\\AccountSettingsController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Settings/AccountSettingsController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Settings\\\\ProfileSettingsController\\:\\:edit\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/Http/Controllers/Settings/ProfileSettingsController.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Contracts\\\\Auth\\\\Factory\\:\\:logout\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Middleware/BannedUserMiddleware.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\ReactToPostRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/ReactToPostRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreCommentRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreCommentRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreContestEntryRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreContestEntryRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreContestRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreContestRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreEventRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreEventRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreGroupRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreGroupRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreListingRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreListingRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StoreMessageRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StoreMessageRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StorePetCareTipRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StorePetCareTipRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StorePetHealthLogRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StorePetHealthLogRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StorePetRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StorePetRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StorePostReportRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StorePostReportRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\StorePostRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/StorePostRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\UpdateAccountRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/UpdateAccountRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\UpdateCommentRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/UpdateCommentRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\UpdatePostRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/UpdatePostRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Requests\\\\UpdateProfileRequest\\:\\:rules\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Http/Requests/UpdateProfileRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Badge\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Models/Badge.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Badge\\:\\:\\$slug\\.$#"
+			count: 1
+			path: app/Models/Badge.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Badge uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Badge.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Badge\\:\\:users\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Badge.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$body\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$parent_id\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Reaction\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Anonymous function should return App\\\\Models\\\\Reaction but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Anonymous function should return App\\\\Models\\\\Reaction but returns stdClass\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Cannot call method forceFill\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Comment uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:commentable\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:parent\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:post\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:reactionCounts\\(\\) return type with generic class Illuminate\\\\Support\\\\Collection does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:reactionFrom\\(\\) should return App\\\\Models\\\\Reaction\\|null but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\|null\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:reactions\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:replies\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:reports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeRecent\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeRecent\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeTopLevel\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeTopLevel\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeTopLevel\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeWithReactionsCount\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:scopeWithReactionsCount\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Comment\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Comment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Contest\\:\\:\\$slug\\.$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Contest\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Contest uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Contest\\:\\:entries\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Contest\\:\\:organizer\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Contest\\:\\:scopeActive\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Contest\\:\\:scopeActive\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Contest\\:\\:scopeVoting\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Contest\\:\\:scopeVoting\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Contest.php
+
+		-
+			message: "#^Class App\\\\Models\\\\ContestEntry uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/ContestEntry.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestEntry\\:\\:contest\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestEntry.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestEntry\\:\\:pet\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestEntry.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestEntry\\:\\:post\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestEntry.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestEntry\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestEntry.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestEntry\\:\\:votes\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestEntry.php
+
+		-
+			message: "#^Class App\\\\Models\\\\ContestVote uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/ContestVote.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestVote\\:\\:entry\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestVote.php
+
+		-
+			message: "#^Method App\\\\Models\\\\ContestVote\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/ContestVote.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$cover_image_path\\.$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$cover_photo_url\\.$#"
+			count: 2
+			path: app/Models/Event.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$start_at\\.$#"
+			count: 2
+			path: app/Models/Event.php
+
+		-
+			message: "#^Anonymous function should return App\\\\Models\\\\EventAttendee but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\.$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Anonymous function should return App\\\\Models\\\\EventAttendee but returns stdClass\\.$#"
+			count: 2
+			path: app/Models/Event.php
+
+		-
+			message: "#^Cannot call method delete\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Cannot call method forceFill\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Event uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:attendees\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:attendingUsers\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:creator\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:group\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:reports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopePast\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopePast\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopePast\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopePublished\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopePublished\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopeSearch\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopeSearch\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopeUpcoming\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopeUpcoming\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Event\\:\\:scopeUpcoming\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Event.php
+
+		-
+			message: "#^Class App\\\\Models\\\\EventAttendee uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:event\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:scopeDeclined\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:scopeDeclined\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:scopeGoing\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:scopeGoing\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:scopeInterested\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:scopeInterested\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Models\\\\EventAttendee\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/EventAttendee.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$avatar_path\\.$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$avatar_url\\.$#"
+			count: 2
+			path: app/Models/Group.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$cover_image_path\\.$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Cannot call method delete\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Cannot call method forceFill\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Group uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:events\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:members\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:memberships\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:owner\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:posts\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopePrivate\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopePrivate\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopePrivate\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopePublic\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopePublic\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopeSearch\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Group\\:\\:scopeSearch\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Group.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$role\\.$#"
+			count: 2
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\GroupMember\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Class App\\\\Models\\\\GroupMember uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:group\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:invitedBy\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopeActive\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopeActive\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopeAdmins\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopeAdmins\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopeAdmins\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopePending\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:scopePending\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Method App\\\\Models\\\\GroupMember\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/GroupMember.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Hashtag\\:\\:\\$name\\.$#"
+			count: 3
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Hashtag uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Hashtag\\:\\:posts\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Hashtag\\:\\:scopeSearch\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Hashtag\\:\\:scopeSearch\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Hashtag\\:\\:scopeTrending\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Hashtag\\:\\:scopeTrending\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Hashtag\\:\\:scopeTrending\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Hashtag.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$currency\\.$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$price\\.$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Class App\\\\Models\\\\MarketplaceListing uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:messages\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:pet\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:reports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopeActive\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopeActive\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopeOfType\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopeOfType\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopePublished\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopePublished\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopeSearch\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:scopeSearch\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:seller\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Method App\\\\Models\\\\MarketplaceListing\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/MarketplaceListing.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$read_at\\.$#"
+			count: 2
+			path: app/Models/Message.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$sender_user_id\\.$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Message uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:listing\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:recipient\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeBetween\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeBetween\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeForUser\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeForUser\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeUnread\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeUnread\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:scopeUnread\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Message\\:\\:sender\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$age_years\\.$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$avatar_path\\.$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$avatar_url\\.$#"
+			count: 2
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$birth_date\\.$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$cover_photo_path\\.$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Pet uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:followers\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:healthLogs\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:marketplaceListings\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:owner\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:posts\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopeAdoptable\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopeAdoptable\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopeLost\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopeLost\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopePublic\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopePublic\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopeSearch\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:scopeSearch\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Pet\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Pet.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\PetCareTip\\:\\:\\$slug\\.$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\PetCareTip\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Class App\\\\Models\\\\PetCareTip uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetCareTip\\:\\:author\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetCareTip\\:\\:scopeApproved\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetCareTip\\:\\:scopeApproved\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetCareTip\\:\\:scopeBySpecies\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetCareTip\\:\\:scopeBySpecies\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetCareTip.php
+
+		-
+			message: "#^Class App\\\\Models\\\\PetHealthLog uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetHealthLog\\:\\:pet\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetHealthLog\\:\\:scopeOfType\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetHealthLog\\:\\:scopeOfType\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetHealthLog\\:\\:scopeRecent\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetHealthLog\\:\\:scopeRecent\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PetHealthLog\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PetHealthLog.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$body\\.$#"
+			count: 2
+			path: app/Models/Post.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user\\.$#"
+			count: 2
+			path: app/Models/Post.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user_id\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$visibility\\.$#"
+			count: 2
+			path: app/Models/Post.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Reaction\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 3
+			path: app/Models/Post.php
+
+		-
+			message: "#^Anonymous function should return App\\\\Models\\\\Reaction but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Anonymous function should return App\\\\Models\\\\Reaction but returns stdClass\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\:\\:notBlockedFor\\(\\)\\.$#"
+			count: 2
+			path: app/Models/Post.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\:\\:public\\(\\)\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\:\\:published\\(\\)\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Hashtag\\:\\:firstOrCreate\\(\\)\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Cannot call method forceFill\\(\\) on stdClass\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Post uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:comments\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:group\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:hashtags\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:pet\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:postReactions\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:postReports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:reactionCounts\\(\\) return type with generic class Illuminate\\\\Support\\\\Collection does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:reactionFrom\\(\\) should return App\\\\Models\\\\Reaction\\|null but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\|null\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:reactions\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:reports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:saves\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeForFeed\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeForFeed\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeNotBlockedFor\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeNotBlockedFor\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeNotBlockedFor\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Builder but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopePublic\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopePublic\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopePublished\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopePublished\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeVisibleTo\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeVisibleTo\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeWithReactionsCount\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:scopeWithReactionsCount\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:topLevelComments\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:topLevelComments\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany but returns Illuminate\\\\Database\\\\Query\\\\Builder\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Post\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Offset 1 on array\\{array\\<int, string\\>, array\\<int, non\\-empty\\-string\\>\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Models/Post.php
+
+		-
+			message: "#^Class App\\\\Models\\\\PostReaction uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/PostReaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PostReaction\\:\\:post\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PostReaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PostReaction\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PostReaction.php
+
+		-
+			message: "#^Class App\\\\Models\\\\PostReport uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/PostReport.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PostReport\\:\\:post\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PostReport.php
+
+		-
+			message: "#^Method App\\\\Models\\\\PostReport\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/PostReport.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Reaction\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Reaction uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Reaction\\:\\:reactable\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Reaction\\:\\:scopeFromUser\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Reaction\\:\\:scopeFromUser\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Reaction\\:\\:scopeOfType\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Reaction\\:\\:scopeOfType\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Reaction\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Reaction.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Report\\:\\:\\$details\\.$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Class App\\\\Models\\\\Report uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:reportable\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:reporter\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:resolver\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:scopePending\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:scopePending\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:scopeResolved\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Method App\\\\Models\\\\Report\\:\\:scopeResolved\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/Report.php
+
+		-
+			message: "#^Class App\\\\Models\\\\SavedPost uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/SavedPost.php
+
+		-
+			message: "#^Method App\\\\Models\\\\SavedPost\\:\\:post\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/SavedPost.php
+
+		-
+			message: "#^Method App\\\\Models\\\\SavedPost\\:\\:user\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/SavedPost.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$age_years\\.$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$avatar_url\\.$#"
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$birth_date\\.$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$email\\.$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$is_private\\.$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 3
+			path: app/Models/User.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany\\:\\:unread\\(\\)\\.$#"
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: "#^Class App\\\\Models\\\\User uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:attendingEvents\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:badges\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:blockedByUsers\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:blockedUsers\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:comments\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:contestEntries\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:createdEvents\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:eventAttendances\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:filedReports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:followedPets\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:followers\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:following\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:groupMemberships\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:groups\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsToMany does not specify its types\\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \\(2\\-4 required\\)$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:marketplaceListings\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:ownedGroups\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:petHealthLogs\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:pets\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:petsHealthLogs\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasManyThrough does not specify its types\\: TRelatedModel, TIntermediateModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:posts\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:reactions\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:receivedMessages\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:reportsAgainst\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:reportsAgainst\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany but returns Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<App\\\\Models\\\\Report\\>\\.$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:resolvedReports\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:scopeActiveRecently\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:scopeActiveRecently\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:scopeDiscoverable\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:scopeDiscoverable\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:scopeSearch\\(\\) has parameter \\$query with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder but does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:scopeSearch\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Builder does not specify its types\\: TModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Method App\\\\Models\\\\User\\:\\:sentMessages\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Class App\\\\Models\\\\UserBlock uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/UserBlock.php
+
+		-
+			message: "#^Method App\\\\Models\\\\UserBlock\\:\\:blocked\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/UserBlock.php
+
+		-
+			message: "#^Method App\\\\Models\\\\UserBlock\\:\\:blocker\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/UserBlock.php
+
+		-
+			message: "#^Class App\\\\Models\\\\UserFollow uses generic trait Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory but does not specify its types\\: TFactory$#"
+			count: 1
+			path: app/Models/UserFollow.php
+
+		-
+			message: "#^Method App\\\\Models\\\\UserFollow\\:\\:follower\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/UserFollow.php
+
+		-
+			message: "#^Method App\\\\Models\\\\UserFollow\\:\\:following\\(\\) return type with generic class Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo does not specify its types\\: TRelatedModel, TDeclaringModel$#"
+			count: 1
+			path: app/Models/UserFollow.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$title\\.$#"
+			count: 4
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 4
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\EventAttendee\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\EventAttendee\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/EventAttendee.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\GroupJoinApproved\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\GroupJoinApproved\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinApproved.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\GroupJoinRequest\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\GroupJoinRequest\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/GroupJoinRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$title\\.$#"
+			count: 2
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\ListingInterest\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\ListingInterest\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/ListingInterest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$body\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$body\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewComment\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewComment\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewComment.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewFollower.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/NewFollower.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/NewFollower.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewFollower\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewFollower.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewFollower\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewFollower.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$body\\.$#"
+			count: 1
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewMessage\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewMessage\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewMessage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewReaction.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/NewReaction.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 3
+			path: app/Notifications/NewReaction.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/NewReaction.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewReaction\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewReaction.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\NewReaction\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/NewReaction.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$name\\.$#"
+			count: 2
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$username\\.$#"
+			count: 1
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\PetFollowed\\:\\:toArray\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\PetFollowed\\:\\:via\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Notifications/PetFollowed.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$post\\.$#"
+			count: 2
+			path: app/Policies/CommentPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Comment\\:\\:\\$user_id\\.$#"
+			count: 1
+			path: app/Policies/CommentPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Event\\:\\:\\$group_id\\.$#"
+			count: 1
+			path: app/Policies/EventPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Group\\:\\:\\$owner_user_id\\.$#"
+			count: 3
+			path: app/Policies/GroupPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Policies/MarketplaceListingPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\MarketplaceListing\\:\\:\\$user_id\\.$#"
+			count: 2
+			path: app/Policies/MarketplaceListingPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$recipient_user_id\\.$#"
+			count: 1
+			path: app/Policies/MessagePolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Message\\:\\:\\$sender_user_id\\.$#"
+			count: 2
+			path: app/Policies/MessagePolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$is_public\\.$#"
+			count: 1
+			path: app/Policies/PetPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Pet\\:\\:\\$user_id\\.$#"
+			count: 2
+			path: app/Policies/PetPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user\\.$#"
+			count: 1
+			path: app/Policies/PostPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$user_id\\.$#"
+			count: 4
+			path: app/Policies/PostPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Post\\:\\:\\$visibility\\.$#"
+			count: 1
+			path: app/Policies/PostPolicy.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\Badge\\:\\:\\$condition_type\\.$#"
+			count: 1
+			path: app/Services/BadgeService.php
+
+		-
+			message: "#^Offset 1 on array\\{array\\<int, string\\>, array\\<int, non\\-empty\\-string\\>\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 2
+			path: app/Services/HashtagService.php
+
+		-
+			message: "#^Method App\\\\View\\\\Components\\\\AppLayout\\:\\:render\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/View/Components/AppLayout.php
+
+		-
+			message: "#^Method App\\\\View\\\\Components\\\\GuestLayout\\:\\:render\\(\\) should return Illuminate\\\\View\\\\View but returns Illuminate\\\\Contracts\\\\View\\\\View\\.$#"
+			count: 1
+			path: app/View/Components/GuestLayout.php

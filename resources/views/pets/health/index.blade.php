@@ -73,8 +73,8 @@
                     <div class="mt-3 space-y-3">
                         @forelse($upcomingLogs as $upcoming)
                             <div class="rounded-md bg-amber-50 p-3 text-sm">
-                                <div class="font-medium text-amber-800">{{ ucfirst(str_replace('_', ' ', (string) ($upcoming->type ?? 'entry'))) }}</div>
-                                <div class="text-amber-700">Due {{ $formatDate($upcoming->next_due_at) }}</div>
+                                <div class="font-medium text-amber-800">{{ ucfirst(str_replace('_', ' ', (string) ($upcoming->log_type ?? 'entry'))) }}</div>
+                                <div class="text-amber-700">Logged {{ $formatDate($upcoming->logged_at) }}</div>
                                 @if(!empty($upcoming->notes))
                                     <div class="mt-1 text-amber-700">{{ \Illuminate\Support\Str::limit((string) $upcoming->notes, 80) }}</div>
                                 @endif
@@ -99,7 +99,6 @@
                                     <th class="px-3 py-2 text-left font-medium text-gray-600">Type</th>
                                     <th class="px-3 py-2 text-left font-medium text-gray-600">Value</th>
                                     <th class="px-3 py-2 text-left font-medium text-gray-600">Logged</th>
-                                    <th class="px-3 py-2 text-left font-medium text-gray-600">Next due</th>
                                     <th class="px-3 py-2 text-left font-medium text-gray-600">Notes</th>
                                     <th class="px-3 py-2 text-left font-medium text-gray-600">Actions</th>
                                 </tr>
@@ -107,10 +106,17 @@
                             <tbody class="divide-y divide-gray-100">
                                 @foreach($logs as $log)
                                     <tr>
-                                        <td class="px-3 py-2">{{ ucfirst(str_replace('_', ' ', (string) ($log->type ?? 'entry'))) }}</td>
-                                        <td class="px-3 py-2">{{ is_null($log->value) ? '—' : $log->value.' '.$log->unit }}</td>
+                                        <td class="px-3 py-2">{{ ucfirst(str_replace('_', ' ', (string) ($log->log_type ?? 'entry'))) }}</td>
+                                        <td class="px-3 py-2">
+                                            @if(!is_null($log->weight_kg))
+                                                {{ $log->weight_kg }} kg
+                                            @elseif(!is_null($log->temperature_c))
+                                                {{ $log->temperature_c }} °C
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
                                         <td class="px-3 py-2">{{ $formatDate($log->logged_at) }}</td>
-                                        <td class="px-3 py-2">{{ $formatDate($log->next_due_at) }}</td>
                                         <td class="px-3 py-2">{{ \Illuminate\Support\Str::limit((string) $log->notes, 70) ?: '—' }}</td>
                                         <td class="px-3 py-2">
                                             <div class="flex items-center gap-2">
