@@ -109,6 +109,63 @@ document.addEventListener('alpine:init', () => {
         },
     });
 
+    Alpine.store('toast', {
+        items: [],
+
+        add(message, type = 'success') {
+            const id = Date.now() + Math.random();
+            this.items.push({ id, message, type });
+            window.setTimeout(() => this.remove(id), 4000);
+        },
+
+        remove(id) {
+            this.items = this.items.filter((item) => item.id !== id);
+        },
+    });
+
+    Alpine.store('confirm', {
+        open: false,
+        message: '',
+        title: 'Are you sure?',
+        variant: 'danger',
+        confirmLabel: 'Confirm',
+        cancelLabel: 'Cancel',
+        resolve: null,
+
+        ask(message, options = {}) {
+            this.open = true;
+            this.message = message;
+            this.title = options.title ?? 'Are you sure?';
+            this.variant = options.variant ?? 'danger';
+            this.confirmLabel = options.confirmLabel ?? 'Confirm';
+            this.cancelLabel = options.cancelLabel ?? 'Cancel';
+
+            return new Promise((resolve) => {
+                this.resolve = resolve;
+            });
+        },
+
+        confirm() {
+            this.open = false;
+
+            if (typeof this.resolve === 'function') {
+                this.resolve(true);
+            }
+
+            this.resolve = null;
+        },
+
+        cancel() {
+            this.open = false;
+
+            if (typeof this.resolve === 'function') {
+                this.resolve(false);
+            }
+
+            this.resolve = null;
+        },
+    });
+
     Alpine.data('themeController', () => ({
         get theme() {
             return Alpine.store('ui').theme;

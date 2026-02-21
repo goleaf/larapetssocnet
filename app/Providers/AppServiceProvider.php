@@ -19,7 +19,7 @@ use App\Policies\CommentPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\FollowPolicy;
 use App\Policies\GroupPolicy;
-use App\Policies\MarketplaceListingPolicy;
+use App\Policies\ListingPolicy;
 use App\Policies\MessagePolicy;
 use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
@@ -61,7 +61,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Pet::class, PetPolicy::class);
         Gate::policy(Group::class, GroupPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
-        Gate::policy(MarketplaceListing::class, MarketplaceListingPolicy::class);
+        Gate::policy(MarketplaceListing::class, ListingPolicy::class);
         Gate::policy(Message::class, MessagePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
         Gate::define('follow', [FollowPolicy::class, 'follow']);

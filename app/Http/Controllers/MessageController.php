@@ -5,61 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\MarketplaceListing;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\ConversationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class MessageController extends Controller
 {
+    public function __construct(private readonly ConversationService $conversations) {}
+
     public function index(Request $request): View
     {
         $viewer = $request->user();
-        $viewerId = (int) $viewer->getKey();
-
-        $latestMessageIds = Message::query()
-            ->forUser($viewer)
-            ->selectRaw('MAX(id) as latest_message_id')
-            ->selectRaw('CASE WHEN sender_user_id = ? THEN recipient_user_id ELSE sender_user_id END as peer_id', [$viewerId])
-            ->groupBy(DB::raw("CASE WHEN sender_user_id = {$viewerId} THEN recipient_user_id ELSE sender_user_id END"))
-            ->pluck('latest_message_id');
-
-        $unreadByPeer = Message::query()
-            ->where('recipient_user_id', $viewerId)
-            ->whereNull('read_at')
-            ->selectRaw('sender_user_id as peer_id, COUNT(*) as unread_count')
-            ->groupBy('sender_user_id')
-            ->pluck('unread_count', 'peer_id');
-
-        $threads = Message::query()
-            ->whereIn('id', $latestMessageIds)
-            ->with([
-                'sender:id,name,username,avatar_path',
-                'recipient:id,name,username,avatar_path',
-            ])
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(function (Message $message) use ($viewerId, $unreadByPeer): ?array {
-                $isSentByViewer = (int) $message->sender_user_id === $viewerId;
-                $peer = $isSentByViewer ? $message->recipient : $message->sender;
-
-                if (! $peer) {
-                    return null;
-                }
-
-                return [
-                    'peer' => $peer,
-                    'latest_message' => $message,
-                    'is_sent_by_viewer' => $isSentByViewer,
-                    'unread_count' => (int) ($unreadByPeer[$peer->getKey()] ?? 0),
-                ];
-            })
-            ->filter()
-            ->values();
+        $threads = $this->conversations->getInboxForUser($viewer);
 
         $search = trim((string) $request->input('q'));
 
@@ -84,35 +48,33 @@ class MessageController extends Controller
     public function show(Request $request, User $peer): View
     {
         $viewer = $request->user();
+        $activeListing = $this->resolveListingContext($request, $peer);
 
-        Message::query()
-            ->where('sender_user_id', $peer->getKey())
-            ->where('recipient_user_id', $viewer->getKey())
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $restriction = null;
 
-        $messages = Message::query()
+        try {
+            $this->conversations->findOrCreate($viewer, $peer, $activeListing);
+            $this->conversations->markAsRead($viewer, $peer, $activeListing);
+        } catch (ValidationException $exception) {
+            $restriction = $this->firstValidationMessage($exception);
+        }
+
+        $messagesQuery = Message::query()
             ->between($viewer, $peer)
             ->with([
                 'sender:id,name,username,avatar_path',
                 'recipient:id,name,username,avatar_path',
                 'listing:id,title,user_id',
             ])
-            ->orderByDesc('created_at')
-            ->paginate(20)
-            ->withQueryString();
+            ->orderByDesc('id');
 
-        $activeListing = null;
-        $listingId = (int) $request->input('listing');
-
-        if ($listingId > 0) {
-            $activeListing = MarketplaceListing::query()
-                ->whereKey($listingId)
-                ->where('user_id', $peer->getKey())
-                ->first();
+        if ($this->hasListingColumn() && $activeListing) {
+            $messagesQuery->where('marketplace_listing_id', $activeListing->getKey());
         }
 
-        $restriction = $this->messageRestriction($viewer, $peer);
+        $messages = $messagesQuery
+            ->paginate(20)
+            ->withQueryString();
 
         return view('messages.show', [
             'peer' => $peer,
@@ -126,44 +88,37 @@ class MessageController extends Controller
 
     public function store(Request $request, User $peer): JsonResponse|RedirectResponse
     {
-        $viewer = $request->user();
-        $restriction = $this->messageRestriction($viewer, $peer);
-
-        if ($restriction !== null) {
-            return $this->denyMessaging($request, $restriction, 422);
-        }
-
-        $hasListingColumn = Schema::hasColumn('messages', 'marketplace_listing_id');
-
         $rules = [
             'body' => ['required', 'string', 'max:5000'],
         ];
 
-        if ($hasListingColumn) {
+        if ($this->hasListingColumn()) {
             $rules['marketplace_listing_id'] = [
                 'nullable',
                 'integer',
-                Rule::exists('marketplace_listings', 'id')->where(
-                    fn ($query) => $query->where('user_id', $peer->getKey())
-                ),
+                Rule::exists('marketplace_listings', 'id')->where(fn ($query) => $query->where('user_id', $peer->getKey())),
             ];
         }
 
         $validated = $request->validate($rules);
+        $viewer = $request->user();
 
-        $payload = [
-            'sender_user_id' => $viewer->getKey(),
-            'recipient_user_id' => $peer->getKey(),
-            'body' => trim((string) $validated['body']),
-            'sent_at' => now(),
-        ];
+        $listing = null;
 
-        if ($hasListingColumn) {
-            $payload['marketplace_listing_id'] = $validated['marketplace_listing_id'] ?? null;
+        if ($this->hasListingColumn() && ! empty($validated['marketplace_listing_id'])) {
+            $listing = MarketplaceListing::query()->find((int) $validated['marketplace_listing_id']);
         }
 
-        $message = Message::query()->create($payload);
-        $message->load(['sender:id,name,username,avatar_path', 'recipient:id,name,username,avatar_path', 'listing:id,title']);
+        try {
+            $message = $this->conversations->sendMessage(
+                $viewer,
+                $peer,
+                (string) $validated['body'],
+                $listing,
+            );
+        } catch (ValidationException $exception) {
+            return $this->validationFailure($request, $exception);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -180,22 +135,24 @@ class MessageController extends Controller
         }
 
         return redirect()
-            ->route('messages.conversation', [
+            ->route('messages.show', [
                 'peer' => $peer,
-                'listing' => $payload['marketplace_listing_id'] ?? null,
+                'listing' => $listing?->getKey(),
             ])
             ->with('success', 'Message sent.');
     }
 
-    public function destroy(Request $request, Message $message): JsonResponse|RedirectResponse
+    public function destroyMessage(Request $request, Message $message): JsonResponse|RedirectResponse
     {
-        $viewer = $request->user();
+        try {
+            $this->conversations->deleteMessage($request->user(), $message);
+        } catch (AuthorizationException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage()], 403);
+            }
 
-        if (! $message->isOwnedBy($viewer)) {
-            return $this->denyMessaging($request, 'You can only delete your own messages.', 403);
+            return redirect()->back()->withErrors(['message' => $exception->getMessage()]);
         }
-
-        $message->delete();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -206,39 +163,199 @@ class MessageController extends Controller
         return redirect()->back()->with('success', 'Message deleted.');
     }
 
-    private function messageRestriction(User $sender, User $recipient): ?string
+    public function startOrShow(Request $request): JsonResponse|RedirectResponse
     {
-        if ((int) $sender->getKey() === (int) $recipient->getKey()) {
-            return 'You cannot message yourself.';
+        $validated = $request->validate([
+            'peer_id' => ['required', 'integer', 'exists:users,id'],
+            'listing_id' => ['nullable', 'integer', 'exists:marketplace_listings,id'],
+        ]);
+
+        $viewer = $request->user();
+        $peer = User::query()->findOrFail((int) $validated['peer_id']);
+        $listing = null;
+
+        if (! empty($validated['listing_id'])) {
+            $listing = MarketplaceListing::query()
+                ->whereKey((int) $validated['listing_id'])
+                ->where('user_id', $peer->getKey())
+                ->first();
         }
 
-        if ($this->isBlockedBetween($sender, $recipient)) {
-            return 'Messaging is unavailable because one user has blocked the other.';
+        try {
+            $this->conversations->findOrCreate($viewer, $peer, $listing);
+        } catch (ValidationException $exception) {
+            return $this->validationFailure($request, $exception, 422);
         }
 
-        if ((bool) $recipient->is_private && ! $this->isFollowing($sender, $recipient)) {
-            return 'This profile is private. Follow the user before sending a message.';
+        $conversationUrl = route('messages.show', [
+            'peer' => $peer,
+            'listing' => $listing?->getKey(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Conversation is ready.',
+                'conversation_url' => $conversationUrl,
+            ]);
         }
 
-        return null;
+        return redirect($conversationUrl);
     }
 
-    private function isBlockedBetween(User $first, User $second): bool
+    public function block(Request $request, User $peer): JsonResponse|RedirectResponse
     {
-        return $first->hasBlockingRelationshipWith($second);
+        try {
+            $this->conversations->blockUser($request->user(), $peer);
+        } catch (\Throwable $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage()], 422);
+            }
+
+            return redirect()->back()->withErrors(['message' => $exception->getMessage()]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User blocked.',
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'User blocked.');
     }
 
-    private function isFollowing(User $follower, User $followed): bool
+    public function unblock(Request $request, User $peer): JsonResponse|RedirectResponse
     {
-        return $follower->isFollowing($followed);
+        try {
+            $this->conversations->unblockUser($request->user(), $peer);
+        } catch (\Throwable $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage()], 422);
+            }
+
+            return redirect()->back()->withErrors(['message' => $exception->getMessage()]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User unblocked.',
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'User unblocked.');
     }
 
-    private function denyMessaging(Request $request, string $message, int $status): JsonResponse|RedirectResponse
+    public function poll(Request $request, User $peer): JsonResponse
+    {
+        $rules = [
+            'since_id' => ['nullable', 'integer', 'min:1'],
+        ];
+
+        if ($this->hasListingColumn()) {
+            $rules['listing_id'] = [
+                'nullable',
+                'integer',
+                Rule::exists('marketplace_listings', 'id')->where(fn ($query) => $query->where('user_id', $peer->getKey())),
+            ];
+        }
+
+        $validated = $request->validate($rules);
+        $viewer = $request->user();
+
+        $listing = null;
+
+        if ($this->hasListingColumn() && ! empty($validated['listing_id'])) {
+            $listing = MarketplaceListing::query()->find((int) $validated['listing_id']);
+        }
+
+        try {
+            $this->conversations->findOrCreate($viewer, $peer, $listing);
+        } catch (ValidationException $exception) {
+            return response()->json([
+                'message' => $this->firstValidationMessage($exception),
+                'messages' => [],
+                'unread_count' => $this->conversations->getUnreadCountForUser($viewer),
+            ], 422);
+        }
+
+        $sinceId = isset($validated['since_id']) ? (int) $validated['since_id'] : null;
+
+        $this->conversations->markAsRead($viewer, $peer, $listing);
+
+        $messages = $this->conversations
+            ->getConversationMessages(
+                $viewer,
+                $peer,
+                $listing,
+                $sinceId,
+                includeSoftDeleted: true,
+            )
+            ->map(function (Message $message): array {
+                return [
+                    'id' => (int) $message->getKey(),
+                    'sender_user_id' => (int) $message->sender_user_id,
+                    'recipient_user_id' => (int) $message->recipient_user_id,
+                    'marketplace_listing_id' => $this->hasListingColumn() ? $message->marketplace_listing_id : null,
+                    'body' => $message->deleted_at ? null : (string) $message->body,
+                    'sent_at' => optional($message->sent_at)->toIso8601String(),
+                    'read_at' => optional($message->read_at)->toIso8601String(),
+                    'created_at' => optional($message->created_at)->toIso8601String(),
+                    'updated_at' => optional($message->updated_at)->toIso8601String(),
+                    'deleted_at' => optional($message->deleted_at)->toIso8601String(),
+                    'is_deleted' => $message->deleted_at !== null,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'messages' => $messages,
+            'unread_count' => $this->conversations->getUnreadCountForUser($viewer),
+        ]);
+    }
+
+    public function destroy(Request $request, Message $message): JsonResponse|RedirectResponse
+    {
+        return $this->destroyMessage($request, $message);
+    }
+
+    private function resolveListingContext(Request $request, User $peer): ?MarketplaceListing
+    {
+        if (! $this->hasListingColumn()) {
+            return null;
+        }
+
+        $listingId = (int) ($request->input('listing_id') ?: $request->input('listing'));
+
+        if ($listingId <= 0) {
+            return null;
+        }
+
+        return MarketplaceListing::query()
+            ->whereKey($listingId)
+            ->where('user_id', $peer->getKey())
+            ->first();
+    }
+
+    private function firstValidationMessage(ValidationException $exception): string
+    {
+        return (string) collect($exception->errors())
+            ->flatten()
+            ->first('Validation failed.');
+    }
+
+    private function validationFailure(Request $request, ValidationException $exception, int $status = 422): JsonResponse|RedirectResponse
     {
         if ($request->expectsJson()) {
-            return response()->json(['message' => $message], $status);
+            return response()->json([
+                'message' => $this->firstValidationMessage($exception),
+                'errors' => $exception->errors(),
+            ], $status);
         }
 
-        return redirect()->back()->withErrors(['message' => $message]);
+        return redirect()->back()->withErrors($exception->errors())->withInput();
+    }
+
+    private function hasListingColumn(): bool
+    {
+        return Schema::hasColumn('messages', 'marketplace_listing_id');
     }
 }
