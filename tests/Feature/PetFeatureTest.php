@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Pet;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PetFeatureTest extends TestCase
@@ -100,5 +102,35 @@ class PetFeatureTest extends TestCase
                 'species' => $pet->species,
             ])
             ->assertForbidden();
+    }
+
+    public function test_owner_can_upload_pet_gallery_photos_and_view_gallery_tab(): void
+    {
+        Storage::fake('public');
+
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)
+            ->post(route('pets.store'), [
+                'name' => 'Gallery Pet',
+                'species' => 'cat',
+                'breed' => 'Tabby',
+                'bio' => 'Gallery bio',
+                'is_public' => true,
+                'gallery_photos' => [
+                    UploadedFile::fake()->image('pet-1.jpg', 800, 600),
+                    UploadedFile::fake()->image('pet-2.png', 1024, 768),
+                ],
+            ])
+            ->assertRedirect();
+
+        $pet = Pet::query()->where('name', 'Gallery Pet')->firstOrFail();
+
+        expect($pet->getMedia('gallery'))->toHaveCount(2);
+
+        $this->get(route('pets.show', ['slug' => $pet->getKey(), 'tab' => 'gallery']))
+            ->assertOk()
+            ->assertSee('<img', false)
+            ->assertDontSee('No gallery items yet.');
     }
 }

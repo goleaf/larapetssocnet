@@ -22,6 +22,8 @@ class StorePetRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:5000'],
             'is_public' => ['nullable', 'boolean'],
             'is_adoptable' => ['nullable', 'boolean'],
+            'gallery_photos' => ['nullable', 'array', 'max:12'],
+            'gallery_photos.*' => ['image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
         ];
     }
 }

@@ -55,6 +55,8 @@
 - Updated pet profile form fields to align with persisted schema fields (`sex`, `birth_date`) and consistent adoption/public toggles.
 - Added pet edit authorization coverage: owner can edit, non-owner receives 403.
 - Updated pet profile page header/about sections to explicitly display species, breed, age, and bio with correct field mapping.
+- Added pet photo gallery uploads on create/edit (`gallery_photos[]`) with validation (max 12 images, 5MB each).
+- Updated pet gallery tab to render only `gallery` media collection items (excluding avatar/cover).
 
 ### Tests
 - Verified passing suites:

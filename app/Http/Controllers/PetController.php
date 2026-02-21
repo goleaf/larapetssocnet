@@ -37,8 +37,11 @@ class PetController extends Controller
         }
 
         $gallery = collect();
-        if (method_exists($pet, 'media')) {
-            $gallery = $pet->media()->latest()->limit(24)->get();
+        if (method_exists($pet, 'getMedia')) {
+            $gallery = collect($pet->getMedia('gallery'))
+                ->sortByDesc(fn ($media) => $media->created_at)
+                ->take(24)
+                ->values();
         } elseif (method_exists($pet, 'galleryItems')) {
             $gallery = $pet->galleryItems()->latest()->limit(24)->get();
         }
@@ -75,6 +78,7 @@ class PetController extends Controller
         $payload = $this->normalizePetPayload($validated, $request);
 
         $pet = Pet::query()->create($payload);
+        $this->attachGalleryPhotos($pet, $request);
 
         return redirect()
             ->route('pets.show', $pet->slug ?? $pet->getKey())
@@ -100,6 +104,7 @@ class PetController extends Controller
         $payload = $this->normalizePetPayload($validated, $request);
 
         $pet->update($payload);
+        $this->attachGalleryPhotos($pet, $request);
 
         return redirect()
             ->route('pets.show', $pet->slug ?? $pet->getKey())
@@ -352,6 +357,13 @@ class PetController extends Controller
             return Schema::hasColumn('pets', $column);
         } catch (Throwable) {
             return false;
+        }
+    }
+
+    protected function attachGalleryPhotos(Pet $pet, Request $request): void
+    {
+        foreach ((array) $request->file('gallery_photos', []) as $photo) {
+            $pet->addMedia($photo)->toMediaCollection('gallery');
         }
     }
 }

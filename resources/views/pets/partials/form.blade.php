@@ -63,6 +63,32 @@
         <x-input-error :messages="$errors->get('bio')" class="mt-2" />
     </div>
 
+    <div>
+        <x-input-label for="gallery_photos" value="Photo Gallery" />
+        <input
+            id="gallery_photos"
+            name="gallery_photos[]"
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-indigo-700 hover:file:bg-indigo-100"
+        />
+        <p class="mt-1 text-xs text-gray-500">Upload up to 12 photos, max 5MB each.</p>
+        <x-input-error :messages="$errors->get('gallery_photos')" class="mt-2" />
+        <x-input-error :messages="$errors->get('gallery_photos.*')" class="mt-2" />
+
+        @if (!empty($pet))
+            @php $existingGallery = $pet->getMedia('gallery'); @endphp
+            @if ($existingGallery->isNotEmpty())
+                <div class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    @foreach ($existingGallery->take(8) as $media)
+                        <img src="{{ $media->getUrl() }}" alt="Pet gallery image" class="h-20 w-full rounded-lg border border-gray-200 object-cover">
+                    @endforeach
+                </div>
+            @endif
+        @endif
+    </div>
+
     <div class="space-y-3">
         <label class="inline-flex items-center gap-2">
             <input type="checkbox" name="is_public" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked(old('is_public', $pet?->is_public ?? true))>
