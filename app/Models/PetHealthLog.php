@@ -31,12 +31,14 @@ class PetHealthLog extends Model
         'weight_kg',
         'temperature_c',
         'logged_at',
+        'next_due_at',
     ];
 
     protected function casts(): array
     {
         return [
             'logged_at' => 'datetime',
+            'next_due_at' => 'datetime',
             'weight_kg' => 'decimal:2',
             'temperature_c' => 'decimal:1',
         ];

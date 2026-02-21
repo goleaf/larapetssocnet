@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\PetHealthLogController;
 use App\Models\Pet;
 use App\Models\PetHealthLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class PetHealthLogFeatureTest extends TestCase
@@ -37,6 +39,7 @@ class PetHealthLogFeatureTest extends TestCase
             'title' => 'Rabies shot',
             'notes' => 'Next due in 12 months',
             'logged_at' => now()->subDays(2)->toDateString(),
+            'next_due_at' => now()->addMonths(12)->toDateString(),
         ])->assertRedirect();
 
         $this->actingAs($owner)->post(route('pets.health.store', $pet->id), [
@@ -50,6 +53,7 @@ class PetHealthLogFeatureTest extends TestCase
         $this->assertDatabaseHas('pet_health_logs', ['pet_id' => $pet->id, 'log_type' => 'vet_visit']);
         $this->assertDatabaseHas('pet_health_logs', ['pet_id' => $pet->id, 'log_type' => 'vaccination']);
         $this->assertDatabaseHas('pet_health_logs', ['pet_id' => $pet->id, 'log_type' => 'medication']);
+        $this->assertDatabaseHas('pet_health_logs', ['pet_id' => $pet->id, 'log_type' => 'vaccination']);
     }
 
     public function test_non_owner_cannot_manage_health_logs(): void
@@ -106,5 +110,41 @@ class PetHealthLogFeatureTest extends TestCase
         $this->assertSoftDeleted('pet_health_logs', [
             'id' => $log->id,
         ]);
+    }
+
+    public function test_upcoming_reminders_are_driven_by_next_due_date_and_sorted_ascending(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+
+        PetHealthLog::query()->create([
+            'pet_id' => $pet->id,
+            'logged_by_user_id' => $owner->id,
+            'log_type' => 'vaccination',
+            'title' => 'Later reminder',
+            'notes' => null,
+            'logged_at' => now()->subDays(10),
+            'next_due_at' => now()->addDays(10),
+        ]);
+
+        PetHealthLog::query()->create([
+            'pet_id' => $pet->id,
+            'logged_by_user_id' => $owner->id,
+            'log_type' => 'medication',
+            'title' => 'Soon reminder',
+            'notes' => null,
+            'logged_at' => now()->subDays(5),
+            'next_due_at' => now()->addDays(2),
+        ]);
+
+        $request = Request::create(route('pets.health.index', ['slug' => $pet->id]), 'GET');
+        $request->setUserResolver(fn () => $owner);
+
+        /** @var \Illuminate\View\View $view */
+        $view = app(PetHealthLogController::class)->index($request, (string) $pet->id);
+        $data = $view->getData();
+
+        $titles = collect($data['upcomingLogs'])->pluck('title')->values()->all();
+        $this->assertSame(['Soon reminder', 'Later reminder'], $titles);
     }
 }

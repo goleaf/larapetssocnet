@@ -71,6 +71,8 @@
 - Updated pet health logs to explicitly support requested categories: weight, vet visits, vaccinations, and medication.
 - Added health-log type normalization (`vaccine` → `vaccination`) and improved label rendering across pet profile and health index.
 - Added feature tests for health-log create/read/update/delete and owner-only access.
+- Added health log reminders with `next_due_at` support (migration + form field + validation + persistence).
+- Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
 ### Tests
 - Verified passing suites:

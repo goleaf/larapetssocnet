@@ -12,6 +12,17 @@
         }
     }
 
+    $nextDueAtValue = old('next_due_at');
+    if ($nextDueAtValue === null && $log) {
+        $rawNextDueAt = data_get($log, 'next_due_at');
+
+        if ($rawNextDueAt instanceof \Illuminate\Support\CarbonInterface) {
+            $nextDueAtValue = $rawNextDueAt->toDateString();
+        } elseif (is_string($rawNextDueAt)) {
+            $nextDueAtValue = substr($rawNextDueAt, 0, 10);
+        }
+    }
+
     $logType = old('type', $log->log_type ?? 'weight');
     if ($logType === 'vaccine') {
         $logType = 'vaccination';
@@ -44,6 +55,12 @@
             <x-input-label for="logged_at" value="Logged date" />
             <x-text-input id="logged_at" name="logged_at" type="date" class="mt-1 block w-full" :value="$loggedAtValue" required />
             <x-input-error :messages="$errors->get('logged_at')" class="mt-2" />
+        </div>
+
+        <div>
+            <x-input-label for="next_due_at" value="Next due date (optional)" />
+            <x-text-input id="next_due_at" name="next_due_at" type="date" class="mt-1 block w-full" :value="$nextDueAtValue" />
+            <x-input-error :messages="$errors->get('next_due_at')" class="mt-2" />
         </div>
 
         <div>

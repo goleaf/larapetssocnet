@@ -29,8 +29,9 @@ class PetHealthLogController extends Controller
             ->withQueryString();
 
         $upcomingLogs = (clone $logsQuery)
-            ->where('log_type', 'vaccine')
-            ->orderByDesc('logged_at')
+            ->whereNotNull('next_due_at')
+            ->where('next_due_at', '>=', now()->startOfDay())
+            ->orderBy('next_due_at')
             ->limit(10)
             ->get();
 
@@ -82,6 +83,7 @@ class PetHealthLogController extends Controller
             'notes' => $validated['notes'] ?? null,
             'weight_kg' => $type === 'weight' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
+            'next_due_at' => $validated['next_due_at'] ?? null,
         ]);
 
         PetHealthLog::query()->create($payload);
@@ -119,6 +121,7 @@ class PetHealthLogController extends Controller
             'notes' => $validated['notes'] ?? null,
             'weight_kg' => $type === 'weight' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
+            'next_due_at' => $validated['next_due_at'] ?? null,
         ]);
 
         $log->update($payload);

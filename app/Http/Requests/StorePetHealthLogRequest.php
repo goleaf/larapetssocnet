@@ -20,6 +20,7 @@ class StorePetHealthLogRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:3000'],
             'value' => ['nullable', 'numeric', 'min:0'],
             'logged_at' => ['required', 'date'],
+            'next_due_at' => ['nullable', 'date', 'after_or_equal:logged_at'],
         ];
     }
 

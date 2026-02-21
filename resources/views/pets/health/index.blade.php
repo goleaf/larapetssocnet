@@ -88,7 +88,7 @@
                         @forelse($upcomingLogs as $upcoming)
                             <div class="rounded-md bg-amber-50 p-3 text-sm">
                                 <div class="font-medium text-amber-800">{{ $typeLabel($upcoming->log_type ?? 'entry') }}</div>
-                                <div class="text-amber-700">Logged {{ $formatDate($upcoming->logged_at) }}</div>
+                                <div class="text-amber-700">Next due {{ $formatDate($upcoming->next_due_at) }}</div>
                                 @if(!empty($upcoming->notes))
                                     <div class="mt-1 text-amber-700">{{ \Illuminate\Support\Str::limit((string) $upcoming->notes, 80) }}</div>
                                 @endif
