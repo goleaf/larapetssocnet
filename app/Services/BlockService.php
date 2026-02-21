@@ -6,6 +6,7 @@ use App\Events\UserBlocked;
 use App\Events\UserUnblocked;
 use App\Exceptions\CannotBlockAdminException;
 use App\Exceptions\CannotBlockSelfException;
+use App\Models\Block;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,12 @@ class BlockService
                 $this->counterCacheService->safeDecrement($actor, 'followers_count');
             }
 
-            $actor->blocking()->syncWithoutDetaching([$target->getKey()]);
+            Block::query()->firstOrCreate([
+                'blocker_id' => $actor->getKey(),
+                'blocked_id' => $target->getKey(),
+            ], [
+                'created_at' => now(),
+            ]);
             $actor->increment('blocked_users_count');
             $target->increment('blocked_by_count');
 

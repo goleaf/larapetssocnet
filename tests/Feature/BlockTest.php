@@ -21,12 +21,22 @@ class BlockTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.is_blocked', true);
 
+        $this->assertDatabaseHas('blocks', [
+            'blocker_id' => $actor->id,
+            'blocked_id' => $target->id,
+        ]);
+
         $this->assertTrue($actor->fresh()->hasBlocked($target));
 
         $this->actingAs($actor)
             ->deleteJson(route('users.unblock', ['user' => $target]))
             ->assertOk()
             ->assertJsonPath('data.is_blocked', false);
+
+        $this->assertDatabaseMissing('blocks', [
+            'blocker_id' => $actor->id,
+            'blocked_id' => $target->id,
+        ]);
 
         $this->assertFalse($actor->fresh()->hasBlocked($target));
     }

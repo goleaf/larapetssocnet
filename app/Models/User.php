@@ -352,16 +352,16 @@ class User extends Authenticatable implements HasMedia
 
     public function blocking(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
+        return $this->belongsToMany(self::class, 'blocks', 'blocker_id', 'blocked_id')
             ->using(Block::class)
-            ->withTimestamps();
+            ->withPivot('created_at');
     }
 
     public function blockedBy(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
+        return $this->belongsToMany(self::class, 'blocks', 'blocked_id', 'blocker_id')
             ->using(Block::class)
-            ->withTimestamps();
+            ->withPivot('created_at');
     }
 
     public function blockedUsers(): BelongsToMany
