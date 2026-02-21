@@ -21,24 +21,55 @@ class Pet extends Model implements HasMedia
     use InteractsWithMedia;
     use SoftDeletes;
 
+    public const SPECIES = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'hamster', 'reptile', 'other'];
+
+    public const GENDERS = ['male', 'female', 'unknown'];
+
+    public const SIZES = ['small', 'medium', 'large', 'xlarge'];
+
+    public const ADOPTION_STATUSES = ['not_listed', 'available', 'pending', 'adopted'];
+
+    public const SPECIES_EMOJI = [
+        'dog' => '🐕',
+        'cat' => '🐈',
+        'bird' => '🐦',
+        'fish' => '🐠',
+        'rabbit' => '🐰',
+        'hamster' => '🐹',
+        'reptile' => '🦎',
+        'other' => '🐾',
+    ];
+
     /**
      * @var list<string>
      */
     protected $fillable = [
         'user_id',
         'name',
+        'slug',
         'species',
         'breed',
         'sex',
+        'gender',
+        'size',
         'birth_date',
+        'date_of_birth',
+        'age_text',
         'adopted_at',
         'bio',
+        'bio_html',
         'personality_tags',
         'color',
         'weight_kg',
         'is_public',
         'is_lost',
+        'is_deceased',
         'is_adoptable',
+        'adoption_status',
+        'adoption_fee',
+        'adoption_notes',
+        'adoption_contact',
+        'adoption_listed_at',
         'avatar_path',
         'cover_photo_path',
         'followers_count',
@@ -60,10 +91,13 @@ class Pet extends Model implements HasMedia
     {
         return [
             'birth_date' => 'date',
+            'date_of_birth' => 'date',
             'adopted_at' => 'date',
+            'adoption_listed_at' => 'datetime',
             'personality_tags' => 'array',
             'is_public' => 'boolean',
             'is_lost' => 'boolean',
+            'is_deceased' => 'boolean',
             'is_adoptable' => 'boolean',
             'weight_kg' => 'decimal:2',
             'followers_count' => 'integer',
@@ -74,9 +108,9 @@ class Pet extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('avatar')->singleFile();
+        $this->addMediaCollection('avatar')->singleFile()->useDisk('public');
         $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('gallery');
+        $this->addMediaCollection('gallery')->useDisk('public');
     }
 
     public function owner(): BelongsTo
@@ -139,6 +173,16 @@ class Pet extends Model implements HasMedia
         return $query->where('is_adoptable', true);
     }
 
+    public function scopeBySpecies(Builder $query, string $species): Builder
+    {
+        return $query->where('species', $species);
+    }
+
+    public function scopeAvailableForAdoption(Builder $query): Builder
+    {
+        return $query->where('adoption_status', 'available');
+    }
+
     public function isFollowedBy(User $user): bool
     {
         return $this->followers()->whereKey($user->getKey())->exists();
@@ -199,11 +243,31 @@ class Pet extends Model implements HasMedia
     protected function ageFormatted(): Attribute
     {
         return Attribute::get(function (): ?string {
-            if ($this->age_years === null) {
-                return null;
+            $birthDate = $this->date_of_birth ?? $this->birth_date;
+            if (! $birthDate) {
+                return $this->age_text;
             }
 
-            return $this->age_years.' years';
+            $diff = now()->diff($birthDate);
+            if ($diff->y > 0) {
+                return $diff->y.' years';
+            }
+
+            if ($diff->m > 0) {
+                return $diff->m.' months';
+            }
+
+            return $diff->d.' days';
         });
+    }
+
+    protected function speciesEmoji(): Attribute
+    {
+        return Attribute::get(fn (): string => self::SPECIES_EMOJI[$this->species] ?? self::SPECIES_EMOJI['other']);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 }

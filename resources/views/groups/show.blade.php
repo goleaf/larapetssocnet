@@ -153,9 +153,15 @@
                                         @method('PATCH')
                                         <select name="role" class="rounded-md border border-[var(--ui-border)] px-2 py-1 text-sm">
                                             <option value="member" @selected($member->role === 'member')>Member</option>
+                                            <option value="moderator" @selected($member->role === 'moderator')>Moderator</option>
                                             <option value="admin" @selected($member->role === 'admin')>Admin</option>
                                         </select>
                                         <button type="submit" class="btn-base btn-ghost px-3 py-2 text-xs">Update</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('groups.members.ban', ['group' => $groupRouteKey, 'membership' => $member->id]) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn-base btn-ghost px-3 py-2 text-xs text-red-600">Ban</button>
                                     </form>
                                 @endif
                             </div>

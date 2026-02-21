@@ -52,7 +52,9 @@
                 @forelse ($events as $event)
                     @php
                         $startAt = data_get($event, $startColumn) ?? $event->start_at ?? $event->starts_at;
-                        $location = data_get($event, $locationColumn) ?? $event->location_text ?? $event->location;
+                        $location = data_get($event, 'event_location')
+                            ?? data_get($event, 'location_text')
+                            ?? data_get($event, 'location');
                         $status = $event->status ?? 'scheduled';
                         $groupRouteKey = filled((string) ($event->group_slug ?? '')) ? $event->group_slug : ($event->group_id ?? null);
                     @endphp

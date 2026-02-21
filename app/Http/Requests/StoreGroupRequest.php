@@ -16,9 +16,11 @@ class StoreGroupRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:160'],
-            'description' => ['nullable', 'string', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'rules' => ['nullable', 'string', 'max:5000'],
             'privacy' => ['required', Rule::in(['public', 'private', 'secret'])],
+            'location' => ['nullable', 'string', 'max:100'],
+            'website' => ['nullable', 'url', 'max:200'],
         ];
     }
 }

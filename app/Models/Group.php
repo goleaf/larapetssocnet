@@ -34,6 +34,9 @@ class Group extends Model implements HasMedia
         'slug',
         'description',
         'rules',
+        'type',
+        'location',
+        'website',
         'privacy',
         'avatar_path',
         'cover_image_path',
@@ -84,7 +87,7 @@ class Group extends Model implements HasMedia
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_members', 'group_id', 'user_id')
-            ->withPivot(['role', 'status', 'joined_at'])
+            ->withPivot(['role', 'status', 'joined_at', 'invited_by'])
             ->withTimestamps();
     }
 
@@ -105,13 +108,18 @@ class Group extends Model implements HasMedia
         return $query->where(function (Builder $subQuery): void {
             $subQuery
                 ->whereNull('privacy')
-                ->orWhere('privacy', 'public');
+                ->orWhere('privacy', 'public')
+                ->orWhere('type', 'public');
         });
     }
 
     public function scopePrivate(Builder $query): Builder
     {
-        return $query->whereIn('privacy', ['private', 'secret']);
+        return $query->where(function (Builder $subQuery): void {
+            $subQuery
+                ->whereIn('privacy', ['private', 'secret'])
+                ->orWhereIn('type', ['private', 'secret']);
+        });
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

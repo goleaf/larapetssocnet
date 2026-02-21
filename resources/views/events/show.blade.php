@@ -1,6 +1,8 @@
 <x-app-layout>
     @php
-        $location = data_get($event, $locationColumn) ?? $event->location_text ?? $event->location;
+        $location = data_get($event, $locationColumn)
+            ?? data_get($event, 'location_text')
+            ?? data_get($event, 'location');
         $statusValue = strtolower((string) (data_get($event, $statusColumn) ?? 'scheduled'));
     @endphp
 

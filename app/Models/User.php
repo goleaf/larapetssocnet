@@ -260,6 +260,11 @@ class User extends Authenticatable implements HasMedia
             ->withTimestamps();
     }
 
+    public function petFollowing(): BelongsToMany
+    {
+        return $this->followedPets();
+    }
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
@@ -781,6 +786,11 @@ class User extends Authenticatable implements HasMedia
     public function isFollowingPet(Pet $pet): bool
     {
         return $this->followedPets()->whereKey($pet->getKey())->exists();
+    }
+
+    public function petFollowingIds(): Collection
+    {
+        return $this->petFollowing()->pluck('pets.id');
     }
 
     public function canBeViewedBy(?self $viewer): bool

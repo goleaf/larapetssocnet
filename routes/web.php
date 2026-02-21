@@ -155,6 +155,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/groups/{group}/members/{membership}/approve', [GroupController::class, 'approveMember'])->name('groups.members.approve');
     Route::delete('/groups/{group}/members/{membership}/reject', [GroupController::class, 'rejectMember'])->name('groups.members.reject');
     Route::patch('/groups/{group}/members/{membership}/role', [GroupController::class, 'updateMemberRole'])->name('groups.members.role');
+    Route::patch('/groups/{group}/members/{membership}/ban', [GroupController::class, 'banMember'])->name('groups.members.ban');
     Route::post('/groups/{group}/posts', [GroupController::class, 'attachPost'])->name('groups.posts.attach');
 
     Route::get('/events/create', [EventController::class, 'create'])->name('events.create');

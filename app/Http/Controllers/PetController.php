@@ -94,7 +94,7 @@ class PetController extends Controller
 
         $validated = $request->validated();
 
-        $payload = $this->normalizePetPayload($validated, $request);
+        $payload = $this->normalizePetPayload($validated, $request, true);
 
         $pet = Pet::query()->create($payload);
         $this->attachGalleryPhotos($pet, $request);
@@ -120,7 +120,7 @@ class PetController extends Controller
         $this->authorize('update', $pet);
 
         $validated = $request->validated();
-        $payload = $this->normalizePetPayload($validated, $request);
+        $payload = $this->normalizePetPayload($validated, $request, false);
 
         $pet->update($payload);
         $this->attachGalleryPhotos($pet, $request);
@@ -279,7 +279,7 @@ class PetController extends Controller
     protected function resolvePet(string $slug): Pet
     {
         return Pet::query()
-            ->where('slug', $slug)
+            ->when($this->petTableHasColumn('slug'), fn ($query) => $query->where('slug', $slug))
             ->orWhere('id', $slug)
             ->firstOrFail();
     }
@@ -300,22 +300,40 @@ class PetController extends Controller
         return (int) $ownerId === (int) $user->getAuthIdentifier();
     }
 
-    protected function normalizePetPayload(array $validated, Request $request): array
+    protected function normalizePetPayload(array $validated, Request $request, bool $includeSlug): array
     {
         $payload = [
             'name' => $validated['name'] ?? null,
             'species' => $validated['species'] ?? null,
             'breed' => $validated['breed'] ?? null,
-            'sex' => $validated['sex'] ?? ($validated['gender'] ?? null),
+            'sex' => $validated['sex'] ?? ($validated['gender'] ?? 'unknown'),
+            'gender' => $validated['gender'] ?? ($validated['sex'] ?? 'unknown'),
+            'size' => $validated['size'] ?? null,
             'birth_date' => $validated['birth_date'] ?? ($validated['birthdate'] ?? null),
+            'date_of_birth' => $validated['date_of_birth'] ?? ($validated['birth_date'] ?? null),
+            'age_text' => $validated['age_text'] ?? null,
             'bio' => $validated['bio'] ?? null,
             'personality_tags' => $this->normalizePersonalityTags($validated['personality_tags'] ?? null),
             'is_public' => $request->boolean('is_public'),
             'is_adoptable' => $request->boolean('is_adoptable') || $request->boolean('is_for_adoption'),
+            'is_deceased' => $request->boolean('is_deceased'),
         ];
 
-        if ($this->petTableHasColumn('slug')) {
-            $payload['slug'] = $validated['slug'] ?? Str::slug($payload['name'] ?? 'pet-'.Str::random(6));
+        if ($includeSlug && $this->petTableHasColumn('slug')) {
+            $ownerUsername = (string) data_get($request->user(), 'username', '');
+            $base = Str::slug(trim(($payload['name'] ?? 'pet').'-'.$ownerUsername, '-'));
+            if ($base === '') {
+                $base = 'pet-'.Str::lower(Str::random(6));
+            }
+
+            $candidate = $base;
+            $counter = 1;
+            while (Pet::query()->where('slug', $candidate)->exists()) {
+                $candidate = $base.'-'.$counter;
+                $counter++;
+            }
+
+            $payload['slug'] = $candidate;
         }
 
         $payload['is_public'] = $request->boolean('is_public');

@@ -122,14 +122,22 @@ class GroupController extends Controller
         $events = null;
 
         if ($activeTab === 'feed') {
-            $feedPosts = Post::query()
-                ->select('posts.*')
-                ->join('group_posts', 'group_posts.post_id', '=', 'posts.id')
-                ->where('group_posts.group_id', $groupModel->getKey())
-                ->with(['user', 'hashtags'])
-                ->orderByDesc('group_posts.created_at')
-                ->paginate(10, ['posts.*'], 'posts_page')
-                ->withQueryString();
+            $privacy = $this->groupPrivacy($groupModel);
+            if ($privacy === 'private' && ! $isMember && ! $isAdmin) {
+                $feedPosts = Post::query()
+                    ->whereKey(-1)
+                    ->paginate(10, ['*'], 'posts_page')
+                    ->withQueryString();
+            } else {
+                $feedPosts = Post::query()
+                    ->select('posts.*')
+                    ->join('group_posts', 'group_posts.post_id', '=', 'posts.id')
+                    ->where('group_posts.group_id', $groupModel->getKey())
+                    ->with(['user', 'hashtags'])
+                    ->orderByDesc('group_posts.created_at')
+                    ->paginate(10, ['posts.*'], 'posts_page')
+                    ->withQueryString();
+            }
         }
 
         if ($activeTab === 'members') {
@@ -328,10 +336,6 @@ class GroupController extends Controller
         $groupModel = $this->resolveGroup($group);
         $viewer = $request->user();
 
-        if ($this->hasPolicyFor(Group::class)) {
-            $this->authorize('view', $groupModel);
-        }
-
         $existingMembership = $this->membershipFor($groupModel, (int) $viewer->getAuthIdentifier());
         if ($existingMembership && $this->isMembershipActive($existingMembership)) {
             return back()->with('status', 'You are already a member.');
@@ -341,7 +345,19 @@ class GroupController extends Controller
             return back()->with('status', 'Membership request already pending.');
         }
 
+        if ($existingMembership && $existingMembership->status === 'banned') {
+            return back()->withErrors(['group' => 'You are banned from this group.']);
+        }
+
         $privacy = $this->groupPrivacy($groupModel);
+        if ($privacy === 'secret') {
+            return back()->withErrors(['group' => 'This is a secret group and cannot be joined directly.']);
+        }
+
+        if ($this->hasPolicyFor(Group::class) && Gate::denies('join', $groupModel)) {
+            return back()->withErrors(['group' => 'You cannot join this group.']);
+        }
+
         $status = $privacy === 'public' ? 'active' : 'pending';
 
         $groupModel->addMember($viewer, 'member', $status);
@@ -422,7 +438,7 @@ class GroupController extends Controller
         $this->authorizeMemberManagement($request, $groupModel);
 
         $validated = $request->validate([
-            'role' => ['required', Rule::in(['member', 'admin'])],
+            'role' => ['required', Rule::in(['member', 'admin', 'moderator'])],
         ]);
 
         $target = GroupMember::query()
@@ -445,6 +461,31 @@ class GroupController extends Controller
         ]);
 
         return back()->with('status', 'Member role updated.');
+    }
+
+    public function banMember(Request $request, string $group, int $membership): RedirectResponse
+    {
+        $groupModel = $this->resolveGroup($group);
+        $this->authorizeMemberManagement($request, $groupModel);
+
+        $target = GroupMember::query()
+            ->where('group_id', $groupModel->getKey())
+            ->whereKey($membership)
+            ->firstOrFail();
+
+        abort_if((string) $target->role === 'owner', 403);
+
+        $wasActive = $this->isMembershipActive($target);
+        $target->update([
+            'status' => 'banned',
+            'role' => 'member',
+        ]);
+
+        if ($wasActive) {
+            $this->syncGroupMembersCount((int) $groupModel->getKey());
+        }
+
+        return back()->with('status', 'Member banned.');
     }
 
     public function attachPost(Request $request, string $group): RedirectResponse
@@ -576,7 +617,7 @@ class GroupController extends Controller
     protected function authorizeMemberManagement(Request $request, Group $group): void
     {
         if ($this->hasPolicyFor(Group::class)) {
-            $this->authorize('update', $group);
+            $this->authorize('moderate', $group);
 
             return;
         }
@@ -598,7 +639,7 @@ class GroupController extends Controller
 
         return $membership !== null
             && $this->isMembershipActive($membership)
-            && in_array((string) $membership->role, ['owner', 'admin'], true);
+            && in_array((string) $membership->role, ['owner', 'admin', 'moderator'], true);
     }
 
     protected function isGroupOwner(Group $group, ?Authenticatable $viewer): bool
@@ -629,7 +670,7 @@ class GroupController extends Controller
 
     protected function isMembershipActive(GroupMember $membership): bool
     {
-        return $membership->status === null || $membership->status === 'active';
+        return $membership->status === null || in_array($membership->status, ['active', 'accepted'], true);
     }
 
     protected function groupPrivacy(Group $group): string

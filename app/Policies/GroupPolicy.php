@@ -9,7 +9,7 @@ class GroupPolicy
 {
     public function view(?User $user, Group $group): bool
     {
-        $privacy = (string) ($group->privacy ?? 'public');
+        $privacy = (string) ($group->type ?? $group->privacy ?? 'public');
 
         if ($privacy === 'public') {
             return true;
@@ -25,7 +25,7 @@ class GroupPolicy
 
         return $group->memberships()
             ->where('user_id', $user->getKey())
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'accepted'])
             ->exists();
     }
 
@@ -50,13 +50,13 @@ class GroupPolicy
 
     public function join(User $user, Group $group): bool
     {
-        if ((string) ($group->privacy ?? 'public') === 'secret') {
+        if ((string) ($group->type ?? $group->privacy ?? 'public') === 'secret') {
             return false;
         }
 
         return ! $group->memberships()
             ->where('user_id', $user->getKey())
-            ->whereIn('status', ['active', 'pending'])
+            ->whereIn('status', ['active', 'accepted', 'pending', 'banned'])
             ->exists();
     }
 
@@ -69,7 +69,7 @@ class GroupPolicy
         return $group->memberships()
             ->where('user_id', $user->getKey())
             ->whereIn('role', ['owner', 'admin', 'moderator'])
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'accepted'])
             ->exists();
     }
 }

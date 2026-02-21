@@ -33,6 +33,10 @@ class PetFeatureTest extends TestCase
 
         $pet = Pet::query()->where('name', 'Mochi')->firstOrFail();
 
+        if (\Illuminate\Support\Facades\Schema::hasColumn('pets', 'slug')) {
+            $this->assertStringContainsString('mochi-'.$user->username, $pet->slug);
+        }
+
         $this->get(route('pets.show', $pet->getKey()))
             ->assertOk()
             ->assertSee('Mochi')
@@ -71,6 +75,8 @@ class PetFeatureTest extends TestCase
             'is_public' => true,
         ]);
 
+        $originalSlug = $pet->slug;
+
         $this->actingAs($owner)
             ->patch(route('pets.update', $pet->getKey()), [
                 'name' => 'Milo Updated',
@@ -90,6 +96,10 @@ class PetFeatureTest extends TestCase
             'bio' => 'After update',
             'is_public' => 1,
         ]);
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('pets', 'slug')) {
+            $this->assertSame($originalSlug, $pet->fresh()->slug);
+        }
     }
 
     public function test_non_owner_cannot_edit_pet_profile(): void
