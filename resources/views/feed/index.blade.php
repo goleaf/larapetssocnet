@@ -1,95 +1,167 @@
 @section('title', 'Feed — PetSocial')
 
 <x-app-layout>
+    @php
+        $yourGroups = collect();
+
+        try {
+            if (
+                auth()->check()
+                && \Illuminate\Support\Facades\Schema::hasTable('groups')
+                && \Illuminate\Support\Facades\Schema::hasTable('group_members')
+            ) {
+                $yourGroups = \App\Models\Group::query()
+                    ->whereIn('groups.id', function ($query): void {
+                        $query->select('group_members.group_id')
+                            ->from('group_members')
+                            ->where('group_members.user_id', auth()->id())
+                            ->where(function ($statusQuery): void {
+                                $statusQuery->whereNull('group_members.status')
+                                    ->orWhereIn('group_members.status', ['active', 'accepted']);
+                            });
+                    })
+                    ->orderByDesc('groups.members_count')
+                    ->limit(6)
+                    ->get();
+            }
+        } catch (\Throwable) {
+            $yourGroups = collect();
+        }
+    @endphp
+
     <x-slot name="header">
         <div class="flex items-center justify-between gap-3">
             <div>
                 <p class="shell-kicker">Home Feed</p>
                 <h1 class="shell-title text-2xl leading-tight">Your Feed</h1>
             </div>
-            <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">Create Post</a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('saved.index') }}" class="btn-base btn-ghost px-3 py-2 text-xs sm:text-sm">Saved</a>
+                <a href="{{ route('explore.index') }}" class="btn-base btn-ghost px-3 py-2 text-xs sm:text-sm">Explore</a>
+            </div>
         </div>
     </x-slot>
 
-    <div class="mx-auto max-w-7xl">
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[16rem,minmax(0,1fr),18rem]">
-            <aside class="hidden lg:block">
-                <div class="sticky top-20 space-y-4">
-                    <div class="rounded-2xl border border-gray-200 bg-white p-4">
-                        <div class="flex items-center gap-3">
-                            <x-avatar :src="$user->avatar_url" :name="$user->name" size="md" />
-                            <div>
-                                <p class="text-sm font-semibold text-gray-900">{{ $user->name }}</p>
-                                <p class="text-xs text-gray-500">@{{ $user->username }}</p>
-                            </div>
-                        </div>
-                        <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                            <div><p class="font-semibold text-gray-900">{{ $user->posts_count }}</p><p class="text-gray-500">Posts</p></div>
-                            <div><p class="font-semibold text-gray-900">{{ $user->followers_count }}</p><p class="text-gray-500">Followers</p></div>
-                            <div><p class="font-semibold text-gray-900">{{ $user->following_count }}</p><p class="text-gray-500">Following</p></div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-gray-200 bg-white p-4 text-sm">
-                        <ul class="space-y-2">
-                            <li><a href="{{ route('pets.explore') }}" class="text-gray-700 hover:text-emerald-600">🐾 My Pets</a></li>
-                            <li><a href="{{ route('saved.index') }}" class="text-gray-700 hover:text-emerald-600">🔖 Saved Posts</a></li>
-                            <li><a href="{{ route('groups.index', ['tab' => 'mine']) }}" class="text-gray-700 hover:text-emerald-600">👥 My Groups</a></li>
-                            <li><a href="{{ route('events.index', ['tab' => 'attending']) }}" class="text-gray-700 hover:text-emerald-600">🎪 My Events</a></li>
-                        </ul>
-                    </div>
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <div class="space-y-4">
+            <section class="shell-card p-4 sm:p-5">
+                <div class="mb-4 flex items-center gap-3">
+                    <x-avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="md" />
+                    <p class="text-sm font-semibold" style="color: var(--ui-text);">Create a post</p>
                 </div>
-            </aside>
 
-            <main class="min-w-0 space-y-4">
-                <x-quick-post-form />
-
-                <nav aria-label="Feed filter" class="rounded-2xl border border-gray-200 bg-white px-4">
-                    <ul class="flex items-center gap-5 text-sm">
-                        <li><a href="{{ route('feed.index') }}" class="inline-block border-b-2 py-3 {{ $type === null ? 'border-emerald-500 font-semibold text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700' }}">All</a></li>
-                        <li><a href="{{ route('feed.index', ['type' => 'photo']) }}" class="inline-block border-b-2 py-3 {{ $type === 'photo' ? 'border-emerald-500 font-semibold text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Photos</a></li>
-                        <li><a href="{{ route('feed.index', ['type' => 'video']) }}" class="inline-block border-b-2 py-3 {{ $type === 'video' ? 'border-emerald-500 font-semibold text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Videos</a></li>
-                        <li><a href="{{ route('feed.index', ['type' => 'text']) }}" class="inline-block border-b-2 py-3 {{ $type === 'text' ? 'border-emerald-500 font-semibold text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700' }}">Text</a></li>
-                    </ul>
-                </nav>
-
-                @if ($posts->total() > 0)
-                    <p class="text-sm text-gray-500">Showing {{ $posts->firstItem() }}–{{ $posts->lastItem() }} of {{ $posts->total() }} posts</p>
-                @endif
-
-                <ul role="feed" aria-label="Your feed" class="space-y-4">
-                    @forelse ($posts as $post)
-                        <li aria-label="Post by {{ $post->author->name }}">
-                            <x-post-card :post="$post" :myReactions="$myReactions" :mySaved="$mySaved" context="feed" />
-                        </li>
-                    @empty
-                        <x-feed-empty-state :user="$user" />
-                    @endforelse
-                </ul>
-
-                @if ($posts->hasPages())
-                    <div class="rounded-2xl border border-gray-200 bg-white p-4">
-                        {{ $posts->links() }}
+                <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    @csrf
+                    <div class="space-y-2">
+                        <label for="feed-post-body" class="text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Body</label>
+                        <textarea
+                            id="feed-post-body"
+                            name="body"
+                            rows="3"
+                            class="form-textarea"
+                            placeholder="Share an update about your pet..."
+                        >{{ old('body') }}</textarea>
+                        @error('body')
+                            <p class="text-xs font-medium text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
-                @endif
 
-                @if ($posts->hasMorePages())
-                    <a href="{{ $posts->nextPageUrl() }}" class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Load more posts</a>
-                @elseif ($posts->total() > 0)
-                    <p class="text-sm text-gray-500">You're all caught up! 🎉</p>
-                @endif
-            </main>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <label for="feed-post-pet-id" class="text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Pet</label>
+                            <select id="feed-post-pet-id" name="pet_id" class="form-select">
+                                <option value="">No pet tag</option>
+                                @foreach (auth()->user()->pets as $pet)
+                                    <option value="{{ $pet->id }}" @selected((string) old('pet_id') === (string) $pet->id)>
+                                        {{ $pet->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('pet_id')
+                                <p class="text-xs font-medium text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-            <aside class="hidden lg:block">
-                <div class="sticky top-20 space-y-4">
-                    <x-widget-who-to-follow :suggestions="$suggestions" />
-                    <x-widget-trending-hashtags :hashtags="$trending" />
-                    <x-widget-upcoming-events :events="$events" />
-                    @if ($contest)
-                        <x-widget-active-contests :contest="$contest" />
-                    @endif
+                        <div class="space-y-2">
+                            <label for="feed-post-photos" class="text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Media</label>
+                            <input
+                                id="feed-post-photos"
+                                type="file"
+                                name="media[]"
+                                multiple
+                                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
+                                class="form-input file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+                            >
+                            @error('media')
+                                <p class="text-xs font-medium text-red-600">{{ $message }}</p>
+                            @enderror
+                            @error('media.*')
+                                <p class="text-xs font-medium text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end">
+                        <button type="submit" class="btn-base btn-primary px-4 py-2 text-sm">Post</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="shell-card border border-[color:var(--ui-border)] p-3">
+                <p class="text-xs shell-text-muted">
+                    Feed note: private group posts only appear once you are an approved member of that group.
+                </p>
+            </section>
+
+            <div role="feed" aria-label="Pet feed" class="space-y-4">
+                @forelse ($posts as $post)
+                    @include('partials.post-card', ['post' => $post, 'viewer' => $user])
+                @empty
+                    <section class="shell-card p-8 text-center">
+                        <p class="text-base font-semibold" style="color: var(--ui-text);">Follow some pet owners to see their posts here! 🐾</p>
+                        <a href="{{ route('explore.index', ['tab' => 'users']) }}" class="mt-4 inline-flex btn-base btn-secondary px-4 py-2 text-sm">
+                            Explore pet owners
+                        </a>
+                    </section>
+                @endforelse
+            </div>
+
+            @if ($posts->hasPages())
+                <div class="shell-card p-4">
+                    {{ $posts->onEachSide(1)->links() }}
                 </div>
-            </aside>
+            @endif
         </div>
+
+        <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
+            <section class="shell-card p-4">
+                <div class="mb-2 flex items-center justify-between">
+                    <p class="shell-kicker">Your Groups</p>
+                    <a href="{{ route('groups.index', ['privacy' => 'joined']) }}" class="text-xs font-semibold hover:underline" style="color: var(--ui-primary);">Browse</a>
+                </div>
+
+                <div class="space-y-2.5">
+                    @forelse ($yourGroups as $group)
+                        @php
+                            $groupRouteKey = filled((string) ($group->slug ?? '')) ? $group->slug : $group->id;
+                        @endphp
+
+                        <a href="{{ route('groups.show', $groupRouteKey) }}" class="hover-lift flex items-center justify-between rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold" style="color: var(--ui-text);">{{ $group->name }}</p>
+                                <p class="truncate text-xs shell-text-muted">{{ \Illuminate\Support\Str::headline((string) ($group->privacy ?? 'public')) }}</p>
+                            </div>
+                            <span class="text-xs shell-text-muted">{{ number_format((int) ($group->members_count ?? 0)) }}</span>
+                        </a>
+                    @empty
+                        <p class="text-sm shell-text-muted">You have not joined any groups yet.</p>
+                    @endforelse
+                </div>
+
+                @auth
+                    <a href="{{ route('groups.create') }}" class="btn-base btn-primary mt-3 w-full px-3 py-2 text-sm">Create a Group</a>
+                @endauth
+            </section>
+        </aside>
     </div>
 </x-app-layout>

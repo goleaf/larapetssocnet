@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Services\BadgeService;
 use App\Services\HashtagService;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class PostObserver
 {
@@ -42,6 +43,26 @@ class PostObserver
         }
 
         $this->logActivity('updated', $post, auth()->user());
+    }
+
+    /**
+     * Handle the Post "deleting" event.
+     */
+    public function deleting(Post $post): void
+    {
+        $post->loadMissing('postMedia');
+
+        foreach ($post->postMedia as $media) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        foreach ($post->media as $media) {
+            if ($media->disk !== 'public' && $media->conversions_disk !== 'public') {
+                continue;
+            }
+
+            $media->delete();
+        }
     }
 
     /**

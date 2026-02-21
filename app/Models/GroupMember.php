@@ -45,35 +45,22 @@ class GroupMember extends Model
         return $this->belongsTo(User::class, 'invited_by');
     }
 
-    public function scopeActive(Builder $query): Builder
+    public function scopeRole(Builder $query, string $role): Builder
     {
-        return $query->where(function (Builder $subQuery): void {
-            $subQuery->whereNull('status')->orWhere('status', 'active');
-        });
+        return $query->where('role', $role);
     }
 
-    public function scopePending(Builder $query): Builder
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeAdmins(Builder $query): Builder
+    public function scopeManagers(Builder $query): Builder
     {
         return $query->whereIn('role', ['owner', 'admin']);
     }
 
-    public function isAdmin(): bool
+    public function scopeActive(Builder $query): Builder
     {
-        return in_array((string) $this->role, ['owner', 'admin'], true);
-    }
-
-    public function isModerator(): bool
-    {
-        return in_array((string) $this->role, ['owner', 'admin', 'moderator'], true);
-    }
-
-    public function isPending(): bool
-    {
-        return $this->status === 'pending';
+        return $query->where(function (Builder $statusQuery): void {
+            $statusQuery
+                ->whereNull('status')
+                ->orWhereIn('status', ['active', 'accepted']);
+        });
     }
 }

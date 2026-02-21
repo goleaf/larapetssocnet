@@ -288,7 +288,7 @@ class User extends Authenticatable implements HasMedia
 
     public function ownedGroups(): HasMany
     {
-        return $this->hasMany(Group::class, 'owner_user_id');
+        return $this->hasMany(Group::class, 'owner_id');
     }
 
     public function groupMemberships(): HasMany
@@ -299,8 +299,18 @@ class User extends Authenticatable implements HasMedia
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class, 'group_members', 'user_id', 'group_id')
-            ->withPivot(['role', 'status', 'joined_at'])
+            ->withPivot(['role', 'joined_at', 'status', 'invited_by'])
             ->withTimestamps();
+    }
+
+    public function groupJoinRequests(): HasMany
+    {
+        return $this->hasMany(GroupJoinRequest::class);
+    }
+
+    public function groupBans(): HasMany
+    {
+        return $this->hasMany(GroupBan::class);
     }
 
     public function createdEvents(): HasMany
@@ -325,6 +335,59 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(MarketplaceListing::class);
     }
 
+    public function listings(): HasMany
+    {
+        return $this->hasMany(Listing::class);
+    }
+
+    public function conversationsAsOne(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'user_one_id');
+    }
+
+    public function conversationsAsTwo(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'user_two_id');
+    }
+
+    public function conversations(): Builder
+    {
+        return Conversation::query()
+            ->forUser($this)
+            ->ordered();
+    }
+
+    public function conversationWith(self $other): ?Conversation
+    {
+        return Conversation::query()
+            ->where(function (Builder $query) use ($other): void {
+                $query
+                    ->where('user_one_id', $this->getKey())
+                    ->where('user_two_id', $other->getKey());
+            })
+            ->orWhere(function (Builder $query) use ($other): void {
+                $query
+                    ->where('user_one_id', $other->getKey())
+                    ->where('user_two_id', $this->getKey());
+            })
+            ->first();
+    }
+
+    public function totalUnreadMessages(): int
+    {
+        $userId = (int) $this->getKey();
+
+        $asUserOne = (int) Conversation::query()
+            ->where('user_one_id', $userId)
+            ->sum('unread_count_user_one');
+
+        $asUserTwo = (int) Conversation::query()
+            ->where('user_two_id', $userId)
+            ->sum('unread_count_user_two');
+
+        return $asUserOne + $asUserTwo;
+    }
+
     public function usernameRedirects(): HasMany
     {
         return $this->hasMany(UsernameRedirect::class);
@@ -332,27 +395,48 @@ class User extends Authenticatable implements HasMedia
 
     public function sentMessages(): HasMany
     {
-        return $this->hasMany(Message::class, 'sender_user_id');
+        return $this->hasMany(Message::class, 'sender_id');
     }
 
-    public function receivedMessages(): HasMany
+    public function receivedMessages(): Builder
     {
-        return $this->hasMany(Message::class, 'recipient_user_id');
+        $userId = (int) $this->getKey();
+
+        return Message::query()
+            ->whereHas('conversation', function (Builder $query) use ($userId): void {
+                $query->where(function (Builder $participantQuery) use ($userId): void {
+                    $participantQuery
+                        ->where('user_one_id', $userId)
+                        ->orWhere('user_two_id', $userId);
+                });
+            })
+            ->where('sender_id', '!=', $userId);
     }
 
     public function unreadMessagesCount(): int
     {
-        return (int) $this->receivedMessages()
-            ->unread()
-            ->count();
+        return $this->totalUnreadMessages();
     }
 
     public function unreadThreadsCount(): int
     {
-        return (int) $this->receivedMessages()
-            ->unread()
-            ->distinct('sender_user_id')
-            ->count('sender_user_id');
+        $userId = (int) $this->getKey();
+
+        return (int) Conversation::query()
+            ->where(function (Builder $query) use ($userId): void {
+                $query
+                    ->where(function (Builder $asUserOne) use ($userId): void {
+                        $asUserOne
+                            ->where('user_one_id', $userId)
+                            ->where('unread_count_user_one', '>', 0);
+                    })
+                    ->orWhere(function (Builder $asUserTwo) use ($userId): void {
+                        $asUserTwo
+                            ->where('user_two_id', $userId)
+                            ->where('unread_count_user_two', '>', 0);
+                    });
+            })
+            ->count();
     }
 
     public function filedReports(): HasMany
@@ -384,15 +468,18 @@ class User extends Authenticatable implements HasMedia
     public function followers(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'follows', 'following_id', 'follower_id')
-            ->using(Follow::class)
             ->withPivot(['status', 'created_at']);
     }
 
     public function following(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'follows', 'follower_id', 'following_id')
-            ->using(Follow::class)
             ->withPivot(['status', 'created_at']);
+    }
+
+    public function followings(): BelongsToMany
+    {
+        return $this->following();
     }
 
     public function acceptedFollowers(): BelongsToMany
@@ -405,6 +492,11 @@ class User extends Authenticatable implements HasMedia
         return $this->following()->wherePivot('status', 'accepted');
     }
 
+    public function acceptedFollowings(): BelongsToMany
+    {
+        return $this->acceptedFollowing();
+    }
+
     public function pendingFollowRequests(): BelongsToMany
     {
         return $this->followers()->wherePivot('status', 'pending');
@@ -413,6 +505,11 @@ class User extends Authenticatable implements HasMedia
     public function sentPendingRequests(): BelongsToMany
     {
         return $this->following()->wherePivot('status', 'pending');
+    }
+
+    public function sentPendingFollowings(): BelongsToMany
+    {
+        return $this->sentPendingRequests();
     }
 
     public function blocking(): BelongsToMany
@@ -883,6 +980,11 @@ class User extends Authenticatable implements HasMedia
         ])->saveQuietly();
     }
 
+    public function getAvatarUrl(): string
+    {
+        return (string) ($this->avatar_url ?: '/images/default-avatar.png');
+    }
+
     public function setAttribute($key, $value)
     {
         if (is_string($key) && $this->shouldIgnoreMissingColumn($key)) {
@@ -976,7 +1078,7 @@ class User extends Authenticatable implements HasMedia
                 return (string) $this->profile_photo_path;
             }
 
-            return 'https://ui-avatars.com/api/?name='.urlencode((string) $this->name);
+            return '/images/default-avatar.png';
         });
     }
 

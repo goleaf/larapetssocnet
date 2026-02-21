@@ -34,6 +34,7 @@ class Post extends Model implements HasMedia
 
     protected $fillable = [
         'user_id',
+        'group_id',
         'pet_id',
         'body',
         'body_html',
@@ -52,6 +53,7 @@ class Post extends Model implements HasMedia
         return [
             'is_pinned' => 'boolean',
             'tagged_pets' => 'array',
+            'group_id' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -113,9 +115,24 @@ class Post extends Model implements HasMedia
         return $this->belongsTo(Pet::class);
     }
 
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
+    }
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(Like::class);
+    }
+
+    public function postMedia(): HasMany
+    {
+        return $this->hasMany(PostMedia::class)->orderBy('order');
     }
 
     public function reactions(): MorphMany
@@ -304,20 +321,27 @@ class Post extends Model implements HasMedia
         $query->where('is_pinned', true);
     }
 
-    public function scopeForFeed(Builder $query, User $user): void
+    public function scopeForGroup(Builder $query, int $groupId): Builder
+    {
+        return $query->where('group_id', $groupId);
+    }
+
+    public function scopeForFeed(Builder $query, User $user): Builder
     {
         $followingIds = $user->acceptedFollowing()
             ->pluck('users.id')
             ->push($user->getKey())
-            ->unique();
+            ->unique()
+            ->values();
 
-        $query
+        return $query
             ->whereIn('user_id', $followingIds)
             ->where(function (Builder $visibilityQuery) use ($user): void {
                 $visibilityQuery
                     ->where('user_id', $user->getKey())
                     ->orWhereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
             })
+            ->whereNull('posts.group_id')
             ->whereNull('posts.deleted_at');
     }
 
@@ -347,6 +371,17 @@ class Post extends Model implements HasMedia
     public function getVideoUrlAttribute(): ?string
     {
         return $this->getFirstMediaUrl('videos') ?: null;
+    }
+
+    public function isLikedBy(User $user): bool
+    {
+        if ($this->relationLoaded('likes')) {
+            return $this->likes->contains(function (Like $like) use ($user): bool {
+                return $like->user_id === $user->getKey();
+            });
+        }
+
+        return $this->likes()->where('user_id', $user->getKey())->exists();
     }
 
     public function refreshLikesCount(): void

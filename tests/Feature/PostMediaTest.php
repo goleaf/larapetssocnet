@@ -66,24 +66,7 @@ class PostMediaTest extends TestCase
         $this->assertCount(1, $post->getMedia('videos'));
     }
 
-    public function test_can_upload_webm_video_to_post(): void
-    {
-        Storage::fake('public');
-        $user = User::factory()->create();
-
-        $this->actingAs($user)
-            ->post(route('posts.store'), [
-                'body' => null,
-                'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('clip.webm', 1024, 'video/webm'),
-            ])->assertRedirect();
-
-        $post = Post::query()->latest('id')->firstOrFail();
-        $this->assertSame(Post::TYPE_VIDEO, $post->type);
-        $this->assertCount(1, $post->getMedia('videos'));
-    }
-
-    public function test_rejects_video_over_50mb(): void
+    public function test_rejects_webm_video_upload(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
@@ -93,7 +76,25 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('clip.mp4', 51201, 'video/mp4'),
+                'video' => UploadedFile::fake()->create('clip.webm', 1024, 'video/webm'),
+            ]);
+
+        $response->assertRedirect(route('posts.create'));
+        $response->assertSessionHasErrors(['video']);
+        $this->assertSame(0, Post::query()->count());
+    }
+
+    public function test_rejects_video_over_20mb(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->from(route('posts.create'))
+            ->post(route('posts.store'), [
+                'body' => null,
+                'visibility' => 'public',
+                'video' => UploadedFile::fake()->create('clip.mp4', 20481, 'video/mp4'),
             ]);
 
         $response->assertRedirect(route('posts.create'));
@@ -189,5 +190,54 @@ class PostMediaTest extends TestCase
         $response->assertRedirect(route('posts.create'));
         $response->assertSessionHasErrors(['photos']);
         $this->assertSame(0, Post::query()->count());
+    }
+
+    public function test_rejects_photo_over_20mb(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->from(route('posts.create'))
+            ->post(route('posts.store'), [
+                'body' => null,
+                'visibility' => 'public',
+                'photos' => [UploadedFile::fake()->image('large-photo.jpg')->size(20481)],
+            ]);
+
+        $response->assertRedirect(route('posts.create'));
+        $response->assertSessionHasErrors(['photos.0']);
+        $this->assertSame(0, Post::query()->count());
+    }
+
+    public function test_post_media_files_are_removed_when_post_is_deleted(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('posts.store'), [
+                'body' => null,
+                'visibility' => 'public',
+                'photos' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
+            ])
+            ->assertRedirect();
+
+        $post = Post::query()->latest('id')->firstOrFail();
+        $media = $post->getFirstMedia('photos');
+
+        $this->assertNotNull($media);
+
+        $relativePath = $media->getPathRelativeToRoot();
+        Storage::disk('public')->assertExists($relativePath);
+
+        $this->actingAs($user)
+            ->delete(route('posts.destroy', $post))
+            ->assertRedirect();
+
+        Storage::disk('public')->assertMissing($relativePath);
+        $this->assertDatabaseMissing('media', [
+            'id' => $media->id,
+        ]);
     }
 }

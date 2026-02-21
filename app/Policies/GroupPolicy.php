@@ -3,13 +3,19 @@
 namespace App\Policies;
 
 use App\Models\Group;
+use App\Models\GroupMember;
 use App\Models\User;
 
 class GroupPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
     public function view(?User $user, Group $group): bool
     {
-        $privacy = (string) ($group->type ?? $group->privacy ?? 'public');
+        $privacy = $this->privacy($group);
 
         if ($privacy === 'public') {
             return true;
@@ -19,14 +25,11 @@ class GroupPolicy
             return false;
         }
 
-        if ((int) $group->owner_user_id === (int) $user->getKey()) {
+        if ($this->isOwner($user, $group)) {
             return true;
         }
 
-        return $group->memberships()
-            ->where('user_id', $user->getKey())
-            ->whereIn('status', ['active', 'accepted'])
-            ->exists();
+        return $this->isActiveMembership($this->membership($user, $group));
     }
 
     public function create(User $user): bool
@@ -36,40 +39,82 @@ class GroupPolicy
 
     public function update(User $user, Group $group): bool
     {
-        if ((int) $group->owner_user_id === (int) $user->getKey()) {
+        if ($this->isOwner($user, $group)) {
             return true;
         }
 
-        return $user->hasAnyRole(['admin', 'moderator']);
+        $membership = $this->membership($user, $group);
+
+        return $this->isActiveMembership($membership)
+            && in_array((string) $membership?->role, ['owner', 'admin'], true);
     }
 
     public function delete(User $user, Group $group): bool
     {
-        return $this->update($user, $group);
+        return $this->isOwner($user, $group);
     }
 
-    public function join(User $user, Group $group): bool
+    public function post(User $user, Group $group): bool
     {
-        if ((string) ($group->type ?? $group->privacy ?? 'public') === 'secret') {
-            return false;
+        if ($this->isOwner($user, $group)) {
+            return true;
         }
 
-        return ! $group->memberships()
-            ->where('user_id', $user->getKey())
-            ->whereIn('status', ['active', 'accepted', 'pending', 'banned'])
-            ->exists();
+        return $this->isActiveMembership($this->membership($user, $group));
+    }
+
+    public function manageMembers(User $user, Group $group): bool
+    {
+        if ($this->isOwner($user, $group)) {
+            return true;
+        }
+
+        $membership = $this->membership($user, $group);
+
+        return $this->isActiveMembership($membership)
+            && in_array((string) $membership?->role, ['owner', 'admin'], true);
     }
 
     public function moderate(User $user, Group $group): bool
     {
-        if ((int) $group->owner_user_id === (int) $user->getKey()) {
+        if ($this->isOwner($user, $group)) {
             return true;
         }
 
+        $membership = $this->membership($user, $group);
+
+        return $this->isActiveMembership($membership)
+            && in_array((string) $membership?->role, ['owner', 'admin', 'moderator'], true);
+    }
+
+    private function privacy(Group $group): string
+    {
+        $privacy = strtolower((string) ($group->privacy ?: $group->type ?: 'public'));
+
+        return in_array($privacy, ['public', 'private', 'secret'], true)
+            ? $privacy
+            : 'public';
+    }
+
+    private function isOwner(User $user, Group $group): bool
+    {
+        return (int) $group->owner_user_id === (int) $user->getKey();
+    }
+
+    private function membership(User $user, Group $group): ?GroupMember
+    {
         return $group->memberships()
             ->where('user_id', $user->getKey())
-            ->whereIn('role', ['owner', 'admin', 'moderator'])
-            ->whereIn('status', ['active', 'accepted'])
-            ->exists();
+            ->first();
+    }
+
+    private function isActiveMembership(?GroupMember $membership): bool
+    {
+        if (! $membership) {
+            return false;
+        }
+
+        return $membership->status === null
+            || in_array((string) $membership->status, ['active', 'accepted'], true);
     }
 }

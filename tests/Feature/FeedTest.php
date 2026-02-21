@@ -90,12 +90,12 @@ it('paginates feed posts at 15 items per page', function (): void {
     $firstPage = $this->actingAs($viewer)->get(route('feed.index'));
 
     $firstPage->assertOk();
-    $firstPage->assertSee('feed-page-post-0');
-    $firstPage->assertSee('feed-page-post-14');
-    $firstPage->assertDontSee('feed-page-post-15');
+    $firstPage->assertSee('feed-page-post-15');
+    $firstPage->assertSee('feed-page-post-1');
+    $firstPage->assertDontSee('feed-page-post-0');
 
     $secondPage = $this->actingAs($viewer)->get(route('feed.index', ['page' => 2]));
 
     $secondPage->assertOk();
-    $secondPage->assertSee('feed-page-post-15');
+    $secondPage->assertSee('feed-page-post-0');
 });

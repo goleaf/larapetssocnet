@@ -1,14 +1,20 @@
 <?php
 
 use App\Http\Controllers\BlockController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowRequestController;
+use App\Http\Controllers\GroupBanController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupJoinRequestController;
+use App\Http\Controllers\GroupMemberController;
+use App\Http\Controllers\GroupPostController;
 use App\Http\Controllers\HashtagController;
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\MarketplaceListingController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
@@ -32,7 +38,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (auth()->check()) {
-        return redirect()->route('feed.index');
+        return app(FeedController::class)->index(request());
     }
 
     return redirect()->route('explore.index');
@@ -50,10 +56,6 @@ Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
 Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
-Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
-Route::get('/groups/{group}', [GroupController::class, 'show'])
-    ->where('group', '^(?!create$).+')
-    ->name('groups.show');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{event}', [EventController::class, 'show'])
     ->whereNumber('event')
@@ -91,12 +93,17 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+    Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])
+        ->middleware('throttle:60,1')
+        ->name('posts.like');
 
     Route::post('/posts/{post}/react', [ReactionController::class, 'react'])
         ->middleware('throttle:60,1')
         ->name('posts.react');
-    Route::post('/posts/{post}/comments', [PostCommentController::class, 'store'])->name('posts.comments.store');
-    Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.store');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.legacy.store');
     Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');
     Route::post('/comments/{comment}/react', [CommentReactionController::class, 'reactToComment'])
         ->middleware('throttle:60,1')
@@ -104,7 +111,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/posts/{post}/comments/{comment}', [PostCommentController::class, 'update'])->name('posts.comments.update');
     Route::delete('/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])->name('posts.comments.destroy');
     Route::patch('/comments/{post}/{comment}', [PostCommentController::class, 'update'])->name('comments.update');
-    Route::delete('/comments/{post}/{comment}', [PostCommentController::class, 'destroy'])->name('comments.destroy');
+    Route::delete('/comments/{post}/{comment}', [PostCommentController::class, 'destroy'])->name('comments.post.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
@@ -145,18 +152,32 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         ->whereNumber('step')
         ->name('onboarding.skip');
 
+    Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     Route::get('/groups/create', [GroupController::class, 'create'])->name('groups.create');
     Route::post('/groups', [GroupController::class, 'store'])->name('groups.store');
-    Route::get('/groups/{group}/edit', [GroupController::class, 'edit'])->name('groups.edit');
-    Route::patch('/groups/{group}', [GroupController::class, 'update'])->name('groups.update');
-    Route::delete('/groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
-    Route::post('/groups/{group}/join', [GroupController::class, 'join'])->name('groups.join');
-    Route::delete('/groups/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
-    Route::post('/groups/{group}/members/{membership}/approve', [GroupController::class, 'approveMember'])->name('groups.members.approve');
-    Route::delete('/groups/{group}/members/{membership}/reject', [GroupController::class, 'rejectMember'])->name('groups.members.reject');
-    Route::patch('/groups/{group}/members/{membership}/role', [GroupController::class, 'updateMemberRole'])->name('groups.members.role');
-    Route::patch('/groups/{group}/members/{membership}/ban', [GroupController::class, 'banMember'])->name('groups.members.ban');
-    Route::post('/groups/{group}/posts', [GroupController::class, 'attachPost'])->name('groups.posts.attach');
+    Route::get('/groups/{group:slug}', [GroupController::class, 'show'])->name('groups.show');
+    Route::get('/groups/{group:slug}/edit', [GroupController::class, 'edit'])->name('groups.edit');
+    Route::patch('/groups/{group:slug}', [GroupController::class, 'update'])->name('groups.update');
+    Route::delete('/groups/{group:slug}', [GroupController::class, 'destroy'])->name('groups.destroy');
+
+    Route::post('/groups/{group:slug}/join', [GroupController::class, 'join'])->name('groups.join');
+    Route::delete('/groups/{group:slug}/leave', [GroupController::class, 'leave'])->name('groups.leave');
+
+    Route::get('/groups/{group:slug}/requests', [GroupJoinRequestController::class, 'index'])->name('groups.requests.index');
+    Route::post('/groups/{group:slug}/requests', [GroupJoinRequestController::class, 'store'])->name('groups.requests.store');
+    Route::post('/groups/{group:slug}/requests/{membership}/approve', [GroupJoinRequestController::class, 'approve'])->name('groups.requests.approve');
+    Route::post('/groups/{group:slug}/requests/{membership}/reject', [GroupJoinRequestController::class, 'reject'])->name('groups.requests.reject');
+
+    Route::get('/groups/{group:slug}/members', [GroupMemberController::class, 'index'])->name('groups.members.index');
+    Route::post('/groups/{group:slug}/members/{membership}/promote', [GroupMemberController::class, 'promote'])->name('groups.members.promote');
+    Route::post('/groups/{group:slug}/members/{membership}/demote', [GroupMemberController::class, 'demote'])->name('groups.members.demote');
+    Route::delete('/groups/{group:slug}/members/{membership}/remove', [GroupMemberController::class, 'remove'])->name('groups.members.remove');
+
+    Route::post('/groups/{group:slug}/bans', [GroupBanController::class, 'store'])->name('groups.bans.store');
+    Route::delete('/groups/{group:slug}/bans/{user}', [GroupBanController::class, 'destroy'])->name('groups.bans.destroy');
+
+    Route::post('/groups/{group:slug}/posts', [GroupPostController::class, 'store'])->name('groups.posts.store');
+    Route::delete('/groups/{group:slug}/posts/{post}', [GroupPostController::class, 'destroy'])->name('groups.posts.destroy');
 
     Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
@@ -180,7 +201,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::delete('/settings/account', [AccountSettingsController::class, 'destroy'])->name('settings.account.destroy');
 
     Route::middleware('throttle:30,1')->group(function (): void {
-        Route::post('/users/{user:username}/follow', [FollowController::class, 'follow'])->name('users.follow');
+        Route::post('/users/{user:username}/follow', [FollowController::class, 'toggle'])->name('users.follow');
         Route::match(['POST', 'DELETE'], '/users/{user:username}/unfollow', [FollowController::class, 'unfollow'])->name('users.unfollow');
         Route::delete('/users/{user:username}/follower', [FollowController::class, 'removeFollower'])->name('users.remove-follower');
     });

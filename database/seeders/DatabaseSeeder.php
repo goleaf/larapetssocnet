@@ -15,18 +15,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RoleSeeder::class,
-            BadgeSeeder::class,
-            ReservedUsernameSeeder::class,
             UserSeeder::class,
             PetSeeder::class,
-            SocialSeeder::class,
-            ContentSeeder::class,
-            GroupSeeder::class,
-            EventSeeder::class,
-            MarketplaceSeeder::class,
-            HealthSeeder::class,
-            ContestSeeder::class,
+            FollowSeeder::class,
+            PostSeeder::class,
         ]);
     }
 }

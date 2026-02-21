@@ -4,24 +4,20 @@ namespace App\Models;
 
 use App\Traits\HasCounterCache;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 
 class Group extends Model implements HasMedia
 {
     use HasCounterCache;
     use HasFactory;
-    use HasSlug;
     use InteractsWithMedia;
     use SoftDeletes;
 
@@ -29,17 +25,22 @@ class Group extends Model implements HasMedia
      * @var list<string>
      */
     protected $fillable = [
+        'owner_id',
         'owner_user_id',
         'name',
         'slug',
         'description',
-        'rules',
+        'avatar',
+        'avatar_path',
+        'cover_image',
+        'cover_image_path',
         'type',
+        'privacy',
+        'species_focus',
+        'species',
+        'rules',
         'location',
         'website',
-        'privacy',
-        'avatar_path',
-        'cover_image_path',
         'members_count',
         'posts_count',
     ];
@@ -49,6 +50,7 @@ class Group extends Model implements HasMedia
      */
     protected $appends = [
         'avatar_url',
+        'cover_url',
         'cover_photo_url',
         'profile_photo_url',
     ];
@@ -61,11 +63,26 @@ class Group extends Model implements HasMedia
         ];
     }
 
-    public function getSlugOptions(): SlugOptions
+    protected static function booted(): void
     {
-        return SlugOptions::create()
-            ->generateSlugsFrom('name')
-            ->saveSlugsTo('slug');
+        static::saving(function (self $group): void {
+            $group->syncOwnerColumns();
+
+            if (! $group->exists || $group->isDirty('name') || blank($group->slug)) {
+                $group->slug = static::generateUniqueSlug(
+                    (string) ($group->name ?: $group->slug),
+                    $group->exists ? (int) $group->getKey() : null,
+                );
+            }
+
+            if (blank($group->type)) {
+                $group->type = 'public';
+            }
+
+            if (blank($group->species_focus)) {
+                $group->species_focus = 'all';
+            }
+        });
     }
 
     public function registerMediaCollections(): void
@@ -76,26 +93,32 @@ class Group extends Model implements HasMedia
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_user_id');
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
-    public function memberships(): HasMany
+    public function members(): HasMany
     {
         return $this->hasMany(GroupMember::class);
     }
 
-    public function members(): BelongsToMany
+    public function memberships(): HasMany
     {
-        return $this->belongsToMany(User::class, 'group_members', 'group_id', 'user_id')
-            ->withPivot(['role', 'status', 'joined_at', 'invited_by'])
-            ->withTimestamps();
+        return $this->members();
     }
 
-    public function posts(): BelongsToMany
+    public function joinRequests(): HasMany
     {
-        return $this->belongsToMany(Post::class, 'group_posts', 'group_id', 'post_id')
-            ->withPivot('added_by_user_id')
-            ->withTimestamps();
+        return $this->hasMany(GroupJoinRequest::class);
+    }
+
+    public function bans(): HasMany
+    {
+        return $this->hasMany(GroupBan::class);
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
     }
 
     public function events(): HasMany
@@ -103,36 +126,48 @@ class Group extends Model implements HasMedia
         return $this->hasMany(Event::class);
     }
 
-    public function scopePublic(Builder $query): Builder
+    public function scopeVisible(Builder $query, ?User $user): Builder
     {
-        return $query->where(function (Builder $subQuery): void {
-            $subQuery
-                ->whereNull('privacy')
-                ->orWhere('privacy', 'public')
-                ->orWhere('type', 'public');
+        return $query->where(function (Builder $visibilityQuery) use ($user): void {
+            $visibilityQuery
+                ->where('type', '!=', 'secret')
+                ->orWhereNull('type');
+
+            if ($user) {
+                $visibilityQuery
+                    ->orWhere('owner_id', $user->getKey())
+                    ->orWhere('owner_user_id', $user->getKey())
+                    ->orWhereHas('members', function (Builder $memberQuery) use ($user): void {
+                        $memberQuery
+                            ->where('user_id', $user->getKey())
+                            ->where(function (Builder $statusQuery): void {
+                                if (Schema::hasColumn('group_members', 'status')) {
+                                    $statusQuery
+                                        ->whereNull('status')
+                                        ->orWhereIn('status', ['active', 'accepted']);
+                                }
+                            });
+                    });
+            }
         });
     }
 
-    public function scopePrivate(Builder $query): Builder
+    public function scopeForSpecies(Builder $query, string $species): Builder
     {
-        return $query->where(function (Builder $subQuery): void {
-            $subQuery
-                ->whereIn('privacy', ['private', 'secret'])
-                ->orWhereIn('type', ['private', 'secret']);
-        });
-    }
+        $value = strtolower(trim($species));
 
-    public function scopeSearch(Builder $query, ?string $term): Builder
-    {
-        if (! $term) {
+        if ($value === '' || $value === 'all') {
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($term): void {
-            $subQuery
-                ->where('name', 'like', "%{$term}%")
-                ->orWhere('slug', 'like', "%{$term}%")
-                ->orWhere('description', 'like', "%{$term}%");
+        return $query->where(function (Builder $speciesQuery) use ($value): void {
+            if (Schema::hasColumn('groups', 'species_focus')) {
+                $speciesQuery->where('species_focus', $value);
+            }
+
+            if (Schema::hasColumn('groups', 'species')) {
+                $speciesQuery->orWhere('species', $value);
+            }
         });
     }
 
@@ -141,107 +176,203 @@ class Group extends Model implements HasMedia
         return 'slug';
     }
 
+    public function avatarUrl(): string
+    {
+        $mediaUrl = $this->getFirstMediaUrl('avatar');
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        if (filled((string) $this->avatar)) {
+            return asset('storage/'.ltrim((string) $this->avatar, '/'));
+        }
+
+        if (filled((string) $this->avatar_path)) {
+            return (string) $this->avatar_path;
+        }
+
+        return '/images/default-group-avatar.png';
+    }
+
+    public function coverUrl(): string
+    {
+        $mediaUrl = $this->getFirstMediaUrl('cover');
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        if (filled((string) $this->cover_image)) {
+            return asset('storage/'.ltrim((string) $this->cover_image, '/'));
+        }
+
+        if (filled((string) $this->cover_image_path)) {
+            return (string) $this->cover_image_path;
+        }
+
+        return '/images/default-group-cover.png';
+    }
+
     public function isMember(User $user): bool
     {
-        return $this->members()->whereKey($user->getKey())->exists();
+        return $this->members()
+            ->where('user_id', $user->getKey())
+            ->where(function (Builder $statusQuery): void {
+                if (Schema::hasColumn('group_members', 'status')) {
+                    $statusQuery
+                        ->whereNull('status')
+                        ->orWhereIn('status', ['active', 'accepted']);
+                }
+            })
+            ->exists();
+    }
+
+    public function isOwner(User $user): bool
+    {
+        return (int) $this->owner_id === (int) $user->getKey()
+            || (int) ($this->owner_user_id ?? 0) === (int) $user->getKey();
     }
 
     public function memberRole(User $user): ?string
     {
-        return $this->memberships()
+        return $this->members()
             ->where('user_id', $user->getKey())
             ->value('role');
     }
 
+    public function isBanned(User $user): bool
+    {
+        return $this->bans()
+            ->where('user_id', $user->getKey())
+            ->exists();
+    }
+
+    public function hasPendingRequest(User $user): bool
+    {
+        return $this->joinRequests()
+            ->where('user_id', $user->getKey())
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    public function canManage(User $user): bool
+    {
+        if ($this->isOwner($user)) {
+            return true;
+        }
+
+        return $this->members()
+            ->where('user_id', $user->getKey())
+            ->where('role', 'admin')
+            ->where(function (Builder $statusQuery): void {
+                if (Schema::hasColumn('group_members', 'status')) {
+                    $statusQuery
+                        ->whereNull('status')
+                        ->orWhereIn('status', ['active', 'accepted']);
+                }
+            })
+            ->exists();
+    }
+
+    public function canModerate(User $user): bool
+    {
+        if ($this->isOwner($user)) {
+            return true;
+        }
+
+        return $this->members()
+            ->where('user_id', $user->getKey())
+            ->whereIn('role', ['admin', 'moderator'])
+            ->where(function (Builder $statusQuery): void {
+                if (Schema::hasColumn('group_members', 'status')) {
+                    $statusQuery
+                        ->whereNull('status')
+                        ->orWhereIn('status', ['active', 'accepted']);
+                }
+            })
+            ->exists();
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        return $this->avatarUrl();
+    }
+
+    public function getCoverUrlAttribute(): string
+    {
+        return $this->coverUrl();
+    }
+
+    public function getCoverPhotoUrlAttribute(): string
+    {
+        return $this->coverUrl();
+    }
+
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        return $this->avatarUrl();
+    }
+
     public function addMember(User $user, string $role = 'member', string $status = 'active'): bool
     {
-        return DB::transaction(function () use ($user, $role, $status): bool {
-            $membership = $this->memberships()
-                ->where('user_id', $user->getKey())
-                ->lockForUpdate()
-                ->first();
+        $attributes = [
+            'group_id' => $this->getKey(),
+            'user_id' => $user->getKey(),
+        ];
 
-            if ($membership) {
-                $previouslyActive = $membership->status === 'active';
-                $membership->forceFill([
-                    'role' => $role,
-                    'status' => $status,
-                    'joined_at' => $membership->joined_at ?: now(),
-                ])->save();
+        $values = [
+            'role' => $role,
+            'joined_at' => now(),
+        ];
 
-                if (! $previouslyActive && $status === 'active') {
-                    $this->incrementCounter('members_count');
-                }
+        if (Schema::hasColumn('group_members', 'status')) {
+            $values['status'] = $status;
+        }
 
-                return true;
-            }
+        $this->members()->updateOrCreate($attributes, $values);
 
-            $this->memberships()->create([
-                'user_id' => $user->getKey(),
-                'role' => $role,
-                'status' => $status,
-                'joined_at' => now(),
-            ]);
-
-            if ($status === 'active') {
-                $this->incrementCounter('members_count');
-            }
-
-            return true;
-        });
+        return true;
     }
 
     public function removeMember(User $user): bool
     {
-        return DB::transaction(function () use ($user): bool {
-            $membership = $this->memberships()
-                ->where('user_id', $user->getKey())
-                ->lockForUpdate()
-                ->first();
-
-            if (! $membership) {
-                return false;
-            }
-
-            $wasActive = $membership->status === 'active';
-            $deleted = (bool) $membership->delete();
-
-            if ($deleted && $wasActive) {
-                $this->decrementCounter('members_count');
-            }
-
-            return $deleted;
-        });
+        return (bool) $this->members()->where('user_id', $user->getKey())->delete();
     }
 
-    protected function avatarUrl(): Attribute
+    protected static function generateUniqueSlug(string $seed, ?int $ignoreId = null): string
     {
-        return Attribute::get(function (): string {
-            $mediaUrl = $this->getFirstMediaUrl('avatar');
+        $base = Str::slug($seed);
 
-            if ($mediaUrl !== '') {
-                return $mediaUrl;
-            }
+        if ($base === '') {
+            $base = 'group';
+        }
 
-            return (string) ($this->avatar_path ?: 'https://ui-avatars.com/api/?name='.urlencode((string) $this->name));
-        });
+        $slug = $base;
+        $suffix = 1;
+
+        while (static::query()
+            ->withTrashed()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn (Builder $query): Builder => $query->whereKeyNot($ignoreId))
+            ->exists()) {
+            $slug = $base.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
     }
 
-    protected function coverPhotoUrl(): Attribute
+    protected function syncOwnerColumns(): void
     {
-        return Attribute::get(function (): string {
-            $mediaUrl = $this->getFirstMediaUrl('cover');
+        $ownerId = $this->getAttribute('owner_id') ?? $this->getAttribute('owner_user_id');
 
-            if ($mediaUrl !== '') {
-                return $mediaUrl;
+        if ($ownerId !== null) {
+            $this->setAttribute('owner_id', (int) $ownerId);
+
+            if (Schema::hasColumn('groups', 'owner_user_id')) {
+                $this->setAttribute('owner_user_id', (int) $ownerId);
             }
-
-            return (string) ($this->cover_image_path ?: $this->avatar_url);
-        });
-    }
-
-    protected function profilePhotoUrl(): Attribute
-    {
-        return Attribute::get(fn (): string => $this->avatar_url);
+        }
     }
 }

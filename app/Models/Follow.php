@@ -3,14 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class Follow extends Pivot
+class Follow extends Model
 {
     protected $table = 'follows';
-
-    public $incrementing = false;
 
     public $timestamps = false;
 
@@ -21,6 +19,7 @@ class Follow extends Pivot
         'follower_id',
         'following_id',
         'status',
+        'created_at',
     ];
 
     protected function casts(): array

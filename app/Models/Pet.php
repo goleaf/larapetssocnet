@@ -198,6 +198,11 @@ class Pet extends Model implements HasMedia
         return $user->unfollowPet($this);
     }
 
+    public function getAvatarUrl(): string
+    {
+        return (string) ($this->avatar_url ?: '/images/default-avatar.png');
+    }
+
     protected function avatarUrl(): Attribute
     {
         return Attribute::get(function (): string {
@@ -207,7 +212,7 @@ class Pet extends Model implements HasMedia
                 return $mediaUrl;
             }
 
-            return (string) ($this->avatar_path ?: 'https://ui-avatars.com/api/?name='.urlencode((string) $this->name));
+            return (string) ($this->avatar_path ?: '/images/default-avatar.png');
         });
     }
 
