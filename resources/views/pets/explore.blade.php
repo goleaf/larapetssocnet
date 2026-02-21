@@ -28,12 +28,12 @@
                     </div>
 
                     <div>
-                        <x-input-label for="gender" value="Gender" />
-                        <select id="gender" name="gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <x-input-label for="sex" value="Sex" />
+                        <select id="sex" name="sex" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Any</option>
-                            <option value="male" @selected($filters['gender'] === 'male')>Male</option>
-                            <option value="female" @selected($filters['gender'] === 'female')>Female</option>
-                            <option value="unknown" @selected($filters['gender'] === 'unknown')>Unknown</option>
+                            <option value="male" @selected($filters['sex'] === 'male')>Male</option>
+                            <option value="female" @selected($filters['sex'] === 'female')>Female</option>
+                            <option value="unknown" @selected($filters['sex'] === 'unknown')>Unknown</option>
                         </select>
                     </div>
 
@@ -50,7 +50,7 @@
 
                     <div class="sm:col-span-2 lg:col-span-6 flex items-center justify-between">
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" name="is_for_adoption" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked($filters['is_for_adoption'])>
+                            <input type="checkbox" name="is_adoptable" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked($filters['is_adoptable'])>
                             Show only pets for adoption
                         </label>
 
@@ -78,11 +78,11 @@
                             <p class="mt-2 text-sm text-gray-600">{{ \Illuminate\Support\Str::limit((string) ($pet->bio ?? 'No bio yet.'), 130) }}</p>
 
                             <div class="mt-3 flex flex-wrap gap-2">
-                                @if(!empty($pet->is_for_adoption))
+                                @if(!empty($pet->is_adoptable) || !empty($pet->is_for_adoption))
                                     <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Adoption</span>
                                 @endif
-                                @if(!empty($pet->gender))
-                                    <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ ucfirst($pet->gender) }}</span>
+                                @if(!empty($pet->sex) || !empty($pet->gender))
+                                    <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ ucfirst($pet->sex ?? $pet->gender) }}</span>
                                 @endif
                             </div>
 

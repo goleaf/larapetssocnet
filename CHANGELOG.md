@@ -64,6 +64,9 @@
 - Updated post show tagged-pets resolver to include `pet_id` fallback when `tagged_pets` is empty.
 - Added pet personality tags support with DB column, model casting, and create/edit form input.
 - Updated pet profile About tab to render saved personality tags as chips.
+- Added `pets.is_adoptable` migration for consistent adoption flag support across environments.
+- Updated pet explore/adopt filtering and forms to use `is_adoptable` + `sex` field naming with legacy fallback.
+- Added adopt-page feature coverage to ensure only adoptable pets are listed.
 
 ### Tests
 - Verified passing suites:

@@ -20,12 +20,12 @@
                     </div>
 
                     <div>
-                        <x-input-label for="gender" value="Gender" />
-                        <select id="gender" name="gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <x-input-label for="sex" value="Sex" />
+                        <select id="sex" name="sex" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Any</option>
-                            <option value="male" @selected($filters['gender'] === 'male')>Male</option>
-                            <option value="female" @selected($filters['gender'] === 'female')>Female</option>
-                            <option value="unknown" @selected($filters['gender'] === 'unknown')>Unknown</option>
+                            <option value="male" @selected($filters['sex'] === 'male')>Male</option>
+                            <option value="female" @selected($filters['sex'] === 'female')>Female</option>
+                            <option value="unknown" @selected($filters['sex'] === 'unknown')>Unknown</option>
                         </select>
                     </div>
 

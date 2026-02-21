@@ -152,7 +152,7 @@ class PetController extends Controller
             });
         }
 
-        foreach (['species', 'breed', 'gender'] as $filterColumn) {
+        foreach (['species', 'breed', 'sex'] as $filterColumn) {
             $filterValue = trim((string) $request->string($filterColumn));
 
             if ($filterValue !== '' && $this->petTableHasColumn($filterColumn)) {
@@ -160,8 +160,13 @@ class PetController extends Controller
             }
         }
 
-        if ($request->filled('is_for_adoption') && $this->petTableHasColumn('is_for_adoption')) {
-            $query->where('is_for_adoption', $request->boolean('is_for_adoption'));
+        if ($request->filled('is_adoptable') || $request->filled('is_for_adoption')) {
+            $adoptableFilterValue = $request->boolean('is_adoptable') || $request->boolean('is_for_adoption');
+            if ($this->petTableHasColumn('is_adoptable')) {
+                $query->where('is_adoptable', $adoptableFilterValue);
+            } elseif ($this->petTableHasColumn('is_for_adoption')) {
+                $query->where('is_for_adoption', $adoptableFilterValue);
+            }
         }
 
         $sort = $request->string('sort')->toString() ?: 'newest';
@@ -182,9 +187,9 @@ class PetController extends Controller
                 'q' => $search,
                 'species' => (string) $request->string('species'),
                 'breed' => (string) $request->string('breed'),
-                'gender' => (string) $request->string('gender'),
-                'is_for_adoption' => $request->filled('is_for_adoption')
-                    ? $request->boolean('is_for_adoption')
+                'sex' => (string) $request->string('sex'),
+                'is_adoptable' => ($request->filled('is_adoptable') || $request->filled('is_for_adoption'))
+                    ? ($request->boolean('is_adoptable') || $request->boolean('is_for_adoption'))
                     : null,
                 'sort' => $sort,
             ],
@@ -199,7 +204,9 @@ class PetController extends Controller
             $query->where('is_public', true);
         }
 
-        if ($this->petTableHasColumn('is_for_adoption')) {
+        if ($this->petTableHasColumn('is_adoptable')) {
+            $query->where('is_adoptable', true);
+        } elseif ($this->petTableHasColumn('is_for_adoption')) {
             $query->where('is_for_adoption', true);
         }
 
@@ -220,7 +227,7 @@ class PetController extends Controller
             });
         }
 
-        foreach (['species', 'gender'] as $filterColumn) {
+        foreach (['species', 'sex'] as $filterColumn) {
             $filterValue = trim((string) $request->string($filterColumn));
 
             if ($filterValue !== '' && $this->petTableHasColumn($filterColumn)) {
@@ -244,7 +251,7 @@ class PetController extends Controller
             'filters' => [
                 'q' => $search,
                 'species' => (string) $request->string('species'),
-                'gender' => (string) $request->string('gender'),
+                'sex' => (string) $request->string('sex'),
                 'sort' => $sort,
             ],
         ]);

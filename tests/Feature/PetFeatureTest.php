@@ -6,6 +6,7 @@ use App\Models\Pet;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -162,5 +163,33 @@ class PetFeatureTest extends TestCase
             ->assertSee('playful')
             ->assertSee('curious')
             ->assertSee('affectionate');
+    }
+
+    public function test_adopt_page_shows_only_pets_marked_as_adoptable(): void
+    {
+        $owner = User::factory()->create();
+
+        $adoptable = Pet::factory()->for($owner)->create([
+            'name' => 'Adopt Me',
+            'is_public' => true,
+        ]);
+
+        $notAdoptable = Pet::factory()->for($owner)->create([
+            'name' => 'Not Adoptable',
+            'is_public' => true,
+        ]);
+
+        if (Schema::hasColumn('pets', 'is_adoptable')) {
+            $adoptable->update(['is_adoptable' => true]);
+            $notAdoptable->update(['is_adoptable' => false]);
+        } elseif (Schema::hasColumn('pets', 'is_for_adoption')) {
+            $adoptable->update(['is_for_adoption' => true]);
+            $notAdoptable->update(['is_for_adoption' => false]);
+        }
+
+        $this->get(route('pets.adopt'))
+            ->assertOk()
+            ->assertSee($adoptable->name)
+            ->assertDontSee($notAdoptable->name);
     }
 }
