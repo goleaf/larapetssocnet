@@ -1,0 +1,32 @@
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Post>
+ */
+class PostFactory extends Factory
+{
+    protected $model = \App\Models\Post::class;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'user_id' => \App\Models\User::factory(),
+            'pet_id' => null,
+            'body' => fake()->paragraph(fake()->numberBetween(1, 3)),
+            'visibility' => fake()->randomElement(['public', 'followers', 'private']),
+            'status' => 'published',
+            'comments_count' => 0,
+            'reactions_count' => 0,
+            'published_at' => fake()->dateTimeBetween('-60 days', 'now'),
+        ];
+    }
+}
