@@ -54,8 +54,8 @@ class SocialSeeder extends Seeder
                 $createdAt = Carbon::instance($faker->dateTimeBetween('-90 days', 'now'));
 
                 $follows[] = [
-                    'follower_user_id' => $followerId,
-                    'followed_user_id' => $followedId,
+                    'follower_id' => $followerId,
+                    'following_id' => $followedId,
                     'created_at' => $createdAt,
                     'updated_at' => $createdAt,
                 ];
@@ -66,7 +66,7 @@ class SocialSeeder extends Seeder
 
         if ($follows !== []) {
             foreach (array_chunk($follows, 500) as $chunk) {
-                DB::table('follows')->insertOrIgnore($chunk);
+                DB::table('user_follows')->insertOrIgnore($chunk);
             }
         }
 
@@ -80,19 +80,19 @@ class SocialSeeder extends Seeder
                 foreach ($this->pickRandomUnique($petIds, $target) as $petId) {
                     $createdAt = Carbon::instance($faker->dateTimeBetween('-90 days', 'now'));
 
-                    $petFollows[] = [
-                        'user_id' => $userId,
-                        'pet_id' => $petId,
-                        'created_at' => $createdAt,
-                        'updated_at' => $createdAt,
-                    ];
+                $petFollows[] = [
+                    'user_id' => $userId,
+                    'pet_id' => $petId,
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
+                ];
                 }
             }
         }
 
         if ($petFollows !== []) {
             foreach (array_chunk($petFollows, 500) as $chunk) {
-                DB::table('pet_follows')->insertOrIgnore($chunk);
+                DB::table('pet_followers')->insertOrIgnore($chunk);
             }
         }
 
@@ -120,20 +120,20 @@ class SocialSeeder extends Seeder
             $createdAt = Carbon::instance($faker->dateTimeBetween('-60 days', 'now'));
 
             $blocks[] = [
-                'blocker_user_id' => $blockerId,
-                'blocked_user_id' => $blockedId,
+                'blocker_id' => $blockerId,
+                'blocked_id' => $blockedId,
                 'created_at' => $createdAt,
                 'updated_at' => $createdAt,
             ];
         }
 
         if ($blocks !== []) {
-            DB::table('blocks')->insertOrIgnore($blocks);
+            DB::table('user_blocks')->insertOrIgnore($blocks);
         }
 
-        DB::statement('UPDATE users SET following_count = (SELECT COUNT(*) FROM follows WHERE follows.follower_user_id = users.id)');
-        DB::statement('UPDATE users SET followers_count = (SELECT COUNT(*) FROM follows WHERE follows.followed_user_id = users.id)');
-        DB::statement('UPDATE pets SET followers_count = (SELECT COUNT(*) FROM pet_follows WHERE pet_follows.pet_id = pets.id)');
+        DB::statement('UPDATE users SET following_count = (SELECT COUNT(*) FROM user_follows WHERE user_follows.follower_id = users.id)');
+        DB::statement('UPDATE users SET followers_count = (SELECT COUNT(*) FROM user_follows WHERE user_follows.following_id = users.id)');
+        DB::statement('UPDATE pets SET followers_count = (SELECT COUNT(*) FROM pet_followers WHERE pet_followers.pet_id = pets.id)');
     }
 
     /**
