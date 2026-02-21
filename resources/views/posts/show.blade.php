@@ -57,6 +57,9 @@
             @endif
 
             @auth
+                @php
+                    $commentReactionTypes = ['love' => '❤️', 'cute' => '🥹', 'funny' => '😂', 'wow' => '😮', 'sad' => '😢', 'support' => '🤝'];
+                @endphp
                 <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                     <h3 class="text-sm font-semibold text-gray-900">React</h3>
                     <p id="reaction-status" class="mt-1 text-xs text-gray-500">Current reaction: {{ $userReaction ? ucfirst($userReaction) : 'None' }}</p>
@@ -139,6 +142,23 @@
                                 <p class="text-sm font-semibold text-gray-900">{{ $comment->user->name }}</p>
                                 <p class="mt-1 whitespace-pre-line text-sm text-gray-800">{{ $comment->body }}</p>
                                 <p class="mt-1 text-xs text-gray-500">{{ $comment->created_at?->diffForHumans() }}</p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    <span id="comment-reactions-count-{{ $comment->id }}">{{ (int) $comment->reactions_count }}</span> reactions
+                                </p>
+
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    @foreach ($commentReactionTypes as $type => $emoji)
+                                        <button
+                                            type="button"
+                                            class="js-comment-react rounded-lg border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                            data-url="{{ route('posts.comments.react', [$post, $comment]) }}"
+                                            data-type="{{ $type }}"
+                                            data-comment-id="{{ $comment->id }}"
+                                        >
+                                            {{ $emoji }} {{ ucfirst($type) }}
+                                        </button>
+                                    @endforeach
+                                </div>
 
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
                                     @if ($comment->user_id === auth()->id())
@@ -171,6 +191,23 @@
                                                 <p class="text-xs font-semibold text-gray-900">{{ $reply->user->name }}</p>
                                                 <p class="mt-1 whitespace-pre-line text-xs text-gray-800">{{ $reply->body }}</p>
                                                 <p class="mt-1 text-[11px] text-gray-500">{{ $reply->created_at?->diffForHumans() }}</p>
+                                                <p class="mt-1 text-[11px] text-gray-500">
+                                                    <span id="comment-reactions-count-{{ $reply->id }}">{{ (int) $reply->reactions_count }}</span> reactions
+                                                </p>
+
+                                                <div class="mt-2 flex flex-wrap gap-1">
+                                                    @foreach ($commentReactionTypes as $type => $emoji)
+                                                        <button
+                                                            type="button"
+                                                            class="js-comment-react rounded-lg border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                                                            data-url="{{ route('posts.comments.react', [$post, $reply]) }}"
+                                                            data-type="{{ $type }}"
+                                                            data-comment-id="{{ $reply->id }}"
+                                                        >
+                                                            {{ $emoji }}
+                                                        </button>
+                                                    @endforeach
+                                                </div>
 
                                                 @if ($reply->user_id === auth()->id())
                                                     <div class="mt-2 flex flex-wrap gap-2">
@@ -250,6 +287,41 @@
                             }
                         } catch (error) {
                             statusEl.textContent = 'Could not update reaction right now.';
+                        }
+                    });
+                });
+
+                const commentButtons = document.querySelectorAll('.js-comment-react');
+                commentButtons.forEach((button) => {
+                    button.addEventListener('click', async () => {
+                        const type = button.dataset.type;
+                        const url = button.dataset.url;
+                        const commentId = button.dataset.commentId;
+
+                        try {
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': token,
+                                },
+                                body: JSON.stringify({ type }),
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Comment reaction request failed');
+                            }
+
+                            const payload = await response.json();
+                            if (payload?.success) {
+                                const countEl = document.getElementById(`comment-reactions-count-${commentId}`);
+                                if (countEl) {
+                                    countEl.textContent = String(payload.data.reactions_count ?? 0);
+                                }
+                            }
+                        } catch (error) {
+                            // no-op
                         }
                     });
                 });

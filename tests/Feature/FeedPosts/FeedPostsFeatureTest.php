@@ -209,6 +209,70 @@ class FeedPostsFeatureTest extends TestCase
         ]);
     }
 
+    public function test_comment_reaction_endpoint_toggles_and_updates_reactions_count(): void
+    {
+        $author = User::factory()->create();
+        $reactor = User::factory()->create();
+        $post = Post::query()->create([
+            'user_id' => $author->id,
+            'body' => 'post-for-comment-reaction',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        $comment = Comment::query()->create([
+            'post_id' => $post->id,
+            'user_id' => $author->id,
+            'body' => 'comment-to-react',
+        ]);
+
+        $this->actingAs($reactor)
+            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'support'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.current_reaction', 'support')
+            ->assertJsonPath('data.reactions_count', 1);
+
+        $this->assertDatabaseHas('reactions', [
+            'reactable_type' => Comment::class,
+            'reactable_id' => $comment->id,
+            'user_id' => $reactor->id,
+            'type' => 'support',
+        ]);
+
+        $this->assertDatabaseHas('comments', [
+            'id' => $comment->id,
+            'reactions_count' => 1,
+        ]);
+
+        $this->actingAs($reactor)
+            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'support'])
+            ->assertOk()
+            ->assertJsonPath('data.current_reaction', null)
+            ->assertJsonPath('data.reactions_count', 0);
+    }
+
+    public function test_comment_reaction_endpoint_rejects_invalid_reaction_type(): void
+    {
+        $author = User::factory()->create();
+        $reactor = User::factory()->create();
+        $post = Post::query()->create([
+            'user_id' => $author->id,
+            'body' => 'post-for-comment-reaction-invalid',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        $comment = Comment::query()->create([
+            'post_id' => $post->id,
+            'user_id' => $author->id,
+            'body' => 'comment-to-react-invalid',
+        ]);
+
+        $this->actingAs($reactor)
+            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'angry'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['type']);
+    }
+
     public function test_save_toggle_saves_and_unsaves_post(): void
     {
         $user = User::factory()->create();

@@ -17,6 +17,7 @@ use App\Http\Controllers\PetController;
 use App\Http\Controllers\PetFollowController;
 use App\Http\Controllers\PetHealthLogController;
 use App\Http\Controllers\PostCommentController;
+use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostReportController;
@@ -89,6 +90,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
 
     Route::post('/posts/{post}/react', [PostReactionController::class, 'react'])->name('posts.react');
     Route::post('/posts/{post}/comments', [PostCommentController::class, 'store'])->name('posts.comments.store');
+    Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');
     Route::patch('/posts/{post}/comments/{comment}', [PostCommentController::class, 'update'])->name('posts.comments.update');
     Route::delete('/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])->name('posts.comments.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
