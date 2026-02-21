@@ -23,25 +23,59 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $username = (string) Str::of(fake()->unique()->userName())
+            ->lower()
+            ->replaceMatches('/[^a-z0-9._]/', '')
+            ->trim('._');
+
+        if ($username === '') {
+            $username = 'petlover_'.fake()->unique()->numerify('###');
+        }
+
+        $username = (string) Str::of($username)->limit(30, '');
+        $birthdate = fake()->optional(0.75)->date();
+
         return [
             'name' => fake()->name(),
-            'username' => fake()->unique()->userName(),
+            'username' => $username,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'bio' => fake()->optional()->sentence(),
+            'bio_html' => fake()->optional(0.4)->paragraph(),
             'avatar_path' => fake()->optional(0.35)->imageUrl(640, 640, 'pets', true),
+            'cover_photo_path' => fake()->optional(0.15)->imageUrl(1280, 720, 'pets', true),
+            'profile_photo_path' => fake()->optional(0.2)->imageUrl(640, 640, 'pets', true),
             'city' => fake()->optional(0.8)->city(),
             'country_code' => fake()->optional(0.8)->countryCode(),
+            'location' => fake()->optional(0.8)->city(),
+            'location_lat' => fake()->optional(0.75)->latitude(),
+            'location_lng' => fake()->optional(0.75)->longitude(),
+            'website' => fake()->optional(0.4)->url(),
+            'gender' => fake()->optional(0.7)->randomElement(['male', 'female', 'non_binary', 'prefer_not_to_say']),
+            'gender_custom' => fake()->optional(0.05)->word(),
+            'birthdate' => $birthdate,
+            'birth_date' => $birthdate,
+            'flags' => fake()->optional(0.1)->randomElement(['verified', 'staff', 'early_access']),
+            'is_banned' => false,
+            'ban_reason' => null,
             'is_private' => fake()->boolean(15),
+            'privacy_display_email' => fake()->boolean(10),
+            'privacy_display_location' => fake()->boolean(75),
+            'privacy_display_birthdate' => fake()->boolean(20),
+            'privacy_display_last_seen' => fake()->boolean(80),
             'last_seen_at' => fake()->dateTimeBetween('-7 days', 'now'),
             'onboarding_step' => fake()->randomElement(['welcome', 'profile', 'pets', 'complete']),
+            'onboarding_completed_at' => fake()->optional(0.65)->dateTimeBetween('-30 days', 'now'),
             'interests_text' => implode(', ', fake()->words(fake()->numberBetween(3, 7))),
             'followers_count' => 0,
             'following_count' => 0,
+            'following_pets_count' => 0,
             'pets_count' => 0,
             'posts_count' => 0,
+            'blocked_users_count' => 0,
+            'blocked_by_count' => 0,
         ];
     }
 

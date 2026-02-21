@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\NewFollower;
 use App\Traits\HasCounterCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -11,12 +12,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements HasMedia
@@ -26,6 +30,20 @@ class User extends Authenticatable implements HasMedia
     use HasRoles;
     use InteractsWithMedia;
     use Notifiable;
+
+    public const MEDIA_COLLECTION_AVATAR = 'avatar';
+
+    public const MEDIA_COLLECTION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_PROFILE = 'profile';
+
+    public const MEDIA_COLLECTION_PHOTOS = 'photos';
+
+    public const MEDIA_CONVERSION_AVATAR_THUMB = 'avatar_thumb';
+
+    public const MEDIA_CONVERSION_AVATAR_CARD = 'avatar_card';
+
+    public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
 
     /**
      * @var array<string, bool>
@@ -41,9 +59,12 @@ class User extends Authenticatable implements HasMedia
         'email',
         'password',
         'bio',
+        'bio_html',
         'location',
         'website',
         'birth_date',
+        'city',
+        'country_code',
         'interests_text',
         'is_private',
         'onboarding_step',
@@ -105,10 +126,7 @@ class User extends Authenticatable implements HasMedia
                 return;
             }
 
-            $normalizedUsername = (string) Str::of((string) $user->username)
-                ->lower()
-                ->replaceMatches('/[^a-z0-9._]/', '')
-                ->trim('._');
+            $normalizedUsername = static::normalizeUsername((string) $user->username);
 
             if ($normalizedUsername !== '') {
                 $user->username = static::generateUniqueUsername($normalizedUsername);
@@ -121,12 +139,17 @@ class User extends Authenticatable implements HasMedia
         });
     }
 
-    public static function generateUniqueUsername(string $seed): string
+    public static function normalizeUsername(?string $username): string
     {
-        $base = (string) Str::of($seed)
+        return (string) Str::of((string) $username)
             ->lower()
             ->replaceMatches('/[^a-z0-9._]/', '')
             ->trim('._');
+    }
+
+    public static function generateUniqueUsername(string $seed): string
+    {
+        $base = static::normalizeUsername($seed);
 
         if ($base === '') {
             $base = 'petlover';
@@ -149,11 +172,51 @@ class User extends Authenticatable implements HasMedia
         return $username;
     }
 
+    public static function isUsernameAvailable(string $username, ?self $ignore = null): bool
+    {
+        if (! static::hasUsersColumn('username')) {
+            return false;
+        }
+
+        $normalized = static::normalizeUsername($username);
+
+        if (strlen($normalized) < 3) {
+            return false;
+        }
+
+        $query = static::query()->where('username', $normalized);
+
+        if ($ignore?->exists) {
+            $query->whereKeyNot($ignore->getKey());
+        }
+
+        return ! $query->exists();
+    }
+
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('avatar')->singleFile();
-        $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('profile')->singleFile();
+        $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)->singleFile();
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)->singleFile();
+        $this->addMediaCollection(self::MEDIA_COLLECTION_PROFILE)->singleFile();
+        $this->addMediaCollection(self::MEDIA_COLLECTION_PHOTOS);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_THUMB)
+            ->fit(Fit::Crop, 96, 96)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_CARD)
+            ->fit(Fit::Crop, 256, 256)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER_BANNER)
+            ->fit(Fit::Crop, 1600, 480)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
+            ->nonQueued();
     }
 
     public function pets(): HasMany
@@ -333,6 +396,49 @@ class User extends Authenticatable implements HasMedia
         return $query->where('last_seen_at', '>=', now()->subDays($days));
     }
 
+    public function scopeNotBlockedFor(Builder $query, ?self $viewer): Builder
+    {
+        if (! $viewer) {
+            return $query;
+        }
+
+        return $query
+            ->whereNotIn(
+                'users.id',
+                UserBlock::query()
+                    ->select('blocked_id')
+                    ->where('blocker_id', $viewer->getKey())
+            )
+            ->whereNotIn(
+                'users.id',
+                UserBlock::query()
+                    ->select('blocker_id')
+                    ->where('blocked_id', $viewer->getKey())
+            );
+    }
+
+    public function scopeVisibleTo(Builder $query, ?self $viewer): Builder
+    {
+        if (! $viewer) {
+            return $query
+                ->discoverable()
+                ->notBlockedFor($viewer);
+        }
+
+        return $query
+            ->where(function (Builder $visibilityQuery) use ($viewer): void {
+                $visibilityQuery
+                    ->whereKey($viewer->getKey())
+                    ->orWhere(fn (Builder $public) => $public->whereNull('is_private')->orWhere('is_private', false))
+                    ->orWhere(function (Builder $followers) use ($viewer): void {
+                        $followers
+                            ->where('is_private', true)
+                            ->whereIn('users.id', $viewer->following()->select('users.id'));
+                    });
+            })
+            ->notBlockedFor($viewer);
+    }
+
     public function isFollowing(self $user): bool
     {
         return $this->following()->whereKey($user->getKey())->exists();
@@ -345,13 +451,16 @@ class User extends Authenticatable implements HasMedia
 
     public function follow(self $user): bool
     {
-        if ($this->is($user) || $this->hasBlocked($user) || $user->hasBlocked($this)) {
+        if ($this->is($user) || $this->hasBlockingRelationshipWith($user)) {
             return false;
         }
 
         return DB::transaction(function () use ($user): bool {
-            $alreadyFollowing = $this->following()
-                ->whereKey($user->getKey())
+            $this->lockUsersForRelationship($user);
+
+            $alreadyFollowing = UserFollow::query()
+                ->where('follower_id', $this->getKey())
+                ->where('following_id', $user->getKey())
                 ->lockForUpdate()
                 ->exists();
 
@@ -367,6 +476,10 @@ class User extends Authenticatable implements HasMedia
             $this->incrementCounter('following_count');
             $user->incrementCounter('followers_count');
 
+            DB::afterCommit(function () use ($user): void {
+                $user->notify(new NewFollower($this));
+            });
+
             return true;
         });
     }
@@ -378,9 +491,15 @@ class User extends Authenticatable implements HasMedia
         }
 
         return DB::transaction(function () use ($user): bool {
-            $detached = $this->following()->detach($user->getKey()) > 0;
+            $this->lockUsersForRelationship($user);
 
-            if (! $detached) {
+            $deleted = UserFollow::query()
+                ->where('follower_id', $this->getKey())
+                ->where('following_id', $user->getKey())
+                ->lockForUpdate()
+                ->delete();
+
+            if ($deleted < 1) {
                 return false;
             }
 
@@ -401,6 +520,11 @@ class User extends Authenticatable implements HasMedia
         return $this->blockedByUsers()->whereKey($user->getKey())->exists();
     }
 
+    public function hasBlockingRelationshipWith(self $user): bool
+    {
+        return $this->hasBlocked($user) || $this->isBlockedBy($user);
+    }
+
     public function block(self $user): bool
     {
         return $this->blockUser($user);
@@ -418,8 +542,11 @@ class User extends Authenticatable implements HasMedia
         }
 
         return DB::transaction(function () use ($user): bool {
-            $alreadyBlocked = $this->blockedUsers()
-                ->whereKey($user->getKey())
+            $this->lockUsersForRelationship($user);
+
+            $alreadyBlocked = UserBlock::query()
+                ->where('blocker_id', $this->getKey())
+                ->where('blocked_id', $user->getKey())
                 ->lockForUpdate()
                 ->exists();
 
@@ -435,14 +562,24 @@ class User extends Authenticatable implements HasMedia
             $this->incrementCounter('blocked_users_count');
             $user->incrementCounter('blocked_by_count');
 
-            if ($this->isFollowing($user)) {
-                $this->following()->detach($user->getKey());
+            $forwardDeleted = UserFollow::query()
+                ->where('follower_id', $this->getKey())
+                ->where('following_id', $user->getKey())
+                ->lockForUpdate()
+                ->delete();
+
+            if ($forwardDeleted > 0) {
                 $this->decrementCounter('following_count');
                 $user->decrementCounter('followers_count');
             }
 
-            if ($user->isFollowing($this)) {
-                $user->following()->detach($this->getKey());
+            $reverseDeleted = UserFollow::query()
+                ->where('follower_id', $user->getKey())
+                ->where('following_id', $this->getKey())
+                ->lockForUpdate()
+                ->delete();
+
+            if ($reverseDeleted > 0) {
                 $user->decrementCounter('following_count');
                 $this->decrementCounter('followers_count');
             }
@@ -454,9 +591,15 @@ class User extends Authenticatable implements HasMedia
     public function unblockUser(self $user): bool
     {
         return DB::transaction(function () use ($user): bool {
-            $detached = $this->blockedUsers()->detach($user->getKey()) > 0;
+            $this->lockUsersForRelationship($user);
 
-            if (! $detached) {
+            $deleted = UserBlock::query()
+                ->where('blocker_id', $this->getKey())
+                ->where('blocked_id', $user->getKey())
+                ->lockForUpdate()
+                ->delete();
+
+            if ($deleted < 1) {
                 return false;
             }
 
@@ -512,21 +655,59 @@ class User extends Authenticatable implements HasMedia
         return $this->followedPets()->whereKey($pet->getKey())->exists();
     }
 
+    public function canBeViewedBy(?self $viewer): bool
+    {
+        if (! $viewer) {
+            return ! $this->is_private;
+        }
+
+        if ($viewer->hasBlockingRelationshipWith($this)) {
+            return false;
+        }
+
+        if (! $this->is_private) {
+            return true;
+        }
+
+        return $viewer->is($this) || $viewer->isFollowing($this) || $viewer->hasAnyRole(['admin', 'moderator']);
+    }
+
+    public function canViewFollowersList(?self $viewer): bool
+    {
+        return $this->canBeViewedBy($viewer);
+    }
+
+    public function canViewFollowingList(?self $viewer): bool
+    {
+        return $this->canBeViewedBy($viewer);
+    }
+
     public function canView(Model $model): bool
     {
         if (! $model instanceof self) {
             return true;
         }
 
-        if ($model->hasBlocked($this) || $this->hasBlocked($model)) {
-            return false;
-        }
+        return $model->canBeViewedBy($this);
+    }
 
-        if (! $model->is_private) {
-            return true;
-        }
+    public function updateAvatar(UploadedFile $file): void
+    {
+        $this->storeProfileMedia($file, self::MEDIA_COLLECTION_AVATAR);
 
-        return $model->is($this) || $this->isFollowing($model);
+        $this->forceFill([
+            'avatar_path' => null,
+            'profile_photo_path' => null,
+        ])->saveQuietly();
+    }
+
+    public function updateCover(UploadedFile $file): void
+    {
+        $this->storeProfileMedia($file, self::MEDIA_COLLECTION_COVER);
+
+        $this->forceFill([
+            'cover_photo_path' => null,
+        ])->saveQuietly();
     }
 
     public function setAttribute($key, $value)
@@ -536,6 +717,38 @@ class User extends Authenticatable implements HasMedia
         }
 
         return parent::setAttribute($key, $value);
+    }
+
+    protected function lockUsersForRelationship(self $user): void
+    {
+        static::query()
+            ->whereIn($this->getQualifiedKeyName(), [$this->getKey(), $user->getKey()])
+            ->lockForUpdate()
+            ->get();
+    }
+
+    protected function storeProfileMedia(UploadedFile $file, string $collection): void
+    {
+        $extension = $file->guessExtension() ?: $file->extension() ?: 'jpg';
+
+        $this->addMedia($file)
+            ->usingFileName($collection.'-'.Str::uuid().'.'.$extension)
+            ->toMediaCollection($collection);
+    }
+
+    protected function firstMediaUrl(string $collection, ?string $conversion = null): string
+    {
+        $media = $this->getFirstMedia($collection);
+
+        if (! $media) {
+            return '';
+        }
+
+        if ($conversion !== null && $media->hasGeneratedConversion($conversion)) {
+            return $media->getUrl($conversion);
+        }
+
+        return $media->getUrl();
     }
 
     protected function shouldIgnoreMissingColumn(string $key): bool
@@ -567,7 +780,7 @@ class User extends Authenticatable implements HasMedia
     protected function avatarUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            $mediaUrl = $this->getFirstMediaUrl('avatar');
+            $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_CONVERSION_AVATAR_CARD);
 
             if ($mediaUrl !== '') {
                 return $mediaUrl;
@@ -588,7 +801,7 @@ class User extends Authenticatable implements HasMedia
     protected function coverPhotoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            $mediaUrl = $this->getFirstMediaUrl('cover');
+            $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER_BANNER);
 
             if ($mediaUrl !== '') {
                 return $mediaUrl;
@@ -604,7 +817,24 @@ class User extends Authenticatable implements HasMedia
 
     protected function profilePhotoUrl(): Attribute
     {
-        return Attribute::get(fn (): string => $this->getFirstMediaUrl('profile') ?: $this->avatar_url);
+        return Attribute::get(fn (): string => $this->firstMediaUrl(self::MEDIA_COLLECTION_PROFILE) ?: $this->avatar_url);
+    }
+
+    protected function bioHtml(): Attribute
+    {
+        return Attribute::get(function (?string $value): ?string {
+            if (filled($value)) {
+                return (string) $value;
+            }
+
+            $bio = trim((string) $this->bio);
+
+            if ($bio === '') {
+                return null;
+            }
+
+            return nl2br(e($bio));
+        });
     }
 
     protected function ageYears(): Attribute

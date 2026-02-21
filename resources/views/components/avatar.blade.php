@@ -1,6 +1,7 @@
 @props([
     'src' => null,
     'name' => null,
+    'alt' => null,
     'size' => 'md',
     'status' => null,
 ])
@@ -30,19 +31,26 @@
         'away' => 'bg-amber-400',
         'busy' => 'bg-rose-500',
     ][$status] ?? null;
+
+    $avatarAlt = $alt ?? ($name ? $name.' avatar' : 'Avatar');
 @endphp
 
 <div
     {{ $attributes->merge(['class' => "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 {$sizeClasses}"]) }}
     style="background: color-mix(in srgb, var(--ui-primary) 14%, var(--ui-surface) 86%); color: var(--ui-primary); border-color: color-mix(in srgb, var(--ui-primary) 26%, var(--ui-border) 74%);"
+    @if (! $src)
+        role="img"
+        aria-label="{{ $avatarAlt }}"
+    @endif
 >
     @if ($src)
-        <img src="{{ $src }}" alt="{{ $name ? $name.' avatar' : 'Avatar' }}" class="h-full w-full object-cover" loading="lazy">
+        <img src="{{ $src }}" alt="{{ $avatarAlt }}" class="h-full w-full object-cover" loading="lazy">
     @else
-        <span class="font-heading font-bold">{{ $initials }}</span>
+        <span class="font-heading font-bold" aria-hidden="true">{{ $initials }}</span>
+        <span class="sr-only">{{ $avatarAlt }}</span>
     @endif
 
     @if ($statusClasses)
-        <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 {{ $statusClasses }}" style="border-color: var(--ui-surface);"></span>
+        <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 {{ $statusClasses }}" style="border-color: var(--ui-surface);" aria-hidden="true"></span>
     @endif
 </div>

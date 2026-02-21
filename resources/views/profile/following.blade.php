@@ -8,30 +8,30 @@
         </div>
     </x-slot>
 
-    <section class="shell-card p-5">
-        <div class="mb-4 flex items-center justify-between">
-            <p class="text-sm shell-text-muted">Total: {{ $following->total() }}</p>
-            <a href="{{ route('profile.show', ['user' => $profileUser]) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Back to Profile</a>
+    <section class="shell-card p-5 dark:border-slate-700/60 dark:bg-slate-900/40">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm shell-text-muted">Total: {{ number_format($following->total()) }}</p>
+            <a href="{{ route('profile.show', ['user' => $profileUser]) }}" class="btn-base btn-ghost px-3 py-2 text-sm" aria-label="Back to {{ $profileUser->name }} profile">
+                Back to Profile
+            </a>
         </div>
 
-        <div class="space-y-3">
+        <div class="grid gap-3 sm:grid-cols-2">
             @forelse ($following as $followedUser)
-                <article class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
-                    @php
-                        $followingProfileUrl = filled($followedUser->username) ? route('profile.show', ['user' => $followedUser]) : null;
-                    @endphp
-                    <a href="{{ $followingProfileUrl ?? '#' }}" class="flex min-w-0 items-center gap-3 {{ $followingProfileUrl ? '' : 'pointer-events-none opacity-70' }}">
-                        <x-avatar :src="$followedUser->getFirstMediaUrl('avatar')" :name="$followedUser->name" size="md" />
-                        <div class="min-w-0">
-                            <p class="truncate font-semibold">{{ $followedUser->name }}</p>
-                            <p class="truncate text-xs shell-text-muted">@{{ $followedUser->username }}</p>
-                        </div>
-                    </a>
-                    <div class="text-right text-xs shell-text-muted">
-                        <p>{{ $followedUser->followers_count }} followers</p>
-                        <p>{{ $followedUser->following_count }} following</p>
-                    </div>
-                </article>
+                @php
+                    $profileUrl = filled($followedUser->username) ? route('profile.show', ['user' => $followedUser]) : null;
+                @endphp
+
+                <x-user-card
+                    :name="$followedUser->name"
+                    :username="$followedUser->username"
+                    :avatar="$followedUser->getFirstMediaUrl('avatar')"
+                    :followers="$followedUser->followers_count"
+                    :following="true"
+                    :profile-href="$profileUrl"
+                    :action-label="$profileUrl ? 'View Profile' : null"
+                    :action-href="$profileUrl"
+                />
             @empty
                 <x-empty-state
                     icon="🧭"

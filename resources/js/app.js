@@ -31,6 +31,18 @@ const toNumber = (value, fallback = 0) => {
     return Number.isFinite(number) ? number : fallback;
 };
 
+const toStringValue = (value, fallback = '') => {
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    if (value === null || value === undefined) {
+        return fallback;
+    }
+
+    return String(value);
+};
+
 window.uiHelpers = {
     formatCount(value) {
         return new Intl.NumberFormat().format(toNumber(value));
@@ -255,6 +267,206 @@ document.addEventListener('alpine:init', () => {
 
         clear() {
             this.query = '';
+        },
+    }));
+
+    Alpine.data('profileActions', (config = {}) => ({
+        isFollowing: Boolean(config.isFollowing),
+        isBlocked: Boolean(config.isBlocked),
+        followersCount: toNumber(config.followersCount),
+        followUrl: toStringValue(config.followUrl),
+        unfollowUrl: toStringValue(config.unfollowUrl),
+        blockUrl: toStringValue(config.blockUrl),
+        unblockUrl: toStringValue(config.unblockUrl),
+        busy: false,
+        notice: '',
+
+        formatCount(value) {
+            return window.uiHelpers.formatCount(value);
+        },
+
+        async send(url, method) {
+            if (!url) {
+                return;
+            }
+
+            this.busy = true;
+            this.notice = '';
+
+            try {
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                    },
+                });
+
+                let payload = {};
+
+                try {
+                    payload = await response.json();
+                } catch (error) {
+                    payload = {};
+                }
+
+                const data = payload.data || {};
+
+                if (Object.hasOwn(data, 'is_following')) {
+                    this.isFollowing = Boolean(data.is_following);
+                }
+
+                if (Object.hasOwn(data, 'is_blocked')) {
+                    this.isBlocked = Boolean(data.is_blocked);
+                }
+
+                if (Object.hasOwn(data, 'followers_count')) {
+                    this.followersCount = toNumber(data.followers_count);
+                }
+
+                if (payload.message) {
+                    this.notice = payload.message;
+                } else if (!response.ok) {
+                    this.notice = 'Unable to update this relationship right now.';
+                }
+            } catch (error) {
+                this.notice = 'Network error. Please try again.';
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async toggleFollow() {
+            if (this.busy || this.isBlocked) {
+                return;
+            }
+
+            if (this.isFollowing) {
+                await this.send(this.unfollowUrl, 'DELETE');
+                return;
+            }
+
+            await this.send(this.followUrl, 'POST');
+        },
+
+        async toggleBlock() {
+            if (this.busy) {
+                return;
+            }
+
+            if (this.isBlocked) {
+                await this.send(this.unblockUrl, 'DELETE');
+                return;
+            }
+
+            await this.send(this.blockUrl, 'POST');
+        },
+    }));
+
+    Alpine.data('profileEditorPreview', (defaults = {}) => ({
+        name: toStringValue(defaults.name),
+        username: toStringValue(defaults.username),
+        bio: toStringValue(defaults.bio),
+        location: toStringValue(defaults.location),
+        website: toStringValue(defaults.website),
+        avatarSrc: toStringValue(defaults.avatarUrl),
+        coverSrc: toStringValue(defaults.coverUrl),
+        avatarObjectUrl: null,
+        coverObjectUrl: null,
+
+        init() {
+            window.addEventListener(
+                'beforeunload',
+                () => {
+                    this.cleanupObjectUrls();
+                },
+                { once: true },
+            );
+        },
+
+        get displayName() {
+            const value = this.name.trim();
+            return value === '' ? 'Pet Lover' : value;
+        },
+
+        get displayUsername() {
+            const value = this.username.trim().replace(/^@+/, '');
+            return value === '' ? '@username' : `@${value}`;
+        },
+
+        get initials() {
+            const words = this.displayName.split(/\s+/).filter(Boolean).slice(0, 2);
+            const letters = words.map((word) => word.slice(0, 1).toUpperCase()).join('');
+
+            return letters || 'PA';
+        },
+
+        get safeWebsite() {
+            const value = this.website.trim();
+            return /^https?:\/\//i.test(value) ? value : '';
+        },
+
+        setAvatarPreview(event) {
+            const file = event?.target?.files?.[0];
+
+            if (this.avatarObjectUrl) {
+                URL.revokeObjectURL(this.avatarObjectUrl);
+                this.avatarObjectUrl = null;
+            }
+
+            if (!file) {
+                this.avatarSrc = toStringValue(defaults.avatarUrl);
+                return;
+            }
+
+            this.avatarObjectUrl = URL.createObjectURL(file);
+            this.avatarSrc = this.avatarObjectUrl;
+        },
+
+        setCoverPreview(event) {
+            const file = event?.target?.files?.[0];
+
+            if (this.coverObjectUrl) {
+                URL.revokeObjectURL(this.coverObjectUrl);
+                this.coverObjectUrl = null;
+            }
+
+            if (!file) {
+                this.coverSrc = toStringValue(defaults.coverUrl);
+                return;
+            }
+
+            this.coverObjectUrl = URL.createObjectURL(file);
+            this.coverSrc = this.coverObjectUrl;
+        },
+
+        cleanupObjectUrls() {
+            if (this.avatarObjectUrl) {
+                URL.revokeObjectURL(this.avatarObjectUrl);
+                this.avatarObjectUrl = null;
+            }
+
+            if (this.coverObjectUrl) {
+                URL.revokeObjectURL(this.coverObjectUrl);
+                this.coverObjectUrl = null;
+            }
+        },
+    }));
+
+    Alpine.data('dangerZoneConfirm', (expectedUsername = '') => ({
+        expectedUsername: toStringValue(expectedUsername),
+        confirmation: '',
+        submitting: false,
+
+        get canDelete() {
+            const expected = this.expectedUsername.trim();
+            const actual = this.confirmation.trim();
+
+            if (expected === '') {
+                return actual.length > 0;
+            }
+
+            return actual === expected;
         },
     }));
 });
