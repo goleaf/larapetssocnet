@@ -46,7 +46,7 @@ class EventController extends Controller
 
         $query = DB::table('events')
             ->leftJoin('groups', 'groups.id', '=', 'events.group_id')
-            ->leftJoin("users as creators", "creators.id", '=', "events.{$creatorColumn}")
+            ->leftJoin('users as creators', 'creators.id', '=', "events.{$creatorColumn}")
             ->select([
                 'events.*',
                 'groups.name as group_name',
@@ -187,7 +187,7 @@ class EventController extends Controller
         }
 
         return view('events.create', [
-            'event' => new Event(),
+            'event' => new Event,
             'groups' => $groups,
             'selectedGroupId' => $selectedGroupId,
             'startColumn' => $this->eventStartColumn(),
@@ -211,7 +211,7 @@ class EventController extends Controller
         }
 
         $event = DB::transaction(function () use ($validated, $viewer): Event {
-            $event = new Event();
+            $event = new Event;
             $payload = $this->buildEventPayload($validated, (int) $viewer->getAuthIdentifier());
             $event->forceFill($this->filterToExistingColumns('events', $payload))->save();
 
@@ -269,7 +269,11 @@ class EventController extends Controller
             abort_unless($this->canCreateEventInGroup((int) $validated['group_id'], (int) $request->user()->getAuthIdentifier()), 403);
         }
 
-        $payload = $this->buildEventPayload($validated, $this->eventCreatorId($eventModel) ?? (int) $request->user()->getAuthIdentifier());
+        $payload = $this->buildEventPayload(
+            $validated,
+            $this->eventCreatorId($eventModel) ?? (int) $request->user()->getAuthIdentifier(),
+            $eventModel
+        );
         $eventModel->forceFill($this->filterToExistingColumns('events', $payload))->save();
         $this->syncEventAttendeesCounters((int) $eventModel->getKey());
 
@@ -454,7 +458,7 @@ class EventController extends Controller
      * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
-    protected function buildEventPayload(array $validated, int $creatorId): array
+    protected function buildEventPayload(array $validated, int $creatorId, ?Event $existing = null): array
     {
         $startColumn = $this->eventStartColumn();
         $endColumn = $this->eventEndColumn();
@@ -474,7 +478,9 @@ class EventController extends Controller
         ];
 
         if ($statusColumn) {
-            $payload[$statusColumn] = 'scheduled';
+            $payload[$statusColumn] = $existing
+                ? (string) ($existing->getAttribute($statusColumn) ?? 'scheduled')
+                : 'scheduled';
         }
 
         if ($maxAttendeesColumn && ! empty($validated['max_attendees'])) {

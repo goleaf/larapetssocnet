@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -26,14 +25,14 @@ class MessageController extends Controller
             ->forUser($viewer)
             ->selectRaw('MAX(id) as latest_message_id')
             ->selectRaw('CASE WHEN sender_user_id = ? THEN recipient_user_id ELSE sender_user_id END as peer_id', [$viewerId])
-            ->groupBy('peer_id')
+            ->groupBy(DB::raw("CASE WHEN sender_user_id = {$viewerId} THEN recipient_user_id ELSE sender_user_id END"))
             ->pluck('latest_message_id');
 
         $unreadByPeer = Message::query()
             ->where('recipient_user_id', $viewerId)
             ->whereNull('read_at')
             ->selectRaw('sender_user_id as peer_id, COUNT(*) as unread_count')
-            ->groupBy('peer_id')
+            ->groupBy('sender_user_id')
             ->pluck('unread_count', 'peer_id');
 
         $threads = Message::query()
@@ -226,34 +225,64 @@ class MessageController extends Controller
 
     private function isBlockedBetween(User $first, User $second): bool
     {
-        if (! Schema::hasTable('blocks')) {
-            return false;
+        if (Schema::hasTable('blocks')
+            && Schema::hasColumn('blocks', 'blocker_user_id')
+            && Schema::hasColumn('blocks', 'blocked_user_id')) {
+            return DB::table('blocks')
+                ->where(function ($query) use ($first, $second): void {
+                    $query
+                        ->where('blocker_user_id', $first->getKey())
+                        ->where('blocked_user_id', $second->getKey());
+                })
+                ->orWhere(function ($query) use ($first, $second): void {
+                    $query
+                        ->where('blocker_user_id', $second->getKey())
+                        ->where('blocked_user_id', $first->getKey());
+                })
+                ->exists();
         }
 
-        return DB::table('blocks')
-            ->where(function ($query) use ($first, $second): void {
-                $query
-                    ->where('blocker_user_id', $first->getKey())
-                    ->where('blocked_user_id', $second->getKey());
-            })
-            ->orWhere(function ($query) use ($first, $second): void {
-                $query
-                    ->where('blocker_user_id', $second->getKey())
-                    ->where('blocked_user_id', $first->getKey());
-            })
-            ->exists();
+        if (Schema::hasTable('user_blocks')
+            && Schema::hasColumn('user_blocks', 'blocker_id')
+            && Schema::hasColumn('user_blocks', 'blocked_id')) {
+            return DB::table('user_blocks')
+                ->where(function ($query) use ($first, $second): void {
+                    $query
+                        ->where('blocker_id', $first->getKey())
+                        ->where('blocked_id', $second->getKey());
+                })
+                ->orWhere(function ($query) use ($first, $second): void {
+                    $query
+                        ->where('blocker_id', $second->getKey())
+                        ->where('blocked_id', $first->getKey());
+                })
+                ->exists();
+        }
+
+        return false;
     }
 
     private function isFollowing(User $follower, User $followed): bool
     {
-        if (! Schema::hasTable('follows')) {
-            return false;
+        if (Schema::hasTable('follows')
+            && Schema::hasColumn('follows', 'follower_user_id')
+            && Schema::hasColumn('follows', 'followed_user_id')) {
+            return DB::table('follows')
+                ->where('follower_user_id', $follower->getKey())
+                ->where('followed_user_id', $followed->getKey())
+                ->exists();
         }
 
-        return DB::table('follows')
-            ->where('follower_user_id', $follower->getKey())
-            ->where('followed_user_id', $followed->getKey())
-            ->exists();
+        if (Schema::hasTable('user_follows')
+            && Schema::hasColumn('user_follows', 'follower_id')
+            && Schema::hasColumn('user_follows', 'following_id')) {
+            return DB::table('user_follows')
+                ->where('follower_id', $follower->getKey())
+                ->where('following_id', $followed->getKey())
+                ->exists();
+        }
+
+        return false;
     }
 
     private function denyMessaging(Request $request, string $message, int $status): JsonResponse|RedirectResponse

@@ -192,7 +192,7 @@ class GroupController extends Controller
         }
 
         return view('groups.create', [
-            'group' => new Group(),
+            'group' => new Group,
             'selectedPrivacy' => 'public',
         ]);
     }
@@ -212,7 +212,7 @@ class GroupController extends Controller
         ]);
 
         $group = DB::transaction(function () use ($request, $validated): Group {
-            $group = new Group();
+            $group = new Group;
 
             $payload = [
                 'name' => $validated['name'],
@@ -261,6 +261,7 @@ class GroupController extends Controller
         return view('groups.edit', [
             'group' => $groupModel,
             'selectedPrivacy' => $this->groupPrivacy($groupModel),
+            'canDelete' => $this->isGroupOwner($groupModel, $request->user()),
         ]);
     }
 
@@ -329,8 +330,6 @@ class GroupController extends Controller
 
         if ($this->hasPolicyFor(Group::class)) {
             $this->authorize('view', $groupModel);
-        } elseif ($this->groupPrivacy($groupModel) === 'secret' && ! $this->canViewGroup($groupModel, $viewer)) {
-            abort(403);
         }
 
         $existingMembership = $this->membershipFor($groupModel, (int) $viewer->getAuthIdentifier());
@@ -453,10 +452,11 @@ class GroupController extends Controller
         $groupModel = $this->resolveGroup($group);
         $viewer = $request->user();
         $membership = $this->membershipFor($groupModel, (int) $viewer->getAuthIdentifier());
-        $isAdmin = $this->isGroupOwner($groupModel, $viewer)
+        $isOwner = $this->isGroupOwner($groupModel, $viewer);
+        $isAdmin = $isOwner
             || ($membership && $this->isMembershipActive($membership) && in_array((string) $membership->role, ['owner', 'admin'], true));
 
-        abort_unless($membership && $this->isMembershipActive($membership), 403);
+        abort_unless($isOwner || ($membership && $this->isMembershipActive($membership)), 403);
 
         $validated = $request->validate([
             'post_id' => ['nullable', 'integer', 'exists:posts,id'],
@@ -472,7 +472,7 @@ class GroupController extends Controller
             ]);
         }
 
-        $postId = DB::transaction(function () use ($groupModel, $hasPostId, $isAdmin, $validated, $viewer): int {
+        $postId = DB::transaction(function () use ($hasPostId, $isAdmin, $validated, $viewer): int {
             if ($hasPostId) {
                 $post = Post::query()->findOrFail((int) $validated['post_id']);
                 abort_unless($isAdmin || (int) $post->user_id === (int) $viewer->getAuthIdentifier(), 403);
@@ -513,13 +513,20 @@ class GroupController extends Controller
     protected function resolveGroup(string $group): Group
     {
         $query = Group::query();
+        $hasConstraint = false;
 
         if ($this->hasTableColumn('groups', 'slug')) {
             $query->where('slug', $group);
+            $hasConstraint = true;
         }
 
         if (ctype_digit($group)) {
             $query->orWhereKey((int) $group);
+            $hasConstraint = true;
+        }
+
+        if (! $hasConstraint) {
+            abort(404);
         }
 
         return $query->firstOrFail();

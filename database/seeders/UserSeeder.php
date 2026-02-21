@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-    public const DEFAULT_ADMIN_EMAIL = 'admin@petsocial.test';
-    public const DEFAULT_MODERATOR_EMAIL = 'moderator@petsocial.test';
+    public const DEFAULT_ADMIN_EMAIL = 'admin@larapetssocnet.test';
+    public const DEFAULT_MODERATOR_EMAIL = 'mod@larapetssocnet.test';
 
     private const TARGET_USER_COUNT = 62;
 

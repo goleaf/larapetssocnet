@@ -31,10 +31,16 @@ Route::get('/dashboard', function () {
 
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
-Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show');
+Route::get('/groups/{group}', [GroupController::class, 'show'])
+    ->where('group', '^(?!create$).+')
+    ->name('groups.show');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
-Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
-Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])->name('events.ics');
+Route::get('/events/{event}', [EventController::class, 'show'])
+    ->whereNumber('event')
+    ->name('events.show');
+Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])
+    ->whereNumber('event')
+    ->name('events.ics');
 Route::get('/hashtags/{hashtag}', [HashtagController::class, 'show'])->name('hashtags.show');
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');

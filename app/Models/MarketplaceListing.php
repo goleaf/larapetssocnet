@@ -67,6 +67,7 @@ class MarketplaceListing extends Model implements HasMedia
     {
         $this->addMediaCollection('cover')->singleFile();
         $this->addMediaCollection('gallery');
+        $this->addMediaCollection('images');
     }
 
     public function seller(): BelongsTo
@@ -150,6 +151,12 @@ class MarketplaceListing extends Model implements HasMedia
 
             if ($image !== '') {
                 return $image;
+            }
+
+            $legacyImage = $this->getFirstMediaUrl('images');
+
+            if ($legacyImage !== '') {
+                return $legacyImage;
             }
 
             return '';
