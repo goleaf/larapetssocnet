@@ -1,41 +1,37 @@
 @props([
-    'user' => null,
-    'role' => null,
+    'name' => '',
+    'avatar' => null,
     'subtitle' => null,
+    'href' => null,
 ])
 
-@php
-    $userName = $user?->name ?? 'Unknown User';
-    $userUsername = $user?->username ?? null;
-    $avatarSrc = $user?->avatar_url ?? $user?->avatar_path ?? null;
-    $profileUrl = $userUsername ? route('profile.show', $userUsername) : null;
-@endphp
-
-<div {{ $attributes->class(['flex items-center justify-between gap-3 py-2']) }}>
+<div {{ $attributes->merge(['class' => 'flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-cream transition-colors']) }}>
     <div class="flex items-center gap-3 min-w-0">
-        <a @if ($profileUrl) href="{{ $profileUrl }}" @endif class="shrink-0">
-            <x-avatar :src="$avatarSrc" :name="$userName" size="md" />
-        </a>
-        <div class="min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-                <a @if ($profileUrl) href="{{ $profileUrl }}" @endif class="text-sm font-semibold text-bark truncate hover:text-paw transition-colors">
-                    {{ $userName }}
-                </a>
-                @if (filled($role))
-                    <x-ui.role-badge :role="$role" />
+        @if($href)
+            <a href="{{ $href }}" class="shrink-0">
+                <x-ui.avatar :name="$name" :src="$avatar" size="md" />
+            </a>
+            <div class="min-w-0">
+                <a href="{{ $href }}" class="block truncate text-sm font-semibold text-bark hover:text-paw transition-colors">{{ $name }}</a>
+                @if($subtitle)
+                    <p class="truncate text-xs text-fur">{{ $subtitle }}</p>
                 @endif
             </div>
-            @if (filled($userUsername))
-                <p class="text-xs text-fur truncate">{{ '@' . $userUsername }}</p>
-            @endif
-            @if (filled($subtitle))
-                <p class="text-xs text-fur mt-0.5">{{ $subtitle }}</p>
-            @endif
-        </div>
+        @else
+            <div class="shrink-0">
+                <x-ui.avatar :name="$name" :src="$avatar" size="md" />
+            </div>
+            <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-bark">{{ $name }}</p>
+                @if($subtitle)
+                    <p class="truncate text-xs text-fur">{{ $subtitle }}</p>
+                @endif
+            </div>
+        @endif
     </div>
-
-    @if (isset($action))
-        <div class="shrink-0 flex items-center gap-2">
+    
+    @if(isset($action))
+        <div class="shrink-0 flex items-center">
             {{ $action }}
         </div>
     @endif

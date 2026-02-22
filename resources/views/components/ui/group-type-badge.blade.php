@@ -1,14 +1,13 @@
-@props([
-    'type' => 'public',
-])
+@props(['type' => 'public'])
+
 @php
-    $config = [
-        'public' => ['variant' => 'success', 'label' => '🌍 Public'],
+    $config = match (strtolower($type)) {
         'private' => ['variant' => 'warning', 'label' => '🔒 Private'],
         'secret' => ['variant' => 'dark', 'label' => '🕵️ Secret'],
-    ][$type] ?? ['variant' => 'default', 'label' => ucfirst((string) $type)];
+        default => ['variant' => 'success', 'label' => '🌍 Public'],
+    };
 @endphp
 
-<x-ui.badge :variant="$config['variant']" size="sm" {{ $attributes }}>
+<x-ui.badge :variant="$config['variant']" {{ $attributes }}>
     {{ $config['label'] }}
 </x-ui.badge>

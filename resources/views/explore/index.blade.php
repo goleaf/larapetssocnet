@@ -3,63 +3,64 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <p class="shell-kicker">Discover</p>
-                <h1 class="shell-title text-2xl">Explore Public Posts</h1>
-                <p class="mt-1 text-sm shell-text-muted">Find photos, videos, trending topics, and new creators.</p>
-            </div>
+            <x-ui.page-header title="Explore Public Posts" subtitle="Discover"
+                description="Find photos, videos, trending topics, and new creators." />
 
             @auth
-                <a href="{{ route('posts.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">✚ New Post</a>
+                <x-ui.button href="{{ route('posts.create') }}" variant="primary"
+                    icon="<path stroke-linecap='round' stroke-linejoin='round' d='M12 4.5v15m7.5-7.5h-15' />">New
+                    Post</x-ui.button>
             @endauth
         </div>
     </x-slot>
 
     <div class="space-y-4">
-        <section class="shell-panel p-4 sm:p-5">
+        <x-ui.card>
             <form method="GET" action="{{ route('explore.index') }}" class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-                <input
-                    type="text"
-                    name="q"
-                    value="{{ $search }}"
-                    class="form-input"
-                    placeholder="Search posts, users, hashtags, or location"
-                >
+                <x-ui.input type="text" name="q" value="{{ $search }}"
+                    placeholder="Search posts, users, hashtags, or location">
+                    <x-slot name="prefix">
+                        <svg class="w-5 h-5 text-fur" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </x-slot>
+                </x-ui.input>
 
-                <select name="type" class="form-select sm:min-w-[10rem]">
+                <x-ui.select name="type" class="sm:min-w-[10rem]">
                     <option value="all" @selected($type === 'all')>All Posts</option>
                     <option value="photos" @selected($type === 'photos')>Photos</option>
                     <option value="videos" @selected($type === 'videos')>Videos</option>
                     <option value="trending" @selected($type === 'trending')>Trending (48h)</option>
-                </select>
+                </x-ui.select>
 
-                <button type="submit" class="btn-base btn-primary px-4 py-2 text-sm">Apply</button>
+                <x-ui.button type="submit" variant="primary">Apply</x-ui.button>
             </form>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="mt-4 flex flex-wrap gap-2">
                 @foreach (['all' => 'All', 'photos' => 'Photos', 'videos' => 'Videos', 'trending' => 'Trending'] as $option => $label)
-                    <a
-                        href="{{ route('explore.index', array_merge(request()->except('page', 'type'), ['type' => $option])) }}"
-                        class="btn-base {{ $type === $option ? 'btn-primary' : 'btn-ghost' }} px-3 py-2 text-xs"
-                    >
-                        {{ $label }}
-                    </a>
+                    <x-ui.badge :variant="$type === $option ? 'primary' : 'default'" pill>
+                        <a
+                            href="{{ route('explore.index', array_merge(request()->except('page', 'type'), ['type' => $option])) }}">
+                            {{ $label }}
+                        </a>
+                    </x-ui.badge>
                 @endforeach
             </div>
-        </section>
+        </x-ui.card>
 
         @forelse ($posts as $post)
-            @include('posts.partials.card', ['post' => $post])
+            @include('partials.post-card', ['post' => $post])
         @empty
-            <x-empty-state
-                icon="🔎"
-                title="No public posts found"
-                description="Try a different search term, media type, or check back soon for new activity."
-            />
+            <x-ui.empty-state icon="🔎" title="No public posts found"
+                description="Try a different search term, media type, or check back soon for new activity." />
         @endforelse
 
-        <div class="shell-card p-3 sm:p-4">
-            {{ $posts->links() }}
-        </div>
+        @if($posts->hasPages())
+            <x-ui.card>
+                <x-ui.pagination :paginator="$posts" />
+            </x-ui.card>
+        @endif
     </div>
 </x-app-layout>

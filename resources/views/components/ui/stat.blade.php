@@ -1,27 +1,28 @@
 @props([
-    'label' => '',
-    'value' => '',
+    'label',
+    'value',
     'icon' => null,
     'trend' => null,
     'trendUp' => true,
 ])
 
-<div {{ $attributes->class(['flex flex-col gap-1']) }}>
-    <div class="flex items-center gap-2">
-        @if (filled($icon))
-            <span class="text-lg text-fur" aria-hidden="true">{{ $icon }}</span>
-        @endif
-        <span class="text-2xl font-bold font-display text-bark leading-tight">{{ $value }}</span>
-        @if (filled($trend))
-            <span @class([
-                'inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded-pill',
-                'bg-leaf-light text-leaf' => $trendUp,
-                'bg-rose-light text-rose' => ! $trendUp,
-            ])>
-                @if ($trendUp) ↑ @else ↓ @endif
-                {{ $trend }}
-            </span>
-        @endif
+<div {{ $attributes->merge(['class' => 'bg-warm-white rounded-lg p-4 border border-whisker/30 shadow-sm flex items-start gap-4']) }}>
+    @if($icon)
+        <div class="w-10 h-10 rounded-pill bg-paw-light text-paw-dark flex items-center justify-center shrink-0 text-xl">
+            {!! $icon !!}
+        </div>
+    @endif
+    
+    <div class="flex-1">
+        <p class="text-sm text-fur font-medium">{{ $label }}</p>
+        <div class="flex items-baseline gap-2 mt-1">
+            <p class="text-2xl font-bold font-display text-bark">{{ $value }}</p>
+            
+            @if($trend)
+                <x-ui.badge size="sm" :variant="$trendUp ? 'success' : 'danger'" class="font-mono">
+                    {{ $trend }}
+                </x-ui.badge>
+            @endif
+        </div>
     </div>
-    <span class="text-xs font-medium text-fur uppercase tracking-wide">{{ $label }}</span>
 </div>

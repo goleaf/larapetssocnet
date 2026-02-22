@@ -1,56 +1,38 @@
 @props([
-    'tabs' => [],
+    'tabs' => [], /* array of ['label', 'value', 'count' => null] */
+    'active' => null,
+    'paramName' => 'tab',
 ])
 
 @php
-    $normalizedTabs = collect($tabs)->map(function ($tab, $index) {
-        if (is_string($tab)) {
-            return [
-                'label' => $tab,
-                'href' => null,
-                'active' => false,
-                'count' => null,
-            ];
-        }
-
-        if (is_array($tab)) {
-            return [
-                'label' => (string) ($tab['label'] ?? 'Tab '.($index + 1)),
-                'href' => $tab['href'] ?? null,
-                'active' => (bool) ($tab['active'] ?? false),
-                'count' => $tab['count'] ?? null,
-            ];
-        }
-
-        return [
-            'label' => 'Tab '.($index + 1),
-            'href' => null,
-            'active' => false,
-            'count' => null,
-        ];
-    })->values();
+    $activeTab = $active ?? request()->query($paramName) ?? ($tabs[0]['value'] ?? ($tabs[0] ?? null));
 @endphp
 
-<nav {{ $attributes->merge(['class' => 'shell-card flex flex-wrap items-center gap-2 p-3']) }} aria-label="Listing filters">
-    @foreach ($normalizedTabs as $tab)
-        @php
-            $buttonClass = $tab['active'] ? 'btn-primary' : 'btn-ghost';
-        @endphp
-
-        @if ($tab['href'])
-            <a href="{{ $tab['href'] }}" class="btn-base {{ $buttonClass }} px-3 py-2 text-sm">
-                <span>{{ $tab['label'] }}</span>
-                @if (! is_null($tab['count']))
-                    <span class="chip">{{ number_format((int) $tab['count']) }}</span>
+<div {{ $attributes->merge(['class' => 'border-b border-whisker/40 w-full mb-6']) }}>
+    <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
+        @foreach($tabs as $tab)
+            @php
+                $val = is_array($tab) ? ($tab['value'] ?? '') : $tab;
+                $label = is_array($tab) ? ($tab['label'] ?? $val) : $val;
+                $count = is_array($tab) ? ($tab['count'] ?? null) : null;
+                $isActive = $activeTab === $val;
+                
+                $url = request()->fullUrlWithQuery([$paramName => $val]);
+            @endphp
+            
+            <a 
+                href="{{ $url }}"
+                class="whitespace-nowrap flex items-center gap-2 py-4 px-1 border-b-2 text-sm transition-colors {{ $isActive ? 'border-paw text-paw font-semibold' : 'border-transparent text-fur hover:text-bark hover:border-whisker' }}"
+                @if($isActive) aria-current="page" @endif
+            >
+                {{ $label }}
+                
+                @if($count !== null)
+                    <x-ui.badge :variant="$isActive ? 'primary' : 'default'" size="sm" pill class="ml-1.5">
+                        {{ $count }}
+                    </x-ui.badge>
                 @endif
             </a>
-        @else
-            <button type="button" class="btn-base {{ $buttonClass }} px-3 py-2 text-sm">
-                <span>{{ $tab['label'] }}</span>
-                @if (! is_null($tab['count']))
-                    <span class="chip">{{ number_format((int) $tab['count']) }}</span>
-                @endif
-            </button>
-        @endif
-    @endforeach
-</nav>
+        @endforeach
+    </nav>
+</div>

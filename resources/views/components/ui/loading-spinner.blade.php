@@ -2,27 +2,26 @@
     'size' => 'md',
     'color' => 'paw',
 ])
-
 @php
-    $sizeClasses = [
-        'sm' => 'h-4 w-4',
-        'md' => 'h-6 w-6',
-        'lg' => 'h-8 w-8',
-    ][$size] ?? 'h-6 w-6';
+    $sizes = [
+        'sm' => 'w-4 h-4',
+        'md' => 'w-6 h-6',
+        'lg' => 'w-8 h-8',
+    ];
 
-    $colorClasses = [
-        'paw'   => 'text-paw',
+    $colors = [
+        'paw' => 'text-paw',
         'white' => 'text-white',
-        'fur'   => 'text-fur',
-    ][$color] ?? 'text-paw';
+        'fur' => 'text-fur',
+    ];
+
+    $sizeClass = $sizes[$size] ?? $sizes['md'];
+    $colorClass = $colors[$color] ?? $colors['paw'];
 @endphp
 
-<svg
-    {{ $attributes->class(['animate-spin', $sizeClasses, $colorClasses]) }}
-    viewBox="0 0 24 24"
-    fill="none"
-    aria-hidden="true"
->
-    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2" />
-    <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+
+       
+    <svg class="animate-spin {{ $sizeClass }} {{ $colorClass }} {{ $attributes->get('class') }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {{ $attributes->except('class') }}>
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 </svg>

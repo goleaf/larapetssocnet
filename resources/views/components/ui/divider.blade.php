@@ -2,12 +2,15 @@
     'label' => null,
 ])
 
-@if (filled($label))
-    <div {{ $attributes->class(['flex items-center gap-3 my-4']) }}>
-        <div class="flex-1 border-t border-whisker/30"></div>
-        <span class="text-xs font-medium text-fur uppercase tracking-wide shrink-0">{{ $label }}</span>
-        <div class="flex-1 border-t border-whisker/30"></div>
+@if($label)
+    <div {{ $attributes->merge(['class' => 'relative w-full my-6']) }}>
+        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+            <div class="w-full border-t border-whisker/40"></div>
+        </div>
+        <div class="relative flex justify-center">
+            <span class="bg-cream px-3 text-sm text-fur">{{ $label }}</span>
+        </div>
     </div>
 @else
-    <hr {{ $attributes->class(['border-t border-whisker/30 my-4']) }}>
+    <hr {{ $attributes->merge(['class' => 'border-t border-whisker/40 my-6']) }} />
 @endif

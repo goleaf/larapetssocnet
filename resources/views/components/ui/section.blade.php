@@ -4,22 +4,25 @@
     'tight' => false,
 ])
 
-<div {{ $attributes->class([
-    $tight ? 'mb-4' : 'mb-6',
-]) }}>
-    <div class="flex items-center justify-between">
+<div {{ $attributes->merge(['class' => $tight ? 'mb-4' : 'mb-8']) }}>
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-whisker/40 pb-4">
         <div>
-            @if (filled($title))
+            @if($title)
                 <h2 class="text-2xl font-bold font-display text-bark">{{ $title }}</h2>
             @endif
-            @if (filled($subtitle))
+            @if($subtitle)
                 <p class="text-sm text-fur mt-1">{{ $subtitle }}</p>
             @endif
         </div>
-        @if (isset($action))
-            <div class="shrink-0">
+        
+        @if(isset($action))
+            <div class="shrink-0 mb-1">
                 {{ $action }}
             </div>
         @endif
+    </div>
+    
+    <div class="pt-6">
+        {{ $slot }}
     </div>
 </div>

@@ -1,10 +1,13 @@
 @props([
-    'deleted' => false,
+    'hover' => true,
+    'highlight' => false,
 ])
 
-<tr {{ $attributes->class([
-    'transition-colors duration-150 hover:bg-white/30 dark:hover:bg-black/10',
-    'opacity-65' => $deleted,
+    <tr {{ $attributes->merge([
+    'class' => \Illuminate\Support\Arr::toCssClasses([
+        $hover ? 'hover:bg-cream transition-colors' : '',
+        $highlight ? 'bg-paw-light/30' : '',
+    ])
 ]) }}>
     {{ $slot }}
 </tr>

@@ -168,109 +168,97 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="antialiased" x-data="appShell()">
+    <body class="antialiased font-body bg-cream text-bark" x-data="appShell()">
         <div class="relative min-h-screen">
+            <!-- Background blobs -->
             <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-[28rem] overflow-hidden">
-                <div class="absolute -left-16 top-12 h-72 w-72 rounded-full opacity-40 blur-3xl animate-float" style="background: color-mix(in srgb, var(--ui-primary) 30%, transparent);"></div>
-                <div class="absolute -right-16 top-0 h-80 w-80 rounded-full opacity-35 blur-3xl animate-float" style="background: color-mix(in srgb, var(--ui-accent) 26%, transparent); animation-delay: 800ms;"></div>
+                <div class="absolute -left-16 top-12 h-72 w-72 rounded-full opacity-40 blur-3xl animate-float bg-paw-light"></div>
+                <div class="absolute -right-16 top-0 h-80 w-80 rounded-full opacity-35 blur-3xl animate-float bg-amber-light" style="animation-delay: 800ms;"></div>
             </div>
 
-            @include('layouts.navigation', [
-                'appName' => $appName,
-                'searchTarget' => $searchTarget,
-                'desktopNav' => $desktopNav,
-                'currentRoute' => $currentRoute,
-                'user' => $user,
-                'routeIsActive' => $routeIsActive,
-            ])
+            <!-- New Navbar Component -->
+            <x-ui.navbar />
 
-            @if ($flashMessages->isNotEmpty())
-                <div class="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4 sm:justify-end">
-                    <div class="pointer-events-auto w-full max-w-sm space-y-3">
-                        @foreach ($flashMessages as $flash)
-                            <x-flash-message :type="$flash['type']" :message="$flash['message']" />
-                        @endforeach
-                    </div>
-                </div>
-            @endif
+            <!-- New Flash Messages & Toast Container -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <x-ui.flash-messages />
+            </div>
+            <x-ui.toast-container />
 
             <div @class([
-                'relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-5 px-4 pb-24 pt-5 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',
+                'relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',
                 'lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem]' => ! $hideLeftRail,
                 'lg:grid-cols-[minmax(0,1fr)_20rem]' => $hideLeftRail,
             ])>
                 @unless ($hideLeftRail)
                 <aside class="hidden lg:block">
                     <div class="sticky top-24 space-y-4">
-                        <section class="shell-panel p-4">
+                        <x-ui.card>
                             <div class="flex items-center gap-3">
-                                <x-avatar :name="$user?->name ?? 'Guest User'" :src="$user?->avatar_url" size="lg" />
+                                <x-ui.avatar :name="$user?->name ?? 'Guest User'" :src="$user?->avatar_url" size="lg" />
                                 <div class="min-w-0">
-                                    <p class="truncate shell-title text-base">{{ $user?->name ?? 'Guest User' }}</p>
-                                    <p class="truncate text-xs shell-text-muted">{{ $user?->username ? '@'.$user->username : ($user?->email ?? 'community@larapets.test') }}</p>
+                                    <p class="truncate text-base font-semibold text-bark">{{ $user?->name ?? 'Guest User' }}</p>
+                                    <p class="truncate text-xs text-fur">{{ $user?->username ? '@'.$user->username : ($user?->email ?? 'community@larapets.test') }}</p>
                                 </div>
                             </div>
 
                             <div class="mt-4 grid grid-cols-3 gap-2">
                                 @foreach ($communityStats as $stat)
-                                    <div class="rounded-xl border px-2 py-2 text-center" style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-surface) 90%, white 10%);">
-                                        <p class="shell-value text-sm">{{ $stat['value'] }}</p>
-                                        <p class="text-[0.62rem] font-semibold uppercase tracking-[0.08em] shell-text-muted">{{ $stat['label'] }}</p>
+                                    <div class="rounded-xl border border-whisker/30 bg-warm-white px-2 py-2 text-center">
+                                        <p class="text-sm font-bold text-bark">{{ $stat['value'] }}</p>
+                                        <p class="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-fur">{{ $stat['label'] }}</p>
                                     </div>
                                 @endforeach
                             </div>
-                        </section>
+                        </x-ui.card>
 
-                        <section class="shell-card p-4">
-                            <p class="shell-kicker">Navigate</p>
-                            <nav class="mt-2 space-y-1" aria-label="Desktop Navigation">
-                                @foreach ($desktopNav as $item)
-                                    @php
-                                        $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
-                                        $isActive = $routeIsActive($item['patterns'] ?? []);
-                                    @endphp
+                        <x-ui.card>
+                            <h4 class="px-1 text-xs font-bold font-display uppercase tracking-wider text-fur mb-2">Navigate</h4>
+                            @php
+                                $mappedNav = collect($desktopNav)->map(function($item) {
+                                    return [
+                                        'label' => $item['label'],
+                                        'href' => isset($item['route']) && Route::has($item['route']) ? route($item['route']) : '#',
+                                        'icon' => '<span class="text-lg leading-none">' . $item['icon'] . '</span>',
+                                        'pattern' => $item['patterns'] ?? [],
+                                    ];
+                                })->toArray();
+                            @endphp
+                            <x-ui.sidebar-nav :items="$mappedNav" class="!mb-0" />
+                        </x-ui.card>
 
-                                    <a href="{{ $href }}" class="shell-nav-link {{ $isActive ? 'active' : '' }}">
-                                        <span aria-hidden="true">{{ $item['icon'] }}</span>
-                                        <span>{{ $item['label'] }}</span>
-                                    </a>
-                                @endforeach
-                            </nav>
-                        </section>
-
-                        <section class="shell-card p-4">
+                        <x-ui.card>
                             <div class="mb-2 flex items-center justify-between">
-                                <p class="shell-kicker">Trending Tags</p>
-                                <span class="chip">Live</span>
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Trending Tags</h4>
+                                <x-ui.badge variant="success" size="sm" pill>Live</x-ui.badge>
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="space-y-2 mt-3">
                                 @forelse ($trendingHashtags as $hashtag)
                                     <a
                                         href="{{ route('hashtags.show', $hashtag) }}"
-                                        class="hover-lift flex items-center justify-between rounded-xl border px-3 py-2"
-                                        style="border-color: var(--ui-border);"
+                                        class="flex items-center justify-between rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm"
                                     >
-                                        <span class="text-sm font-semibold" style="color: var(--ui-text);">#{{ $hashtag->name }}</span>
-                                        <span class="text-xs shell-text-muted">{{ number_format((int) $hashtag->posts_count) }}</span>
+                                        <span class="text-sm font-semibold text-bark">#{{ $hashtag->name }}</span>
+                                        <span class="text-xs text-fur">{{ number_format((int) $hashtag->posts_count) }}</span>
                                     </a>
                                 @empty
-                                    <p class="text-sm shell-text-muted">No trending hashtags yet.</p>
+                                    <p class="text-sm text-fur">No trending hashtags yet.</p>
                                 @endforelse
                             </div>
-                        </section>
+                        </x-ui.card>
                     </div>
                 </aside>
                 @endunless
 
                 <main class="min-w-0 space-y-5">
                     @isset($header)
-                        <header class="shell-card p-4 sm:p-5 animate-fade-up">
+                        <x-ui.card class="animate-fade-up">
                             <div class="flex items-center justify-between gap-3">
                                 <div class="min-w-0">{{ $header }}</div>
-                                <span class="chip">PetSocial</span>
+                                <x-ui.badge variant="primary" size="sm" pill>PetSocial</x-ui.badge>
                             </div>
-                        </header>
+                        </x-ui.card>
                     @endisset
 
                     <section class="space-y-5 animate-fade-up">
@@ -280,119 +268,77 @@
 
                 <aside class="hidden lg:block">
                     <div class="sticky top-24 space-y-4">
-                        <section class="shell-card p-4">
-                            <div class="mb-2 flex items-center justify-between">
-                                <p class="shell-kicker">Who To Follow</p>
-                                <a href="{{ Route::has('search.index') ? route('search.index', ['type' => 'users']) : '#' }}" class="text-xs font-semibold hover:underline" style="color: var(--ui-primary);">See all</a>
+                        <x-ui.card>
+                            <div class="mb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Who To Follow</h4>
+                                <a href="{{ Route::has('search.index') ? route('search.index', ['type' => 'users']) : '#' }}" class="text-xs font-semibold hover:underline text-paw">See all</a>
                             </div>
 
-                            <div class="space-y-2.5">
+                            <div class="space-y-1 -mx-2">
                                 @forelse ($suggestedUsers as $suggested)
-                                    <a href="{{ route('profile.show', ['user' => $suggested]) }}" class="hover-lift flex items-center justify-between rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
-                                        <div class="flex min-w-0 items-center gap-2.5">
-                                            <x-avatar :name="$suggested->name" :src="$suggested->avatar_url" size="sm" />
-                                            <div class="min-w-0">
-                                                <p class="truncate text-sm font-semibold" style="color: var(--ui-text);">{{ $suggested->name }}</p>
-                                                <p class="truncate text-xs shell-text-muted">{{ $suggested->username ? '@'.$suggested->username : 'Pet lover' }}</p>
-                                            </div>
-                                        </div>
-                                        <span class="text-xs shell-text-muted">{{ number_format((int) $suggested->followers_count) }}</span>
-                                    </a>
+                                    <x-ui.user-row 
+                                        :name="$suggested->name" 
+                                        :subtitle="$suggested->username ? '@'.$suggested->username : 'Pet lover'" 
+                                        :avatar="$suggested->avatar_url" 
+                                        :href="route('profile.show', ['user' => $suggested])"
+                                        class="px-2"
+                                    >
+                                        <x-slot name="action">
+                                            <span class="text-xs text-fur">{{ number_format((int) $suggested->followers_count) }}</span>
+                                        </x-slot>
+                                    </x-ui.user-row>
                                 @empty
-                                    <p class="text-sm shell-text-muted">Suggestions appear after activity grows.</p>
+                                    <p class="text-sm text-fur px-2">Suggestions appear after activity grows.</p>
                                 @endforelse
                             </div>
-                        </section>
+                        </x-ui.card>
 
-                        <section class="shell-card p-4">
-                            <div class="mb-2 flex items-center justify-between">
-                                <p class="shell-kicker">Upcoming Events</p>
-                                <a href="{{ Route::has('events.index') ? route('events.index') : '#' }}" class="text-xs font-semibold hover:underline" style="color: var(--ui-primary);">Browse</a>
+                        <x-ui.card>
+                            <div class="mb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Upcoming Events</h4>
+                                <a href="{{ Route::has('events.index') ? route('events.index') : '#' }}" class="text-xs font-semibold hover:underline text-paw">Browse</a>
                             </div>
 
-                            <div class="space-y-2.5">
+                            <div class="space-y-2 mt-3">
                                 @forelse ($upcomingEvents as $event)
-                                    <a href="{{ route('events.show', $event) }}" class="hover-lift block rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
-                                        <p class="line-clamp-1 text-sm font-semibold" style="color: var(--ui-text);">{{ $event->title }}</p>
-                                        <p class="mt-0.5 text-xs shell-text-muted">
+                                    <a href="{{ route('events.show', $event) }}" class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm">
+                                        <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $event->title }}</p>
+                                        <p class="mt-0.5 text-xs text-fur">
                                             {{ optional($event->start_at)->format('M j, g:i A') ?? 'Date TBD' }}
-                                            <span class="dot-divider"></span>
+                                            <span class="mx-1">•</span>
                                             {{ $event->location_text ?: 'Online / TBD' }}
                                         </p>
                                     </a>
                                 @empty
-                                    <p class="text-sm shell-text-muted">No upcoming events scheduled.</p>
+                                    <p class="text-sm text-fur">No upcoming events scheduled.</p>
                                 @endforelse
                             </div>
-                        </section>
+                        </x-ui.card>
 
-                        <section class="shell-card p-4">
-                            <div class="mb-2 flex items-center justify-between">
-                                <p class="shell-kicker">Active Contests</p>
-                                <span class="chip">{{ $activeContests->count() }}</span>
+                        <x-ui.card>
+                            <div class="mb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Active Contests</h4>
+                                <x-ui.badge variant="success" size="sm" pill>{{ $activeContests->count() }}</x-ui.badge>
                             </div>
 
-                            <div class="space-y-2.5">
+                            <div class="space-y-2 mt-3">
                                 @forelse ($activeContests as $contest)
-                                    <a href="{{ Route::has('contests.index') ? route('contests.index') : '#' }}" class="hover-lift block rounded-xl border px-3 py-2" style="border-color: var(--ui-border);">
-                                        <p class="line-clamp-1 text-sm font-semibold" style="color: var(--ui-text);">{{ $contest->title }}</p>
-                                        <p class="mt-0.5 text-xs shell-text-muted">{{ ucfirst((string) $contest->status) }} · {{ number_format((int) $contest->entries_count) }} entries</p>
+                                    <a href="{{ Route::has('contests.index') ? route('contests.index') : '#' }}" class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm">
+                                        <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $contest->title }}</p>
+                                        <p class="mt-0.5 text-xs text-fur">{{ ucfirst((string) $contest->status) }} · {{ number_format((int) $contest->entries_count) }} entries</p>
                                     </a>
                                 @empty
-                                    <p class="text-sm shell-text-muted">No active contests right now.</p>
+                                    <p class="text-sm text-fur">No active contests right now.</p>
                                 @endforelse
                             </div>
-                        </section>
+                        </x-ui.card>
                     </div>
                 </aside>
             </div>
-
-            <div class="fixed inset-0 z-50 lg:hidden" x-cloak x-show="mobileMenuOpen" x-transition.opacity>
-                <button type="button" class="absolute inset-0 bg-slate-950/45" @click="closeMenus" aria-label="Close mobile menu"></button>
-
-                <aside
-                    class="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col gap-4 border-r p-4 shadow-soft"
-                    style="border-color: var(--ui-border); background: var(--ui-surface);"
-                    x-transition:enter="transition ease-out duration-200"
-                    x-transition:enter-start="-translate-x-full"
-                    x-transition:enter-end="translate-x-0"
-                    x-transition:leave="transition ease-in duration-150"
-                    x-transition:leave-start="translate-x-0"
-                    x-transition:leave-end="-translate-x-full"
-                >
-                    <div class="flex items-center justify-between">
-                        <a href="{{ Route::has('feed.index') ? route('feed.index') : url('/') }}" class="flex items-center gap-2">
-                            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-lg" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">🐾</span>
-                            <span class="shell-title text-base">{{ $appName }}</span>
-                        </a>
-
-                        <button type="button" class="icon-button" @click="closeMenus" aria-label="Close menu">
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <x-search-form :action="$searchTarget" class="w-full" placeholder="Search on {{ $appName }}" />
-
-                    <nav class="space-y-1" aria-label="Mobile Navigation Drawer">
-                        @foreach ($desktopNav as $item)
-                            @php
-                                $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
-                                $isActive = $routeIsActive($item['patterns'] ?? []);
-                            @endphp
-
-                            <a href="{{ $href }}" class="shell-nav-link {{ $isActive ? 'active' : '' }}" @click="closeMenus">
-                                <span aria-hidden="true">{{ $item['icon'] }}</span>
-                                <span>{{ $item['label'] }}</span>
-                            </a>
-                        @endforeach
-                    </nav>
-                </aside>
-            </div>
-
+            
+            <!-- Mobile Bottom Nav -->
             <nav class="fixed inset-x-3 bottom-3 z-40 lg:hidden">
-                <div class="shell-card flex items-center justify-between px-2 py-1.5">
+                <div class="bg-warm-white rounded-2xl shadow-card-hover border border-whisker/30 flex items-center justify-between px-2 py-1.5">
                     @foreach ($mobileNav as $item)
                         @php
                             $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) : '#';
@@ -402,8 +348,7 @@
 
                         <a
                             href="{{ $href }}"
-                            class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1 text-[0.65rem] font-semibold"
-                            style="color: {{ $isPrimaryAction ? '#f8fafc' : ($isActive ? 'var(--ui-primary)' : 'var(--ui-text-muted)') }}; background: {{ $isPrimaryAction ? 'linear-gradient(135deg, var(--ui-primary), var(--ui-primary-strong))' : 'transparent' }};"
+                            class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1 text-[0.65rem] font-semibold transition-colors {{ $isPrimaryAction ? 'bg-paw text-white shadow-button hover:bg-paw-dark' : ($isActive ? 'text-paw' : 'text-fur hover:bg-cream hover:text-bark') }}"
                         >
                             <span class="text-base" aria-hidden="true">{{ $item['icon'] }}</span>
                             <span class="truncate">{{ $item['label'] }}</span>

@@ -6,35 +6,56 @@
 ])
 
 @php
-    $collection = collect($users);
-    $displayUsers = $collection->take($max);
-    $remaining = ($total ?? $collection->count()) - $displayUsers->count();
-
-    $sizeClasses = [
-        'sm' => 'h-8 w-8 text-xs',
-        'md' => 'h-10 w-10 text-sm',
-    ][$size] ?? 'h-10 w-10 text-sm';
-
-    $overlapClass = $size === 'sm' ? '-ml-2' : '-ml-3';
+    $items = is_iterable($users) ? collect($users) : collect([]);
+    $displayUsers = $items->take($max);
+    $actualTotal = $total ?? $items->count();
+    $remaining = max(0, $actualTotal - $displayUsers->count());
+    
+    $margins = [
+        'sm' => '-ml-2',
+        'md' => '-ml-3',
+    ];
+    
+    $marginClass = $margins[$size] ?? $margins['md'];
 @endphp
 
-<div {{ $attributes->class(['flex items-center']) }}>
-    @foreach ($displayUsers as $index => $user)
-        <div @class([$overlapClass => $index > 0, 'relative'])>
-            <x-avatar
-                :src="$user->avatar_url ?? $user->avatar_path ?? null"
-                :name="$user->name ?? 'User'"
-                :size="$size"
-                class="ring-2 ring-warm-white"
-            />
-        </div>
+<div {{ $attributes->merge(['class' => 'flex items-center isolate']) }}>
+    @foreach($displayUsers as $index => $user)
+        @php
+            $name = is_object($user) ? current((array) $user) : (is_array($user) ? ($user['name'] ?? 'User') : 'User'); // Simple fallback
+            if (is_object($user) && method_exists($user, 'avatarUrl')) {
+                $src = $user->avatarUrl();
+            } elseif (is_object($user) && property_exists($user, 'avatar_url')) {
+                $src = $user->avatar_url;
+            } elseif (is_array($user)) {
+                $src = $user['avatar_url'] ?? $user['src'] ?? null;
+            } else {
+                $src = null;
+            }
+            if (is_object($user) && property_exists($user, 'name')) {
+                $name = $user->name;
+            }
+        @endphp
+        
+        <x-ui.avatar 
+            :src="$src" 
+            :name="$name" 
+            :size="$size" 
+            class="{{ $index > 0 ? $marginClass : '' }} ring-2 ring-warm-white relative z-[{{ compact('index') ? 10 - $index : 0 }}]" 
+            style="z-index: {{ 10 - $index }}"
+        />
     @endforeach
-
-    @if ($remaining > 0)
-        <div class="{{ $overlapClass }}">
-            <span class="inline-flex items-center justify-center rounded-full bg-cream border-2 border-warm-white text-fur font-semibold {{ $sizeClasses }}">
-                +{{ $remaining > 99 ? '99' : $remaining }}
-            </span>
+    
+    @if($remaining > 0)
+        @php
+            $sizes = [
+                'sm' => 'w-8 h-8 text-xs',
+                'md' => 'w-10 h-10 text-sm',
+            ];
+            $sizeClass = $sizes[$size] ?? $sizes['md'];
+        @endphp
+        <div class="{{ $sizeClass }} {{ $marginClass }} relative z-0 flex items-center justify-center rounded-pill bg-cream border border-whisker/30 text-fur font-medium ring-2 ring-warm-white shrink-0">
+            +{{ $remaining }}
         </div>
     @endif
 </div>

@@ -4,29 +4,40 @@
     'variant' => 'default',
     'disabled' => false,
 ])
+
 @php
-    $tag = filled($href) && !$disabled ? 'a' : 'button';
-    $variantClasses = [
-        'default' => 'text-bark hover:bg-cream',
-        'danger' => 'text-rose hover:bg-rose-light',
-    ][$variant] ?? 'text-bark hover:bg-cream';
+    $baseClasses = 'flex items-center gap-2 px-4 py-2 text-sm w-full text-left transition-colors font-medium';
+    
+    $variantClasses = $variant === 'danger' 
+        ? 'text-rose hover:bg-rose-light border-l-2 border-transparent hover:border-rose' 
+        : 'text-bark hover:bg-cream border-l-2 border-transparent hover:border-paw';
+        
+    $disabledClasses = $disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+    
+    $classes = \Illuminate\Support\Arr::toCssClasses([
+        $baseClasses,
+        $variantClasses,
+        $disabledClasses,
+        $attributes->get('class'),
+    ]);
 @endphp
 
-<{{ $tag }}
-    {{ $attributes->class([
-    'flex items-center gap-2 w-full px-4 py-2 text-sm transition-colors duration-150',
-    $variantClasses,
-    'opacity-50 cursor-not-allowed' => $disabled,
-]) }}
-    @if ($tag === 'a')
-        href="{{ $href }}"
-    @else
-        type="button"
-    @endif
-    @disabled($disabled && $tag === 'button')
->
-    @if (filled($icon))
-        <span class="shrink-0 text-fur" aria-hidden="true">{!! $icon !!}</span>
-    @endif
-    {{ $slot }}
-</{{ $tag }}>
+@if($href)
+    <a href="{{ $href }}" {{ $attributes->except('class')->merge(['class' => $classes]) }} @if($disabled) aria-disabled="true" tabindex="-1" @endif>
+        @if($icon)
+            <div class="shrink-0 w-4 h-4 text-inherit flex items-center justify-center">
+                {!! $icon !!}
+            </div>
+        @endif
+        {{ $slot }}
+    </a>
+@else
+    <button type="button" {{ $attributes->except('class')->merge(['class' => $classes]) }} @if($disabled) disabled @endif>
+        @if($icon)
+            <div class="shrink-0 w-4 h-4 text-inherit flex items-center justify-center">
+                {!! $icon !!}
+            </div>
+        @endif
+        {{ $slot }}
+    </button>
+@endif

@@ -1,39 +1,60 @@
 @props([
     'name',
     'label' => null,
-    'options' => [],
-    'value' => null,
-    'columns' => 2,
+    'options' => [], /* array of ['value', 'label', 'description'] */
+    'selected' => null,
+    'required' => false,
+    'error' => null,
 ])
 
 @php
-    $gridClass = match ((int) $columns) {
-        1 => 'grid-cols-1',
-        3 => 'grid-cols-1 md:grid-cols-3',
-        4 => 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4',
-        default => 'grid-cols-1 md:grid-cols-2',
-    };
+    $error = $error ?? $errors->first($name);
 @endphp
 
-<div {{ $attributes->only('class') }}>
-    @if ($label)
-        <p class="mb-1.5 text-sm font-semibold" style="color: var(--ui-text);">{{ $label }}</p>
+<div class="flex flex-col gap-2 {{ $attributes->get('class') }}" x-data="{ selected: '{{ $selected }}' }">
+    @if($label)
+        <x-ui.label :for="$name" :required="$required">{{ $label }}</x-ui.label>
     @endif
-
-    <div class="grid {{ $gridClass }} gap-2">
-        @foreach ($options as $optionValue => $optionLabel)
-            <label class="flex items-center gap-2 rounded-xl border px-3 py-2" style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-surface) 92%, white 8%);">
-                <input
-                    type="radio"
-                    name="{{ $name }}"
-                    value="{{ $optionValue }}"
-                    @checked((string) $value === (string) $optionValue)
-                    {{ $attributes->except('class')->merge(['class' => 'border-gray-300 text-emerald-600 focus:ring-emerald-500']) }}
+    
+    <div class="space-y-2">
+        @foreach($options as $option)
+            @php
+                $optValue = is_array($option) ? ($option['value'] ?? '') : $option;
+                $optLabel = is_array($option) ? ($option['label'] ?? $optValue) : $optValue;
+                $optDesc = is_array($option) ? ($option['description'] ?? null) : null;
+                $isSelected = $selected == $optValue;
+            @endphp
+            
+            <label 
+                class="flex items-start gap-4 cursor-pointer w-full transition-all duration-150 relative"
+                :class="selected == '{{ $optValue }}' ? 'border-2 border-paw bg-paw-light rounded-lg p-3' : 'border border-whisker bg-warm-white rounded-lg p-3 hover:bg-cream'"
+            >
+                <input 
+                    type="radio" 
+                    name="{{ $name }}" 
+                    value="{{ $optValue }}"
+                    x-model="selected"
+                    class="sr-only peer"
+                    {{ $required ? 'required' : '' }}
+                    {{ $isSelected ? 'checked' : '' }}
+                />
+                
+                <div 
+                    class="w-5 h-5 rounded-pill flex items-center justify-center border mt-0.5 shrink-0 transition-all duration-150 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-paw"
+                    :class="selected == '{{ $optValue }}' ? 'border-paw' : 'border-whisker bg-warm-white'"
                 >
-                <span class="text-sm font-medium" style="color: var(--ui-text);">{{ $optionLabel }}</span>
+                    <div class="w-2.5 h-2.5 rounded-pill bg-paw transition-transform duration-150" :class="selected == '{{ $optValue }}' ? 'scale-100' : 'scale-0'"></div>
+                </div>
+                
+                <div class="flex flex-col flex-1">
+                    <span class="text-sm font-medium text-bark">{{ $optLabel }}</span>
+                    @if($optDesc)
+                        <span class="text-xs text-fur mt-0.5">{{ $optDesc }}</span>
+                    @endif
+                </div>
             </label>
         @endforeach
     </div>
-
-    <x-input-error :messages="$errors->get($name)" class="mt-2" />
+    
+    <x-ui.hint :error="$error" />
 </div>

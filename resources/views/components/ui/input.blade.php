@@ -1,88 +1,69 @@
 @props([
-    'name' => null,
+    'name',
     'label' => null,
     'type' => 'text',
-    'value' => null,
-    'placeholder' => null,
-    'hint' => null,
-    'help' => null,
-    'id' => null,
     'required' => false,
     'disabled' => false,
-    'readonly' => false,
-    'state' => null,
     'error' => null,
-    'maxlength' => null,
-    'showCounter' => true,
+    'hint' => null,
+    'prefix' => null,
+    'suffix' => null,
 ])
 
 @php
-    $inputName = $name ?? $attributes->get('name');
-    $normalizedName = $inputName ? str_replace(['.', '[', ']'], '-', $inputName) : null;
-    $inputId = $id ?: ($attributes->get('id') ?: ($normalizedName ?: 'field-'.substr(md5((string) $label), 0, 8)));
-    $errorKey = $inputName ?: $inputId;
-    $errorMessages = $error ?? $errors->get($errorKey);
-    $hasError = filled($errorMessages);
-    $resolvedState = $state ?? ($hasError ? 'error' : 'default');
-    $hintText = $hint ?? $help;
-    $currentValue = $inputName ? old($inputName, $value) : $value;
-    $shouldPopulateValue = ! in_array($type, ['password', 'file'], true);
-    $maxLength = $maxlength ?? $attributes->get('maxlength');
-    $counterEnabled = (bool) $showCounter && filled($maxLength) && ! in_array($type, ['number', 'range', 'date', 'datetime-local', 'time', 'file'], true);
-    $hintId = $inputId.'-hint';
-    $counterId = $inputId.'-counter';
-    $errorId = $inputId.'-error';
-    $describedBy = trim(implode(' ', array_filter([
-        filled($hintText) ? $hintId : null,
-        $counterEnabled ? $counterId : null,
-        $hasError ? $errorId : null,
-    ])));
+    $error = $error ?? $errors->first($name);
+    
+    $baseClasses = 'w-full border rounded-md px-3.5 py-2.5 text-bark text-sm font-body placeholder:text-whisker transition-all duration-150 focus:outline-none';
+    
+    if ($error) {
+        $stateClasses = 'border-rose focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)] bg-rose-light/20';
+    } elseif ($disabled) {
+        $stateClasses = 'bg-cream border-whisker opacity-60 cursor-not-allowed';
+    } else {
+        $stateClasses = 'bg-warm-white border-whisker focus:border-paw focus:shadow-input';
+    }
+    
+    $paddingClasses = '';
+    if ($prefix) $paddingClasses .= ' pl-9';
+    if ($suffix) $paddingClasses .= ' pr-9';
+    
+    $classes = \Illuminate\Support\Arr::toCssClasses([
+        $baseClasses,
+        $stateClasses,
+        $paddingClasses,
+    ]);
 @endphp
 
-<div {{ $attributes->only('class') }} x-data="{ length: {{ mb_strlen((string) $currentValue) }} }">
-    @if ($label)
-        <x-ui.label :for="$inputId" :required="$required">{{ $label }}</x-ui.label>
+<div class="flex flex-col gap-1 {{ $attributes->get('class') }}">
+    @if($label)
+        <x-ui.label :for="$name" :required="$required">{{ $label }}</x-ui.label>
     @endif
-
-    <input
-        id="{{ $inputId }}"
-        @if ($inputName)
-            name="{{ $inputName }}"
+    
+    <div class="relative flex items-center w-full">
+        @if($prefix)
+            <div class="absolute left-3 text-fur pointer-events-none flex items-center justify-center">
+                {{ $prefix }}
+            </div>
         @endif
-        type="{{ $type }}"
-        @if ($shouldPopulateValue)
-            value="{{ $currentValue }}"
+        
+        <input 
+            type="{{ $type }}" 
+            name="{{ $name }}" 
+            id="{{ $name }}"
+            {{ $disabled ? 'disabled' : '' }}
+            {{ $required ? 'required' : '' }}
+            {!! $attributes->except(['class']) !!} 
+            class="{{ $classes }}" 
+        />
+        
+        @if($suffix)
+            <div class="absolute right-3 text-fur pointer-events-none flex items-center justify-center">
+                {{ $suffix }}
+            </div>
         @endif
-        placeholder="{{ $placeholder }}"
-        @required($required)
-        @disabled($disabled)
-        @readonly($readonly)
-        @if ($describedBy !== '')
-            aria-describedby="{{ $describedBy }}"
-        @endif
-        aria-invalid="{{ $hasError ? 'true' : 'false' }}"
-        @if ($counterEnabled)
-            x-on:input="length = $event.target.value.length"
-        @endif
-        {{ $attributes
-            ->except('class', 'id', 'name', 'type', 'value', 'placeholder', 'required', 'disabled', 'readonly')
-            ->class([
-                'form-input',
-                'cursor-not-allowed opacity-60' => $disabled,
-                'border-emerald-500 focus:border-emerald-500' => $resolvedState === 'success',
-                'border-rose-500 focus:border-rose-500' => $resolvedState === 'error',
-            ]) }}
-    >
-
-    @if (filled($hintText))
-        <x-ui.hint :id="$hintId" class="mt-1">{{ $hintText }}</x-ui.hint>
-    @endif
-
-    @if ($counterEnabled)
-        <x-ui.hint :id="$counterId" class="mt-1 text-right">
-            <span x-text="`${length}/{{ $maxLength }}`"></span>
-        </x-ui.hint>
-    @endif
-
-    <x-input-error :messages="$errorMessages" :id="$errorId" class="mt-1" />
+    </div>
+    
+    <x-ui.hint :error="$error">
+        @if($hint) {{ $hint }} @endif
+    </x-ui.hint>
 </div>

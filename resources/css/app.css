@@ -3,6 +3,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root {
     --color-cream: #FDF6EC;
     --color-warm-white: #FFFBF5;

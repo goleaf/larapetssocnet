@@ -1,31 +1,63 @@
-<div x-data class="fixed bottom-4 right-4 z-[60] flex flex-col-reverse gap-2 pointer-events-none" aria-live="polite">
-    <template x-for="toast in $store.toast.items" :key="toast.id">
-        <div x-show="true" x-transition:enter="transition ease-out duration-250"
-            x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0"
-            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-x-0"
-            x-transition:leave-end="opacity-0 translate-x-4"
-            class="pointer-events-auto flex items-center gap-3 rounded-lg bg-warm-white border border-whisker/30 shadow-card-hover px-4 py-3 min-w-[280px] max-w-sm">
-            <span class="shrink-0 h-full w-1 rounded-pill self-stretch" :class="{
-                    'bg-leaf':  toast.type === 'success',
-                    'bg-rose':  toast.type === 'error',
-                    'bg-amber': toast.type === 'warning',
-                    'bg-sky':   toast.type === 'info',
-                    'bg-paw':   !['success','error','warning','info'].includes(toast.type),
-                }"></span>
-            <span class="shrink-0 text-base" x-text="({
-                    success: '✅',
-                    error:   '❌',
-                    warning: '⚠️',
-                    info:    'ℹ️',
-                })[toast.type] || '🐾'"></span>
-            <p class="text-sm text-bark flex-1" x-text="toast.message"></p>
-            <button @click="$store.toast.remove(toast.id)" class="shrink-0 text-fur hover:text-bark transition-colors"
-                aria-label="Dismiss">
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                        d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                </svg>
-            </button>
+<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm px-4 sm:px-0 pointer-events-none" x-data>
+    <template x-for="item in $store.toast.items" :key="item.id">
+        <div class="pointer-events-auto w-full bg-warm-white rounded-lg shadow-card-hover border overflow-hidden flex"
+            :class="{
+                'border-leaf-light': item.type === 'success',
+                'border-rose-light': item.type === 'error',
+                'border-amber-light': item.type === 'warning',
+                'border-sky-light': item.type === 'info',
+            }" x-transition:enter="transition ease-out duration-300 transform"
+            x-transition:enter-start="translate-x-full opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
+            x-transition:leave="transition ease-in duration-200 transform"
+            x-transition:leave-start="translate-x-0 opacity-100" x-transition:leave-end="translate-x-full opacity-0">
+            <div class="w-1.5 shrink-0" :class="{
+                    'bg-leaf': item.type === 'success',
+                    'bg-rose': item.type === 'error',
+                    'bg-amber': item.type === 'warning',
+                    'bg-sky': item.type === 'info',
+                }"></div>
+            <div class="px-3 py-3 w-full flex items-start gap-3">
+                <div class="shrink-0 mt-0.5">
+                    <template x-if="item.type === 'success'">
+                        <svg class="w-5 h-5 text-leaf" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </template>
+                    <template x-if="item.type === 'error'">
+                        <svg class="w-5 h-5 text-rose" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </template>
+                    <template x-if="item.type === 'warning'">
+                        <svg class="w-5 h-5 text-amber" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </template>
+                    <template x-if="item.type === 'info'">
+                        <svg class="w-5 h-5 text-sky" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                        </svg>
+                    </template>
+                </div>
+
+                <div class="flex-1 text-sm text-bark font-medium pr-2" x-text="item.message"></div>
+
+                <button @click="$store.toast.remove(item.id)"
+                    class="shrink-0 p-1 text-whisker hover:text-bark transition-colors -mr-1 -mt-1 rounded-md focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-1">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                            d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </template>
 </div>

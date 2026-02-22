@@ -1,23 +1,22 @@
 @props([
-    'title',
+    'title' => null,
     'description' => null,
-    'icon' => null,
 ])
 
-<section {{ $attributes->merge(['class' => 'shell-card space-y-5 p-5 sm:p-6']) }}>
-    <header class="space-y-1">
-        <div class="flex items-center gap-2">
-            @if ($icon)
-                <span class="text-xl">{{ $icon }}</span>
+<div {{ $attributes->merge(['class' => 'flex flex-col md:flex-row gap-6 mb-8']) }}>
+    @if($title || $description)
+        <div class="w-full md:w-1/3 shrink-0">
+            @if($title)
+                <h3 class="text-base font-semibold font-display text-bark mb-1">{{ $title }}</h3>
             @endif
-
-            <h2 class="shell-title text-lg">{{ $title }}</h2>
+            
+            @if($description)
+                <p class="text-sm text-fur">{{ $description }}</p>
+            @endif
         </div>
-
-        @if ($description)
-            <p class="text-sm shell-text-muted">{{ $description }}</p>
-        @endif
-    </header>
-
-    {{ $slot }}
-</section>
+    @endif
+    
+    <div class="w-full md:w-2/3 md:max-w-xl space-y-5">
+        {{ $slot }}
+    </div>
+</div>

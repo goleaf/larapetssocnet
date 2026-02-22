@@ -2,32 +2,29 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h1 class="shell-title text-xl">Profile & Account</h1>
-            <p class="mt-1 text-sm shell-text-muted">Manage your public profile, password, and account safety settings.</p>
-        </div>
+        <x-ui.page-header title="Profile & Account"
+            subtitle="Manage your public profile, password, and account safety settings." />
     </x-slot>
 
-    <div class="space-y-5">
-        <section class="shell-card p-6 dark:border-slate-700/60 dark:bg-slate-900/40">
-            <h2 class="shell-title text-lg">Public Profile</h2>
-            <p class="mt-1 text-sm shell-text-muted">Edit display name, username, bio, avatar, and cover with live preview.</p>
-            <div class="mt-4 flex flex-wrap gap-3">
-                <a href="{{ route('settings.profile.edit') }}" class="btn-base btn-primary" aria-label="Open profile settings">
-                    Open Profile Settings
-                </a>
-                <a href="{{ route('settings.account.edit') }}" class="btn-base btn-ghost" aria-label="Open account settings">
-                    Open Account Settings
-                </a>
-            </div>
-        </section>
+    <div class="space-y-6 mt-6">
+        <x-ui.section title="Public Profile"
+            subtitle="Edit display name, username, bio, avatar, and cover with live preview.">
+            <x-slot name="action">
+                <div class="flex flex-wrap gap-2">
+                    <x-ui.button href="{{ route('settings.profile.edit') }}" variant="primary">Open Profile
+                        Settings</x-ui.button>
+                    <x-ui.button href="{{ route('settings.account.edit') }}" variant="ghost">Open Account
+                        Settings</x-ui.button>
+                </div>
+            </x-slot>
+        </x-ui.section>
 
-        <section class="shell-card p-6 dark:border-slate-700/60 dark:bg-slate-900/40">
+        <x-ui.card>
             @include('profile.partials.update-password-form')
-        </section>
+        </x-ui.card>
 
-        <section class="shell-card p-6 dark:border-slate-700/60 dark:bg-slate-900/40">
+        <x-ui.card>
             @include('profile.partials.delete-user-form')
-        </section>
+        </x-ui.card>
     </div>
 </x-app-layout>
