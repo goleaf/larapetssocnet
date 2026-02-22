@@ -1,0 +1,80 @@
+<?php
+
+use App\Models\Pet;
+use App\Models\User;
+use App\Services\PersonalityTagService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(Tests\TestCase::class, RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->service = new PersonalityTagService;
+    $this->user = User::factory()->create();
+});
+
+it('syncs tags correctly', function (): void {
+    $pet = Pet::factory()->create(['user_id' => $this->user->id]);
+
+    $result = $this->service->sync($pet, ['playful', 'energetic', 'calm']);
+
+    expect($result)->toHaveCount(3);
+    expect($result)->toContain('playful', 'energetic', 'calm');
+    expect($pet->fresh()->personality_tags)->toHaveCount(3);
+});
+
+it('enforces max 10 tags', function (): void {
+    $pet = Pet::factory()->create(['user_id' => $this->user->id]);
+
+    $tags = [
+        'playful',
+        'energetic',
+        'calm',
+        'shy',
+        'friendly',
+        'independent',
+        'cuddly',
+        'protective',
+        'gentle',
+        'silly',
+        'stubborn',
+        'smart',
+    ];
+
+    $result = $this->service->sync($pet, $tags);
+
+    expect($result)->toHaveCount(10);
+});
+
+it('stores tags as lowercase', function (): void {
+    $pet = Pet::factory()->create(['user_id' => $this->user->id]);
+
+    $result = $this->service->sync($pet, ['PLAYFUL', 'Energetic']);
+
+    expect($result)->toBe(['playful', 'energetic']);
+});
+
+it('strips special characters from tags', function (): void {
+    $pet = Pet::factory()->create(['user_id' => $this->user->id]);
+
+    $result = $this->service->sync($pet, ['super-fast!', 'very@cute']);
+
+    expect($result[0])->toBe('superfast');
+    expect($result[1])->toBe('verycute');
+});
+
+it('deduplicates tags', function (): void {
+    $pet = Pet::factory()->create(['user_id' => $this->user->id]);
+
+    $result = $this->service->sync($pet, ['playful', 'PLAYFUL', 'Playful']);
+
+    expect($result)->toHaveCount(1);
+    expect($result[0])->toBe('playful');
+});
+
+it('returns correct suggestions list', function (): void {
+    $suggestions = $this->service->getSuggestions();
+
+    expect($suggestions)->toBeArray();
+    expect($suggestions)->toContain('playful', 'calm', 'adventurous');
+    expect($suggestions)->toHaveCount(16);
+});
