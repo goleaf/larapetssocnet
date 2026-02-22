@@ -16,6 +16,7 @@ class ContestVote extends Model
     protected $fillable = [
         'entry_id',
         'user_id',
+        'contest_id',
     ];
 
     public function entry(): BelongsTo
@@ -26,5 +27,10 @@ class ContestVote extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function contest(): BelongsTo
+    {
+        return $this->belongsTo(Contest::class);
     }
 }

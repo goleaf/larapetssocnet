@@ -271,6 +271,47 @@ class Pet extends Model implements HasMedia
         return Attribute::get(fn (): string => self::SPECIES_EMOJI[$this->species] ?? self::SPECIES_EMOJI['other']);
     }
 
+    protected function isAvailableForAdoption(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->adoption_status === 'available');
+    }
+
+    /**
+     * Weight-type health logs ordered oldest to newest (for charting).
+     */
+    public function getWeightLogsAttribute(): \Illuminate\Support\Collection
+    {
+        return $this->healthLogs()
+            ->where('log_type', PetHealthLog::TYPE_WEIGHT)
+            ->oldest('logged_at')
+            ->get();
+    }
+
+    /**
+     * Health logs with an upcoming next_due_at within the next 30 days.
+     */
+    public function getUpcomingRemindersAttribute(): \Illuminate\Support\Collection
+    {
+        return $this->healthLogs()
+            ->whereNotNull('next_due_at')
+            ->where('next_due_at', '>=', today())
+            ->where('next_due_at', '<=', today()->addDays(30))
+            ->oldest('next_due_at')
+            ->get();
+    }
+
+    /**
+     * True if any health log reminder is due within the next 7 days.
+     */
+    public function getHasUrgentRemindersAttribute(): bool
+    {
+        return $this->healthLogs()
+            ->whereNotNull('next_due_at')
+            ->where('next_due_at', '>=', today())
+            ->where('next_due_at', '<=', today()->addDays(7))
+            ->exists();
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

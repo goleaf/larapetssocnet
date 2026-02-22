@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
@@ -32,6 +33,7 @@ class User extends Authenticatable implements HasMedia
     use HasRoles;
     use InteractsWithMedia;
     use Notifiable;
+    use SoftDeletes;
 
     public const MEDIA_COLLECTION_AVATAR = 'avatar';
 
@@ -86,6 +88,9 @@ class User extends Authenticatable implements HasMedia
         'posts_count',
         'blocked_users_count',
         'blocked_by_count',
+        'is_banned',
+        'ban_reason',
+        'role',
     ];
 
     /**
@@ -124,6 +129,7 @@ class User extends Authenticatable implements HasMedia
             'posts_count' => 'integer',
             'blocked_users_count' => 'integer',
             'blocked_by_count' => 'integer',
+            'is_banned' => 'boolean',
         ];
     }
 
@@ -539,9 +545,22 @@ class User extends Authenticatable implements HasMedia
 
     public function badges(): BelongsToMany
     {
-        return $this->belongsToMany(Badge::class, 'badge_user')
-            ->withPivot('awarded_at')
-            ->withTimestamps();
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->withPivot(['awarded_at', 'awarded_by', 'note'])
+            ->orderByPivot('awarded_at', 'desc');
+    }
+
+    public function hasBadge(string $slug): bool
+    {
+        return $this->badges()->where('slug', $slug)->exists();
+    }
+
+    /**
+     * @param  string|list<string>  $roles
+     */
+    public function hasAppRole(string|array $roles): bool
+    {
+        return in_array($this->role ?? 'member', (array) $roles, true);
     }
 
     public function contestEntries(): HasMany

@@ -87,7 +87,7 @@ class PetFeatureTest extends TestCase
                 'bio' => 'After update',
                 'is_public' => '1',
             ])
-            ->assertRedirect(route('pets.show', $pet->getKey()));
+            ->assertRedirect(route('pets.show', $pet->slug ?? $pet->getKey()));
 
         $this->assertDatabaseHas('pets', [
             'id' => $pet->id,

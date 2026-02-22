@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdoptionController;
 use App\Http\Controllers\BlockController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommentReactionController;
@@ -62,6 +63,7 @@ Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
 Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
+Route::get('/adoption', [AdoptionController::class, 'index'])->name('adoption.index');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{event}', [EventController::class, 'show'])
     ->whereNumber('event')
@@ -134,6 +136,8 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::delete('/pets/{slug}', [PetController::class, 'destroy'])->name('pets.destroy');
     Route::post('/pets/{slug}/follow', [PetFollowController::class, 'store'])->name('pets.follow');
     Route::delete('/pets/{slug}/follow', [PetFollowController::class, 'destroy'])->name('pets.unfollow');
+
+    Route::patch('/pets/{pet:slug}/adoption', [AdoptionController::class, 'update'])->name('pets.adoption.update');
 
     Route::get('/pets/{slug}/health', [PetHealthLogController::class, 'index'])->name('pets.health.index');
     Route::get('/pets/{slug}/health/create', [PetHealthLogController::class, 'create'])->name('pets.health.create');
@@ -231,6 +235,45 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::get('/messages/{peer}', [MessageController::class, 'show'])->name('messages.conversation');
     Route::post('/messages/{peer}', [MessageController::class, 'store'])->name('messages.store');
     Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+
+    // Contests
+    Route::get('/contests', [App\Http\Controllers\ContestController::class, 'index'])->name('contests.index');
+    Route::get('/contests/create', [App\Http\Controllers\ContestController::class, 'create'])->name('contests.create');
+    Route::post('/contests', [App\Http\Controllers\ContestController::class, 'store'])->name('contests.store');
+    Route::get('/contests/{contest:slug}', [App\Http\Controllers\ContestController::class, 'show'])->name('contests.show');
+    Route::get('/contests/{contest:slug}/edit', [App\Http\Controllers\ContestController::class, 'edit'])->name('contests.edit');
+    Route::patch('/contests/{contest:slug}', [App\Http\Controllers\ContestController::class, 'update'])->name('contests.update');
+    Route::delete('/contests/{contest:slug}', [App\Http\Controllers\ContestController::class, 'destroy'])->name('contests.destroy');
+    Route::post('/contests/{contest:slug}/entries', [App\Http\Controllers\ContestEntryController::class, 'store'])->name('contests.entries.store');
+    Route::post('/contests/{contest:slug}/entries/{entry}/vote', [App\Http\Controllers\ContestVoteController::class, 'store'])->name('contests.entries.vote');
+    Route::post('/contests/{contest:slug}/entries/{entry}/winner', [App\Http\Controllers\ContestVoteController::class, 'pickWinner'])->name('contests.entries.winner');
+
+    // Badges
+    Route::get('/@{user:username}/badges', [App\Http\Controllers\BadgeController::class, 'index'])->name('badges.index');
+
+    // Settings – password & privacy
+    Route::get('/settings/password', [App\Http\Controllers\Settings\PasswordController::class, 'show'])->name('settings.password');
+    Route::patch('/settings/password', [App\Http\Controllers\Settings\PasswordController::class, 'update'])->name('settings.password.update');
+    Route::get('/settings/privacy', [App\Http\Controllers\Settings\PrivacyController::class, 'show'])->name('settings.privacy');
+    Route::patch('/settings/privacy', [App\Http\Controllers\Settings\PrivacyController::class, 'update'])->name('settings.privacy.update');
+    Route::delete('/settings/account', [App\Http\Controllers\Settings\AccountController::class, 'destroy'])->name('settings.account.destroy');
+});
+
+// Admin area
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', App\Http\Middleware\AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+    Route::post('/users/{user}/ban', [App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
+    Route::post('/users/{user}/unban', [App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
+    Route::patch('/users/{user}/role', [App\Http\Controllers\Admin\UserController::class, 'role'])->name('users.role');
+    Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/posts', [App\Http\Controllers\Admin\PostController::class, 'index'])->name('posts.index');
+    Route::delete('/posts/{post}', [App\Http\Controllers\Admin\PostController::class, 'destroy'])->name('posts.destroy');
+    Route::post('/posts/{post}/restore', [App\Http\Controllers\Admin\PostController::class, 'restore'])->name('posts.restore');
+    Route::get('/reports', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{report}', [App\Http\Controllers\Admin\ReportController::class, 'show'])->name('reports.show');
+    Route::patch('/reports/{report}/resolve', [App\Http\Controllers\Admin\ReportController::class, 'resolve'])->name('reports.resolve');
 });
 
 Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');
@@ -239,4 +282,4 @@ Route::get('/@{user:username}/followers', [FollowController::class, 'followers']
 Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

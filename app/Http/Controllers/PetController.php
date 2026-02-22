@@ -5,18 +5,22 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePetRequest;
 use App\Http\Requests\UpdatePetRequest;
 use App\Models\Pet;
+use App\Services\ChartService;
+use App\Services\PetService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Throwable;
 
 class PetController extends Controller
 {
+    public function __construct(
+        private PetService $petService,
+        private ChartService $chartService,
+    ) {}
+
     public function show(Request $request, string $slug): View
     {
         $pet = $this->resolvePet($slug);
@@ -49,24 +53,10 @@ class PetController extends Controller
         }
 
         $healthLogs = collect();
-        $weightTrendData = [
-            'path' => null,
-            'points' => [],
-            'min' => null,
-            'max' => null,
-        ];
+        $weightChartSvg = null;
         if ($isOwner && method_exists($pet, 'healthLogs')) {
             $healthLogs = $pet->healthLogs()->latest('logged_at')->limit(12)->get();
-
-            $weightSeries = $pet->healthLogs()
-                ->where('log_type', 'weight')
-                ->whereNotNull('weight_kg')
-                ->orderBy('logged_at')
-                ->limit(30)
-                ->select(['logged_at', 'weight_kg'])
-                ->get();
-
-            $weightTrendData = $this->buildWeightTrendData($weightSeries);
+            $weightChartSvg = $this->chartService->weightChart($pet->weight_logs);
         }
 
         return view('pets.show', [
@@ -77,7 +67,7 @@ class PetController extends Controller
             'posts' => $posts,
             'gallery' => $gallery,
             'healthLogs' => $healthLogs,
-            'weightTrendData' => $weightTrendData,
+            'weightChartSvg' => $weightChartSvg,
         ]);
     }
 
@@ -93,10 +83,11 @@ class PetController extends Controller
         $this->authorize('create', Pet::class);
 
         $validated = $request->validated();
+        $avatar = $request->file('avatar');
 
-        $payload = $this->normalizePetPayload($validated, $request, true);
+        $data = $this->prepareData($validated, $request);
+        $pet = $this->petService->create($request->user(), $data, $avatar);
 
-        $pet = Pet::query()->create($payload);
         $this->attachGalleryPhotos($pet, $request);
 
         return redirect()
@@ -120,9 +111,11 @@ class PetController extends Controller
         $this->authorize('update', $pet);
 
         $validated = $request->validated();
-        $payload = $this->normalizePetPayload($validated, $request, false);
+        $avatar = $request->file('avatar');
 
-        $pet->update($payload);
+        $data = $this->prepareData($validated, $request);
+        $this->petService->update($pet, $data, $avatar);
+
         $this->attachGalleryPhotos($pet, $request);
 
         return redirect()
@@ -135,7 +128,7 @@ class PetController extends Controller
         $pet = $this->resolvePet($slug);
         $this->authorize('delete', $pet);
 
-        $pet->delete();
+        $this->petService->delete($pet);
 
         return redirect()
             ->route('pets.explore')
@@ -153,20 +146,10 @@ class PetController extends Controller
         $search = trim((string) $request->string('q'));
         if ($search !== '') {
             $query->where(function ($innerQuery) use ($search) {
-                if ($this->petTableHasColumn('name')) {
-                    $innerQuery->orWhere('name', 'like', "%{$search}%");
-                }
-
-                if ($this->petTableHasColumn('bio')) {
-                    $innerQuery->orWhere('bio', 'like', "%{$search}%");
-                }
-
-                if ($this->petTableHasColumn('breed')) {
-                    $innerQuery->orWhere('breed', 'like', "%{$search}%");
-                }
-
-                if ($this->petTableHasColumn('species')) {
-                    $innerQuery->orWhere('species', 'like', "%{$search}%");
+                foreach (['name', 'bio', 'breed', 'species'] as $col) {
+                    if ($this->petTableHasColumn($col)) {
+                        $innerQuery->orWhere($col, 'like', "%{$search}%");
+                    }
                 }
             });
         }
@@ -232,16 +215,10 @@ class PetController extends Controller
         $search = trim((string) $request->string('q'));
         if ($search !== '') {
             $query->where(function ($innerQuery) use ($search) {
-                if ($this->petTableHasColumn('name')) {
-                    $innerQuery->orWhere('name', 'like', "%{$search}%");
-                }
-
-                if ($this->petTableHasColumn('bio')) {
-                    $innerQuery->orWhere('bio', 'like', "%{$search}%");
-                }
-
-                if ($this->petTableHasColumn('breed')) {
-                    $innerQuery->orWhere('breed', 'like', "%{$search}%");
+                foreach (['name', 'bio', 'breed'] as $col) {
+                    if ($this->petTableHasColumn($col)) {
+                        $innerQuery->orWhere($col, 'like', "%{$search}%");
+                    }
                 }
             });
         }
@@ -276,17 +253,35 @@ class PetController extends Controller
         ]);
     }
 
+    /**
+     * Map request data to the shape PetService expects.
+     *
+     * @return array<string, mixed>
+     */
+    private function prepareData(array $validated, Request $request): array
+    {
+        return [
+            'name' => $validated['name'] ?? null,
+            'species' => $validated['species'] ?? null,
+            'breed' => $validated['breed'] ?? null,
+            'gender' => $validated['gender'] ?? ($validated['sex'] ?? 'unknown'),
+            'size' => $validated['size'] ?? null,
+            'date_of_birth' => $validated['date_of_birth'] ?? ($validated['birth_date'] ?? null),
+            'age_text' => $validated['age_text'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+            'personality_tags' => $this->normalizePersonalityTags($validated['personality_tags'] ?? null),
+            'is_public' => $request->boolean('is_public'),
+            'is_adoptable' => $request->boolean('is_adoptable') || $request->boolean('is_for_adoption'),
+            'is_deceased' => $request->boolean('is_deceased'),
+        ];
+    }
+
     protected function resolvePet(string $slug): Pet
     {
         return Pet::query()
             ->when($this->petTableHasColumn('slug'), fn ($query) => $query->where('slug', $slug))
             ->orWhere('id', $slug)
             ->firstOrFail();
-    }
-
-    protected function ensureOwner(Pet $pet, ?Authenticatable $user): void
-    {
-        abort_unless($this->isOwner($pet, $user), 403);
     }
 
     protected function isOwner(Pet $pet, ?Authenticatable $user): bool
@@ -300,53 +295,7 @@ class PetController extends Controller
         return (int) $ownerId === (int) $user->getAuthIdentifier();
     }
 
-    protected function normalizePetPayload(array $validated, Request $request, bool $includeSlug): array
-    {
-        $payload = [
-            'name' => $validated['name'] ?? null,
-            'species' => $validated['species'] ?? null,
-            'breed' => $validated['breed'] ?? null,
-            'sex' => $validated['sex'] ?? ($validated['gender'] ?? 'unknown'),
-            'gender' => $validated['gender'] ?? ($validated['sex'] ?? 'unknown'),
-            'size' => $validated['size'] ?? null,
-            'birth_date' => $validated['birth_date'] ?? ($validated['birthdate'] ?? null),
-            'date_of_birth' => $validated['date_of_birth'] ?? ($validated['birth_date'] ?? null),
-            'age_text' => $validated['age_text'] ?? null,
-            'bio' => $validated['bio'] ?? null,
-            'personality_tags' => $this->normalizePersonalityTags($validated['personality_tags'] ?? null),
-            'is_public' => $request->boolean('is_public'),
-            'is_adoptable' => $request->boolean('is_adoptable') || $request->boolean('is_for_adoption'),
-            'is_deceased' => $request->boolean('is_deceased'),
-        ];
-
-        if ($includeSlug && $this->petTableHasColumn('slug')) {
-            $ownerUsername = (string) data_get($request->user(), 'username', '');
-            $base = Str::slug(trim(($payload['name'] ?? 'pet').'-'.$ownerUsername, '-'));
-            if ($base === '') {
-                $base = 'pet-'.Str::lower(Str::random(6));
-            }
-
-            $candidate = $base;
-            $counter = 1;
-            while (Pet::query()->where('slug', $candidate)->exists()) {
-                $candidate = $base.'-'.$counter;
-                $counter++;
-            }
-
-            $payload['slug'] = $candidate;
-        }
-
-        $payload['is_public'] = $request->boolean('is_public');
-        $payload['is_adoptable'] = $request->boolean('is_adoptable') || $request->boolean('is_for_adoption');
-
-        if ($ownerColumn = $this->resolvePetOwnerColumn()) {
-            $payload[$ownerColumn] = $request->user()?->getAuthIdentifier();
-        }
-
-        return $this->filterToExistingColumns('pets', $payload);
-    }
-
-    protected function normalizePersonalityTags(mixed $rawTags): array
+    private function normalizePersonalityTags(mixed $rawTags): array
     {
         if (is_array($rawTags)) {
             return collect($rawTags)
@@ -367,35 +316,7 @@ class PetController extends Controller
             ->all();
     }
 
-    protected function resolvePetOwnerColumn(): ?string
-    {
-        foreach (['user_id', 'owner_id'] as $column) {
-            if ($this->petTableHasColumn($column)) {
-                return $column;
-            }
-        }
-
-        return null;
-    }
-
-    protected function filterToExistingColumns(string $table, array $payload): array
-    {
-        try {
-            $columns = Schema::getColumnListing($table);
-
-            if ($columns === []) {
-                return $payload;
-            }
-
-            return collect($payload)
-                ->only($columns)
-                ->all();
-        } catch (Throwable) {
-            return $payload;
-        }
-    }
-
-    protected function petTableHasColumn(string $column): bool
+    private function petTableHasColumn(string $column): bool
     {
         try {
             return Schema::hasColumn('pets', $column);
@@ -404,68 +325,10 @@ class PetController extends Controller
         }
     }
 
-    protected function attachGalleryPhotos(Pet $pet, Request $request): void
+    private function attachGalleryPhotos(Pet $pet, Request $request): void
     {
         foreach ((array) $request->file('gallery_photos', []) as $photo) {
             $pet->addMedia($photo)->toMediaCollection('gallery');
         }
-    }
-
-    protected function buildWeightTrendData(Collection $series): array
-    {
-        if ($series->isEmpty()) {
-            return [
-                'path' => null,
-                'points' => [],
-                'min' => null,
-                'max' => null,
-            ];
-        }
-
-        $values = $series->pluck('weight_kg')->map(static fn ($value) => (float) $value)->values();
-        $min = $values->min();
-        $max = $values->max();
-        $range = max($max - $min, 0.01);
-        $lastIndex = max($values->count() - 1, 1);
-
-        $points = $values->map(function (float $value, int $index) use ($min, $range, $lastIndex, $series) {
-            $x = ($index / $lastIndex) * 100;
-            $y = 100 - (($value - $min) / $range) * 100;
-
-            $rawLabel = data_get($series[$index], 'logged_at');
-            $label = null;
-
-            if ($rawLabel instanceof \Illuminate\Support\CarbonInterface) {
-                $label = $rawLabel->format('M j');
-            } elseif (is_string($rawLabel) && $rawLabel !== '') {
-                try {
-                    $label = Carbon::parse($rawLabel)->format('M j');
-                } catch (Throwable) {
-                    $label = $rawLabel;
-                }
-            }
-
-            return [
-                'x' => round($x, 2),
-                'y' => round($y, 2),
-                'label' => $label,
-                'value' => $value,
-            ];
-        })->all();
-
-        $path = collect($points)
-            ->map(function (array $point, int $index) {
-                $command = $index === 0 ? 'M' : 'L';
-
-                return sprintf('%s %s %s', $command, $point['x'], $point['y']);
-            })
-            ->implode(' ');
-
-        return [
-            'path' => $path,
-            'points' => $points,
-            'min' => $min,
-            'max' => $max,
-        ];
     }
 }

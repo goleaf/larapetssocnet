@@ -21,6 +21,7 @@ class PetFactory extends Factory
         return [
             'user_id' => \App\Models\User::factory(),
             'name' => fake()->firstName(),
+            'slug' => fake()->unique()->slug(2),
             'species' => fake()->randomElement(['dog', 'cat', 'bird', 'rabbit', 'hamster']),
             'breed' => fake()->optional(0.8)->word(),
             'sex' => fake()->randomElement(['male', 'female']),
@@ -28,6 +29,7 @@ class PetFactory extends Factory
             'bio' => fake()->optional()->sentence(),
             'avatar_path' => fake()->optional(0.5)->imageUrl(640, 640, 'pets', true),
             'is_public' => fake()->boolean(90),
+            'adoption_status' => 'not_listed',
             'followers_count' => 0,
             'posts_count' => 0,
         ];

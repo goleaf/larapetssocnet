@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Badge;
 use App\Models\User;
+use App\Notifications\BadgeAwarded;
 use Illuminate\Support\Facades\DB;
 
 class BadgeService
@@ -21,15 +22,62 @@ class BadgeService
                 continue;
             }
 
-            DB::transaction(function () use ($badge, $user): void {
-                $user->badges()->syncWithoutDetaching([
-                    $badge->getKey() => [
-                        'awarded_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                ]);
-            });
+            $this->award($user, $badge->slug);
+        }
+    }
+
+    public function award(User $user, string $slug, ?User $awardedBy = null, ?string $note = null): void
+    {
+        $badge = Badge::where('slug', $slug)->first();
+
+        if (! $badge || $user->hasBadge($slug)) {
+            return;
+        }
+
+        DB::transaction(function () use ($user, $badge, $awardedBy, $note): void {
+            $user->badges()->attach($badge->id, [
+                'awarded_at' => now(),
+                'awarded_by' => $awardedBy?->id,
+                'note' => $note,
+            ]);
+
+            $user->notify(new BadgeAwarded($badge));
+        });
+    }
+
+    public function checkPostMilestones(User $user): void
+    {
+        $count = (int) ($user->posts_count ?? 0);
+
+        if ($count >= 1) {
+            $this->award($user, 'first_post');
+        }
+        if ($count >= 10) {
+            $this->award($user, 'ten_posts');
+        }
+        if ($count >= 100) {
+            $this->award($user, 'hundred_posts');
+        }
+    }
+
+    public function checkFollowerMilestones(User $user): void
+    {
+        $count = (int) ($user->followers_count ?? 0);
+
+        if ($count >= 1) {
+            $this->award($user, 'first_follower');
+        }
+        if ($count >= 100) {
+            $this->award($user, 'popular');
+        }
+    }
+
+    public function checkPetMilestones(User $user): void
+    {
+        $count = (int) ($user->pets_count ?? 0);
+
+        if ($count >= 3) {
+            $this->award($user, 'pet_lover');
         }
     }
 

@@ -15,6 +15,16 @@ class Contest extends Model
     use HasFactory;
     use SoftDeletes;
 
+    /** @var list<string> */
+    public const STATUSES = ['draft', 'active', 'voting', 'ended', 'cancelled'];
+
+    /** @var array<string, list<string>> */
+    public const TRANSITIONS = [
+        'draft' => ['active'],
+        'active' => ['voting', 'cancelled'],
+        'voting' => ['ended', 'cancelled'],
+    ];
+
     /**
      * @var list<string>
      */
@@ -77,6 +87,16 @@ class Contest extends Model
         return $this->hasMany(ContestEntry::class);
     }
 
+    public function votes(): HasMany
+    {
+        return $this->hasMany(ContestVote::class);
+    }
+
+    public function winner(): BelongsTo
+    {
+        return $this->belongsTo(ContestEntry::class, 'winner_entry_id');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
@@ -85,5 +105,26 @@ class Contest extends Model
     public function scopeVoting(Builder $query): Builder
     {
         return $query->where('status', 'voting');
+    }
+
+    public function scopeVisible(Builder $query): Builder
+    {
+        return $query->whereIn('status', ['active', 'voting', 'ended']);
+    }
+
+    public function hasEntered(User $user): bool
+    {
+        return $this->entries()->where('user_id', $user->id)->exists();
+    }
+
+    public function hasVoted(User $user): bool
+    {
+        return $this->votes()->where('user_id', $user->id)->exists();
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active'
+            && now()->between($this->starts_at, $this->ends_at);
     }
 }

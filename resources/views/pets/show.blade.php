@@ -181,22 +181,9 @@
                             <h4 class="text-sm font-semibold text-gray-900">Weight history</h4>
                             <p class="mt-1 text-xs text-gray-500">Last 30 weight entries.</p>
 
-                            @if(!empty($weightTrendData['path']))
-                                <div class="mt-3">
-                                    <svg viewBox="0 0 100 100" class="h-40 w-full" role="img" aria-label="Weight history chart">
-                                        <line x1="0" y1="100" x2="100" y2="100" class="stroke-gray-200" stroke-width="1" />
-                                        <line x1="0" y1="0" x2="0" y2="100" class="stroke-gray-200" stroke-width="1" />
-                                        <path d="{{ $weightTrendData['path'] }}" fill="none" stroke="currentColor" class="text-indigo-500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                        @foreach($weightTrendData['points'] as $point)
-                                            <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="1.6" class="fill-indigo-500">
-                                                <title>{{ $point['label'] ?? 'Entry' }}: {{ number_format($point['value'], 2) }} kg</title>
-                                            </circle>
-                                        @endforeach
-                                    </svg>
-                                    <p class="mt-2 text-xs text-gray-500">
-                                        Min: {{ number_format((float) $weightTrendData['min'], 2) }} kg •
-                                        Max: {{ number_format((float) $weightTrendData['max'], 2) }} kg
-                                    </p>
+                            @if(!empty($weightChartSvg))
+                                <div class="mt-3" aria-label="Weight history chart">
+                                    {!! $weightChartSvg !!}
                                 </div>
                             @else
                                 <p class="mt-3 text-sm text-gray-500">Add at least one weight entry to see a chart.</p>
