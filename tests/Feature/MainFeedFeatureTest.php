@@ -101,7 +101,7 @@ it('stores and deletes comments through main feed endpoints', function () {
 
     $this->actingAs($viewer)
         ->from(route('feed.index'))
-        ->post(route('comments.store', $post), [
+        ->post(route('posts.comments.store', $post), [
             'body' => 'This is a lovely pet update.',
         ])
         ->assertRedirect(route('feed.index'));

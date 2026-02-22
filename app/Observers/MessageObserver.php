@@ -24,9 +24,9 @@ class MessageObserver
         ];
 
         if ((int) $message->sender_id === (int) $conversation->user_one_id) {
-            $updates['unread_count_user_two'] = DB::raw('COALESCE(unread_count_user_two, 0) + 1');
+            $updates['user_two_unread_count'] = DB::raw('COALESCE(user_two_unread_count, 0) + 1');
         } elseif ((int) $message->sender_id === (int) $conversation->user_two_id) {
-            $updates['unread_count_user_one'] = DB::raw('COALESCE(unread_count_user_one, 0) + 1');
+            $updates['user_one_unread_count'] = DB::raw('COALESCE(user_one_unread_count, 0) + 1');
         }
 
         Conversation::query()

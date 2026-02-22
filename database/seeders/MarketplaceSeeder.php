@@ -11,8 +11,6 @@ class MarketplaceSeeder extends Seeder
 {
     private const TARGET_LISTING_COUNT = 90;
 
-    private const TARGET_MESSAGE_COUNT = 700;
-
     private const TARGET_REPORT_COUNT = 85;
 
     /**
@@ -68,36 +66,6 @@ class MarketplaceSeeder extends Seeder
                 'created_at' => $createdAt,
                 'updated_at' => $createdAt,
             ]);
-        }
-
-        $messages = [];
-
-        for ($i = 0; $i < self::TARGET_MESSAGE_COUNT; $i++) {
-            $senderId = $userIds[array_rand($userIds)];
-            $recipientId = $userIds[array_rand($userIds)];
-
-            while ($recipientId === $senderId) {
-                $recipientId = $userIds[array_rand($userIds)];
-            }
-
-            $sentAt = Carbon::instance($faker->dateTimeBetween('-45 days', 'now'));
-            $readAt = random_int(1, 100) <= 68
-                ? Carbon::instance($faker->dateTimeBetween($sentAt, 'now'))
-                : null;
-
-            $messages[] = [
-                'sender_user_id' => $senderId,
-                'recipient_user_id' => $recipientId,
-                'body' => $faker->sentence(random_int(4, 14)),
-                'sent_at' => $sentAt,
-                'read_at' => $readAt,
-                'created_at' => $sentAt,
-                'updated_at' => $sentAt,
-            ];
-        }
-
-        foreach (array_chunk($messages, 500) as $chunk) {
-            DB::table('messages')->insert($chunk);
         }
 
         $moderatorIds = $this->moderatorUserIds();

@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Conversation;
 use App\Models\MarketplaceListing;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ConversationService
@@ -21,16 +22,13 @@ class ConversationService
     {
         $this->ensureCanMessage($viewer, $peer);
 
-        if ($listing && (int) $listing->user_id !== (int) $peer->getKey()) {
-            throw ValidationException::withMessages([
-                'listing_id' => ['The selected listing does not belong to this user.'],
-            ]);
-        }
+        $conversation = $this->resolveConversation($viewer, $peer);
 
         return [
             'peer' => $peer,
             'listing' => $listing,
-            'conversation_key' => $this->conversationKey($viewer, $peer, $listing),
+            'conversation' => $conversation,
+            'conversation_key' => $this->conversationKey($viewer, $peer),
         ];
     }
 
@@ -46,44 +44,49 @@ class ConversationService
             ]);
         }
 
-        $payload = [
-            'sender_user_id' => $sender->getKey(),
-            'recipient_user_id' => $recipient->getKey(),
+        $conversation = $this->resolveConversation($sender, $recipient);
+
+        $message = Message::query()->create([
+            'conversation_id' => $conversation->getKey(),
+            'sender_id' => $sender->getKey(),
             'body' => $normalizedBody,
-            'sent_at' => now(),
-        ];
-
-        if ($this->hasListingColumn()) {
-            $payload['marketplace_listing_id'] = $listing?->getKey();
-        }
-
-        $message = Message::query()->create($payload);
-
-        return $message->load([
-            'sender:id,name,username,avatar_path',
-            'recipient:id,name,username,avatar_path',
-            'listing:id,title,user_id',
         ]);
+
+        $conversation->update([
+            'last_message_at' => now(),
+            'last_message_preview' => mb_substr($normalizedBody, 0, 100),
+        ]);
+
+        return $message->load('sender:id,name,username,avatar_path');
     }
 
     public function markAsRead(User $viewer, User $peer, ?MarketplaceListing $listing = null): int
     {
-        $query = Message::query()
-            ->where('sender_user_id', $peer->getKey())
-            ->where('recipient_user_id', $viewer->getKey())
-            ->whereNull('read_at')
-            ->whereNull('deleted_at');
+        $conversation = $this->findConversation($viewer, $peer);
 
-        if ($this->hasListingColumn() && $listing) {
-            $query->where('marketplace_listing_id', $listing->getKey());
+        if (! $conversation) {
+            return 0;
         }
 
-        return $query->update(['read_at' => now()]);
+        $updated = Message::query()
+            ->where('conversation_id', $conversation->getKey())
+            ->where('sender_id', '!=', $viewer->getKey())
+            ->whereNull('read_at')
+            ->whereNull('deleted_at')
+            ->update(['read_at' => now(), 'is_read' => true]);
+
+        if ($viewer->getKey() === (int) $conversation->user_one_id) {
+            $conversation->update(['user_one_unread_count' => 0]);
+        } else {
+            $conversation->update(['user_two_unread_count' => 0]);
+        }
+
+        return $updated;
     }
 
     public function deleteMessage(User $viewer, Message $message): bool
     {
-        if ((int) $message->sender_user_id !== (int) $viewer->getKey()) {
+        if ((int) $message->sender_id !== (int) $viewer->getKey()) {
             throw new AuthorizationException('You can only delete your own messages.');
         }
 
@@ -105,74 +108,38 @@ class ConversationService
      */
     public function getInboxForUser(User $viewer): Collection
     {
-        $messages = Message::query()
+        $conversations = Conversation::query()
             ->forUser($viewer)
-            ->withTrashed()
             ->with([
-                'sender:id,name,username,avatar_path',
-                'recipient:id,name,username,avatar_path',
-                'listing:id,title,user_id',
+                'userOne:id,name,username,avatar_path',
+                'userTwo:id,name,username,avatar_path',
+                'latestMessage',
             ])
-            ->latest('id')
+            ->ordered()
             ->get();
 
-        return $messages
-            ->groupBy(function (Message $message) use ($viewer): string {
-                $peerId = (int) $message->sender_user_id === (int) $viewer->getKey()
-                    ? (int) $message->recipient_user_id
-                    : (int) $message->sender_user_id;
-                $listingId = $this->hasListingColumn() ? (int) ($message->marketplace_listing_id ?? 0) : 0;
+        return $conversations->map(function (Conversation $conversation) use ($viewer): array {
+            $peer = $conversation->otherUser($viewer);
 
-                return $peerId.':'.$listingId;
-            })
-            ->map(function (Collection $conversation) use ($viewer): ?array {
-                /** @var Message|null $latest */
-                $latest = $conversation->first();
-
-                if (! $latest) {
-                    return null;
-                }
-
-                $peer = (int) $latest->sender_user_id === (int) $viewer->getKey()
-                    ? $latest->recipient
-                    : $latest->sender;
-
-                if (! $peer) {
-                    return null;
-                }
-
-                $unreadCount = $conversation
-                    ->filter(function (Message $message) use ($viewer): bool {
-                        return (int) $message->recipient_user_id === (int) $viewer->getKey()
-                            && $message->read_at === null
-                            && $message->deleted_at === null;
-                    })
-                    ->count();
-
-                return [
-                    'peer' => $peer,
-                    'latest_message' => $latest,
-                    'unread_count' => $unreadCount,
-                    'listing' => $latest->listing,
-                    'conversation_key' => $this->conversationKey($viewer, $peer, $latest->listing),
-                ];
-            })
-            ->filter()
-            ->sortByDesc(fn (array $item): int => (int) $item['latest_message']->getKey())
-            ->values();
+            return [
+                'peer' => $peer,
+                'latest_message' => $conversation->latestMessage,
+                'unread_count' => $conversation->unreadCountFor($viewer),
+                'listing' => null,
+                'conversation_key' => $peer
+                    ? $this->conversationKey($viewer, $peer)
+                    : (string) $conversation->getKey(),
+            ];
+        })->filter(fn (array $item): bool => $item['peer'] !== null)->values();
     }
 
     public function getUnreadCountForUser(User $viewer): int
     {
-        return (int) Message::query()
-            ->where('recipient_user_id', $viewer->getKey())
-            ->whereNull('read_at')
-            ->whereNull('deleted_at')
-            ->count();
+        return $viewer->totalUnreadMessages();
     }
 
     /**
-     * @return Collection<int, Message>
+     * @return EloquentCollection<int, Message>
      */
     public function getConversationMessages(
         User $viewer,
@@ -180,14 +147,16 @@ class ConversationService
         ?MarketplaceListing $listing = null,
         ?int $sinceId = null,
         bool $includeSoftDeleted = false,
-    ): Collection {
+    ): EloquentCollection {
+        $conversation = $this->findConversation($viewer, $peer);
+
+        if (! $conversation) {
+            return EloquentCollection::make();
+        }
+
         $query = Message::query()
-            ->between($viewer, $peer)
-            ->with([
-                'sender:id,name,username,avatar_path',
-                'recipient:id,name,username,avatar_path',
-                'listing:id,title,user_id',
-            ])
+            ->where('conversation_id', $conversation->getKey())
+            ->with('sender:id,name,username,avatar_path')
             ->orderBy('id');
 
         if ($includeSoftDeleted) {
@@ -198,11 +167,28 @@ class ConversationService
             $query->where('id', '>', $sinceId);
         }
 
-        if ($this->hasListingColumn() && $listing) {
-            $query->where('marketplace_listing_id', $listing->getKey());
+        return $query->get();
+    }
+
+    private function resolveConversation(User $viewer, User $peer): Conversation
+    {
+        $existing = $this->findConversation($viewer, $peer);
+
+        if ($existing) {
+            return $existing;
         }
 
-        return $query->get();
+        return Conversation::query()->create([
+            'user_one_id' => min((int) $viewer->getKey(), (int) $peer->getKey()),
+            'user_two_id' => max((int) $viewer->getKey(), (int) $peer->getKey()),
+            'user_one_unread_count' => 0,
+            'user_two_unread_count' => 0,
+        ]);
+    }
+
+    private function findConversation(User $viewer, User $peer): ?Conversation
+    {
+        return $viewer->conversationWith($peer);
     }
 
     private function ensureCanMessage(User $viewer, User $peer): void
@@ -226,17 +212,9 @@ class ConversationService
         }
     }
 
-    private function hasListingColumn(): bool
+    private function conversationKey(User $viewer, User $peer): string
     {
-        return Schema::hasColumn('messages', 'marketplace_listing_id');
-    }
-
-    private function conversationKey(User $viewer, User $peer, ?MarketplaceListing $listing = null): string
-    {
-        $listingKey = $this->hasListingColumn() ? (string) ($listing?->getKey() ?? 0) : '0';
-
         return min((int) $viewer->getKey(), (int) $peer->getKey())
-            .':'.max((int) $viewer->getKey(), (int) $peer->getKey())
-            .':'.$listingKey;
+            .':'.max((int) $viewer->getKey(), (int) $peer->getKey());
     }
 }

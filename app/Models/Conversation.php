@@ -23,8 +23,8 @@ class Conversation extends Model
         'blocked_by',
         'last_message_at',
         'last_message_preview',
-        'unread_count_user_one',
-        'unread_count_user_two',
+        'user_one_unread_count',
+        'user_two_unread_count',
     ];
 
     protected function casts(): array
@@ -32,8 +32,8 @@ class Conversation extends Model
         return [
             'last_message_at' => 'datetime',
             'blocked_by' => 'integer',
-            'unread_count_user_one' => 'integer',
-            'unread_count_user_two' => 'integer',
+            'user_one_unread_count' => 'integer',
+            'user_two_unread_count' => 'integer',
         ];
     }
 
@@ -92,11 +92,11 @@ class Conversation extends Model
         $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
 
         if ($userId === (int) $this->user_one_id) {
-            return (int) ($this->unread_count_user_one ?? 0);
+            return (int) ($this->user_one_unread_count ?? 0);
         }
 
         if ($userId === (int) $this->user_two_id) {
-            return (int) ($this->unread_count_user_two ?? 0);
+            return (int) ($this->user_two_unread_count ?? 0);
         }
 
         return 0;

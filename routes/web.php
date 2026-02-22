@@ -101,7 +101,6 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         ->middleware('throttle:60,1')
         ->name('posts.react');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
-    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.legacy.store');
     Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');
@@ -113,7 +112,6 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/comments/{post}/{comment}', [PostCommentController::class, 'update'])->name('comments.update');
     Route::delete('/comments/{post}/{comment}', [PostCommentController::class, 'destroy'])->name('comments.post.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save');
-    Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
     Route::delete('/posts/{post}/pin', [PostController::class, 'unpin'])->name('posts.unpin');
     Route::post('/posts/{post}/report', [ReportController::class, 'reportPost'])->name('posts.report');
@@ -233,4 +231,9 @@ Route::get('/@{user:username}/followers', [FollowController::class, 'followers']
 Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
 
-require __DIR__.'/auth.php';
+
+if (app()->environment('local')) {
+    Route::view('/dev/components', 'dev.components')->name('dev.components');
+}
+
+require __DIR__ . '/auth.php';

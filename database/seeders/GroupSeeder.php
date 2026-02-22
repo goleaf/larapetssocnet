@@ -34,6 +34,7 @@ class GroupSeeder extends Seeder
 
             $groupId = DB::table('groups')->insertGetId([
                 'owner_user_id' => $ownerId,
+                'owner_id' => $ownerId,
                 'name' => $name,
                 'slug' => Str::slug($name).'-'.random_int(1000, 9999),
                 'description' => random_int(1, 100) <= 80 ? $faker->sentence() : null,

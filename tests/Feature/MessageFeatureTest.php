@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,9 +24,13 @@ class MessageFeatureTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('messages', [
-            'sender_user_id' => $sender->getKey(),
-            'recipient_user_id' => $receiver->getKey(),
+            'sender_id' => $sender->getKey(),
             'body' => 'Hey there!',
+        ]);
+
+        $this->assertDatabaseHas('conversations', [
+            'user_one_id' => min($sender->id, $receiver->id),
+            'user_two_id' => max($sender->id, $receiver->id),
         ]);
 
         $this->actingAs($sender)
@@ -39,11 +44,15 @@ class MessageFeatureTest extends TestCase
         $sender = User::factory()->create(['is_private' => false]);
         $receiver = User::factory()->create(['is_private' => false]);
 
+        $conversation = Conversation::query()->create([
+            'user_one_id' => min($sender->id, $receiver->id),
+            'user_two_id' => max($sender->id, $receiver->id),
+        ]);
+
         $message = Message::query()->create([
-            'sender_user_id' => $sender->getKey(),
-            'recipient_user_id' => $receiver->getKey(),
+            'conversation_id' => $conversation->getKey(),
+            'sender_id' => $sender->getKey(),
             'body' => 'Delete me',
-            'sent_at' => now(),
         ]);
 
         $this->actingAs($sender)

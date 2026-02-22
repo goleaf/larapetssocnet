@@ -283,7 +283,7 @@ class FeedPostsFeatureTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->post(route('posts.save.toggle', $post))
+            ->post(route('posts.save', $post))
             ->assertRedirect();
 
         $this->assertDatabaseHas('saved_posts', [
@@ -294,7 +294,7 @@ class FeedPostsFeatureTest extends TestCase
         $this->assertSame(1, SavedPost::query()->where('post_id', $post->id)->where('user_id', $user->id)->count());
 
         $this->actingAs($user)
-            ->post(route('posts.save.toggle', $post))
+            ->post(route('posts.save', $post))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('saved_posts', [

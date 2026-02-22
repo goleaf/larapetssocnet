@@ -3,10 +3,12 @@
     'size' => 'md',
     'loading' => false,
     'disabled' => false,
-    'loadingText' => 'Loading...',
+    'loadingText' => null,
     'as' => null,
     'href' => null,
     'asLink' => false,
+    'full' => false,
+    'icon' => null,
 ])
 
 @php
@@ -26,25 +28,29 @@
 
     $isLoading = $toBoolean($loading);
     $isDisabled = $toBoolean($disabled) || $isLoading;
+    $isFull = $toBoolean($full);
     $wantsLink = $toBoolean($asLink) || strtolower((string) $as) === 'a' || filled($href);
     $resolvedTag = $wantsLink ? 'a' : 'button';
 
     $variantClasses = [
-        'primary' => 'btn-primary',
-        'secondary' => 'btn-secondary',
-        'ghost' => 'btn-ghost',
-        'danger' => 'btn-danger',
-    ][$variant] ?? 'btn-primary';
+        'primary'   => 'bg-paw text-white hover:bg-paw-dark shadow-button',
+        'secondary' => 'bg-paw-light text-paw-dark hover:bg-orange-200',
+        'ghost'     => 'bg-transparent text-fur hover:bg-cream',
+        'danger'    => 'bg-rose text-white hover:bg-red-700',
+        'success'   => 'bg-leaf text-white hover:bg-green-700',
+        'outline'   => 'border border-whisker text-bark bg-transparent hover:bg-cream',
+    ][$variant] ?? 'bg-paw text-white hover:bg-paw-dark shadow-button';
 
     $sizeClasses = [
-        'xs' => 'px-2.5 py-1.5 text-xs',
-        'sm' => 'px-3 py-2 text-xs',
-        'md' => 'px-3.5 py-2 text-sm',
-        'lg' => 'px-4 py-2.5 text-sm',
-    ][$size] ?? 'px-3.5 py-2 text-sm';
+        'xs' => 'px-2.5 py-1 text-xs rounded-sm',
+        'sm' => 'px-3.5 py-1.5 text-sm rounded-md',
+        'md' => 'px-5 py-2.5 text-sm rounded-md',
+        'lg' => 'px-7 py-3.5 text-base rounded-md',
+    ][$size] ?? 'px-5 py-2.5 text-sm rounded-md';
 
     $stateClasses = [
-        'pointer-events-none opacity-60' => $isDisabled,
+        'opacity-50 cursor-not-allowed pointer-events-none' => $isDisabled,
+        'w-full justify-center' => $isFull,
     ];
 
     $hasDisabledBinding = $attributes->has(':disabled') || $attributes->has('x-bind:disabled');
@@ -56,7 +62,7 @@
 @if ($resolvedTag === 'a')
     <a
         {{ $attributes->class([
-            'btn-base',
+            'inline-flex items-center justify-center gap-2 font-medium transition-all duration-150',
             $variantClasses,
             $sizeClasses,
             ...$stateClasses,
@@ -79,15 +85,18 @@
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2" />
                 <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
             </svg>
-            <span>{{ $loadingText }}</span>
+            <span>{{ $loadingText ?? $slot }}</span>
         @else
+            @if ($icon)
+                <span class="shrink-0" aria-hidden="true">{!! $icon !!}</span>
+            @endif
             {{ $slot }}
         @endif
     </a>
 @else
     <button
         {{ $attributes->class([
-            'btn-base',
+            'inline-flex items-center justify-center gap-2 font-medium transition-all duration-150',
             $variantClasses,
             $sizeClasses,
             ...$stateClasses,
@@ -104,8 +113,11 @@
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity=".2" />
                 <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
             </svg>
-            <span>{{ $loadingText }}</span>
+            <span>{{ $loadingText ?? $slot }}</span>
         @else
+            @if ($icon)
+                <span class="shrink-0" aria-hidden="true">{!! $icon !!}</span>
+            @endif
             {{ $slot }}
         @endif
     </button>

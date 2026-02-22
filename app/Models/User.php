@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -379,11 +380,11 @@ class User extends Authenticatable implements HasMedia
 
         $asUserOne = (int) Conversation::query()
             ->where('user_one_id', $userId)
-            ->sum('unread_count_user_one');
+            ->sum('user_one_unread_count');
 
         $asUserTwo = (int) Conversation::query()
             ->where('user_two_id', $userId)
-            ->sum('unread_count_user_two');
+            ->sum('user_two_unread_count');
 
         return $asUserOne + $asUserTwo;
     }
@@ -428,12 +429,12 @@ class User extends Authenticatable implements HasMedia
                     ->where(function (Builder $asUserOne) use ($userId): void {
                         $asUserOne
                             ->where('user_one_id', $userId)
-                            ->where('unread_count_user_one', '>', 0);
+                            ->where('user_one_unread_count', '>', 0);
                     })
                     ->orWhere(function (Builder $asUserTwo) use ($userId): void {
                         $asUserTwo
                             ->where('user_two_id', $userId)
-                            ->where('unread_count_user_two', '>', 0);
+                            ->where('user_two_unread_count', '>', 0);
                     });
             })
             ->count();

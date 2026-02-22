@@ -212,7 +212,7 @@
                                         <p class="text-xs shell-text-muted">{{ $pending->user?->username ? '@'.$pending->user->username : 'Pending member' }}</p>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <form method="POST" action="{{ route('groups.members.approve', ['group' => $groupRouteKey, 'membership' => $pending->id]) }}">
+                                        <form method="POST" action="{{ route('groups.requests.approve', ['group' => $groupRouteKey, 'membership' => $pending->id]) }}">
                                             @csrf
                                             <button type="submit" class="btn-base btn-primary px-3 py-1.5 text-xs">Approve</button>
                                         </form>

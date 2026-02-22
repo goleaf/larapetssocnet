@@ -87,7 +87,7 @@ class GroupMembershipFlowTest extends TestCase
         $this->assertSame('pending', $pending->status);
 
         $this->actingAs($admin)
-            ->post(route('groups.members.approve', ['group' => $group->slug, 'membership' => $pending->id]))
+            ->post(route('groups.requests.approve', ['group' => $group->slug, 'membership' => $pending->id]))
             ->assertRedirect();
 
         $this->assertDatabaseHas('group_members', [
@@ -156,9 +156,7 @@ class GroupMembershipFlowTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->patch(route('groups.members.role', ['group' => $group->slug, 'membership' => $membership->id]), [
-                'role' => 'moderator',
-            ])
+            ->post(route('groups.members.promote', ['group' => $group->slug, 'membership' => $membership->id]))
             ->assertRedirect();
 
         $this->assertDatabaseHas('group_members', [
@@ -167,13 +165,16 @@ class GroupMembershipFlowTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->patch(route('groups.members.ban', ['group' => $group->slug, 'membership' => $membership->id]))
+            ->post(route('groups.bans.store', ['group' => $group->slug]), [
+                'user_id' => $member->id,
+                'reason' => 'Test ban',
+            ])
             ->assertRedirect();
 
         $this->assertDatabaseHas('group_members', [
-            'id' => $membership->id,
+            'group_id' => $group->id,
+            'user_id' => $member->id,
             'status' => 'banned',
-            'role' => 'member',
         ]);
     }
 }

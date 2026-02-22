@@ -95,7 +95,7 @@
                 @click="
                     const previous = saved;
                     saved = !saved;
-                    fetch('{{ route('posts.save.toggle', $post) }}', {
+                    fetch('{{ route('posts.save', $post) }}', {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',

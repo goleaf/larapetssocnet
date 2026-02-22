@@ -14,7 +14,7 @@ it('saves and unsaves a post by toggling saved state', function (): void {
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('posts.save.toggle', $post))
+        ->postJson(route('posts.save', $post))
         ->assertOk()
         ->assertJsonPath('saved', true);
 
@@ -24,7 +24,7 @@ it('saves and unsaves a post by toggling saved state', function (): void {
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('posts.save.toggle', $post))
+        ->postJson(route('posts.save', $post))
         ->assertOk()
         ->assertJsonPath('saved', false);
 

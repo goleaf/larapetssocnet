@@ -10,9 +10,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -61,16 +59,8 @@ class MessageController extends Controller
 
         $messagesQuery = Message::query()
             ->between($viewer, $peer)
-            ->with([
-                'sender:id,name,username,avatar_path',
-                'recipient:id,name,username,avatar_path',
-                'listing:id,title,user_id',
-            ])
+            ->with('sender:id,name,username,avatar_path')
             ->orderByDesc('id');
-
-        if ($this->hasListingColumn() && $activeListing) {
-            $messagesQuery->where('marketplace_listing_id', $activeListing->getKey());
-        }
 
         $messages = $messagesQuery
             ->paginate(20)
@@ -88,26 +78,12 @@ class MessageController extends Controller
 
     public function store(Request $request, User $peer): JsonResponse|RedirectResponse
     {
-        $rules = [
+        $validated = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
-        ];
+        ]);
 
-        if ($this->hasListingColumn()) {
-            $rules['marketplace_listing_id'] = [
-                'nullable',
-                'integer',
-                Rule::exists('marketplace_listings', 'id')->where(fn ($query) => $query->where('user_id', $peer->getKey())),
-            ];
-        }
-
-        $validated = $request->validate($rules);
         $viewer = $request->user();
-
-        $listing = null;
-
-        if ($this->hasListingColumn() && ! empty($validated['marketplace_listing_id'])) {
-            $listing = MarketplaceListing::query()->find((int) $validated['marketplace_listing_id']);
-        }
+        $listing = $this->resolveListingContext($request, $peer);
 
         try {
             $message = $this->conversations->sendMessage(
@@ -126,16 +102,14 @@ class MessageController extends Controller
                 'data' => [
                     'id' => $message->getKey(),
                     'body' => $message->body,
-                    'sent_at' => optional($message->sent_at)->toIso8601String(),
-                    'sender_id' => $message->sender_user_id,
-                    'recipient_id' => $message->recipient_user_id,
-                    'marketplace_listing_id' => $message->marketplace_listing_id,
+                    'sent_at' => optional($message->created_at)->toIso8601String(),
+                    'sender_id' => $message->sender_id,
                 ],
             ], 201);
         }
 
         return redirect()
-            ->route('messages.show', [
+            ->route('messages.conversation', [
                 'peer' => $peer,
                 'listing' => $listing?->getKey(),
             ])
@@ -187,7 +161,7 @@ class MessageController extends Controller
             return $this->validationFailure($request, $exception, 422);
         }
 
-        $conversationUrl = route('messages.show', [
+        $conversationUrl = route('messages.conversation', [
             'peer' => $peer,
             'listing' => $listing?->getKey(),
         ]);
@@ -246,26 +220,12 @@ class MessageController extends Controller
 
     public function poll(Request $request, User $peer): JsonResponse
     {
-        $rules = [
+        $validated = $request->validate([
             'since_id' => ['nullable', 'integer', 'min:1'],
-        ];
+        ]);
 
-        if ($this->hasListingColumn()) {
-            $rules['listing_id'] = [
-                'nullable',
-                'integer',
-                Rule::exists('marketplace_listings', 'id')->where(fn ($query) => $query->where('user_id', $peer->getKey())),
-            ];
-        }
-
-        $validated = $request->validate($rules);
         $viewer = $request->user();
-
-        $listing = null;
-
-        if ($this->hasListingColumn() && ! empty($validated['listing_id'])) {
-            $listing = MarketplaceListing::query()->find((int) $validated['listing_id']);
-        }
+        $listing = $this->resolveListingContext($request, $peer);
 
         try {
             $this->conversations->findOrCreate($viewer, $peer, $listing);
@@ -292,11 +252,8 @@ class MessageController extends Controller
             ->map(function (Message $message): array {
                 return [
                     'id' => (int) $message->getKey(),
-                    'sender_user_id' => (int) $message->sender_user_id,
-                    'recipient_user_id' => (int) $message->recipient_user_id,
-                    'marketplace_listing_id' => $this->hasListingColumn() ? $message->marketplace_listing_id : null,
+                    'sender_id' => (int) $message->sender_id,
                     'body' => $message->deleted_at ? null : (string) $message->body,
-                    'sent_at' => optional($message->sent_at)->toIso8601String(),
                     'read_at' => optional($message->read_at)->toIso8601String(),
                     'created_at' => optional($message->created_at)->toIso8601String(),
                     'updated_at' => optional($message->updated_at)->toIso8601String(),
@@ -319,10 +276,6 @@ class MessageController extends Controller
 
     private function resolveListingContext(Request $request, User $peer): ?MarketplaceListing
     {
-        if (! $this->hasListingColumn()) {
-            return null;
-        }
-
         $listingId = (int) ($request->input('listing_id') ?: $request->input('listing'));
 
         if ($listingId <= 0) {
@@ -352,10 +305,5 @@ class MessageController extends Controller
         }
 
         return redirect()->back()->withErrors($exception->errors())->withInput();
-    }
-
-    private function hasListingColumn(): bool
-    {
-        return Schema::hasColumn('messages', 'marketplace_listing_id');
     }
 }
