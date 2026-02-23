@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contest;
+use App\Models\ContestEntry;
+use App\Models\Event;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\VisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PublicProfileController extends Controller
@@ -36,14 +40,14 @@ class PublicProfileController extends Controller
             abort(404);
         }
 
-        $allowedTabs = ['posts', 'pets', 'photos', 'likes'];
+        $allowedTabs = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests'];
         $tab = in_array($request->string('tab')->toString(), $allowedTabs, true)
             ? $request->string('tab')->toString()
             : 'posts';
 
         $canViewContent = $user->canViewPosts($viewer);
 
-        $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets']);
+        $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets', 'posts']);
 
         if (! $canViewContent && (bool) $user->is_private) {
             return view('profile.private', [
@@ -113,6 +117,81 @@ class PublicProfileController extends Controller
                 ->count();
         }
 
+        // Badges — always load (up to 8 most recent)
+        $badges = $canViewContent
+            ? $user->badges()->limit(8)->get()
+            : collect();
+
+        // Groups tab data
+        $groups = $tab === 'groups' && $canViewContent
+            ? $user->groups()->withCount('members')->get()
+            : collect();
+
+        // Events tab data — split into upcoming and past
+        // Uses Event::query with whereHas to avoid pivot column compatibility issues
+        $upcomingEvents = collect();
+        $pastEvents = collect();
+        if ($tab === 'events' && $canViewContent) {
+            $eventQuery = fn () => Event::query()
+                ->whereHas('attendees', fn ($q) => $q->where('user_id', $user->id)->whereIn('status', ['going', 'interested']))
+                ->with('creator');
+
+            $upcomingEvents = $eventQuery()->upcoming()->limit(20)->get();
+            $pastEvents = $eventQuery()->past()->limit(5)->get();
+        }
+
+        // Contests tab data — entries + organized
+        $contestEntries = collect();
+        $organizedContests = collect();
+        if ($tab === 'contests' && $canViewContent) {
+            $contestEntries = ContestEntry::query()
+                ->where('user_id', $user->id)
+                ->with('contest')
+                ->latest()
+                ->get();
+
+            $organizedContests = Contest::query()
+                ->where('organizer_user_id', $user->id)
+                ->visible()
+                ->latest()
+                ->get();
+        }
+
+        // Mutual connections (visitor only)
+        $mutualConnections = collect();
+        $isOwner = $viewer && $viewer->is($user);
+        if ($viewer && ! $isOwner && $canViewContent) {
+            $mutualConnections = $viewer->getMutualFollowers($user);
+        }
+
+        // Common groups (visitor only)
+        $commonGroups = collect();
+        if ($viewer && ! $isOwner && $canViewContent) {
+            $viewerGroupIds = $viewer->groups()->pluck('groups.id');
+            $commonGroups = $user->groups()
+                ->whereIn('groups.id', $viewerGroupIds)
+                ->withCount('members')
+                ->limit(5)
+                ->get();
+        }
+
+        // Activity chart — posts per month for last 6 months
+        $activityData = $canViewContent
+            ? DB::table('posts')
+                ->selectRaw("strftime('%Y-%m', created_at) as month, count(*) as count")
+                ->where('user_id', $user->id)
+                ->where('created_at', '>=', now()->subMonths(6))
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get()
+                ->map(fn ($row) => [
+                    'month' => \Carbon\Carbon::createFromFormat('Y-m', $row->month)->format('M'),
+                    'count' => (int) $row->count,
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return view('profile.show', [
             'profileUser' => $user,
             'tab' => $tab,
@@ -126,6 +205,15 @@ class PublicProfileController extends Controller
             'privatePosts' => $privatePosts,
             'privateCount' => $privateCount,
             'likes' => collect(),
+            'badges' => $badges,
+            'groups' => $groups,
+            'upcomingEvents' => $upcomingEvents,
+            'pastEvents' => $pastEvents,
+            'contestEntries' => $contestEntries,
+            'organizedContests' => $organizedContests,
+            'mutualConnections' => $mutualConnections,
+            'commonGroups' => $commonGroups,
+            'activityData' => $activityData,
             'isFollowing' => $viewer ? $viewer->isFollowing($user) : false,
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
         ]);
