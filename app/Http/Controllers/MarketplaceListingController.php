@@ -79,7 +79,7 @@ class MarketplaceListingController extends Controller
             'pet:id,name,species,avatar_path',
         ]);
 
-        if (! $listing->isActive() && (! $viewer || (int) $viewer->getKey() !== (int) $listing->user_id)) {
+        if (!$listing->isActive() && (!$viewer || (int) $viewer->getKey() !== (int) $listing->user_id)) {
             abort(404);
         }
 
@@ -241,15 +241,19 @@ class MarketplaceListingController extends Controller
             'pet_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('pets', 'id')->where(fn ($query) => $query->where('user_id', $viewer->getKey())),
+                Rule::exists('pets', 'id')->where(fn($query) => $query->where('user_id', $viewer->getKey())),
             ],
             'listing_type' => ['required', 'string', 'max:32'],
-            'status' => ['required', 'string', Rule::in([
-                MarketplaceListing::STATUS_DRAFT,
-                MarketplaceListing::STATUS_ACTIVE,
-                MarketplaceListing::STATUS_SOLD,
-                MarketplaceListing::STATUS_ARCHIVED,
-            ])],
+            'status' => [
+                'required',
+                'string',
+                Rule::in([
+                    MarketplaceListing::STATUS_DRAFT,
+                    MarketplaceListing::STATUS_ACTIVE,
+                    MarketplaceListing::STATUS_SOLD,
+                    MarketplaceListing::STATUS_ARCHIVED,
+                ])
+            ],
             'price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'currency' => ['nullable', 'string', 'size:3'],
             'location_text' => ['nullable', 'string', 'max:255'],
@@ -299,7 +303,7 @@ class MarketplaceListingController extends Controller
             return 'Messaging is unavailable because one user has blocked the other.';
         }
 
-        if ((bool) $recipient->is_private && ! $this->isFollowing($sender, $recipient)) {
+        if ((bool) $recipient->is_private && !$this->isFollowing($sender, $recipient)) {
             return 'This profile is private. Follow the user before sending a message.';
         }
 
@@ -308,7 +312,7 @@ class MarketplaceListingController extends Controller
 
     private function isBlockedBetween(User $first, User $second): bool
     {
-        return $first->hasAnyBlockRelationshipWith($second);
+        return $first->hasBlockingRelationshipWith($second);
     }
 
     private function isFollowing(User $follower, User $followed): bool

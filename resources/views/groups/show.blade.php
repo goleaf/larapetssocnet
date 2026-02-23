@@ -160,8 +160,8 @@
             :variant="$activeTab === 'events' ? 'primary' : 'ghost'" size="sm">Events</x-ui.button>
     </nav>
 
-    <div class="mt-4 flex flex-col gap-5 max-w-4xl mx-auto">
-        <section class="space-y-4">
+    <div class="mt-4 grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)] max-w-6xl mx-auto">
+        <section class="space-y-4 lg:col-start-2 lg:row-start-1">
             @if (session('status'))
                 <x-ui.alert type="success">{{ session('status') }}</x-ui.alert>
             @endif
@@ -181,7 +181,8 @@
                         <div>
                             <h3 class="text-base font-semibold" style="color: var(--ui-text);">Rules</h3>
                             <p class="mt-2 whitespace-pre-line text-sm shell-text-muted">
-                                {{ $group->rules ?: 'No published rules yet.' }}</p>
+                                {{ $group->rules ?: 'No published rules yet.' }}
+                            </p>
                         </div>
                     </div>
                 </x-ui.card>
@@ -361,7 +362,7 @@
             @endif
         </section>
 
-        <aside class="space-y-4">
+        <aside class="space-y-4 lg:col-start-1 lg:row-start-1 lg:sticky lg:top-24 lg:self-start">
             <x-ui.card>
                 <x-slot name="header">
                     <x-ui.card-header title="Group Snapshot" />

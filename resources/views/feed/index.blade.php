@@ -52,8 +52,8 @@
         </div>
     </x-slot>
 
-    <div class="mt-4 flex flex-col gap-5 max-w-4xl mx-auto">
-        <div class="space-y-4">
+    <div class="mt-4 grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] max-w-6xl mx-auto">
+        <div class="space-y-4 lg:col-start-2 lg:row-start-1">
             <x-ui.card class="border">
                 <x-slot name="header">
                     <x-ui.card-header title="Create a post" subtitle="Share something about your pet today.">
@@ -140,7 +140,7 @@
             @endif
         </div>
 
-        <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
+        <aside class="space-y-4 lg:col-start-1 lg:row-start-1 lg:sticky lg:top-24 lg:self-start">
             <x-ui.card class="border">
                 <x-slot name="header">
                     <x-ui.card-header title="Your Groups" subtitle="Communities you are active in">

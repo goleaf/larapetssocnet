@@ -26,7 +26,7 @@
         </x-ui.page-header>
     </x-slot>
 
-    <div class="space-y-5 max-w-4xl mx-auto">
+    <div class="space-y-5 max-w-5xl mx-auto">
         <x-ui.card>
             <form method="GET" action="{{ route('groups.index') }}" class="grid gap-3 md:grid-cols-12">
                 <x-ui.input class="md:col-span-5" name="q" label="Search" :value="$search"

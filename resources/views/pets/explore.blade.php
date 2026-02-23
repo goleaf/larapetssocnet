@@ -47,7 +47,7 @@
         </x-ui.page-header>
     </x-slot>
 
-    <div class="space-y-5 max-w-4xl mx-auto">
+    <div class="space-y-5 max-w-5xl mx-auto">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <x-ui.stat label="Total Results" :value="number_format($totalCount)" icon="🐾" />
             <x-ui.stat label="Adoptable in Results" :value="number_format($adoptionCount)" icon="🏡" />

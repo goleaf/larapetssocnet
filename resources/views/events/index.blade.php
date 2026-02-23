@@ -71,7 +71,7 @@
         @else
             <p class="text-sm text-fur">{{ number_format($events->total()) }} events found</p>
 
-            <div class="mt-4 flex flex-col gap-4 max-w-4xl mx-auto">
+            <div class="mt-4 flex flex-col gap-4 max-w-5xl mx-auto">
                 @foreach ($events as $event)
                     @php
                         $startAt = data_get($event, $startColumn) ?? $event->start_at ?? $event->starts_at;

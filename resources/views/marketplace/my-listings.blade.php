@@ -71,7 +71,7 @@
                     You do not have listings yet.
                 </div>
             @else
-                <div class="mt-4 flex flex-col gap-4 max-w-4xl mx-auto">
+                <div class="mt-4 flex flex-col gap-4 max-w-5xl mx-auto">
                     @foreach ($listings as $listing)
                         <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                             @if ($listing->cover_photo_url)

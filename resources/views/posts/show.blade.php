@@ -1,11 +1,11 @@
 <x-app-layout>
-    <div class="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto py-8">
         <x-post-card :post="$post" />
 
         @php
             $taggedPets = collect($post->tagged_pets ?? [])
                 ->filter()
-                ->whenNotEmpty(fn ($ids) => auth()->user()?->pets()->whereIn('id', $ids)->get(), fn () => collect());
+                ->whenNotEmpty(fn($ids) => auth()->user()?->pets()->whereIn('id', $ids)->get(), fn() => collect());
         @endphp
 
         @if ($taggedPets->isNotEmpty())
@@ -13,7 +13,8 @@
                 <h3 class="mb-2 text-sm font-semibold text-gray-800">Tagged Pets</h3>
                 <div class="flex flex-wrap gap-2">
                     @foreach ($taggedPets as $pet)
-                        <a href="{{ route('pets.show', $pet->slug ?? $pet->getKey()) }}" class="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-700 hover:bg-emerald-100">
+                        <a href="{{ route('pets.show', $pet->slug ?? $pet->getKey()) }}"
+                            class="rounded-full bg-emerald-50 px-3 py-1 text-sm text-emerald-700 hover:bg-emerald-100">
                             {{ $pet->name }}
                         </a>
                     @endforeach
@@ -22,8 +23,10 @@
         @endif
 
         <!-- Comments Section -->
-        <div class="mt-8 bg-white rounded-lg shadow p-6" id="comments">
-            <h3 class="text-lg font-medium text-gray-900 mb-6">Comments ({{ $post->comments_count }})</h3>
+        <x-ui.card class="mt-8 border" id="comments">
+            <x-slot name="header">
+                <x-ui.card-header title="Comments ({{ $post->comments_count }})" />
+            </x-slot>
 
             @auth
                 <!-- Add Top-Level Comment Form -->
@@ -62,6 +65,6 @@
                     @endforeach
                 </div>
             @endif
-        </div>
+        </x-ui.card>
     </div>
 </x-app-layout>
