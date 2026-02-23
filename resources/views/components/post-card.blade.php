@@ -86,7 +86,7 @@
         <x-reaction-bar :post="$post" :currentReaction="$currentReaction" />
 
         <div class="flex items-center gap-2 text-sm">
-            <a href="{{ route('posts.show', $post) }}#comments" class="rounded-md px-2 py-1 text-gray-600 hover:bg-gray-100">💬 {{ $post->comments_count }}</a>
+            <a href="{{ route('posts.show', $post) }}#comments" class="rounded-md px-2 py-1 text-gray-600 hover:bg-gray-100">💬 {{ $post->comments_count ?? 0 }} {{ $post->comments_count === 1 ? 'Comment' : 'Comments' }}</a>
 
             <button
                 type="button"

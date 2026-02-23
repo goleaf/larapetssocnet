@@ -72,7 +72,6 @@
         liked: {{ $isLiked ? 'true' : 'false' }},
         likes: {{ $likeCount }},
         likeBusy: false,
-        commentsOpen: false,
         async toggleLike() {
             if (this.likeBusy) {
                 return;
@@ -256,13 +255,13 @@
                 <span class="opacity-80" x-text="likes"></span>
             </button>
 
-            <button type="button" @click="commentsOpen = !commentsOpen" data-testid="comments-toggle"
+            <a href="{{ route('posts.show', $post) }}#comments" data-testid="comments-toggle"
                 class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[color:var(--ui-surface-muted)]"
                 style="border-color: var(--ui-border); color: var(--ui-text);">
                 <span>💬</span>
                 <span>Comments</span>
                 <span class="opacity-80">({{ (int) ($post->comments_count ?? $comments->count()) }})</span>
-            </button>
+            </a>
 
             <button type="button"
                 class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[color:var(--ui-surface-muted)]"
@@ -276,56 +275,6 @@
                 ">
                 <span x-text="copied ? 'Copied' : 'Share'"></span>
             </button>
-        </div>
-
-        <div x-show="commentsOpen" x-transition.opacity class="mt-3 space-y-3" style="display: none;">
-            <div class="space-y-2">
-                @forelse ($comments as $comment)
-                    <div class="rounded-xl border p-3"
-                        style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-surface-muted) 72%, white 28%);">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold" style="color: var(--ui-text);">
-                                    {{ $comment->user?->name ?? 'Unknown user' }}
-                                    <span class="font-normal shell-text-muted">
-                                        @if ($comment->created_at)
-                                            · {{ $comment->created_at->diffForHumans() }}
-                                        @endif
-                                    </span>
-                                </p>
-                                <p class="mt-1 text-sm break-words" style="color: var(--ui-text);">{{ $comment->body }}</p>
-                            </div>
-
-                            @if (auth()->id() === $comment->user_id)
-                                <form action="{{ route('comments.destroy', $comment) }}" method="POST"
-                                    onsubmit="return confirm('Delete this comment?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <x-ui.button type="submit" data-testid="comment-delete" variant="danger"
-                                        size="xs">Delete</x-ui.button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-xs shell-text-muted">No comments yet. Be the first to comment.</p>
-                @endforelse
-            </div>
-
-            @auth
-                <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="space-y-2">
-                    @csrf
-                    <label for="comment-body-{{ $post->id }}" class="sr-only">Add comment</label>
-                    <textarea id="comment-body-{{ $post->id }}" name="body" data-testid="comment-body" rows="2" required
-                        class="form-textarea" placeholder="Add a comment..."></textarea>
-                    <div class="flex justify-end">
-                        <x-ui.button type="submit" data-testid="comment-submit" variant="primary"
-                            size="xs">Comment</x-ui.button>
-                    </div>
-                </form>
-            @else
-                <x-ui.button href="{{ route('login') }}" variant="ghost" size="xs">Log in to comment</x-ui.button>
-            @endauth
         </div>
     </div>
 </x-ui.card>
