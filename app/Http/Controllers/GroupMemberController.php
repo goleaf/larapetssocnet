@@ -11,7 +11,7 @@ class GroupMemberController extends Controller
 {
     public function index(Group $group): RedirectResponse
     {
-        $this->authorize('manageMembers', $group);
+        $this->authorize('view', $group);
 
         return redirect()->route('groups.show', [
             'group' => $group,

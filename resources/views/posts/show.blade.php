@@ -23,48 +23,58 @@
         @endif
 
         <!-- Comments Section -->
-        <x-ui.card class="mt-8 border" id="comments">
+        <x-ui.card class="mt-6 border-0 shadow-sm" id="comments">
             <x-slot name="header">
-                <x-ui.card-header title="Comments ({{ $post->comments_count }})" />
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-bold text-gray-900 text-lg">Comments <span
+                            class="text-gray-500 font-normal text-base ml-1">({{ $post->comments_count }})</span></h3>
+                </div>
             </x-slot>
 
-            @auth
-                <!-- Add Top-Level Comment Form -->
-                <div class="mb-8 flex space-x-3">
-                    <img src="{{ auth()->user()->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
-                        class="w-10 h-10 rounded-full" alt="">
-                    <div class="flex-1">
-                        <form action="{{ route('posts.comments.store', $post) }}" method="POST">
-                            @csrf
-                            <textarea name="body" rows="2"
-                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 resize-none"
-                                placeholder="Add a comment..." required></textarea>
-                            <div class="mt-2 flex justify-end">
+            <div class="p-5">
+                @auth
+                    <!-- Add Top-Level Comment Form -->
+                    <div class="mb-6 flex gap-3 items-start">
+                        <x-ui.avatar :src="auth()->user()->avatar_url" :name="auth()->user()->name" size="sm"
+                            class="mt-1" />
+                        <div class="flex-1">
+                            <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="relative">
+                                @csrf
+                                <textarea name="body" rows="1"
+                                    class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 pr-12 text-sm text-gray-900 placeholder-gray-500 focus:bg-white focus:border-paw focus:ring-1 focus:ring-paw resize-none overflow-hidden"
+                                    placeholder="Write a comment..."
+                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                    required></textarea>
                                 <button type="submit"
-                                    class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-1.5 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                    Post Comment
+                                    class="absolute right-2 bottom-2 p-1.5 text-paw hover:bg-paw-light/30 rounded-full transition-colors disabled:opacity-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                        class="w-5 h-5">
+                                        <path
+                                            d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                                    </svg>
                                 </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            @endauth
+                @endauth
 
-            <!-- Comments List -->
-            @php
-                // Usually done in controller, but for simplicity here we query top-level comments and load replies.
-                $comments = $post->comments()->topLevel()->with(['user', 'replies.user'])->latest()->get();
-            @endphp
+                <!-- Comments List -->
+                @php
+                    $comments = $post->comments()->topLevel()->with(['user', 'replies.user'])->latest()->get();
+                @endphp
 
-            @if($comments->isEmpty())
-                <p class="text-gray-500 text-sm text-center py-4">No comments yet. Be the first to share your thoughts!</p>
-            @else
-                <div class="space-y-4">
-                    @foreach($comments as $comment)
-                        <x-comment-item :comment="$comment" :post="$post" />
-                    @endforeach
-                </div>
-            @endif
+                @if($comments->isEmpty())
+                    <div class="py-8 text-center">
+                        <p class="text-gray-500 text-sm">No comments yet. Be the first to share your thoughts!</p>
+                    </div>
+                @else
+                    <div class="space-y-4">
+                        @foreach($comments as $comment)
+                            <x-comment-item :comment="$comment" :post="$post" />
+                        @endforeach
+                    </div>
+                @endif
+            </div>
         </x-ui.card>
     </div>
 </x-app-layout>

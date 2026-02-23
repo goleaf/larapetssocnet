@@ -1,113 +1,142 @@
 @props(['comment', 'post'])
 
-<div class="py-4 {{ $comment->isReply() ? 'ml-8 md:ml-12 border-l-2 border-gray-100 pl-4 mt-2' : 'border-b border-gray-100 last:border-0' }}"
-    id="comment-{{ $comment->id }}">
-    <div class="flex items-start space-x-3">
-        <img src="{{ $comment->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($comment->user->name) }}"
-            class="w-8 h-8 rounded-full mt-1" alt="">
+<div class="group py-2 {{ $comment->isReply() ? 'ml-11 mt-1' : 'mt-4' }}" id="comment-{{ $comment->id }}">
+    <div class="flex items-start gap-2">
+        <!-- Avatar -->
+        <a href="{{ route('profile.show', $comment->user->username) }}" class="shrink-0 mt-0.5">
+            <x-ui.avatar :src="$comment->user->avatar_url" :name="$comment->user->name" size="sm" />
+        </a>
 
-        <div class="flex-1 min-w-0">
-            <div class="bg-gray-50 rounded-lg px-4 py-3">
-                <div class="flex items-center justify-between">
-                    <span class="font-medium text-sm text-gray-900">{{ $comment->user->name }}</span>
-                    <span class="text-xs text-gray-500">{{ $comment->created_at->diffForHumans() }}</span>
+        <div class="flex-1 min-w-0" x-data="{ showReply: false, editing: false }">
+
+            <!-- Comment Bubble -->
+            <div x-show="!editing">
+                <div class="inline-block bg-gray-100/80 rounded-2xl px-3.5 py-2.5 max-w-full">
+                    <a href="{{ route('profile.show', $comment->user->username) }}"
+                        class="font-bold text-sm text-gray-900 hover:underline">
+                        {{ $comment->user->name }}
+                    </a>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap break-words mt-0.5 leading-snug">
+                        {{ $comment->body }}
+                    </div>
                 </div>
 
-                <div class="mt-1 text-sm text-gray-800 break-words">
-                    {{ $comment->body }}
-                </div>
-            </div>
-
-            <!-- Comment Actions -->
-            <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500"
-                x-data="{ showReply: false, editing: false }">
-
-                <!-- React to Comment -->
-                @auth
-                    <button @click="
-                            fetch('{{ route('comments.react', $comment) }}', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({ type: 'like' })
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                if(data.success) {
-                                    // For simplicity, we just reload to show the new count
-                                    // In a full SPA this would be reactive
-                                    window.location.reload(); 
-                                }
-                            })
-                        " class="font-medium hover:text-indigo-600 transition"
-                        :class="{'text-indigo-600': '{{ $comment->reactions_count > 0 ? 'true' : 'false' }}'}">
-                        Like {{ $comment->reactions_count > 0 ? '(' . $comment->reactions_count . ')' : '' }}
-                    </button>
-                @endauth
-
-                <!-- Reply Toggle -->
-                @auth
-                    @if(!$comment->isReply()) <!-- Only allow 1 level deep -->
-                        <button @click="showReply = !showReply"
-                            class="font-medium hover:text-gray-900 transition">Reply</button>
-                    @endif
-                @endauth
-
-                <!-- Admin / Owner Actions -->
-                @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->user()->hasRole('admin')))
-                    <button @click="editing = !editing" class="hover:text-gray-900 transition">Edit</button>
-                    <form method="POST" action="{{ route('posts.comments.destroy', ['post' => $post, 'comment' => $comment]) }}"
-                        class="inline" onsubmit="return confirm('Delete comment?');">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="hover:text-red-600 transition">Delete</button>
-                    </form>
-                @endif
-
-                <button class="hover:text-gray-900 transition ml-auto">Report</button>
-
-                <!-- Nested Reply Form -->
-                <div x-show="showReply" x-cloak class="mt-3 w-full" style="display: none;">
-                    <form action="{{ route('posts.comments.store', $post) }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="parent_id" value="{{ $comment->id }}">
-                        <textarea name="body" rows="2"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                            placeholder="Write a reply..." required></textarea>
-                        <div class="mt-2 flex justify-end space-x-2">
-                            <button type="button" @click="showReply = false"
-                                class="text-xs bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded px-3 py-1">Cancel</button>
-                            <button type="submit"
-                                class="text-xs bg-indigo-600 text-white hover:bg-indigo-700 rounded px-3 py-1">Reply</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Nested Edit Form -->
-                @if(auth()->check() && auth()->id() === $comment->user_id)
-                    <div x-show="editing" x-cloak class="mt-3 w-full" style="display: none;">
-                        <form action="{{ route('posts.comments.update', ['post' => $post, 'comment' => $comment]) }}"
-                            method="POST">
-                            @csrf @method('PATCH')
-                            <textarea name="body" rows="2"
-                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                required>{{ $comment->body }}</textarea>
-                            <div class="mt-2 flex justify-end space-x-2">
-                                <button type="button" @click="editing = false"
-                                    class="text-xs bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded px-3 py-1">Cancel</button>
-                                <button type="submit"
-                                    class="text-xs bg-indigo-600 text-white hover:bg-indigo-700 rounded px-3 py-1">Save</button>
-                            </div>
-                        </form>
+                @if($comment->reactions_count > 0)
+                    <div
+                        class="inline-flex items-center justify-center bg-white shadow-sm ring-1 ring-gray-900/5 rounded-full px-1.5 py-0.5 -ml-4 -mb-3 z-10 relative">
+                        <span class="text-xs">👍</span>
+                        <span class="text-[0.65rem] font-medium text-gray-500 ml-0.5">{{ $comment->reactions_count }}</span>
                     </div>
                 @endif
             </div>
 
+            <!-- Edit Form -->
+            @if(auth()->check() && auth()->id() === $comment->user_id)
+                <div x-show="editing" x-cloak class="w-full max-w-2xl bg-gray-50 rounded-2xl p-2 border border-gray-200">
+                    <form action="{{ route('posts.comments.update', ['post' => $post, 'comment' => $comment]) }}"
+                        method="POST">
+                        @csrf @method('PATCH')
+                        <textarea name="body" rows="2"
+                            class="w-full bg-transparent border-0 focus:ring-0 p-1 text-sm resize-none"
+                            required>{{ $comment->body }}</textarea>
+                        <div class="mt-2 flex justify-end gap-2 pr-1 pb-1">
+                            <button type="button" @click="editing = false"
+                                class="text-xs font-semibold text-gray-500 hover:text-gray-700">Cancel</button>
+                            <button type="submit"
+                                class="text-xs font-bold text-paw hover:text-paw-dark drop-shadow-sm">Update</button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            <!-- Action Links -->
+            <div x-show="!editing" class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500">
+                @auth
+                    <!-- Like Button -->
+                    <button @click="
+                                    fetch('{{ route('comments.react', $comment) }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({ type: 'like' })
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if(data.success) {
+                                            window.location.reload(); 
+                                        }
+                                    })
+                                " class="hover:underline {{ $comment->reactions_count > 0 ? 'text-paw' : '' }}">
+                        Like
+                    </button>
+
+                    <!-- Reply Button -->
+                    @if(!$comment->isReply())
+                        <button @click="showReply = !showReply; if(showReply) { $nextTick(() => $refs.replyInput.focus()); }"
+                            class="hover:underline">Reply</button>
+                    @endif
+                @endauth
+
+                <!-- Timestamp -->
+                <span class="font-normal text-gray-400 hover:underline cursor-pointer"
+                    title="{{ $comment->created_at->format('M j, Y g:i A') }}">
+                    {{ str_replace([' seconds', ' minutes', ' hours', ' days', ' weeks', ' months', ' years', ' ago'], ['s', 'm', 'h', 'd', 'w', 'mo', 'y', ''], $comment->created_at->diffForHumans()) }}
+                </span>
+
+                <!-- Hover Actions (Edit/Delete/Report) -->
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                    <span class="text-gray-300 font-normal">&middot;</span>
+                    @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->user()->hasRole('admin')))
+                        <button @click="editing = true" class="hover:underline hover:text-gray-800">Edit</button>
+                        <form method="POST"
+                            action="{{ route('posts.comments.destroy', ['post' => $post, 'comment' => $comment]) }}"
+                            class="inline m-0 p-0" onsubmit="return confirm('Delete this comment?');">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="hover:underline hover:text-red-500">Delete</button>
+                        </form>
+                    @endif
+                    @if(auth()->check() && auth()->id() !== $comment->user_id)
+                        <form method="POST"
+                            action="{{ route('comments.report', ['post' => $post, 'comment' => $comment]) }}"
+                            class="inline m-0 p-0" onsubmit="return confirm('Report this comment?');">
+                            @csrf
+                            <input type="hidden" name="reason" value="spam">
+                            <button type="submit" class="hover:underline hover:text-amber-600">Report</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Inline Reply Form -->
+            <div x-show="showReply" x-cloak class="mt-2 w-full max-w-2xl flex items-start gap-2">
+                <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="xs" class="mt-1" />
+                <div class="flex-1">
+                    <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="relative">
+                        @csrf
+                        <input type="hidden" name="parent_id" value="{{ $comment->id }}">
+                        <textarea x-ref="replyInput" name="body" rows="1"
+                            class="w-full py-2 pl-3 pr-10 text-sm bg-gray-100 border-transparent rounded-2xl focus:bg-white focus:border-paw focus:ring-1 focus:ring-paw resize-none overflow-hidden"
+                            placeholder="Write a reply..." required
+                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                            @keydown.escape="showReply = false"></textarea>
+                        <button type="submit"
+                            class="absolute right-2 bottom-1.5 p-1 text-paw hover:bg-paw-light/30 rounded-full transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                class="w-4 h-4">
+                                <path
+                                    d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Children / Replies -->
             @if($comment->replies->count() > 0)
-                <div class="mt-2">
+                <div class="mt-1">
                     @foreach($comment->replies as $reply)
                         <x-comment-item :comment="$reply" :post="$post" />
                     @endforeach
