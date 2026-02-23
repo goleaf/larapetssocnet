@@ -5,34 +5,37 @@
 @endpush
 
 <x-app-layout>
-    <div class="mx-auto max-w-lg px-4 py-12 text-center">
-        <div class="mb-4 flex justify-center">
-            <x-avatar :user="$user" size="2xl" />
-        </div>
+    <div class="mx-auto max-w-3xl space-y-5">
+        <section class="overflow-hidden rounded-2xl border border-whisker/40 bg-warm-white shadow-card">
+            <div class="h-40 w-full bg-gradient-to-r from-paw-light via-cream to-sky-light"></div>
 
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $user->name }}</h1>
-        <p class="mt-1 text-gray-500 dark:text-gray-400">&#64;{{ $user->username }}</p>
+            <div class="px-6 pb-6">
+                <div class="-mt-12 flex items-end gap-4">
+                    <x-ui.avatar :src="$user->avatar_url" :name="$user->name" size="2xl" class="h-24 w-24 border-4 border-warm-white bg-warm-white shadow-xl" />
 
-        <div class="mb-6 mt-8">
-            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                <span class="text-2xl" aria-hidden="true">🔒</span>
+                    <div class="pb-1">
+                        <h1 class="text-2xl font-bold font-display text-bark">{{ $user->name }}</h1>
+                        <p class="text-sm text-fur">&#64;{{ $user->username }}</p>
+                    </div>
+                </div>
             </div>
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">This profile is private</h2>
-            <p class="mx-auto mt-2 max-w-xs text-sm text-gray-500 dark:text-gray-400">
-                This account is private. Follow <strong>&#64;{{ $user->username }}</strong> to see posts, photos, and pet profiles.
-            </p>
-        </div>
+        </section>
 
-        @auth
-            @php
-                $followStatus = auth()->user()->getFollowStatus($user);
-            @endphp
-
-            <x-follow-button :user="$user" :follow-status="$followStatus" size="lg" />
-        @else
-            <a href="{{ route('login') }}" class="inline-block rounded-xl bg-emerald-500 px-8 py-2.5 font-semibold text-white transition-colors hover:bg-emerald-600">
-                Log in to follow
-            </a>
-        @endauth
+        <x-ui.card>
+            <x-ui.empty-state icon="🔒" title="This profile is private" description="Follow &#64;{{ $user->username }} to see posts, photos, and pet profiles.">
+                @auth
+                    @php
+                        $followStatus = auth()->user()->getFollowStatus($user);
+                    @endphp
+                    <x-slot name="action">
+                        <x-follow-button :user="$user" :follow-status="$followStatus" size="lg" />
+                    </x-slot>
+                @else
+                    <x-slot name="action">
+                        <x-ui.button :href="route('login')" variant="primary" size="sm">Log In to Follow</x-ui.button>
+                    </x-slot>
+                @endauth
+            </x-ui.empty-state>
+        </x-ui.card>
     </div>
 </x-app-layout>

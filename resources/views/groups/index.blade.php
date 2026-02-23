@@ -1,47 +1,13 @@
 <x-app-layout>
     @php
-        $selectedSpecies = request()->string('species')->toString();
-        if ($selectedSpecies === '') {
-            $selectedSpecies = 'all_pets';
-        }
-
-        $speciesTabs = [
-            'all_pets' => 'All Pets',
-            'dogs' => 'Dogs',
-            'cats' => 'Cats',
-            'birds' => 'Birds',
-            'small_pets' => 'Small Pets',
-            'reptiles' => 'Reptiles',
-            'aquatic' => 'Aquatic',
-            'mixed' => 'Mixed',
-        ];
-
-        $speciesTabItems = collect($speciesTabs)
-            ->map(static fn(string $label, string $value): array => ['label' => $label, 'value' => $value])
-            ->values()
-            ->all();
-
-        $visibleGroups = $groups->getCollection()->filter(function ($group) use ($selectedSpecies): bool {
-            if ($selectedSpecies === 'all_pets') {
-                return true;
-            }
-
-            $groupSpecies = strtolower(str_replace(['-', ' '], '_', (string) data_get($group, 'species', 'mixed')));
-
-            return $groupSpecies === $selectedSpecies;
-        })->values();
-
         $privacyOptions = [
             ['value' => 'all', 'label' => 'All types'],
             ['value' => 'public', 'label' => 'Public'],
             ['value' => 'private', 'label' => 'Private'],
             ['value' => 'secret', 'label' => 'Secret'],
+            ['value' => 'joined', 'label' => 'Joined'],
+            ['value' => 'owned', 'label' => 'Owned'],
         ];
-
-        if (auth()->check()) {
-            $privacyOptions[] = ['value' => 'joined', 'label' => 'Joined'];
-            $privacyOptions[] = ['value' => 'owned', 'label' => 'Owned'];
-        }
 
         $sortOptions = [
             ['value' => 'latest', 'label' => 'Latest'],
@@ -51,10 +17,10 @@
     @endphp
 
     <x-slot name="header">
-        <x-ui.page-header title="Groups" subtitle="Find Communities">
+        <x-ui.page-header title="Groups" subtitle="Find and join communities for pet lovers.">
             <x-slot name="action">
                 @auth
-                    <x-ui.button href="{{ route('groups.create') }}" variant="primary" size="sm">Create Group</x-ui.button>
+                    <x-ui.button :href="route('groups.create')" variant="primary" size="sm">Create Group</x-ui.button>
                 @endauth
             </x-slot>
         </x-ui.page-header>
@@ -63,14 +29,12 @@
     <div class="space-y-5">
         <x-ui.card>
             <form method="GET" action="{{ route('groups.index') }}" class="grid gap-3 md:grid-cols-12">
-                <input type="hidden" name="species" value="{{ $selectedSpecies }}">
-
                 <x-ui.input
                     class="md:col-span-5"
                     name="q"
                     label="Search"
                     :value="$search"
-                    placeholder="Search groups, interests, breeds..."
+                    placeholder="Search groups"
                 />
 
                 <x-ui.select
@@ -89,60 +53,43 @@
                     :selected="$sort"
                 />
 
-                <div class="flex items-end md:col-span-2">
-                    <x-ui.button type="submit" class="w-full" variant="primary" size="sm">Apply</x-ui.button>
+                <div class="flex items-end md:col-span-1">
+                    <x-ui.button type="submit" variant="primary" size="sm" class="w-full">Apply</x-ui.button>
+                </div>
+
+                <div class="flex items-end md:col-span-1">
+                    <x-ui.button :href="route('groups.index')" variant="ghost" size="sm" class="w-full">Reset</x-ui.button>
                 </div>
             </form>
-
-            <x-ui.divider class="my-5" />
-
-            <x-ui.tabs :tabs="$speciesTabItems" :active="$selectedSpecies" param-name="species" class="mb-0" />
-
-            <x-ui.card class="mt-5" padding="sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Type Legend</p>
-                <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-fur">
-                    <span class="inline-flex items-center gap-1.5">
-                        <x-ui.group-type-badge type="public" />
-                        Anyone can join.
-                    </span>
-                    <span class="inline-flex items-center gap-1.5">
-                        <x-ui.group-type-badge type="private" />
-                        Requires approval.
-                    </span>
-                    <span class="inline-flex items-center gap-1.5">
-                        <x-ui.group-type-badge type="secret" />
-                        Invite-only.
-                    </span>
-                </div>
-            </x-ui.card>
         </x-ui.card>
 
-        <section>
-            @if ($visibleGroups->isEmpty())
+        @if ($groups->isEmpty())
+            <x-ui.card>
                 <x-ui.empty-state
+                    icon="👥"
                     title="No Groups Found"
-                    description="Try a different species tab or search term."
+                    description="Try a different search or filter option."
                 />
-            @else
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    @foreach ($visibleGroups as $group)
-                        @php
-                            $ownerId = $group->owner_user_id ?? $group->owner_id;
-                            $owner = $owners->get($ownerId);
-                            $membership = $membershipByGroup->get($group->id);
-                        @endphp
+            </x-ui.card>
+        @else
+            <p class="text-sm text-fur">{{ number_format($groups->total()) }} groups found</p>
 
-                        @include('partials.group-card', [
-                            'group' => $group,
-                            'owner' => $owner,
-                            'membership' => $membership,
-                        ])
-                    @endforeach
-                </div>
-            @endif
-        </section>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                @foreach ($groups as $group)
+                    @php
+                        $ownerId = $group->owner_user_id ?? $group->owner_id;
+                        $owner = $owners->get($ownerId);
+                        $membership = $membershipByGroup->get($group->id);
+                    @endphp
 
-        @if ($groups->hasPages())
+                    @include('partials.group-card', [
+                        'group' => $group,
+                        'owner' => $owner,
+                        'membership' => $membership,
+                    ])
+                @endforeach
+            </div>
+
             <x-ui.card>
                 <x-ui.pagination :paginator="$groups" />
             </x-ui.card>

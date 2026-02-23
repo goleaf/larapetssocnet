@@ -1,104 +1,150 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800 leading-tight">Marketplace</h2>
-                <p class="mt-1 text-sm text-gray-600">Browse listings, filter results, and contact sellers directly.</p>
-            </div>
+    @php
+        $listingType = (string) request('listing_type', '');
 
-            @auth
-                <div class="flex items-center gap-2">
-                    <a href="{{ route('messages.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Messages</a>
-                    <a href="{{ route('marketplace.my-listings') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">My Listings</a>
-                    <a href="{{ route('marketplace.create') }}" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create Listing</a>
-                </div>
-            @endauth
-        </div>
+        $typeOptions = collect($typeOptions)
+            ->map(static fn ($type): array => [
+                'value' => $type,
+                'label' => \Illuminate\Support\Str::headline((string) $type),
+            ])
+            ->prepend([
+                'value' => '',
+                'label' => 'All types',
+            ])
+            ->values()
+            ->all();
+
+        $statusOptions = [
+            ['value' => \App\Models\MarketplaceListing::STATUS_ACTIVE, 'label' => 'Active'],
+            ['value' => \App\Models\MarketplaceListing::STATUS_SOLD, 'label' => 'Sold'],
+        ];
+
+        $sortOptions = [
+            ['value' => 'newest', 'label' => 'Newest'],
+            ['value' => 'oldest', 'label' => 'Oldest'],
+            ['value' => 'price_low', 'label' => 'Price: Low to High'],
+            ['value' => 'price_high', 'label' => 'Price: High to Low'],
+            ['value' => 'most_viewed', 'label' => 'Most Viewed'],
+        ];
+    @endphp
+
+    <x-slot name="header">
+        <x-ui.page-header title="Marketplace" subtitle="Browse listings and contact sellers directly.">
+            <x-slot name="action">
+                @auth
+                    <div class="flex flex-wrap items-center gap-2">
+                        <x-ui.button :href="route('messages.index')" variant="outline" size="sm">Messages</x-ui.button>
+                        <x-ui.button :href="route('marketplace.my-listings')" variant="outline" size="sm">My Listings</x-ui.button>
+                        <x-ui.button :href="route('marketplace.create')" variant="primary" size="sm">Create Listing</x-ui.button>
+                    </div>
+                @endauth
+            </x-slot>
+        </x-ui.page-header>
     </x-slot>
 
-    <div class="py-6">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-            <form method="GET" action="{{ route('marketplace.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-6">
-                <div class="md:col-span-2">
-                    <label for="q" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Search</label>
-                    <input id="q" name="q" type="text" value="{{ request('q') }}" placeholder="Title, description, location"
-                        class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+    <div class="space-y-5">
+        <x-ui.card>
+            <form method="GET" action="{{ route('marketplace.index') }}" class="grid gap-3 md:grid-cols-12">
+                <x-ui.input
+                    class="md:col-span-4"
+                    name="q"
+                    label="Search"
+                    :value="request('q')"
+                    placeholder="Title, description, location"
+                />
+
+                <x-ui.select
+                    class="md:col-span-2"
+                    name="listing_type"
+                    label="Type"
+                    :options="$typeOptions"
+                    :selected="$listingType"
+                />
+
+                <x-ui.select
+                    class="md:col-span-2"
+                    name="status"
+                    label="Status"
+                    :options="$statusOptions"
+                    :selected="$status"
+                />
+
+                <x-ui.select
+                    class="md:col-span-2"
+                    name="sort"
+                    label="Sort"
+                    :options="$sortOptions"
+                    :selected="$sort"
+                />
+
+                <x-ui.input
+                    class="md:col-span-2"
+                    name="location"
+                    label="Location"
+                    :value="request('location')"
+                />
+
+                <x-ui.input
+                    class="md:col-span-2"
+                    name="min_price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    label="Min Price"
+                    :value="request('min_price')"
+                />
+
+                <x-ui.input
+                    class="md:col-span-2"
+                    name="max_price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    label="Max Price"
+                    :value="request('max_price')"
+                />
+
+                <div class="md:col-span-8"></div>
+
+                <div class="flex items-end md:col-span-2">
+                    <x-ui.button type="submit" variant="primary" size="sm" class="w-full">Apply Filters</x-ui.button>
                 </div>
 
-                <div>
-                    <label for="listing_type" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Type</label>
-                    <select id="listing_type" name="listing_type" class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">All</option>
-                        @foreach ($typeOptions as $type)
-                            <option value="{{ $type }}" @selected(request('listing_type') === $type)>{{ ucfirst($type) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label for="status" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Status</label>
-                    <select id="status" name="status" class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="{{ \App\Models\MarketplaceListing::STATUS_ACTIVE }}" @selected($status === \App\Models\MarketplaceListing::STATUS_ACTIVE)>Active</option>
-                        <option value="{{ \App\Models\MarketplaceListing::STATUS_SOLD }}" @selected($status === \App\Models\MarketplaceListing::STATUS_SOLD)>Sold</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="sort" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
-                    <select id="sort" name="sort" class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="newest" @selected($sort === 'newest')>Newest</option>
-                        <option value="oldest" @selected($sort === 'oldest')>Oldest</option>
-                        <option value="price_low" @selected($sort === 'price_low')>Price: Low to High</option>
-                        <option value="price_high" @selected($sort === 'price_high')>Price: High to Low</option>
-                        <option value="most_viewed" @selected($sort === 'most_viewed')>Most Viewed</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="location" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Location</label>
-                    <input id="location" name="location" type="text" value="{{ request('location') }}" class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label for="min_price" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Min Price</label>
-                    <input id="min_price" name="min_price" type="number" min="0" step="0.01" value="{{ request('min_price') }}" class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label for="max_price" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Max Price</label>
-                    <input id="max_price" name="max_price" type="number" min="0" step="0.01" value="{{ request('max_price') }}" class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-
-                <div class="md:col-span-6 flex justify-end gap-2">
-                    <a href="{{ route('marketplace.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Reset</a>
-                    <button type="submit" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Apply Filters</button>
+                <div class="flex items-end md:col-span-2">
+                    <x-ui.button :href="route('marketplace.index')" variant="ghost" size="sm" class="w-full">Reset</x-ui.button>
                 </div>
             </form>
+        </x-ui.card>
 
-            @if ($listings->isEmpty())
-                <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">
-                    No listings found for the selected filters.
-                </div>
-            @else
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    @foreach ($listings as $listing)
-                        <x-marketplace-card
-                            :title="$listing->title"
-                            :price="$listing->formatted_price ?: 'Price on request'"
-                            :condition="ucfirst($listing->listing_type ?: 'Listing')"
-                            :location="$listing->location_text ?: 'Location not provided'"
-                            :seller="$listing->seller?->name ?: 'Unknown seller'"
-                            :image="$listing->cover_photo_url ?: null"
-                            cta-label="View Listing"
-                            :cta-href="route('marketplace.show', $listing)"
-                        />
-                    @endforeach
-                </div>
+        @if ($listings->isEmpty())
+            <x-ui.card>
+                <x-ui.empty-state
+                    icon="🛍️"
+                    title="No Listings Found"
+                    description="Try adjusting your filters to see more results."
+                />
+            </x-ui.card>
+        @else
+            <p class="text-sm text-fur">{{ number_format($listings->total()) }} listings found</p>
 
-                <div>
-                    {{ $listings->links() }}
-                </div>
-            @endif
-        </div>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                @foreach ($listings as $listing)
+                    <x-marketplace-card
+                        :title="$listing->title"
+                        :price="$listing->formatted_price ?: 'Price on request'"
+                        :condition="ucfirst($listing->listing_type ?: 'Listing')"
+                        :location="$listing->location_text ?: 'Location not provided'"
+                        :seller="$listing->seller?->name ?: 'Unknown seller'"
+                        :image="$listing->cover_photo_url ?: null"
+                        cta-label="View Listing"
+                        :cta-href="route('marketplace.show', $listing)"
+                    />
+                @endforeach
+            </div>
+
+            <x-ui.card>
+                <x-ui.pagination :paginator="$listings" />
+            </x-ui.card>
+        @endif
     </div>
 </x-app-layout>

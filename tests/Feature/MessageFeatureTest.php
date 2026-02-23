@@ -39,7 +39,7 @@ class MessageFeatureTest extends TestCase
         $this->actingAs($viewer)
             ->get(route('messages.index'))
             ->assertOk()
-            ->assertSee('Inbox')
+            ->assertSee('Messages')
             ->assertSee('Coco Owner')
             ->assertSee('@cocoowner')
             ->assertSee('hello from coco');

@@ -55,10 +55,29 @@ class PublicProfileController extends Controller
             ? $user->pets()->latest()->get()
             : collect();
 
+        $featuredPets = $canViewContent
+            ? $user->pets()->latest()->limit(9)->get()
+            : collect();
+
         $photos = $tab === 'photos' && $canViewContent
             ? collect($user->getMedia('photos'))
                 ->merge($user->getMedia('avatar'))
                 ->merge($user->getMedia('cover'))
+            : collect();
+
+        $sidebarPhotos = $canViewContent
+            ? collect($user->getMedia('photos'))
+                ->merge($user->getMedia('avatar'))
+                ->merge($user->getMedia('cover'))
+                ->take(9)
+                ->values()
+            : collect();
+
+        $friendsPreview = $canViewContent
+            ? $user->acceptedFollowing()
+                ->withCount(['acceptedFollowers as followers_count'])
+                ->limit(9)
+                ->get(['users.id', 'users.name', 'users.username', 'users.avatar_path'])
             : collect();
 
         $posts = $tab === 'posts' && $canViewContent
@@ -99,7 +118,10 @@ class PublicProfileController extends Controller
             'tab' => $tab,
             'canViewContent' => $canViewContent,
             'pets' => $pets,
+            'featuredPets' => $featuredPets,
             'photos' => $photos,
+            'sidebarPhotos' => $sidebarPhotos,
+            'friendsPreview' => $friendsPreview,
             'posts' => $posts,
             'privatePosts' => $privatePosts,
             'privateCount' => $privateCount,

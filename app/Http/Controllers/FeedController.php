@@ -9,6 +9,15 @@ use Illuminate\View\View;
 
 class FeedController extends Controller
 {
+    /**
+     * @var array<string, string>
+     */
+    private const THEMES = [
+        'accessible-soft' => 'Accessible Soft',
+        'high-contrast' => 'High Contrast',
+        'minimalist-soothe' => 'Minimalist Soothe',
+    ];
+
     public function __construct(private FeedService $feed) {}
 
     public function index(Request $request): View
@@ -16,6 +25,11 @@ class FeedController extends Controller
         $type = in_array($request->string('type')->toString(), ['text', 'photo', 'video'], true)
             ? $request->string('type')->toString()
             : null;
+        $theme = $request->string('theme')->toString();
+
+        if (! array_key_exists($theme, self::THEMES)) {
+            $theme = 'accessible-soft';
+        }
 
         $user = $request->user()
             ->load([
@@ -77,7 +91,8 @@ class FeedController extends Controller
         return view('feed.index', array_merge(
             compact('posts', 'myReactions', 'mySaved'),
             $sidebarData,
-            compact('user', 'type'),
+            compact('user', 'type', 'theme'),
+            ['themes' => self::THEMES],
         ));
     }
 }

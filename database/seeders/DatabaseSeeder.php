@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
 
             // Pets (depends on users)
             PetSeeder::class,
+            AdoptablePetSeeder::class,
 
             // Social graph: follows, blocks, pet follows (depends on users + pets)
             FollowSeeder::class,

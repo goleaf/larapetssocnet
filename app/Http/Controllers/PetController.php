@@ -137,7 +137,7 @@ class PetController extends Controller
 
     public function explore(Request $request): View
     {
-        $query = Pet::query();
+        $query = Pet::query()->with('owner:id,name');
 
         if ($this->petTableHasColumn('is_public')) {
             $query->where('is_public', true);
@@ -200,7 +200,7 @@ class PetController extends Controller
 
     public function adopt(Request $request): View
     {
-        $query = Pet::query();
+        $query = Pet::query()->with('owner:id,name');
 
         if ($this->petTableHasColumn('is_public')) {
             $query->where('is_public', true);

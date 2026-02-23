@@ -78,6 +78,12 @@
         'pets.create',
     ]);
 
+    $hideRightRail = $routeIsActive([
+        'profile.show',
+        'profile.followers',
+        'profile.following',
+    ]);
+
     $trendingHashtags = collect();
     $upcomingEvents = collect();
     $suggestedUsers = collect();
@@ -188,8 +194,10 @@
 
             <div @class([
                 'relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',
-                'lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem]' => ! $hideLeftRail,
-                'lg:grid-cols-[minmax(0,1fr)_20rem]' => $hideLeftRail,
+                'lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem]' => ! $hideLeftRail && ! $hideRightRail,
+                'lg:grid-cols-[16.5rem_minmax(0,1fr)]' => ! $hideLeftRail && $hideRightRail,
+                'lg:grid-cols-[minmax(0,1fr)_20rem]' => $hideLeftRail && ! $hideRightRail,
+                'lg:grid-cols-[minmax(0,1fr)]' => $hideLeftRail && $hideRightRail,
             ])>
                 @unless ($hideLeftRail)
                 <aside class="hidden lg:block">
@@ -267,6 +275,7 @@
                     </section>
                 </main>
 
+                @unless ($hideRightRail)
                 <aside class="hidden lg:block">
                     <div class="sticky top-24 space-y-4">
                         <x-ui.card>
@@ -335,6 +344,7 @@
                         </x-ui.card>
                     </div>
                 </aside>
+                @endunless
             </div>
             
             <!-- Mobile Bottom Nav -->

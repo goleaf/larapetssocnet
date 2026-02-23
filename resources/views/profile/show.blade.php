@@ -1,14 +1,24 @@
 @php
     $avatarUrl = $profileUser->getFirstMediaUrl('avatar');
     $coverUrl = $profileUser->getFirstMediaUrl('cover');
-    $tabs = ['posts' => 'Posts', 'pets' => 'Pets', 'photos' => 'Photos', 'likes' => 'Likes'];
     $canInteract = auth()->check() && auth()->id() !== $profileUser->id;
     $isOwner = auth()->check() && auth()->id() === $profileUser->id;
     $location = $profileUser->location ?? $profileUser->city ?? null;
 
-    $previewPets = $canViewContent
-        ? ($tab === 'pets' ? $pets->take(8) : $profileUser->pets()->latest()->limit(8)->get())
-        : collect();
+    $websiteRaw = trim((string) ($profileUser->website ?? ''));
+    $websiteUrl = $websiteRaw !== ''
+        ? (\Illuminate\Support\Str::startsWith($websiteRaw, ['http://', 'https://']) ? $websiteRaw : 'https://'.$websiteRaw)
+        : null;
+
+    $tabItems = [
+        ['label' => 'Posts', 'value' => 'posts', 'count' => (int) ($profileUser->posts_count ?? 0)],
+        ['label' => 'About', 'value' => 'about', 'href' => '#profile-intro'],
+        ['label' => 'Pets', 'value' => 'pets', 'count' => (int) ($profileUser->pets_count ?? 0)],
+        ['label' => 'Photos', 'value' => 'photos', 'count' => $canViewContent ? $sidebarPhotos->count() : 0],
+        ['label' => 'Followers', 'value' => 'followers-nav', 'href' => route('profile.followers', ['user' => $profileUser]), 'count' => (int) ($profileUser->followers_count ?? 0)],
+        ['label' => 'Following', 'value' => 'following-nav', 'href' => route('profile.following', ['user' => $profileUser]), 'count' => (int) ($profileUser->following_count ?? 0)],
+        ['label' => 'Likes', 'value' => 'likes'],
+    ];
 @endphp
 
 @section('title', at_username($profileUser) . ' — PetSocial')
@@ -31,10 +41,6 @@
 @endpush
 
 <x-app-layout>
-    <x-slot name="header">
-        <x-ui.page-header :title="$profileUser->name" :subtitle="'@' . $profileUser->username" />
-    </x-slot>
-
     <div class="space-y-5" x-data="profileActions({
             isFollowing: @js($isFollowing),
             isBlocked: @js($isBlocked),
@@ -44,273 +50,329 @@
             blockUrl: @js(route('users.block', ['user' => $profileUser])),
             unblockUrl: @js(route('users.unblock', ['user' => $profileUser]))
         })">
-        <x-ui.card padding="0" class="overflow-hidden">
-            <div class="relative h-48 w-full sm:h-56">
+
+        <section class="overflow-hidden rounded-2xl border border-whisker/40 bg-warm-white shadow-card">
+            <div class="relative h-56 w-full sm:h-72 lg:h-80">
                 @if ($coverUrl)
-                    <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
-                        class="h-full w-full object-cover" />
+                    <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image" class="h-full w-full object-cover" />
                 @else
-                    <div class="h-full w-full bg-paw-light"></div>
+                    <div class="h-full w-full bg-gradient-to-r from-paw-light via-cream to-sky-light"></div>
                 @endif
 
-                <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/15 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
 
                 <div class="absolute right-4 top-4 flex items-center gap-2">
+                    @if ($isOwner)
+                        <x-ui.button :href="route('settings.profile.edit')" variant="default" size="xs">Update Cover</x-ui.button>
+                    @endif
                     @if ($profileUser->is_private)
                         <x-ui.badge variant="warning" size="sm" pill>🔒 Private Profile</x-ui.badge>
                     @else
                         <x-ui.badge variant="success" size="sm" pill>🌍 Public Profile</x-ui.badge>
                     @endif
-
-                    @if ($isOwner)
-                        <a href="{{ route('settings.profile.edit') }}"
-                            class="inline-flex items-center justify-center font-medium transition-all duration-150 rounded-lg text-white bg-black/20 hover:bg-black/40 px-3 py-1.5 text-xs border border-white/30 backdrop-blur-sm shadow-sm"
-                            aria-label="Edit your profile">
-                            Edit Profile
-                        </a>
-                    @endif
                 </div>
             </div>
 
-            <div class="relative px-5 pb-5 sm:px-6">
-                <div class="-mt-12 flex flex-wrap items-end justify-between gap-4">
-                    <div class="flex items-end gap-3">
-                        <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl"
-                            class="h-24 w-24 border-4 border-warm-white shadow-xl bg-warm-white" />
-                        <div class="pb-2">
-                            <p class="text-2xl font-bold font-display text-bark">{{ $profileUser->name }}</p>
-                            <p class="text-sm text-fur">&#64;{{ $profileUser->username }}</p>
-                            @if ($location)
-                                <p class="text-xs text-fur mt-1">📍 {{ $location }}</p>
-                            @endif
+            <div class="px-4 pb-5 sm:px-6">
+                <div class="-mt-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div class="flex items-end gap-4">
+                        <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl" class="h-28 w-28 border-4 border-warm-white shadow-xl bg-warm-white" />
+
+                        <div class="pb-1">
+                            <h1 class="text-3xl font-bold font-display text-bark">{{ $profileUser->name }}</h1>
+                            <p class="text-sm font-semibold text-fur">&#64;{{ $profileUser->username }}</p>
+
+                            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fur">
+                                @if ($location)
+                                    <span>📍 {{ $location }}</span>
+                                @endif
+                                <span>Joined {{ optional($profileUser->created_at)->format('M Y') }}</span>
+                            </div>
                         </div>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
                         @if ($isOwner)
-                            <x-ui.button href="{{ route('settings.profile.edit') }}" variant="primary" size="sm">Edit
-                                Profile</x-ui.button>
-                            <x-ui.button href="{{ route('settings.account.edit') }}" variant="ghost" size="sm">Account
-                                Settings</x-ui.button>
+                            <x-ui.button :href="route('posts.create')" variant="secondary" size="sm">Create Post</x-ui.button>
+                            <x-ui.button :href="route('settings.profile.edit')" variant="primary" size="sm">Edit Profile</x-ui.button>
+                            <x-ui.button :href="route('settings.account.edit')" variant="outline" size="sm">Account Settings</x-ui.button>
                         @elseif ($canInteract)
                             <button
-                                class="inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw px-4 py-2 text-sm rounded-lg"
-                                :class="isFollowing ? 'bg-warm-white text-bark border border-whisker hover:bg-cream' : 'bg-paw text-white shadow-button hover:bg-paw-dark'"
-                                x-bind:disabled="busy || isBlocked" x-bind:aria-pressed="isFollowing.toString()"
+                                class="inline-flex items-center justify-center rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150"
+                                :class="isFollowing ? 'border border-whisker bg-warm-white text-bark hover:bg-cream' : 'bg-paw text-white hover:bg-paw-dark shadow-button'"
+                                x-bind:disabled="busy || isBlocked"
+                                x-bind:aria-pressed="isFollowing.toString()"
                                 x-bind:aria-label="isFollowing ? 'Unfollow {{ addslashes($profileUser->name) }}' : 'Follow {{ addslashes($profileUser->name) }}'"
-                                @click="toggleFollow">
+                                @click="toggleFollow"
+                            >
                                 <span x-text="busy ? 'Saving...' : (isFollowing ? 'Following' : 'Follow')"></span>
                             </button>
 
-                            <x-ui.button href="{{ route('messages.conversation', ['peer' => $profileUser]) }}"
-                                variant="ghost" size="sm">Message</x-ui.button>
+                            <x-ui.button :href="route('messages.conversation', ['peer' => $profileUser])" variant="outline" size="sm">Message</x-ui.button>
 
                             @include('profile._actions-dropdown', ['user' => $profileUser, 'isBlocked' => $isBlocked])
                         @elseif (!auth()->check() && Route::has('login'))
-                            <x-ui.button href="{{ route('login') }}" variant="primary" size="sm">Sign In to
-                                Follow</x-ui.button>
+                            <x-ui.button :href="route('login')" variant="primary" size="sm">Sign In to Follow</x-ui.button>
                         @endif
                     </div>
                 </div>
 
-                <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4" role="list" aria-label="Profile statistics">
-                    <a href="{{ route('profile.followers', ['user' => $profileUser]) }}"
-                        class="rounded-xl border border-whisker/30 bg-warm-white hover:bg-cream transition-colors px-3 py-2 text-center"
-                        aria-label="View followers list">
-                        <p class="text-xl font-bold text-bark" x-text="formatCount(followersCount)">
-                            {{ number_format((int) $profileUser->followers_count) }}</p>
+                <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" role="list" aria-label="Profile statistics">
+                    <a href="{{ route('profile.followers', ['user' => $profileUser]) }}" class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+                        <p class="text-xl font-bold text-bark" x-text="formatCount(followersCount)">{{ number_format((int) $profileUser->followers_count) }}</p>
                         <p class="text-xs text-fur">Followers</p>
                     </a>
-                    <a href="{{ route('profile.following', ['user' => $profileUser]) }}"
-                        class="rounded-xl border border-whisker/30 bg-warm-white hover:bg-cream transition-colors px-3 py-2 text-center"
-                        aria-label="View following list">
-                        <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->following_count) }}
-                        </p>
+                    <a href="{{ route('profile.following', ['user' => $profileUser]) }}" class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+                        <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->following_count) }}</p>
                         <p class="text-xs text-fur">Following</p>
                     </a>
-                    <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'pets']) }}"
-                        class="rounded-xl border border-whisker/30 bg-warm-white hover:bg-cream transition-colors px-3 py-2 text-center"
-                        aria-label="View pets">
+                    <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'pets']) }}" class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
                         <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->pets_count) }}</p>
                         <p class="text-xs text-fur">Pets</p>
                     </a>
-                    <div class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center"
-                        aria-label="Privacy status">
+                    <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'posts']) }}" class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+                        <p class="text-xl font-bold text-bark">{{ number_format((int) ($profileUser->posts_count ?? 0)) }}</p>
+                        <p class="text-xs text-fur">Posts</p>
+                    </a>
+                    <div class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center">
                         <p class="text-xl font-bold text-bark">{{ $profileUser->is_private ? 'Private' : 'Public' }}</p>
                         <p class="text-xs text-fur">Visibility</p>
                     </div>
                 </div>
 
-                @if ($profileUser->bio)
-                    <p class="mt-5 whitespace-pre-line text-sm text-bark">{{ $profileUser->bio }}</p>
-                @endif
-
-                @if ($profileUser->website)
-                    <a href="{{ $profileUser->website }}" target="_blank" rel="noopener noreferrer"
-                        class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-paw hover:text-paw-dark hover:underline"
-                        aria-label="Open {{ $profileUser->name }} website">
-                        🔗 {{ $profileUser->website }}
-                    </a>
-                @endif
-
-                <p class="mt-3 text-sm text-fur font-medium" x-show="notice" x-text="notice"></p>
+                <p class="mt-3 text-sm text-fur" role="status" aria-live="polite" x-show="notice" x-text="notice"></p>
             </div>
+        </section>
+
+        <x-ui.card padding="sm">
+            <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0" />
         </x-ui.card>
 
-        @if ($canViewContent)
-            <x-ui.card>
-                <div class="mb-3 flex items-center justify-between gap-3">
-                    <h2 class="text-lg font-bold font-display text-bark">Pets Strip</h2>
-                    <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'pets']) }}"
-                        class="text-xs font-semibold text-paw hover:underline focus:outline-none focus:ring-2 focus:ring-paw rounded-sm"
-                        aria-label="Open all pets from {{ $profileUser->name }}">
-                        See all pets
-                    </a>
-                </div>
+        <div class="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
+            <aside class="space-y-5">
+                <x-ui.card id="profile-intro">
+                    <h2 class="text-base font-bold font-display text-bark">Intro</h2>
 
-                <div class="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 no-scrollbar">
-                    @forelse ($previewPets as $pet)
-                        @php
-                            $petRouteParam = $pet->slug ?? $pet->getKey();
-                        @endphp
-                        <a href="{{ route('pets.show', ['slug' => $petRouteParam]) }}"
-                            class="min-w-[11.5rem] rounded-xl border border-whisker/30 bg-warm-white px-3 py-3 transition-all hover:-translate-y-1 hover:shadow-card-hover hover:border-paw/30 focus:outline-none focus:ring-2 focus:ring-paw"
-                            aria-label="View pet profile for {{ $pet->name }}">
-                            <div class="flex items-center gap-2.5">
-                                <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="sm" />
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-bark">{{ $pet->name }}</p>
-                                    <p class="truncate text-xs text-fur">{{ $pet->species }}</p>
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <p class="text-sm text-fur">No pets published yet.</p>
-                    @endforelse
-                </div>
-            </x-ui.card>
-        @endif
+                    <div class="mt-3 space-y-2 text-sm text-fur">
+                        @if ($profileUser->bio)
+                            <p class="whitespace-pre-line text-bark">{{ $profileUser->bio }}</p>
+                        @else
+                            <p>No bio added yet.</p>
+                        @endif
 
-        <x-ui.tabs :tabs="array_map(fn($v, $k) => ['label' => $v, 'value' => $k], array_values($tabs), array_keys($tabs))"
-            :active="$tab" class="mb-0" />
+                        @if ($location)
+                            <p>📍 Lives in {{ $location }}</p>
+                        @endif
 
-        @if (!$canViewContent)
-            <x-ui.empty-state icon="🔒" title="This profile is private"
-                description="Follow {{ $profileUser->name }} to view posts, pets, photos, and likes.">
-                @if ($canInteract)
-                    <x-slot name="action">
-                        <button
-                            class="inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw px-4 py-2 text-sm rounded-lg shadow-button text-white bg-paw hover:bg-paw-dark mt-2"
-                            x-bind:disabled="busy || isBlocked" x-bind:aria-pressed="isFollowing.toString()"
-                            x-bind:aria-label="isFollowing ? 'Unfollow {{ addslashes($profileUser->name) }}' : 'Follow {{ addslashes($profileUser->name) }}'"
-                            @click="toggleFollow">
-                            <span x-text="busy ? 'Saving...' : (isFollowing ? 'Following' : 'Follow to View')"></span>
-                        </button>
-                    </x-slot>
-                @endif
-            </x-ui.empty-state>
-        @elseif ($tab === 'pets')
-            <x-ui.card>
-                <div class="mt-1 grid gap-4 sm:grid-cols-2">
-                    @forelse ($pets as $pet)
-                        @php
-                            $petRouteParam = $pet->slug ?? $pet->getKey();
-                        @endphp
-                        <a href="{{ route('pets.show', ['slug' => $petRouteParam]) }}"
-                            class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-1 hover:shadow-card-hover hover:border-paw/30 focus:outline-none focus:ring-2 focus:ring-paw"
-                            aria-label="Open {{ $pet->name }} pet profile">
-                            <div class="flex items-center gap-3">
-                                <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="md" />
-                                <div class="min-w-0">
-                                    <p class="truncate font-semibold text-bark text-base">{{ $pet->name }}</p>
-                                    <p class="truncate text-xs text-fur font-medium mt-0.5">
-                                        {{ $pet->species }}{{ $pet->breed ? ' · ' . $pet->breed : '' }}
-                                    </p>
-                                </div>
-                            </div>
-                            @if ($pet->bio)
-                                <p class="mt-3 line-clamp-2 text-sm text-fur">{{ $pet->bio }}</p>
-                            @endif
-                        </a>
-                    @empty
-                        <div class="col-span-full">
-                            <x-ui.empty-state icon="🐾" title="No pets yet"
-                                description="This user has not added pets to their profile." />
-                        </div>
-                    @endforelse
-                </div>
-            </x-ui.card>
-        @elseif ($tab === 'photos')
-            <x-ui.card>
-                <div class="mt-1 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    @forelse ($photos as $photo)
-                        <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo"
-                            class="h-44 w-full rounded-xl object-cover hover:opacity-90 transition-opacity cursor-pointer shadow-sm" />
-                    @empty
-                        <div class="col-span-full">
-                            <x-ui.empty-state icon="📷" title="No photos yet"
-                                description="When this user shares photos, they will appear here." />
-                        </div>
-                    @endforelse
-                </div>
-            </x-ui.card>
-        @elseif ($tab === 'likes')
-            <x-ui.card>
-                <x-ui.empty-state icon="❤️" title="No likes to show"
-                    description="Likes tab is ready for Wave 2 data integration." />
-            </x-ui.card>
-        @else
-            <section class="space-y-4">
-                @forelse ($posts as $post)
-                    <x-post-card :post="$post" context="profile" />
+                        @if ($websiteUrl)
+                            <p>
+                                🔗
+                                <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer" class="font-medium text-paw hover:text-paw-dark hover:underline">
+                                    {{ $profileUser->website }}
+                                </a>
+                            </p>
+                        @endif
 
-                    @if ($isOwner)
-                        <div class="-mt-2 flex items-center justify-end gap-2">
-                            @if ($post->is_pinned)
-                                <form method="POST" action="{{ route('posts.unpin', $post) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <x-ui.button type="submit" variant="ghost" size="xs">Unpin</x-ui.button>
-                                </form>
-                            @else
-                                <form method="POST" action="{{ route('posts.pin', $post) }}">
-                                    @csrf
-                                    <x-ui.button type="submit" variant="secondary" size="xs">Pin to Profile</x-ui.button>
-                                </form>
-                            @endif
-                        </div>
-                    @endif
-                @empty
-                    <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet." />
-                @endforelse
-
-                @if ($isOwner && ($privateCount ?? 0) > 0)
-                    <div class="mt-6 border-t border-whisker/30 pt-6">
-                        <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-fur">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                            </svg>
-                            Private posts
-                            <x-ui.badge variant="default" size="sm" pill>{{ $privateCount }}</x-ui.badge>
-                        </h3>
-
-                        <div class="space-y-4">
-                            @foreach (($privatePosts ?? collect()) as $post)
-                                <x-post-card :post="$post" context="profile" />
-                            @endforeach
-                        </div>
+                        <p>🗓️ Joined {{ optional($profileUser->created_at)->format('F Y') }}</p>
                     </div>
-                @endif
+                </x-ui.card>
 
-                @if (method_exists($posts, 'links'))
-                    @if($posts->hasPages())
-                        <x-ui.card>
-                            <x-ui.pagination :paginator="$posts" />
-                        </x-ui.card>
-                    @endif
+                @if ($canViewContent)
+                    <x-ui.card>
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-bark">Pets</h3>
+                            <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'pets']) }}" class="text-xs font-semibold text-paw hover:underline">See all</a>
+                        </div>
+
+                        @if ($featuredPets->isEmpty())
+                            <p class="text-sm text-fur">No pets published yet.</p>
+                        @else
+                            <div class="grid grid-cols-3 gap-2">
+                                @foreach ($featuredPets as $pet)
+                                    @php
+                                        $petRouteParam = $pet->slug ?? $pet->getKey();
+                                    @endphp
+                                    <a href="{{ route('pets.show', ['slug' => $petRouteParam]) }}" class="rounded-lg border border-whisker/30 bg-cream p-2 text-center transition-colors hover:bg-paw-light/40">
+                                        <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="sm" class="mx-auto" />
+                                        <p class="mt-1 truncate text-[11px] font-medium text-bark">{{ $pet->name }}</p>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </x-ui.card>
+
+                    <x-ui.card>
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-bark">Photos</h3>
+                            <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'photos']) }}" class="text-xs font-semibold text-paw hover:underline">See all</a>
+                        </div>
+
+                        @if ($sidebarPhotos->isEmpty())
+                            <p class="text-sm text-fur">No photos yet.</p>
+                        @else
+                            <div class="grid grid-cols-3 gap-2">
+                                @foreach ($sidebarPhotos as $photo)
+                                    <a href="{{ route('profile.show', ['user' => $profileUser, 'tab' => 'photos']) }}" class="overflow-hidden rounded-lg border border-whisker/30">
+                                        <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo" class="h-16 w-full object-cover" loading="lazy" />
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </x-ui.card>
+
+                    <x-ui.card>
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-bark">Friends</h3>
+                            <a href="{{ route('profile.following', ['user' => $profileUser]) }}" class="text-xs font-semibold text-paw hover:underline">See all</a>
+                        </div>
+
+                        @if ($friendsPreview->isEmpty())
+                            <p class="text-sm text-fur">No friends to show yet.</p>
+                        @else
+                            <div class="space-y-2">
+                                @foreach ($friendsPreview as $friend)
+                                    <a href="{{ route('profile.show', ['user' => $friend]) }}" class="flex items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40">
+                                        <x-ui.avatar :src="$friend->avatar_url" :name="$friend->name" size="sm" />
+                                        <div class="min-w-0">
+                                            <p class="truncate text-sm font-medium text-bark">{{ $friend->name }}</p>
+                                            <p class="truncate text-[11px] text-fur">&#64;{{ $friend->username }}</p>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </x-ui.card>
+                @endif
+            </aside>
+
+            <section class="space-y-5">
+                @if (!$canViewContent)
+                    <x-ui.card>
+                        <x-ui.empty-state icon="🔒" title="This profile is private" description="Follow {{ $profileUser->name }} to view posts, pets, photos, and likes.">
+                            @if ($canInteract)
+                                <x-slot name="action">
+                                    <button
+                                        class="inline-flex items-center justify-center rounded-md bg-paw px-4 py-2 text-sm font-medium text-white shadow-button transition-all duration-150 hover:bg-paw-dark"
+                                        x-bind:disabled="busy || isBlocked"
+                                        x-bind:aria-pressed="isFollowing.toString()"
+                                        x-bind:aria-label="isFollowing ? 'Unfollow {{ addslashes($profileUser->name) }}' : 'Follow {{ addslashes($profileUser->name) }}'"
+                                        @click="toggleFollow"
+                                    >
+                                        <span x-text="busy ? 'Saving...' : (isFollowing ? 'Following' : 'Follow to View')"></span>
+                                    </button>
+                                </x-slot>
+                            @endif
+                        </x-ui.empty-state>
+                    </x-ui.card>
+                @elseif ($tab === 'pets')
+                    <x-ui.card>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            @forelse ($pets as $pet)
+                                @php
+                                    $petRouteParam = $pet->slug ?? $pet->getKey();
+                                @endphp
+                                <a href="{{ route('pets.show', ['slug' => $petRouteParam]) }}" class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
+                                    <div class="flex items-center gap-3">
+                                        <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="md" />
+                                        <div class="min-w-0">
+                                            <p class="truncate text-base font-semibold text-bark">{{ $pet->name }}</p>
+                                            <p class="truncate text-xs text-fur">{{ $pet->species }}{{ $pet->breed ? ' · '.$pet->breed : '' }}</p>
+                                        </div>
+                                    </div>
+                                    @if ($pet->bio)
+                                        <p class="mt-3 line-clamp-2 text-sm text-fur">{{ $pet->bio }}</p>
+                                    @endif
+                                </a>
+                            @empty
+                                <div class="col-span-full">
+                                    <x-ui.empty-state icon="🐾" title="No pets yet" description="This user has not added pets to their profile." />
+                                </div>
+                            @endforelse
+                        </div>
+                    </x-ui.card>
+                @elseif ($tab === 'photos')
+                    <x-ui.card>
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            @forelse ($photos as $photo)
+                                <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo" class="h-44 w-full rounded-xl object-cover shadow-sm" loading="lazy" />
+                            @empty
+                                <div class="col-span-full">
+                                    <x-ui.empty-state icon="📷" title="No photos yet" description="When this user shares photos, they will appear here." />
+                                </div>
+                            @endforelse
+                        </div>
+                    </x-ui.card>
+                @elseif ($tab === 'likes')
+                    <x-ui.card>
+                        <x-ui.empty-state icon="❤️" title="No likes to show" description="Likes tab is ready for Wave 2 data integration." />
+                    </x-ui.card>
+                @else
+                    <section class="space-y-4">
+                        @if ($isOwner)
+                            <x-ui.card>
+                                <div class="flex items-center gap-3">
+                                    <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="md" />
+                                    <a href="{{ route('posts.create') }}" class="w-full rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30">
+                                        What's on your mind, {{ $profileUser->name }}?
+                                    </a>
+                                </div>
+                                <div class="mt-3 grid grid-cols-3 gap-2">
+                                    <a href="{{ route('posts.create') }}" class="rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream">📷 Photo</a>
+                                    <a href="{{ route('posts.create') }}" class="rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream">🐾 Pet update</a>
+                                    <a href="{{ route('posts.create') }}" class="rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream">🎉 Life event</a>
+                                </div>
+                            </x-ui.card>
+                        @endif
+
+                        @forelse ($posts as $post)
+                            <x-post-card :post="$post" context="profile" />
+
+                            @if ($isOwner)
+                                <div class="-mt-2 flex items-center justify-end gap-2">
+                                    @if ($post->is_pinned)
+                                        <form method="POST" action="{{ route('posts.unpin', $post) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <x-ui.button type="submit" variant="ghost" size="xs">Unpin</x-ui.button>
+                                        </form>
+                                    @else
+                                        <form method="POST" action="{{ route('posts.pin', $post) }}">
+                                            @csrf
+                                            <x-ui.button type="submit" variant="secondary" size="xs">Pin to Profile</x-ui.button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
+                        @empty
+                            <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet." />
+                        @endforelse
+
+                        @if ($isOwner && ($privateCount ?? 0) > 0)
+                            <x-ui.card>
+                                <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-fur">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                    </svg>
+                                    Private posts
+                                    <x-ui.badge variant="default" size="sm" pill>{{ $privateCount }}</x-ui.badge>
+                                </h3>
+
+                                <div class="space-y-4">
+                                    @foreach (($privatePosts ?? collect()) as $post)
+                                        <x-post-card :post="$post" context="profile" />
+                                    @endforeach
+                                </div>
+                            </x-ui.card>
+                        @endif
+
+                        @if (method_exists($posts, 'hasPages') && $posts->hasPages())
+                            <x-ui.card>
+                                <x-ui.pagination :paginator="$posts" />
+                            </x-ui.card>
+                        @endif
+                    </section>
                 @endif
             </section>
-        @endif
+        </div>
     </div>
 </x-app-layout>
