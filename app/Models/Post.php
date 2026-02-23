@@ -335,14 +335,25 @@ class Post extends Model implements HasMedia
             ->values();
 
         return $query
-            ->whereIn('user_id', $followingIds)
+            ->where(function (Builder $q) use ($followingIds): void {
+                $q->whereIn('user_id', $followingIds)
+                    ->orWhere(function (Builder $publicQ): void {
+                        $publicQ->where('visibility', self::VISIBILITY_PUBLIC)
+                            ->whereHas('author', function (Builder $authorQ): void {
+                                $authorQ->where('profile_visibility', 'public')
+                                    ->where('is_private', false)
+                                    ->where('is_banned', false);
+                            });
+                    });
+            })
             ->where(function (Builder $visibilityQuery) use ($user): void {
                 $visibilityQuery
                     ->where('user_id', $user->getKey())
                     ->orWhereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
             })
             ->whereNull('posts.group_id')
-            ->whereNull('posts.deleted_at');
+            ->whereNull('posts.deleted_at')
+            ->notBlockedFor($user);
     }
 
     // Accessors

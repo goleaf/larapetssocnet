@@ -19,4 +19,3 @@ if (! function_exists('at_username')) {
         return '@'.$value;
     }
 }
-

@@ -59,7 +59,9 @@ class ReactionService
         $post->update(['likes_count' => $likesCount]);
 
         if ($user->id !== $post->user_id) {
-            $post->author->notify(new NewReaction($user, $post, $type));
+            if ($post->author->notificationEnabled('post_likes')) {
+                $post->author->notify(new NewReaction($user, $post, $type));
+            }
         }
 
         return ['action' => 'added', 'current_reaction' => $type, 'likes_count' => $likesCount];

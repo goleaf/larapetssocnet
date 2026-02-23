@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Foundation\Configuration\Middleware;
 use App\Exceptions\CannotFollowSelfException;
 use App\Exceptions\UserBannedException;
 use App\Exceptions\UserBlockedException;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 

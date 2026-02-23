@@ -205,9 +205,17 @@ class ConversationService
             ]);
         }
 
-        if ((bool) $peer->is_private && ! $viewer->isFollowing($peer)) {
+        $hasExisting = $this->findConversation($viewer, $peer) !== null;
+
+        if (! $hasExisting && (bool) $peer->is_private && ! $viewer->isFollowing($peer)) {
             throw ValidationException::withMessages([
                 'peer_id' => ['This profile is private. Follow the user before sending a message.'],
+            ]);
+        }
+
+        if (! $hasExisting && $peer->messaging_permission === 'followers_only' && ! $viewer->isFollowing($peer) && ! $viewer->hasAppRole(['admin', 'moderator'])) {
+            throw ValidationException::withMessages([
+                'peer_id' => ['This user only accepts messages from their followers.'],
             ]);
         }
     }

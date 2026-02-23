@@ -65,6 +65,7 @@ class User extends Authenticatable implements HasMedia
         'username_changed_at',
         'email',
         'password',
+        'password_changed_at',
         'bio',
         'bio_html',
         'location',
@@ -73,6 +74,13 @@ class User extends Authenticatable implements HasMedia
         'city',
         'country_code',
         'interests_text',
+        'profile_visibility',
+        'messaging_permission',
+        'pets_visibility',
+        'groups_visibility',
+        'show_in_explore',
+        'open_following',
+        'notification_preferences',
         'is_private',
         'onboarding_step',
         'onboarding_completed_at',
@@ -91,6 +99,8 @@ class User extends Authenticatable implements HasMedia
         'is_banned',
         'ban_reason',
         'role',
+        'scheduled_deletion_at',
+        'deletion_reason',
     ];
 
     /**
@@ -116,8 +126,16 @@ class User extends Authenticatable implements HasMedia
         return [
             'email_verified_at' => 'datetime',
             'username_changed_at' => 'datetime',
+            'password_changed_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'profile_visibility' => 'string',
+            'messaging_permission' => 'string',
+            'pets_visibility' => 'string',
+            'groups_visibility' => 'string',
+            'show_in_explore' => 'boolean',
+            'open_following' => 'boolean',
+            'notification_preferences' => 'array',
             'is_private' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'last_seen_at' => 'datetime',
@@ -130,6 +148,7 @@ class User extends Authenticatable implements HasMedia
             'blocked_users_count' => 'integer',
             'blocked_by_count' => 'integer',
             'is_banned' => 'boolean',
+            'scheduled_deletion_at' => 'datetime',
         ];
     }
 
@@ -533,14 +552,21 @@ class User extends Authenticatable implements HasMedia
             ->withPivot('created_at');
     }
 
+    public function userBlocks(): HasMany
+    {
+        return $this->hasMany(UserBlock::class, 'blocker_id');
+    }
+
     public function blockedUsers(): BelongsToMany
     {
-        return $this->blocking();
+        return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
+            ->withTimestamps();
     }
 
     public function blockedByUsers(): BelongsToMany
     {
-        return $this->blockedBy();
+        return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
+            ->withTimestamps();
     }
 
     public function badges(): BelongsToMany
@@ -566,6 +592,17 @@ class User extends Authenticatable implements HasMedia
     public function contestEntries(): HasMany
     {
         return $this->hasMany(ContestEntry::class);
+    }
+
+    public function notificationEnabled(string $type): bool
+    {
+        $prefs = $this->notification_preferences;
+
+        if (! is_array($prefs) || ! array_key_exists($type, $prefs)) {
+            return true;
+        }
+
+        return (bool) $prefs[$type];
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
@@ -604,19 +641,33 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeNotBlockedFor(Builder $query, ?self $viewer): Builder
     {
-        if (! $viewer || ! static::hasBlocksTable()) {
+        if (! $viewer) {
             return $query;
         }
 
-        return $query
+        $query = $query
             ->whereNotIn(
                 'users.id',
-                $viewer->blocking()->select('users.id')
+                $viewer->blockedUsers()->select('users.id')
             )
             ->whereNotIn(
                 'users.id',
-                $viewer->blockedBy()->select('users.id')
+                $viewer->blockedByUsers()->select('users.id')
             );
+
+        if (static::hasBlocksTable()) {
+            $query = $query
+                ->whereNotIn(
+                    'users.id',
+                    $viewer->blocking()->select('users.id')
+                )
+                ->whereNotIn(
+                    'users.id',
+                    $viewer->blockedBy()->select('users.id')
+                );
+        }
+
+        return $query;
     }
 
     public function scopeVisibleTo(Builder $query, ?self $viewer): Builder
@@ -775,20 +826,28 @@ class User extends Authenticatable implements HasMedia
 
     public function hasBlocked(self $user): bool
     {
-        if (! static::hasBlocksTable()) {
-            return false;
+        if ($this->blockedUsers()->whereKey($user->getKey())->exists()) {
+            return true;
         }
 
-        return $this->blocking()->whereKey($user->getKey())->exists();
+        if (static::hasBlocksTable() && $this->blocking()->whereKey($user->getKey())->exists()) {
+            return true;
+        }
+
+        return false;
     }
 
     public function isBlockedBy(self $user): bool
     {
-        if (! static::hasBlocksTable()) {
-            return false;
+        if ($this->blockedByUsers()->whereKey($user->getKey())->exists()) {
+            return true;
         }
 
-        return $this->blockedBy()->whereKey($user->getKey())->exists();
+        if (static::hasBlocksTable() && $this->blockedBy()->whereKey($user->getKey())->exists()) {
+            return true;
+        }
+
+        return false;
     }
 
     public function hasBlockingRelationshipWith(self $user): bool
@@ -827,11 +886,13 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeNotBlockedBy(Builder $query, self $user): Builder
     {
-        if (! static::hasBlocksTable()) {
-            return $query;
+        $query = $query->whereNotIn('users.id', $user->blockedUsers()->select('users.id'));
+
+        if (static::hasBlocksTable()) {
+            $query = $query->whereNotIn('users.id', $user->blocking()->select('users.id'));
         }
 
-        return $query->whereNotIn('users.id', $user->blocking()->select('users.id'));
+        return $query;
     }
 
     public function scopeNotBlocking(Builder $query, self $user): Builder

@@ -21,4 +21,3 @@ class ReservedUsername extends Model
             ->exists();
     }
 }
-

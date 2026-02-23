@@ -2,83 +2,131 @@
 
 namespace App\Services;
 
-use App\Models\Follow;
-use App\Models\Pet;
-use App\Models\Post;
+use App\Models\Group;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use App\Models\UserBlock;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use RuntimeException;
+use Illuminate\Validation\ValidationException;
 
 class SettingsService
 {
-    public function updateProfile(User $user, array $data, ?UploadedFile $avatar = null): User
+    public function updateProfile(User $user, array $data, ?string $usernameConfirm = null): User
     {
-        return DB::transaction(function () use ($user, $data, $avatar): User {
-            $user->update(array_filter([
-                'name' => $data['name'] ?? null,
-                'username' => $data['username'] ?? null,
-                'bio' => $data['bio'] ?? null,
-                'bio_html' => isset($data['bio']) && class_exists(ContentService::class)
-                    ? app(ContentService::class)->process($data['bio'])
-                    : null,
-                'location' => $data['location'] ?? null,
-                'website' => $data['website'] ?? null,
-            ], fn ($v) => $v !== null));
-
-            if ($avatar) {
-                $user->clearMediaCollection('avatar');
-                $user->addMedia($avatar)
-                    ->usingFileName(Str::uuid().'.webp')
-                    ->toMediaCollection('avatar');
+        if (isset($data['username']) && $data['username'] !== $user->username) {
+            if ($usernameConfirm !== $user->username) {
+                throw ValidationException::withMessages([
+                    'username_confirm' => 'The confirmation username does not match your current username.',
+                ]);
             }
-
-            return $user->fresh();
-        });
-    }
-
-    public function changePassword(User $user, string $current, string $new): void
-    {
-        if (! Hash::check($current, $user->password)) {
-            throw new RuntimeException('Current password is incorrect.');
+            $data['username_changed_at'] = now();
         }
 
-        $user->update(['password' => Hash::make($new)]);
+        $user->update($data);
+
+        return $user;
     }
 
-    public function updatePrivacy(User $user, bool $isPrivate): void
+    public function changePassword(User $user, string $currentPassword, string $newPassword): User
     {
-        $user->update(['is_private' => $isPrivate]);
+        if (! Hash::check($currentPassword, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => 'The provided password does not match your current password.',
+            ]);
+        }
 
-        if (! $isPrivate) {
-            $pending = Follow::query()
-                ->where('following_id', $user->getKey())
-                ->where('status', 'pending')
-                ->get();
+        $user->update([
+            'password' => Hash::make($newPassword),
+            'password_changed_at' => now(),
+        ]);
 
-            foreach ($pending as $follow) {
-                $follow->update(['status' => 'accepted']);
-                $user->increment('followers_count');
-                User::where('id', $follow->follower_id)->increment('following_count');
+        return $user;
+    }
+
+    public function savePrivacySettings(User $user, array $settings): User
+    {
+        $user->update([
+            'profile_visibility' => $settings['profile_visibility'] ?? $user->profile_visibility,
+            'messaging_permission' => $settings['messaging_permission'] ?? $user->messaging_permission,
+            'pets_visibility' => $settings['pets_visibility'] ?? $user->pets_visibility,
+            'groups_visibility' => $settings['groups_visibility'] ?? $user->groups_visibility,
+            'show_in_explore' => $settings['show_in_explore'] ?? $user->show_in_explore,
+            'open_following' => $settings['open_following'] ?? $user->open_following,
+        ]);
+
+        return $user;
+    }
+
+    public function saveNotificationPreferences(User $user, array $preferences): User
+    {
+        $user->update([
+            'notification_preferences' => collect($preferences)
+                ->mapWithKeys(fn ($value, $key) => [$key => (bool) $value])
+                ->toArray(),
+        ]);
+
+        return $user;
+    }
+
+    public function initiateDeletion(User $user, ?string $reason = null): User
+    {
+        $user->update([
+            'scheduled_deletion_at' => now()->addDays(30),
+            'deletion_reason' => $reason,
+        ]);
+
+        $this->handleGroupOwnershipTransfers($user);
+
+        return $user;
+    }
+
+    protected function handleGroupOwnershipTransfers(User $user): void
+    {
+        $ownedGroups = Group::where('owner_id', $user->id)->get();
+
+        foreach ($ownedGroups as $group) {
+            $oldestAdmin = $group->members()
+                ->wherePivot('role', 'admin')
+                ->where('users.id', '!=', $user->id)
+                ->orderBy('group_user.created_at', 'asc')
+                ->first();
+
+            if ($oldestAdmin) {
+                $group->update(['owner_id' => $oldestAdmin->id]);
+            } else {
+                $group->delete();
             }
         }
     }
 
-    public function deleteAccount(User $user, string $password): void
+    public function cancelDeletion(User $user): User
     {
-        if (! Hash::check($password, $user->password)) {
-            throw new RuntimeException('Password is incorrect.');
+        $user->update([
+            'scheduled_deletion_at' => null,
+            'deletion_reason' => null,
+        ]);
+
+        return $user;
+    }
+
+    public function blockUser(User $blocker, User $blocked): void
+    {
+        UserBlock::firstOrCreate([
+            'blocker_id' => $blocker->id,
+            'blocked_id' => $blocked->id,
+        ]);
+
+        if (method_exists($blocker, 'unfollow') && $blocker->isFollowing($blocked)) {
+            $blocker->unfollow($blocked);
         }
+        if (method_exists($blocked, 'unfollow') && $blocked->isFollowing($blocker)) {
+            $blocked->unfollow($blocker);
+        }
+    }
 
-        DB::transaction(function () use ($user): void {
-            $user->posts()->each(fn (Post $p) => $p->delete());
-            $user->pets()->each(fn (Pet $p) => $p->delete());
-            $user->delete();
-        });
-
-        Auth::logout();
+    public function unblockUser(User $blocker, User $blocked): void
+    {
+        UserBlock::where('blocker_id', $blocker->id)
+            ->where('blocked_id', $blocked->id)
+            ->delete();
     }
 }

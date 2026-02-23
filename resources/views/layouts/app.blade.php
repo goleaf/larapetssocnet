@@ -32,7 +32,7 @@
         ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*']],
         ['label' => 'Post', 'icon' => '✚', 'route' => 'posts.create', 'patterns' => ['posts.create']],
         ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
-        ['label' => 'Profile', 'icon' => '🙂', 'route' => 'settings.profile.edit', 'patterns' => ['profile.*', 'settings.*']],
+        ['label' => 'Profile', 'icon' => '🙂', 'route' => 'settings.profile', 'patterns' => ['profile.*', 'settings.*']],
     ];
 
     $searchTarget = Route::has('search.index') ? route('search.index') : url('/');

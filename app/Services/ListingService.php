@@ -155,7 +155,7 @@ class ListingService
             ->first();
 
         if (! $media) {
-            throw (new ModelNotFoundException())->setModel(Media::class, [$imageId]);
+            throw (new ModelNotFoundException)->setModel(Media::class, [$imageId]);
         }
 
         $wasCover = $media->collection_name === 'cover';
@@ -302,7 +302,6 @@ class ListingService
     }
 
     /**
-     * @param  mixed  $images
      * @return list<UploadedFile>
      */
     private function normalizeImages(mixed $images): array

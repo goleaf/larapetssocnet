@@ -68,9 +68,7 @@
     };
 @endphp
 
-<x-ui.card
-    class="overflow-hidden"
-    x-data="{
+<x-ui.card class="overflow-hidden" x-data="{
         liked: {{ $isLiked ? 'true' : 'false' }},
         likes: {{ $likeCount }},
         likeBusy: false,
@@ -123,8 +121,7 @@
                 this.likeBusy = false;
             }
         },
-    }"
->
+    }">
     <header class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
             <div class="flex items-start gap-3">
@@ -138,7 +135,8 @@
 
                 <div class="min-w-0">
                     @if ($author)
-                        <a href="{{ $profileUrl }}" class="truncate text-sm font-semibold hover:underline" style="color: var(--ui-text);">
+                        <a href="{{ $profileUrl }}" class="truncate text-sm font-semibold hover:underline"
+                            style="color: var(--ui-text);">
                             {{ $author->name }}
                         </a>
                         <p class="truncate text-xs shell-text-muted">&#64;{{ $author->username }}</p>
@@ -168,7 +166,8 @@
             @endif
 
             @if ($isOwner)
-                <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Delete this post?');">
+                <form action="{{ route('posts.destroy', $post) }}" method="POST"
+                    onsubmit="return confirm('Delete this post?');">
                     @csrf
                     @method('DELETE')
                     <x-ui.button type="submit" variant="danger" size="xs">Delete</x-ui.button>
@@ -182,122 +181,99 @@
     @endif
 
     @if ($shownMedia->isNotEmpty())
-        <div class="mt-4">
-            @if ($shownMedia->count() === 1)
-                @php($item = $shownMedia->first())
-                <div class="relative overflow-hidden rounded-xl border" style="border-color: var(--ui-border);">
+    <div class="mt-4">
+        @if ($shownMedia->count() === 1)
+        @php($item = $shownMedia->first())
+            <div class="relative overflow-hidden rounded-xl border" style="border-color: var(--ui-border);">
+                @if ($isVideoMedia($item))
+                    <video controls preload="metadata" class="h-72 w-full object-cover sm:h-96">
+                        <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
+                    </video>
+                @else
+                    <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-72 w-full object-cover sm:h-96" loading="lazy">
+                @endif
+            </div>
+        @elseif ($shownMedia->count() === 2)
+            <div class="grid grid-cols-1 gap-2">
+                @foreach ($shownMedia as $item)
+                    <div class="overflow-hidden rounded-xl border" style="border-color: var(--ui-border);">
+                        @if ($isVideoMedia($item))
+                            <video controls preload="metadata" class="h-44 w-full object-cover sm:h-56">
+                                <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
+                            </video>
+                        @else
+                            <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-44 w-full object-cover sm:h-56"
+                                loading="lazy">
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @else
+        <div class="grid grid-cols-1 gap-2">
+            @foreach ($shownMedia as $item)
+                <div @class([
+                    'relative overflow-hidden rounded-xl border',
+                    'col-span-2' => $loop->first,
+                ])
+                    style="border-color: var(--ui-border);">
                     @if ($isVideoMedia($item))
-                        <video controls preload="metadata" class="h-72 w-full object-cover sm:h-96">
+                        <video controls preload="metadata" @class([
+                            'w-full object-cover',
+                            'h-52 sm:h-64' => $loop->first,
+                            'h-36 sm:h-44' => !$loop->first,
+                        ])>
                             <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                         </video>
                     @else
-                        <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-72 w-full object-cover sm:h-96" loading="lazy">
+                        <img src="{{ $mediaUrl($item) }}" alt="Post media" @class([
+                            'w-full object-cover',
+                            'h-52 sm:h-64' => $loop->first,
+                            'h-36 sm:h-44' => !$loop->first,
+                        ]) loading="lazy">
+                    @endif
+
+                    @if ($loop->last && $hiddenMediaCount > 0)
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/45 text-xl font-bold text-white">
+                            +{{ $hiddenMediaCount }}
+                        </div>
                     @endif
                 </div>
-            @elseif ($shownMedia->count() === 2)
-                <div class="grid grid-cols-2 gap-2">
-                    @foreach ($shownMedia as $item)
-                        <div class="overflow-hidden rounded-xl border" style="border-color: var(--ui-border);">
-                            @if ($isVideoMedia($item))
-                                <video controls preload="metadata" class="h-44 w-full object-cover sm:h-56">
-                                    <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
-                                </video>
-                            @else
-                                <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-44 w-full object-cover sm:h-56" loading="lazy">
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="grid grid-cols-2 gap-2">
-                    @foreach ($shownMedia as $item)
-                        <div
-                            @class([
-                                'relative overflow-hidden rounded-xl border',
-                                'col-span-2' => $loop->first,
-                            ])
-                            style="border-color: var(--ui-border);"
-                        >
-                            @if ($isVideoMedia($item))
-                                <video
-                                    controls
-                                    preload="metadata"
-                                    @class([
-                                        'w-full object-cover',
-                                        'h-52 sm:h-64' => $loop->first,
-                                        'h-36 sm:h-44' => !$loop->first,
-                                    ])
-                                >
-                                    <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
-                                </video>
-                            @else
-                                <img
-                                    src="{{ $mediaUrl($item) }}"
-                                    alt="Post media"
-                                    @class([
-                                        'w-full object-cover',
-                                        'h-52 sm:h-64' => $loop->first,
-                                        'h-36 sm:h-44' => !$loop->first,
-                                    ])
-                                    loading="lazy"
-                                >
-                            @endif
-
-                            @if ($loop->last && $hiddenMediaCount > 0)
-                                <div class="absolute inset-0 flex items-center justify-center bg-black/45 text-xl font-bold text-white">
-                                    +{{ $hiddenMediaCount }}
-                                </div>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @endif
+            @endforeach
         </div>
+        @endif
+    </div>
     @endif
 
     <div class="mt-4 border-t pt-3" style="border-color: var(--ui-border);">
         <div class="flex items-center gap-2">
-            <button
-                type="button"
-                @click="toggleLike()"
-                :disabled="likeBusy"
-                data-testid="like-toggle"
+            <button type="button" @click="toggleLike()" :disabled="likeBusy" data-testid="like-toggle"
                 class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                 :class="liked
                     ? 'border-rose-200 bg-rose-50 text-rose-600'
-                    : 'border-[color:var(--ui-border)] bg-[color:var(--ui-surface)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]'"
-            >
+                    : 'border-[color:var(--ui-border)] bg-[color:var(--ui-surface)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]'">
                 <span x-text="liked ? '♥' : '♡'"></span>
                 <span x-text="liked ? 'Liked' : 'Like'"></span>
                 <span class="opacity-80" x-text="likes"></span>
             </button>
 
-            <button
-                type="button"
-                @click="commentsOpen = !commentsOpen"
-                data-testid="comments-toggle"
+            <button type="button" @click="commentsOpen = !commentsOpen" data-testid="comments-toggle"
                 class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[color:var(--ui-surface-muted)]"
-                style="border-color: var(--ui-border); color: var(--ui-text);"
-            >
+                style="border-color: var(--ui-border); color: var(--ui-text);">
                 <span>💬</span>
                 <span>Comments</span>
                 <span class="opacity-80">({{ (int) ($post->comments_count ?? $comments->count()) }})</span>
             </button>
 
-            <button
-                type="button"
+            <button type="button"
                 class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[color:var(--ui-surface-muted)]"
-                style="border-color: var(--ui-border); color: var(--ui-text);"
-                x-data="{ copied: false }"
-                @click="
+                style="border-color: var(--ui-border); color: var(--ui-text);" x-data="{ copied: false }" @click="
                     const shareLink = '{{ route('posts.show', $post) }}';
                     navigator.clipboard?.writeText(shareLink)
                         .then(() => {
                             copied = true;
                             setTimeout(() => copied = false, 1500);
                         });
-                "
-            >
+                ">
                 <span x-text="copied ? 'Copied' : 'Share'"></span>
             </button>
         </div>
@@ -305,7 +281,8 @@
         <div x-show="commentsOpen" x-transition.opacity class="mt-3 space-y-3" style="display: none;">
             <div class="space-y-2">
                 @forelse ($comments as $comment)
-                    <div class="rounded-xl border p-3" style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-surface-muted) 72%, white 28%);">
+                    <div class="rounded-xl border p-3"
+                        style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-surface-muted) 72%, white 28%);">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold" style="color: var(--ui-text);">
@@ -320,10 +297,12 @@
                             </div>
 
                             @if (auth()->id() === $comment->user_id)
-                                <form action="{{ route('comments.destroy', $comment) }}" method="POST" onsubmit="return confirm('Delete this comment?');">
+                                <form action="{{ route('comments.destroy', $comment) }}" method="POST"
+                                    onsubmit="return confirm('Delete this comment?');">
                                     @csrf
                                     @method('DELETE')
-                                    <x-ui.button type="submit" data-testid="comment-delete" variant="danger" size="xs">Delete</x-ui.button>
+                                    <x-ui.button type="submit" data-testid="comment-delete" variant="danger"
+                                        size="xs">Delete</x-ui.button>
                                 </form>
                             @endif
                         </div>
@@ -337,17 +316,11 @@
                 <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="space-y-2">
                     @csrf
                     <label for="comment-body-{{ $post->id }}" class="sr-only">Add comment</label>
-                    <textarea
-                        id="comment-body-{{ $post->id }}"
-                        name="body"
-                        data-testid="comment-body"
-                        rows="2"
-                        required
-                        class="form-textarea"
-                        placeholder="Add a comment..."
-                    ></textarea>
+                    <textarea id="comment-body-{{ $post->id }}" name="body" data-testid="comment-body" rows="2" required
+                        class="form-textarea" placeholder="Add a comment..."></textarea>
                     <div class="flex justify-end">
-                        <x-ui.button type="submit" data-testid="comment-submit" variant="primary" size="xs">Comment</x-ui.button>
+                        <x-ui.button type="submit" data-testid="comment-submit" variant="primary"
+                            size="xs">Comment</x-ui.button>
                     </div>
                 </form>
             @else

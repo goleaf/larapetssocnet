@@ -81,4 +81,3 @@ class HashtagPageTest extends TestCase
             ->assertDontSee('Secret #cats post');
     }
 }
-

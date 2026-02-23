@@ -1,46 +1,144 @@
-@extends('layouts.app')
-@section('title', 'Privacy Settings')
-
-@section('content')
-    <div class="max-w-lg mx-auto">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">🔐 Privacy Settings</h1>
-
-        <form method="POST" action="{{ route('settings.privacy.update') }}"
-            class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
-            @csrf @method('PATCH')
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="font-medium text-gray-900">Private Account</p>
-                    <p class="text-sm text-gray-500">Only approved followers can see your posts and pets.</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="hidden" name="is_private" value="0">
-                    <input type="checkbox" name="is_private" value="1" class="sr-only peer" {{ $user->is_private ? 'checked' : '' }}>
-                    <div
-                        class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-emerald-600 peer-focus:ring-2 peer-focus:ring-emerald-300 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full">
-                    </div>
-                </label>
-            </div>
-            <button type="submit"
-                class="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700">
-                Save Privacy Settings
-            </button>
-        </form>
-
-        <div class="bg-white rounded-xl shadow-sm border border-red-200 p-6 mt-8">
-            <h3 class="text-lg font-bold text-red-600 mb-2">⚠️ Delete Account</h3>
-            <p class="text-sm text-gray-500 mb-4">This action is irreversible. All your posts, pets, and data will be
-                permanently removed.</p>
-            <form method="POST" action="{{ route('settings.account.destroy') }}"
-                onsubmit="return confirm('Are you sure? This cannot be undone.')">
-                @csrf @method('DELETE')
-                <input type="password" name="password" placeholder="Enter your password to confirm" required
-                    class="w-full rounded-lg border-red-300 text-sm mb-3">
-                <button type="submit"
-                    class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 w-full">
-                    Delete My Account
-                </button>
-            </form>
+<x-settings-layout>
+    <div class="space-y-6">
+        <div>
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Privacy & Visibility</h3>
+            <p class="mt-1 text-sm text-gray-500">Manage who can see your content and who can interact with you.</p>
         </div>
+
+        <form action="{{ route('settings.privacy.update') }}" method="POST" class="space-y-8">
+            @csrf
+            @method('PUT')
+
+            <div class="space-y-6">
+                <!-- Profile Visibility -->
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900">Profile Visibility</h4>
+                    <p class="text-sm text-gray-500 mb-4">Control who can view your posts and personal details.</p>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input id="pv_public" name="profile_visibility" type="radio" value="public"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('profile_visibility', $user->profile_visibility) === 'public')>
+                            <label for="pv_public" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Public <span class="font-normal text-gray-500">(Anyone can see your profile and
+                                    posts)</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="pv_followers" name="profile_visibility" type="radio" value="followers_only"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('profile_visibility', $user->profile_visibility) === 'followers_only')>
+                            <label for="pv_followers" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Followers Only <span class="font-normal text-gray-500">(Only approved followers can see
+                                    your profile and posts)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <x-input-error class="mt-2" :messages="$errors->get('profile_visibility')" />
+                </div>
+
+                <hr class="border-gray-200">
+
+                <!-- Messaging Permission -->
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900">Direct Messages</h4>
+                    <p class="text-sm text-gray-500 mb-4">Control who can send you direct messages.</p>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input id="mp_everyone" name="messaging_permission" type="radio" value="everyone"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('messaging_permission', $user->messaging_permission) === 'everyone')>
+                            <label for="mp_everyone" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Everyone
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="mp_followers" name="messaging_permission" type="radio" value="followers_only"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('messaging_permission', $user->messaging_permission) === 'followers_only')>
+                            <label for="mp_followers" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Followers Only
+                            </label>
+                        </div>
+                    </div>
+                    <x-input-error class="mt-2" :messages="$errors->get('messaging_permission')" />
+                </div>
+
+                <hr class="border-gray-200">
+
+                <!-- Pets Visibility -->
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900">Pets Visibility</h4>
+                    <p class="text-sm text-gray-500 mb-4">Control who can see the pets associated with your account.</p>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input id="pet_everyone" name="pets_visibility" type="radio" value="everyone"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('pets_visibility', $user->pets_visibility) === 'everyone')>
+                            <label for="pet_everyone" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Everyone
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="pet_followers" name="pets_visibility" type="radio" value="followers_only"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('pets_visibility', $user->pets_visibility) === 'followers_only')>
+                            <label for="pet_followers" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Followers Only
+                            </label>
+                        </div>
+                    </div>
+                    <x-input-error class="mt-2" :messages="$errors->get('pets_visibility')" />
+                </div>
+
+                <hr class="border-gray-200">
+
+                <!-- Groups Visibility -->
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900">Groups Visibility</h4>
+                    <p class="text-sm text-gray-500 mb-4">Control who can see the groups you have joined.</p>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input id="grp_everyone" name="groups_visibility" type="radio" value="everyone"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('groups_visibility', $user->groups_visibility) === 'everyone')>
+                            <label for="grp_everyone" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Everyone
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="grp_followers" name="groups_visibility" type="radio" value="followers_only"
+                                class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                @checked(old('groups_visibility', $user->groups_visibility) === 'followers_only')>
+                            <label for="grp_followers" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                Followers Only
+                            </label>
+                        </div>
+                    </div>
+                    <x-input-error class="mt-2" :messages="$errors->get('groups_visibility')" />
+                </div>
+
+                <hr class="border-gray-200">
+
+                <!-- Toggles -->
+                <div class="space-y-6">
+                    <x-ui.toggle name="show_in_explore" label="Show in Explore"
+                        description="Allow your profile to be recommended to other users."
+                        :checked="old('show_in_explore', $user->show_in_explore)" />
+
+                    <x-ui.toggle name="open_following" label="Open Following"
+                        description="Allow anyone to see who you follow." :checked="old('open_following', $user->open_following)" />
+                </div>
+
+            </div>
+
+            <div class="flex justify-end border-t border-gray-200 pt-5">
+                <x-primary-button>Save Privacy Settings</x-primary-button>
+            </div>
+        </form>
     </div>
-@endsection
+</x-settings-layout>

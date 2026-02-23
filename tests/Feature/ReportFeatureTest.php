@@ -115,4 +115,3 @@ class ReportFeatureTest extends TestCase
         $this->assertSame(0, Report::query()->count());
     }
 }
-

@@ -8,8 +8,8 @@ use App\Exceptions\UserBlockedException;
 use App\Models\Follow;
 use App\Models\User;
 use App\Notifications\FollowRequestApproved;
-use App\Notifications\NewFollowRequest;
 use App\Notifications\NewFollower;
+use App\Notifications\NewFollowRequest;
 use Illuminate\Support\Facades\DB;
 
 class FollowService
@@ -19,15 +19,15 @@ class FollowService
     public function follow(User $actor, User $target): string
     {
         if ($actor->is($target)) {
-            throw new CannotFollowSelfException();
+            throw new CannotFollowSelfException;
         }
 
         if ($actor->hasBlocked($target) || $target->hasBlocked($actor)) {
-            throw new UserBlockedException();
+            throw new UserBlockedException;
         }
 
         if ((bool) $target->is_banned) {
-            throw new UserBannedException();
+            throw new UserBannedException;
         }
 
         $status = $target->is_private ? 'pending' : 'accepted';
@@ -56,13 +56,17 @@ class FollowService
             if ($status === 'accepted') {
                 $this->counterCacheService->safeIncrement($actor, 'following_count');
                 $this->counterCacheService->safeIncrement($target, 'followers_count');
-                $target->notify(new NewFollower($actor));
+                if ($target->notificationEnabled('new_follower')) {
+                    $target->notify(new NewFollower($actor));
+                }
 
                 return 'following';
             }
 
             $this->counterCacheService->safeIncrement($target, 'follow_requests_count');
-            $target->notify(new NewFollowRequest($actor));
+            if ($target->notificationEnabled('follow_requests')) {
+                $target->notify(new NewFollowRequest($actor));
+            }
 
             return 'pending';
         });
@@ -112,7 +116,9 @@ class FollowService
             $this->counterCacheService->safeIncrement($owner, 'followers_count');
             $this->counterCacheService->safeDecrement($owner, 'follow_requests_count');
 
-            $requester->notify(new FollowRequestApproved($owner));
+            if ($requester->notificationEnabled('follow_requests')) {
+                $requester->notify(new FollowRequestApproved($owner));
+            }
         });
     }
 
@@ -154,7 +160,9 @@ class FollowService
             $requesterIds = $pending->pluck('follower_id')->unique()->values();
             User::query()->whereIn('id', $requesterIds)->get()->each(function (User $requester) use ($owner): void {
                 $requester->increment('following_count');
-                $requester->notify(new FollowRequestApproved($owner));
+                if ($requester->notificationEnabled('follow_requests')) {
+                    $requester->notify(new FollowRequestApproved($owner));
+                }
             });
 
             return $pending->count();

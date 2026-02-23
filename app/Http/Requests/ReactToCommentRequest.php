@@ -19,4 +19,3 @@ class ReactToCommentRequest extends FormRequest
         ];
     }
 }
-

@@ -37,5 +37,4 @@ class NewFollower extends Notification
     {
         return $this->toDatabase($notifiable);
     }
-
 }

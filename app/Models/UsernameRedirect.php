@@ -35,4 +35,3 @@ class UsernameRedirect extends Model
         return $query->where('redirects_until', '>=', now());
     }
 }
-

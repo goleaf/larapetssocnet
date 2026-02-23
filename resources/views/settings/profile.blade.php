@@ -1,188 +1,106 @@
-@php
-    $avatarUrl = $user->getFirstMediaUrl('avatar');
-    $coverUrl = $user->getFirstMediaUrl('cover');
-    $currentLocation = $user->location ?? $user->city;
-@endphp
-
-@section('title', 'Profile Settings')
-
-<x-app-layout>
-    <x-slot name="header">
+<x-settings-layout>
+    <div class="space-y-6">
         <div>
-            <h1 class="shell-title text-xl">Profile Settings</h1>
-            <p class="mt-1 text-sm shell-text-muted">Update your public details with a live profile preview.</p>
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Profile Information</h3>
+            <p class="mt-1 text-sm text-gray-500">Update your account's profile information and email address.</p>
         </div>
-    </x-slot>
 
-    <div
-        class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]"
-        x-data="profileEditorPreview({
-            name: @js(old('name', $user->name)),
-            username: @js(old('username', $user->username)),
-            bio: @js(old('bio', $user->bio)),
-            location: @js(old('location', $currentLocation)),
-            website: @js(old('website', $user->website)),
-            avatarUrl: @js($avatarUrl),
-            coverUrl: @js($coverUrl)
-        })"
-    >
-        <section class="shell-card p-6 sm:p-8 dark:border-slate-700/60 dark:bg-slate-900/40">
-            <form method="POST" action="{{ route('settings.profile.update') }}" enctype="multipart/form-data" class="space-y-6" aria-label="Edit public profile">
-                @csrf
-                @method('PATCH')
+        <form action="{{ route('settings.profile.update') }}" method="POST" class="space-y-6">
+            @csrf
+            @method('PUT')
 
-                <div class="grid gap-5 md:grid-cols-2">
-                    <div>
-                        <label for="name" class="mb-1 block text-sm font-semibold">Name</label>
-                        <input id="name" name="name" type="text" class="form-input" x-model="name" value="{{ old('name', $user->name) }}" required aria-label="Your display name" />
-                        <x-input-error :messages="$errors->get('name')" class="mt-2" />
-                    </div>
-
-                    <div>
-                        <label for="username" class="mb-1 block text-sm font-semibold">Username</label>
-                        @if (! $user->canChangeUsername())
-                            <div class="mt-1 flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-800">
-                                <span class="text-gray-400">@</span>
-                                <span class="font-medium text-gray-700 dark:text-gray-300">{{ $user->username }}</span>
-                                <span class="ml-auto rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                                    Can change in {{ $user->daysUntilUsernameChange() }} days
-                                </span>
-                            </div>
-                            <input type="hidden" name="username" value="{{ $user->username }}">
-                            <p class="mt-1 text-xs shell-text-muted">Usernames can only be changed once every 30 days.</p>
-                        @else
-                            <div
-                                class="relative mt-1"
-                                x-data="{ original: @js($user->username), val: @js(old('username', $user->username)), status: 'original', checking: false, message: '', get isChanged(){ return this.val !== this.original; }, async check(){ if(!this.isChanged){ this.status='original'; return; } if(this.val.length < 3){ this.status='short'; return; } this.checking=true; const res=await fetch('{{ route('api.username.available') }}?username='+encodeURIComponent(this.val)); const data=await res.json(); this.status = data.available ? 'ok' : 'taken'; this.message = data.message ?? ''; this.checking=false; } }"
-                            >
-                                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-400">@</span>
-                                <input id="username" name="username" type="text" class="form-input block w-full pl-7" x-model="val" value="{{ old('username', $user->username) }}" maxlength="30" @input.debounce.500ms="check()" aria-label="Your username" />
-                                <div class="mt-1 h-5 text-sm">
-                                    <span x-show="checking" class="text-gray-400">Checking availability...</span>
-                                    <span x-show="status === 'ok'" class="text-emerald-600">✓ Available</span>
-                                    <span x-show="status === 'taken'" class="text-red-600">✗ Already taken</span>
-                                    <span x-show="status === 'original'" class="text-gray-400">Your current username</span>
-                                </div>
-                                <div x-show="status === 'ok'" class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                                    Changing your username keeps a redirect from your old URL for 90 days.
-                                </div>
-                            </div>
-                            <x-input-error :messages="$errors->get('username')" class="mt-2" />
-                        @endif
-                    </div>
+            <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-6 sm:gap-x-6">
+                <!-- Name -->
+                <div class="sm:col-span-3">
+                    <x-input-label for="name" value="Name" />
+                    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+                    <x-input-error class="mt-2" :messages="$errors->get('name')" />
                 </div>
 
-                <div class="grid gap-5 md:grid-cols-2">
-                    <div>
-                        <label for="email" class="mb-1 block text-sm font-semibold">Email</label>
-                        <input id="email" name="email" type="email" class="form-input" value="{{ old('email', $user->email) }}" required aria-label="Your email address" />
-                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                    </div>
+                <!-- Username -->
+                <div class="sm:col-span-3"
+                    x-data="{ currentUsername: '{{ $user->username }}', newUsername: '{{ old('username', $user->username) }}' }">
+                    <x-input-label for="username" value="Username" />
+                    <x-text-input id="username" name="username" type="text" class="mt-1 block w-full"
+                        x-model="newUsername" required autocomplete="username" />
+                    <x-input-error class="mt-2" :messages="$errors->get('username')" />
 
-                    <div>
-                        <label for="website" class="mb-1 block text-sm font-semibold">Website</label>
-                        <input id="website" name="website" type="url" class="form-input" x-model="website" value="{{ old('website', $user->website) }}" placeholder="https://example.com" aria-label="Website URL" />
-                        <x-input-error :messages="$errors->get('website')" class="mt-2" />
-                    </div>
-                </div>
-
-                <div>
-                    <label for="location" class="mb-1 block text-sm font-semibold">Location</label>
-                    <input id="location" name="location" type="text" class="form-input" x-model="location" value="{{ old('location', $currentLocation) }}" aria-label="Location" />
-                    <x-input-error :messages="$errors->get('location')" class="mt-2" />
-                </div>
-
-                <div>
-                    <div class="mb-1 flex items-center justify-between gap-3">
-                        <label for="bio" class="block text-sm font-semibold">Bio</label>
-                        <span class="text-xs shell-text-muted" x-text="`${bio.length}/1000`"></span>
-                    </div>
-                    <textarea id="bio" name="bio" rows="4" class="form-textarea" x-model="bio" aria-label="Bio">{{ old('bio', $user->bio) }}</textarea>
-                    <x-input-error :messages="$errors->get('bio')" class="mt-2" />
-                </div>
-
-                <div class="grid gap-6 md:grid-cols-2">
-                    <div class="space-y-3">
-                        <label for="avatar" class="block text-sm font-semibold">Avatar</label>
-                        <div class="flex items-center gap-3 rounded-xl border border-[var(--ui-border)] p-3 dark:border-slate-700/60 dark:bg-slate-900/30">
-                            <x-avatar :src="$avatarUrl" :name="$user->name" size="xl" />
-                            <div class="flex-1">
-                                <input id="avatar" name="avatar" type="file" accept="image/*" class="form-input" @change="setAvatarPreview($event)" aria-label="Upload avatar image" />
-                                <p class="mt-1 text-xs shell-text-muted">Square image works best.</p>
-                            </div>
+                    <div x-show="currentUsername !== newUsername && newUsername !== ''"
+                        class="mt-3 p-3 bg-yellow-50 rounded-md border border-yellow-200" style="display: none;">
+                        <p class="text-sm border-l-4 border-yellow-400 pl-3 py-1 text-yellow-700">
+                            <strong>Warning:</strong> Changing your username will change your profile URL
+                            (<code>{{ url('/@') }}<span x-text="newUsername"></span></code>). Old links leading to your
+                            profile may break.
+                        </p>
+                        <div class="mt-3">
+                            <x-input-label for="username_confirm" value="Type your new username again to confirm"
+                                class="text-yellow-800" />
+                            <x-text-input id="username_confirm" name="username_confirm" type="text"
+                                class="mt-1 block w-full border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500" />
+                            <x-input-error class="mt-2 text-yellow-800" :messages="$errors->get('username_confirm')" />
                         </div>
-                        <x-input-error :messages="$errors->get('avatar')" class="mt-2" />
-                    </div>
-
-                    <div class="space-y-3">
-                        <label for="cover" class="block text-sm font-semibold">Cover</label>
-                        <div class="h-28 overflow-hidden rounded-xl border border-[var(--ui-border)] dark:border-slate-700/60">
-                            <img
-                                x-show="coverSrc"
-                                x-cloak
-                                :src="coverSrc"
-                                alt="Cover preview"
-                                class="h-full w-full object-cover"
-                            >
-                            <div
-                                x-show="!coverSrc"
-                                class="flex h-full items-center justify-center text-sm shell-text-muted"
-                                style="background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-surface) 90%);"
-                            >
-                                No cover image selected
-                            </div>
-                        </div>
-                        <input id="cover" name="cover" type="file" accept="image/*" class="form-input" @change="setCoverPreview($event)" aria-label="Upload cover image" />
-                        <x-input-error :messages="$errors->get('cover')" class="mt-2" />
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3">
-                    <button type="submit" class="btn-base btn-primary">Save Changes</button>
-                    <a href="{{ route('settings.account.edit') }}" class="btn-base btn-ghost" aria-label="Open account settings">Account Settings</a>
-
-                    @if (session('status') === 'profile-updated')
-                        <p class="text-sm shell-text-muted">Saved.</p>
-                    @endif
-                </div>
-            </form>
-        </section>
-
-        <aside class="shell-card p-4 dark:border-slate-700/60 dark:bg-slate-900/40 lg:sticky lg:top-24 lg:self-start">
-            <p class="shell-kicker">Live Preview</p>
-
-            <div class="mt-3 overflow-hidden rounded-2xl border border-[var(--ui-border)] dark:border-slate-700/60">
-                <div class="relative h-28 w-full">
-                    <img x-show="coverSrc" x-cloak :src="coverSrc" alt="Profile cover preview" class="h-full w-full object-cover">
-                    <div
-                        x-show="!coverSrc"
-                        class="h-full w-full"
-                        style="background: linear-gradient(120deg, color-mix(in srgb, var(--ui-primary) 24%, var(--ui-surface) 76%), color-mix(in srgb, var(--ui-accent) 22%, var(--ui-surface) 78%));"
-                    ></div>
+                <!-- Email -->
+                <div class="sm:col-span-6">
+                    <x-input-label for="email" value="Email Address" />
+                    <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="email" />
+                    <x-input-error class="mt-2" :messages="$errors->get('email')" />
                 </div>
 
-                <div class="relative p-4">
-                    <div class="-mt-10 inline-flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-[var(--ui-surface)] bg-[color:var(--ui-surface-muted)] text-xl font-bold dark:border-slate-900/80">
-                        <img x-show="avatarSrc" x-cloak :src="avatarSrc" :alt="`${displayName} avatar preview`" class="h-full w-full object-cover">
-                        <span x-show="!avatarSrc" x-text="initials"></span>
-                    </div>
+                <!-- Bio -->
+                <div class="sm:col-span-6">
+                    <x-input-label for="bio" value="Bio" />
+                    <textarea id="bio" name="bio" rows="4"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ old('bio', $user->bio) }}</textarea>
+                    <x-input-error class="mt-2" :messages="$errors->get('bio')" />
+                    <p class="mt-2 text-sm text-gray-500">Brief description for your profile. URLs are hyperlinked.</p>
+                </div>
 
-                    <p class="mt-3 shell-title text-lg" x-text="displayName"></p>
-                    <p class="text-sm shell-text-muted" x-text="displayUsername"></p>
+                <!-- Location -->
+                <div class="sm:col-span-3">
+                    <x-input-label for="location" value="Location" />
+                    <x-text-input id="location" name="location" type="text" class="mt-1 block w-full"
+                        :value="old('location', $user->location)" />
+                    <x-input-error class="mt-2" :messages="$errors->get('location')" />
+                </div>
 
-                    <p class="mt-3 text-sm" x-show="bio" x-text="bio"></p>
-                    <p class="mt-3 text-sm shell-text-muted" x-show="location" x-text="`📍 ${location}`"></p>
-                    <a
-                        x-show="safeWebsite"
-                        :href="safeWebsite"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="mt-2 inline-flex text-sm font-semibold hover:underline"
-                        style="color: var(--ui-primary);"
-                        x-text="safeWebsite"
-                    ></a>
+                <!-- Website -->
+                <div class="sm:col-span-3">
+                    <x-input-label for="website" value="Website" />
+                    <x-text-input id="website" name="website" type="url" class="mt-1 block w-full"
+                        :value="old('website', $user->website)" />
+                    <x-input-error class="mt-2" :messages="$errors->get('website')" />
+                </div>
+
+                <!-- Gender -->
+                <div class="sm:col-span-3">
+                    <x-input-label for="gender" value="Gender" />
+                    <select id="gender" name="gender"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <option value="">Select...</option>
+                        <option value="male" @selected(old('gender', $user->gender) == 'male')>Male</option>
+                        <option value="female" @selected(old('gender', $user->gender) == 'female')>Female</option>
+                        <option value="other" @selected(old('gender', $user->gender) == 'other')>Other</option>
+                        <option value="prefer_not_to_say" @selected(old('gender', $user->gender) == 'prefer_not_to_say')>
+                            Prefer not to say</option>
+                    </select>
+                    <x-input-error class="mt-2" :messages="$errors->get('gender')" />
+                </div>
+
+                <!-- Birth Date -->
+                <div class="sm:col-span-3">
+                    <x-input-label for="birth_date" value="Birth Date" />
+                    <x-text-input id="birth_date" name="birth_date" type="date" class="mt-1 block w-full"
+                        :value="old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : '')" />
+                    <x-input-error class="mt-2" :messages="$errors->get('birth_date')" />
                 </div>
             </div>
-        </aside>
+
+            <div class="flex justify-end border-t border-gray-200 pt-5">
+                <x-primary-button>Save Profile</x-primary-button>
+            </div>
+        </form>
     </div>
-</x-app-layout>
+</x-settings-layout>

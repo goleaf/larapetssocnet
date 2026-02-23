@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Notifications\NewFollowRequest;
 use App\Notifications\NewFollower;
+use App\Notifications\NewFollowRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;

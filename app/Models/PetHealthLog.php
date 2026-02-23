@@ -14,9 +14,13 @@ class PetHealthLog extends Model
     use SoftDeletes;
 
     public const TYPE_WEIGHT = 'weight';
+
     public const TYPE_MEDICATION = 'medication';
+
     public const TYPE_VACCINATION = 'vaccination';
+
     public const TYPE_VACCINE_LEGACY = 'vaccine';
+
     public const TYPE_VET_VISIT = 'vet_visit';
 
     /**

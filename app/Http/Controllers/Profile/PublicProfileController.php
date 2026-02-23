@@ -55,11 +55,15 @@ class PublicProfileController extends Controller
             ]);
         }
 
-        $pets = $tab === 'pets' && $canViewContent
+        $canViewPets = $viewer && $viewer->is($user)
+            ? true
+            : ($canViewContent && ($user->pets_visibility === 'everyone' || ($user->pets_visibility === 'followers_only' && $viewer && $viewer->isFollowing($user))));
+
+        $pets = $tab === 'pets' && $canViewPets
             ? $user->pets()->latest()->get()
             : collect();
 
-        $featuredPets = $canViewContent
+        $featuredPets = $canViewPets
             ? $user->pets()->latest()->limit(9)->get()
             : collect();
 
@@ -123,7 +127,11 @@ class PublicProfileController extends Controller
             : collect();
 
         // Groups tab data
-        $groups = $tab === 'groups' && $canViewContent
+        $canViewGroups = $viewer && $viewer->is($user)
+            ? true
+            : ($canViewContent && ($user->groups_visibility === 'everyone' || ($user->groups_visibility === 'followers_only' && $viewer && $viewer->isFollowing($user))));
+
+        $groups = $tab === 'groups' && $canViewGroups
             ? $user->groups()->withCount('members')->get()
             : collect();
 

@@ -117,4 +117,3 @@ it('mentions of non existent usernames are left as plain text', function (): voi
 
     expect($html)->toContain('@ghost_user');
 });
-

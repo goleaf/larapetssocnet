@@ -47,6 +47,7 @@ class DatabaseSeeder extends Seeder
 
             // Conversations + messages (depends on users)
             ConversationSeeder::class,
+            UserBlockSeeder::class,
 
             // Contests + entries + votes (depends on users + pets)
             ContestSeeder::class,

@@ -15,4 +15,3 @@ class NotReservedUsername implements ValidationRule
         }
     }
 }
-

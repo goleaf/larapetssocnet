@@ -118,7 +118,7 @@
                 </div>
             </header>
 
-            <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+            <div class="mt-4 flex flex-col gap-5 max-w-4xl mx-auto">
                 <div class="space-y-4">
                     <x-ui.card class="border" :class="$activeTheme['panel']">
                         <x-slot name="header">

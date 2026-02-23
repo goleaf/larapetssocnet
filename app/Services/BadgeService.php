@@ -41,7 +41,9 @@ class BadgeService
                 'note' => $note,
             ]);
 
-            $user->notify(new BadgeAwarded($badge));
+            if ($user->notificationEnabled('system_announcements')) {
+                $user->notify(new BadgeAwarded($badge));
+            }
         });
     }
 

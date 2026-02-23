@@ -50,7 +50,7 @@
 
         $membersForPage = $activeMembers;
 
-        if ($activeTab === 'members' && ! ($membersForPage instanceof \Illuminate\Pagination\LengthAwarePaginator)) {
+        if ($activeTab === 'members' && !($membersForPage instanceof \Illuminate\Pagination\LengthAwarePaginator)) {
             $membersForPage = \App\Models\GroupMember::query()
                 ->where('group_id', $group->id)
                 ->where(function ($query): void {
@@ -68,14 +68,10 @@
     @endphp
 
     <x-slot name="header">
-        <x-ui.page-header
-            :title="$group->name"
-            :subtitle="$privacyLabel . ' · ' . $speciesLabel"
-            :breadcrumbs="[
-                ['label' => 'Groups', 'href' => route('groups.index')],
-                ['label' => $group->name],
-            ]"
-        >
+        <x-ui.page-header :title="$group->name" :subtitle="$privacyLabel . ' · ' . $speciesLabel" :breadcrumbs="[
+        ['label' => 'Groups', 'href' => route('groups.index')],
+        ['label' => $group->name],
+    ]">
             <x-slot name="action">
                 <div class="flex flex-wrap items-center gap-2">
                     <x-ui.button href="{{ route('groups.index') }}" variant="ghost" size="sm">Back</x-ui.button>
@@ -101,7 +97,8 @@
                         @endif
 
                         @if ($isAdmin || $isOwner)
-                            <x-ui.button href="{{ route('groups.edit', $groupRouteKey) }}" variant="outline" size="sm">Edit</x-ui.button>
+                            <x-ui.button href="{{ route('groups.edit', $groupRouteKey) }}" variant="outline"
+                                size="sm">Edit</x-ui.button>
                         @endif
                     @endauth
                 </div>
@@ -114,13 +111,16 @@
             @if ($coverUrl !== '')
                 <img src="{{ $coverUrl }}" alt="{{ $group->name }} cover" class="h-full w-full object-cover">
             @else
-                <div class="h-full w-full" style="background: linear-gradient(120deg, color-mix(in srgb, var(--ui-primary) 24%, var(--ui-surface) 76%), color-mix(in srgb, var(--ui-accent) 22%, var(--ui-surface) 78%));"></div>
+                <div class="h-full w-full"
+                    style="background: linear-gradient(120deg, color-mix(in srgb, var(--ui-primary) 24%, var(--ui-surface) 76%), color-mix(in srgb, var(--ui-accent) 22%, var(--ui-surface) 78%));">
+                </div>
             @endif
         </div>
 
         <div class="relative px-5 pb-5 pt-0 sm:px-6">
             <div class="-mt-10 flex flex-wrap items-end gap-4">
-                <div class="h-20 w-20 overflow-hidden rounded-full border-4 border-[color:var(--ui-surface)] bg-[color:var(--ui-surface-muted)] sm:h-24 sm:w-24">
+                <div
+                    class="h-20 w-20 overflow-hidden rounded-full border-4 border-[color:var(--ui-surface)] bg-[color:var(--ui-surface-muted)] sm:h-24 sm:w-24">
                     @if ($avatarUrl !== '')
                         <img src="{{ $avatarUrl }}" alt="{{ $group->name }} avatar" class="h-full w-full object-cover">
                     @else
@@ -144,16 +144,23 @@
     </x-ui.card>
 
     <nav class="mt-4 flex flex-wrap gap-2">
-        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" :variant="$activeTab === 'feed' ? 'primary' : 'ghost'" size="sm">Overview</x-ui.button>
-        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members']) }}" :variant="$activeTab === 'members' && ! $showPendingRequests ? 'primary' : 'ghost'" size="sm">Members</x-ui.button>
+        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}"
+            :variant="$activeTab === 'feed' ? 'primary' : 'ghost'" size="sm">Overview</x-ui.button>
+        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members']) }}"
+            :variant="$activeTab === 'members' && !$showPendingRequests ? 'primary' : 'ghost'"
+            size="sm">Members</x-ui.button>
         @if ($canManageMembers)
-            <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members', 'request_tab' => 'pending']) }}" :variant="$showPendingRequests ? 'primary' : 'ghost'" size="sm">Requests ({{ $pendingCount }})</x-ui.button>
+            <x-ui.button
+                href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members', 'request_tab' => 'pending']) }}"
+                :variant="$showPendingRequests ? 'primary' : 'ghost'" size="sm">Requests ({{ $pendingCount }})</x-ui.button>
         @endif
-        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'about']) }}" :variant="$activeTab === 'about' ? 'primary' : 'ghost'" size="sm">About</x-ui.button>
-        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'events']) }}" :variant="$activeTab === 'events' ? 'primary' : 'ghost'" size="sm">Events</x-ui.button>
+        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'about']) }}"
+            :variant="$activeTab === 'about' ? 'primary' : 'ghost'" size="sm">About</x-ui.button>
+        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'events']) }}"
+            :variant="$activeTab === 'events' ? 'primary' : 'ghost'" size="sm">Events</x-ui.button>
     </nav>
 
-    <div class="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
+    <div class="mt-4 flex flex-col gap-5 max-w-4xl mx-auto">
         <section class="space-y-4">
             @if (session('status'))
                 <x-ui.alert type="success">{{ session('status') }}</x-ui.alert>
@@ -173,7 +180,8 @@
 
                         <div>
                             <h3 class="text-base font-semibold" style="color: var(--ui-text);">Rules</h3>
-                            <p class="mt-2 whitespace-pre-line text-sm shell-text-muted">{{ $group->rules ?: 'No published rules yet.' }}</p>
+                            <p class="mt-2 whitespace-pre-line text-sm shell-text-muted">
+                                {{ $group->rules ?: 'No published rules yet.' }}</p>
                         </div>
                     </div>
                 </x-ui.card>
@@ -193,7 +201,8 @@
 
                             <x-ui.card padding="sm" class="border border-[color:var(--ui-border)] shadow-none">
                                 <h4 class="font-semibold">
-                                    <a href="{{ route('events.show', $eventItem->id) }}" class="hover:underline">{{ $eventItem->title }}</a>
+                                    <a href="{{ route('events.show', $eventItem->id) }}"
+                                        class="hover:underline">{{ $eventItem->title }}</a>
                                 </h4>
                                 <p class="mt-1 text-xs shell-text-muted">
                                     {{ $startAtRaw ? \Carbon\Carbon::parse($startAtRaw)->format('M j, Y g:i A') : 'TBA' }}
@@ -201,7 +210,8 @@
                                         · {{ $location }}
                                     @endif
                                 </p>
-                                <x-ui.badge class="mt-2" variant="default">{{ \Illuminate\Support\Str::headline($eventStatus) }}</x-ui.badge>
+                                <x-ui.badge class="mt-2"
+                                    variant="default">{{ \Illuminate\Support\Str::headline($eventStatus) }}</x-ui.badge>
                             </x-ui.card>
                         @empty
                             <p class="text-sm shell-text-muted">No events yet.</p>
@@ -223,17 +233,16 @@
 
                         <div class="space-y-3">
                             @forelse ($pendingMembers as $pending)
-                                <x-ui.user-row
-                                    :name="$pending->user?->name ?? 'Unknown user'"
-                                    :subtitle="$pending->user?->username ? '@' . $pending->user->username : 'Pending member'"
-                                >
+                                <x-ui.user-row :name="$pending->user?->name ?? 'Unknown user'" :subtitle="$pending->user?->username ? '@' . $pending->user->username : 'Pending member'">
                                     <x-slot name="action">
                                         <div class="flex items-center gap-2">
-                                            <form method="POST" action="{{ route('groups.requests.approve', ['group' => $groupRouteKey, 'membership' => $pending->id]) }}">
+                                            <form method="POST"
+                                                action="{{ route('groups.requests.approve', ['group' => $groupRouteKey, 'membership' => $pending->id]) }}">
                                                 @csrf
                                                 <x-ui.button type="submit" size="xs" variant="primary">Approve</x-ui.button>
                                             </form>
-                                            <form method="POST" action="{{ route('groups.requests.reject', ['group' => $groupRouteKey, 'membership' => $pending->id]) }}">
+                                            <form method="POST"
+                                                action="{{ route('groups.requests.reject', ['group' => $groupRouteKey, 'membership' => $pending->id]) }}">
                                                 @csrf
                                                 <x-ui.button type="submit" size="xs" variant="ghost">Reject</x-ui.button>
                                             </form>
@@ -257,30 +266,32 @@
                                     $roleValue = strtolower((string) ($memberItem->role ?? 'member'));
                                 @endphp
 
-                                <x-ui.user-row
-                                    :name="$memberItem->user?->name ?? 'Unknown user'"
-                                    :subtitle="$memberItem->user?->username ? '@' . $memberItem->user->username : 'Member'"
-                                >
+                                <x-ui.user-row :name="$memberItem->user?->name ?? 'Unknown user'"
+                                    :subtitle="$memberItem->user?->username ? '@' . $memberItem->user->username : 'Member'">
                                     <x-slot name="action">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <x-ui.role-badge :role="$roleValue" />
 
                                             @if ($canManageMembers && $roleValue !== 'owner')
                                                 @if (in_array($roleValue, ['member', 'moderator'], true))
-                                                    <form method="POST" action="{{ route('groups.members.promote', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}">
+                                                    <form method="POST"
+                                                        action="{{ route('groups.members.promote', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}">
                                                         @csrf
                                                         <x-ui.button type="submit" size="xs" variant="ghost">Promote</x-ui.button>
                                                     </form>
                                                 @endif
 
                                                 @if (in_array($roleValue, ['admin', 'moderator'], true))
-                                                    <form method="POST" action="{{ route('groups.members.demote', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}">
+                                                    <form method="POST"
+                                                        action="{{ route('groups.members.demote', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}">
                                                         @csrf
                                                         <x-ui.button type="submit" size="xs" variant="ghost">Demote</x-ui.button>
                                                     </form>
                                                 @endif
 
-                                                <form method="POST" action="{{ route('groups.members.remove', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}" onsubmit="return confirm('Remove this member from the group?');">
+                                                <form method="POST"
+                                                    action="{{ route('groups.members.remove', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}"
+                                                    onsubmit="return confirm('Remove this member from the group?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <x-ui.button type="submit" size="xs" variant="danger">Remove</x-ui.button>
@@ -308,24 +319,16 @@
                             <x-ui.card-header title="Share in this group" />
                         </x-slot>
 
-                        <form method="POST" action="{{ route('groups.posts.store', $groupRouteKey) }}" enctype="multipart/form-data" class="space-y-3">
+                        <form method="POST" action="{{ route('groups.posts.store', $groupRouteKey) }}"
+                            enctype="multipart/form-data" class="space-y-3">
                             @csrf
-                            <x-ui.textarea
-                                name="body"
-                                label="Post"
-                                rows="3"
-                                placeholder="Write something for this group..."
-                                :error="$errors->first('body')"
-                            >{{ old('body') }}</x-ui.textarea>
+                            <x-ui.textarea name="body" label="Post" rows="3" placeholder="Write something for this group..."
+                                :error="$errors->first('body')">{{ old('body') }}</x-ui.textarea>
 
-                            <x-ui.file-upload
-                                name="media"
-                                label="Media"
-                                multiple
+                            <x-ui.file-upload name="media" label="Media" multiple
                                 accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm"
                                 :error="$errors->first('media') ?: $errors->first('media.*')"
-                                hint="Optional: add up to 4 files."
-                            />
+                                hint="Optional: add up to 4 files." />
 
                             <div class="flex justify-end">
                                 <x-ui.button type="submit" variant="primary" size="sm">Publish</x-ui.button>
@@ -334,23 +337,18 @@
                     </x-ui.card>
                 @endif
 
-                @if (! $canSeePosts)
+                @if (!$canSeePosts)
                     <x-ui.card>
-                        <x-ui.empty-state
-                            title="Private group content"
-                            description="Join this group to view and participate in posts."
-                            icon="🔒"
-                        />
+                        <x-ui.empty-state title="Private group content"
+                            description="Join this group to view and participate in posts." icon="🔒" />
                     </x-ui.card>
                 @else
                     <div class="space-y-4">
                         @forelse ($feedPosts ?? [] as $post)
                             @include('partials.post-card', ['post' => $post, 'viewer' => $viewer])
                         @empty
-                            <x-ui.empty-state
-                                title="No Group Posts Yet"
-                                description="Start the conversation by sharing the first post."
-                            />
+                            <x-ui.empty-state title="No Group Posts Yet"
+                                description="Start the conversation by sharing the first post." />
                         @endforelse
 
                         @if ($feedPosts instanceof \Illuminate\Pagination\LengthAwarePaginator)
@@ -387,12 +385,11 @@
 
                 <div class="space-y-2">
                     @forelse ($sidebarMembers as $memberItem)
-                        <x-ui.user-row
-                            :name="$memberItem->user?->name ?? 'Unknown user'"
-                            :subtitle="$memberItem->user?->username ? '@' . $memberItem->user->username : 'Member'"
-                        >
+                        <x-ui.user-row :name="$memberItem->user?->name ?? 'Unknown user'"
+                            :subtitle="$memberItem->user?->username ? '@' . $memberItem->user->username : 'Member'">
                             <x-slot name="action">
-                                <x-ui.badge size="sm" variant="default">{{ \Illuminate\Support\Str::headline((string) ($memberItem->role ?? 'member')) }}</x-ui.badge>
+                                <x-ui.badge size="sm"
+                                    variant="default">{{ \Illuminate\Support\Str::headline((string) ($memberItem->role ?? 'member')) }}</x-ui.badge>
                             </x-slot>
                         </x-ui.user-row>
                     @empty
@@ -414,7 +411,8 @@
                     @if ($pendingCount > 0)
                         <p class="text-sm shell-text-muted">You have pending member requests to review.</p>
                         <div class="mt-3">
-                            <x-ui.button href="{{ $requestsUrl }}" variant="primary" full size="sm">Review Requests</x-ui.button>
+                            <x-ui.button href="{{ $requestsUrl }}" variant="primary" full size="sm">Review
+                                Requests</x-ui.button>
                         </div>
                     @else
                         <p class="text-sm shell-text-muted">No pending requests right now.</p>

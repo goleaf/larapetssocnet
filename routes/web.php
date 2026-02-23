@@ -26,15 +26,12 @@ use App\Http\Controllers\PetFollowController;
 use App\Http\Controllers\PetHealthLogController;
 use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\PostController;
-use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\Settings\AccountSettingsController;
-use App\Http\Controllers\Settings\ProfileSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -195,18 +192,31 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
     Route::post('/events/{event}/attend', [EventController::class, 'rsvp'])->name('events.attend');
 
-    Route::get('/profile', [ProfileSettingsController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileSettingsController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [AccountSettingsController::class, 'destroy'])->name('profile.destroy');
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SettingsController::class, 'index'])->name('index');
 
-    Route::get('/settings/profile', [ProfileSettingsController::class, 'edit'])->name('settings.profile.edit');
-    Route::patch('/settings/profile', [ProfileSettingsController::class, 'update'])->name('settings.profile.update');
+        Route::get('/profile', [\App\Http\Controllers\SettingsController::class, 'editProfile'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('profile.update');
 
-    Route::get('/settings/account', [AccountSettingsController::class, 'edit'])->name('settings.account.edit');
-    Route::get('/settings/blocked', [BlockController::class, 'index'])->name('settings.blocked');
-    Route::patch('/settings/account/privacy', [AccountSettingsController::class, 'updatePrivacy'])->name('settings.account.privacy');
-    Route::post('/settings/privacy/toggle', [PrivacyController::class, 'toggle'])->name('privacy.toggle');
-    Route::delete('/settings/account', [AccountSettingsController::class, 'destroy'])->name('settings.account.destroy');
+        Route::get('/password', [\App\Http\Controllers\SettingsController::class, 'editPassword'])->name('password');
+        Route::put('/password', [\App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('password.update');
+
+        Route::get('/privacy', [\App\Http\Controllers\SettingsController::class, 'editPrivacy'])->name('privacy');
+        Route::put('/privacy', [\App\Http\Controllers\SettingsController::class, 'updatePrivacy'])->name('privacy.update');
+
+        Route::get('/notifications', [\App\Http\Controllers\SettingsController::class, 'editNotifications'])->name('notifications');
+        Route::put('/notifications', [\App\Http\Controllers\SettingsController::class, 'updateNotifications'])->name('notifications.update');
+
+        Route::get('/blocked', [\App\Http\Controllers\SettingsController::class, 'blockedUsers'])->name('blocked');
+        Route::post('/blocked', [\App\Http\Controllers\SettingsController::class, 'blockUser'])->name('blocked.store');
+        Route::delete('/blocked/{user:username}', [\App\Http\Controllers\SettingsController::class, 'unblockUser'])->name('blocked.destroy');
+
+        Route::get('/data', [\App\Http\Controllers\SettingsController::class, 'editData'])->name('data');
+        Route::post('/export-data', [\App\Http\Controllers\SettingsController::class, 'exportData'])->name('export-data');
+
+        Route::delete('/delete-account', [\App\Http\Controllers\AccountDeletionController::class, 'destroy'])->name('delete-account');
+        Route::post('/cancel-deletion', [\App\Http\Controllers\AccountDeletionController::class, 'cancel'])->name('cancel-deletion');
+    });
 
     Route::middleware('throttle:30,1')->group(function (): void {
         Route::post('/users/{user:username}/follow', [FollowController::class, 'toggle'])->name('users.follow');
@@ -249,12 +259,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     // Badges
     Route::get('/@{user:username}/badges', [App\Http\Controllers\BadgeController::class, 'index'])->name('badges.index');
 
-    // Settings – password & privacy
-    Route::get('/settings/password', [App\Http\Controllers\Settings\PasswordController::class, 'show'])->name('settings.password');
-    Route::patch('/settings/password', [App\Http\Controllers\Settings\PasswordController::class, 'update'])->name('settings.password.update');
-    Route::get('/settings/privacy', [App\Http\Controllers\Settings\PrivacyController::class, 'show'])->name('settings.privacy');
-    Route::patch('/settings/privacy', [App\Http\Controllers\Settings\PrivacyController::class, 'update'])->name('settings.privacy.update');
-    Route::delete('/settings/account', [App\Http\Controllers\Settings\AccountController::class, 'destroy'])->name('settings.account.destroy');
+    // Legacy settings routes removed
 });
 
 // Admin area

@@ -18,11 +18,11 @@ class BlockService
     public function block(User $actor, User $target): void
     {
         if ($actor->is($target)) {
-            throw new CannotBlockSelfException();
+            throw new CannotBlockSelfException;
         }
 
         if ($target->hasAnyRole(['admin', 'moderator'])) {
-            throw new CannotBlockAdminException();
+            throw new CannotBlockAdminException;
         }
 
         if ($actor->hasBlocked($target)) {
