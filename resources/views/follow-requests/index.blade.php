@@ -25,7 +25,7 @@
                     <x-avatar :user="$requester" size="md" />
                     <div class="min-w-0 flex-1">
                         <p class="truncate font-semibold">{{ $requester->name }}</p>
-                        <p class="text-xs shell-text-muted">@{{ $requester->username }}</p>
+                        <p class="text-xs shell-text-muted">&#64;{{ $requester->username }}</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <button

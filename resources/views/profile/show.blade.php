@@ -79,7 +79,7 @@
                             class="h-24 w-24 border-4 border-warm-white shadow-xl bg-warm-white" />
                         <div class="pb-2">
                             <p class="text-2xl font-bold font-display text-bark">{{ $profileUser->name }}</p>
-                            <p class="text-sm text-fur">@{{ $profileUser->username }}</p>
+                            <p class="text-sm text-fur">&#64;{{ $profileUser->username }}</p>
                             @if ($location)
                                 <p class="text-xs text-fur mt-1">📍 {{ $location }}</p>
                             @endif

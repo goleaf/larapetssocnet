@@ -168,7 +168,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="antialiased font-body bg-cream text-bark" x-data="appShell()">
+    <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
         <div class="relative min-h-screen">
             <!-- Background blobs -->
             <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-[28rem] overflow-hidden">
@@ -184,6 +184,7 @@
                 <x-ui.flash-messages />
             </div>
             <x-ui.toast-container />
+            <x-ui.confirm-modal />
 
             <div @class([
                 'relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',

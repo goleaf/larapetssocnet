@@ -23,8 +23,8 @@
         $requestsPaginator = match ($statusTab) {
             'approved' => (clone $baseQuery)
                 ->where(function ($query): void {
-                        $query->whereNull('status')->orWhereIn('status', ['active', 'accepted']);
-                    })
+                    $query->whereNull('status')->orWhereIn('status', ['active', 'accepted']);
+                })
                 ->paginate(20)
                 ->withQueryString(),
             'rejected' => (clone $baseQuery)
@@ -37,107 +37,96 @@
                 ->withQueryString(),
         };
 
-        $membersUrl = Route::has('groups.members')
-            ? route('groups.members', $groupRouteKey)
+        $membersUrl = Route::has('groups.members.index')
+            ? route('groups.members.index', $groupRouteKey)
             : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members']);
 
-        $requestsBaseUrl = Route::has('groups.requests')
-            ? route('groups.requests', $groupRouteKey)
+        $requestsBaseUrl = Route::has('groups.requests.index')
+            ? route('groups.requests.index', $groupRouteKey)
             : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members', 'request_tab' => 'pending']);
 
-        $tabUrl = static fn(string $status): string => Route::has('groups.requests')
-            ? route('groups.requests', ['group' => $groupRouteKey, 'status' => $status])
+        $tabUrl = static fn (string $status): string => Route::has('groups.requests.index')
+            ? route('groups.requests.index', ['group' => $groupRouteKey, 'status' => $status])
             : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members', 'request_tab' => 'pending', 'status' => $status]);
     @endphp
 
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <p class="shell-kicker">Membership Queue</p>
-                <h2 class="shell-title text-xl">{{ $group->name }}</h2>
-            </div>
-            <a href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}"
-                class="btn-base btn-ghost px-3 py-2 text-sm">Back to Group</a>
-        </div>
+        <x-ui.page-header
+            title="{{ $group->name }}"
+            subtitle="Membership Requests"
+            :breadcrumbs="[
+                ['label' => 'Groups', 'href' => route('groups.index')],
+                ['label' => $group->name, 'href' => route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed'])],
+                ['label' => 'Requests'],
+            ]"
+        >
+            <x-slot name="action">
+                <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" variant="ghost" size="sm">Back to Group</x-ui.button>
+            </x-slot>
+        </x-ui.page-header>
     </x-slot>
 
     @if (!$canManage)
-        <section class="shell-card p-6 text-center">
-            <h3 class="text-base font-semibold" style="color: var(--ui-text);">No access</h3>
-            <p class="mt-2 text-sm shell-text-muted">Only group moderators and admins can review requests.</p>
-        </section>
+        <x-ui.card>
+            <x-ui.empty-state title="No Access" description="Only group moderators and admins can review requests." icon="🔒" />
+        </x-ui.card>
     @else
-        <nav class="shell-card flex flex-wrap gap-2 p-3">
-            <a href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}"
-                class="btn-base btn-ghost px-3 py-2 text-sm">Overview</a>
-            <a href="{{ $membersUrl }}" class="btn-base btn-ghost px-3 py-2 text-sm">Members</a>
-            <a href="{{ $requestsBaseUrl }}" class="btn-base btn-primary px-3 py-2 text-sm">Requests</a>
+        <nav class="mb-4 flex flex-wrap gap-2">
+            <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" variant="ghost" size="sm">Overview</x-ui.button>
+            <x-ui.button href="{{ $membersUrl }}" variant="ghost" size="sm">Members</x-ui.button>
+            <x-ui.button href="{{ $requestsBaseUrl }}" variant="primary" size="sm">Requests</x-ui.button>
         </nav>
 
-        <section class="shell-card p-5">
+        <x-ui.card>
             <div class="mb-4 flex flex-wrap gap-2">
-                <a href="{{ $tabUrl('pending') }}"
-                    class="rounded-full border px-3 py-1.5 text-xs font-semibold {{ $statusTab === 'pending' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-[color:var(--ui-border)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]' }}">Pending
-                    ({{ $pendingCount }})</a>
-                <a href="{{ $tabUrl('approved') }}"
-                    class="rounded-full border px-3 py-1.5 text-xs font-semibold {{ $statusTab === 'approved' ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-[color:var(--ui-border)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]' }}">Approved
-                    ({{ $approvedCount }})</a>
-                <a href="{{ $tabUrl('rejected') }}"
-                    class="rounded-full border px-3 py-1.5 text-xs font-semibold {{ $statusTab === 'rejected' ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-[color:var(--ui-border)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]' }}">Rejected
-                    ({{ $rejectedCount }})</a>
+                <x-ui.button href="{{ $tabUrl('pending') }}" :variant="$statusTab === 'pending' ? 'primary' : 'ghost'" size="xs">Pending ({{ $pendingCount }})</x-ui.button>
+                <x-ui.button href="{{ $tabUrl('approved') }}" :variant="$statusTab === 'approved' ? 'primary' : 'ghost'" size="xs">Approved ({{ $approvedCount }})</x-ui.button>
+                <x-ui.button href="{{ $tabUrl('rejected') }}" :variant="$statusTab === 'rejected' ? 'primary' : 'ghost'" size="xs">Rejected ({{ $rejectedCount }})</x-ui.button>
             </div>
 
             <div class="space-y-3">
                 @forelse ($requestsPaginator as $requestMember)
                     @php
                         $statusValue = strtolower((string) ($requestMember->status ?? 'active'));
-                        $statusClass = match ($statusValue) {
-                            'pending' => 'bg-amber-50 text-amber-700',
-                            'rejected', 'denied', 'banned' => 'bg-rose-50 text-rose-700',
-                            default => 'bg-emerald-50 text-emerald-700',
+                        $statusVariant = match ($statusValue) {
+                            'pending' => 'warning',
+                            'rejected', 'denied', 'banned' => 'danger',
+                            default => 'success',
                         };
                     @endphp
 
-                    <article
-                        class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--ui-border)] p-3">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <x-avatar :src="$requestMember->user?->avatar_url" :name="$requestMember->user?->name" size="sm" />
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold" style="color: var(--ui-text);">
-                                    {{ $requestMember->user?->name ?? 'Unknown user' }}</p>
-                                <p class="truncate text-xs shell-text-muted">
-                                    {{ $requestMember->user?->username ? '@' . $requestMember->user->username : 'User' }}</p>
+                    <x-ui.user-row
+                        :name="$requestMember->user?->name ?? 'Unknown user'"
+                        :subtitle="$requestMember->user?->username ? '@' . $requestMember->user->username : 'User'"
+                    >
+                        <x-slot name="action">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <x-ui.badge :variant="$statusVariant" size="sm">{{ \Illuminate\Support\Str::headline($statusValue) }}</x-ui.badge>
+
+                                @if ($statusTab === 'pending')
+                                    <form method="POST" action="{{ route('groups.requests.approve', ['group' => $groupRouteKey, 'membership' => $requestMember->id]) }}">
+                                        @csrf
+                                        <x-ui.button type="submit" variant="primary" size="xs">Approve</x-ui.button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('groups.requests.reject', ['group' => $groupRouteKey, 'membership' => $requestMember->id]) }}">
+                                        @csrf
+                                        <x-ui.button type="submit" variant="ghost" size="xs">Reject</x-ui.button>
+                                    </form>
+                                @endif
                             </div>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span
-                                class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ \Illuminate\Support\Str::headline($statusValue) }}</span>
-
-                            @if ($statusTab === 'pending')
-                                <form method="POST"
-                                    action="{{ route('groups.requests.approve', ['group' => $groupRouteKey, 'membership' => $requestMember->id]) }}">
-                                    @csrf
-                                    <button type="submit" class="btn-base btn-primary px-3 py-1.5 text-xs">Approve</button>
-                                </form>
-
-                                <form method="POST"
-                                    action="{{ route('groups.members.reject', ['group' => $groupRouteKey, 'membership' => $requestMember->id]) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-base btn-ghost px-3 py-1.5 text-xs">Reject</button>
-                                </form>
-                            @endif
-                        </div>
-                    </article>
+                        </x-slot>
+                    </x-ui.user-row>
                 @empty
-                    <x-empty-state title="No Requests" description="No entries in this request state." />
+                    <x-ui.empty-state title="No Requests" description="No entries in this request state." />
                 @endforelse
             </div>
 
             @if ($requestsPaginator instanceof \Illuminate\Pagination\LengthAwarePaginator && $requestsPaginator->hasPages())
-                <div class="mt-4">{{ $requestsPaginator->links() }}</div>
+                <div class="mt-4">
+                    <x-ui.pagination :paginator="$requestsPaginator" />
+                </div>
             @endif
-        </section>
+        </x-ui.card>
     @endif
 </x-app-layout>

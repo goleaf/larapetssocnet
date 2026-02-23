@@ -12,6 +12,86 @@ class MessageFeatureTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_user_can_view_inbox_threads(): void
+    {
+        $viewer = User::factory()->create(['is_private' => false]);
+        $peer = User::factory()->create([
+            'is_private' => false,
+            'name' => 'Coco Owner',
+            'username' => 'cocoowner',
+        ]);
+
+        $conversation = Conversation::query()->create([
+            'user_one_id' => min($viewer->id, $peer->id),
+            'user_two_id' => max($viewer->id, $peer->id),
+            'last_message_at' => now(),
+            'last_message_preview' => 'hello from coco',
+            'user_one_unread_count' => 1,
+            'user_two_unread_count' => 0,
+        ]);
+
+        Message::query()->create([
+            'conversation_id' => $conversation->getKey(),
+            'sender_id' => $peer->getKey(),
+            'body' => 'hello from coco',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('messages.index'))
+            ->assertOk()
+            ->assertSee('Inbox')
+            ->assertSee('Coco Owner')
+            ->assertSee('@cocoowner')
+            ->assertSee('hello from coco');
+    }
+
+    public function test_user_can_filter_inbox_threads_by_search_query(): void
+    {
+        $viewer = User::factory()->create(['is_private' => false]);
+        $catPeer = User::factory()->create([
+            'is_private' => false,
+            'name' => 'Cat Friend',
+            'username' => 'catfriend',
+        ]);
+        $dogPeer = User::factory()->create([
+            'is_private' => false,
+            'name' => 'Dog Buddy',
+            'username' => 'dogbuddy',
+        ]);
+
+        $catConversation = Conversation::query()->create([
+            'user_one_id' => min($viewer->id, $catPeer->id),
+            'user_two_id' => max($viewer->id, $catPeer->id),
+            'last_message_at' => now(),
+            'last_message_preview' => 'cat thread',
+        ]);
+
+        $dogConversation = Conversation::query()->create([
+            'user_one_id' => min($viewer->id, $dogPeer->id),
+            'user_two_id' => max($viewer->id, $dogPeer->id),
+            'last_message_at' => now(),
+            'last_message_preview' => 'dog thread',
+        ]);
+
+        Message::query()->create([
+            'conversation_id' => $catConversation->getKey(),
+            'sender_id' => $catPeer->getKey(),
+            'body' => 'cat thread',
+        ]);
+
+        Message::query()->create([
+            'conversation_id' => $dogConversation->getKey(),
+            'sender_id' => $dogPeer->getKey(),
+            'body' => 'dog thread',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('messages.index', ['q' => 'cat']))
+            ->assertOk()
+            ->assertSee('Cat Friend')
+            ->assertDontSee('dog thread');
+    }
+
     public function test_user_can_send_message_and_view_conversation(): void
     {
         $sender = User::factory()->create(['is_private' => false]);

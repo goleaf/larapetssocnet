@@ -14,7 +14,7 @@
                     </a>
                     <div class="min-w-0 flex-1">
                         <a href="{{ route('profile.show', ['user' => $suggested]) }}" class="block truncate text-xs font-medium text-gray-900 hover:underline dark:text-white">{{ $suggested->name }}</a>
-                        <p class="truncate text-xs text-gray-400">@{{ $suggested->username }}</p>
+                        <p class="truncate text-xs text-gray-400">&#64;{{ $suggested->username }}</p>
                     </div>
                     <x-follow-button :user="$suggested" follow-status="none" size="sm" />
                 </div>

@@ -1,13 +1,15 @@
 @props(['type' => 'public'])
 
 @php
-    $config = match (strtolower($type)) {
-        'private' => ['variant' => 'warning', 'label' => '🔒 Private'],
-        'secret' => ['variant' => 'dark', 'label' => '🕵️ Secret'],
-        default => ['variant' => 'success', 'label' => '🌍 Public'],
+    $normalizedType = strtolower((string) $type);
+
+    $config = match ($normalizedType) {
+        'private' => ['tone' => 'warning', 'label' => '🔒 Private'],
+        'secret' => ['tone' => 'dark', 'label' => '🕵️ Secret'],
+        default => ['tone' => 'success', 'label' => '🌍 Public'],
     };
 @endphp
 
-<x-ui.badge :variant="$config['variant']" {{ $attributes }}>
+<x-ui.badge :tone="$config['tone']" {{ $attributes }}>
     {{ $config['label'] }}
 </x-ui.badge>

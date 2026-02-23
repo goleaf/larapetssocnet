@@ -45,7 +45,7 @@
                         <article class="hover-lift rounded-xl border p-4" style="border-color: var(--ui-border);">
                             @if($type === 'users')
                                 <div class="font-semibold" style="color: var(--ui-text);">{{ $row->name }}</div>
-                                <div class="text-sm shell-text-muted">@{{ $row->username }}</div>
+                                <div class="text-sm shell-text-muted">&#64;{{ $row->username }}</div>
                             @elseif($type === 'pets')
                                 <div class="font-semibold" style="color: var(--ui-text);">{{ $row->name }}</div>
                                 <div class="text-sm shell-text-muted">{{ $row->species }} @if($row->breed) · {{ $row->breed }} @endif</div>

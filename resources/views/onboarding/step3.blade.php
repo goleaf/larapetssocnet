@@ -20,7 +20,7 @@
                             <div class="min-w-0">
                                 <p class="truncate font-semibold">{{ $suggestedUser->name }}</p>
                                 <p class="truncate text-xs shell-text-muted">
-                                    @{{ $suggestedUser->username }} · {{ $suggestedUser->followers_count }} followers
+                                    &#64;{{ $suggestedUser->username }} · {{ $suggestedUser->followers_count }} followers
                                 </p>
                             </div>
                             <div class="flex items-center gap-2">

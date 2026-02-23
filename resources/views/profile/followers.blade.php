@@ -4,7 +4,7 @@
     <x-slot name="header">
         <div>
             <h1 class="shell-title text-xl">Followers</h1>
-            <p class="mt-1 text-sm shell-text-muted">@{{ $user->username }} · {{ number_format((int) $user->followers_count) }} followers</p>
+            <p class="mt-1 text-sm shell-text-muted">&#64;{{ $user->username }} · {{ number_format((int) $user->followers_count) }} followers</p>
         </div>
     </x-slot>
 
@@ -28,7 +28,7 @@
 
                     <div class="min-w-0 flex-1">
                         <a href="{{ route('profile.show', ['user' => $follower]) }}" class="truncate font-semibold hover:underline">{{ $follower->name }}</a>
-                        <p class="text-xs shell-text-muted">@{{ $follower->username }}</p>
+                        <p class="text-xs shell-text-muted">&#64;{{ $follower->username }}</p>
                     </div>
 
                     @auth

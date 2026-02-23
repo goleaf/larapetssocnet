@@ -126,19 +126,11 @@ document.addEventListener('alpine:init', () => {
     Alpine.store('confirm', {
         open: false,
         message: '',
-        title: 'Are you sure?',
-        variant: 'danger',
-        confirmLabel: 'Confirm',
-        cancelLabel: 'Cancel',
         resolve: null,
 
-        ask(message, options = {}) {
+        ask(message) {
             this.open = true;
             this.message = message;
-            this.title = options.title ?? 'Are you sure?';
-            this.variant = options.variant ?? 'danger';
-            this.confirmLabel = options.confirmLabel ?? 'Confirm';
-            this.cancelLabel = options.cancelLabel ?? 'Cancel';
 
             return new Promise((resolve) => {
                 this.resolve = resolve;
@@ -153,6 +145,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.resolve = null;
+            this.message = '';
         },
 
         cancel() {
@@ -163,6 +156,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.resolve = null;
+            this.message = '';
         },
     });
 

@@ -1,16 +1,31 @@
-<div class="mb-6 space-y-3" x-data="{}" x-cloak>
-    @foreach(['success', 'error', 'warning', 'info', 'status'] as $type)
-        @if(session()->has($type))
-            <x-ui.alert type="{{ $type === 'status' ? 'info' : $type }}" dismissible
-                x-init="setTimeout(() => $el.remove(), 4000)">
-                {{ session()->get($type) }}
-            </x-ui.alert>
-        @endif
-    @endforeach
+@props([
+    'timeout' => 4000,
+])
 
-    @if($errors->any())
-        <x-ui.alert type="error" dismissible x-init="setTimeout(() => $el.remove(), 4000)">
-            {{ $errors->first() }}
-        </x-ui.alert>
-    @endif
-</div>
+@php
+    $messages = collect([
+        ['type' => 'success', 'message' => session('success')],
+        ['type' => 'error', 'message' => session('error')],
+        ['type' => 'warning', 'message' => session('warning')],
+        ['type' => 'info', 'message' => session('info')],
+        ['type' => 'info', 'message' => session('status')],
+    ])->filter(static fn (array $message): bool => filled($message['message']))
+      ->values();
+
+    if ($errors->any()) {
+        $messages = $messages->prepend([
+            'type' => 'error',
+            'message' => $errors->first(),
+        ]);
+    }
+@endphp
+
+@if($messages->isNotEmpty())
+    <div class="mb-6 space-y-3">
+        @foreach($messages as $message)
+            <x-ui.alert :type="$message['type']" dismissible :timeout="$timeout">
+                {{ $message['message'] }}
+            </x-ui.alert>
+        @endforeach
+    </div>
+@endif

@@ -1,13 +1,15 @@
 @props([
     'hover' => true,
     'highlight' => false,
+    'deleted' => false,
 ])
 
-    <tr {{ $attributes->merge([
+<tr {{ $attributes->merge([
     'class' => \Illuminate\Support\Arr::toCssClasses([
-        $hover ? 'hover:bg-cream transition-colors' : '',
+        $hover ? 'transition-colors hover:bg-cream' : '',
         $highlight ? 'bg-paw-light/30' : '',
-    ])
+        $deleted ? 'opacity-70' : '',
+    ]),
 ]) }}>
     {{ $slot }}
 </tr>

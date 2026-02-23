@@ -16,6 +16,11 @@
             'mixed' => 'Mixed',
         ];
 
+        $speciesTabItems = collect($speciesTabs)
+            ->map(static fn(string $label, string $value): array => ['label' => $label, 'value' => $value])
+            ->values()
+            ->all();
+
         $visibleGroups = $groups->getCollection()->filter(function ($group) use ($selectedSpecies): bool {
             if ($selectedSpecies === 'all_pets') {
                 return true;
@@ -25,87 +30,96 @@
 
             return $groupSpecies === $selectedSpecies;
         })->values();
+
+        $privacyOptions = [
+            ['value' => 'all', 'label' => 'All types'],
+            ['value' => 'public', 'label' => 'Public'],
+            ['value' => 'private', 'label' => 'Private'],
+            ['value' => 'secret', 'label' => 'Secret'],
+        ];
+
+        if (auth()->check()) {
+            $privacyOptions[] = ['value' => 'joined', 'label' => 'Joined'];
+            $privacyOptions[] = ['value' => 'owned', 'label' => 'Owned'];
+        }
+
+        $sortOptions = [
+            ['value' => 'latest', 'label' => 'Latest'],
+            ['value' => 'members', 'label' => 'Members'],
+            ['value' => 'name', 'label' => 'Name'],
+        ];
     @endphp
 
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <p class="shell-kicker">Find Communities</p>
-                <h2 class="shell-title text-xl leading-tight">Groups</h2>
-            </div>
-
-            @auth
-                <a href="{{ route('groups.create') }}" class="btn-base btn-primary px-3 py-2 text-sm">Create Group</a>
-            @endauth
-        </div>
+        <x-ui.page-header title="Groups" subtitle="Find Communities">
+            <x-slot name="action">
+                @auth
+                    <x-ui.button href="{{ route('groups.create') }}" variant="primary" size="sm">Create Group</x-ui.button>
+                @endauth
+            </x-slot>
+        </x-ui.page-header>
     </x-slot>
 
     <div class="space-y-5">
-        @if (session('status'))
-            <x-flash-message type="success" :message="session('status')" />
-        @endif
-
-        <section class="shell-card space-y-4 p-4 sm:p-5">
+        <x-ui.card>
             <form method="GET" action="{{ route('groups.index') }}" class="grid gap-3 md:grid-cols-12">
                 <input type="hidden" name="species" value="{{ $selectedSpecies }}">
 
-                <div class="md:col-span-5">
-                    <label for="q" class="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Search</label>
-                    <x-text-input id="q" name="q" type="text" class="block w-full" :value="$search" placeholder="Search groups, interests, breeds..." />
-                </div>
+                <x-ui.input
+                    class="md:col-span-5"
+                    name="q"
+                    label="Search"
+                    :value="$search"
+                    placeholder="Search groups, interests, breeds..."
+                />
 
-                <div class="md:col-span-3">
-                    <label for="privacy" class="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Type</label>
-                    <select id="privacy" name="privacy" class="form-select">
-                        <option value="all" @selected($privacy === 'all')>All types</option>
-                        <option value="public" @selected($privacy === 'public')>Public</option>
-                        <option value="private" @selected($privacy === 'private')>Private</option>
-                        <option value="secret" @selected($privacy === 'secret')>Secret</option>
-                        @auth
-                            <option value="joined" @selected($privacy === 'joined')>Joined</option>
-                            <option value="owned" @selected($privacy === 'owned')>Owned</option>
-                        @endauth
-                    </select>
-                </div>
+                <x-ui.select
+                    class="md:col-span-3"
+                    name="privacy"
+                    label="Type"
+                    :options="$privacyOptions"
+                    :selected="$privacy"
+                />
 
-                <div class="md:col-span-2">
-                    <label for="sort" class="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Sort</label>
-                    <select id="sort" name="sort" class="form-select">
-                        <option value="latest" @selected($sort === 'latest')>Latest</option>
-                        <option value="members" @selected($sort === 'members')>Members</option>
-                        <option value="name" @selected($sort === 'name')>Name</option>
-                    </select>
-                </div>
+                <x-ui.select
+                    class="md:col-span-2"
+                    name="sort"
+                    label="Sort"
+                    :options="$sortOptions"
+                    :selected="$sort"
+                />
 
                 <div class="flex items-end md:col-span-2">
-                    <button type="submit" class="btn-base btn-primary w-full px-3 py-2 text-sm">Apply</button>
+                    <x-ui.button type="submit" class="w-full" variant="primary" size="sm">Apply</x-ui.button>
                 </div>
             </form>
 
-            <div class="flex flex-wrap gap-2" aria-label="Species filters">
-                @foreach ($speciesTabs as $value => $label)
-                    <a
-                        href="{{ route('groups.index', array_merge(request()->except('page', 'species'), ['species' => $value])) }}"
-                        class="rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors {{ $selectedSpecies === $value ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-[color:var(--ui-border)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]' }}"
-                    >
-                        {{ $label }}
-                    </a>
-                @endforeach
-            </div>
+            <x-ui.divider class="my-5" />
 
-            <div class="rounded-xl border border-[color:var(--ui-border)] p-3">
+            <x-ui.tabs :tabs="$speciesTabItems" :active="$selectedSpecies" param-name="species" class="mb-0" />
+
+            <x-ui.card class="mt-5" padding="sm">
                 <p class="text-xs font-semibold uppercase tracking-[0.08em] shell-text-muted">Type Legend</p>
-                <div class="mt-2 flex flex-wrap gap-3 text-xs">
-                    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>Public: anyone can join</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>Private: requires approval</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>Secret: invite-only</span>
+                <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-fur">
+                    <span class="inline-flex items-center gap-1.5">
+                        <x-ui.group-type-badge type="public" />
+                        Anyone can join.
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <x-ui.group-type-badge type="private" />
+                        Requires approval.
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <x-ui.group-type-badge type="secret" />
+                        Invite-only.
+                    </span>
                 </div>
-            </div>
-        </section>
+            </x-ui.card>
+        </x-ui.card>
 
         <section>
             @if ($visibleGroups->isEmpty())
-                <x-empty-state
+                <x-ui.empty-state
                     title="No Groups Found"
                     description="Try a different species tab or search term."
                 />
@@ -129,9 +143,9 @@
         </section>
 
         @if ($groups->hasPages())
-            <section class="shell-card p-4">
-                {{ $groups->onEachSide(1)->links() }}
-            </section>
+            <x-ui.card>
+                <x-ui.pagination :paginator="$groups" />
+            </x-ui.card>
         @endif
     </div>
 </x-app-layout>

@@ -134,7 +134,7 @@
                             <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')" :name="$blockedUser->name" size="md" />
                             <div class="min-w-0">
                                 <p class="truncate font-semibold">{{ $blockedUser->name }}</p>
-                                <p class="truncate text-xs shell-text-muted">@{{ $blockedUser->username }}</p>
+                                <p class="truncate text-xs shell-text-muted">&#64;{{ $blockedUser->username }}</p>
                             </div>
                         </div>
 

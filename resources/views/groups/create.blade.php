@@ -4,170 +4,128 @@
         $speciesValue = old('species', data_get($group, 'species', 'all_pets'));
 
         $privacyOptions = [
-            'public' => 'Anyone can discover and join instantly.',
-            'private' => 'Visible in search, but new members need approval.',
-            'secret' => 'Hidden from discovery and joinable by invite only.',
+            ['value' => 'public', 'label' => 'Public', 'description' => 'Anyone can discover and join instantly.'],
+            ['value' => 'private', 'label' => 'Private', 'description' => 'Visible in search, but new members need approval.'],
+            ['value' => 'secret', 'label' => 'Secret', 'description' => 'Hidden from discovery and joinable by invite only.'],
         ];
 
         $speciesOptions = [
-            'all_pets' => 'All Pets',
-            'dogs' => 'Dogs',
-            'cats' => 'Cats',
-            'birds' => 'Birds',
-            'small_pets' => 'Small Pets',
-            'reptiles' => 'Reptiles',
-            'aquatic' => 'Aquatic',
-            'mixed' => 'Mixed',
+            ['value' => 'all_pets', 'label' => 'All Pets'],
+            ['value' => 'dogs', 'label' => 'Dogs'],
+            ['value' => 'cats', 'label' => 'Cats'],
+            ['value' => 'birds', 'label' => 'Birds'],
+            ['value' => 'small_pets', 'label' => 'Small Pets'],
+            ['value' => 'reptiles', 'label' => 'Reptiles'],
+            ['value' => 'aquatic', 'label' => 'Aquatic'],
+            ['value' => 'mixed', 'label' => 'Mixed'],
         ];
     @endphp
 
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <p class="shell-kicker">Create Community</p>
-                <h2 class="shell-title text-xl leading-tight">Create Group</h2>
-            </div>
-            <a href="{{ route('groups.index') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Back to Groups</a>
-        </div>
+        <x-ui.page-header
+            title="Create Group"
+            subtitle="Create Community"
+            :breadcrumbs="[
+                ['label' => 'Groups', 'href' => route('groups.index')],
+                ['label' => 'Create'],
+            ]"
+        >
+            <x-slot name="action">
+                <x-ui.button href="{{ route('groups.index') }}" variant="ghost" size="sm">Back to Groups</x-ui.button>
+            </x-slot>
+        </x-ui.page-header>
     </x-slot>
 
-    <section
-        class="shell-card p-5 sm:p-6"
-        x-data="{
-            name: @js(old('name', $group->name ?? '')),
-            description: @js(old('description', $group->description ?? '')),
-            rules: @js(old('rules', $group->rules ?? '')),
-            avatarSrc: @js(data_get($group, 'avatar_url', '')),
-            coverSrc: @js(data_get($group, 'cover_photo_url', data_get($group, 'cover_image_path', ''))),
-            avatarObjectUrl: null,
-            coverObjectUrl: null,
-            setAvatarPreview(event) {
-                const file = event?.target?.files?.[0];
-
-                if (this.avatarObjectUrl) {
-                    URL.revokeObjectURL(this.avatarObjectUrl);
-                    this.avatarObjectUrl = null;
-                }
-
-                if (!file) {
-                    return;
-                }
-
-                this.avatarObjectUrl = URL.createObjectURL(file);
-                this.avatarSrc = this.avatarObjectUrl;
-            },
-            setCoverPreview(event) {
-                const file = event?.target?.files?.[0];
-
-                if (this.coverObjectUrl) {
-                    URL.revokeObjectURL(this.coverObjectUrl);
-                    this.coverObjectUrl = null;
-                }
-
-                if (!file) {
-                    return;
-                }
-
-                this.coverObjectUrl = URL.createObjectURL(file);
-                this.coverSrc = this.coverObjectUrl;
-            }
-        }"
-    >
+    <x-ui.card>
         <form method="POST" action="{{ route('groups.store') }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
 
-            <div class="grid gap-5 md:grid-cols-2">
-                <div>
-                    <label for="name" class="mb-1 block text-sm font-semibold">Group Name</label>
-                    <x-text-input id="name" name="name" type="text" class="block w-full" x-model="name" :value="old('name', $group->name ?? '')" maxlength="160" required />
-                    <div class="mt-1 flex justify-end text-xs shell-text-muted"><span x-text="`${name.length}/160`"></span></div>
-                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            <x-ui.form-section title="Basics" description="Set the group identity and focus.">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <x-ui.input
+                        class="md:col-span-2"
+                        name="name"
+                        label="Group Name"
+                        required
+                        maxlength="160"
+                        :value="old('name', $group->name ?? '')"
+                    />
+
+                    <x-ui.select
+                        class="md:col-span-2"
+                        name="species"
+                        label="Species Focus"
+                        :options="$speciesOptions"
+                        :selected="$speciesValue"
+                    />
+                </div>
+            </x-ui.form-section>
+
+            <x-ui.form-section title="Privacy" description="Choose how members discover and join.">
+                <x-ui.radio-group
+                    name="privacy"
+                    label="Group Type"
+                    :options="$privacyOptions"
+                    :selected="$privacyValue"
+                />
+            </x-ui.form-section>
+
+            <x-ui.form-section title="Content" description="Explain what this community is about.">
+                <div class="space-y-4">
+                    <x-ui.textarea
+                        name="description"
+                        label="Description"
+                        rows="5"
+                        maxlength="5000"
+                        :value="old('description', $group->description ?? '')"
+                    />
+
+                    <x-ui.textarea
+                        name="rules"
+                        label="Group Rules"
+                        rows="4"
+                        maxlength="5000"
+                        :value="old('rules', $group->rules ?? '')"
+                    />
+                </div>
+            </x-ui.form-section>
+
+            <x-ui.form-section title="Media" description="Add optional avatar and cover visuals.">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <x-ui.file-upload
+                        name="avatar"
+                        label="Avatar"
+                        accept="image/*"
+                        preview
+                        max-size="5MB"
+                        hint="Square image recommended."
+                        :error="$errors->first('avatar')"
+                    />
+
+                    <x-ui.file-upload
+                        name="cover"
+                        label="Cover"
+                        accept="image/*"
+                        preview
+                        max-size="8MB"
+                        hint="Landscape image works best."
+                        :error="$errors->first('cover')"
+                    />
                 </div>
 
-                <div>
-                    <label for="species" class="mb-1 block text-sm font-semibold">Species Focus</label>
-                    <select id="species" name="species" class="form-select">
-                        @foreach ($speciesOptions as $value => $label)
-                            <option value="{{ $value }}" @selected($speciesValue === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <x-input-error :messages="$errors->get('species')" class="mt-2" />
-                </div>
-            </div>
-
-            <div>
-                <p class="mb-2 text-sm font-semibold">Group Type</p>
-                <div class="grid gap-3 md:grid-cols-3">
-                    @foreach ($privacyOptions as $value => $description)
-                        <label class="cursor-pointer rounded-xl border p-3 transition-colors {{ $privacyValue === $value ? 'border-emerald-300 bg-emerald-50' : 'border-[color:var(--ui-border)] hover:bg-[color:var(--ui-surface-muted)]' }}">
-                            <div class="flex items-start gap-2">
-                                <input type="radio" name="privacy" value="{{ $value }}" class="mt-1" @checked($privacyValue === $value)>
-                                <span>
-                                    <span class="block text-sm font-semibold" style="color: var(--ui-text);">{{ \Illuminate\Support\Str::headline($value) }}</span>
-                                    <span class="mt-0.5 block text-xs shell-text-muted">{{ $description }}</span>
-                                </span>
-                            </div>
-                        </label>
-                    @endforeach
-                </div>
-                <x-input-error :messages="$errors->get('privacy')" class="mt-2" />
-            </div>
-
-            <div>
-                <div class="mb-1 flex items-center justify-between gap-3">
-                    <label for="description" class="block text-sm font-semibold">Description</label>
-                    <span class="text-xs shell-text-muted" x-text="`${description.length}/5000`"></span>
-                </div>
-                <textarea id="description" name="description" rows="5" class="form-textarea" x-model="description">{{ old('description', $group->description ?? '') }}</textarea>
-                <x-input-error :messages="$errors->get('description')" class="mt-2" />
-            </div>
-
-            <div>
-                <div class="mb-1 flex items-center justify-between gap-3">
-                    <label for="rules" class="block text-sm font-semibold">Group Rules</label>
-                    <span class="text-xs shell-text-muted" x-text="`${rules.length}/5000`"></span>
-                </div>
-                <textarea id="rules" name="rules" rows="4" class="form-textarea" x-model="rules">{{ old('rules', $group->rules ?? '') }}</textarea>
-                <x-input-error :messages="$errors->get('rules')" class="mt-2" />
-            </div>
-
-            <div class="grid gap-5 md:grid-cols-2">
-                <div class="space-y-3">
-                    <label for="avatar" class="block text-sm font-semibold">Avatar</label>
-                    <div class="flex items-center gap-3 rounded-xl border border-[color:var(--ui-border)] p-3">
-                        <div class="h-16 w-16 overflow-hidden rounded-full border border-[color:var(--ui-border)] bg-[color:var(--ui-surface-muted)]">
-                            <img x-show="avatarSrc" x-cloak :src="avatarSrc" alt="Group avatar preview" class="h-full w-full object-cover">
-                            <div x-show="!avatarSrc" class="flex h-full items-center justify-center text-lg">🐾</div>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <input id="avatar" name="avatar" type="file" accept="image/*" class="form-input" @change="setAvatarPreview($event)">
-                            <p class="mt-1 text-xs shell-text-muted">Square image recommended.</p>
-                        </div>
-                    </div>
-                    <x-input-error :messages="$errors->get('avatar')" class="mt-2" />
-                </div>
-
-                <div class="space-y-3">
-                    <label for="cover" class="block text-sm font-semibold">Cover</label>
-                    <div class="h-28 overflow-hidden rounded-xl border border-[color:var(--ui-border)] bg-[color:var(--ui-surface-muted)]">
-                        <img x-show="coverSrc" x-cloak :src="coverSrc" alt="Group cover preview" class="h-full w-full object-cover">
-                        <div x-show="!coverSrc" class="flex h-full items-center justify-center text-sm shell-text-muted">No cover selected</div>
-                    </div>
-                    <input id="cover" name="cover" type="file" accept="image/*" class="form-input" @change="setCoverPreview($event)">
-                    <x-input-error :messages="$errors->get('cover')" class="mt-2" />
-                </div>
-            </div>
-
-            <div>
-                <label for="cover_image_path" class="mb-1 block text-sm font-semibold">Cover URL (optional fallback)</label>
-                <x-text-input id="cover_image_path" name="cover_image_path" type="url" class="block w-full" :value="old('cover_image_path', $group->cover_image_path ?? '')" placeholder="https://example.com/cover.jpg" />
-                <x-input-error :messages="$errors->get('cover_image_path')" class="mt-2" />
-            </div>
+                <x-ui.input
+                    name="cover_image_path"
+                    label="Cover URL (optional fallback)"
+                    type="url"
+                    :value="old('cover_image_path', $group->cover_image_path ?? '')"
+                    placeholder="https://example.com/cover.jpg"
+                />
+            </x-ui.form-section>
 
             <div class="flex flex-wrap items-center justify-end gap-2">
-                <a href="{{ route('groups.index') }}" class="btn-base btn-ghost">Cancel</a>
-                <button type="submit" class="btn-base btn-primary">Create Group</button>
+                <x-ui.button href="{{ route('groups.index') }}" variant="ghost">Cancel</x-ui.button>
+                <x-ui.button type="submit" variant="primary">Create Group</x-ui.button>
             </div>
         </form>
-    </section>
+    </x-ui.card>
 </x-app-layout>

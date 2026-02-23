@@ -1,35 +1,71 @@
 @props([
-    'tabs' => [], /* array of ['label', 'value', 'count' => null] */
+    'tabs' => [],
     'active' => null,
     'paramName' => 'tab',
 ])
 
 @php
-    $activeTab = $active ?? request()->query($paramName) ?? ($tabs[0]['value'] ?? ($tabs[0] ?? null));
+    $activeParam = $active ?? request()->query($paramName);
+
+    $normalizedTabs = collect($tabs)->map(function ($tab) use ($activeParam, $paramName) {
+        $isArray = is_array($tab);
+
+        $value = $isArray
+            ? ($tab['value'] ?? $tab['id'] ?? $tab['key'] ?? $tab['label'] ?? null)
+            : $tab;
+
+        $label = $isArray
+            ? ($tab['label'] ?? $tab['title'] ?? $value)
+            : $tab;
+
+        $href = $isArray ? ($tab['href'] ?? $tab['url'] ?? null) : null;
+        $count = $isArray ? ($tab['count'] ?? null) : null;
+
+        $isActive = $isArray && array_key_exists('active', $tab)
+            ? (bool) $tab['active']
+            : ((string) $activeParam !== '' && (string) $activeParam === (string) $value);
+
+        if (! $href) {
+            if ($value === null || $value === '') {
+                $href = '#';
+            } else {
+                $href = request()->fullUrlWithQuery([$paramName => $value, 'page' => null]);
+            }
+        }
+
+        return [
+            'label' => $label,
+            'value' => $value,
+            'href' => $href,
+            'count' => $count,
+            'active' => $isActive,
+        ];
+    })->values();
+
+    if ($activeParam === null && $normalizedTabs->isNotEmpty()) {
+        $firstValue = $normalizedTabs->first()['value'];
+        $normalizedTabs = $normalizedTabs->map(function (array $tab, int $index) use ($firstValue) {
+            $tab['active'] = $index === 0 || ((string) $tab['value'] !== '' && (string) $tab['value'] === (string) $firstValue);
+            return $tab;
+        });
+    }
 @endphp
 
-<div {{ $attributes->merge(['class' => 'border-b border-whisker/40 w-full mb-6']) }}>
+<div {{ $attributes->merge(['class' => 'mb-6 w-full border-b border-whisker/40']) }}>
     <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
-        @foreach($tabs as $tab)
-            @php
-                $val = is_array($tab) ? ($tab['value'] ?? '') : $tab;
-                $label = is_array($tab) ? ($tab['label'] ?? $val) : $val;
-                $count = is_array($tab) ? ($tab['count'] ?? null) : null;
-                $isActive = $activeTab === $val;
-                
-                $url = request()->fullUrlWithQuery([$paramName => $val]);
-            @endphp
-            
-            <a 
-                href="{{ $url }}"
-                class="whitespace-nowrap flex items-center gap-2 py-4 px-1 border-b-2 text-sm transition-colors {{ $isActive ? 'border-paw text-paw font-semibold' : 'border-transparent text-fur hover:text-bark hover:border-whisker' }}"
-                @if($isActive) aria-current="page" @endif
+        @foreach($normalizedTabs as $tab)
+            <a
+                href="{{ $tab['href'] }}"
+                class="flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-4 text-sm transition-colors {{ $tab['active'] ? 'border-paw font-semibold text-paw' : 'border-transparent text-fur hover:border-whisker hover:text-bark' }}"
+                @if($tab['active'])
+                    aria-current="page"
+                @endif
             >
-                {{ $label }}
-                
-                @if($count !== null)
-                    <x-ui.badge :variant="$isActive ? 'primary' : 'default'" size="sm" pill class="ml-1.5">
-                        {{ $count }}
+                {{ $tab['label'] }}
+
+                @if($tab['count'] !== null)
+                    <x-ui.badge :variant="$tab['active'] ? 'primary' : 'default'" size="sm" pill class="ml-1.5">
+                        {{ $tab['count'] }}
                     </x-ui.badge>
                 @endif
             </a>

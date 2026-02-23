@@ -1,7 +1,9 @@
 @props([
-    'name',
+    'name' => null,
+    'id' => null,
     'label' => null,
-    'options' => [], /* array of ['value' => '', 'label' => ''] or associative [value => label] */
+    'options' => [],
+    'value' => null,
     'selected' => null,
     'placeholder' => null,
     'required' => false,
@@ -11,63 +13,110 @@
 ])
 
 @php
-    $error = $error ?? $errors->first($name);
-    
-    $baseClasses = 'w-full border rounded-md pl-3.5 pr-10 py-2.5 text-bark text-sm font-body transition-all duration-150 focus:outline-none appearance-none';
-    
-    if ($error) {
-        $stateClasses = 'border-rose focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)] bg-rose-light/20';
-    } elseif ($disabled) {
-        $stateClasses = 'bg-cream border-whisker opacity-60 cursor-not-allowed';
-    } else {
-        $stateClasses = 'bg-warm-white border-whisker focus:border-paw focus:shadow-input';
+    $fieldName = $name ?: $attributes->get('name');
+    $fieldId = $id ?: $attributes->get('id') ?: ($fieldName ?: 'select-'.\Illuminate\Support\Str::random(6));
+
+    $selectedValue = $value ?? $selected;
+
+    if ($selectedValue === null) {
+        $selectedValue = $attributes->get('value');
     }
-    
+
+    if ($selectedValue === null && $fieldName) {
+        $selectedValue = old($fieldName);
+    }
+
+    $resolvedError = $error;
+
+    if ($resolvedError === null && $fieldName) {
+        $resolvedError = $errors->first($fieldName);
+    }
+
+    $hasError = filled($resolvedError);
+    $hintId = $fieldId.'-hint';
+
+    $baseClasses = 'w-full appearance-none rounded-md border pl-3.5 pr-10 py-2.5 text-sm text-bark transition-all duration-150 focus:outline-none';
+
+    if ($hasError) {
+        $stateClasses = 'border-rose bg-rose-light/20 focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]';
+    } elseif ($disabled) {
+        $stateClasses = 'border-whisker bg-cream opacity-60 cursor-not-allowed';
+    } else {
+        $stateClasses = 'border-whisker bg-warm-white focus:border-paw focus:shadow-input';
+    }
+
     $classes = \Illuminate\Support\Arr::toCssClasses([
         $baseClasses,
         $stateClasses,
     ]);
+
+    $normalizedOptions = [];
+
+    foreach ($options as $key => $option) {
+        if (is_array($option)) {
+            $optionValue = $option['value'] ?? $key;
+            $optionLabel = $option['label'] ?? (string) $optionValue;
+        } else {
+            $optionValue = is_int($key) ? $option : $key;
+            $optionLabel = (string) $option;
+        }
+
+        $normalizedOptions[] = ['value' => $optionValue, 'label' => $optionLabel];
+    }
+
+    $selectedValues = is_array($selectedValue) ? $selectedValue : [$selectedValue];
+
+    $controlAttributes = $attributes->except(['class', 'name', 'id', 'value']);
 @endphp
 
-<div class="flex flex-col gap-1 {{ $attributes->get('class') }}">
-    @if($label)
-        <x-ui.label :for="$name" :required="$required">{{ $label }}</x-ui.label>
+<div {{ $attributes->only('class')->merge(['class' => 'flex flex-col gap-1']) }}>
+    @if ($label)
+        <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
     @endif
-    
-    <div class="relative w-full">
-        <select 
-            name="{{ $name }}" 
-            id="{{ $name }}"
-            {{ $disabled ? 'disabled' : '' }}
-            {{ $required ? 'required' : '' }}
-            {!! $attributes->except(['class'])->merge(['class' => $classes]) !!} 
-        >
-            @if($placeholder)
-                <option value="" disabled @if(!$selected) selected @endif>{{ $placeholder }}</option>
+
+    <div class="relative">
+        <select
+            id="{{ $fieldId }}"
+            @if ($fieldName)
+                name="{{ $fieldName }}"
             @endif
-            
-            @foreach($options as $key => $option)
-                @php
-                    $optValue = is_array($option) ? ($option['value'] ?? $key) : $key;
-                    $optLabel = is_array($option) ? ($option['label'] ?? $option) : $option;
-                    $isSelected = $selected == $optValue || (is_array($selected) && in_array($optValue, $selected));
-                @endphp
-                <option value="{{ $optValue }}" @if($isSelected) selected @endif>
-                    {{ $optLabel }}
+            @if ($required)
+                required
+            @endif
+            @if ($disabled)
+                disabled
+            @endif
+            @if ($hasError)
+                aria-invalid="true"
+            @endif
+            @if ($hasError || $hint)
+                aria-describedby="{{ $hintId }}"
+            @endif
+            {{ $controlAttributes->merge(['class' => $classes]) }}
+        >
+            @if ($placeholder)
+                <option value="" @if (! in_array('', $selectedValues, true)) disabled @endif @selected(in_array('', $selectedValues, true))>
+                    {{ $placeholder }}
+                </option>
+            @endif
+
+            @foreach ($normalizedOptions as $option)
+                <option value="{{ $option['value'] }}" @selected(in_array($option['value'], $selectedValues, false))>
+                    {{ $option['label'] }}
                 </option>
             @endforeach
-            
+
             {{ $slot }}
         </select>
-        
-        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-fur">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+
+        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-fur" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
                 <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
             </svg>
-        </div>
+        </span>
     </div>
-    
-    <x-ui.hint :error="$error">
-        @if($hint) {{ $hint }} @endif
-    </x-ui.hint>
+
+    @if ($hasError || $hint)
+        <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$hint" />
+    @endif
 </div>

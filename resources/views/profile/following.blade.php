@@ -4,7 +4,7 @@
     <x-slot name="header">
         <div>
             <h1 class="shell-title text-xl">Following</h1>
-            <p class="mt-1 text-sm shell-text-muted">@{{ $user->username }} · {{ number_format((int) $user->following_count) }} following</p>
+            <p class="mt-1 text-sm shell-text-muted">&#64;{{ $user->username }} · {{ number_format((int) $user->following_count) }} following</p>
         </div>
     </x-slot>
 
@@ -28,7 +28,7 @@
 
                     <div class="min-w-0 flex-1">
                         <a href="{{ route('profile.show', ['user' => $followedUser]) }}" class="truncate font-semibold hover:underline">{{ $followedUser->name }}</a>
-                        <p class="text-xs shell-text-muted">@{{ $followedUser->username }}</p>
+                        <p class="text-xs shell-text-muted">&#64;{{ $followedUser->username }}</p>
                         @if ($followedUser->isFollowing($user))
                             <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">Follows you</span>
                         @endif

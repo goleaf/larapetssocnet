@@ -1,37 +1,40 @@
 @props([
     'padding' => 'md',
     'hover' => false,
+    'as' => 'div',
 ])
 
 @php
     $paddings = [
         'none' => '',
+        '0' => '',
         'sm' => 'p-3',
         'md' => 'p-5',
         'lg' => 'p-7',
     ];
 
-    $paddingClass = $paddings[$padding] ?? $paddings['md'];
+    $paddingKey = (string) $padding;
+    $paddingClass = $paddings[$paddingKey] ?? $paddings['md'];
 
     $classes = \Illuminate\Support\Arr::toCssClasses([
-        'bg-warm-white rounded-lg shadow-card',
-        $hover ? 'transition-all duration-150 hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer' : '',
+        'rounded-lg border border-whisker/30 bg-warm-white shadow-card',
+        $hover ? 'cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-card-hover' : '',
         $attributes->get('class'),
     ]);
 @endphp
 
-<div {{ $attributes->except('class')->merge(['class' => $classes]) }}>
+<{{ $as }} {{ $attributes->except('class')->merge(['class' => $classes]) }}>
     <div class="{{ $paddingClass }}">
-        @if(isset($header))
+        @isset($header)
             {{ $header }}
-        @endif
-        
+        @endisset
+
         {{ $slot }}
-        
-        @if(isset($footer))
-            <div class="border-t border-whisker/40 mt-4 pt-4">
+
+        @isset($footer)
+            <div class="mt-4 border-t border-whisker/40 pt-4">
                 {{ $footer }}
             </div>
-        @endif
+        @endisset
     </div>
-</div>
+</{{ $as }}>

@@ -17,87 +17,87 @@
                 ->paginate(20)
                 ->withQueryString();
 
-        $membersUrl = Route::has('groups.members')
-            ? route('groups.members', $groupRouteKey)
+        $membersUrl = Route::has('groups.members.index')
+            ? route('groups.members.index', $groupRouteKey)
             : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members']);
 
-        $requestsUrl = Route::has('groups.requests')
-            ? route('groups.requests', $groupRouteKey)
+        $requestsUrl = Route::has('groups.requests.index')
+            ? route('groups.requests.index', ['group' => $groupRouteKey, 'status' => 'pending'])
             : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members', 'request_tab' => 'pending']);
     @endphp
 
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <p class="shell-kicker">Group Members</p>
-                <h2 class="shell-title text-xl">{{ $group->name }}</h2>
-            </div>
-            <a href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Back to Group</a>
-        </div>
+        <x-ui.page-header
+            title="{{ $group->name }}"
+            subtitle="Group Members"
+            :breadcrumbs="[
+                ['label' => 'Groups', 'href' => route('groups.index')],
+                ['label' => $group->name, 'href' => route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed'])],
+                ['label' => 'Members'],
+            ]"
+        >
+            <x-slot name="action">
+                <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" variant="ghost" size="sm">Back to Group</x-ui.button>
+            </x-slot>
+        </x-ui.page-header>
     </x-slot>
 
-    <nav class="shell-card flex flex-wrap gap-2 p-3">
-        <a href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Overview</a>
-        <a href="{{ $membersUrl }}" class="btn-base btn-primary px-3 py-2 text-sm">Members</a>
+    <nav class="mb-4 flex flex-wrap gap-2">
+        <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}" variant="ghost" size="sm">Overview</x-ui.button>
+        <x-ui.button href="{{ $membersUrl }}" variant="primary" size="sm">Members</x-ui.button>
         @if ($canManage)
-            <a href="{{ $requestsUrl }}" class="btn-base btn-ghost px-3 py-2 text-sm">Requests</a>
+            <x-ui.button href="{{ $requestsUrl }}" variant="ghost" size="sm">Requests</x-ui.button>
         @endif
     </nav>
 
-    <section class="shell-card p-5">
+    <x-ui.card>
         <div class="space-y-3">
             @forelse ($membersPaginator as $member)
                 @php
                     $roleValue = strtolower((string) ($member->role ?? 'member'));
-                    $roleClass = match ($roleValue) {
-                        'owner' => 'bg-purple-50 text-purple-700 ring-purple-200',
-                        'admin' => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-                        'moderator' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                        default => 'bg-slate-100 text-slate-700 ring-slate-200',
-                    };
                 @endphp
 
-                <article class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--ui-border)] p-3">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <x-avatar :src="$member->user?->avatar_url" :name="$member->user?->name" size="sm" />
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold" style="color: var(--ui-text);">{{ $member->user?->name ?? 'Unknown user' }}</p>
-                            <p class="truncate text-xs shell-text-muted">{{ $member->user?->username ? '@'.$member->user->username : 'Member' }}</p>
+                <x-ui.user-row
+                    :name="$member->user?->name ?? 'Unknown user'"
+                    :subtitle="$member->user?->username ? '@' . $member->user->username : 'Member'"
+                >
+                    <x-slot name="action">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <x-ui.role-badge :role="$roleValue" />
+
+                            @if ($canManage && $roleValue !== 'owner')
+                                @if (in_array($roleValue, ['member', 'moderator'], true))
+                                    <form method="POST" action="{{ route('groups.members.promote', ['group' => $groupRouteKey, 'membership' => $member->id]) }}">
+                                        @csrf
+                                        <x-ui.button type="submit" variant="ghost" size="xs">Promote</x-ui.button>
+                                    </form>
+                                @endif
+
+                                @if (in_array($roleValue, ['admin', 'moderator'], true))
+                                    <form method="POST" action="{{ route('groups.members.demote', ['group' => $groupRouteKey, 'membership' => $member->id]) }}">
+                                        @csrf
+                                        <x-ui.button type="submit" variant="ghost" size="xs">Demote</x-ui.button>
+                                    </form>
+                                @endif
+
+                                <form method="POST" action="{{ route('groups.members.remove', ['group' => $groupRouteKey, 'membership' => $member->id]) }}" onsubmit="return confirm('Remove this member from the group?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-ui.button type="submit" variant="danger" size="xs">Remove</x-ui.button>
+                                </form>
+                            @endif
                         </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $roleClass }}">
-                            {{ \Illuminate\Support\Str::headline($roleValue) }}
-                        </span>
-
-                        @if ($canManage && $roleValue !== 'owner')
-                            <form method="POST" action="{{ route('groups.members.role', ['group' => $groupRouteKey, 'membership' => $member->id]) }}" class="flex items-center gap-2">
-                                @csrf
-                                @method('PATCH')
-                                <select name="role" class="rounded-md border border-[color:var(--ui-border)] px-2 py-1 text-xs">
-                                    <option value="member" @selected($roleValue === 'member')>Member</option>
-                                    <option value="moderator" @selected($roleValue === 'moderator')>Moderator</option>
-                                    <option value="admin" @selected($roleValue === 'admin')>Admin</option>
-                                </select>
-                                <button type="submit" class="btn-base btn-ghost px-2.5 py-1.5 text-xs">Save</button>
-                            </form>
-
-                            <form method="POST" action="{{ route('groups.members.ban', ['group' => $groupRouteKey, 'membership' => $member->id]) }}">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="btn-base btn-ghost px-2.5 py-1.5 text-xs text-red-600">Ban</button>
-                            </form>
-                        @endif
-                    </div>
-                </article>
+                    </x-slot>
+                </x-ui.user-row>
             @empty
-                <x-empty-state title="No Members" description="There are no active members yet." />
+                <x-ui.empty-state title="No Members" description="There are no active members yet." />
             @endforelse
         </div>
 
         @if ($membersPaginator instanceof \Illuminate\Pagination\LengthAwarePaginator && $membersPaginator->hasPages())
-            <div class="mt-4">{{ $membersPaginator->links() }}</div>
+            <div class="mt-4">
+                <x-ui.pagination :paginator="$membersPaginator" />
+            </div>
         @endif
-    </section>
+    </x-ui.card>
 </x-app-layout>

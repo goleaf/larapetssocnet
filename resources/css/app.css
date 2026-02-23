@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 :root {
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
     --color-cream: #FDF6EC;
     --color-warm-white: #FFFBF5;
     --color-paw: #E8834A;
@@ -33,6 +37,10 @@
     --shadow-card: 0 2px 12px var(--color-shadow);
     --shadow-card-hover: 0 6px 24px var(--color-shadow-md);
     --shadow-button: 0 2px 8px rgba(232, 131, 74, 0.25);
+    --shadow-input: 0 0 0 3px rgba(232, 131, 74, 0.15);
+
+    --text-2xs: 0.625rem;
+    --text-2xs-line-height: 0.875rem;
 
     /* Compatibility aliases for existing pages. */
     --ui-bg: var(--color-cream);
@@ -60,15 +68,16 @@
     }
 
     html {
-        font-family: 'DM Sans', sans-serif;
-        background-color: #FDF6EC;
-        color: #3D2B1F;
+        font-family: var(--font-body);
+        background-color: var(--color-cream);
+        color: var(--color-bark);
         scroll-behavior: smooth;
+        scrollbar-color: var(--color-whisker) var(--color-cream);
     }
 
     body {
         margin: 0;
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-body);
         background: radial-gradient(circle at 0% -10%, rgba(232, 131, 74, 0.12), transparent 35%),
             radial-gradient(circle at 100% 0%, rgba(74, 133, 201, 0.08), transparent 30%),
             var(--color-cream);
@@ -84,14 +93,14 @@
     h6,
     .font-display,
     .font-heading {
-        font-family: 'Playfair Display', serif;
+        font-family: var(--font-display);
         color: var(--color-bark);
     }
 
     code,
     pre,
     .font-mono {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-mono);
     }
 
     [x-cloak] {
@@ -104,22 +113,22 @@
     }
 
     ::-webkit-scrollbar-track {
-        background: #FDF6EC;
+        background: var(--color-cream);
     }
 
     ::-webkit-scrollbar-thumb {
-        background: #C4A882;
+        background: var(--color-whisker);
         border-radius: 9999px;
     }
 
     *:focus-visible {
-        outline: 2px solid #E8834A;
+        outline: 2px solid var(--color-paw);
         outline-offset: 2px;
     }
 
     ::selection {
-        background: #FDE8D8;
-        color: #3D2B1F;
+        background: var(--color-paw-light);
+        color: var(--color-bark);
     }
 }
 

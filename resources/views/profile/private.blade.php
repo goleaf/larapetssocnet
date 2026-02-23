@@ -11,7 +11,7 @@
         </div>
 
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $user->name }}</h1>
-        <p class="mt-1 text-gray-500 dark:text-gray-400">@{{ $user->username }}</p>
+        <p class="mt-1 text-gray-500 dark:text-gray-400">&#64;{{ $user->username }}</p>
 
         <div class="mb-6 mt-8">
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
@@ -19,7 +19,7 @@
             </div>
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">This profile is private</h2>
             <p class="mx-auto mt-2 max-w-xs text-sm text-gray-500 dark:text-gray-400">
-                This account is private. Follow <strong>@{{ $user->username }}</strong> to see posts, photos, and pet profiles.
+                This account is private. Follow <strong>&#64;{{ $user->username }}</strong> to see posts, photos, and pet profiles.
             </p>
         </div>
 

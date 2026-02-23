@@ -1,60 +1,128 @@
 @props([
-    'name',
+    'name' => null,
+    'id' => null,
     'label' => null,
-    'options' => [], /* array of ['value', 'label', 'description'] */
+    'options' => [],
+    'value' => null,
     'selected' => null,
     'required' => false,
+    'disabled' => false,
     'error' => null,
+    'hint' => null,
+    'description' => null,
 ])
 
 @php
-    $error = $error ?? $errors->first($name);
+    $fieldName = $name ?: $attributes->get('name');
+    $fieldId = $id ?: $attributes->get('id') ?: ($fieldName ?: 'radio-group-'.\Illuminate\Support\Str::random(6));
+    $resolvedHint = $description ?? $hint;
+
+    $selectedValue = $value ?? $selected;
+
+    if ($selectedValue === null && $fieldName) {
+        $selectedValue = old($fieldName);
+    }
+
+    $resolvedError = $error;
+
+    if ($resolvedError === null && $fieldName) {
+        $resolvedError = $errors->first($fieldName);
+    }
+
+    $hasError = filled($resolvedError);
+    $hintId = $fieldId.'-hint';
+
+    $normalizedOptions = [];
+
+    foreach ($options as $key => $option) {
+        if (is_array($option)) {
+            $optionValue = $option['value'] ?? $key;
+            $optionLabel = $option['label'] ?? (string) $optionValue;
+            $optionDescription = $option['description'] ?? null;
+            $optionDisabled = (bool) ($option['disabled'] ?? false);
+        } else {
+            $optionValue = is_int($key) ? $option : $key;
+            $optionLabel = (string) $option;
+            $optionDescription = null;
+            $optionDisabled = false;
+        }
+
+        $normalizedOptions[] = [
+            'value' => $optionValue,
+            'label' => $optionLabel,
+            'description' => $optionDescription,
+            'disabled' => $optionDisabled,
+        ];
+    }
+
+    $xModel = $attributes->get('x-model');
+    $wrapperAttributes = $attributes->except(['x-model', 'name', 'id']);
 @endphp
 
-<div class="flex flex-col gap-2 {{ $attributes->get('class') }}" x-data="{ selected: '{{ $selected }}' }">
-    @if($label)
-        <x-ui.label :for="$name" :required="$required">{{ $label }}</x-ui.label>
+<fieldset {{ $wrapperAttributes->merge(['class' => 'flex flex-col gap-2']) }}>
+    @if ($label)
+        <legend class="text-sm font-medium text-bark">
+            {{ $label }}
+            @if ($required)
+                <span class="ml-0.5 text-rose" aria-hidden="true">*</span>
+                <span class="sr-only">required</span>
+            @endif
+        </legend>
     @endif
-    
+
     <div class="space-y-2">
-        @foreach($options as $option)
+        @foreach ($normalizedOptions as $index => $option)
             @php
-                $optValue = is_array($option) ? ($option['value'] ?? '') : $option;
-                $optLabel = is_array($option) ? ($option['label'] ?? $optValue) : $optValue;
-                $optDesc = is_array($option) ? ($option['description'] ?? null) : null;
-                $isSelected = $selected == $optValue;
+                $optionId = $fieldId.'-'.\Illuminate\Support\Str::slug((string) $option['value']).'-'.$index;
+                $optionSelected = (string) $selectedValue === (string) $option['value'];
+                $optionDisabled = $disabled || $option['disabled'];
             @endphp
-            
-            <label 
-                class="flex items-start gap-4 cursor-pointer w-full transition-all duration-150 relative"
-                :class="selected == '{{ $optValue }}' ? 'border-2 border-paw bg-paw-light rounded-lg p-3' : 'border border-whisker bg-warm-white rounded-lg p-3 hover:bg-cream'"
+
+            <label
+                for="{{ $optionId }}"
+                class="relative flex w-full cursor-pointer items-start gap-4 rounded-lg border bg-warm-white p-3 transition-all duration-150 hover:bg-cream"
             >
-                <input 
-                    type="radio" 
-                    name="{{ $name }}" 
-                    value="{{ $optValue }}"
-                    x-model="selected"
-                    class="sr-only peer"
-                    {{ $required ? 'required' : '' }}
-                    {{ $isSelected ? 'checked' : '' }}
-                />
-                
-                <div 
-                    class="w-5 h-5 rounded-pill flex items-center justify-center border mt-0.5 shrink-0 transition-all duration-150 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-paw"
-                    :class="selected == '{{ $optValue }}' ? 'border-paw' : 'border-whisker bg-warm-white'"
-                >
-                    <div class="w-2.5 h-2.5 rounded-pill bg-paw transition-transform duration-150" :class="selected == '{{ $optValue }}' ? 'scale-100' : 'scale-0'"></div>
-                </div>
-                
-                <div class="flex flex-col flex-1">
-                    <span class="text-sm font-medium text-bark">{{ $optLabel }}</span>
-                    @if($optDesc)
-                        <span class="text-xs text-fur mt-0.5">{{ $optDesc }}</span>
+                <input
+                    type="radio"
+                    id="{{ $optionId }}"
+                    @if ($fieldName)
+                        name="{{ $fieldName }}"
                     @endif
-                </div>
+                    value="{{ $option['value'] }}"
+                    class="peer sr-only"
+                    @if ($xModel)
+                        x-model="{{ $xModel }}"
+                    @endif
+                    @checked($optionSelected)
+                    @if ($required)
+                        required
+                    @endif
+                    @if ($optionDisabled)
+                        disabled
+                    @endif
+                    @if ($hasError)
+                        aria-invalid="true"
+                    @endif
+                    @if ($hasError || $resolvedHint)
+                        aria-describedby="{{ $hintId }}"
+                    @endif
+                />
+
+                <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-whisker bg-warm-white transition peer-checked:border-paw peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-paw">
+                    <span class="h-2.5 w-2.5 rounded-pill bg-paw scale-0 transition peer-checked:scale-100"></span>
+                </span>
+
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-medium text-bark">{{ $option['label'] }}</span>
+                    @if ($option['description'])
+                        <span class="mt-0.5 block text-xs text-fur">{{ $option['description'] }}</span>
+                    @endif
+                </span>
             </label>
         @endforeach
     </div>
-    
-    <x-ui.hint :error="$error" />
-</div>
+
+    @if ($hasError || $resolvedHint)
+        <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$resolvedHint" />
+    @endif
+</fieldset>

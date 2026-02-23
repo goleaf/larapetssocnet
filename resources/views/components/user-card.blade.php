@@ -23,7 +23,7 @@
                 <h3 class="truncate shell-title text-base">{{ $name }}</h3>
             @endif
             @if ($username)
-                <p class="truncate text-xs shell-text-muted">@{{ $username }}</p>
+                <p class="truncate text-xs shell-text-muted">&#64;{{ $username }}</p>
             @elseif ($headline)
                 <p class="truncate text-xs shell-text-muted">{{ $headline }}</p>
             @endif

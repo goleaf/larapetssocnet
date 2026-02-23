@@ -1,361 +1,436 @@
 @section('title', 'Design System Preview')
 
 <x-app-layout>
+    @php
+        $demoItems = collect(range(1, 120));
+        $demoPage = max(1, (int) request()->integer('demo_page', 3));
+        $perPage = 10;
+
+        $demoPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $demoItems->forPage($demoPage, $perPage)->values(),
+            $demoItems->count(),
+            $perPage,
+            $demoPage,
+            [
+                'path' => url()->current(),
+                'pageName' => 'demo_page',
+                'query' => request()->except('demo_page'),
+            ],
+        );
+
+        $speciesOptions = [
+            ['value' => 'all_pets', 'label' => 'All Pets'],
+            ['value' => 'dogs', 'label' => 'Dogs'],
+            ['value' => 'cats', 'label' => 'Cats'],
+            ['value' => 'birds', 'label' => 'Birds'],
+        ];
+
+        $sidebarItems = [
+            ['label' => 'Overview', 'href' => '#', 'icon' => '🏠', 'pattern' => '*', 'badge' => null],
+            ['label' => 'Members', 'href' => '#', 'icon' => '👥', 'badge' => 42],
+            ['label' => 'Requests', 'href' => '#', 'icon' => '📥', 'badge' => 3, 'badgeVariant' => 'warning'],
+            ['label' => 'Settings', 'href' => '#', 'icon' => '⚙️'],
+        ];
+
+        $radioOptions = [
+            ['value' => 'all', 'label' => 'All notifications', 'description' => 'Everything from posts to requests.'],
+            ['value' => 'mentions', 'label' => 'Only mentions', 'description' => 'Mentions and direct replies only.'],
+            ['value' => 'none', 'label' => 'None', 'description' => 'Pause all notifications.'],
+        ];
+
+        $tableRows = [
+            ['name' => 'Lindsay Walton', 'title' => 'Front-end Developer', 'email' => 'lindsay.walton@example.com', 'role' => 'Member'],
+            ['name' => 'Courtney Henry', 'title' => 'Designer', 'email' => 'courtney.henry@example.com', 'role' => 'Admin'],
+            ['name' => 'Tom Cook', 'title' => 'Director of Product', 'email' => 'tom.cook@example.com', 'role' => 'Moderator'],
+        ];
+
+        $tabs = [
+            ['label' => 'General', 'value' => 'general'],
+            ['label' => 'Security', 'value' => 'security'],
+            ['label' => 'Notifications', 'value' => 'notifications', 'count' => 3],
+        ];
+    @endphp
+
     <x-slot name="header">
-        <x-ui.page-header 
-            title="Design System" 
-            subtitle="Development Preview" 
-            description="A comprehensive gallery of all available UI components in the Warm Paw design system."
-        />
+        <x-ui.page-header
+            title="Design System"
+            subtitle="Development component showcase"
+            :breadcrumbs="[
+                ['label' => 'Home', 'href' => route('dashboard')],
+                ['label' => 'Dev'],
+                ['label' => 'Components'],
+            ]"
+        >
+            <x-slot name="action">
+                <x-ui.button href="{{ route('feed.index') }}" variant="ghost" size="sm">Back to Feed</x-ui.button>
+            </x-slot>
+        </x-ui.page-header>
     </x-slot>
 
     <div class="space-y-12 pb-20">
-        <!-- 1. Buttons & Badges -->
-        <x-ui.section title="1. Buttons & Badges" subtitle="Standard interactive elements">
-            <!-- Buttons -->
+        <x-ui.section title="Buttons & Badges" subtitle="Primary actions and state indicators">
             <x-ui.card class="mb-6">
                 <x-slot name="header">
-                    <x-ui.card-header title="Buttons" />
+                    <x-ui.card-header title="Buttons" subtitle="All variants and sizes" />
                 </x-slot>
-                <div class="flex flex-wrap items-end gap-4">
+
+                <div class="flex flex-wrap items-center gap-3">
                     <x-ui.button variant="primary">Primary</x-ui.button>
                     <x-ui.button variant="secondary">Secondary</x-ui.button>
-                    <x-ui.button variant="danger">Danger</x-ui.button>
                     <x-ui.button variant="ghost">Ghost</x-ui.button>
-                    <x-ui.button variant="default">Default</x-ui.button>
-                    
+                    <x-ui.button variant="outline">Outline</x-ui.button>
+                    <x-ui.button variant="danger">Danger</x-ui.button>
+                    <x-ui.button variant="success">Success</x-ui.button>
+                    <x-ui.button variant="primary" loading>Loading</x-ui.button>
                     <x-ui.button variant="primary" disabled>Disabled</x-ui.button>
-                    
-                    <x-ui.button variant="primary" size="sm">Small</x-ui.button>
-                    <x-ui.button variant="primary" size="md">Medium</x-ui.button>
-                    <x-ui.button variant="primary" size="lg">Large</x-ui.button>
-                    
-                    <x-ui.button variant="primary" icon="🐾">With Icon</x-ui.button>
+                </div>
+
+                <x-ui.divider class="my-5" />
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <x-ui.button size="xs" variant="primary">XS</x-ui.button>
+                    <x-ui.button size="sm" variant="primary">SM</x-ui.button>
+                    <x-ui.button size="md" variant="primary">MD</x-ui.button>
+                    <x-ui.button size="lg" variant="primary">LG</x-ui.button>
+                    <x-ui.button size="sm" variant="secondary" icon="🐾">With Icon</x-ui.button>
+                </div>
+
+                <x-ui.divider class="my-5" />
+
+                <div class="grid gap-3 md:grid-cols-2">
+                    <x-ui.button full variant="primary">Full Width</x-ui.button>
+                    <x-ui.button full variant="outline" href="#">Link Button</x-ui.button>
                 </div>
             </x-ui.card>
 
-            <!-- Icon Buttons -->
             <x-ui.card class="mb-6">
                 <x-slot name="header">
                     <x-ui.card-header title="Icon Buttons" />
                 </x-slot>
-                <div class="flex flex-wrap items-center gap-4">
-                    <x-ui.icon-button icon="❤️" variant="primary" />
-                    <x-ui.icon-button icon="✨" variant="secondary" />
-                    <x-ui.icon-button icon="✖️" variant="danger" />
-                    <x-ui.icon-button icon="⚙️" variant="ghost" />
-                    <x-ui.icon-button icon="⚙️" variant="ghost" size="sm" />
-                    <x-ui.icon-button icon="⚙️" variant="ghost" size="lg" />
-                    <x-ui.icon-button icon="🐾" pill />
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <x-ui.icon-button variant="primary" size="sm" icon="❤️" />
+                    <x-ui.icon-button variant="secondary" size="md" icon="✨" />
+                    <x-ui.icon-button variant="ghost" size="md" icon="⚙️" />
+                    <x-ui.icon-button variant="outline" size="lg" icon="✏️" />
+                    <x-ui.icon-button variant="danger" size="md" icon="🗑️" />
+                    <x-ui.icon-button variant="success" size="md" icon="✅" />
+                    <x-ui.icon-button variant="ghost" size="md" icon="🔒" disabled />
                 </div>
             </x-ui.card>
 
-            <!-- Badges -->
             <x-ui.card>
                 <x-slot name="header">
-                    <x-ui.card-header title="Badges" />
+                    <x-ui.card-header title="Badges" subtitle="Standard and domain badges" />
                 </x-slot>
-                <div class="flex flex-wrap items-center gap-4 mb-4">
+
+                <div class="flex flex-wrap items-center gap-3">
                     <x-ui.badge variant="default">Default</x-ui.badge>
                     <x-ui.badge variant="primary">Primary</x-ui.badge>
-                    <x-ui.badge variant="secondary">Secondary</x-ui.badge>
                     <x-ui.badge variant="success">Success</x-ui.badge>
                     <x-ui.badge variant="danger">Danger</x-ui.badge>
                     <x-ui.badge variant="warning">Warning</x-ui.badge>
                     <x-ui.badge variant="info">Info</x-ui.badge>
+                    <x-ui.badge variant="dark">Dark</x-ui.badge>
+                    <x-ui.badge variant="primary" dot>Dot Badge</x-ui.badge>
+                    <x-ui.badge variant="primary" size="sm">Small</x-ui.badge>
                 </div>
-                <div class="flex flex-wrap items-center gap-4 mb-4">
-                    <x-ui.badge pill variant="primary">Pill Badge</x-ui.badge>
-                    <x-ui.badge icon="🐾" variant="primary">With Icon</x-ui.badge>
-                    <x-ui.badge size="sm" variant="primary">Small</x-ui.badge>
-                    <x-ui.badge size="md" variant="primary">Medium</x-ui.badge>
-                    <x-ui.badge size="lg" variant="primary">Large</x-ui.badge>
-                </div>
-                
-                <h4 class="text-sm font-semibold mb-2 mt-6">Specialized Badges</h4>
-                <div class="flex flex-wrap items-center gap-4">
+
+                <x-ui.divider label="Domain" class="my-6" />
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <x-ui.role-badge role="owner" />
                     <x-ui.role-badge role="admin" />
                     <x-ui.role-badge role="moderator" />
-                    
+                    <x-ui.role-badge role="member" />
                     <x-ui.group-type-badge type="public" />
                     <x-ui.group-type-badge type="private" />
+                    <x-ui.group-type-badge type="secret" />
                 </div>
             </x-ui.card>
         </x-ui.section>
 
-        <!-- 2. Inputs & Forms -->
-        <x-ui.section title="2. Inputs & Forms" subtitle="Data entry components">
-            <x-ui.card class="max-w-xl">
-                <form class="space-y-6">
-                    <!-- Standard Input -->
-                    <div class="space-y-2">
-                        <x-ui.label for="name" required>Full Name</x-ui.label>
-                        <x-ui.input id="name" placeholder="John Doe" />
-                        <x-ui.hint>Please enter your full legal name.</x-ui.hint>
+        <x-ui.section title="Inputs & Forms" subtitle="Field, selection, and upload controls">
+            <x-ui.card>
+                <div class="grid gap-5 md:grid-cols-2">
+                    <x-ui.input name="demo_name" label="Full Name" value="Jane Doe" required hint="Use your public profile name." />
+
+                    <x-ui.input
+                        name="demo_email"
+                        label="Email"
+                        type="email"
+                        value="jane@example.com"
+                        prefix="✉️"
+                    />
+
+                    <x-ui.input
+                        name="demo_error"
+                        label="Input with Error"
+                        value="invalid value"
+                        error="This field value is invalid."
+                    />
+
+                    <x-ui.select
+                        name="demo_species"
+                        label="Species"
+                        :options="$speciesOptions"
+                        selected="dogs"
+                        placeholder="Select a focus"
+                    />
+
+                    <x-ui.textarea
+                        class="md:col-span-2"
+                        name="demo_bio"
+                        label="Bio"
+                        rows="4"
+                        maxlength="160"
+                        hint="Tell people what kind of pets you share updates about."
+                    >Two playful rescues and one very opinionated cat.</x-ui.textarea>
+                </div>
+
+                <x-ui.divider class="my-6" />
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div class="space-y-3">
+                        <x-ui.checkbox name="demo_terms" label="I agree to the terms" checked />
+                        <x-ui.checkbox name="demo_newsletter" label="Subscribe to newsletter" hint="Only important updates." />
+                        <x-ui.checkbox name="demo_disabled" label="Disabled option" disabled />
                     </div>
 
-                    <!-- Input with Icon -->
-                    <div class="space-y-2">
-                        <x-ui.label for="email">Email</x-ui.label>
-                        <x-ui.input id="email" type="email" placeholder="john@example.com">
-                            <x-slot name="prefix">
-                                ✉️
-                            </x-slot>
-                        </x-ui.input>
-                    </div>
+                    <x-ui.radio-group
+                        name="demo_notifications"
+                        label="Notification Preference"
+                        :options="$radioOptions"
+                        selected="mentions"
+                    />
 
-                    <!-- Input with Error -->
-                    <div class="space-y-2">
-                        <x-ui.label for="username">Username</x-ui.label>
-                        <x-ui.input id="username" value="invalid*name" error="Username can only contain numbers and letters." />
-                        <x-ui.hint error message="Username can only contain numbers and letters." />
-                    </div>
+                    <x-ui.file-upload
+                        class="md:col-span-2"
+                        name="demo_media"
+                        label="Media Upload"
+                        accept="image/jpeg,image/png,video/mp4"
+                        max-size="20MB"
+                        multiple
+                        preview
+                        hint="Supports drag-and-drop and image preview."
+                    />
+                </div>
+            </x-ui.card>
 
-                    <!-- Textarea -->
-                    <div class="space-y-2">
-                        <x-ui.label for="bio">Biography</x-ui.label>
-                        <x-ui.textarea id="bio" placeholder="Tell us about yourself..." />
-                    </div>
+            <x-ui.card class="mt-6">
+                <x-slot name="header">
+                    <x-ui.card-header title="Form Section Pattern" subtitle="Composable section wrapper" />
+                </x-slot>
 
-                    <!-- Select -->
-                    <div class="space-y-2">
-                        <x-ui.label for="country">Country</x-ui.label>
-                        <x-ui.select id="country">
-                            <option value="">Select country</option>
-                            <option value="us">United States</option>
-                            <option value="uk">United Kingdom</option>
-                            <option value="ca">Canada</option>
-                        </x-ui.select>
-                    </div>
-
-                    <!-- Checkboxes & Radios -->
-                    <div class="space-y-4 pt-4">
-                        <x-ui.checkbox id="terms" label="I agree to the Terms of Service" required />
-                        <x-ui.checkbox id="newsletter" label="Subscribe to newsletter" hint="We only send important updates." checked />
-                        <x-ui.checkbox id="disabled" label="Disabled option" disabled />
-                    </div>
-
-                    <div class="space-y-2 pt-4">
-                        <x-ui.label>Notification Preference</x-ui.label>
-                        <x-ui.radio-group 
-                            name="notifications" 
-                            :options="[
-                                ['value' => 'all', 'label' => 'All notifications'],
-                                ['value' => 'mentions', 'label' => 'Only mentions'],
-                                ['value' => 'none', 'label' => 'None']
-                            ]"
-                            selected="mentions"
-                        />
-                    </div>
-
-                    <!-- File Upload -->
-                    <div class="space-y-2 pt-4">
-                        <x-ui.label for="avatar">Avatar</x-ui.label>
-                        <x-ui.file-upload id="avatar" accept="image/*" />
-                    </div>
-                </form>
+                <x-ui.form-section title="Profile Details" description="A reusable two-column section layout for longer forms.">
+                    <x-ui.input name="section_city" label="City" value="Bratislava" />
+                    <x-ui.input name="section_website" label="Website" value="https://larapets.test" />
+                </x-ui.form-section>
             </x-ui.card>
         </x-ui.section>
 
-        <!-- 3. Cards & Layout -->
-        <x-ui.section title="3. Cards & Layout" subtitle="Content containers and organizers">
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- Basic Card -->
+        <x-ui.section title="Cards, Layout & Avatar" subtitle="Surface components and profile primitives">
+            <div class="grid gap-6 md:grid-cols-2">
                 <x-ui.card>
                     <x-slot name="header">
-                        <x-ui.card-header title="Standard Card" subtitle="With subtitle and actions">
+                        <x-ui.card-header title="Standard Card" subtitle="Header + body + footer">
                             <x-slot name="action">
-                                <x-ui.button size="sm">Action</x-ui.button>
+                                <x-ui.button variant="ghost" size="sm">Action</x-ui.button>
                             </x-slot>
                         </x-ui.card-header>
                     </x-slot>
-                    <p class="text-bark">This is a standard card with default padding.</p>
+
+                    <p class="text-sm text-fur">Cards are the base content container across app pages.</p>
+
+                    <x-slot name="footer">
+                        <p class="text-xs text-fur">Footer slot</p>
+                    </x-slot>
                 </x-ui.card>
 
-                <!-- Panel -->
-                <x-ui.panel>
-                    A panel is a simpler alternative to a card, typically with a darker background, useful for secondary content or grouping.
+                <x-ui.panel title="Panel" subtitle="Compact container" collapsible>
+                    <p class="text-sm text-fur">Panels work well for sidebars and grouped metadata.</p>
                 </x-ui.panel>
             </div>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <x-ui.stat label="Total Users" value="10,234" icon="👥" trend="up" trendValue="12% from last month" />
-                <x-ui.stat label="Active Pets" value="8,402" icon="🐾" />
-                <x-ui.stat label="Server Load" value="23%" icon="⚡" trend="down" trendValue="5% below average" />
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+                <x-ui.stat label="Total Members" value="12,340" icon="👥" trend="+12%" :trend-up="true" />
+                <x-ui.stat label="Active Pets" value="8,421" icon="🐾" />
+                <x-ui.stat label="Reported Issues" value="14" icon="⚠️" trend="-3" :trend-up="false" />
             </div>
 
-            <x-ui.divider class="my-8" />
+            <x-ui.card class="mt-6">
+                <x-slot name="header">
+                    <x-ui.card-header title="Avatars" />
+                </x-slot>
 
-            <!-- Empty State -->
-            <x-ui.card>
-                <x-ui.empty-state 
-                    icon="📁" 
-                    title="No files found" 
-                    description="Get started by uploading your first file now."
+                <div class="space-y-5">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <x-ui.avatar name="Alex Morgan" size="xs" />
+                        <x-ui.avatar name="Alex Morgan" size="sm" />
+                        <x-ui.avatar name="Alex Morgan" size="md" />
+                        <x-ui.avatar name="Alex Morgan" size="lg" />
+                        <x-ui.avatar name="Alex Morgan" size="xl" />
+                        <x-ui.avatar name="Online User" size="md" :online="true" />
+                    </div>
+
+                    <x-ui.avatar-group
+                        :users="[
+                            ['name' => 'Alice'],
+                            ['name' => 'Bob'],
+                            ['name' => 'Charlie'],
+                            ['name' => 'Denise'],
+                            ['name' => 'Eric'],
+                        ]"
+                        :max="3"
+                    />
+                </div>
+            </x-ui.card>
+
+            <x-ui.card class="mt-6">
+                <x-ui.empty-state
+                    icon="📭"
+                    title="No records found"
+                    description="Use empty states to guide users to their next action."
                 >
                     <x-slot name="action">
-                        <x-ui.button variant="primary">Upload File</x-ui.button>
+                        <x-ui.button variant="primary">Create First Item</x-ui.button>
                     </x-slot>
                 </x-ui.empty-state>
             </x-ui.card>
+        </x-ui.section>
 
-            <!-- Avatars -->
-            <x-ui.card class="mt-6">
+        <x-ui.section title="Feedback & Overlays" subtitle="Alerts, loading, dropdowns, modals, and confirmation">
+            <x-ui.card>
                 <x-slot name="header">
-                    <x-ui.card-header title="Avatars & Groups" />
+                    <x-ui.card-header title="Alerts" />
                 </x-slot>
-                <div class="flex flex-col gap-6">
-                    <div class="flex items-end gap-4">
-                        <x-ui.avatar name="John Doe" size="xs" />
-                        <x-ui.avatar name="John Doe" size="sm" />
-                        <x-ui.avatar name="Jane Smith" size="md" />
-                        <x-ui.avatar src="https://ui-avatars.com/api/?name=Alex&background=random" name="Alex" size="lg" />
-                        <x-ui.avatar name="Admin User" size="xl" />
-                        <x-ui.avatar name="Big Avatar" size="2xl" />
-                    </div>
-                    
-                    <div>
-                        <h4 class="text-sm font-medium text-fur mb-2">Avatar Group</h4>
-                        <x-ui.avatar-group 
-                            :users="[
-                                ['name' => 'Alice'],
-                                ['name' => 'Bob', 'avatar_url' => 'https://ui-avatars.com/api/?name=Bob'],
-                                ['name' => 'Charlie'],
-                                ['name' => 'Dave'],
-                                ['name' => 'Eve'],
-                            ]"
-                            max="3"
-                        />
-                    </div>
+
+                <div class="space-y-3">
+                    <x-ui.alert type="info" title="Info">Informational message content.</x-ui.alert>
+                    <x-ui.alert type="success" title="Success">Saved successfully.</x-ui.alert>
+                    <x-ui.alert type="warning" title="Warning">This action is almost irreversible.</x-ui.alert>
+                    <x-ui.alert type="error" title="Error">Something went wrong.</x-ui.alert>
+                    <x-ui.alert type="info" title="Dismissible" dismissible>This alert can be closed.</x-ui.alert>
                 </div>
             </x-ui.card>
-        </x-ui.section>
 
-        <!-- 4. Feedback & Overlays -->
-        <x-ui.section title="4. Feedback & Overlays" subtitle="Alerts, modals, toasts, and loaders" x-data="{ showModal: false, showConfirmModal: false }">
-            <!-- Alerts -->
-            <div class="space-y-4 mb-8">
-                <x-ui.alert type="info" title="Information">This is an informational alert.</x-ui.alert>
-                <x-ui.alert type="success" title="Success">Your changes have been saved successfully.</x-ui.alert>
-                <x-ui.alert type="warning" title="Warning">Your subscription is expiring soon.</x-ui.alert>
-                <x-ui.alert type="error" title="Error">There was a problem submitting your form.</x-ui.alert>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-4 mb-8">
-                <!-- Toast Trigger -->
-                <x-ui.button variant="secondary" @click="$dispatch('notify', { type: 'success', message: 'This is a test toast!' })">
-                    Show Toast
-                </x-ui.button>
-
-                <!-- Loaders -->
-                <x-ui.loading-spinner size="sm" />
-                <x-ui.loading-spinner size="md" />
-                <x-ui.loading-spinner size="lg" color="leaf" />
-
-                <!-- Tooltip -->
-                <div class="ml-4 relative group inline-block">
-                    <x-ui.badge variant="default">Hover me</x-ui.badge>
-                    <x-ui.tooltip text="This is a useful tooltip!" position="top" />
-                </div>
-            </div>
-
-            <!-- Modals -->
-            <div class="flex flex-wrap gap-4">
-                <x-ui.button @click="showModal = true">Standard Modal</x-ui.button>
-                <x-ui.button variant="danger" @click="showConfirmModal = true">Confirmation Modal</x-ui.button>
-            </div>
-
-            <x-ui.modal x-show="showModal" @close="showModal = false" title="Modal Example">
-                <p class="text-bark">This is the content of the modal. You can place anything inside here.</p>
-                <div class="mt-6 flex justify-end gap-3">
-                    <x-ui.button variant="ghost" @click="showModal = false">Cancel</x-ui.button>
-                    <x-ui.button variant="primary" @click="showModal = false">Submit</x-ui.button>
-                </div>
-            </x-ui.modal>
-
-            <x-ui.confirm-modal 
-                x-show="showConfirmModal" 
-                @close="showConfirmModal = false"
-                @confirm="$dispatch('notify', {type: 'success', message: 'Confirmed!'}); showConfirmModal = false;"
-                title="Delete Account"
-                message="Are you absolutely sure you want to delete your account? This action cannot be undone."
-                confirmLabel="Delete Account"
-            />
-
-            <!-- Progress -->
-            <div class="mt-8 space-y-4 max-w-md">
-                <x-ui.progress value="45" label="Uploading file..." />
-                <x-ui.progress value="85" color="success" label="almost done" />
-            </div>
-            
-            <!-- Dropdown -->
-            <div class="mt-8" style="height: 150px;">
-                <x-ui.dropdown>
-                    <x-slot name="trigger">
-                        <x-ui.button variant="secondary" trailingIcon="▼">Options</x-ui.button>
-                    </x-slot>
-                    <x-slot name="content">
-                        <x-ui.dropdown-item icon="👤">Profile</x-ui.dropdown-item>
-                        <x-ui.dropdown-item icon="⚙️">Settings</x-ui.dropdown-item>
-                        <x-ui.divider class="my-1" />
-                        <x-ui.dropdown-item icon="🚪" variant="danger">Logout</x-ui.dropdown-item>
-                    </x-slot>
-                </x-ui.dropdown>
-            </div>
-        </x-ui.section>
-
-        <!-- 5. Navigation & Data -->
-        <x-ui.section title="5. Navigation & Data" subtitle="Tables, lists, tabs, and more">
-            <!-- Tabs -->
-            <x-ui.card class="mb-6">
-                <x-ui.tabs 
-                    :tabs="[
-                        ['label' => 'General', 'value' => 'general'],
-                        ['label' => 'Security', 'value' => 'security'],
-                        ['label' => 'Notifications', 'value' => 'notifications', 'count' => 3],
-                    ]" 
-                    active="general"
-                />
-                <div class="p-4 text-bark">Tab content goes here.</div>
-            </x-ui.card>
-
-            <!-- Breadcrumbs -->
-            <x-ui.card class="mb-6">
-                <x-ui.breadcrumbs 
-                    :links="[
-                        ['label' => 'Home', 'url' => '#'],
-                        ['label' => 'Settings', 'url' => '#'],
-                        ['label' => 'Profile']
-                    ]" 
-                />
-            </x-ui.card>
-
-            <div class="grid lg:grid-cols-2 gap-6 mb-6">
-                <!-- Data List -->
+            <div class="mt-6 grid gap-6 md:grid-cols-2">
                 <x-ui.card>
                     <x-slot name="header">
-                        <x-ui.card-header title="Data List" />
+                        <x-ui.card-header title="Loading & Progress" />
                     </x-slot>
-                    <x-ui.data-list 
-                        divided
-                        :items="[
-                            ['label' => 'Full name', 'value' => 'Margot Foster'],
-                            ['label' => 'Application for', 'value' => 'Backend Developer'],
-                            ['label' => 'Email address', 'value' => 'margot@example.com'],
-                            ['label' => 'Salary expectation', 'value' => '$120,000'],
-                        ]" 
-                    />
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <x-ui.loading-spinner size="sm" color="paw" />
+                            <x-ui.loading-spinner size="md" color="fur" />
+                            <x-ui.loading-spinner size="lg" color="white" class="rounded-full bg-paw p-1" />
+                        </div>
+
+                        <x-ui.progress value="35" label="Upload progress" color="paw" />
+                        <x-ui.progress value="72" label="Processing" color="sky" />
+                        <x-ui.progress value="100" label="Completed" color="leaf" />
+                    </div>
                 </x-ui.card>
 
-                <!-- User Row -->
                 <x-ui.card>
                     <x-slot name="header">
-                        <x-ui.card-header title="User Rows" />
+                        <x-ui.card-header title="Tooltip & Dropdown" />
                     </x-slot>
-                    <div class="space-y-2">
-                        <x-ui.user-row name="Leslie Alexander" subtitle="Co-Founder / CEO" />
-                        <x-ui.user-row name="Michael Foster" subtitle="Dries Vincent" href="#">
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <x-ui.tooltip text="Tooltip on top" position="top">
+                            <x-ui.badge variant="default">Top</x-ui.badge>
+                        </x-ui.tooltip>
+
+                        <x-ui.tooltip text="Tooltip on right" position="right">
+                            <x-ui.badge variant="info">Right</x-ui.badge>
+                        </x-ui.tooltip>
+
+                        <x-ui.dropdown>
+                            <x-slot name="trigger">
+                                <x-ui.button variant="secondary" size="sm">Options</x-ui.button>
+                            </x-slot>
+                            <x-slot name="content">
+                                <x-ui.dropdown-item icon="👤">Profile</x-ui.dropdown-item>
+                                <x-ui.dropdown-item icon="⚙️">Settings</x-ui.dropdown-item>
+                                <x-ui.divider class="my-1" />
+                                <x-ui.dropdown-item icon="🚪" variant="danger">Sign out</x-ui.dropdown-item>
+                            </x-slot>
+                        </x-ui.dropdown>
+                    </div>
+                </x-ui.card>
+            </div>
+
+            <div class="mt-6 grid gap-6 md:grid-cols-2">
+                <x-ui.modal id="demo-modal" title="Modal Example">
+                    <x-slot name="triggerSlot">
+                        <x-ui.button variant="primary">Open Modal</x-ui.button>
+                    </x-slot>
+
+                    <p class="text-sm text-fur">Use modal slots for contextual actions and confirmations.</p>
+
+                    <x-slot name="footer">
+                        <x-ui.button variant="ghost" size="sm" @click="$dispatch('close-modal', 'demo-modal')">Cancel</x-ui.button>
+                        <x-ui.button variant="primary" size="sm" @click="$dispatch('close-modal', 'demo-modal')">Confirm</x-ui.button>
+                    </x-slot>
+                </x-ui.modal>
+
+                <x-ui.confirm-modal
+                    id="demo-confirm-modal"
+                    title="Delete Group"
+                    message="This action cannot be undone."
+                    confirm-label="Delete"
+                >
+                    <x-slot name="triggerSlot">
+                        <x-ui.button variant="danger">Open Confirm Modal</x-ui.button>
+                    </x-slot>
+                </x-ui.confirm-modal>
+            </div>
+        </x-ui.section>
+
+        <x-ui.section title="Navigation & Data" subtitle="Search, tabs, lists, tables, and pagination">
+            <x-ui.card class="mb-6">
+                <x-slot name="header">
+                    <x-ui.card-header title="Tabs & Breadcrumbs" />
+                </x-slot>
+
+                <x-ui.tabs :tabs="$tabs" active="general" />
+                <x-ui.breadcrumbs :items="[
+                    ['label' => 'Home', 'href' => '#'],
+                    ['label' => 'Groups', 'href' => '#'],
+                    ['label' => 'Dev Showcase'],
+                ]" />
+            </x-ui.card>
+
+            <div class="grid gap-6 lg:grid-cols-2">
+                <x-ui.card>
+                    <x-slot name="header">
+                        <x-ui.card-header title="Search & Sidebar Navigation" />
+                    </x-slot>
+
+                    <div class="space-y-4">
+                        <x-ui.search-input action="{{ route('dev.components') }}" name="q" placeholder="Search components" value="ui card" class="max-w-md" />
+                        <x-ui.sidebar-nav title="Group Admin" :items="$sidebarItems" />
+                    </div>
+                </x-ui.card>
+
+                <x-ui.card>
+                    <x-slot name="header">
+                        <x-ui.card-header title="Data List & User Row" />
+                    </x-slot>
+
+                    <div class="space-y-4">
+                        <x-ui.data-list
+                            divided
+                            :items="[
+                                ['label' => 'Group Name', 'value' => 'Pet Parents'],
+                                ['label' => 'Privacy', 'value' => 'Private'],
+                                ['label' => 'Members', 'value' => '182'],
+                            ]"
+                        />
+
+                        <x-ui.user-row name="Leslie Alexander" subtitle="Moderator" href="#">
                             <x-slot name="action">
                                 <x-ui.button size="sm" variant="secondary">View</x-ui.button>
                             </x-slot>
@@ -364,40 +439,42 @@
                 </x-ui.card>
             </div>
 
-            <!-- Table -->
-            <x-ui.card padding="0">
-                <x-ui.table 
-                    :headers="['Name', 'Title', 'Email', 'Role', ['label' => 'Actions', 'align' => 'right']]"
-                    striped
-                >
-                    <x-ui.table-row>
-                        <x-ui.table-cell class="font-medium text-bark">Lindsay Walton</x-ui.table-cell>
-                        <x-ui.table-cell>Front-end Developer</x-ui.table-cell>
-                        <x-ui.table-cell>lindsay.walton@example.com</x-ui.table-cell>
-                        <x-ui.table-cell><x-ui.badge size="sm">Member</x-ui.badge></x-ui.table-cell>
-                        <x-ui.table-cell align="right">
-                            <x-ui.button variant="ghost" size="sm">Edit</x-ui.button>
-                        </x-ui.table-cell>
-                    </x-ui.table-row>
-                    <x-ui.table-row>
-                        <x-ui.table-cell class="font-medium text-bark">Courtney Henry</x-ui.table-cell>
-                        <x-ui.table-cell>Designer</x-ui.table-cell>
-                        <x-ui.table-cell>courtney.henry@example.com</x-ui.table-cell>
-                        <x-ui.table-cell><x-ui.badge size="sm" variant="primary">Admin</x-ui.badge></x-ui.table-cell>
-                        <x-ui.table-cell align="right">
-                            <x-ui.button variant="ghost" size="sm">Edit</x-ui.button>
-                        </x-ui.table-cell>
-                    </x-ui.table-row>
-                    <x-ui.table-row>
-                        <x-ui.table-cell class="font-medium text-bark">Tom Cook</x-ui.table-cell>
-                        <x-ui.table-cell>Director of Product</x-ui.table-cell>
-                        <x-ui.table-cell>tom.cook@example.com</x-ui.table-cell>
-                        <x-ui.table-cell><x-ui.badge size="sm">Member</x-ui.badge></x-ui.table-cell>
-                        <x-ui.table-cell align="right">
-                            <x-ui.button variant="ghost" size="sm">Edit</x-ui.button>
-                        </x-ui.table-cell>
-                    </x-ui.table-row>
+            <x-ui.card class="mt-6" padding="none">
+                <x-ui.table :headers="['Name', 'Title', 'Email', 'Role', ['label' => 'Actions', 'align' => 'right']]" striped>
+                    @foreach ($tableRows as $row)
+                        <x-ui.table-row>
+                            <x-ui.table-cell class="font-medium">{{ $row['name'] }}</x-ui.table-cell>
+                            <x-ui.table-cell>{{ $row['title'] }}</x-ui.table-cell>
+                            <x-ui.table-cell>{{ $row['email'] }}</x-ui.table-cell>
+                            <x-ui.table-cell>
+                                <x-ui.badge size="sm" :variant="$row['role'] === 'Admin' ? 'primary' : ($row['role'] === 'Moderator' ? 'warning' : 'default')">
+                                    {{ $row['role'] }}
+                                </x-ui.badge>
+                            </x-ui.table-cell>
+                            <x-ui.table-cell align="right">
+                                <x-ui.button variant="ghost" size="sm">Edit</x-ui.button>
+                            </x-ui.table-cell>
+                        </x-ui.table-row>
+                    @endforeach
                 </x-ui.table>
+            </x-ui.card>
+
+            <x-ui.card class="mt-6">
+                <x-slot name="header">
+                    <x-ui.card-header title="Pagination" subtitle="LengthAwarePaginator integration" />
+                </x-slot>
+
+                <x-ui.pagination :paginator="$demoPaginator" />
+            </x-ui.card>
+        </x-ui.section>
+
+        <x-ui.section title="Global Helpers" subtitle="Components rendered globally in layout">
+            <x-ui.card>
+                <p class="text-sm text-fur">
+                    <code>x-ui.navbar</code>, <code>x-ui.flash-messages</code>, and <code>x-ui.toast-container</code>
+                    are mounted globally by <code>resources/views/layouts/app.blade.php</code>. Use normal app interactions
+                    to preview those states.
+                </p>
             </x-ui.card>
         </x-ui.section>
     </div>

@@ -9,7 +9,7 @@
                     <x-avatar :src="$suggestion->avatar_url" :name="$suggestion->name" size="sm" />
                     <span class="min-w-0">
                         <span class="block truncate text-sm font-medium text-gray-900">{{ $suggestion->name }}</span>
-                        <span class="block truncate text-xs text-gray-500">@{{ $suggestion->username }}</span>
+                        <span class="block truncate text-xs text-gray-500">&#64;{{ $suggestion->username }}</span>
                     </span>
                 </a>
                 <a href="{{ route('profile.show', $suggestion) }}" class="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700">Follow</a>

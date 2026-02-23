@@ -1,19 +1,20 @@
 @props([
-    'items' => [], /* array of ['label', 'value'] */
+    'items' => [],
     'divided' => false,
 ])
 
 <dl {{ $attributes->merge(['class' => 'space-y-4']) }}>
     @foreach($items as $item)
         @php
-            $label = $item['label'] ?? '';
-            $value = $item['value'] ?? '';
+            $label = $item['label'] ?? $item['key'] ?? $item['title'] ?? '';
+            $value = $item['value'] ?? $item['content'] ?? '';
         @endphp
-        <div class="{{ $divided && !$loop->last ? 'pb-4 border-b border-whisker/30' : '' }}">
-                <dt class="text-xs text-fur font-medium mb-0.5">{{ $label }}</dt>
-            <dd class="text-sm text-bark font-medium">{{ $value }}</dd>
-            </div>
+
+        <div class="{{ $divided && ! $loop->last ? 'border-b border-whisker/30 pb-4' : '' }}">
+            <dt class="mb-0.5 text-xs font-medium text-fur">{{ $label }}</dt>
+            <dd class="text-sm font-medium text-bark">{{ $value }}</dd>
+        </div>
     @endforeach
-    
+
     {{ $slot }}
 </dl>

@@ -1,28 +1,37 @@
 @props([
     'title' => null,
     'subtitle' => null,
+    'description' => null,
     'tight' => false,
 ])
 
-<div {{ $attributes->merge(['class' => $tight ? 'mb-4' : 'mb-8']) }}>
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-whisker/40 pb-4">
-        <div>
-            @if($title)
-                <h2 class="text-2xl font-bold font-display text-bark">{{ $title }}</h2>
-            @endif
-            @if($subtitle)
-                <p class="text-sm text-fur mt-1">{{ $subtitle }}</p>
+@php
+    $summary = $description ?? $subtitle;
+    $actionSlot = $action ?? $actions ?? null;
+@endphp
+
+<section {{ $attributes->merge(['class' => $tight ? 'mb-4' : 'mb-8']) }}>
+    @if(filled($title) || filled($summary) || $actionSlot)
+        <div class="flex flex-col justify-between gap-4 border-b border-whisker/40 pb-4 sm:flex-row sm:items-end">
+            <div>
+                @if(filled($title))
+                    <h2 class="text-2xl font-bold font-display text-bark">{{ $title }}</h2>
+                @endif
+
+                @if(filled($summary))
+                    <p class="mt-1 text-sm text-fur">{{ $summary }}</p>
+                @endif
+            </div>
+
+            @if($actionSlot)
+                <div class="shrink-0 sm:mb-1">
+                    {{ $actionSlot }}
+                </div>
             @endif
         </div>
-        
-        @if(isset($action))
-            <div class="shrink-0 mb-1">
-                {{ $action }}
-            </div>
-        @endif
-    </div>
-    
-    <div class="pt-6">
+    @endif
+
+    <div @class(['pt-6' => ! $tight, 'pt-4' => $tight])>
         {{ $slot }}
     </div>
-</div>
+</section>

@@ -37,7 +37,7 @@
                 </button>
 
                 <div x-show="confirmBlock" x-transition class="mt-2 rounded-lg border border-rose-400/40 bg-rose-500/5 p-3">
-                    <p class="text-xs">Block @{{ $user->username }}?</p>
+                    <p class="text-xs">Block &#64;{{ $user->username }}?</p>
                     <div class="mt-2 flex gap-2">
                         <button type="button" class="btn-base btn-ghost px-2 py-1 text-xs" @click="confirmBlock = false">Cancel</button>
                         <button type="button" class="btn-base btn-primary px-2 py-1 text-xs" @click="confirmBlock = false; toggleBlock(); open = false;">Confirm</button>

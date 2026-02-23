@@ -49,11 +49,11 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-if (app()->environment('local')) {
-    Route::get('/dev/components', function () {
-        return view('dev.components');
-    })->name('dev.components');
-}
+Route::get('/dev/components', function () {
+    abort_unless(app()->isLocal(), 404);
+
+    return view('dev.components');
+})->name('dev.components');
 
 Route::get('/banned', function () {
     return response()->view('errors.banned', [], 403);
@@ -109,7 +109,6 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         ->middleware('throttle:60,1')
         ->name('posts.react');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
-    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.legacy.store');
     Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');
@@ -121,7 +120,6 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::patch('/comments/{post}/{comment}', [PostCommentController::class, 'update'])->name('comments.update');
     Route::delete('/comments/{post}/{comment}', [PostCommentController::class, 'destroy'])->name('comments.post.destroy');
     Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save');
-    Route::post('/posts/{post}/save', [SavedPostController::class, 'toggle'])->name('posts.save.toggle');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])->name('posts.pin');
     Route::delete('/posts/{post}/pin', [PostController::class, 'unpin'])->name('posts.unpin');
     Route::post('/posts/{post}/report', [ReportController::class, 'reportPost'])->name('posts.report');
