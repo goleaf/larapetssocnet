@@ -15,7 +15,7 @@
             'patterns' => $isAuthenticated ? ['feed.*', 'posts.*', 'saved.*'] : ['explore.*', 'search.*', 'hashtags.*'],
         ],
         ['label' => 'Explore', 'icon' => '🧭', 'route' => 'explore.index', 'patterns' => ['explore.*', 'search.*', 'hashtags.*']],
-        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'patterns' => ['pets.*', 'tips.*']],
+        ['label' => 'Pets', 'icon' => '🐾', 'route' => 'pets.explore', 'patterns' => ['pets.*', 'tips.*'], 'exclude' => ['pets.adopt']],
         ['label' => 'Adopt', 'icon' => '🏡', 'route' => 'pets.adopt', 'patterns' => ['pets.adopt']],
         ['label' => 'Groups', 'icon' => '👥', 'route' => 'groups.index', 'patterns' => ['groups.*']],
         ['label' => 'Events', 'icon' => '📅', 'route' => 'events.index', 'patterns' => ['events.*']],
@@ -51,9 +51,15 @@
         ]);
     }
 
-    $routeIsActive = static function (array $patterns) use ($currentRoute): bool {
+    $routeIsActive = static function (array $patterns, array $except = []) use ($currentRoute): bool {
         if (! $currentRoute) {
             return false;
+        }
+
+        foreach ($except as $pattern) {
+            if (\Illuminate\Support\Str::is($pattern, $currentRoute)) {
+                return false;
+            }
         }
 
         foreach ($patterns as $pattern) {
@@ -71,6 +77,7 @@
         'profile.following',
         'profile.edit',
         'profile.update',
+        'settings.*',
         'settings.profile.*',
         'pets.show',
         'pets.edit',
@@ -82,12 +89,14 @@
         'profile.show',
         'profile.followers',
         'profile.following',
+        'settings.*',
     ]);
 
     $trendingHashtags = collect();
     $upcomingEvents = collect();
     $suggestedUsers = collect();
     $activeContests = collect();
+    $yourGroups = collect();
 
     $communityStats = [
         ['label' => 'Members', 'value' => '--'],
@@ -139,6 +148,26 @@
                 ->orderBy('ends_at')
                 ->limit(2)
                 ->get(['id', 'title', 'slug', 'status', 'ends_at', 'entries_count']);
+        }
+
+        if (
+            $user
+            && \Illuminate\Support\Facades\Schema::hasTable('groups')
+            && \Illuminate\Support\Facades\Schema::hasTable('group_members')
+        ) {
+            $yourGroups = \App\Models\Group::query()
+                ->whereIn('groups.id', function ($query) use ($user): void {
+                    $query->select('group_members.group_id')
+                        ->from('group_members')
+                        ->where('group_members.user_id', $user->getKey())
+                        ->where(function ($statusQuery): void {
+                            $statusQuery->whereNull('group_members.status')
+                                ->orWhereIn('group_members.status', ['active', 'accepted']);
+                        });
+                })
+                ->orderByDesc('groups.members_count')
+                ->limit(6)
+                ->get();
         }
     } catch (\Throwable $exception) {
         // Keep layout resilient when schema is in flux.
@@ -224,16 +253,172 @@
                         <x-ui.card>
                             <h4 class="px-1 text-xs font-bold font-display uppercase tracking-wider text-fur mb-2">Navigate</h4>
                             @php
-                                $mappedNav = collect($desktopNav)->map(function($item) {
+                                $mappedNav = collect($desktopNav)->map(function ($item) use ($routeIsActive) {
+                                    $patterns = $item['patterns'] ?? [];
+                                    $except = $item['exclude'] ?? [];
+
                                     return [
                                         'label' => $item['label'],
                                         'href' => isset($item['route']) && Route::has($item['route']) ? route($item['route']) : '#',
                                         'icon' => '<span class="text-lg leading-none">' . $item['icon'] . '</span>',
-                                        'pattern' => $item['patterns'] ?? [],
+                                        'patterns' => $patterns,
+                                        'active' => $routeIsActive($patterns, $except),
                                     ];
                                 })->toArray();
                             @endphp
                             <x-ui.sidebar-nav :items="$mappedNav" class="!mb-0" />
+                        </x-ui.card>
+
+                        <x-ui.card>
+                            <x-slot name="header">
+                                <x-ui.card-header title="Your Groups" subtitle="Communities you are active in">
+                                    <x-slot name="action">
+                                        <x-ui.button href="{{ route('groups.index', ['privacy' => 'joined']) }}" variant="ghost" size="xs">
+                                            Browse
+                                        </x-ui.button>
+                                    </x-slot>
+                                </x-ui.card-header>
+                            </x-slot>
+
+                            <div class="space-y-1 -mx-2">
+                                @forelse ($yourGroups as $group)
+                                    @php
+                                        $groupRouteKey = filled((string) ($group->slug ?? '')) ? $group->slug : $group->id;
+                                    @endphp
+
+                                    <x-ui.user-row
+                                        :name="$group->name"
+                                        :subtitle="\Illuminate\Support\Str::headline((string) ($group->privacy ?? 'public'))"
+                                        :href="route('groups.show', $groupRouteKey)"
+                                        class="px-2"
+                                    >
+                                        <x-slot name="action">
+                                            <span class="text-xs text-fur">
+                                                {{ number_format((int) ($group->members_count ?? 0)) }}
+                                            </span>
+                                        </x-slot>
+                                    </x-ui.user-row>
+                                @empty
+                                    <p class="px-2 text-sm text-fur">
+                                        You have not joined any groups yet.
+                                    </p>
+                                @endforelse
+                            </div>
+
+                            <div class="mt-4">
+                                <x-ui.button href="{{ route('groups.create') }}" variant="primary" full>
+                                    Create a Group
+                                </x-ui.button>
+                            </div>
+                        </x-ui.card>
+
+                        <x-ui.card>
+                            <x-slot name="header">
+                                <x-ui.card-header title="Suggested People" subtitle="Grow your pet network" />
+                            </x-slot>
+
+                            <div class="space-y-2">
+                                @forelse ($suggestedUsers as $suggestedUser)
+                                    <x-ui.user-row
+                                        :name="$suggestedUser->name"
+                                        :subtitle="$suggestedUser->username ? '@'.$suggestedUser->username : 'Pet lover'"
+                                        :href="route('profile.show', $suggestedUser)"
+                                    >
+                                        <x-slot name="avatar">
+                                            <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" size="sm" />
+                                        </x-slot>
+                                    </x-ui.user-row>
+                                @empty
+                                    <p class="text-sm text-fur">
+                                        Suggestions refresh as more members join.
+                                    </p>
+                                @endforelse
+                            </div>
+                        </x-ui.card>
+
+                        <x-ui.card>
+                            <div class="mb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Who To Follow</h4>
+                                <a
+                                    href="{{ Route::has('search.index') ? route('search.index', ['type' => 'users']) : '#' }}"
+                                    class="text-xs font-semibold hover:underline text-paw"
+                                >
+                                    See all
+                                </a>
+                            </div>
+
+                            <div class="space-y-1 -mx-2">
+                                @forelse ($suggestedUsers as $suggested)
+                                    <x-ui.user-row 
+                                        :name="$suggested->name" 
+                                        :subtitle="$suggested->username ? '@'.$suggested->username : 'Pet lover'" 
+                                        :avatar="$suggested->avatar_url" 
+                                        :href="route('profile.show', ['user' => $suggested])"
+                                        class="px-2"
+                                    >
+                                        <x-slot name="action">
+                                            <span class="text-xs text-fur">{{ number_format((int) $suggested->followers_count) }}</span>
+                                        </x-slot>
+                                    </x-ui.user-row>
+                                @empty
+                                    <p class="text-sm text-fur px-2">Suggestions appear after activity grows.</p>
+                                @endforelse
+                            </div>
+                        </x-ui.card>
+
+                        <x-ui.card>
+                            <div class="mb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Upcoming Events</h4>
+                                <a
+                                    href="{{ Route::has('events.index') ? route('events.index') : '#' }}"
+                                    class="text-xs font-semibold hover:underline text-paw"
+                                >
+                                    Browse
+                                </a>
+                            </div>
+
+                            <div class="space-y-2 mt-3">
+                                @forelse ($upcomingEvents as $event)
+                                    <a
+                                        href="{{ route('events.show', $event) }}"
+                                        class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm"
+                                    >
+                                        <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $event->title }}</p>
+                                        <p class="mt-0.5 text-xs text-fur">
+                                            {{ optional($event->start_at)->format('M j, g:i A') ?? 'Date TBD' }}
+                                            <span class="mx-1">•</span>
+                                            {{ $event->location_text ?: 'Online / TBD' }}
+                                        </p>
+                                    </a>
+                                @empty
+                                    <p class="text-sm text-fur">No upcoming events scheduled.</p>
+                                @endforelse
+                            </div>
+                        </x-ui.card>
+
+                        <x-ui.card>
+                            <div class="mb-3 flex items-center justify-between">
+                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Active Contests</h4>
+                                <x-ui.badge variant="success" size="sm" pill>{{ $activeContests->count() }}</x-ui.badge>
+                            </div>
+
+                            <div class="space-y-2 mt-3">
+                                @forelse ($activeContests as $contest)
+                                    <a
+                                        href="{{ Route::has('contests.index') ? route('contests.index') : '#' }}"
+                                        class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm"
+                                    >
+                                        <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $contest->title }}</p>
+                                        <p class="mt-0.5 text-xs text-fur">
+                                            {{ ucfirst((string) $contest->status) }}
+                                            ·
+                                            {{ number_format((int) $contest->entries_count) }} entries
+                                        </p>
+                                    </a>
+                                @empty
+                                    <p class="text-sm text-fur">No active contests right now.</p>
+                                @endforelse
+                            </div>
                         </x-ui.card>
 
                         <x-ui.card>
@@ -276,74 +461,7 @@
                 </main>
 
                 @unless ($hideRightRail)
-                <aside class="hidden lg:block">
-                    <div class="sticky top-24 space-y-4">
-                        <x-ui.card>
-                            <div class="mb-3 flex items-center justify-between">
-                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Who To Follow</h4>
-                                <a href="{{ Route::has('search.index') ? route('search.index', ['type' => 'users']) : '#' }}" class="text-xs font-semibold hover:underline text-paw">See all</a>
-                            </div>
-
-                            <div class="space-y-1 -mx-2">
-                                @forelse ($suggestedUsers as $suggested)
-                                    <x-ui.user-row 
-                                        :name="$suggested->name" 
-                                        :subtitle="$suggested->username ? '@'.$suggested->username : 'Pet lover'" 
-                                        :avatar="$suggested->avatar_url" 
-                                        :href="route('profile.show', ['user' => $suggested])"
-                                        class="px-2"
-                                    >
-                                        <x-slot name="action">
-                                            <span class="text-xs text-fur">{{ number_format((int) $suggested->followers_count) }}</span>
-                                        </x-slot>
-                                    </x-ui.user-row>
-                                @empty
-                                    <p class="text-sm text-fur px-2">Suggestions appear after activity grows.</p>
-                                @endforelse
-                            </div>
-                        </x-ui.card>
-
-                        <x-ui.card>
-                            <div class="mb-3 flex items-center justify-between">
-                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Upcoming Events</h4>
-                                <a href="{{ Route::has('events.index') ? route('events.index') : '#' }}" class="text-xs font-semibold hover:underline text-paw">Browse</a>
-                            </div>
-
-                            <div class="space-y-2 mt-3">
-                                @forelse ($upcomingEvents as $event)
-                                    <a href="{{ route('events.show', $event) }}" class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm">
-                                        <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $event->title }}</p>
-                                        <p class="mt-0.5 text-xs text-fur">
-                                            {{ optional($event->start_at)->format('M j, g:i A') ?? 'Date TBD' }}
-                                            <span class="mx-1">•</span>
-                                            {{ $event->location_text ?: 'Online / TBD' }}
-                                        </p>
-                                    </a>
-                                @empty
-                                    <p class="text-sm text-fur">No upcoming events scheduled.</p>
-                                @endforelse
-                            </div>
-                        </x-ui.card>
-
-                        <x-ui.card>
-                            <div class="mb-3 flex items-center justify-between">
-                                <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Active Contests</h4>
-                                <x-ui.badge variant="success" size="sm" pill>{{ $activeContests->count() }}</x-ui.badge>
-                            </div>
-
-                            <div class="space-y-2 mt-3">
-                                @forelse ($activeContests as $contest)
-                                    <a href="{{ Route::has('contests.index') ? route('contests.index') : '#' }}" class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm">
-                                        <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $contest->title }}</p>
-                                        <p class="mt-0.5 text-xs text-fur">{{ ucfirst((string) $contest->status) }} · {{ number_format((int) $contest->entries_count) }} entries</p>
-                                    </a>
-                                @empty
-                                    <p class="text-sm text-fur">No active contests right now.</p>
-                                @endforelse
-                            </div>
-                        </x-ui.card>
-                    </div>
-                </aside>
+                <aside class="hidden lg:block"></aside>
                 @endunless
             </div>
             

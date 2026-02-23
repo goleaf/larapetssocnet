@@ -70,13 +70,12 @@
                 <x-ui.select class="md:col-span-3" name="sex" label="Sex" :options="$sexOptions"
                     :selected="$filters['sex']" />
 
-                <div class="flex items-end md:col-span-5">
-                    <label
-                        class="inline-flex items-center gap-2 rounded-md border border-whisker/40 bg-warm-white px-3 py-2 text-sm text-fur">
-                        <input type="checkbox" name="is_adoptable" value="1"
-                            class="rounded border-whisker text-paw focus:ring-paw" @checked($filters['is_adoptable'])>
-                        Show only adoptable pets
-                    </label>
+                <div class="md:col-span-5">
+                    <x-ui.checkbox
+                        name="is_adoptable"
+                        label="Show only adoptable pets"
+                        :checked="$filters['is_adoptable']"
+                    />
                 </div>
 
                 <div class="flex items-end md:col-span-2">

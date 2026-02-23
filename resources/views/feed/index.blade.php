@@ -52,8 +52,8 @@
         </div>
     </x-slot>
 
-    <div class="mt-4 grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] max-w-6xl mx-auto">
-        <div class="space-y-4 lg:col-start-2 lg:row-start-1">
+    <div class="mt-4 max-w-3xl mx-auto space-y-4">
+        <div class="space-y-4">
             <x-ui.card class="border">
                 <x-slot name="header">
                     <x-ui.card-header title="Create a post" subtitle="Share something about your pet today.">
@@ -139,120 +139,5 @@
                 </x-ui.card>
             @endif
         </div>
-
-        <aside class="space-y-4 lg:col-start-1 lg:row-start-1 lg:sticky lg:top-24 lg:self-start">
-            <x-ui.card class="border">
-                <x-slot name="header">
-                    <x-ui.card-header title="Your Groups" subtitle="Communities you are active in">
-                        <x-slot name="action">
-                            <x-ui.button href="{{ route('groups.index', ['privacy' => 'joined']) }}" variant="ghost"
-                                size="xs">Browse</x-ui.button>
-                        </x-slot>
-                    </x-ui.card-header>
-                </x-slot>
-
-                <div class="space-y-1 -mx-2">
-                    @forelse ($yourGroups as $group)
-                        @php
-                            $groupRouteKey = filled((string) ($group->slug ?? '')) ? $group->slug : $group->id;
-                        @endphp
-
-                        <x-ui.user-row :name="$group->name" :subtitle="\Illuminate\Support\Str::headline((string) ($group->privacy ?? 'public'))" :href="route('groups.show', $groupRouteKey)" class="px-2">
-                            <x-slot name="action">
-                                <span class="text-xs text-fur">
-                                    {{ number_format((int) ($group->members_count ?? 0)) }}
-                                </span>
-                            </x-slot>
-                        </x-ui.user-row>
-                    @empty
-                        <p class="px-2 text-sm text-fur">
-                            You have not joined any groups yet.
-                        </p>
-                    @endforelse
-                </div>
-
-                <div class="mt-4">
-                    <x-ui.button href="{{ route('groups.create') }}" variant="primary" full>Create a Group</x-ui.button>
-                </div>
-            </x-ui.card>
-
-            <x-ui.card class="border">
-                <x-slot name="header">
-                    <x-ui.card-header title="Suggested People" subtitle="Grow your pet network" />
-                </x-slot>
-
-                <div class="space-y-2">
-                    @forelse ($suggestions as $suggestedUser)
-                        <x-ui.user-row :name="$suggestedUser->name" :subtitle="'@' . $suggestedUser->username"
-                            :href="route('profile.show', $suggestedUser->username)">
-                            <x-slot name="avatar">
-                                <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" size="sm" />
-                            </x-slot>
-                        </x-ui.user-row>
-                    @empty
-                        <p class="text-sm text-fur">
-                            Suggestions refresh as more members join.
-                        </p>
-                    @endforelse
-                </div>
-            </x-ui.card>
-
-            <x-ui.card class="border">
-                <x-slot name="header">
-                    <x-ui.card-header title="Trending Hashtags" subtitle="Community momentum" />
-                </x-slot>
-
-                <div class="flex flex-wrap gap-2">
-                    @forelse ($trending as $hashtag)
-                        <a href="{{ route('hashtags.show', $hashtag->slug) }}"
-                            class="inline-flex items-center rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                            #{{ $hashtag->name }}
-                        </a>
-                    @empty
-                        <p class="text-sm text-fur">
-                            No hashtags trending yet.
-                        </p>
-                    @endforelse
-                </div>
-            </x-ui.card>
-
-            <x-ui.card class="border">
-                <x-slot name="header">
-                    <x-ui.card-header title="Upcoming Events" subtitle="Meetups and care sessions" />
-                </x-slot>
-
-                <div class="space-y-3">
-                    @forelse ($events as $event)
-                        <a href="{{ route('events.show', $event) }}"
-                            class="block rounded-xl border border-whisker/40 px-3 py-2 transition hover:bg-cream/80 dark:border-zinc-700 dark:hover:bg-zinc-800">
-                            <p class="text-sm font-semibold">{{ $event->title }}</p>
-                            <p class="mt-0.5 text-xs text-fur">
-                                {{ optional($event->start_at)->format('M j, g:i A') }} ·
-                                {{ $event->location_text ?: 'Online' }}
-                            </p>
-                        </a>
-                    @empty
-                        <p class="text-sm text-fur">
-                            No upcoming events currently.
-                        </p>
-                    @endforelse
-                </div>
-
-                @if ($contest)
-                    <div
-                        class="mt-4 rounded-xl border border-whisker/40 bg-amber-light/60 p-3 dark:border-zinc-700 dark:bg-zinc-800/80">
-                        <p class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">
-                            Active Contest
-                        </p>
-                        <p class="mt-1 text-sm font-semibold">{{ $contest->title }}</p>
-                        <x-ui.button href="{{ route('contests.show', $contest->slug) }}" variant="ghost" size="xs"
-                            class="mt-2">
-                            View contest
-                        </x-ui.button>
-                    </div>
-                @endif
-            </x-ui.card>
-        </aside>
-    </div>
     </div>
 </x-app-layout>

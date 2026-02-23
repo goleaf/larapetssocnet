@@ -24,6 +24,7 @@ use App\Http\Controllers\PetCareTipController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\PetFollowController;
 use App\Http\Controllers\PetHealthLogController;
+use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\Profile\PublicProfileController;
@@ -32,10 +33,11 @@ use App\Http\Controllers\ReactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\SearchController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (auth()->check()) {
+    if (Auth::check()) {
         return app(FeedController::class)->index(request());
     }
 
@@ -123,6 +125,11 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/posts/{post}/comments/{comment}/report', [ReportController::class, 'reportComment'])->name('comments.report');
     Route::post('/users/{user:username}/report', [ReportController::class, 'reportUser'])->name('users.report');
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+
+    Route::get('/settings/photos', [PhotoGalleryController::class, 'index'])->name('settings.photos');
+    Route::post('/photo-galleries', [PhotoGalleryController::class, 'store'])->name('photo-galleries.store');
+    Route::post('/photo-galleries/{gallery}/photos', [PhotoGalleryController::class, 'storePhotos'])->name('photo-galleries.photos.store');
+    Route::post('/photo-galleries/{gallery}/cover/{media}', [PhotoGalleryController::class, 'setCover'])->name('photo-galleries.cover.store');
 
     Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
     Route::post('/pets', [PetController::class, 'store'])->name('pets.store');
@@ -281,6 +288,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', App\Http\M
 
 Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');
 Route::get('/@{user:username}', [PublicProfileController::class, 'show'])->name('profile.show');
+Route::get('/profile/edit', [ProfileController::class, 'edit'])->middleware(['auth', 'banned'])->name('profile.edit');
+Route::patch('/profile', [ProfileController::class, 'update'])->middleware(['auth', 'banned'])->name('profile.update');
+Route::delete('/profile', [ProfileController::class, 'destroy'])->middleware(['auth', 'banned'])->name('profile.destroy');
+Route::get('/@{user:username}/photos/galleries/{gallery}', [PhotoGalleryController::class, 'show'])
+    ->name('photo-galleries.show');
 Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');

@@ -21,42 +21,45 @@
                     $href = route($item['route']);
                 }
 
-                $patterns = \Illuminate\Support\Arr::wrap($item['pattern'] ?? $item['patterns'] ?? []);
-                $routePatterns = \Illuminate\Support\Arr::wrap($item['routePattern'] ?? $item['routePatterns'] ?? []);
-
-                $patternMatched = false;
-                foreach ($patterns as $pattern) {
-                    $pattern = (string) $pattern;
-
-                    if ($currentRoute && \Illuminate\Support\Str::is($pattern, $currentRoute)) {
-                        $patternMatched = true;
-                        break;
-                    }
-
-                    if (request()->is($pattern)) {
-                        $patternMatched = true;
-                        break;
-                    }
-                }
-
-                $routeMatched = false;
-                if ($currentRoute) {
-                    foreach ($routePatterns as $pattern) {
-                        if (\Illuminate\Support\Str::is((string) $pattern, $currentRoute)) {
-                            $routeMatched = true;
-                            break;
-                        }
-                    }
-                }
-
-                $urlMatched = request()->url() === url($href);
-                $isActive = array_key_exists('active', $item)
-                    ? (bool) $item['active']
-                    : ($urlMatched || $patternMatched || $routeMatched);
-
                 $label = $item['label'] ?? '';
                 $icon = $item['icon'] ?? null;
                 $badge = $item['badge'] ?? $item['count'] ?? null;
+
+                if (array_key_exists('active', $item)) {
+                    $isActive = (bool) $item['active'];
+                } else {
+                    $patterns = \Illuminate\Support\Arr::wrap($item['pattern'] ?? $item['patterns'] ?? []);
+                    $routePatterns = \Illuminate\Support\Arr::wrap($item['routePattern'] ?? $item['routePatterns'] ?? []);
+
+                    $patternMatched = false;
+                    foreach ($patterns as $pattern) {
+                        $pattern = (string) $pattern;
+
+                        if ($currentRoute && \Illuminate\Support\Str::is($pattern, $currentRoute)) {
+                            $patternMatched = true;
+                            break;
+                        }
+
+                        if (request()->is($pattern)) {
+                            $patternMatched = true;
+                            break;
+                        }
+                    }
+
+                    $routeMatched = false;
+                    if ($currentRoute) {
+                        foreach ($routePatterns as $pattern) {
+                            if (\Illuminate\Support\Str::is((string) $pattern, $currentRoute)) {
+                                $routeMatched = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    $urlMatched = request()->url() === url($href);
+                    $isActive = $urlMatched || $patternMatched || $routeMatched;
+                }
+
                 $badgeVariant = $item['badgeVariant'] ?? ($isActive ? 'primary' : 'default');
             @endphp
 

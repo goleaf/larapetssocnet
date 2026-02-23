@@ -280,6 +280,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Pet::class);
     }
 
+    public function photoGalleries(): HasMany
+    {
+        return $this->hasMany(PhotoGallery::class);
+    }
+
     public function followedPets(): BelongsToMany
     {
         return $this->belongsToMany(Pet::class, 'pet_followers', 'user_id', 'pet_id')

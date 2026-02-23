@@ -1,0 +1,43 @@
+{
+  "plugins": {
+    "context7-plugin": {
+      "enabled": true
+    },
+    "functions": {
+      "enabled": true
+    },
+    "glean-people": {
+      "enabled": true
+    },
+    "glean-core": {
+      "enabled": true
+    },
+    "glean-search": {
+      "enabled": true
+    },
+    "glean-code": {
+      "enabled": true
+    },
+    "parallel": {
+      "enabled": true
+    },
+    "compound-engineering": {
+      "enabled": true
+    },
+    "create-plugin": {
+      "enabled": true
+    },
+    "superpowers": {
+      "enabled": true
+    },
+    "continual-learning": {
+      "enabled": true
+    },
+    "cursor-team-kit": {
+      "enabled": true
+    },
+    "sentry": {
+      "enabled": true
+    }
+  }
+}

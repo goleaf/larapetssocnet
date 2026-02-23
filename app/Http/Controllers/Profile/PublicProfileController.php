@@ -67,6 +67,14 @@ class PublicProfileController extends Controller
             ? $user->pets()->latest()->limit(9)->get()
             : collect();
 
+        $galleries = $tab === 'photos' && $canViewContent
+            ? $user->photoGalleries()
+                ->with(['coverMedia', 'media'])
+                ->withCount('media')
+                ->latest()
+                ->get()
+            : collect();
+
         $photos = $tab === 'photos' && $canViewContent
             ? collect($user->getMedia('photos'))
                 ->merge($user->getMedia('avatar'))
@@ -207,6 +215,7 @@ class PublicProfileController extends Controller
             'pets' => $pets,
             'featuredPets' => $featuredPets,
             'photos' => $photos,
+            'galleries' => $galleries,
             'sidebarPhotos' => $sidebarPhotos,
             'friendsPreview' => $friendsPreview,
             'posts' => $posts,

@@ -412,7 +412,7 @@ test('user can delete account with correct password confirmation', function (): 
         ->assertRedirect('/');
 
     $this->assertGuest();
-    expect($user->fresh())->toBeNull();
+    expect($user->fresh()?->deleted_at)->not()->toBeNull();
 });
 
 test('delete account requires correct password confirmation', function (): void {
@@ -460,7 +460,7 @@ test('authenticated profile requests refresh online indicator timestamp', functi
 
     try {
         $this->actingAs($user)
-            ->get(route('settings.profile.edit'))
+            ->get(route('settings.profile'))
             ->assertOk();
     } finally {
         Carbon::setTestNow();
