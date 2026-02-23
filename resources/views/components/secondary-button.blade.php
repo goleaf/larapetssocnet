@@ -1,5 +1,5 @@
 <button
-    {{ $attributes->merge(['type' => 'button', 'class' => 'btn-base btn-secondary']) }}
+ {{ $attributes->merge(['type'=>'button','class'=>'btn-base btn-secondary']) }}
 >
-    {{ $slot }}
+ {{ $slot }}
 </button>

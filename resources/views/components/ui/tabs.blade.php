@@ -1,74 +1,74 @@
 @props([
-    'tabs' => [],
-    'active' => null,
-    'paramName' => 'tab',
+'tabs'=> [],
+'active'=> null,
+'paramName'=>'tab',
 ])
 
 @php
-    $activeParam = $active ?? request()->query($paramName);
+ $activeParam = $active ?? request()->query($paramName);
 
-    $normalizedTabs = collect($tabs)->map(function ($tab) use ($activeParam, $paramName) {
-        $isArray = is_array($tab);
+ $normalizedTabs = collect($tabs)->map(function ($tab) use ($activeParam, $paramName) {
+ $isArray = is_array($tab);
 
-        $value = $isArray
-            ? ($tab['value'] ?? $tab['id'] ?? $tab['key'] ?? $tab['label'] ?? null)
-            : $tab;
+ $value = $isArray
+ ? ($tab['value'] ?? $tab['id'] ?? $tab['key'] ?? $tab['label'] ?? null)
+ : $tab;
 
-        $label = $isArray
-            ? ($tab['label'] ?? $tab['title'] ?? $value)
-            : $tab;
+ $label = $isArray
+ ? ($tab['label'] ?? $tab['title'] ?? $value)
+ : $tab;
 
-        $href = $isArray ? ($tab['href'] ?? $tab['url'] ?? null) : null;
-        $count = $isArray ? ($tab['count'] ?? null) : null;
+ $href = $isArray ? ($tab['href'] ?? $tab['url'] ?? null) : null;
+ $count = $isArray ? ($tab['count'] ?? null) : null;
 
-        $isActive = $isArray && array_key_exists('active', $tab)
-            ? (bool) $tab['active']
-            : ((string) $activeParam !== '' && (string) $activeParam === (string) $value);
+ $isActive = $isArray && array_key_exists('active', $tab)
+ ? (bool) $tab['active']
+ : ((string) $activeParam !==''&& (string) $activeParam === (string) $value);
 
-        if (! $href) {
-            if ($value === null || $value === '') {
-                $href = '#';
-            } else {
-                $href = request()->fullUrlWithQuery([$paramName => $value, 'page' => null]);
-            }
-        }
+ if (! $href) {
+ if ($value === null || $value ==='') {
+ $href ='#';
+ } else {
+ $href = request()->fullUrlWithQuery([$paramName => $value,'page'=> null]);
+ }
+ }
 
-        return [
-            'label' => $label,
-            'value' => $value,
-            'href' => $href,
-            'count' => $count,
-            'active' => $isActive,
-        ];
-    })->values();
+ return [
+'label'=> $label,
+'value'=> $value,
+'href'=> $href,
+'count'=> $count,
+'active'=> $isActive,
+ ];
+ })->values();
 
-    if ($activeParam === null && $normalizedTabs->isNotEmpty()) {
-        $firstValue = $normalizedTabs->first()['value'];
-        $normalizedTabs = $normalizedTabs->map(function (array $tab, int $index) use ($firstValue) {
-            $tab['active'] = $index === 0 || ((string) $tab['value'] !== '' && (string) $tab['value'] === (string) $firstValue);
-            return $tab;
-        });
-    }
+ if ($activeParam === null && $normalizedTabs->isNotEmpty()) {
+ $firstValue = $normalizedTabs->first()['value'];
+ $normalizedTabs = $normalizedTabs->map(function (array $tab, int $index) use ($firstValue) {
+ $tab['active'] = $index === 0 || ((string) $tab['value'] !==''&& (string) $tab['value'] === (string) $firstValue);
+ return $tab;
+ });
+ }
 @endphp
 
-<div {{ $attributes->merge(['class' => 'mb-6 w-full border-b border-whisker/40']) }}>
-    <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
-        @foreach($normalizedTabs as $tab)
-            <a
-                href="{{ $tab['href'] }}"
-                class="flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-4 text-sm transition-colors {{ $tab['active'] ? 'border-paw font-semibold text-paw' : 'border-transparent text-fur hover:border-whisker hover:text-bark' }}"
-                @if($tab['active'])
-                    aria-current="page"
-                @endif
-            >
-                {{ $tab['label'] }}
+<div {{ $attributes->merge(['class'=>'mb-6 w-full border-b border-whisker/40']) }}>
+ <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar"aria-label="Tabs">
+ @foreach($normalizedTabs as $tab)
+ <a
+ href="{{ $tab['href'] }}"
+ class="flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-4 text-sm transition-colors {{ $tab['active'] ?'border-paw font-semibold text-paw':'border-transparent text-fur hover:border-whisker hover:text-bark'}}"
+ @if($tab['active'])
+ aria-current="page"
+ @endif
+ >
+ {{ $tab['label'] }}
 
-                @if($tab['count'] !== null)
-                    <x-ui.badge :variant="$tab['active'] ? 'primary' : 'default'" size="sm" pill class="ml-1.5">
-                        {{ $tab['count'] }}
-                    </x-ui.badge>
-                @endif
-            </a>
-        @endforeach
-    </nav>
+ @if($tab['count'] !== null)
+ <x-ui.badge :variant="$tab['active'] ?'primary':'default'"size="sm"pill class="ml-1.5">
+ {{ $tab['count'] }}
+ </x-ui.badge>
+ @endif
+ </a>
+ @endforeach
+ </nav>
 </div>

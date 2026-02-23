@@ -17,8 +17,7 @@ class SettingsController extends Controller
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly AccountExportService $exportService
-    ) {
-    }
+    ) {}
 
     public function index(): RedirectResponse
     {
@@ -61,7 +60,7 @@ class SettingsController extends Controller
                 Rule::requiredIf($request->input('username') !== $user->username),
                 'nullable',
                 'string',
-                'in:' . $user->username,
+                'in:'.$user->username,
             ],
         ], [
             'username_confirm.in' => 'You must type your CURRENT username exactly to confirm the change.',
@@ -193,7 +192,7 @@ class SettingsController extends Controller
 
         return response()->streamDownload(function () use ($data) {
             echo json_encode($data, JSON_PRETTY_PRINT);
-        }, 'account-data-' . now()->format('Y-m-d') . '.json', [
+        }, 'account-data-'.now()->format('Y-m-d').'.json', [
             'Content-Type' => 'application/json',
         ]);
     }

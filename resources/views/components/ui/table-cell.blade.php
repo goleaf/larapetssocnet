@@ -1,18 +1,18 @@
 @props([
-    'align' => 'left',
-    'compact' => false,
+'align'=>'left',
+'compact'=> false,
 ])
 
 @php
-    $alignClass = match ((string) $align) {
-        'center' => 'text-center',
-        'right' => 'text-right',
-        default => 'text-left',
-    };
+ $alignClass = match ((string) $align) {
+'center'=>'text-center',
+'right'=>'text-right',
+ default =>'text-left',
+ };
 
-    $paddingClass = $compact ? 'px-3 py-2' : 'px-4 py-3';
+ $paddingClass = $compact ?'px-3 py-2':'px-4 py-3';
 @endphp
 
-<td {{ $attributes->merge(['class' => $paddingClass . ' ' . $alignClass . ' text-bark']) }}>
-    {{ $slot }}
+<td {{ $attributes->merge(['class'=> $paddingClass .''. $alignClass .'text-bark']) }}>
+ {{ $slot }}
 </td>

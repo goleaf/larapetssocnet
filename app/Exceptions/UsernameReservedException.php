@@ -11,4 +11,3 @@ class UsernameReservedException extends RuntimeException
         parent::__construct('This username is reserved and cannot be used.');
     }
 }
-

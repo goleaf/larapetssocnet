@@ -297,4 +297,4 @@ Route::get('/@{user:username}/followers', [FollowController::class, 'followers']
 Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

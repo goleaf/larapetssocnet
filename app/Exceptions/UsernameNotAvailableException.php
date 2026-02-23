@@ -11,4 +11,3 @@ class UsernameNotAvailableException extends RuntimeException
         parent::__construct('This username is not available.');
     }
 }
-

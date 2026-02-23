@@ -11,4 +11,3 @@ class UsernameChangeCooldownException extends RuntimeException
         parent::__construct("You can change your username again in {$daysRemaining} day(s).");
     }
 }
-

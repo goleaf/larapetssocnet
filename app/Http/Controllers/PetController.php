@@ -39,7 +39,42 @@ class PetController extends Controller
 
         $posts = collect();
         if (method_exists($pet, 'posts')) {
-            $posts = $pet->posts()->latest()->limit(12)->get();
+            $posts = $pet->posts()
+                ->with([
+                    'user',
+                    'author',
+                    'author.media',
+                    'pet',
+                    'pet.media',
+                    'media',
+                    'postMedia',
+                    'likes',
+                    'comments.user',
+                ])
+                ->withCount([
+                    'comments',
+                    'likes',
+                ])
+                ->latest()
+                ->limit(12)
+                ->get();
+        }
+
+        $myReactions = collect();
+        $mySaved = collect();
+
+        if ($request->user() && $posts->isNotEmpty()) {
+            $postIds = $posts->modelKeys();
+            $myReactions = $request->user()->reactions()
+                ->whereIn('reactable_id', $postIds)
+                ->where('reactable_type', \App\Models\Post::class)
+                ->get()
+                ->keyBy('reactable_id');
+
+            $mySaved = $request->user()->savedPosts()
+                ->whereIn('posts.id', $postIds)
+                ->pluck('posts.id')
+                ->flip();
         }
 
         $gallery = collect();
@@ -65,6 +100,8 @@ class PetController extends Controller
             'activeTab' => $activeTab,
             'isOwner' => $isOwner,
             'posts' => $posts,
+            'myReactions' => $myReactions,
+            'mySaved' => $mySaved,
             'gallery' => $gallery,
             'healthLogs' => $healthLogs,
             'weightChartSvg' => $weightChartSvg,
