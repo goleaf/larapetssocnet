@@ -1149,7 +1149,7 @@ class User extends Authenticatable implements HasMedia
 
     protected function avatarUrl(): Attribute
     {
-        return Attribute::get(function (): string {
+        return Attribute::get(function (): ?string {
             $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_CONVERSION_AVATAR_CARD);
 
             if ($mediaUrl !== '') {
@@ -1164,13 +1164,13 @@ class User extends Authenticatable implements HasMedia
                 return (string) $this->profile_photo_path;
             }
 
-            return '/images/default-avatar.png';
+            return null;
         });
     }
 
     protected function coverPhotoUrl(): Attribute
     {
-        return Attribute::get(function (): string {
+        return Attribute::get(function (): ?string {
             $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER_BANNER);
 
             if ($mediaUrl !== '') {
@@ -1187,7 +1187,7 @@ class User extends Authenticatable implements HasMedia
 
     protected function profilePhotoUrl(): Attribute
     {
-        return Attribute::get(fn (): string => $this->firstMediaUrl(self::MEDIA_COLLECTION_PROFILE) ?: $this->avatar_url);
+        return Attribute::get(fn (): ?string => $this->firstMediaUrl(self::MEDIA_COLLECTION_PROFILE) ?: $this->avatar_url);
     }
 
     protected function profileUrl(): Attribute
