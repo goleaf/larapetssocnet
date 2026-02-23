@@ -9,27 +9,16 @@ use Illuminate\View\View;
 
 class FeedController extends Controller
 {
-    /**
-     * @var array<string, string>
-     */
-    private const THEMES = [
-        'accessible-soft' => 'Accessible Soft',
-        'high-contrast' => 'High Contrast',
-        'minimalist-soothe' => 'Minimalist Soothe',
-    ];
-
-    public function __construct(private FeedService $feed) {}
+    public function __construct(private FeedService $feed)
+    {
+    }
 
     public function index(Request $request): View
     {
         $type = in_array($request->string('type')->toString(), ['text', 'photo', 'video'], true)
             ? $request->string('type')->toString()
             : null;
-        $theme = $request->string('theme')->toString();
 
-        if (! array_key_exists($theme, self::THEMES)) {
-            $theme = 'accessible-soft';
-        }
 
         $user = $request->user()
             ->load([
@@ -47,10 +36,10 @@ class FeedController extends Controller
         $posts = Post::query()
             ->when(
                 $hasFollowing,
-                fn ($query) => $query->forFeed($user),
-                fn ($query) => $query->visibleTo($user)
+                fn($query) => $query->forFeed($user),
+                fn($query) => $query->visibleTo($user)
             )
-            ->whereDoesntHave('author', fn ($query) => $query->where('is_banned', true))
+            ->whereDoesntHave('author', fn($query) => $query->where('is_banned', true))
             ->whereNotIn('user_id', $user->blocking()->select('users.id'))
             ->whereNotIn('user_id', $user->blockedBy()->select('users.id'))
             ->with([
@@ -68,7 +57,7 @@ class FeedController extends Controller
                 'comments',
                 'likes',
             ])
-            ->when($type !== null, fn ($query) => $query->byType($type))
+            ->when($type !== null, fn($query) => $query->byType($type))
             ->orderByDesc('posts.created_at')
             ->paginate(15)
             ->withQueryString();
@@ -91,8 +80,7 @@ class FeedController extends Controller
         return view('feed.index', array_merge(
             compact('posts', 'myReactions', 'mySaved'),
             $sidebarData,
-            compact('user', 'type', 'theme'),
-            ['themes' => self::THEMES],
+            compact('user', 'type'),
         ));
     }
 }

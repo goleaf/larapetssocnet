@@ -93,7 +93,7 @@
             <div class="flex flex-wrap gap-2" role="tablist" aria-label="Feed post filters">
                 @foreach ($typeFilters as $filterKey => $filterLabel)
                     @php
-                        $filterQuery = array_merge(request()->query(), ['theme' => $theme]);
+                        $filterQuery = request()->query();
 
                         if ($filterKey === 'all') {
                             unset($filterQuery['type']);
