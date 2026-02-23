@@ -5,21 +5,21 @@
     $trendPath = data_get($trendData, 'path');
     $trendPoints = data_get($trendData, 'points', []);
 
-        $typeLabel = static function ($type): string {
-            if ($type === 'vaccine') {
-                $type = 'vaccination';
-            }
+    $typeLabel = static function ($type): string {
+        if ($type === 'vaccine') {
+            $type = 'vaccination';
+        }
 
-            return match ((string) $type) {
-                'weight' => 'Weight',
-                'medication' => 'Medication',
-                'vaccination' => 'Vaccination',
-                'vet_visit' => 'Vet Visit',
-                default => ucfirst(str_replace('_', ' ', (string) $type)),
-            };
+        return match ((string) $type) {
+            'weight' => 'Weight',
+            'medication' => 'Medication',
+            'vaccination' => 'Vaccination',
+            'vet_visit' => 'Vet Visit',
+            default => ucfirst(str_replace('_', ' ', (string) $type)),
         };
+    };
 
-        $formatDate = static function ($value): string {
+    $formatDate = static function ($value): string {
         if ($value instanceof \Illuminate\Support\CarbonInterface) {
             return $value->format('M j, Y');
         }
@@ -39,13 +39,17 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
                 {{ $pet->name ?? 'Pet' }} Health Log
             </h2>
 
             <div class="flex items-center gap-3">
-                <a href="{{ route('pets.show', $petSlug) }}" class="text-sm text-gray-600 hover:text-gray-900">Back to profile</a>
-                <a href="{{ route('pets.health.create', $petSlug) }}" class="text-sm text-indigo-600 hover:text-indigo-800">Add health entry</a>
+                <a href="{{ route('pets.show', $petSlug) }}"
+                    class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Back to
+                    profile</a>
+                <a href="{{ route('pets.health.create', $petSlug) }}"
+                    class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Add
+                    health entry</a>
             </div>
         </div>
     </x-slot>
@@ -68,7 +72,8 @@
                             <svg viewBox="0 0 100 100" class="h-48 w-full" role="img" aria-label="Weight trend">
                                 <line x1="0" y1="100" x2="100" y2="100" stroke="#CBD5E1" stroke-width="1" />
                                 <line x1="0" y1="0" x2="0" y2="100" stroke="#CBD5E1" stroke-width="1" />
-                                <path d="{{ $trendPath }}" fill="none" stroke="#4F46E5" stroke-width="2" vector-effect="non-scaling-stroke" />
+                                <path d="{{ $trendPath }}" fill="none" stroke="#4F46E5" stroke-width="2"
+                                    vector-effect="non-scaling-stroke" />
                                 @foreach($trendPoints as $point)
                                     <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="1.4" fill="#4F46E5" />
                                 @endforeach
@@ -87,10 +92,12 @@
                     <div class="mt-3 space-y-3">
                         @forelse($upcomingLogs as $upcoming)
                             <div class="rounded-md bg-amber-50 p-3 text-sm">
-                                <div class="font-medium text-amber-800">{{ $typeLabel($upcoming->log_type ?? 'entry') }}</div>
+                                <div class="font-medium text-amber-800">{{ $typeLabel($upcoming->log_type ?? 'entry') }}
+                                </div>
                                 <div class="text-amber-700">Next due {{ $formatDate($upcoming->next_due_at) }}</div>
                                 @if(!empty($upcoming->notes))
-                                    <div class="mt-1 text-amber-700">{{ \Illuminate\Support\Str::limit((string) $upcoming->notes, 80) }}</div>
+                                    <div class="mt-1 text-amber-700">
+                                        {{ \Illuminate\Support\Str::limit((string) $upcoming->notes, 80) }}</div>
                                 @endif
                             </div>
                         @empty
@@ -131,14 +138,19 @@
                                             @endif
                                         </td>
                                         <td class="px-3 py-2">{{ $formatDate($log->logged_at) }}</td>
-                                        <td class="px-3 py-2">{{ \Illuminate\Support\Str::limit((string) $log->notes, 70) ?: '—' }}</td>
+                                        <td class="px-3 py-2">
+                                            {{ \Illuminate\Support\Str::limit((string) $log->notes, 70) ?: '—' }}</td>
                                         <td class="px-3 py-2">
                                             <div class="flex items-center gap-2">
-                                                <a href="{{ route('pets.health.edit', ['slug' => $petSlug, 'healthLog' => $log->getKey()]) }}" class="text-indigo-600 hover:text-indigo-800">Edit</a>
-                                                <form method="POST" action="{{ route('pets.health.destroy', ['slug' => $petSlug, 'healthLog' => $log->getKey()]) }}" onsubmit="return confirm('Delete this log entry?');">
+                                                <a href="{{ route('pets.health.edit', ['slug' => $petSlug, 'healthLog' => $log->getKey()]) }}"
+                                                    class="text-indigo-600 hover:text-indigo-800">Edit</a>
+                                                <form method="POST"
+                                                    action="{{ route('pets.health.destroy', ['slug' => $petSlug, 'healthLog' => $log->getKey()]) }}"
+                                                    onsubmit="return confirm('Delete this log entry?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
+                                                    <button type="submit"
+                                                        class="text-red-600 hover:text-red-800">Delete</button>
                                                 </form>
                                             </div>
                                         </td>

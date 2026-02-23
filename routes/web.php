@@ -74,11 +74,11 @@ Route::get('/hashtags/{hashtag:slug}', [HashtagController::class, 'show'])->name
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
 Route::get('/pets/{slug}', [PetController::class, 'show'])
-    ->where('slug', '^(?!create$).+')
+    ->where('slug', '^(?!create$)[^/]+')
     ->name('pets.show');
 Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
 Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
-    ->where('tip', '^(?!create$).+')
+    ->where('tip', '^(?!create$)[^/]+')
     ->name('tips.show');
 Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
 Route::get('/api/username-available', [ProfileController::class, 'usernameAvailable'])
@@ -297,4 +297,4 @@ Route::get('/@{user:username}/followers', [FollowController::class, 'followers']
 Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
 Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

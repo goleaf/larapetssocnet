@@ -15,7 +15,7 @@
     </x-slot>
 
     <div class="space-y-4">
-        <x-ui.card>
+        <div class="bg-transparent border-none shadow-none">
             <form method="GET" action="{{ route('explore.index') }}" class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
                 <x-ui.input type="text" name="q" value="{{ $search }}"
                     placeholder="Search posts, users, hashtags, or location">
@@ -48,7 +48,7 @@
                     </x-ui.badge>
                 @endforeach
             </div>
-        </x-ui.card>
+        </div>
 
         @forelse ($posts as $post)
             @include('partials.post-card', ['post' => $post])

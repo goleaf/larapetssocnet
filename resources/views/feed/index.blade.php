@@ -52,7 +52,7 @@
         </div>
     </x-slot>
 
-    <div class="mt-4 max-w-3xl mx-auto space-y-4">
+    <div class="mt-4 mx-auto space-y-4">
         <div class="space-y-4">
             <x-ui.card class="border">
                 <x-slot name="header">

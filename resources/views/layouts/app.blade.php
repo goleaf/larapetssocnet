@@ -85,13 +85,6 @@
         'pets.create',
     ]);
 
-    $hideRightRail = $routeIsActive([
-        'profile.show',
-        'profile.followers',
-        'profile.following',
-        'settings.*',
-    ]);
-
     $trendingHashtags = collect();
     $upcomingEvents = collect();
     $suggestedUsers = collect();
@@ -223,10 +216,8 @@
 
             <div @class([
                 'relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',
-                'lg:grid-cols-[16.5rem_minmax(0,1fr)_20rem]' => ! $hideLeftRail && ! $hideRightRail,
-                'lg:grid-cols-[16.5rem_minmax(0,1fr)]' => ! $hideLeftRail && $hideRightRail,
-                'lg:grid-cols-[minmax(0,1fr)_20rem]' => $hideLeftRail && ! $hideRightRail,
-                'lg:grid-cols-[minmax(0,1fr)]' => $hideLeftRail && $hideRightRail,
+                'lg:grid-cols-[16.5rem_minmax(0,1fr)]' => ! $hideLeftRail,
+                'lg:grid-cols-[minmax(0,1fr)]' => $hideLeftRail,
             ])>
                 @unless ($hideLeftRail)
                 <aside class="hidden lg:block">
@@ -447,10 +438,10 @@
 
                 <main class="min-w-0 space-y-5">
                     @isset($header)
-                        <x-ui.card class="animate-fade-up">
+                        <x-ui.card class="animate-fade-up dark:bg-gray-800 dark:border-gray-700">
                             <div class="flex items-center justify-between gap-3">
                                 <div class="min-w-0">{{ $header }}</div>
-                                <x-ui.badge variant="primary" size="sm" pill>PetSocial</x-ui.badge>
+                                <x-ui.badge variant="primary" size="sm" class="dark:bg-indigo-900 dark:text-indigo-100 dark:border-indigo-700" pill>PetSocial</x-ui.badge>
                             </div>
                         </x-ui.card>
                     @endisset
@@ -459,10 +450,6 @@
                         {{ $slot }}
                     </section>
                 </main>
-
-                @unless ($hideRightRail)
-                <aside class="hidden lg:block"></aside>
-                @endunless
             </div>
             
             <!-- Mobile Bottom Nav -->

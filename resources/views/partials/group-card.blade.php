@@ -70,19 +70,19 @@
             @endif
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('groups.show', $groupRouteKey) }}" class="btn-base btn-ghost px-3 py-1.5 text-xs">View</a>
+                <x-ui.button :href="route('groups.show', $groupRouteKey)" variant="ghost" size="xs">View</x-ui.button>
 
                 @auth
                     @if ($isMember)
-                        <span class="chip">Member</span>
+                        <x-ui.badge variant="primary" size="sm" pill>Member</x-ui.badge>
                     @elseif ($isPending)
-                        <span class="chip">Pending</span>
+                        <x-ui.badge variant="warning" size="sm" pill>Pending</x-ui.badge>
                     @elseif ($privacyValue !== 'secret')
-                        <form method="POST" action="{{ route('groups.join', $groupRouteKey) }}">
+                        <form method="POST" action="{{ route('groups.join', $groupRouteKey) }}" class="inline-block">
                             @csrf
-                            <button type="submit" class="btn-base btn-primary px-3 py-1.5 text-xs">
+                            <x-ui.button type="submit" variant="primary" size="xs">
                                 {{ $privacyValue === 'public' ? 'Join' : 'Request' }}
-                            </button>
+                            </x-ui.button>
                         </form>
                     @endif
                 @endauth
