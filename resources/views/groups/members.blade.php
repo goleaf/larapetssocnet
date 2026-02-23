@@ -1,103 +1,103 @@
 <x-app-layout>
- @php
- $groupRouteKey = filled((string) ($group->slug ??'')) ? $group->slug : $group->id;
+    @php
+        $groupRouteKey = filled((string) ($group->slug ?? '')) ? $group->slug : $group->id;
 
- $canManage = (bool) ($canManageMembers ?? $isAdmin ?? $isOwner ?? false);
+        $canManage = (bool) ($canManageMembers ?? $isAdmin ?? $isOwner ?? false);
 
- $membersPaginator = $members
- ?? $activeMembers
- ?? \App\Models\GroupMember::query()
- ->where('group_id', $group->id)
- ->where(function ($query): void {
- $query->whereNull('status')->orWhereIn('status', ['active','accepted']);
- })
- ->with('user:id,name,username')
- ->orderByRaw("CASE role WHEN'owner'THEN 1 WHEN'admin'THEN 2 WHEN'moderator'THEN 3 ELSE 4 END")
- ->orderBy('joined_at')
- ->paginate(20)
- ->withQueryString();
+        $membersPaginator = $members
+            ?? $activeMembers
+            ?? \App\Models\GroupMember::query()
+                ->where('group_id', $group->id)
+                ->where(function ($query): void {
+                    $query->whereNull('status')->orWhereIn('status', ['active', 'accepted']);
+                })
+                ->with('user:id,name,username')
+                ->orderByRaw("CASE role WHEN 'owner' THEN 1 WHEN 'admin' THEN 2 WHEN 'moderator' THEN 3 ELSE 4 END")
+                ->orderBy('joined_at')
+                ->paginate(20)
+                ->withQueryString();
 
- $membersUrl = Route::has('groups.members.index')
- ? route('groups.members.index', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members']);
+        $membersUrl = Route::has('groups.members')
+            ? route('groups.members', $groupRouteKey)
+            : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members']);
 
- $requestsUrl = Route::has('groups.requests.index')
- ? route('groups.requests.index', ['group'=> $groupRouteKey,'status'=>'pending'])
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members','request_tab'=>'pending']);
- @endphp
+        $requestsUrl = Route::has('groups.requests')
+            ? route('groups.requests', $groupRouteKey)
+            : route('groups.show', ['group' => $groupRouteKey, 'tab' => 'members', 'request_tab' => 'pending']);
+    @endphp
 
- <x-slot name="header">
- <x-ui.page-header
- title="{{ $group->name }}"
- subtitle="Group Members"
- :breadcrumbs="[
- ['label'=>'Groups','href'=> route('groups.index')],
- ['label'=> $group->name,'href'=> route('groups.show', ['group'=> $groupRouteKey,'tab'=>'feed'])],
- ['label'=>'Members'],
- ]"
- >
- <x-slot name="action">
- <x-ui.button href="{{ route('groups.show', ['group'=> $groupRouteKey,'tab'=>'feed']) }}"variant="ghost"size="sm">Back to Group</x-ui.button>
- </x-slot>
- </x-ui.page-header>
- </x-slot>
+    <x-slot name="header">
+        <x-ui.page-header :title="$group->name" subtitle="Group Members">
+            <x-slot:action>
+                <x-ui.button href="{{ route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed']) }}"
+                    variant="ghost" size="sm">Back to Group</x-ui.button>
+            </x-slot:action>
+        </x-ui.page-header>
+    </x-slot>
 
- <nav class="mb-4 flex flex-wrap gap-2">
- <x-ui.button href="{{ route('groups.show', ['group'=> $groupRouteKey,'tab'=>'feed']) }}"variant="ghost"size="sm">Overview</x-ui.button>
- <x-ui.button href="{{ $membersUrl }}"variant="primary"size="sm">Members</x-ui.button>
- @if ($canManage)
- <x-ui.button href="{{ $requestsUrl }}"variant="ghost"size="sm">Requests</x-ui.button>
- @endif
- </nav>
+    <div class="mb-6">
+        @php
+            $navTabs = [
+                ['label' => 'Overview', 'value' => 'feed', 'href' => route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed'])],
+                ['label' => 'Members', 'value' => 'members', 'href' => $membersUrl],
+            ];
+            if ($canManage) {
+                $navTabs[] = ['label' => 'Requests', 'value' => 'requests', 'href' => $requestsUrl];
+            }
+        @endphp
+        <x-ui.tabs :tabs="$navTabs" active="members" />
+    </div>
 
- <x-ui.card>
- <div class="space-y-3">
- @forelse ($membersPaginator as $member)
- @php
- $roleValue = strtolower((string) ($member->role ??'member'));
- @endphp
+    <x-ui.card padding="lg">
+        <div class="space-y-3">
+            @forelse ($membersPaginator as $member)
+                @php
+                    $roleValue = strtolower((string) ($member->role ?? 'member'));
+                @endphp
 
- <x-ui.user-row
- :name="$member->user?->name ??'Unknown user'"
- :subtitle="$member->user?->username ?'@'. $member->user->username :'Member'"
- >
- <x-slot name="action">
- <div class="flex flex-wrap items-center gap-2">
- <x-ui.role-badge :role="$roleValue"/>
+                <x-ui.user-row :user="$member->user" :role="$roleValue"
+                    class="border border-whisker/30 rounded-xl px-4 bg-warm-white">
+                    <x-slot:action>
+                        @if ($canManage && $roleValue !== 'owner')
+                            <div x-data="dropdownState()" class="relative">
+                                <x-ui.button variant="ghost" size="sm" @click="toggle()">Manage ▾</x-ui.button>
 
- @if ($canManage && $roleValue !=='owner')
- @if (in_array($roleValue, ['member','moderator'], true))
- <form method="POST"action="{{ route('groups.members.promote', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}">
- @csrf
- <x-ui.button type="submit"variant="ghost"size="xs">Promote</x-ui.button>
- </form>
- @endif
+                                <div x-show="open" x-cloak @click.outside="close()"
+                                    class="absolute right-0 mt-1 min-w-[200px] bg-warm-white border border-whisker/30 shadow-card-hover rounded-lg z-30 p-2 space-y-2">
+                                    <form method="POST"
+                                        action="{{ route('groups.members.role', ['group' => $groupRouteKey, 'membership' => $member->id]) }}"
+                                        class="flex items-center gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select name="role"
+                                            class="block w-full rounded-md border-whisker/50 py-1.5 pl-3 pr-8 text-sm text-bark focus:border-paw focus:ring-paw bg-cream">
+                                            <option value="member" @selected($roleValue === 'member')>Member</option>
+                                            <option value="moderator" @selected($roleValue === 'moderator')>Moderator</option>
+                                            <option value="admin" @selected($roleValue === 'admin')>Admin</option>
+                                        </select>
+                                        <x-ui.icon-button type="submit" variant="ghost" size="sm"
+                                            title="Save">✓</x-ui.icon-button>
+                                    </form>
+                                    <x-ui.divider class="!my-2" />
+                                    <form method="POST"
+                                        action="{{ route('groups.members.ban', ['group' => $groupRouteKey, 'membership' => $member->id]) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <x-ui.button type="submit" variant="danger" :full="true" size="sm">Ban
+                                            Member</x-ui.button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endif
+                    </x-slot:action>
+                </x-ui.user-row>
+            @empty
+                <x-ui.empty-state title="No Members" description="There are no active members yet." icon="👥" />
+            @endforelse
+        </div>
 
- @if (in_array($roleValue, ['admin','moderator'], true))
- <form method="POST"action="{{ route('groups.members.demote', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}">
- @csrf
- <x-ui.button type="submit"variant="ghost"size="xs">Demote</x-ui.button>
- </form>
- @endif
-
- <form method="POST"action="{{ route('groups.members.remove', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}"onsubmit="return confirm('Remove this member from the group?');">
- @csrf
- @method('DELETE')
- <x-ui.button type="submit"variant="danger"size="xs">Remove</x-ui.button>
- </form>
- @endif
- </div>
- </x-slot>
- </x-ui.user-row>
- @empty
- <x-ui.empty-state title="No Members"description="There are no active members yet."/>
- @endforelse
- </div>
-
- @if ($membersPaginator instanceof \Illuminate\Pagination\LengthAwarePaginator && $membersPaginator->hasPages())
- <div class="mt-4">
- <x-ui.pagination :paginator="$membersPaginator"/>
- </div>
- @endif
- </x-ui.card>
+        @if ($membersPaginator instanceof \Illuminate\Pagination\LengthAwarePaginator && $membersPaginator->hasPages())
+            <div class="mt-6">{{ $membersPaginator->links() }}</div>
+        @endif
+    </x-ui.card>
 </x-app-layout>

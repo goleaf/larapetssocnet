@@ -1,41 +1,43 @@
 <x-guest-layout>
- @if (session('status'))
- <x-ui.alert type="success"class="mb-4">{{ session('status') }}</x-ui.alert>
- @endif
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
 
- <form method="POST"action="{{ route('login') }}"class="space-y-4">
- @csrf
+    <form method="POST" action="{{ route('login') }}">
+        @csrf
 
- <x-ui.input
- name="email"
- label="{{ __('Email') }}"
- type="email"
- :value="old('email')"
- required
- autofocus
- autocomplete="username"
- />
+        <div class="space-y-4">
+            <div>
+                <x-ui.input id="email" type="email" name="email" label="Email" :value="old('email')" required autofocus
+                    autocomplete="username" />
+            </div>
 
- <x-ui.input
- name="password"
- label="{{ __('Password') }}"
- type="password"
- required
- autocomplete="current-password"
- />
+            <!-- Password -->
+            <div>
+                <x-ui.input id="password" type="password" name="password" label="Password" required
+                    autocomplete="current-password" />
+            </div>
 
- <x-ui.checkbox name="remember"label="{{ __('Remember me') }}"value="1":checked="old('remember')"/>
+            <!-- Remember Me -->
+            <div class="block mt-4">
+                <label for="remember_me" class="inline-flex items-center group cursor-pointer">
+                    <input id="remember_me" type="checkbox"
+                        class="rounded border-whisker/50 text-paw shadow-sm focus:ring-paw" name="remember">
+                    <span
+                        class="ms-2 text-sm text-fur group-hover:text-bark transition-colors">{{ __('Remember me') }}</span>
+                </label>
+            </div>
 
- <div class="flex items-center justify-between gap-3 pt-2">
- @if (Route::has('password.request'))
- <x-ui.button href="{{ route('password.request') }}"variant="ghost"size="sm">
- {{ __('Forgot your password?') }}
- </x-ui.button>
- @else
- <span></span>
- @endif
+            <div class="flex items-center justify-end mt-4 gap-4">
+                @if (Route::has('password.request'))
+                    <a class="text-sm text-paw hover:underline focus:outline-none" href="{{ route('password.request') }}">
+                        {{ __('Forgot your password?') }}
+                    </a>
+                @endif
 
- <x-ui.button type="submit"variant="primary"size="sm">{{ __('Log in') }}</x-ui.button>
- </div>
- </form>
+                <x-ui.button type="submit" variant="primary">
+                    {{ __('Log in') }}
+                </x-ui.button>
+            </div>
+        </div>
+    </form>
 </x-guest-layout>

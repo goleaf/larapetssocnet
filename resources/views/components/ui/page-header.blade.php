@@ -1,45 +1,36 @@
 @props([
-'title'=> null,
-'subtitle'=> null,
-'description'=> null,
-'breadcrumbs'=> [],
-'eyebrow'=> null,
-'icon'=> null,
+    'title',
+    'description' => null,
+    'eyebrow' => null,
+    'icon' => '🐾',
 ])
 
-@php
- $summary = $description ?? $subtitle;
- $actionSlot = $action ?? $actions ?? null;
-@endphp
+<div {{ $attributes->merge(['class' => 'shell-panel p-4 sm:p-5']) }}>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+            @if ($eyebrow)
+                <p class="shell-kicker">{{ $eyebrow }}</p>
+            @endif
 
-<div {{ $attributes->merge(['class'=>'mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end']) }}>
- <div class="min-w-0">
- @if(!empty($breadcrumbs))
- <x-ui.breadcrumbs :items="$breadcrumbs"class="mb-3"/>
- @endif
+            <div class="mt-1 flex items-start gap-3">
+                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">
+                    {{ $icon }}
+                </span>
 
- @if(filled($eyebrow))
- <p class="text-xs font-semibold uppercase tracking-[0.12em] text-fur">{{ $eyebrow }}</p>
- @endif
+                <div class="min-w-0">
+                    <h1 class="shell-title text-2xl sm:text-[1.7rem]">{{ $title }}</h1>
 
- <div class="mt-1 flex items-center gap-2">
- @if(filled($icon))
- <span class="text-2xl leading-none"aria-hidden="true">{{ $icon }}</span>
- @endif
+                    @if ($description)
+                        <p class="mt-1 text-sm shell-text-muted">{{ $description }}</p>
+                    @endif
+                </div>
+            </div>
+        </div>
 
- @if(filled($title))
- <h1 class="truncate text-3xl font-bold font-display text-bark">{{ $title }}</h1>
- @endif
- </div>
-
- @if(filled($summary))
- <p class="mt-1 text-sm text-fur">{{ $summary }}</p>
- @endif
- </div>
-
- @if($actionSlot)
- <div class="shrink-0 sm:mb-1">
- {{ $actionSlot }}
- </div>
- @endif
+        @if (isset($action))
+            <div class="flex flex-wrap items-center gap-2">
+                {{ $action }}
+            </div>
+        @endif
+    </div>
 </div>
