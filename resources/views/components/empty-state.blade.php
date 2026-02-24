@@ -15,7 +15,7 @@
  <p class="mx-auto mt-2 max-w-md text-sm shell-text-muted">{{ $description }}</p>
 
  @if ($actionLabel)
- <a href="{{ $actionHref }}"class="btn-base btn-primary mt-5">
+ <a href="{{ $actionHref }}" class="btn-base btn-primary mt-5">
  {{ $actionLabel }}
  </a>
  @endif

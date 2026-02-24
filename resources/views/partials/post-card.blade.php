@@ -68,7 +68,7 @@
  };
 @endphp
 
-<x-ui.card class="overflow-hidden"x-data="{
+<x-ui.card class="overflow-hidden" x-data="{
  liked: {{ $isLiked ?'true':'false'}},
  likes: {{ $likeCount }},
  likeBusy: false,
@@ -85,15 +85,15 @@
 
  try {
  const response = await fetch('{{ route('posts.like', $post) }}', {
- method:'POST',
+ method:' POST',
  headers: {
-'Accept':'application/json',
-'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ??'',
+' Accept' :' application/json',
+' X-CSRF-TOKEN' : document.querySelector(' meta[name=csrf-token]')?.content ??'',
  },
  });
 
  if (!response.ok) {
- throw new Error('like_request_failed');
+ throw new Error(' like_request_failed');
  }
 
  const data = await response.json();
@@ -125,16 +125,16 @@
  <div class="min-w-0 flex-1">
  <div class="flex items-start gap-3">
  @if ($author)
- <a href="{{ $profileUrl }}"class="shrink-0">
- <x-ui.avatar :src="$author->avatar_url":name="$author->name"size="md"/>
+ <a href="{{ $profileUrl }}" class="shrink-0">
+ <x-ui.avatar :src="$author->avatar_url" :name="$author->name" size="md"/>
  </a>
  @else
- <x-ui.avatar :name="'Deleted User'"size="md"/>
+ <x-ui.avatar :name="' Deleted User'" size="md"/>
  @endif
 
  <div class="min-w-0">
  @if ($author)
- <a href="{{ $profileUrl }}"class="truncate text-sm font-semibold hover:underline"
+ <a href="{{ $profileUrl }}" class="truncate text-sm font-semibold hover:underline"
  style="color: var(--ui-text);">
  {{ $author->name }}
  </a>
@@ -151,7 +151,7 @@
  @if ($post->pet && $petUrl)
  <span aria-hidden="true">•</span>
  <a href="{{ $petUrl }}">
- <x-ui.badge variant="primary"size="sm">🐾 {{ $post->pet->name }}</x-ui.badge>
+ <x-ui.badge variant="primary" size="sm">🐾 {{ $post->pet->name }}</x-ui.badge>
  </a>
  @endif
  </div>
@@ -165,11 +165,11 @@
  @endif
 
  @if ($isOwner)
- <form action="{{ route('posts.destroy', $post) }}"method="POST"
+ <form action="{{ route('posts.destroy', $post) }}" method="POST"
  onsubmit="return confirm('Delete this post?');">
  @csrf
  @method('DELETE')
- <x-ui.button type="submit"variant="danger"size="xs">Delete</x-ui.button>
+ <x-ui.button type="submit" variant="danger" size="xs">Delete</x-ui.button>
  </form>
  @endif
  </div>
@@ -185,11 +185,11 @@
  @php($item = $shownMedia->first())
  <div class="relative overflow-hidden rounded-xl border"style="border-color: var(--ui-border);">
  @if ($isVideoMedia($item))
- <video controls preload="metadata"class="h-72 w-full object-cover sm:h-96">
- <source src="{{ $mediaUrl($item) }}"type="{{ $item->mime_type ??'video/mp4'}}">
+ <video controls preload="metadata" class="h-72 w-full object-cover sm:h-96">
+ <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ??'video/mp4'}}">
  </video>
  @else
- <img src="{{ $mediaUrl($item) }}"alt="Post media"class="h-72 w-full object-cover sm:h-96"loading="lazy">
+ <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-72 w-full object-cover sm:h-96"loading="lazy">
  @endif
  </div>
  @elseif ($shownMedia->count() === 2)
@@ -197,11 +197,11 @@
  @foreach ($shownMedia as $item)
  <div class="overflow-hidden rounded-xl border"style="border-color: var(--ui-border);">
  @if ($isVideoMedia($item))
- <video controls preload="metadata"class="h-44 w-full object-cover sm:h-56">
- <source src="{{ $mediaUrl($item) }}"type="{{ $item->mime_type ??'video/mp4'}}">
+ <video controls preload="metadata" class="h-44 w-full object-cover sm:h-56">
+ <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ??'video/mp4'}}">
  </video>
  @else
- <img src="{{ $mediaUrl($item) }}"alt="Post media"class="h-44 w-full object-cover sm:h-56"
+ <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-44 w-full object-cover sm:h-56"
  loading="lazy">
  @endif
  </div>
@@ -221,10 +221,10 @@
 'h-52 sm:h-64'=> $loop->first,
 'h-36 sm:h-44'=> !$loop->first,
  ])>
- <source src="{{ $mediaUrl($item) }}"type="{{ $item->mime_type ??'video/mp4'}}">
+ <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ??'video/mp4'}}">
  </video>
  @else
- <img src="{{ $mediaUrl($item) }}"alt="Post media"@class([
+ <img src="{{ $mediaUrl($item) }}" alt="Post media"@class([
 'w-full object-cover',
 'h-52 sm:h-64'=> $loop->first,
 'h-36 sm:h-44'=> !$loop->first,
@@ -245,7 +245,7 @@
 
  <div class="mt-4 border-t pt-3"style="border-color: var(--ui-border);">
  <div class="flex items-center gap-2">
- <button type="button"@click="toggleLike()":disabled="likeBusy"data-testid="like-toggle"
+ <button type="button"@click="toggleLike()" :disabled="likeBusy"data-testid="like-toggle"
  class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
  :class="liked
  ?'border-rose-200 bg-rose-50 text-rose-600'

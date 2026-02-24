@@ -1,6 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+import daisyui from 'daisyui';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -8,6 +9,7 @@ export default {
         './resources/**/*.blade.php',
         './resources/**/*.js',
         './resources/**/*.vue',
+        './vendor/robsontenorio/mary/src/View/Components/**/*.php',
     ],
 
     theme: {
@@ -59,5 +61,33 @@ export default {
         },
     },
 
-    plugins: [forms, typography],
+    plugins: [forms, typography, daisyui],
+
+    daisyui: {
+        themes: [
+            {
+                // Custom theme that maps daisyUI tokens to the project's warm palette.
+                petssocnet: {
+                    'primary': '#E8834A', // paw
+                    'primary-content': '#ffffff',
+                    'secondary': '#D4850A', // amber
+                    'secondary-content': '#ffffff',
+                    'accent': '#4A85C9', // sky
+                    'accent-content': '#ffffff',
+                    'neutral': '#3D2B1F', // bark
+                    'neutral-content': '#FDF6EC',
+                    'base-100': '#FDF6EC', // cream
+                    'base-200': '#F9F0E6',
+                    'base-300': '#F0E4D0',
+                    'base-content': '#3D2B1F', // bark
+                    'info': '#4A85C9',
+                    'success': '#5A9A6F', // leaf
+                    'warning': '#D4850A',
+                    'error': '#C94A5A', // rose
+                },
+            },
+        ],
+        darkTheme: false,
+        logs: false,
+    },
 };

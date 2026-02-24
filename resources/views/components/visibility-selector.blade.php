@@ -59,7 +59,7 @@
  }"
  class="space-y-2"
 >
- <input type="hidden"name="{{ $name }}":value="selected"/>
+ <input type="hidden" name="{{ $name }}" :value="selected"/>
 
  @foreach($options as $value => $option)
  <button
@@ -91,7 +91,7 @@
  :'border-gray-300 bg-white'"
  class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
  >
- <span x-show="selected ==='{{ $value }}'"class="h-1.5 w-1.5 rounded-full bg-white"></span>
+ <span x-show="selected ==='{{ $value }}'" class="h-1.5 w-1.5 rounded-full bg-white"></span>
  </span>
  </button>
  @endforeach

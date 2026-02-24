@@ -60,7 +60,7 @@
  }
 
  if (str_contains($iconString,'<path')) {
- return'<svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 24 24"fill="none"stroke="currentColor"stroke-width="1.5"class="h-4 w-4">'.$iconString.'</svg>';
+ return'<svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 24 24"fill="none"stroke="currentColor"stroke-width="1.5" class="h-4 w-4">'.$iconString.'</svg>';
  }
 
  return'<span class="leading-none">'.$iconString.'</span>';

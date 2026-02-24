@@ -11,7 +11,7 @@
 
  <div {{ $attributes->merge(['class'=>'mt-3']) }}>
  <p class="mb-2 text-xs font-semibold text-fur">Activity</p>
- <svg viewBox="0 0 {{ count($data) * 18 }} {{ $svgHeight + 16 }}"class="w-full h-16"aria-label="Activity chart">
+ <svg viewBox="0 0 {{ count($data) * 18 }} {{ $svgHeight + 16 }}" class="w-full h-16"aria-label="Activity chart">
  @foreach ($data as $i => $item)
  @php
  $barHeight = $maxCount > 0 ? (int) round(($item['count'] / $maxCount) * $svgHeight) : 0;

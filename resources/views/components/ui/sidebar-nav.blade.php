@@ -79,7 +79,7 @@
  </span>
 
  @if($badge !== null)
- <x-ui.badge :variant="$badgeVariant"size="sm"pill>
+ <x-ui.badge :variant="$badgeVariant" size="sm" pill>
  {{ $badge }}
  </x-ui.badge>
  @endif

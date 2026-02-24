@@ -8,7 +8,7 @@
 @endphp
 
 <nav {{ $attributes->merge(['class'=>'flex']) }} aria-label="Breadcrumb">
- <ol role="list"class="flex items-center space-x-2">
+ <ol role="list" class="flex items-center space-x-2">
  @foreach($resolvedItems as $index => $item)
  @php
  $isLast = $index === count($resolvedItems) - 1;
@@ -35,7 +35,7 @@
  @endif
 
  @if($href && ! $isLast)
- <a href="{{ $href }}"class="text-sm font-medium text-fur transition-colors hover:text-bark">{{ $label }}</a>
+ <a href="{{ $href }}" class="text-sm font-medium text-fur transition-colors hover:text-bark">{{ $label }}</a>
  @else
  <span class="text-sm font-medium {{ $isLast ?'text-bark':'text-fur'}}"@if($isLast) aria-current="page"@endif>{{ $label }}</span>
  @endif

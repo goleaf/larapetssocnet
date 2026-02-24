@@ -23,7 +23,7 @@
  @if ($savedPost->post)
  <div class="rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
  Saved {{ $savedPost->created_at?->diffForHumans() }}
- <form method="POST"action="{{ route('posts.save', $savedPost->post) }}"class="ml-3 inline">
+ <form method="POST" action="{{ route('posts.save', $savedPost->post) }}" class="ml-3 inline">
  @csrf
  <button type="submit"
  class="font-semibold text-gray-700 underline hover:text-red-600">Unsave</button>

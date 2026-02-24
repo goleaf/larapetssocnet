@@ -79,7 +79,7 @@
                 <div class="grid gap-5 md:grid-cols-2">
                     <div>
                         <x-ui.input id="name" name="name" type="text" label="Group Name" x-model="name"
-                            :value="old('name', $group->name ?? '')" maxlength="160" required />
+                            :value="old(' name', $group->name ?? '')" maxlength="160" required />
                         <div class="mt-1 flex justify-end text-xs text-fur"><span x-text="`${name.length}/160`"></span>
                         </div>
                     </div>
@@ -108,7 +108,7 @@
                             </label>
                         @endforeach
                     </div>
-                    <x-input-error :messages="$errors->get('privacy')" class="mt-2" />
+                    <x-input-error :messages="$errors->get(' privacy')" class="mt-2" />
                 </div>
 
                 <div>
@@ -147,7 +147,7 @@
                                 <p class="mt-1 text-xs text-fur">Square image recommended.</p>
                             </div>
                         </div>
-                        <x-input-error :messages="$errors->get('avatar')" class="mt-2" />
+                        <x-input-error :messages="$errors->get(' avatar')" class="mt-2" />
                     </div>
 
                     <div class="space-y-3">
@@ -169,13 +169,13 @@
                         </div>
                         <input id="cover" name="cover" type="file" accept="image/*" class="sr-only"
                             @change="setCoverPreview($event)">
-                        <x-input-error :messages="$errors->get('cover')" class="mt-2" />
+                        <x-input-error :messages="$errors->get(' cover')" class="mt-2" />
                     </div>
                 </div>
 
                 <div>
                     <x-ui.input id="cover_image_path" name="cover_image_path" type="url"
-                        label="Cover URL (optional fallback)" :value="old('cover_image_path', $group->cover_image_path ?? '')" placeholder="https://example.com/cover.jpg" />
+                        label="Cover URL (optional fallback)" :value="old(' cover_image_path', $group->cover_image_path ?? '')" placeholder="https://example.com/cover.jpg" />
                 </div>
             </form>
 

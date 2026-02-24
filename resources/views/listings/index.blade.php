@@ -73,7 +73,7 @@
  icon="🦴"
  >
  <x-slot name="actions">
- <x-ui.button variant="ghost":href="$messagesHref">Messages</x-ui.button>
+ <x-ui.button variant="ghost" :href="$messagesHref">Messages</x-ui.button>
  <x-ui.button :href="$createHref">New Listing</x-ui.button>
  </x-slot>
  </x-ui.page-header>
@@ -105,15 +105,15 @@
  @endphp
 
  <div class="flex gap-2">
- <x-ui.button variant="ghost"size="sm"class="flex-1":href="$showHref">View</x-ui.button>
- <x-ui.button size="sm"class="flex-1":href="$editHref">Edit</x-ui.button>
+ <x-ui.button variant="ghost" size="sm" class="flex-1" :href="$showHref">View</x-ui.button>
+ <x-ui.button size="sm" class="flex-1" :href="$editHref">Edit</x-ui.button>
  </div>
  </div>
  @endforeach
  </div>
 
  <div class="hidden md:block">
- <x-ui.table :headings="['Listing','Type','Price','Status','Views','Updated','Actions']">
+ <x-ui.table :headings="[' Listing',' Type',' Price',' Status',' Views',' Updated',' Actions']">
  @foreach ($listingItems as $listing)
  @php
  $listingId = (int) data_get($listing,'id');
@@ -163,7 +163,7 @@
  <div class="flex items-center gap-3">
  <div class="h-12 w-12 overflow-hidden rounded-xl border"style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
  @if ($coverImageUrl !=='')
- <img src="{{ $coverImageUrl }}"alt="{{ $listingTitle }}"class="h-full w-full object-cover">
+ <img src="{{ $coverImageUrl }}" alt="{{ $listingTitle }}" class="h-full w-full object-cover">
  @else
  <div class="flex h-full items-center justify-center text-lg">🐾</div>
  @endif
@@ -192,23 +192,23 @@
  <td class="px-4 py-4 text-sm shell-text-muted">{{ $updatedAtLabel }}</td>
 
  <td class="px-4 py-4 text-right">
- <x-ui.dropdown align="right"width="48">
+ <x-ui.dropdown align="right" width="48">
  <x-slot name="trigger">
- <x-ui.button variant="ghost"size="xs"type="button">Actions</x-ui.button>
+ <x-ui.button variant="ghost" size="xs" type="button">Actions</x-ui.button>
  </x-slot>
 
  <x-slot name="content">
  <div class="space-y-1 p-1 text-sm">
- <a href="{{ $showHref }}"class="block rounded-lg px-3 py-2 hover:bg-black/5">View</a>
+ <a href="{{ $showHref }}" class="block rounded-lg px-3 py-2 hover:bg-black/5">View</a>
 
  @if (! $isDeleted && $editRouteName)
- <a href="{{ $editHref }}"class="block rounded-lg px-3 py-2 hover:bg-black/5">Edit</a>
+ <a href="{{ $editHref }}" class="block rounded-lg px-3 py-2 hover:bg-black/5">Edit</a>
  @endif
 
  @if ($isDeleted && $restoreRouteName)
- <form method="POST"action="{{ route($restoreRouteName, $listingId ?: $listing) }}">
+ <form method="POST" action="{{ route($restoreRouteName, $listingId ?: $listing) }}">
  @csrf
- <button type="submit"class="block w-full rounded-lg px-3 py-2 text-left hover:bg-black/5">Restore</button>
+ <button type="submit" class="block w-full rounded-lg px-3 py-2 text-left hover:bg-black/5">Restore</button>
  </form>
  @endif
 
@@ -238,13 +238,13 @@
  $deleteFormId ='delete-listing-'.$listingId;
  @endphp
 
- <form id="{{ $deleteFormId }}"method="POST"action="{{ route($destroyRouteName, $listingId ?: $listing) }}"class="hidden">
+ <form id="{{ $deleteFormId }}" method="POST" action="{{ route($destroyRouteName, $listingId ?: $listing) }}" class="hidden">
  @csrf
  @method('DELETE')
  </form>
 
  <x-ui.confirm-modal
- :name="'delete-listing-'.$listingId"
+ :name="' delete-listing-'.$listingId"
  title="Delete listing?"
  description="{{'You are about to delete'.$listingTitle.'. This can be restored only if your backend supports listing restore.'}}"
  confirm-label="Delete"
@@ -254,7 +254,7 @@
  @endif
 
  @if ($isPaginator)
- <x-ui.pagination :paginator="$listings"class="mt-4"/>
+ <x-ui.pagination :paginator="$listings" class="mt-4"/>
  @endif
  @endif
  </div>

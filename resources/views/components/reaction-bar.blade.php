@@ -62,17 +62,17 @@
  }"
  class="relative flex items-center gap-2"
 >
- <button type="button"class="rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"@click="react('love')">❤️ <span x-text="total"></span></button>
- <button type="button"class="rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"@click="showPicker = !showPicker">+</button>
+ <button type="button" class="rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"@click="react('love')">❤️ <span x-text="total"></span></button>
+ <button type="button" class="rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"@click="showPicker = !showPicker">+</button>
 
- <div x-show="showPicker"@click.outside="showPicker = false"class="absolute bottom-9 left-0 z-10 rounded-full border border-gray-200 bg-white p-2 shadow"style="display: none;">
+ <div x-show="showPicker"@click.outside="showPicker = false" class="absolute bottom-9 left-0 z-10 rounded-full border border-gray-200 bg-white p-2 shadow"style="display: none;">
  <div class="flex items-center gap-1">
- <button type="button"class="h-8 w-8 rounded-full hover:bg-gray-100":class="current ==='love'?'ring-2 ring-emerald-500':''"@click="react('love')">❤️</button>
- <button type="button"class="h-8 w-8 rounded-full hover:bg-gray-100":class="current ==='cute'?'ring-2 ring-emerald-500':''"@click="react('cute')">🥰</button>
- <button type="button"class="h-8 w-8 rounded-full hover:bg-gray-100":class="current ==='funny'?'ring-2 ring-emerald-500':''"@click="react('funny')">😄</button>
- <button type="button"class="h-8 w-8 rounded-full hover:bg-gray-100":class="current ==='wow'?'ring-2 ring-emerald-500':''"@click="react('wow')">😮</button>
- <button type="button"class="h-8 w-8 rounded-full hover:bg-gray-100":class="current ==='sad'?'ring-2 ring-emerald-500':''"@click="react('sad')">😢</button>
- <button type="button"class="h-8 w-8 rounded-full hover:bg-gray-100":class="current ==='support'?'ring-2 ring-emerald-500':''"@click="react('support')">🤗</button>
+ <button type="button" class="h-8 w-8 rounded-full hover:bg-gray-100" :class="current ==='love'?'ring-2 ring-emerald-500':''"@click="react('love')">❤️</button>
+ <button type="button" class="h-8 w-8 rounded-full hover:bg-gray-100" :class="current ==='cute'?'ring-2 ring-emerald-500':''"@click="react('cute')">🥰</button>
+ <button type="button" class="h-8 w-8 rounded-full hover:bg-gray-100" :class="current ==='funny'?'ring-2 ring-emerald-500':''"@click="react('funny')">😄</button>
+ <button type="button" class="h-8 w-8 rounded-full hover:bg-gray-100" :class="current ==='wow'?'ring-2 ring-emerald-500':''"@click="react('wow')">😮</button>
+ <button type="button" class="h-8 w-8 rounded-full hover:bg-gray-100" :class="current ==='sad'?'ring-2 ring-emerald-500':''"@click="react('sad')">😢</button>
+ <button type="button" class="h-8 w-8 rounded-full hover:bg-gray-100" :class="current ==='support'?'ring-2 ring-emerald-500':''"@click="react('support')">🤗</button>
  </div>
  </div>
 </div>

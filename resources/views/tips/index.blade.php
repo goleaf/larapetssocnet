@@ -4,7 +4,7 @@
  <h2 class="font-semibold text-xl text-gray-800 leading-tight">
  Pet Care Tips
  </h2>
- <a href="{{ route('tips.create') }}"class="text-sm text-indigo-600 hover:text-indigo-800">Share a tip</a>
+ <a href="{{ route('tips.create') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Share a tip</a>
  </div>
  </x-slot>
 
@@ -17,20 +17,20 @@
  @endif
 
  <div class="bg-white shadow-sm sm:rounded-lg p-6">
- <form method="GET"action="{{ route('tips.index') }}"class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+ <form method="GET" action="{{ route('tips.index') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
  <div class="lg:col-span-2">
- <x-input-label for="q"value="Search"/>
- <x-text-input id="q"name="q"class="mt-1 block w-full":value="$filters['q']"placeholder="Title or content"/>
+ <x-input-label for="q" value="Search"/>
+ <x-text-input id="q" name="q" class="mt-1 block w-full" :value="$filters[' q']" placeholder="Title or content"/>
  </div>
 
  <div>
- <x-input-label for="species"value="Species"/>
- <x-text-input id="species"name="species"class="mt-1 block w-full":value="$filters['species']"/>
+ <x-input-label for="species" value="Species"/>
+ <x-text-input id="species" name="species" class="mt-1 block w-full" :value="$filters[' species']"/>
  </div>
 
  <div>
- <x-input-label for="sort"value="Sort"/>
- <select id="sort"name="sort"class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+ <x-input-label for="sort" value="Sort"/>
+ <select id="sort" name="sort" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
  <option value="latest"@selected($filters['sort'] ==='latest')>Latest</option>
  <option value="oldest"@selected($filters['sort'] ==='oldest')>Oldest</option>
  <option value="helpful"@selected($filters['sort'] ==='helpful')>Most helpful</option>
@@ -39,7 +39,7 @@
 
  <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-end gap-2">
  <x-primary-button>Apply filters</x-primary-button>
- <a href="{{ route('tips.index') }}"class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
+ <a href="{{ route('tips.index') }}" class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
  </div>
  </form>
  </div>
@@ -73,7 +73,7 @@
 
  <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
  <span>{{ data_get($tip,'helpful_count', 0) }} helpful</span>
- <a href="{{ route('tips.show', $tipSlug) }}"class="text-indigo-600 hover:text-indigo-800">Read tip</a>
+ <a href="{{ route('tips.show', $tipSlug) }}" class="text-indigo-600 hover:text-indigo-800">Read tip</a>
  </div>
  </article>
  @endforeach

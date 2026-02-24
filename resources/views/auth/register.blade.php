@@ -5,7 +5,7 @@
         <div class="space-y-4">
             <!-- Name -->
             <div>
-                <x-ui.input id="name" type="text" name="name" label="Name" :value="old('name')" required autofocus
+                <x-ui.input id="name" type="text" name="name" label="Name" :value="old(' name')" required autofocus
                     autocomplete="name" />
             </div>
 
@@ -32,12 +32,12 @@
                                 x-text="message"></span></span>
                     </div>
                 </div>
-                <x-input-error :messages="$errors->get('username')" class="mt-2" />
+                <x-input-error :messages="$errors->get(' username')" class="mt-2" />
             </div>
 
             <!-- Email Address -->
             <div>
-                <x-ui.input id="email" type="email" name="email" label="Email" :value="old('email')" required
+                <x-ui.input id="email" type="email" name="email" label="Email" :value="old(' email')" required
                     autocomplete="username" />
             </div>
 

@@ -154,7 +154,7 @@
  x-on:keydown.space.prevent="openPicker()"
 >
  @if ($label)
- <x-ui.label :for="$fieldId":required="$required">{{ $label }}</x-ui.label>
+ <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
  @endif
 
  <div
@@ -219,7 +219,7 @@
  <template x-for="(previewItem, index) in previews":key="index">
  <div class="h-24 w-24 overflow-hidden rounded-md border border-whisker bg-cream">
  <template x-if="previewItem.image">
- <img :src="previewItem.url":alt="previewItem.name"class="h-full w-full object-cover"/>
+ <img :src="previewItem.url" :alt="previewItem.name" class="h-full w-full object-cover"/>
  </template>
  <template x-if="!previewItem.image">
  <div class="flex h-full items-center justify-center px-2 text-center text-xs text-fur"x-text="previewItem.name"></div>
@@ -238,13 +238,13 @@
  </div>
 
  <p id="{{ $errorId }}"x-show="errorMessage"x-cloak class="mt-1 flex items-center gap-1 text-xs text-rose">
- <svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 20 20"fill="currentColor"class="h-4 w-4 shrink-0"aria-hidden="true">
+ <svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 20 20"fill="currentColor" class="h-4 w-4 shrink-0"aria-hidden="true">
  <path fill-rule="evenodd"d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"clip-rule="evenodd"/>
  </svg>
  <span x-text="errorMessage"></span>
  </p>
 
  @if ($resolvedHelp)
- <x-ui.hint id="{{ $helpId }}":message="$resolvedHelp"x-show="!errorMessage"/>
+ <x-ui.hint id="{{ $helpId }}" :message="$resolvedHelp" x-show="!errorMessage"/>
  @endif
 </div>

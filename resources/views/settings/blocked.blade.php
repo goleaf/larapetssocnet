@@ -8,11 +8,11 @@
 
  <!-- Block new user form -->
  <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
- <form action="{{ route('settings.blocked.store') }}"method="POST"class="sm:flex sm:items-center">
+ <form action="{{ route('settings.blocked.store') }}" method="POST" class="sm:flex sm:items-center">
  @csrf
  <div class="w-full sm:max-w-xs">
- <label for="username"class="sr-only">Username</label>
- <input type="text"name="username"id="username"
+ <label for="username" class="sr-only">Username</label>
+ <input type="text" name="username" id="username"
  class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
  placeholder="Enter username to block">
  </div>
@@ -21,7 +21,7 @@
  Block User
  </button>
  </form>
- <x-input-error class="mt-2":messages="$errors->get('username')"/>
+ <x-input-error class="mt-2" :messages="$errors->get(' username')"/>
  </div>
 
  <!-- Block list -->
@@ -37,9 +37,9 @@
  <th scope="col"
  class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">User
  </th>
- <th scope="col"class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date
+ <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date
  Blocked</th>
- <th scope="col"class="relative py-3.5 pl-3 pr-4 sm:pr-0">
+ <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
  <span class="sr-only">Unblock</span>
  </th>
  </tr>
@@ -66,10 +66,10 @@
  <td
  class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
  <form action="{{ route('settings.blocked.destroy', $blockedUser->username) }}"
- method="POST"class="inline">
+ method="POST" class="inline">
  @csrf
  @method('DELETE')
- <button type="submit"class="text-indigo-600 hover:text-indigo-900">Unblock<span
+ <button type="submit" class="text-indigo-600 hover:text-indigo-900">Unblock<span
  class="sr-only"> {{ $blockedUser->name }}</span></button>
  </form>
  </td>

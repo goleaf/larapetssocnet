@@ -50,7 +50,7 @@
  icon="📝"
  >
  <x-slot name="actions">
- <x-ui.button variant="ghost":href="$indexHref">Back to listings</x-ui.button>
+ <x-ui.button variant="ghost" :href="$indexHref">Back to listings</x-ui.button>
  </x-slot>
  </x-ui.page-header>
  </x-slot>
@@ -92,7 +92,7 @@
  }
  }"
  >
- <form method="POST"action="{{ $storeAction }}"enctype="multipart/form-data"class="space-y-5">
+ <form method="POST" action="{{ $storeAction }}"enctype="multipart/form-data" class="space-y-5">
  @csrf
 
  <x-ui.form-section
@@ -107,7 +107,7 @@
  label="Title"
  required
  maxlength="140"
- :value="old('title', data_get($listing,'title'))"
+ :value="old(' title', data_get($listing,' title'))"
  placeholder="Golden retriever puppy looking for a home"
  x-model="preview.title"
  />
@@ -118,7 +118,7 @@
  label="Description"
  required
  rows="5"
- :value="old('description', data_get($listing,'description'))"
+ :value="old(' description', data_get($listing,' description'))"
  placeholder="Share temperament, health info, and what adopters should know."
  x-model="preview.description"
  />
@@ -128,7 +128,7 @@
  name="listing_type"
  label="Listing Type"
  :options="$typeOptions"
- :value="old('listing_type', data_get($listing,'listing_type','adoption'))"
+ :value="old(' listing_type', data_get($listing,' listing_type',' adoption'))"
  x-model="preview.type"
  />
  </div>
@@ -144,7 +144,7 @@
  name="status"
  label="Status"
  :options="$statusOptions"
- :value="old('status', data_get($listing,'status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
+ :value="old(' status', data_get($listing,' status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
  required
  x-model="preview.status"
  />
@@ -166,7 +166,7 @@
  type="number"
  min="0"
  step="0.01"
- :value="old('price', data_get($listing,'price'))"
+ :value="old(' price', data_get($listing,' price'))"
  placeholder="0.00"
  x-model="preview.price"
  />
@@ -175,7 +175,7 @@
  name="currency"
  label="Currency"
  maxlength="3"
- :value="strtoupper((string) old('currency', data_get($listing,'currency','USD')))"
+ :value="strtoupper((string) old(' currency', data_get($listing,' currency',' USD')))"
  placeholder="USD"
  x-model="preview.currency"
  />
@@ -193,7 +193,7 @@
  <x-ui.input
  name="location_text"
  label="Location"
- :value="old('location_text', data_get($listing,'location_text'))"
+ :value="old(' location_text', data_get($listing,' location_text'))"
  placeholder="Austin, TX"
  x-model="preview.location"
  />
@@ -203,7 +203,7 @@
  label="Pet ID"
  type="number"
  min="1"
- :value="old('pet_id', data_get($listing,'pet_id'))"
+ :value="old(' pet_id', data_get($listing,' pet_id'))"
  placeholder="Optional"
  x-model="preview.pet_id"
  />
@@ -211,7 +211,7 @@
  <x-ui.input
  name="contact_phone"
  label="Contact Phone"
- :value="old('contact_phone', data_get($listing,'contact_phone'))"
+ :value="old(' contact_phone', data_get($listing,' contact_phone'))"
  placeholder="+1 555 000 0000"
  x-model="preview.contact_phone"
  />
@@ -220,7 +220,7 @@
  name="contact_email"
  label="Contact Email"
  type="email"
- :value="old('contact_email', data_get($listing,'contact_email'))"
+ :value="old(' contact_email', data_get($listing,' contact_email'))"
  placeholder="you@example.com"
  x-model="preview.contact_email"
  />
@@ -251,7 +251,7 @@
  </x-ui.form-section>
 
  <div class="flex flex-wrap items-center justify-end gap-2">
- <x-ui.button variant="ghost":href="$indexHref">Cancel</x-ui.button>
+ <x-ui.button variant="ghost" :href="$indexHref">Cancel</x-ui.button>
  <x-ui.button type="submit">Create listing</x-ui.button>
  </div>
  </form>
@@ -270,7 +270,7 @@
  <div class="space-y-3 p-4">
  <div class="flex items-start justify-between gap-2">
  <h3 class="shell-title text-base"x-text="preview.title ||'Untitled listing'"></h3>
- <x-ui.badge tone="info"x-text="statusLabel"></x-ui.badge>
+ <x-ui.badge tone="info" x-text="statusLabel"></x-ui.badge>
  </div>
 
  <p class="shell-title text-lg"style="color: var(--ui-primary);"x-text="previewPrice"></p>

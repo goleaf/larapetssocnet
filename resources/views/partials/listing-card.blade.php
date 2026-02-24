@@ -38,7 +38,7 @@
 <article class="shell-card overflow-hidden">
  <div class="aspect-[16/10] w-full border-b"style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
  @if ($imageUrl !=='')
- <img src="{{ $imageUrl }}"alt="{{ $title }}"class="h-full w-full object-cover"loading="lazy">
+ <img src="{{ $imageUrl }}" alt="{{ $title }}" class="h-full w-full object-cover"loading="lazy">
  @else
  <div class="flex h-full items-center justify-center text-4xl">🐶</div>
  @endif

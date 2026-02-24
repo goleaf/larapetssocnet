@@ -64,7 +64,7 @@
  {{ $tab['label'] }}
 
  @if($tab['count'] !== null)
- <x-ui.badge :variant="$tab['active'] ?'primary':'default'"size="sm"pill class="ml-1.5">
+ <x-ui.badge :variant="$tab[' active'] ?' primary' :' default'" size="sm" pill class="ml-1.5">
  {{ $tab['count'] }}
  </x-ui.badge>
  @endif

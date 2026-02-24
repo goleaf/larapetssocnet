@@ -11,15 +11,15 @@
 
  <div class="space-y-5">
  <section class="shell-panel p-4 sm:p-5">
- <form method="GET"action="{{ route('search.index') }}"class="grid gap-4 md:grid-cols-4">
+ <form method="GET" action="{{ route('search.index') }}" class="grid gap-4 md:grid-cols-4">
  <div class="md:col-span-3">
- <x-input-label for="q"value="Search Query"/>
- <x-text-input id="q"name="q"type="text"class="mt-1 block w-full":value="$q"placeholder="Search users, pets, posts..."/>
+ <x-input-label for="q" value="Search Query"/>
+ <x-text-input id="q" name="q" type="text" class="mt-1 block w-full" :value="$q" placeholder="Search users, pets, posts..."/>
  </div>
 
  <div>
- <x-input-label for="type"value="Result Type"/>
- <select id="type"name="type"class="form-select mt-1 block w-full">
+ <x-input-label for="type" value="Result Type"/>
+ <select id="type" name="type" class="form-select mt-1 block w-full">
  @foreach($types as $searchType)
  <option value="{{ $searchType }}"@selected($type === $searchType)>{{ ucfirst($searchType) }}</option>
  @endforeach

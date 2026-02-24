@@ -146,7 +146,7 @@
     <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <section class="space-y-4">
             @if (session('status'))
-                <x-flash-message type="success" :message="session('status')" />
+                <x-flash-message type="success" :message="session(' status')" />
             @endif
 
             @if ($errors->any())
@@ -194,7 +194,7 @@
                                 </div>
                             </x-ui.card>
                         @empty
-                            <x-ui.empty-state title="No events yet" description="This group hasn't scheduled any events." icon="📅" />
+                            <x-ui.empty-state title="No events yet" description="This group hasn' t scheduled any events." icon="📅" />
                         @endforelse
                     </div>
 
@@ -280,7 +280,7 @@
                         <x-ui.card-header title="Share in this group" />
                         <form method="POST" action="{{ route('groups.posts.attach', $groupRouteKey) }}" class="space-y-4">
                             @csrf
-                            <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old('post_id')" min="1" />
+                            <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old(' post_id')" min="1" />
                             <x-ui.textarea name="body" label="Or create new post" rows="3" placeholder="Write something for this group...">{{ old('body') }}</x-ui.textarea>
                             <div class="flex justify-end">
                                 <x-ui.button type="submit" variant="primary">Publish</x-ui.button>
@@ -343,7 +343,7 @@
 
                 <div class="space-y-1">
                     @forelse ($sidebarMembers as $memberItem)
-                        <x-ui.user-row :user="$memberItem->user" :role="strtolower((string) ($memberItem->role ?? 'member'))" class="border border-whisker/30 rounded-xl px-2.5 bg-warm-white !py-1" />
+                        <x-ui.user-row :user="$memberItem->user" :role="strtolower((string) ($memberItem->role ?? ' member'))" class="border border-whisker/30 rounded-xl px-2.5 bg-warm-white !py-1" />
                     @empty
                         <p class="text-sm text-fur">No members yet.</p>
                     @endforelse

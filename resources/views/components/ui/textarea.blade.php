@@ -69,7 +69,7 @@
  @endif
 >
  @if ($label)
- <x-ui.label :for="$fieldId":required="$required">{{ $label }}</x-ui.label>
+ <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
  @endif
 
  <textarea
@@ -100,7 +100,7 @@
  <div class="flex items-start justify-between gap-3">
  <div class="min-w-0 flex-1">
  @if ($hasError || $hint)
- <x-ui.hint :id="$hintId":error="$resolvedError":message="$hint"/>
+ <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$hint"/>
  @endif
  </div>
 

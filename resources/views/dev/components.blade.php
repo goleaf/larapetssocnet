@@ -140,16 +140,16 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <x-ui.input name="demo_name" label="Full Name" placeholder="Enter your name" required />
-            <x-ui.input name="demo_email" label="Email" type="email" placeholder="you@example.com" hint="We'll never share your email." />
+            <x-ui.input name="demo_email" label="Email" type="email" placeholder="you@example.com" hint="We' ll never share your email." />
             <x-ui.input name="demo_error" label="With Error" value="bad value" error="This field has an error." />
-            <x-ui.input name="demo_disabled" label="Disabled" value="Can't edit me" :disabled="true" />
+            <x-ui.input name="demo_disabled" label="Disabled" value="Can' t edit me" :disabled="true" />
             <div class="md:col-span-2">
                 <x-ui.textarea name="demo_bio" label="Bio" placeholder="Tell us about your pet..." :maxlength="200" />
             </div>
             <x-ui.select name="demo_select" label="Select Option" :options="[
-                ['value' => 'dog', 'label' => '🐕 Dog'],
-                ['value' => 'cat', 'label' => '🐈 Cat'],
-                ['value' => 'bird', 'label' => '🐦 Bird'],
+                [' value' => ' dog', ' label' => '🐕 Dog'],
+                [' value' => ' cat', ' label' => '🐈 Cat'],
+                [' value' => ' bird', ' label' => '🐦 Bird'],
             ]" placeholder="Choose a pet type" />
             <div class="space-y-3">
                 <x-ui.checkbox name="demo_check" label="I agree to the terms and conditions" />
@@ -163,9 +163,9 @@
             name="demo_privacy"
             label="Group Privacy"
             :options="[
-                ['value' => 'public', 'label' => '🌍 Public', 'description' => 'Anyone can see and join this group.'],
-                ['value' => 'private', 'label' => '🔒 Private', 'description' => 'Membership requires admin approval.'],
-                ['value' => 'secret', 'label' => '🕵️ Secret', 'description' => 'Only invited members can find this group.'],
+                [' value' => ' public', ' label' => '🌍 Public', ' description' => ' Anyone can see and join this group.'],
+                [' value' => ' private', ' label' => '🔒 Private', ' description' => ' Membership requires admin approval.'],
+                [' value' => ' secret', ' label' => '🕵️ Secret', ' description' => ' Only invited members can find this group.'],
             ]"
             selected="public"
         />
@@ -258,9 +258,9 @@
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Toast Demo</p>
         <div class="flex flex-wrap gap-2">
-            <x-ui.button size="sm" variant="success" @click="$store.toast.add('Pet saved successfully!', 'success')">Success Toast</x-ui.button>
-            <x-ui.button size="sm" variant="danger" @click="$store.toast.add('Failed to upload photo.', 'error')">Error Toast</x-ui.button>
-            <x-ui.button size="sm" variant="outline" @click="$store.toast.add('Check your notifications.', 'info')">Info Toast</x-ui.button>
+            <x-ui.button size="sm" variant="success" @click="$store.toast.add(' Pet saved successfully!', ' success')">Success Toast</x-ui.button>
+            <x-ui.button size="sm" variant="danger" @click="$store.toast.add(' Failed to upload photo.', ' error')">Error Toast</x-ui.button>
+            <x-ui.button size="sm" variant="outline" @click="$store.toast.add(' Check your notifications.', ' info')">Info Toast</x-ui.button>
         </div>
     </x-ui.card>
 
@@ -298,7 +298,7 @@
             </div>
 
             {{-- Tooltip --}}
-            <x-ui.tooltip text="I'm a tooltip!">
+            <x-ui.tooltip text="I' m a tooltip!">
                 <x-ui.button size="sm" variant="ghost">Hover for Tooltip</x-ui.button>
             </x-ui.tooltip>
         </div>
@@ -310,18 +310,18 @@
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Breadcrumbs</p>
         <x-ui.breadcrumbs :items="[
-            ['label' => 'Home', 'href' => '#'],
-            ['label' => 'Groups', 'href' => '#'],
-            ['label' => 'Golden Retrievers', 'href' => '#'],
-            ['label' => 'Members'],
+            [' label' => ' Home', ' href' => '#'],
+            [' label' => ' Groups', ' href' => '#'],
+            [' label' => ' Golden Retrievers', ' href' => '#'],
+            [' label' => ' Members'],
         ]" class="mb-6" />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Tabs</p>
         <x-ui.tabs
             :tabs="[
-                ['label' => 'Pending', 'value' => 'pending', 'count' => 5],
-                ['label' => 'Approved', 'value' => 'approved', 'count' => 12],
-                ['label' => 'Rejected', 'value' => 'rejected'],
+                [' label' => ' Pending', ' value' => ' pending', ' count' => 5],
+                [' label' => ' Approved', ' value' => ' approved', ' count' => 12],
+                [' label' => ' Rejected', ' value' => ' rejected'],
             ]"
             active="pending"
             class="mb-6"
@@ -332,10 +332,10 @@
             <x-ui.sidebar-nav
                 title="Group Menu"
                 :items="[
-                    ['label' => 'Overview', 'icon' => '🏠', 'href' => '#', 'route' => 'dev.components'],
-                    ['label' => 'Members', 'icon' => '👥', 'href' => '#', 'badge' => 24],
-                    ['label' => 'Requests', 'icon' => '📩', 'href' => '#', 'badge' => 3],
-                    ['label' => 'Settings', 'icon' => '⚙️', 'href' => '#'],
+                    [' label' => ' Overview', ' icon' => '🏠', ' href' => '#', ' route' => ' dev.components'],
+                    [' label' => ' Members', ' icon' => '👥', ' href' => '#', ' badge' => 24],
+                    [' label' => ' Requests', ' icon' => '📩', ' href' => '#', ' badge' => 3],
+                    [' label' => ' Settings', ' icon' => '⚙️', ' href' => '#'],
                 ]"
             />
         </div>
@@ -357,10 +357,10 @@
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Data List</p>
         <div class="max-w-sm mb-6">
             <x-ui.data-list :items="[
-                ['label' => 'Species', 'value' => 'Golden Retriever'],
-                ['label' => 'Age', 'value' => '3 years'],
-                ['label' => 'Weight', 'value' => '32 kg'],
-                ['label' => 'Owner', 'value' => 'Alice Johnson'],
+                [' label' => ' Species', ' value' => ' Golden Retriever'],
+                [' label' => ' Age', ' value' => '3 years'],
+                [' label' => ' Weight', ' value' => '32 kg'],
+                [' label' => ' Owner', ' value' => ' Alice Johnson'],
             ]" />
         </div>
 

@@ -46,7 +46,7 @@
  }
  }"@mouseleave="setTimeout(() => { if (!$el.matches(':hover')) showPicker = false }, 300)">
  <!-- Reaction Button -->
- <button @mouseenter="showPicker = true"@click="react(current ||'like')"class="hover:underline"
+ <button @mouseenter="showPicker = true"@click="react(current ||'like')" class="hover:underline"
  :class="current ?'text-paw':''">
  <span x-show="!current">Like</span>
  <span x-show="current ==='like'">Like</span>
@@ -64,19 +64,19 @@
  x-transition:leave-end="opacity-0 translate-y-2 scale-95"
  class="absolute bottom-6 -left-2 z-50 flex items-center gap-1 rounded-full border border-gray-200 bg-white p-1 shadow-lg"
  style="display: none;">
- <button type="button"title="Like"
+ <button type="button" title="Like"
  class="h-8 w-8 rounded-full text-xl hover:scale-125 transition-transform origin-bottom"
  :class="current ==='like'?'bg-gray-100':''"@click="react('like')">👍</button>
- <button type="button"title="Love"
+ <button type="button" title="Love"
  class="h-8 w-8 rounded-full text-xl hover:scale-125 transition-transform origin-bottom"
  :class="current ==='love'?'bg-gray-100':''"@click="react('love')">❤️</button>
- <button type="button"title="Haha"
+ <button type="button" title="Haha"
  class="h-8 w-8 rounded-full text-xl hover:scale-125 transition-transform origin-bottom"
  :class="current ==='laugh'?'bg-gray-100':''"@click="react('laugh')">😆</button>
- <button type="button"title="Wow"
+ <button type="button" title="Wow"
  class="h-8 w-8 rounded-full text-xl hover:scale-125 transition-transform origin-bottom"
  :class="current ==='wow'?'bg-gray-100':''"@click="react('wow')">😮</button>
- <button type="button"title="Sad"
+ <button type="button" title="Sad"
  class="h-8 w-8 rounded-full text-xl hover:scale-125 transition-transform origin-bottom"
  :class="current ==='sad'?'bg-gray-100':''"@click="react('sad')">😢</button>
  </div>

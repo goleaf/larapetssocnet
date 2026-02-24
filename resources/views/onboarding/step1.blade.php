@@ -7,7 +7,7 @@
  </x-slot>
 
  <div class="shell-card p-6 sm:p-8">
- <form method="POST"action="{{ route('onboarding.store', ['step'=> 1]) }}"class="space-y-6">
+ <form method="POST" action="{{ route('onboarding.store', ['step'=> 1]) }}" class="space-y-6">
  @csrf
 
  <div class="grid gap-3 sm:grid-cols-2">
@@ -25,11 +25,11 @@
  @endforeach
  </div>
 
- <x-input-error :messages="$errors->get('interests')"class="mt-2"/>
- <x-input-error :messages="$errors->get('interests.*')"class="mt-2"/>
+ <x-input-error :messages="$errors->get(' interests')" class="mt-2"/>
+ <x-input-error :messages="$errors->get(' interests.*')" class="mt-2"/>
 
  <div class="flex flex-wrap items-center justify-between gap-3">
- <button type="submit"class="btn-base btn-primary">Save and Continue</button>
+ <button type="submit" class="btn-base btn-primary">Save and Continue</button>
  <button
  type="submit"
  form="skip-step-1"
@@ -40,7 +40,7 @@
  </div>
  </form>
 
- <form id="skip-step-1"method="POST"action="{{ route('onboarding.skip', ['step'=> 1]) }}">
+ <form id="skip-step-1" method="POST" action="{{ route('onboarding.skip', ['step'=> 1]) }}">
  @csrf
  </form>
  </div>

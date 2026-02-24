@@ -7,7 +7,7 @@
  </x-slot>
 
  <div class="space-y-5">
- <form method="POST"action="{{ route('onboarding.store', ['step'=> 3]) }}"class="space-y-5">
+ <form method="POST" action="{{ route('onboarding.store', ['step'=> 3]) }}" class="space-y-5">
  @csrf
 
  <section class="shell-card p-6">
@@ -39,7 +39,7 @@
  <x-empty-state
  icon="👋"
  title="No suggestions yet"
- description="As more members join, we'll suggest profiles for you here."
+ description="As more members join, we' ll suggest profiles for you here."
  class="mt-4"
  />
  @endforelse
@@ -82,16 +82,16 @@
  </div>
  </section>
 
- <x-input-error :messages="$errors->get('follow_user_ids')"class="mt-2"/>
- <x-input-error :messages="$errors->get('join_group_ids')"class="mt-2"/>
+ <x-input-error :messages="$errors->get(' follow_user_ids')" class="mt-2"/>
+ <x-input-error :messages="$errors->get(' join_group_ids')" class="mt-2"/>
 
  <div class="flex flex-wrap items-center justify-between gap-3">
- <button type="submit"class="btn-base btn-primary">Finish Onboarding</button>
- <button type="submit"form="skip-step-3"class="btn-base btn-ghost">Skip and Finish</button>
+ <button type="submit" class="btn-base btn-primary">Finish Onboarding</button>
+ <button type="submit"form="skip-step-3" class="btn-base btn-ghost">Skip and Finish</button>
  </div>
  </form>
 
- <form id="skip-step-3"method="POST"action="{{ route('onboarding.skip', ['step'=> 3]) }}">
+ <form id="skip-step-3" method="POST" action="{{ route('onboarding.skip', ['step'=> 3]) }}">
  @csrf
  </form>
  </div>

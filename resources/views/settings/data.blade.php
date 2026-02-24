@@ -6,7 +6,7 @@
  <p class="mt-1 text-sm text-gray-500">Get a copy of your content. We will prepare an archive containing your
  profile, posts, groups, and pets.</p>
 
- <form action="{{ route('settings.export-data') }}"method="POST"class="mt-4">
+ <form action="{{ route('settings.export-data') }}" method="POST" class="mt-4">
  @csrf
  <x-secondary-button type="submit">
  Download Archive (JSON)
@@ -38,32 +38,32 @@
  <div x-show="confirmingDeletion"style="display: none;"
  class="bg-red-50 border border-red-200 rounded-lg p-5 mt-4">
  <h4 class="text-md font-bold text-red-800 mb-4">Confirm Account Deletion</h4>
- <form action="{{ route('settings.delete-account') }}"method="POST"class="space-y-4">
+ <form action="{{ route('settings.delete-account') }}" method="POST" class="space-y-4">
  @csrf
  @method('DELETE')
 
  <div>
- <x-input-label for="deletion_reason"value="Optional: Why are you leaving?"
+ <x-input-label for="deletion_reason" value="Optional: Why are you leaving?"
  class="text-red-800"/>
- <x-text-input id="deletion_reason"name="deletion_reason"type="text"
+ <x-text-input id="deletion_reason" name="deletion_reason" type="text"
  class="mt-1 block w-full border-red-300 focus:border-red-500 focus:ring-red-500"/>
  </div>
 
  <div>
- <x-input-label for="password"value="Confirm Password"class="text-red-800"/>
- <x-text-input id="password"name="password"type="password"
+ <x-input-label for="password" value="Confirm Password" class="text-red-800"/>
+ <x-text-input id="password" name="password" type="password"
  class="mt-1 block w-full border-red-300 focus:border-red-500 focus:ring-red-500"
  required />
- <x-input-error class="mt-2 text-red-800":messages="$errors->get('password')"/>
+ <x-input-error class="mt-2 text-red-800" :messages="$errors->get(' password')"/>
  </div>
 
  <div>
- <x-input-label for="delete_confirmation"value="Type'DELETE'to confirm"
+ <x-input-label for="delete_confirmation" value="Type' DELETE' to confirm"
  class="text-red-800"/>
- <x-text-input id="delete_confirmation"name="delete_confirmation"type="text"
+ <x-text-input id="delete_confirmation" name="delete_confirmation" type="text"
  class="mt-1 block w-full border-red-300 focus:border-red-500 focus:ring-red-500 font-mono"
  required />
- <x-input-error class="mt-2 text-red-800":messages="$errors->get('delete_confirmation')"/>
+ <x-input-error class="mt-2 text-red-800" :messages="$errors->get(' delete_confirmation')"/>
  </div>
 
  <div class="flex gap-3 pt-2">

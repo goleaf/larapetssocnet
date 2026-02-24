@@ -1,13 +1,13 @@
 <x-guest-layout>
     <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <x-auth-session-status class="mb-4" :status="session(' status')" />
 
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
         <div class="space-y-4">
             <div>
-                <x-ui.input id="email" type="email" name="email" label="Email" :value="old('email')" required autofocus
+                <x-ui.input id="email" type="email" name="email" label="Email" :value="old(' email')" required autofocus
                     autocomplete="username" />
             </div>
 

@@ -13,7 +13,7 @@
 
 <nav class="sticky top-0 z-40 border-b surface-glass"style="border-color: var(--ui-border);">
  <div class="mx-auto flex h-16 w-full max-w-[1400px] items-center gap-2 px-4 sm:px-6 lg:px-8">
- <button type="button"class="icon-button lg:hidden"@click="toggleMobileMenu"aria-label="Toggle mobile menu"
+ <button type="button" class="icon-button lg:hidden"@click="toggleMobileMenu"aria-label="Toggle mobile menu"
  :aria-expanded="mobileMenuOpen.toString()">
  <svg class="h-5 w-5"viewBox="0 0 20 20"fill="none"stroke="currentColor"stroke-width="1.8">
  <path d="M3.5 5.5h13M3.5 10h13M3.5 14.5h13"stroke-linecap="round"/>
@@ -29,14 +29,14 @@
  </a>
 
  <div class="hidden flex-1 px-3 md:block">
- <x-search-form :action="$searchTarget"class="w-full max-w-xl"
+ <x-search-form :action="$searchTarget" class="w-full max-w-xl"
  placeholder="Search pets, posts, groups, events..."/>
  </div>
 
  <div class="ms-auto flex items-center gap-2">
  @auth
  @if (Route::has('messages.index'))
- <a href="{{ route('messages.index') }}"class="icon-button relative"title="Messages"aria-label="Messages">
+ <a href="{{ route('messages.index') }}" class="icon-button relative" title="Messages"aria-label="Messages">
  <svg class="h-5 w-5"viewBox="0 0 20 20"fill="none"stroke="currentColor"stroke-width="1.7">
  <path
  d="M3.3 5.2A2.2 2.2 0 0 1 5.5 3h9a2.2 2.2 0 0 1 2.2 2.2v5.4a2.2 2.2 0 0 1-2.2 2.2H9.8l-2.8 2.2v-2.2H5.5a2.2 2.2 0 0 1-2.2-2.2Z"
@@ -53,7 +53,7 @@
  @endif
 
  @if (Route::has('notifications.index'))
- <a href="{{ route('notifications.index') }}"class="icon-button relative"title="Notifications"
+ <a href="{{ route('notifications.index') }}" class="icon-button relative" title="Notifications"
  aria-label="Notifications">
  <svg class="h-5 w-5"viewBox="0 0 20 20"fill="none"stroke="currentColor"stroke-width="1.7">
  <path
@@ -80,7 +80,7 @@
  @endif
  @endauth
 
- <button type="button"class="icon-button"@click="toggleTheme"
+ <button type="button" class="icon-button"@click="toggleTheme"
  :aria-label="isDark ?'Switch to light mode':'Switch to dark mode'"
  :title="isDark ?'Switch to light mode':'Switch to dark mode'">
  <svg x-show="!isDark"x-cloak class="h-5 w-5"viewBox="0 0 20 20"fill="none"stroke="currentColor"
@@ -96,10 +96,10 @@
  </svg>
  </button>
 
- <x-dropdown align="right"width="64">
+ <x-dropdown align="right" width="64">
  <x-slot name="trigger">
- <button type="button"class="btn-base btn-ghost gap-2 px-2.5 py-2 text-sm">
- <x-avatar :src="$user?->avatar_url":name="$user?->name ??'Guest User'"size="sm"/>
+ <button type="button" class="btn-base btn-ghost gap-2 px-2.5 py-2 text-sm">
+ <x-avatar :src="$user?->avatar_url" :name="$user?->name ??' Guest User'" size="sm"/>
  <span class="hidden max-w-[8rem] truncate sm:inline">{{ $user?->name ??'Guest'}}</span>
  <svg class="h-4 w-4"viewBox="0 0 20 20"fill="none"stroke="currentColor"stroke-width="1.8">
  <path d="m6.5 8 3.5 4 3.5-4"stroke-linecap="round"stroke-linejoin="round"/>
@@ -110,26 +110,26 @@
  <x-slot name="content">
  @auth
  @if ($user?->username && Route::has('profile.show'))
- <x-dropdown-link :href="route('profile.show', ['user'=> $user])">View Profile</x-dropdown-link>
+ <x-dropdown-link :href="route(' profile.show', [' user'=> $user])">View Profile</x-dropdown-link>
  @endif
 
  @if (Route::has('settings.profile'))
- <x-dropdown-link :href="route('settings.profile')">Settings</x-dropdown-link>
+ <x-dropdown-link :href="route(' settings.profile')">Settings</x-dropdown-link>
  @endif
  @endauth
 
  @auth
- <form method="POST"action="{{ route('logout') }}">
+ <form method="POST" action="{{ route('logout') }}">
  @csrf
 
- <x-dropdown-link :href="route('logout')"
- onclick="event.preventDefault(); this.closest('form').submit();">
+ <x-dropdown-link :href="route(' logout')"
+ onclick="event.preventDefault(); this.closest(' form').submit();">
  Log Out
  </x-dropdown-link>
  </form>
  @else
  @if (Route::has('login'))
- <x-dropdown-link :href="route('login')">Log In</x-dropdown-link>
+ <x-dropdown-link :href="route(' login')">Log In</x-dropdown-link>
  @endif
  @endauth
  </x-slot>

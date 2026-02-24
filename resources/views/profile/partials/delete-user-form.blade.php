@@ -29,7 +29,7 @@
  @method('delete')
 
  <div>
- <label for="delete_confirm_username"class="mb-1 block text-sm font-semibold">Username Confirmation</label>
+ <label for="delete_confirm_username" class="mb-1 block text-sm font-semibold">Username Confirmation</label>
  <input
  id="delete_confirm_username"
  type="text"
@@ -41,11 +41,11 @@
  aria-describedby="delete-confirm-help"
  required
  />
- <p id="delete-confirm-help"class="mt-1 text-xs shell-text-muted">Must match your username exactly.</p>
+ <p id="delete-confirm-help" class="mt-1 text-xs shell-text-muted">Must match your username exactly.</p>
  </div>
 
  <div>
- <label for="delete_password"class="mb-1 block text-sm font-semibold">Password</label>
+ <label for="delete_password" class="mb-1 block text-sm font-semibold">Password</label>
  <input
  id="delete_password"
  name="password"
@@ -55,7 +55,7 @@
  required
  aria-label="Password confirmation"
  />
- <x-input-error :messages="$errors->userDeletion->get('password')"class="mt-2"/>
+ <x-input-error :messages="$errors->userDeletion->get(' password')" class="mt-2"/>
  </div>
 
  <p class="text-xs shell-text-muted"x-show="!canDelete"x-cloak>

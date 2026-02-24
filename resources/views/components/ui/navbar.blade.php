@@ -56,7 +56,7 @@
  <div class="mx-auto h-16 max-w-7xl px-4 sm:px-6 lg:px-8">
  <div class="flex h-full items-center justify-between">
  <div class="flex items-center">
- <a href="{{ url('/') }}"class="flex items-center gap-2 text-xl font-bold font-display text-bark">
+ <a href="{{ url('/') }}" class="flex items-center gap-2 text-xl font-bold font-display text-bark">
  <span aria-hidden="true">🐾</span>
  <span>{{ config('app.name','PetSocNet') }}</span>
  </a>
@@ -88,13 +88,13 @@
  </button>
 
  @auth
- <x-ui.dropdown align="right"width="48">
+ <x-ui.dropdown align="right" width="48">
  <x-slot name="trigger">
  <button type="button"
  class="flex items-center gap-2 rounded-full text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  id="user-menu-button">
  <span class="sr-only">Open user menu</span>
- <x-ui.avatar size="sm":name="auth()->user()->name ??'User'"
+ <x-ui.avatar size="sm" :name="auth()->user()->name ??' User'"
  :src="auth()->user()?->avatar_url"/>
  <span
  class="hidden text-sm font-medium text-bark lg:block">{{ auth()->user()->name ??'User'}}</span>
@@ -108,13 +108,13 @@
  </x-slot>
 
  <x-slot name="content">
- <x-ui.dropdown-item :href="Route::has('profile.show') ? route('profile.show', auth()->user()) :'/profile'">My Profile</x-ui.dropdown-item>
- <x-ui.dropdown-item :href="Route::has('settings.profile') ? route('settings.profile') :'/settings'">Settings</x-ui.dropdown-item>
+ <x-ui.dropdown-item :href="Route::has(' profile.show') ? route(' profile.show', auth()->user()) :'/profile'">My Profile</x-ui.dropdown-item>
+ <x-ui.dropdown-item :href="Route::has(' settings.profile') ? route(' settings.profile') :'/settings'">Settings</x-ui.dropdown-item>
  <div class="my-1 border-t border-whisker/30"></div>
- <form method="POST"action="{{ Route::has('logout') ? route('logout') :'/logout'}}">
+ <form method="POST" action="{{ Route::has('logout') ? route('logout') :'/logout'}}">
  @csrf
  <x-ui.dropdown-item variant="danger"
- onclick="event.preventDefault(); this.closest('form').submit();">
+ onclick="event.preventDefault(); this.closest(' form').submit();">
  Log Out
  </x-ui.dropdown-item>
  </form>
@@ -122,9 +122,9 @@
  </x-ui.dropdown>
  @else
  <div class="flex items-center gap-3">
- <x-ui.button :href="Route::has('login') ? route('login') :'/login'"variant="ghost"size="sm">Log
+ <x-ui.button :href="Route::has(' login') ? route(' login') :'/login'" variant="ghost" size="sm">Log
  In</x-ui.button>
- <x-ui.button :href="Route::has('register') ? route('register') :'/register'"variant="primary"
+ <x-ui.button :href="Route::has(' register') ? route(' register') :'/register'" variant="primary"
  size="sm">Sign Up</x-ui.button>
  </div>
  @endauth
@@ -134,7 +134,7 @@
  <button type="button"@click="mobileMenuOpen = !mobileMenuOpen"
  class="inline-flex items-center justify-center rounded-md p-2 text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="sr-only">Open main menu</span>
- <svg x-show="!mobileMenuOpen"class="h-6 w-6"xmlns="http://www.w3.org/2000/svg"fill="none"
+ <svg x-show="!mobileMenuOpen" class="h-6 w-6"xmlns="http://www.w3.org/2000/svg"fill="none"
  viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor"aria-hidden="true">
  <path stroke-linecap="round"stroke-linejoin="round"
  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
@@ -167,7 +167,7 @@
  @auth
  <div class="border-t border-whisker/30 pb-3 pt-4">
  <div class="flex items-center px-4">
- <x-ui.avatar size="md":name="auth()->user()->name ??'User'":src="auth()->user()?->avatar_url"/>
+ <x-ui.avatar size="md" :name="auth()->user()->name ??' User'" :src="auth()->user()?->avatar_url"/>
 
  <div class="ml-3 min-w-0">
  <div class="truncate text-base font-medium text-bark">{{ auth()->user()->name ??'User'}}</div>
@@ -181,7 +181,7 @@
  <a href="{{ Route::has('settings.profile') ? route('settings.profile') :'/settings'}}"
  class="block px-4 py-2 text-base font-medium text-fur hover:bg-cream hover:text-bark">Settings</a>
 
- <form method="POST"action="{{ Route::has('logout') ? route('logout') :'/logout'}}">
+ <form method="POST" action="{{ Route::has('logout') ? route('logout') :'/logout'}}">
  @csrf
  <button type="submit"
  class="block w-full px-4 py-2 text-left text-base font-medium text-rose hover:bg-rose-light">
@@ -192,9 +192,9 @@
  </div>
  @else
  <div class="space-y-3 border-t border-whisker/30 p-4">
- <x-ui.button :href="Route::has('login') ? route('login') :'/login'"variant="ghost"full>Log
+ <x-ui.button :href="Route::has(' login') ? route(' login') :'/login'" variant="ghost" full>Log
  In</x-ui.button>
- <x-ui.button :href="Route::has('register') ? route('register') :'/register'"variant="primary"full>Sign
+ <x-ui.button :href="Route::has(' register') ? route(' register') :'/register'" variant="primary" full>Sign
  Up</x-ui.button>
  </div>
  @endauth

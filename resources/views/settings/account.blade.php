@@ -82,7 +82,7 @@
  class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-60"
  :class="isPrivate ?'bg-amber-500':'bg-gray-300'"
  >
- <span class="inline-block h-5 w-5 transform rounded-full bg-white transition":class="isPrivate ?'translate-x-6':'translate-x-1'"></span>
+ <span class="inline-block h-5 w-5 transform rounded-full bg-white transition" :class="isPrivate ?'translate-x-6':'translate-x-1'"></span>
  </button>
  </div>
 
@@ -93,13 +93,13 @@
  >
  You have <strong x-text="pendingCount"></strong> pending request(s). Making your account public will auto-approve them.
  <div class="mt-2 flex gap-2">
- <button type="button"class="btn-base btn-primary px-3 py-2 text-xs"@click="executeToggle">Confirm</button>
- <button type="button"class="btn-base btn-ghost px-3 py-2 text-xs"@click="showConfirm = false">Cancel</button>
+ <button type="button" class="btn-base btn-primary px-3 py-2 text-xs"@click="executeToggle">Confirm</button>
+ <button type="button" class="btn-base btn-ghost px-3 py-2 text-xs"@click="showConfirm = false">Cancel</button>
  </div>
  </div>
 
  <p
- x-show="message !==''"
+ x-show=" message !==''"
  class="mt-3 text-sm"
  :class="messageType ==='success'?'text-emerald-600':'text-red-600'"
  >
@@ -131,7 +131,7 @@
  @endphp
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
  <div class="flex min-w-0 items-center gap-3">
- <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')":name="$blockedUser->name"size="md"/>
+ <x-avatar :src="$blockedUser->getFirstMediaUrl(' avatar')" :name="$blockedUser->name" size="md"/>
  <div class="min-w-0">
  <p class="truncate font-semibold">{{ $blockedUser->name }}</p>
  <p class="truncate text-xs shell-text-muted">&#64;{{ $blockedUser->username }}</p>

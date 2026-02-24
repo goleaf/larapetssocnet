@@ -27,6 +27,6 @@
  </div>
 
  @if ($ctaLabel)
- <a href="{{ $ctaHref }}"class="btn-base btn-secondary mt-4 w-full">{{ $ctaLabel }}</a>
+ <a href="{{ $ctaHref }}" class="btn-base btn-secondary mt-4 w-full">{{ $ctaLabel }}</a>
  @endif
 </article>

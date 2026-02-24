@@ -76,8 +76,8 @@
  icon="🛠️"
  >
  <x-slot name="actions">
- <x-ui.button variant="ghost":href="$showHref">View listing</x-ui.button>
- <x-ui.button variant="ghost":href="$indexHref">Back to listings</x-ui.button>
+ <x-ui.button variant="ghost" :href="$showHref">View listing</x-ui.button>
+ <x-ui.button variant="ghost" :href="$indexHref">Back to listings</x-ui.button>
  </x-slot>
  </x-ui.page-header>
  </x-slot>
@@ -119,7 +119,7 @@
  }
  }"
  >
- <form method="POST"action="{{ $updateAction }}"enctype="multipart/form-data"class="space-y-5">
+ <form method="POST" action="{{ $updateAction }}"enctype="multipart/form-data" class="space-y-5">
  @csrf
  @method('PATCH')
 
@@ -135,7 +135,7 @@
  label="Title"
  required
  maxlength="140"
- :value="old('title', data_get($listing,'title'))"
+ :value="old(' title', data_get($listing,' title'))"
  placeholder="Golden retriever puppy looking for a home"
  x-model="preview.title"
  />
@@ -146,7 +146,7 @@
  label="Description"
  required
  rows="5"
- :value="old('description', data_get($listing,'description'))"
+ :value="old(' description', data_get($listing,' description'))"
  placeholder="Share temperament, health info, and what adopters should know."
  x-model="preview.description"
  />
@@ -156,7 +156,7 @@
  name="listing_type"
  label="Listing Type"
  :options="$typeOptions"
- :value="old('listing_type', data_get($listing,'listing_type','adoption'))"
+ :value="old(' listing_type', data_get($listing,' listing_type',' adoption'))"
  x-model="preview.type"
  />
  </div>
@@ -172,7 +172,7 @@
  name="status"
  label="Status"
  :options="$statusOptions"
- :value="old('status', data_get($listing,'status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
+ :value="old(' status', data_get($listing,' status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
  required
  x-model="preview.status"
  />
@@ -194,7 +194,7 @@
  type="number"
  min="0"
  step="0.01"
- :value="old('price', data_get($listing,'price'))"
+ :value="old(' price', data_get($listing,' price'))"
  placeholder="0.00"
  x-model="preview.price"
  />
@@ -203,7 +203,7 @@
  name="currency"
  label="Currency"
  maxlength="3"
- :value="strtoupper((string) old('currency', data_get($listing,'currency','USD')))"
+ :value="strtoupper((string) old(' currency', data_get($listing,' currency',' USD')))"
  placeholder="USD"
  x-model="preview.currency"
  />
@@ -221,7 +221,7 @@
  <x-ui.input
  name="location_text"
  label="Location"
- :value="old('location_text', data_get($listing,'location_text'))"
+ :value="old(' location_text', data_get($listing,' location_text'))"
  placeholder="Austin, TX"
  x-model="preview.location"
  />
@@ -231,7 +231,7 @@
  label="Pet ID"
  type="number"
  min="1"
- :value="old('pet_id', data_get($listing,'pet_id'))"
+ :value="old(' pet_id', data_get($listing,' pet_id'))"
  placeholder="Optional"
  x-model="preview.pet_id"
  />
@@ -239,7 +239,7 @@
  <x-ui.input
  name="contact_phone"
  label="Contact Phone"
- :value="old('contact_phone', data_get($listing,'contact_phone'))"
+ :value="old(' contact_phone', data_get($listing,' contact_phone'))"
  placeholder="+1 555 000 0000"
  x-model="preview.contact_phone"
  />
@@ -248,7 +248,7 @@
  name="contact_email"
  label="Contact Email"
  type="email"
- :value="old('contact_email', data_get($listing,'contact_email'))"
+ :value="old(' contact_email', data_get($listing,' contact_email'))"
  placeholder="you@example.com"
  x-model="preview.contact_email"
  />
@@ -273,7 +273,7 @@
  name="remove_cover_image"
  label="Remove current cover image"
  description="Current cover will be removed when you save."
- :checked="(bool) old('remove_cover_image')"
+ :checked="(bool) old(' remove_cover_image')"
  />
  @endif
 
@@ -290,14 +290,14 @@
  name="replace_gallery"
  label="Replace gallery with newly uploaded files"
  description="Enable this to clear current gallery before adding new uploads."
- :checked="(bool) old('replace_gallery')"
+ :checked="(bool) old(' replace_gallery')"
  />
  @endif
  </div>
  </x-ui.form-section>
 
  <div class="flex flex-wrap items-center justify-end gap-2">
- <x-ui.button variant="ghost":href="$showHref">Cancel</x-ui.button>
+ <x-ui.button variant="ghost" :href="$showHref">Cancel</x-ui.button>
  <x-ui.button type="submit">Save changes</x-ui.button>
  </div>
  </form>
@@ -311,7 +311,7 @@
  <article class="shell-card overflow-hidden">
  <div class="aspect-[16/10] border-b"style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
  @if ($coverImageUrl !=='')
- <img src="{{ $coverImageUrl }}"alt="Current cover"class="h-full w-full object-cover">
+ <img src="{{ $coverImageUrl }}" alt="Current cover" class="h-full w-full object-cover">
  @else
  <div class="flex h-full items-center justify-center text-4xl">🐾</div>
  @endif
@@ -320,7 +320,7 @@
  <div class="space-y-3 p-4">
  <div class="flex items-start justify-between gap-2">
  <h3 class="shell-title text-base"x-text="preview.title ||'Untitled listing'"></h3>
- <x-ui.badge tone="info"x-text="statusLabel"></x-ui.badge>
+ <x-ui.badge tone="info" x-text="statusLabel"></x-ui.badge>
  </div>
 
  <p class="shell-title text-lg"style="color: var(--ui-primary);"x-text="previewPrice"></p>
@@ -349,13 +349,13 @@
  <p class="mb-2 text-sm font-semibold"style="color: var(--ui-text);">Cover</p>
 
  <div class="flex flex-wrap items-center gap-3">
- <img src="{{ $coverImageUrl }}"alt="Cover image"class="h-20 w-28 rounded-lg object-cover">
+ <img src="{{ $coverImageUrl }}" alt="Cover image" class="h-20 w-28 rounded-lg object-cover">
 
  @if ($mediaDestroyRouteName && $coverMedia)
- <form method="POST"action="{{ route($mediaDestroyRouteName, [$listing, data_get($coverMedia,'id')]) }}">
+ <form method="POST" action="{{ route($mediaDestroyRouteName, [$listing, data_get($coverMedia,'id')]) }}">
  @csrf
  @method('DELETE')
- <x-ui.button variant="danger"size="sm"type="submit">Remove cover</x-ui.button>
+ <x-ui.button variant="danger" size="sm" type="submit">Remove cover</x-ui.button>
  </form>
  @else
  <p class="text-xs shell-text-muted">Cover removal endpoint is not available. Use the checkbox above and save changes.</p>
@@ -373,13 +373,13 @@
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
  @foreach ($existingGallery as $media)
  <div class="rounded-xl border p-2"style="border-color: var(--ui-border);">
- <img src="{{ $media->getUrl() }}"alt="Gallery image"class="h-28 w-full rounded-lg object-cover">
+ <img src="{{ $media->getUrl() }}" alt="Gallery image" class="h-28 w-full rounded-lg object-cover">
 
  @if ($mediaDestroyRouteName)
- <form method="POST"action="{{ route($mediaDestroyRouteName, [$listing, data_get($media,'id')]) }}"class="mt-2">
+ <form method="POST" action="{{ route($mediaDestroyRouteName, [$listing, data_get($media,'id')]) }}" class="mt-2">
  @csrf
  @method('DELETE')
- <x-ui.button variant="danger"size="xs"type="submit"class="w-full">Remove</x-ui.button>
+ <x-ui.button variant="danger" size="xs" type="submit" class="w-full">Remove</x-ui.button>
  </form>
  @else
  <p class="mt-2 text-xs shell-text-muted">Remove endpoint not available yet.</p>
