@@ -210,7 +210,6 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
 
         Route::get('/privacy', [\App\Http\Controllers\SettingsController::class, 'editPrivacy'])->name('privacy');
         Route::put('/privacy', [\App\Http\Controllers\SettingsController::class, 'updatePrivacy'])->name('privacy.update');
-
         Route::get('/notifications', [\App\Http\Controllers\SettingsController::class, 'editNotifications'])->name('notifications');
         Route::put('/notifications', [\App\Http\Controllers\SettingsController::class, 'updateNotifications'])->name('notifications.update');
 
@@ -224,6 +223,8 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         Route::delete('/delete-account', [\App\Http\Controllers\AccountDeletionController::class, 'destroy'])->name('delete-account');
         Route::post('/cancel-deletion', [\App\Http\Controllers\AccountDeletionController::class, 'cancel'])->name('cancel-deletion');
     });
+
+    Route::post('/settings/privacy/toggle', [\App\Http\Controllers\PrivacyController::class, 'toggle'])->name('privacy.toggle');
 
     Route::middleware('throttle:30,1')->group(function (): void {
         Route::post('/users/{user:username}/follow', [FollowController::class, 'toggle'])->name('users.follow');

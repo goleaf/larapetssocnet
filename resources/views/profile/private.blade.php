@@ -22,7 +22,7 @@
  </section>
 
  <x-ui.card>
- <x-ui.empty-state icon="🔒" title="This profile is private" description="Follow &#64;{{ $user->username }} to see posts, photos, and pet profiles.">
+ <x-ui.empty-state icon="🔒" title="This account is private" :description="'This profile is private. Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
  @auth
  @php
  $followStatus = auth()->user()->getFollowStatus($user);

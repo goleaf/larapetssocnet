@@ -330,26 +330,25 @@ class Post extends Model implements HasMedia
     {
         $followingIds = $user->acceptedFollowing()
             ->pluck('users.id')
-            ->push($user->getKey())
             ->unique()
             ->values();
 
         return $query
-            ->where(function (Builder $q) use ($followingIds): void {
-                $q->whereIn('user_id', $followingIds)
-                    ->orWhere(function (Builder $publicQ): void {
-                        $publicQ->where('visibility', self::VISIBILITY_PUBLIC)
-                            ->whereHas('author', function (Builder $authorQ): void {
-                                $authorQ->where('profile_visibility', 'public')
-                                    ->where('is_private', false)
-                                    ->where('is_banned', false);
-                            });
+            ->where(function (Builder $feedQuery) use ($user, $followingIds): void {
+                $feedQuery
+                    ->where('user_id', $user->getKey())
+                    ->orWhere(function (Builder $followingQuery) use ($followingIds): void {
+                        $followingQuery
+                            ->when(
+                                $followingIds->isNotEmpty(),
+                                fn (Builder $scopedQuery) => $scopedQuery->whereIn('user_id', $followingIds),
+                                fn (Builder $scopedQuery) => $scopedQuery->whereRaw('1 = 0')
+                            )
+                            ->whereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
                     });
             })
-            ->where(function (Builder $visibilityQuery) use ($user): void {
-                $visibilityQuery
-                    ->where('user_id', $user->getKey())
-                    ->orWhereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
+            ->whereHas('author', function (Builder $authorQuery): void {
+                $authorQuery->where('is_banned', false);
             })
             ->whereNull('posts.group_id')
             ->whereNull('posts.deleted_at')

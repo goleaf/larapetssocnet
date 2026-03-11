@@ -22,7 +22,7 @@
  <p class="mt-1 text-xs text-fur">
  In <a href="{{ route('profile.show', ['user'=> $profileUser]) }}"
  class="text-paw hover:underline">
- @{{ $profileUser->username }}
+ &#64;{{ $profileUser->username }}
  </a>'s gallery
  · {{ $gallery->media->count() }} {{ Str::plural('photo', $gallery->media->count()) }}
  </p>
@@ -54,4 +54,3 @@
  </x-ui.card>
  </div>
 </x-app-layout>
-

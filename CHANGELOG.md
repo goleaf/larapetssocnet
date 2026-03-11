@@ -74,6 +74,12 @@
 - Added health log reminders with `next_due_at` support (migration + form field + validation + persistence).
 - Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
+### Fixed
+- Fixed feed rendering and visibility rules so followed feeds exclude discovery posts, feed theme labels render correctly, and translation-backed copy is shown instead of raw `en.*` keys.
+- Fixed message inbox and conversation Blade components so thread lists, conversation pages, and send-message flows render without component or template errors.
+- Fixed profile privacy regressions by restoring the `privacy.toggle` route, matching the locked-profile copy/state expectations, and preserving `noindex, nofollow` metadata.
+- Fixed pet health log ownership handling so non-owners receive `404` on read-only views while mutating actions remain forbidden.
+
 ### Tests
 - Verified passing suites:
   - `tests/Feature/BlockTest.php`
@@ -95,3 +101,4 @@
   - `tests/Feature/PetFollowFeatureTest.php`
   - `tests/Feature/PostTest.php`
   - `tests/Feature/PetHealthLogFeatureTest.php`
+  - `php artisan test --compact`

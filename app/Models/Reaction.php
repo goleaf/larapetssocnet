@@ -12,25 +12,28 @@ class Reaction extends Model
 {
     use HasFactory;
 
-    public const TYPE_LIKE = 'like';
-
     public const TYPE_LOVE = 'love';
 
-    public const TYPE_LAUGH = 'laugh';
+    public const TYPE_CUTE = 'cute';
+
+    public const TYPE_FUNNY = 'funny';
 
     public const TYPE_WOW = 'wow';
 
     public const TYPE_SAD = 'sad';
 
+    public const TYPE_SUPPORT = 'support';
+
     /**
      * @var list<string>
      */
     public const TYPES = [
-        self::TYPE_LIKE,
         self::TYPE_LOVE,
-        self::TYPE_LAUGH,
+        self::TYPE_CUTE,
+        self::TYPE_FUNNY,
         self::TYPE_WOW,
         self::TYPE_SAD,
+        self::TYPE_SUPPORT,
     ];
 
     /**
