@@ -1,0 +1,25 @@
+<?php
+
+use App\Models\Pet;
+use App\Models\Post;
+use App\Models\User;
+use Database\Seeders\PostSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(Tests\TestCase::class, RefreshDatabase::class);
+
+it('seeds posts for existing users without creating extra users', function (): void {
+    $user = User::factory()->create();
+
+    Pet::factory()
+        ->for($user)
+        ->create([
+            'species' => 'dog',
+            'breed' => 'mixed',
+        ]);
+
+    $this->seed(PostSeeder::class);
+
+    expect(Post::query()->count())->toBe(100);
+    expect(User::query()->count())->toBe(1);
+});
