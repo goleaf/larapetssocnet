@@ -108,8 +108,8 @@
  </x-slot>
 
  <x-slot name="content">
- <x-ui.dropdown-item :href="Route::has(' profile.show') ? route(' profile.show', auth()->user()) :'/profile'">My Profile</x-ui.dropdown-item>
- <x-ui.dropdown-item :href="Route::has(' settings.profile') ? route(' settings.profile') :'/settings'">Settings</x-ui.dropdown-item>
+ <x-ui.dropdown-item :href="Route::has('profile.show') ? route('profile.show', auth()->user()) :'/profile'">My Profile</x-ui.dropdown-item>
+ <x-ui.dropdown-item :href="Route::has('settings.profile') ? route('settings.profile') :'/settings'">Settings</x-ui.dropdown-item>
  <div class="my-1 border-t border-whisker/30"></div>
  <form method="POST" action="{{ Route::has('logout') ? route('logout') :'/logout'}}">
  @csrf
@@ -122,9 +122,9 @@
  </x-ui.dropdown>
  @else
  <div class="flex items-center gap-3">
- <x-ui.button :href="Route::has(' login') ? route(' login') :'/login'" variant="ghost" size="sm">Log
+ <x-ui.button :href="Route::has('login') ? route('login') :'/login'" variant="ghost" size="sm">Log
  In</x-ui.button>
- <x-ui.button :href="Route::has(' register') ? route(' register') :'/register'" variant="primary"
+ <x-ui.button :href="Route::has('register') ? route('register') :'/register'" variant="primary"
  size="sm">Sign Up</x-ui.button>
  </div>
  @endauth
@@ -192,9 +192,9 @@
  </div>
  @else
  <div class="space-y-3 border-t border-whisker/30 p-4">
- <x-ui.button :href="Route::has(' login') ? route(' login') :'/login'" variant="ghost" full>Log
+ <x-ui.button :href="Route::has('login') ? route('login') :'/login'" variant="ghost" full>Log
  In</x-ui.button>
- <x-ui.button :href="Route::has(' register') ? route(' register') :'/register'" variant="primary" full>Sign
+ <x-ui.button :href="Route::has('register') ? route('register') :'/register'" variant="primary" full>Sign
  Up</x-ui.button>
  </div>
  @endauth

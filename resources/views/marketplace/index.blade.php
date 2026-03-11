@@ -33,10 +33,10 @@
  <x-slot name="action">
  @auth
  <div class="flex flex-wrap items-center gap-2">
- <x-ui.button :href="route(' messages.index')" variant="outline" size="sm">Messages</x-ui.button>
- <x-ui.button :href="route(' marketplace.my-listings')" variant="outline" size="sm">My
+ <x-ui.button :href="route('messages.index')" variant="outline" size="sm">Messages</x-ui.button>
+ <x-ui.button :href="route('marketplace.my-listings')" variant="outline" size="sm">My
  Listings</x-ui.button>
- <x-ui.button :href="route(' marketplace.create')" variant="primary" size="sm">Create
+ <x-ui.button :href="route('marketplace.create')" variant="primary" size="sm">Create
  Listing</x-ui.button>
  </div>
  @endauth
@@ -73,7 +73,7 @@
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button :href="route(' marketplace.index')" variant="ghost" size="sm"
+ <x-ui.button :href="route('marketplace.index')" variant="ghost" size="sm"
  class="w-full">Reset</x-ui.button>
  </div>
  </form>
@@ -92,7 +92,7 @@
  <x-marketplace-card :title="$listing->title" :price="$listing->formatted_price ?:' Price on request'"
  :condition="ucfirst($listing->listing_type ?:' Listing')" :location="$listing->location_text ?:' Location not provided'" :seller="$listing->seller?->name ?:' Unknown seller'"
  :image="$listing->cover_photo_url ?: null" cta-label="View Listing"
- :cta-href="route(' marketplace.show', $listing)"/>
+ :cta-href="route('marketplace.show', $listing)"/>
  @endforeach
  </div>
 

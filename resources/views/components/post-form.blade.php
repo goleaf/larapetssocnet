@@ -18,7 +18,7 @@
  <label class="block text-sm font-medium text-gray-700">Visibility</label>
  <div class="mt-1">
  <x-visibility-selector
- :selected="old(' visibility', $post?->visibility ??' public')"
+ :selected="old('visibility', $post?->visibility ??' public')"
  :showWarn="$post !== null"
  :postLikes="$post?->likes_count ?? 0"
  :postComments="$post?->comments_count ?? 0"

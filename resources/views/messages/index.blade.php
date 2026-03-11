@@ -3,10 +3,10 @@
 <x-app-layout>
  <x-slot name="header">
  <x-ui.page-header title="Messages" subtitle="Simple inbox, newest conversations first." :breadcrumbs="[
- [' label'=>' Messages'],
+ ['label' =>' Messages'],
  ]" icon="💬">
  <x-slot:action>
- <x-ui.button variant="outline" size="sm" :href="route(' marketplace.index')" icon="🛍️">
+ <x-ui.button variant="outline" size="sm" :href="route('marketplace.index')" icon="🛍️">
  Marketplace
  </x-ui.button>
  </x-slot:action>

@@ -32,7 +32,7 @@
  </x-slot>
  @else
  <x-slot name="action">
- <x-ui.button :href="route(' login')" variant="primary" size="sm">Log In to Follow</x-ui.button>
+ <x-ui.button :href="route('login')" variant="primary" size="sm">Log In to Follow</x-ui.button>
  </x-slot>
  @endauth
  </x-ui.empty-state>

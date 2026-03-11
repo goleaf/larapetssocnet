@@ -34,9 +34,9 @@
  <x-ui.page-header title="Adopt a Pet" subtitle="Browse pets currently marked as adoptable.">
  <x-slot name="action">
  <div class="flex flex-wrap items-center gap-2">
- <x-ui.button :href="route(' pets.explore')" variant="outline" size="sm">Explore All Pets</x-ui.button>
+ <x-ui.button :href="route('pets.explore')" variant="outline" size="sm">Explore All Pets</x-ui.button>
  @auth
- <x-ui.button :href="route(' pets.create')" variant="primary" size="sm">Create Pet Profile</x-ui.button>
+ <x-ui.button :href="route('pets.create')" variant="primary" size="sm">Create Pet Profile</x-ui.button>
  @endauth
  </div>
  </x-slot>
@@ -56,7 +56,7 @@
  class="md:col-span-4"
  name="q"
  label="Search"
- :value="$filters[' q']"
+ :value="$filters['q']"
  placeholder="Name or breed"
  />
 
@@ -65,7 +65,7 @@
  name="species"
  label="Species"
  :options="$speciesOptions"
- :selected="$filters[' species']"
+ :selected="$filters['species']"
  />
 
  <x-ui.select
@@ -73,7 +73,7 @@
  name="sex"
  label="Sex"
  :options="$sexOptions"
- :selected="$filters[' sex']"
+ :selected="$filters['sex']"
  />
 
  <x-ui.select
@@ -81,7 +81,7 @@
  name="sort"
  label="Sort"
  :options="$sortOptions"
- :selected="$filters[' sort']"
+ :selected="$filters['sort']"
  />
 
  <div class="md:col-span-8"></div>
@@ -91,7 +91,7 @@
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button :href="route(' pets.adopt')" variant="ghost" size="sm" class="w-full">Reset</x-ui.button>
+ <x-ui.button :href="route('pets.adopt')" variant="ghost" size="sm" class="w-full">Reset</x-ui.button>
  </div>
  </form>
  </x-ui.card>
@@ -124,7 +124,7 @@
  :image="$imageUrl"
  :owner="$pet->owner?->name"
  cta-label="View Profile"
- :cta-href="route(' pets.show', $petSlug)"
+ :cta-href="route('pets.show', $petSlug)"
  />
  @endforeach
  </div>

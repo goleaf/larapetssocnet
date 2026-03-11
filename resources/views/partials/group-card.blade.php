@@ -70,7 +70,7 @@
  @endif
 
  <div class="flex items-center gap-2">
- <x-ui.button :href="route(' groups.show', $groupRouteKey)" variant="ghost" size="xs">View</x-ui.button>
+ <x-ui.button :href="route('groups.show', $groupRouteKey)" variant="ghost" size="xs">View</x-ui.button>
 
  @auth
  @if ($isMember)

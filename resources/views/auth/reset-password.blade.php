@@ -8,7 +8,7 @@
  name="email"
  label="{{ __('Email') }}"
  type="email"
- :value="old(' email', $request->email)"
+ :value="old('email', $request->email)"
  required
  autofocus
  autocomplete="username"

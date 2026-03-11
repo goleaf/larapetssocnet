@@ -135,7 +135,7 @@
  label="Title"
  required
  maxlength="140"
- :value="old(' title', data_get($listing,' title'))"
+ :value="old('title', data_get($listing, 'title'))"
  placeholder="Golden retriever puppy looking for a home"
  x-model="preview.title"
  />
@@ -146,7 +146,7 @@
  label="Description"
  required
  rows="5"
- :value="old(' description', data_get($listing,' description'))"
+ :value="old('description', data_get($listing, 'description'))"
  placeholder="Share temperament, health info, and what adopters should know."
  x-model="preview.description"
  />
@@ -156,7 +156,7 @@
  name="listing_type"
  label="Listing Type"
  :options="$typeOptions"
- :value="old(' listing_type', data_get($listing,' listing_type',' adoption'))"
+                            :value="old('listing_type', data_get($listing, 'listing_type', 'adoption'))"
  x-model="preview.type"
  />
  </div>
@@ -172,7 +172,7 @@
  name="status"
  label="Status"
  :options="$statusOptions"
- :value="old(' status', data_get($listing,' status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
+ :value="old('status', data_get($listing, 'status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
  required
  x-model="preview.status"
  />
@@ -194,7 +194,7 @@
  type="number"
  min="0"
  step="0.01"
- :value="old(' price', data_get($listing,' price'))"
+ :value="old('price', data_get($listing, 'price'))"
  placeholder="0.00"
  x-model="preview.price"
  />
@@ -203,7 +203,7 @@
  name="currency"
  label="Currency"
  maxlength="3"
- :value="strtoupper((string) old(' currency', data_get($listing,' currency',' USD')))"
+                            :value="strtoupper((string) old('currency', data_get($listing, 'currency', 'USD')))"
  placeholder="USD"
  x-model="preview.currency"
  />
@@ -221,7 +221,7 @@
  <x-ui.input
  name="location_text"
  label="Location"
- :value="old(' location_text', data_get($listing,' location_text'))"
+ :value="old('location_text', data_get($listing, 'location_text'))"
  placeholder="Austin, TX"
  x-model="preview.location"
  />
@@ -231,7 +231,7 @@
  label="Pet ID"
  type="number"
  min="1"
- :value="old(' pet_id', data_get($listing,' pet_id'))"
+ :value="old('pet_id', data_get($listing, 'pet_id'))"
  placeholder="Optional"
  x-model="preview.pet_id"
  />
@@ -239,7 +239,7 @@
  <x-ui.input
  name="contact_phone"
  label="Contact Phone"
- :value="old(' contact_phone', data_get($listing,' contact_phone'))"
+ :value="old('contact_phone', data_get($listing, 'contact_phone'))"
  placeholder="+1 555 000 0000"
  x-model="preview.contact_phone"
  />
@@ -248,7 +248,7 @@
  name="contact_email"
  label="Contact Email"
  type="email"
- :value="old(' contact_email', data_get($listing,' contact_email'))"
+ :value="old('contact_email', data_get($listing, 'contact_email'))"
  placeholder="you@example.com"
  x-model="preview.contact_email"
  />
@@ -273,7 +273,7 @@
  name="remove_cover_image"
  label="Remove current cover image"
  description="Current cover will be removed when you save."
- :checked="(bool) old(' remove_cover_image')"
+ :checked="(bool) old('remove_cover_image')"
  />
  @endif
 
@@ -290,7 +290,7 @@
  name="replace_gallery"
  label="Replace gallery with newly uploaded files"
  description="Enable this to clear current gallery before adding new uploads."
- :checked="(bool) old(' replace_gallery')"
+ :checked="(bool) old('replace_gallery')"
  />
  @endif
  </div>

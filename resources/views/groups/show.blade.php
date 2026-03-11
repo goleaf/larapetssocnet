@@ -280,7 +280,7 @@
                         <x-ui.card-header title="Share in this group" />
                         <form method="POST" action="{{ route('groups.posts.attach', $groupRouteKey) }}" class="space-y-4">
                             @csrf
-                            <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old(' post_id')" min="1" />
+                            <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old('post_id')" min="1" />
                             <x-ui.textarea name="body" label="Or create new post" rows="3" placeholder="Write something for this group...">{{ old('body') }}</x-ui.textarea>
                             <div class="flex justify-end">
                                 <x-ui.button type="submit" variant="primary">Publish</x-ui.button>

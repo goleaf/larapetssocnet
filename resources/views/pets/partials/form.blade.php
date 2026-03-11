@@ -32,19 +32,19 @@
  <div class="grid gap-6 sm:grid-cols-2">
  <div>
  <x-input-label for="name" value="Pet name"/>
- <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old(' name', $pet?->name)" required />
+ <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $pet?->name)" required />
  <x-input-error :messages="$errors->get(' name')" class="mt-2"/>
  </div>
 
  <div>
  <x-input-label for="species" value="Species"/>
- <x-text-input id="species" name="species" type="text" class="mt-1 block w-full" :value="old(' species', $pet?->species)" required />
+ <x-text-input id="species" name="species" type="text" class="mt-1 block w-full" :value="old('species', $pet?->species)" required />
  <x-input-error :messages="$errors->get(' species')" class="mt-2"/>
  </div>
 
  <div>
  <x-input-label for="breed" value="Breed"/>
- <x-text-input id="breed" name="breed" type="text" class="mt-1 block w-full" :value="old(' breed', $pet?->breed)"/>
+ <x-text-input id="breed" name="breed" type="text" class="mt-1 block w-full" :value="old('breed', $pet?->breed)"/>
  <x-input-error :messages="$errors->get(' breed')" class="mt-2"/>
  </div>
 
@@ -67,7 +67,7 @@
 
  <div>
  <x-input-label for="age_text" value="Approx age (if birth date unknown)"/>
- <x-text-input id="age_text" name="age_text" type="text" class="mt-1 block w-full" :value="old(' age_text', $pet?->age_text)" placeholder="~2 years"/>
+ <x-text-input id="age_text" name="age_text" type="text" class="mt-1 block w-full" :value="old('age_text', $pet?->age_text)" placeholder="~2 years"/>
  <x-input-error :messages="$errors->get(' age_text')" class="mt-2"/>
  </div>
 

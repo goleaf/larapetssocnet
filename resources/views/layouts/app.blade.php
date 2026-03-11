@@ -267,7 +267,7 @@
  <x-ui.user-row
  :name="$group->name"
  :subtitle="\Illuminate\Support\Str::headline((string) ($group->privacy ??' public'))"
- :href="route(' groups.show', $groupRouteKey)"
+ :href="route('groups.show', $groupRouteKey)"
  class="px-2"
  >
  <x-slot name="action">
@@ -300,7 +300,7 @@
  <x-ui.user-row
  :name="$suggestedUser->name"
  :subtitle="$suggestedUser->username ?' @'.$suggestedUser->username :' Pet lover'"
- :href="route(' profile.show', $suggestedUser)"
+ :href="route('profile.show', $suggestedUser)"
  >
  <x-slot name="avatar">
  <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" size="sm"/>
@@ -331,7 +331,7 @@
  :name="$suggested->name"
  :subtitle="$suggested->username ?' @'.$suggested->username :' Pet lover'"
  :avatar="$suggested->avatar_url"
- :href="route(' profile.show', [' user'=> $suggested])"
+ :href="route('profile.show', ['user' => $suggested])"
  class="px-2"
  >
  <x-slot name="action">

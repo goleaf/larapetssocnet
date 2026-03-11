@@ -20,7 +20,7 @@
  <x-ui.page-header title="Groups" subtitle="Find and join communities for pet lovers.">
  <x-slot name="action">
  @auth
- <x-ui.button :href="route(' groups.create')" variant="primary" size="sm">Create Group</x-ui.button>
+ <x-ui.button :href="route('groups.create')" variant="primary" size="sm">Create Group</x-ui.button>
  @endauth
  </x-slot>
  </x-ui.page-header>
@@ -42,7 +42,7 @@
  </div>
 
  <div class="flex items-end md:col-span-1">
- <x-ui.button :href="route(' groups.index')" variant="ghost" size="sm"
+ <x-ui.button :href="route('groups.index')" variant="ghost" size="sm"
  class="w-full">Reset</x-ui.button>
  </div>
  </form>

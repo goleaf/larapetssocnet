@@ -6,17 +6,17 @@
  title="Chat"
  :subtitle="' Simple conversation with'.($peer->username ?' @'.$peer->username : $peer->name)"
  :breadcrumbs="[
- [' label'=>' Messages',' href'=> route(' messages.index')],
- [' label'=> $peer->name],
+ ['label' =>' Messages','href' => route('messages.index')],
+ ['label' => $peer->name],
  ]"
  icon="💬"
  >
  <x-slot:action>
  <div class="flex flex-wrap items-center gap-2">
- <x-ui.button variant="outline" size="sm" :href="route(' messages.index')" icon="↩️">
+ <x-ui.button variant="outline" size="sm" :href="route('messages.index')" icon="↩️">
  Inbox
  </x-ui.button>
- <x-ui.button variant="ghost" size="sm" :href="route(' profile.show', [' user'=> $peer])" icon="👤">
+ <x-ui.button variant="ghost" size="sm" :href="route('profile.show', ['user' => $peer])" icon="👤">
  Profile
  </x-ui.button>
  </div>
@@ -125,7 +125,7 @@
  maxlength="5000"
  required
  placeholder="Type a message..."
- :value="old(' body')"
+ :value="old('body')"
  :error="$errors->first(' body')"
  />
 

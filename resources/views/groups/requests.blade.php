@@ -64,18 +64,18 @@
     @else
         <div class="mb-6">
             <x-ui.tabs :tabs="[
-                [' label' => ' Overview', ' value' => ' feed', ' href' => route(' groups.show', [' group' => $groupRouteKey, ' tab' => ' feed'])],
-                [' label' => ' Members', ' value' => ' members', ' href' => $membersUrl],
-                [' label' => ' Requests', ' value' => ' requests', ' href' => $requestsBaseUrl],
+                ['label' => ' Overview', 'value' => 'feed', 'href' => route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed'])],
+                ['label' => ' Members', 'value' => 'members', 'href' => $membersUrl],
+                ['label' => ' Requests', 'value' => 'requests', 'href' => $requestsBaseUrl],
             ]" active="requests" />
         </div>
 
         <x-ui.card padding="lg">
             <div class="mb-6">
                 <x-ui.tabs :tabs="[
-                [' label' => ' Pending', ' value' => ' pending', ' href' => $tabUrl(' pending'), ' count' => $pendingCount],
-                [' label' => ' Approved', ' value' => ' approved', ' href' => $tabUrl(' approved'), ' count' => $approvedCount],
-                [' label' => ' Rejected', ' value' => ' rejected', ' href' => $tabUrl(' rejected'), ' count' => $rejectedCount],
+                ['label' => ' Pending', 'value' => 'pending', 'href' => $tabUrl(' pending'), 'count' => $pendingCount],
+                ['label' => ' Approved', 'value' => 'approved', 'href' => $tabUrl(' approved'), 'count' => $approvedCount],
+                ['label' => ' Rejected', 'value' => 'rejected', 'href' => $tabUrl(' rejected'), 'count' => $rejectedCount],
             ]" :active="$statusTab" paramName="status" />
             </div>
 

@@ -73,7 +73,7 @@
                         <div>
                             <x-ui.label for="feed-post-pet-id"
                                 class="!mb-1 text-xs uppercase tracking-wide">Pet</x-ui.label>
-                            <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect(['' => ' No pet tag'])->merge(auth()->user()->pets->pluck(' name', ' id'))->all()" :value="old(' pet_id')" />
+                            <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect(['' => ' No pet tag'])->merge(auth()->user()->pets->pluck('name', 'id'))->all()" :value="old('pet_id')" />
                             @error('pet_id')
                                 <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
                             @enderror

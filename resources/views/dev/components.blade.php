@@ -147,9 +147,9 @@
                 <x-ui.textarea name="demo_bio" label="Bio" placeholder="Tell us about your pet..." :maxlength="200" />
             </div>
             <x-ui.select name="demo_select" label="Select Option" :options="[
-                [' value' => ' dog', ' label' => '🐕 Dog'],
-                [' value' => ' cat', ' label' => '🐈 Cat'],
-                [' value' => ' bird', ' label' => '🐦 Bird'],
+                ['value' => 'dog', 'label' => '🐕 Dog'],
+                ['value' => 'cat', 'label' => '🐈 Cat'],
+                ['value' => 'bird', 'label' => '🐦 Bird'],
             ]" placeholder="Choose a pet type" />
             <div class="space-y-3">
                 <x-ui.checkbox name="demo_check" label="I agree to the terms and conditions" />
@@ -163,9 +163,9 @@
             name="demo_privacy"
             label="Group Privacy"
             :options="[
-                [' value' => ' public', ' label' => '🌍 Public', ' description' => ' Anyone can see and join this group.'],
-                [' value' => ' private', ' label' => '🔒 Private', ' description' => ' Membership requires admin approval.'],
-                [' value' => ' secret', ' label' => '🕵️ Secret', ' description' => ' Only invited members can find this group.'],
+                ['value' => 'public', 'label' => '🌍 Public', 'description' => ' Anyone can see and join this group.'],
+                ['value' => 'private', 'label' => '🔒 Private', 'description' => ' Membership requires admin approval.'],
+                ['value' => 'secret', 'label' => '🕵️ Secret', 'description' => ' Only invited members can find this group.'],
             ]"
             selected="public"
         />
@@ -310,18 +310,18 @@
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Breadcrumbs</p>
         <x-ui.breadcrumbs :items="[
-            [' label' => ' Home', ' href' => '#'],
-            [' label' => ' Groups', ' href' => '#'],
-            [' label' => ' Golden Retrievers', ' href' => '#'],
-            [' label' => ' Members'],
+            ['label' => ' Home', 'href' => '#'],
+            ['label' => ' Groups', 'href' => '#'],
+            ['label' => ' Golden Retrievers', 'href' => '#'],
+            ['label' => ' Members'],
         ]" class="mb-6" />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Tabs</p>
         <x-ui.tabs
             :tabs="[
-                [' label' => ' Pending', ' value' => ' pending', ' count' => 5],
-                [' label' => ' Approved', ' value' => ' approved', ' count' => 12],
-                [' label' => ' Rejected', ' value' => ' rejected'],
+                ['label' => ' Pending', 'value' => 'pending', 'count' => 5],
+                ['label' => ' Approved', 'value' => 'approved', 'count' => 12],
+                ['label' => ' Rejected', 'value' => 'rejected'],
             ]"
             active="pending"
             class="mb-6"
@@ -332,10 +332,10 @@
             <x-ui.sidebar-nav
                 title="Group Menu"
                 :items="[
-                    [' label' => ' Overview', ' icon' => '🏠', ' href' => '#', ' route' => ' dev.components'],
-                    [' label' => ' Members', ' icon' => '👥', ' href' => '#', ' badge' => 24],
-                    [' label' => ' Requests', ' icon' => '📩', ' href' => '#', ' badge' => 3],
-                    [' label' => ' Settings', ' icon' => '⚙️', ' href' => '#'],
+                    ['label' => ' Overview', 'icon' => '🏠', 'href' => '#', 'route' => 'dev.components'],
+                    ['label' => ' Members', 'icon' => '👥', 'href' => '#', 'badge' => 24],
+                    ['label' => ' Requests', 'icon' => '📩', 'href' => '#', 'badge' => 3],
+                    ['label' => ' Settings', 'icon' => '⚙️', 'href' => '#'],
                 ]"
             />
         </div>
@@ -357,10 +357,10 @@
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Data List</p>
         <div class="max-w-sm mb-6">
             <x-ui.data-list :items="[
-                [' label' => ' Species', ' value' => ' Golden Retriever'],
-                [' label' => ' Age', ' value' => '3 years'],
-                [' label' => ' Weight', ' value' => '32 kg'],
-                [' label' => ' Owner', ' value' => ' Alice Johnson'],
+                ['label' => ' Species', 'value' => ' Golden Retriever'],
+                ['label' => ' Age', 'value' => '3 years'],
+                ['label' => ' Weight', 'value' => '32 kg'],
+                ['label' => ' Owner', 'value' => ' Alice Johnson'],
             ]" />
         </div>
 

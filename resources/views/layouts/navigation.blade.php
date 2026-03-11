@@ -110,11 +110,11 @@
  <x-slot name="content">
  @auth
  @if ($user?->username && Route::has('profile.show'))
- <x-dropdown-link :href="route(' profile.show', [' user'=> $user])">View Profile</x-dropdown-link>
+ <x-dropdown-link :href="route('profile.show', ['user' => $user])">View Profile</x-dropdown-link>
  @endif
 
  @if (Route::has('settings.profile'))
- <x-dropdown-link :href="route(' settings.profile')">Settings</x-dropdown-link>
+ <x-dropdown-link :href="route('settings.profile')">Settings</x-dropdown-link>
  @endif
  @endauth
 
@@ -122,14 +122,14 @@
  <form method="POST" action="{{ route('logout') }}">
  @csrf
 
- <x-dropdown-link :href="route(' logout')"
+ <x-dropdown-link :href="route('logout')"
  onclick="event.preventDefault(); this.closest(' form').submit();">
  Log Out
  </x-dropdown-link>
  </form>
  @else
  @if (Route::has('login'))
- <x-dropdown-link :href="route(' login')">Log In</x-dropdown-link>
+ <x-dropdown-link :href="route('login')">Log In</x-dropdown-link>
  @endif
  @endauth
  </x-slot>

@@ -128,10 +128,10 @@
  <div class="space-y-6">
  <x-ui.toggle name="show_in_explore" label="Show in Explore"
  description="Allow your profile to be recommended to other users."
- :checked="old(' show_in_explore', $user->show_in_explore)"/>
+ :checked="old('show_in_explore', $user->show_in_explore)"/>
 
  <x-ui.toggle name="open_following" label="Open Following"
- description="Allow anyone to see who you follow." :checked="old(' open_following', $user->open_following)"/>
+ description="Allow anyone to see who you follow." :checked="old('open_following', $user->open_following)"/>
  </div>
 
  </div>

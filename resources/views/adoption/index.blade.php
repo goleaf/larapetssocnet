@@ -39,7 +39,7 @@
  <div>
  <x-input-label for="location" value="Location"/>
  <x-text-input id="location" name="location" class="mt-1 block w-full"
- :value="$filters[' location'] ??''" placeholder="City or region"/>
+ :value="$filters['location'] ??''" placeholder="City or region"/>
  </div>
 
  <div class="flex items-end">

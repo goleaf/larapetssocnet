@@ -15,7 +15,7 @@
  name="name"
  type="text"
  class="mt-1 block w-full"
- :value="old(' name', $group->name ??'')"
+ :value="old('name', $group->name ??'')"
  required
  maxlength="160"
  />
@@ -65,7 +65,7 @@
  name="cover_image_path"
  type="text"
  class="mt-1 block w-full"
- :value="old(' cover_image_path', $group->cover_image_path ?? $group->cover_photo_path ??'')"
+ :value="old('cover_image_path', $group->cover_image_path ?? $group->cover_photo_path ??'')"
  maxlength="2048"
  />
  <x-input-error :messages="$errors->get(' cover_image_path')" class="mt-2"/>

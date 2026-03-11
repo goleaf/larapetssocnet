@@ -71,7 +71,7 @@
 
  <div>
  <x-input-label for="title" value="Title (optional)"/>
- <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old(' title', $log->title ?? null)"/>
+ <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old('title', $log->title ?? null)"/>
  <x-input-error :messages="$errors->get(' title')" class="mt-2"/>
  </div>
 

@@ -18,7 +18,7 @@
  <div class="sm:col-span-1">
  <x-input-label for="title" value="Title"/>
  <x-text-input id="title" name="title" type="text" class="mt-1 block w-full"
- :value="old(' title')" required />
+ :value="old('title')" required />
  <x-input-error class="mt-2" :messages="$errors->get(' title')"/>
  </div>
  <div class="sm:col-span-1">

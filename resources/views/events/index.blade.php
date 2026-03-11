@@ -28,7 +28,7 @@
  <x-ui.page-header title="Events" subtitle="Find and join upcoming pet community events.">
  <x-slot name="action">
  @auth
- <x-ui.button :href="route(' events.create')" variant="primary" size="sm">Create Event</x-ui.button>
+ <x-ui.button :href="route('events.create')" variant="primary" size="sm">Create Event</x-ui.button>
  @endauth
  </x-slot>
  </x-ui.page-header>
@@ -57,7 +57,7 @@
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button :href="route(' events.index')" variant="ghost" size="sm"
+ <x-ui.button :href="route('events.index')" variant="ghost" size="sm"
  class="w-full">Reset</x-ui.button>
  </div>
  </form>
@@ -113,7 +113,7 @@
  </div>
 
  <div class="mt-4">
- <x-ui.button :href="route(' events.show', $event->id)" variant="primary" size="sm"
+ <x-ui.button :href="route('events.show', $event->id)" variant="primary" size="sm"
  class="w-full">View Event</x-ui.button>
  </div>
  </x-ui.card>

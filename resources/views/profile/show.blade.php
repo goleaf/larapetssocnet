@@ -67,7 +67,7 @@
 
  <div class="absolute right-4 top-4 flex items-center gap-2">
  @if ($isOwner)
- <x-ui.button :href="route(' settings.profile')" variant="default" size="xs">Update
+ <x-ui.button :href="route('settings.profile')" variant="default" size="xs">Update
  Cover</x-ui.button>
  @endif
  @if ($profileUser->is_private)
@@ -99,11 +99,11 @@
 
  <div class="flex flex-wrap items-center gap-2">
  @if ($isOwner)
- <x-ui.button :href="route(' posts.create')" variant="secondary" size="sm">Create
+ <x-ui.button :href="route('posts.create')" variant="secondary" size="sm">Create
  Post</x-ui.button>
- <x-ui.button :href="route(' settings.profile')" variant="primary" size="sm">Edit
+ <x-ui.button :href="route('settings.profile')" variant="primary" size="sm">Edit
  Profile</x-ui.button>
- <x-ui.button :href="route(' settings.data')" variant="outline" size="sm">Account
+ <x-ui.button :href="route('settings.data')" variant="outline" size="sm">Account
  Settings</x-ui.button>
  @elseif ($canInteract)
  <button
@@ -115,12 +115,12 @@
  <span x-text="busy ?'Saving...': (isFollowing ?'Following':'Follow')"></span>
  </button>
 
- <x-ui.button :href="route(' messages.conversation', [' peer'=> $profileUser])" variant="outline"
+ <x-ui.button :href="route('messages.conversation', ['peer' => $profileUser])" variant="outline"
  size="sm">Message</x-ui.button>
 
  @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
  @elseif (!auth()->check() && Route::has('login'))
- <x-ui.button :href="route(' login')" variant="primary" size="sm">Sign In to Follow</x-ui.button>
+ <x-ui.button :href="route('login')" variant="primary" size="sm">Sign In to Follow</x-ui.button>
  @endif
  </div>
  </div>
@@ -164,7 +164,7 @@
  @if ($badges->isNotEmpty())
  <x-ui.card padding="sm">
  <x-ui.badge-strip :badges="$badges" :max="8"
- :badges-url="route(' profile.show', [' user'=> $profileUser,' tab'=>' posts'])"/>
+ :badges-url="route('profile.show', ['user' => $profileUser,'tab' =>'posts'])"/>
  </x-ui.card>
  @endif
 

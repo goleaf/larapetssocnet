@@ -20,12 +20,12 @@
  <form method="GET" action="{{ route('tips.index') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
  <div class="lg:col-span-2">
  <x-input-label for="q" value="Search"/>
- <x-text-input id="q" name="q" class="mt-1 block w-full" :value="$filters[' q']" placeholder="Title or content"/>
+ <x-text-input id="q" name="q" class="mt-1 block w-full" :value="$filters['q']" placeholder="Title or content"/>
  </div>
 
  <div>
  <x-input-label for="species" value="Species"/>
- <x-text-input id="species" name="species" class="mt-1 block w-full" :value="$filters[' species']"/>
+ <x-text-input id="species" name="species" class="mt-1 block w-full" :value="$filters['species']"/>
  </div>
 
  <div>

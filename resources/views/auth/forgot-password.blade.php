@@ -14,7 +14,7 @@
  name="email"
  label="{{ __('Email') }}"
  type="email"
- :value="old(' email')"
+ :value="old('email')"
  required
  autofocus
  />

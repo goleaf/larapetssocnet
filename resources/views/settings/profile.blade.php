@@ -13,7 +13,7 @@
  <!-- Name -->
  <div class="sm:col-span-3">
  <x-input-label for="name" value="Name"/>
- <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old(' name', $user->name)" required autofocus autocomplete="name"/>
+ <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name"/>
  <x-input-error class="mt-2" :messages="$errors->get(' name')"/>
  </div>
 
@@ -45,7 +45,7 @@
  <!-- Email -->
  <div class="sm:col-span-6">
  <x-input-label for="email" value="Email Address"/>
- <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old(' email', $user->email)" required autocomplete="email"/>
+ <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="email"/>
  <x-input-error class="mt-2" :messages="$errors->get(' email')"/>
  </div>
 
@@ -62,7 +62,7 @@
  <div class="sm:col-span-3">
  <x-input-label for="location" value="Location"/>
  <x-text-input id="location" name="location" type="text" class="mt-1 block w-full"
- :value="old(' location', $user->location)"/>
+ :value="old('location', $user->location)"/>
  <x-input-error class="mt-2" :messages="$errors->get(' location')"/>
  </div>
 
@@ -70,7 +70,7 @@
  <div class="sm:col-span-3">
  <x-input-label for="website" value="Website"/>
  <x-text-input id="website" name="website" type="url" class="mt-1 block w-full"
- :value="old(' website', $user->website)"/>
+ :value="old('website', $user->website)"/>
  <x-input-error class="mt-2" :messages="$errors->get(' website')"/>
  </div>
 
@@ -93,7 +93,7 @@
  <div class="sm:col-span-3">
  <x-input-label for="birth_date" value="Birth Date"/>
  <x-text-input id="birth_date" name="birth_date" type="date" class="mt-1 block w-full"
- :value="old(' birth_date', $user->birth_date ? $user->birth_date->format(' Y-m-d') :'')"/>
+ :value="old('birth_date', $user->birth_date ? $user->birth_date->format(' Y-m-d') :'')"/>
  <x-input-error class="mt-2" :messages="$errors->get(' birth_date')"/>
  </div>
  </div>

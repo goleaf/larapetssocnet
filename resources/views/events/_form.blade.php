@@ -24,7 +24,7 @@
  name="title"
  type="text"
  class="mt-1 block w-full"
- :value="old(' title', $event->title ??'')"
+ :value="old('title', $event->title ??'')"
  maxlength="180"
  required
  />

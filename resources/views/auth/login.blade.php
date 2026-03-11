@@ -7,7 +7,7 @@
 
         <div class="space-y-4">
             <div>
-                <x-ui.input id="email" type="email" name="email" label="Email" :value="old(' email')" required autofocus
+                <x-ui.input id="email" type="email" name="email" label="Email" :value="old('email')" required autofocus
                     autocomplete="username" />
             </div>
 

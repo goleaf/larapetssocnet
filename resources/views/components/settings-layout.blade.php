@@ -8,7 +8,7 @@
  <nav class="md:w-64 flex-shrink-0"aria-label="Settings Navigation">
  <div class="space-y-2">
  <x-ui.button
- :href="route(' settings.profile')"
+ :href="route('settings.profile')"
  :variant="request()->routeIs(' settings.profile*') ?' primary' :' ghost'"
  size="sm"
  full
@@ -18,7 +18,7 @@
  </x-ui.button>
 
  <x-ui.button
- :href="route(' settings.password')"
+ :href="route('settings.password')"
  :variant="request()->routeIs(' settings.password*') ?' primary' :' ghost'"
  size="sm"
  full
@@ -28,7 +28,7 @@
  </x-ui.button>
 
  <x-ui.button
- :href="route(' settings.privacy')"
+ :href="route('settings.privacy')"
  :variant="request()->routeIs(' settings.privacy*') ?' primary' :' ghost'"
  size="sm"
  full
@@ -38,7 +38,7 @@
  </x-ui.button>
 
  <x-ui.button
- :href="route(' settings.notifications')"
+ :href="route('settings.notifications')"
  :variant="request()->routeIs(' settings.notifications*') ?' primary' :' ghost'"
  size="sm"
  full
@@ -48,7 +48,7 @@
  </x-ui.button>
 
  <x-ui.button
- :href="route(' settings.blocked')"
+ :href="route('settings.blocked')"
  :variant="request()->routeIs(' settings.blocked*') ?' primary' :' ghost'"
  size="sm"
  full
@@ -58,7 +58,7 @@
  </x-ui.button>
 
  <x-ui.button
- :href="route(' settings.data')"
+ :href="route('settings.data')"
  :variant="request()->routeIs(' settings.data*') ?' primary' :' ghost'"
  size="sm"
  full
