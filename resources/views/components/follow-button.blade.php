@@ -100,8 +100,8 @@
  :class="btnStyle"
  class="{{ $pad }} font-medium rounded-xl transition-all duration-200 min-w-[110px] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
  >
- <span x-show="loading"x-cloak>...</span>
- <span x-show="!loading"x-text="label"></span>
+ <span x-show="loading" x-cloak>...</span>
+ <span x-show="!loading" x-text="label"></span>
  </button>
 
  <button

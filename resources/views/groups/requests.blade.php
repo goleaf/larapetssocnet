@@ -51,23 +51,23 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header :title="$group->name"subtitle="Membership Queue">
+ <x-ui.page-header :title="$group->name" subtitle="Membership Queue">
  <x-slot:action>
  <x-ui.button href="{{ route('groups.show', ['group'=> $groupRouteKey,'tab'=>'feed']) }}"
- variant="ghost"size="sm">Back to Group</x-ui.button>
+ variant="ghost" size="sm">Back to Group</x-ui.button>
  </x-slot:action>
  </x-ui.page-header>
  </x-slot>
 
  @if (!$canManage)
- <x-ui.empty-state title="No access"description="Only group moderators and admins can review requests."icon="🔒"/>
+ <x-ui.empty-state title="No access" description="Only group moderators and admins can review requests." icon="🔒"/>
  @else
  <div class="mb-6">
  <x-ui.tabs :tabs="[
  ['label'=>'Overview','value'=>'feed','href'=> route('groups.show', ['group'=> $groupRouteKey,'tab'=>'feed'])],
  ['label'=>'Members','value'=>'members','href'=> $membersUrl],
  ['label'=>'Requests','value'=>'requests','href'=> $requestsBaseUrl],
- ]"active="requests"/>
+ ]" active="requests"/>
  </div>
 
  <x-ui.card padding="lg">
@@ -76,7 +76,7 @@
  ['label'=>'Pending','value'=>'pending','href'=> $tabUrl('pending'),'count'=> $pendingCount],
  ['label'=>'Approved','value'=>'approved','href'=> $tabUrl('approved'),'count'=> $approvedCount],
  ['label'=>'Rejected','value'=>'rejected','href'=> $tabUrl('rejected'),'count'=> $rejectedCount],
- ]":active="$statusTab"paramName="status"/>
+ ]" :active="$statusTab" paramName="status"/>
  </div>
 
  <div class="space-y-3">
@@ -90,7 +90,7 @@
  };
  @endphp
 
- <x-ui.user-row :user="$requestMember->user"class="border border-whisker/30 rounded-xl px-4 bg-warm-white">
+ <x-ui.user-row :user="$requestMember->user" class="border border-whisker/30 rounded-xl px-4 bg-warm-white">
  <x-slot:action>
  <div class="flex flex-wrap items-center gap-2">
  <x-ui.badge variant="{{ $statusBadgeVariant }}"
@@ -100,21 +100,21 @@
  <form method="POST"
  action="{{ route('groups.requests.approve', ['group'=> $groupRouteKey,'membership'=> $requestMember->id]) }}">
  @csrf
- <x-ui.button type="submit"variant="success"size="sm">Approve</x-ui.button>
+ <x-ui.button type="submit" variant="success" size="sm">Approve</x-ui.button>
  </form>
 
  <form method="POST"
  action="{{ route('groups.members.reject', ['group'=> $groupRouteKey,'membership'=> $requestMember->id]) }}">
  @csrf
  @method('DELETE')
- <x-ui.button type="submit"variant="ghost"size="sm">Reject</x-ui.button>
+ <x-ui.button type="submit" variant="ghost" size="sm">Reject</x-ui.button>
  </form>
  @endif
  </div>
  </x-slot:action>
  </x-ui.user-row>
  @empty
- <x-ui.empty-state title="No Requests"description="No entries in this request state."icon="📩"/>
+ <x-ui.empty-state title="No Requests" description="No entries in this request state." icon="📩"/>
  @endforelse
  </div>
 

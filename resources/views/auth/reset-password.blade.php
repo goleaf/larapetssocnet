@@ -1,8 +1,8 @@
 <x-guest-layout>
- <form method="POST"action="{{ route('password.store') }}"class="space-y-4">
+ <form method="POST" action="{{ route('password.store') }}" class="space-y-4">
  @csrf
 
- <input type="hidden"name="token"value="{{ $request->route('token') }}">
+ <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
  <x-ui.input
  name="email"
@@ -31,7 +31,7 @@
  />
 
  <div class="flex items-center justify-end pt-2">
- <x-ui.button type="submit"variant="primary"size="sm">{{ __('Reset Password') }}</x-ui.button>
+ <x-ui.button type="submit" variant="primary" size="sm">{{ __('Reset Password') }}</x-ui.button>
  </div>
  </form>
 </x-guest-layout>

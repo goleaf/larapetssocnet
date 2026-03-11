@@ -29,22 +29,22 @@
  $metaDescription = $profileUser->bio ?: ($profileUser->name ."'s profile on PetSocial");
 @endphp
 @push('meta')
- <meta property="og:type"content="profile">
- <meta property="og:title"content="{{ $profileUser->name }} ({{'@'. $profileUser->username }})">
- <meta property="og:description"content="{{ $metaDescription }}">
- <meta property="og:url"content="{{ $profileUser->profile_url }}">
- <meta property="profile:username"content="{{ $profileUser->username }}">
- <meta name="twitter:card"content="summary">
- <meta name="twitter:title"content="{{ $profileUser->name }} on PetSocial">
- <meta name="twitter:description"content="{{ $metaDescription }}">
- <link rel="canonical"href="{{ $profileUser->profile_url }}">
+ <meta property="og:type" content="profile">
+ <meta property="og:title" content="{{ $profileUser->name }} ({{'@'. $profileUser->username }})">
+ <meta property="og:description" content="{{ $metaDescription }}">
+ <meta property="og:url" content="{{ $profileUser->profile_url }}">
+ <meta property="profile:username" content="{{ $profileUser->username }}">
+ <meta name="twitter:card" content="summary">
+ <meta name="twitter:title" content="{{ $profileUser->name }} on PetSocial">
+ <meta name="twitter:description" content="{{ $metaDescription }}">
+ <link rel="canonical" href="{{ $profileUser->profile_url }}">
  @if ($profileUser->is_private)
- <meta name="robots"content="noindex, nofollow">
+ <meta name="robots" content="noindex, nofollow">
  @endif
 @endpush
 
 <x-app-layout>
- <div class="space-y-5"x-data="profileActions({
+ <div class="space-y-5" x-data="profileActions({
  isFollowing: @js($isFollowing),
  isBlocked: @js($isBlocked),
  followersCount: @js($profileUser->followers_count),
@@ -57,7 +57,7 @@
  <section class="overflow-hidden rounded-2xl border border-whisker/40 bg-warm-white shadow-card">
  <div class="relative h-56 w-full sm:h-72 lg:h-80">
  @if ($coverUrl)
- <img src="{{ $coverUrl }}"alt="{{ $profileUser->name }} cover image"
+ <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
  class="h-full w-full object-cover"/>
  @else
  <div class="h-full w-full bg-gradient-to-r from-paw-light via-cream to-sky-light"></div>
@@ -67,13 +67,13 @@
 
  <div class="absolute right-4 top-4 flex items-center gap-2">
  @if ($isOwner)
- <x-ui.button :href="route('settings.profile')"variant="default"size="xs">Update
+ <x-ui.button :href="route('settings.profile')" variant="default" size="xs">Update
  Cover</x-ui.button>
  @endif
  @if ($profileUser->is_private)
- <x-ui.badge variant="warning"size="sm"pill>🔒 Private Profile</x-ui.badge>
+ <x-ui.badge variant="warning" size="sm" pill>🔒 Private Profile</x-ui.badge>
  @else
- <x-ui.badge variant="success"size="sm"pill>🌍 Public Profile</x-ui.badge>
+ <x-ui.badge variant="success" size="sm" pill>🌍 Public Profile</x-ui.badge>
  @endif
  </div>
  </div>
@@ -81,7 +81,7 @@
  <div class="px-4 pb-5 sm:px-6">
  <div class="-mt-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
  <div class="flex items-end gap-4">
- <x-ui.avatar :src="$avatarUrl":name="$profileUser->name"size="2xl"
+ <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl"
  class="h-28 w-28 border-4 border-warm-white shadow-xl bg-warm-white"/>
 
  <div class="pb-1">
@@ -99,37 +99,37 @@
 
  <div class="flex flex-wrap items-center gap-2">
  @if ($isOwner)
- <x-ui.button :href="route('posts.create')"variant="secondary"size="sm">Create
+ <x-ui.button :href="route('posts.create')" variant="secondary" size="sm">Create
  Post</x-ui.button>
- <x-ui.button :href="route('settings.profile')"variant="primary"size="sm">Edit
+ <x-ui.button :href="route('settings.profile')" variant="primary" size="sm">Edit
  Profile</x-ui.button>
- <x-ui.button :href="route('settings.data')"variant="outline"size="sm">Account
+ <x-ui.button :href="route('settings.data')" variant="outline" size="sm">Account
  Settings</x-ui.button>
  @elseif ($canInteract)
  <button
  class="inline-flex items-center justify-center rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150"
  :class="isFollowing ?'border border-whisker bg-warm-white text-bark hover:bg-cream':'bg-paw text-white hover:bg-paw-dark shadow-button'"
- x-bind:disabled="busy || isBlocked"x-bind:aria-pressed="isFollowing.toString()"
+ x-bind:disabled="busy || isBlocked" x-bind:aria-pressed="isFollowing.toString()"
  x-bind:aria-label="isFollowing ?'Unfollow {{ addslashes($profileUser->name) }}':'Follow {{ addslashes($profileUser->name) }}'"
  @click="toggleFollow">
  <span x-text="busy ?'Saving...': (isFollowing ?'Following':'Follow')"></span>
  </button>
 
- <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])"variant="outline"
+ <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"
  size="sm">Message</x-ui.button>
 
  @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
  @elseif (!auth()->check() && Route::has('login'))
- <x-ui.button :href="route('login')"variant="primary"size="sm">Sign In to Follow</x-ui.button>
+ <x-ui.button :href="route('login')" variant="primary" size="sm">Sign In to Follow</x-ui.button>
  @endif
  </div>
  </div>
 
- <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"role="list"
+ <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" role="list"
  aria-label="Profile statistics">
  <a href="{{ route('profile.followers', ['user'=> $profileUser]) }}"
  class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
- <p class="text-xl font-bold text-bark"x-text="formatCount(followersCount)">
+ <p class="text-xl font-bold text-bark" x-text="formatCount(followersCount)">
  {{ number_format((int) $profileUser->followers_count) }}</p>
  <p class="text-xs text-fur">Followers</p>
  </a>
@@ -156,14 +156,14 @@
  </div>
  </div>
 
- <p class="mt-3 text-sm text-fur"role="status"aria-live="polite"x-show="notice"x-text="notice"></p>
+ <p class="mt-3 text-sm text-fur" role="status" aria-live="polite" x-show="notice" x-text="notice"></p>
  </div>
  </section>
 
  {{-- Badge strip --}}
  @if ($badges->isNotEmpty())
  <x-ui.card padding="sm">
- <x-ui.badge-strip :badges="$badges":max="8"
+ <x-ui.badge-strip :badges="$badges" :max="8"
  :badges-url="route('profile.show', ['user'=> $profileUser,'tab'=>'posts'])"/>
  </x-ui.card>
  @endif
@@ -178,7 +178,7 @@
  </div>
  <div class="-mx-1 flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
  @foreach ($featuredPets as $pet)
- <x-ui.pet-card :pet="$pet"size="md"/>
+ <x-ui.pet-card :pet="$pet" size="md"/>
  @endforeach
  @if ($isOwner)
  <a href="{{ route('pets.create') }}"
@@ -202,7 +202,7 @@
  @endif
 
  <x-ui.card padding="sm">
- <x-ui.tabs :tabs="$tabItems":active="$tab"class="mb-0"/>
+ <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 
  <div class="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
@@ -224,7 +224,7 @@
  @if ($websiteUrl)
  <p>
  🔗
- <a href="{{ $websiteUrl }}"target="_blank"rel="noopener noreferrer"
+ <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer"
  class="font-medium text-paw hover:text-paw-dark hover:underline">
  {{ $profileUser->website }}
  </a>
@@ -255,7 +255,7 @@
  @endphp
  <a href="{{ route('pets.show', ['slug'=> $petRouteParam]) }}"
  class="rounded-lg border border-whisker/30 bg-cream p-2 text-center transition-colors hover:bg-paw-light/40">
- <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')":name="$pet->name"size="sm"
+ <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="sm"
  class="mx-auto"/>
  <p class="mt-1 truncate text-[11px] font-medium text-bark">{{ $pet->name }}</p>
  </a>
@@ -278,8 +278,8 @@
  @foreach ($sidebarPhotos as $photo)
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'photos']) }}"
  class="overflow-hidden rounded-lg border border-whisker/30">
- <img src="{{ $photo->getUrl() }}"alt="{{ $profileUser->name }} photo"
- class="h-16 w-full object-cover"loading="lazy"/>
+ <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo"
+ class="h-16 w-full object-cover" loading="lazy"/>
  </a>
  @endforeach
  </div>
@@ -300,7 +300,7 @@
  @foreach ($friendsPreview as $friend)
  <a href="{{ route('profile.show', ['user'=> $friend]) }}"
  class="flex items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40">
- <x-ui.avatar :src="$friend->avatar_url":name="$friend->name"size="sm"/>
+ <x-ui.avatar :src="$friend->avatar_url" :name="$friend->name" size="sm"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-medium text-bark">{{ $friend->name }}</p>
  <p class="truncate text-[11px] text-fur">&#64;{{ $friend->username }}</p>
@@ -329,7 +329,7 @@
  @foreach ($commonGroups as $group)
  <a href="{{ route('groups.show', ['group'=> $group]) }}"
  class="flex items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40">
- <x-ui.avatar :src="$group->getFirstMediaUrl('avatar')":name="$group->name"size="sm"/>
+ <x-ui.avatar :src="$group->getFirstMediaUrl('avatar')" :name="$group->name" size="sm"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-medium text-bark">{{ $group->name }}</p>
  <p class="text-[11px] text-fur">{{ $group->members_count }}
@@ -346,13 +346,13 @@
  <section class="space-y-5">
  @if (!$canViewContent)
  <x-ui.card>
- <x-ui.empty-state icon="🔒"title="This profile is private"
+ <x-ui.empty-state icon="🔒" title="This profile is private"
  description="Follow {{ $profileUser->name }} to view posts, pets, photos, and likes.">
  @if ($canInteract)
  <x-slot name="action">
  <button
  class="inline-flex items-center justify-center rounded-md bg-paw px-4 py-2 text-sm font-medium text-white shadow-button transition-all duration-150 hover:bg-paw-dark"
- x-bind:disabled="busy || isBlocked"x-bind:aria-pressed="isFollowing.toString()"
+ x-bind:disabled="busy || isBlocked" x-bind:aria-pressed="isFollowing.toString()"
  x-bind:aria-label="isFollowing ?'Unfollow {{ addslashes($profileUser->name) }}':'Follow {{ addslashes($profileUser->name) }}'"
  @click="toggleFollow">
  <span
@@ -372,7 +372,7 @@
  <a href="{{ route('pets.show', ['slug'=> $petRouteParam]) }}"
  class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
  <div class="flex items-center gap-3">
- <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')":name="$pet->name"size="md"/>
+ <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="md"/>
  <div class="min-w-0">
  <p class="truncate text-base font-semibold text-bark">{{ $pet->name }}</p>
  <p class="truncate text-xs text-fur">
@@ -385,7 +385,7 @@
  </a>
  @empty
  <div class="col-span-full">
- <x-ui.empty-state icon="🐾"title="No pets yet"
+ <x-ui.empty-state icon="🐾" title="No pets yet"
  description="This user has not added pets to their profile."/>
  </div>
  @endforelse
@@ -397,24 +397,24 @@
  @if ($isOwner)
  <div>
  <h3 class="text-sm font-semibold text-bark">Create new gallery</h3>
- <form action="{{ route('photo-galleries.store') }}"method="POST"class="mt-3 space-y-3">
+ <form action="{{ route('photo-galleries.store') }}" method="POST" class="mt-3 space-y-3">
  @csrf
  <div>
- <label for="gallery-title"class="block text-xs font-medium text-fur">Title</label>
- <input id="gallery-title"name="title"type="text"
+ <label for="gallery-title" class="block text-xs font-medium text-fur">Title</label>
+ <input id="gallery-title" name="title" type="text"
  class="mt-1 block w-full rounded-md border border-whisker/40 bg-warm-white px-3 py-2 text-sm shadow-sm focus:border-paw focus:outline-none focus:ring-1 focus:ring-paw"
  placeholder="Summer walks, Puppy album..."
  required>
  </div>
  <div>
- <label for="gallery-description"class="block text-xs font-medium text-fur">Description
+ <label for="gallery-description" class="block text-xs font-medium text-fur">Description
  (optional)</label>
- <textarea id="gallery-description"name="description"rows="2"
+ <textarea id="gallery-description" name="description" rows="2"
  class="mt-1 block w-full rounded-md border border-whisker/40 bg-warm-white px-3 py-2 text-sm shadow-sm focus:border-paw focus:outline-none focus:ring-1 focus:ring-paw"
  placeholder="Short description for this gallery"></textarea>
  </div>
  <div class="flex justify-end">
- <x-ui.button type="submit"size="sm"variant="primary">
+ <x-ui.button type="submit" size="sm" variant="primary">
  Create Gallery
  </x-ui.button>
  </div>
@@ -439,8 +439,8 @@
  $coverUrl = $gallery->coverUrl();
  @endphp
  @if ($coverUrl !=='')
- <img src="{{ $coverUrl }}"alt="{{ $gallery->title }} cover"
- class="h-32 w-full object-cover"loading="lazy"/>
+ <img src="{{ $coverUrl }}" alt="{{ $gallery->title }} cover"
+ class="h-32 w-full object-cover" loading="lazy"/>
  @else
  <div
  class="flex h-32 w-full items-center justify-center bg-cream text-3xl">
@@ -459,7 +459,7 @@
  {{ $gallery->description }}</p>
  @endif
  </div>
- <x-ui.badge variant="default"size="sm"pill>
+ <x-ui.badge variant="default" size="sm" pill>
  {{ $gallery->media_count }}
  {{ Str::plural('photo', $gallery->media_count) }}
  </x-ui.badge>
@@ -467,17 +467,17 @@
 
  @if ($isOwner)
  <form action="{{ route('photo-galleries.photos.store', $gallery) }}"
- method="POST"enctype="multipart/form-data"
+ method="POST" enctype="multipart/form-data"
  class="mt-1 space-y-2">
  @csrf
  <label class="block text-[11px] font-medium text-fur">
  Add photos
- <input type="file"name="photos[]"multiple
+ <input type="file" name="photos[]" multiple
  class="mt-1 block w-full text-[11px] text-fur"
  accept="image/jpeg,image/png,image/webp">
  </label>
  <div class="flex justify-end">
- <x-ui.button type="submit"size="xs"variant="secondary">
+ <x-ui.button type="submit" size="xs" variant="secondary">
  Upload
  </x-ui.button>
  </div>
@@ -521,11 +521,11 @@
  </div>
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
  @forelse ($photos as $photo)
- <img src="{{ $photo->getUrl() }}"alt="{{ $profileUser->name }} photo"
- class="h-44 w-full rounded-xl object-cover shadow-sm"loading="lazy"/>
+ <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo"
+ class="h-44 w-full rounded-xl object-cover shadow-sm" loading="lazy"/>
  @empty
  <div class="col-span-full">
- <x-ui.empty-state icon="📷"title="No photos yet"
+ <x-ui.empty-state icon="📷" title="No photos yet"
  description="When this user shares photos, they will appear here."/>
  </div>
  @endforelse
@@ -535,13 +535,13 @@
  </x-ui.card>
  @elseif ($tab ==='likes')
  <x-ui.card>
- <x-ui.empty-state icon="❤️"title="No likes to show"
+ <x-ui.empty-state icon="❤️" title="No likes to show"
  description="Likes tab is ready for Wave 2 data integration."/>
  </x-ui.card>
  @elseif ($tab ==='groups')
  <x-ui.card>
  @if ($groups->isEmpty())
- <x-ui.empty-state icon="🏠"title="Not in any groups yet"
+ <x-ui.empty-state icon="🏠" title="Not in any groups yet"
  description="{{ $profileUser->name }} hasn't joined any groups."/>
  @else
  <div class="grid gap-4 sm:grid-cols-2">
@@ -549,7 +549,7 @@
  <a href="{{ route('groups.show', ['group'=> $group]) }}"
  class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
  <div class="flex items-center gap-3">
- <x-ui.avatar :src="$group->getFirstMediaUrl('avatar')":name="$group->name"size="md"/>
+ <x-ui.avatar :src="$group->getFirstMediaUrl('avatar')" :name="$group->name" size="md"/>
  <div class="min-w-0">
  <div class="flex items-center gap-1">
  <p class="truncate text-base font-semibold text-bark">{{ $group->name }}</p>
@@ -571,7 +571,7 @@
  @elseif ($tab ==='events')
  <x-ui.card>
  @if ($upcomingEvents->isEmpty() && $pastEvents->isEmpty())
- <x-ui.empty-state icon="📅"title="No events yet"
+ <x-ui.empty-state icon="📅" title="No events yet"
  description="{{ $profileUser->name }} hasn't RSVP'd to any events."/>
  @else
  @if ($upcomingEvents->isNotEmpty())
@@ -591,7 +591,7 @@
  <p class="truncate text-xs text-fur">📍 {{ $event->location_text }}</p>
  @endif
  @if ($event->pivot)
- <x-ui.badge variant="success"size="sm"
+ <x-ui.badge variant="success" size="sm"
  class="mt-1">{{ ucfirst($event->pivot->status) }}</x-ui.badge>
  @endif
  </div>
@@ -601,16 +601,16 @@
  @endif
 
  @if ($pastEvents->isNotEmpty())
- <div class="mt-4"x-data="{ showPast: false }">
+ <div class="mt-4" x-data="{ showPast: false }">
  <button @click="showPast = !showPast"
  class="flex items-center gap-1 text-xs font-semibold text-fur hover:text-bark transition-colors">
- <svg :class="showPast &&'rotate-90'"class="h-3 w-3 transition-transform"fill="none"
- viewBox="0 0 24 24"stroke-width="2"stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+ <svg :class="showPast &&'rotate-90'" class="h-3 w-3 transition-transform" fill="none"
+ viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
  </svg>
  Past Events ({{ $pastEvents->count() }})
  </button>
- <div x-show="showPast"x-collapse class="mt-2 space-y-3">
+ <div x-show="showPast" x-collapse class="mt-2 space-y-3">
  @foreach ($pastEvents as $event)
  <a href="{{ route('events.show', ['event'=> $event]) }}"
  class="flex items-center gap-3 rounded-xl border border-whisker/20 bg-cream/50 px-4 py-3 opacity-75 transition-all hover:opacity-100">
@@ -636,7 +636,7 @@
  @elseif ($tab ==='contests')
  <x-ui.card>
  @if ($contestEntries->isEmpty() && $organizedContests->isEmpty())
- <x-ui.empty-state icon="🏆"title="No contests yet"
+ <x-ui.empty-state icon="🏆" title="No contests yet"
  description="{{ $profileUser->name }} hasn't entered any contests."/>
  @else
  @if ($organizedContests->isNotEmpty())
@@ -647,9 +647,9 @@
  class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
  <div class="flex items-center justify-between">
  <p class="truncate text-sm font-semibold text-bark">{{ $contest->title }}</p>
- <x-ui.badge variant="info"size="sm">Organizer</x-ui.badge>
+ <x-ui.badge variant="info" size="sm">Organizer</x-ui.badge>
  </div>
- <x-ui.badge variant="default"size="sm"
+ <x-ui.badge variant="default" size="sm"
  class="mt-1">{{ ucfirst($contest->status) }}</x-ui.badge>
  </a>
  @endforeach
@@ -666,10 +666,10 @@
  <div class="flex items-center justify-between">
  <p class="truncate text-sm font-semibold text-bark">{{ $entry->contest->title }}</p>
  @if ($entry->is_winner)
- <x-ui.badge variant="warning"size="sm">🏆 Winner</x-ui.badge>
+ <x-ui.badge variant="warning" size="sm">🏆 Winner</x-ui.badge>
  @endif
  </div>
- <x-ui.badge variant="default"size="sm"
+ <x-ui.badge variant="default" size="sm"
  class="mt-1">{{ ucfirst($entry->contest->status) }}</x-ui.badge>
  </a>
  @endif
@@ -683,7 +683,7 @@
  @if ($isOwner)
  <x-ui.card>
  <div class="flex items-center gap-3">
- <x-ui.avatar :src="$avatarUrl":name="$profileUser->name"size="md"/>
+ <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="md"/>
  <a href="{{ route('posts.create') }}"
  class="w-full rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30">
  What's on your mind, {{ $profileUser->name }}?
@@ -704,43 +704,43 @@
  @endif
 
  @forelse ($posts as $post)
- <x-post-card :post="$post"context="profile"/>
+ <x-post-card :post="$post" context="profile"/>
 
  @if ($isOwner)
  <div class="-mt-2 flex items-center justify-end gap-2">
  @if ($post->is_pinned)
- <form method="POST"action="{{ route('posts.unpin', $post) }}">
+ <form method="POST" action="{{ route('posts.unpin', $post) }}">
  @csrf
  @method('DELETE')
- <x-ui.button type="submit"variant="ghost"size="xs">Unpin</x-ui.button>
+ <x-ui.button type="submit" variant="ghost" size="xs">Unpin</x-ui.button>
  </form>
  @else
- <form method="POST"action="{{ route('posts.pin', $post) }}">
+ <form method="POST" action="{{ route('posts.pin', $post) }}">
  @csrf
- <x-ui.button type="submit"variant="secondary"size="xs">Pin to Profile</x-ui.button>
+ <x-ui.button type="submit" variant="secondary" size="xs">Pin to Profile</x-ui.button>
  </form>
  @endif
  </div>
  @endif
  @empty
- <x-ui.empty-state icon="📝"title="No posts yet"description="No posts published yet."/>
+ <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet."/>
  @endforelse
 
  @if ($isOwner && ($privateCount ?? 0) > 0)
  <x-ui.card>
  <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-fur">
- <svg class="h-4 w-4"fill="none"viewBox="0 0 24 24"stroke-width="1.5"
+ <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
  stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"
+ <path stroke-linecap="round" stroke-linejoin="round"
  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
  </svg>
  Private posts
- <x-ui.badge variant="default"size="sm"pill>{{ $privateCount }}</x-ui.badge>
+ <x-ui.badge variant="default" size="sm" pill>{{ $privateCount }}</x-ui.badge>
  </h3>
 
  <div class="space-y-4">
  @foreach (($privatePosts ?? collect()) as $post)
- <x-post-card :post="$post"context="profile"/>
+ <x-post-card :post="$post" context="profile"/>
  @endforeach
  </div>
  </x-ui.card>

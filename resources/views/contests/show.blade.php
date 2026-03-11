@@ -37,11 +37,11 @@
  @if ($contest->isActive() && !$userEntry)
  <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-5 mb-6">
  <h3 class="font-bold text-emerald-800 mb-3">📸 Submit Your Entry</h3>
- <form action="{{ route('contests.entries.store', $contest->slug) }}"method="POST"enctype="multipart/form-data"
+ <form action="{{ route('contests.entries.store', $contest->slug) }}" method="POST" enctype="multipart/form-data"
  class="space-y-3">
  @csrf
- <input type="file"name="photo"accept="image/*"required class="block w-full text-sm">
- <textarea name="caption"rows="2"placeholder="Caption (optional)"
+ <input type="file" name="photo" accept="image/*" required class="block w-full text-sm">
+ <textarea name="caption" rows="2" placeholder="Caption (optional)"
  class="w-full rounded-lg border-gray-300 text-sm"></textarea>
  <button type="submit"
  class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
@@ -58,7 +58,7 @@
  <div
  class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden {{ $entry->is_winner ?'ring-2 ring-yellow-400':''}}">
  @if ($entry->getFirstMediaUrl('entry-photo'))
- <img src="{{ $entry->getFirstMediaUrl('entry-photo') }}"class="w-full h-48 object-cover"
+ <img src="{{ $entry->getFirstMediaUrl('entry-photo') }}" class="w-full h-48 object-cover"
  alt="Entry by {{ $entry->user->name ??'User'}}">
  @endif
  <div class="p-4">
@@ -75,7 +75,7 @@
  <span class="text-sm text-gray-400">{{ $entry->votes_count ?? 0 }} votes</span>
  @auth
  @if ($contest->status ==='voting'&& !$hasVoted && (int) $entry->user_id !== auth()->id())
- <form action="{{ route('contests.entries.vote', [$contest->slug, $entry]) }}"method="POST">
+ <form action="{{ route('contests.entries.vote', [$contest->slug, $entry]) }}" method="POST">
  @csrf
  <button
  class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Vote</button>

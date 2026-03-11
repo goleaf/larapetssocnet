@@ -12,12 +12,12 @@
  x-data="{ notice:'', unblocking: null }"
  role="region"
  aria-label="Blocked users list">
- <ul class="space-y-3"aria-label="Blocked users">
+ <ul class="space-y-3" aria-label="Blocked users">
  @forelse ($blocked as $blockedUser)
  <li class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3"
  aria-label="Blocked user {{ $blockedUser->name }}">
  <div class="flex min-w-0 items-center gap-3">
- <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')":name="$blockedUser->name"size="md"/>
+ <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')" :name="$blockedUser->name" size="md"/>
  <div class="min-w-0">
  <p class="truncate font-semibold">{{ $blockedUser->name }}</p>
  <p class="truncate text-xs shell-text-muted">&#64;{{ $blockedUser->username }}</p>
@@ -70,7 +70,7 @@
  @endforelse
  </ul>
 
- <p class="mt-3 text-sm shell-text-muted"role="status"aria-live="polite"x-text="notice"x-show="notice"></p>
+ <p class="mt-3 text-sm shell-text-muted" role="status" aria-live="polite" x-text="notice" x-show="notice"></p>
 
  <div class="mt-4">
  {{ $blocked->links() }}

@@ -19,20 +19,20 @@ class FeedService
             ->whereNotIn('user_id', $user->blockedBy()->select('users.id'))
             ->with([
                 'author',
-                'author.media',
                 'pet',
-                'pet.media',
                 'media',
                 'hashtags',
-                'reactions',
             ])
             ->withCount([
                 'comments',
-                'reactions',
+                'likes',
+            ])
+            ->withExists([
+                'likes as liked_by_viewer' => fn ($query) => $query->where('likes.user_id', $user->getKey()),
             ])
             ->when(in_array($type, ['text', 'photo', 'video'], true), fn ($query) => $query->byType($type))
-            ->orderBy('created_at')
-            ->paginate($perPage)
+            ->orderByDesc('created_at')
+            ->cursorPaginate($perPage)
             ->withQueryString();
 
         $postIds = $posts->getCollection()->modelKeys();

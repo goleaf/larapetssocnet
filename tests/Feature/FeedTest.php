@@ -3,6 +3,7 @@
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\CursorPaginator;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
@@ -76,7 +77,7 @@ it('shows feed navigation actions and share action on post cards', function (): 
 it('paginates feed posts at 15 items per page', function (): void {
     $viewer = User::factory()->create();
 
-    Post::factory()
+    $createdPosts = Post::factory()
         ->count(16)
         ->create([
             'user_id' => $viewer->id,
@@ -94,8 +95,28 @@ it('paginates feed posts at 15 items per page', function (): void {
     $firstPage->assertSee('feed-page-post-1');
     $firstPage->assertDontSee('feed-page-post-0');
 
-    $secondPage = $this->actingAs($viewer)->get(route('feed.index', ['page' => 2]));
+    /** @var CursorPaginator $postsPaginator */
+    $postsPaginator = $firstPage->viewData('posts');
+    $nextCursor = $postsPaginator->nextCursor();
+
+    expect($nextCursor)->not->toBeNull();
+    expect($postsPaginator->items())->toHaveCount(15);
+
+    $oldestCreatedPostId = $createdPosts->min('id');
+
+    expect(collect($postsPaginator->items())->pluck('id'))
+        ->not->toContain($oldestCreatedPostId);
+
+    $secondPage = $this->actingAs($viewer)->get(route('feed.index', [
+        'cursor' => $nextCursor?->encode(),
+    ]));
 
     $secondPage->assertOk();
-    $secondPage->assertSee('feed-page-post-0');
+
+    /** @var CursorPaginator $secondPostsPaginator */
+    $secondPostsPaginator = $secondPage->viewData('posts');
+
+    expect($secondPostsPaginator->items())->toHaveCount(1);
+    expect(collect($secondPostsPaginator->items())->pluck('id'))
+        ->toContain($oldestCreatedPostId);
 });

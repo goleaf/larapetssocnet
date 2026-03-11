@@ -42,7 +42,7 @@
  $iconString = trim((string) ($icon ??''));
 
  if ($iconString !==''&& str_contains($iconString,'<path')) {
- $iconString ='<svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 24 24"fill="none"stroke="currentColor"stroke-width="1.5"class="h-[1em] w-[1em]">'.$iconString.'</svg>';
+ $iconString ='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[1em] w-[1em]">'.$iconString.'</svg>';
  }
 
  $ariaLabel = $attributes->get('aria-label') ?: $label;

@@ -57,12 +57,12 @@
 
 <div {{ $attributes->only('class')->merge(['class'=>'flex flex-col gap-1']) }}>
  @if ($label)
- <x-ui.label :for="$fieldId":required="$required">{{ $label }}</x-ui.label>
+ <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
  @endif
 
  <div class="relative">
  @if ($prefix)
- <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fur"aria-hidden="true">
+ <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fur" aria-hidden="true">
  {{ $prefix }}
  </div>
  @endif
@@ -92,13 +92,13 @@
  />
 
  @if ($suffix)
- <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-fur"aria-hidden="true">
+ <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-fur" aria-hidden="true">
  {{ $suffix }}
  </div>
  @endif
  </div>
 
  @if ($hasError || $hint)
- <x-ui.hint :id="$hintId":error="$resolvedError":message="$hint"/>
+ <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$hint"/>
  @endif
 </div>

@@ -12,7 +12,7 @@
  $formMethod = in_array($httpMethod, ['GET','POST'], true) ? $httpMethod :'POST';
 @endphp
 
-<form method="{{ $formMethod }}"action="{{ $action }}"{{ $attributes->merge(['class'=>'space-y-3']) }}>
+<form method="{{ $formMethod }}" action="{{ $action }}" {{ $attributes->merge(['class'=>'space-y-3']) }}>
  @if ($formMethod !=='GET')
  @csrf
  @endif
@@ -30,7 +30,7 @@
 
  <div class="flex items-center justify-between gap-3">
  <span class="text-xs shell-text-muted">Be kind and helpful to pet families.</span>
- <button type="submit"class="btn-base btn-primary">
+ <button type="submit" class="btn-base btn-primary">
  {{ $buttonLabel }}
  </button>
  </div>

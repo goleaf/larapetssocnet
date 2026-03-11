@@ -12,7 +12,7 @@
  <h4 class="mb-2 px-3 text-xs font-bold font-display uppercase tracking-wider text-fur">{{ $title }}</h4>
  @endif
 
- <nav class="space-y-1"aria-label="Sidebar">
+ <nav class="space-y-1" aria-label="Sidebar">
  @foreach($items as $item)
  @php
  $href = $item['href'] ?? $item['url'] ??'#';
@@ -79,7 +79,7 @@
  </span>
 
  @if($badge !== null)
- <x-ui.badge :variant="$badgeVariant"size="sm"pill>
+ <x-ui.badge :variant="$badgeVariant" size="sm" pill>
  {{ $badge }}
  </x-ui.badge>
  @endif

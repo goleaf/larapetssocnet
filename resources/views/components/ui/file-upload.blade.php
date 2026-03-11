@@ -154,7 +154,7 @@
  x-on:keydown.space.prevent="openPicker()"
 >
  @if ($label)
- <x-ui.label :for="$fieldId":required="$required">{{ $label }}</x-ui.label>
+ <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
  @endif
 
  <div
@@ -200,7 +200,7 @@
  {{ $controlAttributes }}
  />
 
- <span class="inline-flex h-11 w-11 items-center justify-center rounded-pill bg-paw-light text-xl"aria-hidden="true">🐾</span>
+ <span class="inline-flex h-11 w-11 items-center justify-center rounded-pill bg-paw-light text-xl" aria-hidden="true">🐾</span>
  <p class="text-sm font-medium text-bark">Drop files here or click to browse</p>
  <p class="text-xs text-fur">
  @if ($accept)
@@ -215,36 +215,36 @@
  </p>
  </div>
 
- <div x-show="previews.length && previewEnabled"x-cloak class="mt-2 flex flex-wrap gap-3">
- <template x-for="(previewItem, index) in previews":key="index">
+ <div x-show="previews.length && previewEnabled" x-cloak class="mt-2 flex flex-wrap gap-3">
+ <template x-for="(previewItem, index) in previews" :key="index">
  <div class="h-24 w-24 overflow-hidden rounded-md border border-whisker bg-cream">
  <template x-if="previewItem.image">
- <img :src="previewItem.url":alt="previewItem.name"class="h-full w-full object-cover"/>
+ <img :src="previewItem.url" :alt="previewItem.name" class="h-full w-full object-cover"/>
  </template>
  <template x-if="!previewItem.image">
- <div class="flex h-full items-center justify-center px-2 text-center text-xs text-fur"x-text="previewItem.name"></div>
+ <div class="flex h-full items-center justify-center px-2 text-center text-xs text-fur" x-text="previewItem.name"></div>
  </template>
  </div>
  </template>
  </div>
 
- <div x-show="files.length && !previewEnabled"x-cloak class="mt-2 text-xs text-fur">
- <p class="font-medium text-bark"x-text="files.length === 1 ?'1 file selected':`${files.length} files selected`"></p>
+ <div x-show="files.length && !previewEnabled" x-cloak class="mt-2 text-xs text-fur">
+ <p class="font-medium text-bark" x-text="files.length === 1 ?'1 file selected':`${files.length} files selected`"></p>
  <ul class="mt-1 list-inside list-disc">
- <template x-for="(file, index) in files":key="index">
- <li class="truncate"x-text="file.name"></li>
+ <template x-for="(file, index) in files" :key="index">
+ <li class="truncate" x-text="file.name"></li>
  </template>
  </ul>
  </div>
 
- <p id="{{ $errorId }}"x-show="errorMessage"x-cloak class="mt-1 flex items-center gap-1 text-xs text-rose">
- <svg xmlns="http://www.w3.org/2000/svg"viewBox="0 0 20 20"fill="currentColor"class="h-4 w-4 shrink-0"aria-hidden="true">
- <path fill-rule="evenodd"d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"clip-rule="evenodd"/>
+ <p id="{{ $errorId }}" x-show="errorMessage" x-cloak class="mt-1 flex items-center gap-1 text-xs text-rose">
+ <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true">
+ <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
  </svg>
  <span x-text="errorMessage"></span>
  </p>
 
  @if ($resolvedHelp)
- <x-ui.hint id="{{ $helpId }}":message="$resolvedHelp"x-show="!errorMessage"/>
+ <x-ui.hint id="{{ $helpId }}" :message="$resolvedHelp" x-show="!errorMessage"/>
  @endif
 </div>

@@ -9,15 +9,15 @@
  <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
  {{-- Filters --}}
  <div class="bg-white shadow-sm sm:rounded-lg p-6">
- <form method="GET"action="{{ route('adoption.index') }}"
+ <form method="GET" action="{{ route('adoption.index') }}"
  class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
  <div>
- <x-input-label for="species"value="Species"/>
- <select id="species"name="species"
+ <x-input-label for="species" value="Species"/>
+ <select id="species" name="species"
  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
  <option value="">All species</option>
  @foreach($species as $s)
- <option value="{{ $s }}"@selected(($filters['species'] ??'') === $s)>
+ <option value="{{ $s }}" @selected(($filters['species'] ??'') === $s)>
  {{ \App\Models\Pet::SPECIES_EMOJI[$s] ??'🐾'}} {{ ucfirst($s) }}
  </option>
  @endforeach
@@ -25,26 +25,26 @@
  </div>
 
  <div>
- <x-input-label for="size"value="Size"/>
- <select id="size"name="size"
+ <x-input-label for="size" value="Size"/>
+ <select id="size" name="size"
  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
  <option value="">Any size</option>
  @foreach($sizes as $sz)
- <option value="{{ $sz }}"@selected(($filters['size'] ??'') === $sz)>{{ ucfirst($sz) }}
+ <option value="{{ $sz }}" @selected(($filters['size'] ??'') === $sz)>{{ ucfirst($sz) }}
  </option>
  @endforeach
  </select>
  </div>
 
  <div>
- <x-input-label for="location"value="Location"/>
- <x-text-input id="location"name="location"class="mt-1 block w-full"
- :value="$filters['location'] ??''"placeholder="City or region"/>
+ <x-input-label for="location" value="Location"/>
+ <x-text-input id="location" name="location" class="mt-1 block w-full"
+ :value="$filters['location'] ??''" placeholder="City or region"/>
  </div>
 
  <div class="flex items-end">
  <label class="inline-flex items-center gap-2 pb-2">
- <input type="checkbox"name="free"value="1"@checked($filters['free'] ?? false)
+ <input type="checkbox" name="free" value="1" @checked($filters['free'] ?? false)
  class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
  <span class="text-sm text-gray-700">Free only</span>
  </label>
@@ -71,7 +71,7 @@
  <article
  class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
  @if($pet->getFirstMediaUrl('avatar'))
- <img src="{{ $pet->getFirstMediaUrl('avatar') }}"alt="{{ $pet->name }}"
+ <img src="{{ $pet->getFirstMediaUrl('avatar') }}" alt="{{ $pet->name }}"
  class="w-full h-48 object-cover">
  @else
  <div class="w-full h-48 bg-emerald-50 flex items-center justify-center text-5xl">

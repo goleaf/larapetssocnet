@@ -31,12 +31,12 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header title="Adopt a Pet"subtitle="Browse pets currently marked as adoptable.">
+ <x-ui.page-header title="Adopt a Pet" subtitle="Browse pets currently marked as adoptable.">
  <x-slot name="action">
  <div class="flex flex-wrap items-center gap-2">
- <x-ui.button :href="route('pets.explore')"variant="outline"size="sm">Explore All Pets</x-ui.button>
+ <x-ui.button :href="route('pets.explore')" variant="outline" size="sm">Explore All Pets</x-ui.button>
  @auth
- <x-ui.button :href="route('pets.create')"variant="primary"size="sm">Create Pet Profile</x-ui.button>
+ <x-ui.button :href="route('pets.create')" variant="primary" size="sm">Create Pet Profile</x-ui.button>
  @endauth
  </div>
  </x-slot>
@@ -45,13 +45,13 @@
 
  <div class="space-y-5">
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
- <x-ui.stat label="Available Now":value="number_format($availableCount)"icon="🐾"/>
- <x-ui.stat label="Species in Results":value="number_format($speciesCount)"icon="🧬"/>
- <x-ui.stat label="Status"value="Adoption"icon="🏡"/>
+ <x-ui.stat label="Available Now" :value="number_format($availableCount)" icon="🐾"/>
+ <x-ui.stat label="Species in Results" :value="number_format($speciesCount)" icon="🧬"/>
+ <x-ui.stat label="Status" value="Adoption" icon="🏡"/>
  </div>
 
  <x-ui.card>
- <form method="GET"action="{{ route('pets.adopt') }}"class="grid gap-3 md:grid-cols-12">
+ <form method="GET" action="{{ route('pets.adopt') }}" class="grid gap-3 md:grid-cols-12">
  <x-ui.input
  class="md:col-span-4"
  name="q"
@@ -87,11 +87,11 @@
  <div class="md:col-span-8"></div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button type="submit"variant="primary"size="sm"class="w-full">Apply Filters</x-ui.button>
+ <x-ui.button type="submit" variant="primary" size="sm" class="w-full">Apply Filters</x-ui.button>
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button :href="route('pets.adopt')"variant="ghost"size="sm"class="w-full">Reset</x-ui.button>
+ <x-ui.button :href="route('pets.adopt')" variant="ghost" size="sm" class="w-full">Reset</x-ui.button>
  </div>
  </form>
  </x-ui.card>

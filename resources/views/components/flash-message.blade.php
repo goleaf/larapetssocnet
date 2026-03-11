@@ -53,21 +53,21 @@
  aria-live="polite"
  >
  <div class="flex items-start gap-3">
- <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold"style="border-color: currentColor;">
+ <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold" style="border-color: currentColor;">
  {{ $styles['icon'] }}
  </span>
 
  <div class="min-w-0 flex-1">
  @if ($title)
- <p class="text-sm font-semibold"style="{{ $styles['titleStyle'] }}">{{ $title }}</p>
+ <p class="text-sm font-semibold" style="{{ $styles['titleStyle'] }}">{{ $title }}</p>
  @endif
- <p class="text-sm leading-5"style="color: var(--ui-text);">{{ $content }}</p>
+ <p class="text-sm leading-5" style="color: var(--ui-text);">{{ $content }}</p>
  </div>
 
  @if ($dismissible)
- <button type="button"class="icon-button h-7 w-7"@click="close()"aria-label="Dismiss message">
- <svg class="h-4 w-4"viewBox="0 0 20 20"fill="none"stroke="currentColor"stroke-width="1.8">
- <path d="M5 5l10 10M15 5L5 15"stroke-linecap="round"/>
+ <button type="button" class="icon-button h-7 w-7" @click="close()" aria-label="Dismiss message">
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+ <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round"/>
  </svg>
  </button>
  @endif

@@ -49,6 +49,6 @@
  @endif
 
  <div class="h-2 w-full overflow-hidden rounded-pill bg-whisker/30">
- <div class="h-full rounded-pill {{ $colorClass }} transition-all duration-500 ease-out"style="width: {{ $percentage }}%"></div>
+ <div class="h-full rounded-pill {{ $colorClass }} transition-all duration-500 ease-out" style="width: {{ $percentage }}%"></div>
  </div>
 </div>

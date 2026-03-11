@@ -25,8 +25,8 @@
  $contentSlot = $content ?? null;
 @endphp
 
-<div class="relative"x-data="dropdownState(false)"@click.outside="close()"@keydown.escape.window="close()">
- <div class="inline-block"@click="toggle()">
+<div class="relative" x-data="dropdownState(false)" @click.outside="close()" @keydown.escape.window="close()">
+ <div class="inline-block" @click="toggle()">
  {{ $triggerSlot }}
  </div>
 

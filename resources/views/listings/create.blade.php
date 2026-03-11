@@ -50,7 +50,7 @@
  icon="📝"
  >
  <x-slot name="actions">
- <x-ui.button variant="ghost":href="$indexHref">Back to listings</x-ui.button>
+ <x-ui.button variant="ghost" :href="$indexHref">Back to listings</x-ui.button>
  </x-slot>
  </x-ui.page-header>
  </x-slot>
@@ -92,7 +92,7 @@
  }
  }"
  >
- <form method="POST"action="{{ $storeAction }}"enctype="multipart/form-data"class="space-y-5">
+ <form method="POST" action="{{ $storeAction }}" enctype="multipart/form-data" class="space-y-5">
  @csrf
 
  <x-ui.form-section
@@ -153,12 +153,12 @@
  class="rounded-xl border border-dashed p-3 text-sm"
  style="border-color: var(--ui-border-strong); background: color-mix(in srgb, var(--ui-surface-muted) 80%, var(--ui-surface) 20%);"
  >
- <p class="font-semibold"style="color: var(--ui-text);">Pricing behavior</p>
- <p class="mt-1 shell-text-muted"x-show="showPricing">Visible pricing is enabled for <span class="font-semibold"x-text="typeLabel"></span>.</p>
- <p class="mt-1 shell-text-muted"x-show="! showPricing">Pricing is hidden for this type. Buyers will see"Price on request".</p>
+ <p class="font-semibold" style="color: var(--ui-text);">Pricing behavior</p>
+ <p class="mt-1 shell-text-muted" x-show="showPricing">Visible pricing is enabled for <span class="font-semibold" x-text="typeLabel"></span>.</p>
+ <p class="mt-1 shell-text-muted" x-show="! showPricing">Pricing is hidden for this type. Buyers will see"Price on request".</p>
  </div>
 
- <div class="md:col-span-2"x-cloak x-show="showPricing">
+ <div class="md:col-span-2" x-cloak x-show="showPricing">
  <div class="grid gap-4 md:grid-cols-2">
  <x-ui.input
  name="price"
@@ -251,7 +251,7 @@
  </x-ui.form-section>
 
  <div class="flex flex-wrap items-center justify-end gap-2">
- <x-ui.button variant="ghost":href="$indexHref">Cancel</x-ui.button>
+ <x-ui.button variant="ghost" :href="$indexHref">Cancel</x-ui.button>
  <x-ui.button type="submit">Create listing</x-ui.button>
  </div>
  </form>
@@ -263,22 +263,22 @@
  icon="✨"
  >
  <article class="shell-card overflow-hidden">
- <div class="aspect-[16/10] border-b"style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
+ <div class="aspect-[16/10] border-b" style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
  <div class="flex h-full items-center justify-center text-4xl">🐾</div>
  </div>
 
  <div class="space-y-3 p-4">
  <div class="flex items-start justify-between gap-2">
- <h3 class="shell-title text-base"x-text="preview.title ||'Untitled listing'"></h3>
- <x-ui.badge tone="info"x-text="statusLabel"></x-ui.badge>
+ <h3 class="shell-title text-base" x-text="preview.title ||'Untitled listing'"></h3>
+ <x-ui.badge tone="info" x-text="statusLabel"></x-ui.badge>
  </div>
 
- <p class="shell-title text-lg"style="color: var(--ui-primary);"x-text="previewPrice"></p>
+ <p class="shell-title text-lg" style="color: var(--ui-primary);" x-text="previewPrice"></p>
 
- <p class="text-sm shell-text-muted"x-text="preview.description ||'Add a clear description to attract more responses.'"></p>
+ <p class="text-sm shell-text-muted" x-text="preview.description ||'Add a clear description to attract more responses.'"></p>
 
  <div class="flex flex-wrap gap-2 text-xs shell-text-muted">
- <span class="chip"x-text="typeLabel"></span>
+ <span class="chip" x-text="typeLabel"></span>
  <span x-text="preview.location ?`📍 ${preview.location}`:'📍 Location not provided'"></span>
  </div>
  </div>

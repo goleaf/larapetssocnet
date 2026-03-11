@@ -37,7 +37,7 @@
 @endphp
 
 <div {{ $attributes->merge(['class'=>'shell-card p-3']) }} x-data="tabsState(@js($initialTab))">
- <nav class="flex flex-wrap items-center gap-2"role="tablist"aria-label="Tabs Navigation">
+ <nav class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Tabs Navigation">
  @foreach ($normalizedTabs as $tab)
  @if ($tab['href'])
  <a
@@ -50,7 +50,7 @@
  >
  <span>{{ $tab['label'] }}</span>
  @if (! is_null($tab['count']))
- <span class="rounded-full px-2 py-0.5 text-xs"style="background: color-mix(in srgb, var(--ui-surface) 70%, transparent);">{{ $tab['count'] }}</span>
+ <span class="rounded-full px-2 py-0.5 text-xs" style="background: color-mix(in srgb, var(--ui-surface) 70%, transparent);">{{ $tab['count'] }}</span>
  @endif
  </a>
  @else
@@ -64,7 +64,7 @@
  >
  <span>{{ $tab['label'] }}</span>
  @if (! is_null($tab['count']))
- <span class="rounded-full px-2 py-0.5 text-xs"style="background: color-mix(in srgb, var(--ui-surface) 70%, transparent);">{{ $tab['count'] }}</span>
+ <span class="rounded-full px-2 py-0.5 text-xs" style="background: color-mix(in srgb, var(--ui-surface) 70%, transparent);">{{ $tab['count'] }}</span>
  @endif
  </button>
  @endif

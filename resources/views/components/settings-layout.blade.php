@@ -5,7 +5,7 @@
  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <div class="flex flex-col md:flex-row gap-8">
  <!-- Sidebar Navigation -->
- <nav class="md:w-64 flex-shrink-0"aria-label="Settings Navigation">
+ <nav class="md:w-64 flex-shrink-0" aria-label="Settings Navigation">
  <div class="space-y-2">
  <x-ui.button
  :href="route('settings.profile')"

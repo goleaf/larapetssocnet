@@ -6,11 +6,11 @@
  <div {{ $attributes->merge(['class'=>'shell-card mt-4 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between']) }}>
  <p class="text-sm shell-text-muted">
  Showing
- <span class="font-semibold"style="color: var(--ui-text);">{{ $paginator->firstItem() ?? 0 }}</span>
+ <span class="font-semibold" style="color: var(--ui-text);">{{ $paginator->firstItem() ?? 0 }}</span>
  to
- <span class="font-semibold"style="color: var(--ui-text);">{{ $paginator->lastItem() ?? 0 }}</span>
+ <span class="font-semibold" style="color: var(--ui-text);">{{ $paginator->lastItem() ?? 0 }}</span>
  of
- <span class="font-semibold"style="color: var(--ui-text);">{{ $paginator->total() }}</span>
+ <span class="font-semibold" style="color: var(--ui-text);">{{ $paginator->total() }}</span>
  results
  </p>
 

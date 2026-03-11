@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
  <meta charset="utf-8">
- <meta name="viewport"content="width=device-width, initial-scale=1">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
  <title>Account Restricted</title>
  @vite(['resources/css/app.css'])
 </head>
@@ -14,7 +14,7 @@
  This account is currently restricted. If this seems incorrect, please contact support.
  </p>
  <div class="mt-6">
- <a href="{{ route('login') }}"class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+ <a href="{{ route('login') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
  Back to Login
  </a>
  </div>

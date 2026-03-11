@@ -25,10 +25,10 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header title="Events"subtitle="Find and join upcoming pet community events.">
+ <x-ui.page-header title="Events" subtitle="Find and join upcoming pet community events.">
  <x-slot name="action">
  @auth
- <x-ui.button :href="route('events.create')"variant="primary"size="sm">Create Event</x-ui.button>
+ <x-ui.button :href="route('events.create')" variant="primary" size="sm">Create Event</x-ui.button>
  @endauth
  </x-slot>
  </x-ui.page-header>
@@ -36,28 +36,28 @@
 
  <div class="space-y-5">
  @if (session('status'))
- <x-flash-message type="success":message="session('status')"/>
+ <x-flash-message type="success" :message="session('status')"/>
  @endif
 
  <x-ui.card>
- <form method="GET"action="{{ route('events.index') }}"class="grid gap-3 md:grid-cols-12">
- <x-ui.input class="md:col-span-5"name="q"label="Search":value="$search"
+ <form method="GET" action="{{ route('events.index') }}" class="grid gap-3 md:grid-cols-12">
+ <x-ui.input class="md:col-span-5" name="q" label="Search" :value="$search"
  placeholder="Search events"/>
 
- <x-ui.select class="md:col-span-3"name="scope"label="Scope":options="$scopeOptions"
+ <x-ui.select class="md:col-span-3" name="scope" label="Scope" :options="$scopeOptions"
  :selected="$scope"/>
 
- <x-ui.select class="md:col-span-4"name="group_id"label="Group":options="$groupOptionsForSelect"
+ <x-ui.select class="md:col-span-4" name="group_id" label="Group" :options="$groupOptionsForSelect"
  :selected="(string) $groupId"/>
 
  <div class="md:col-span-8"></div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button type="submit"variant="primary"size="sm"class="w-full">Apply Filters</x-ui.button>
+ <x-ui.button type="submit" variant="primary" size="sm" class="w-full">Apply Filters</x-ui.button>
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button :href="route('events.index')"variant="ghost"size="sm"
+ <x-ui.button :href="route('events.index')" variant="ghost" size="sm"
  class="w-full">Reset</x-ui.button>
  </div>
  </form>
@@ -65,7 +65,7 @@
 
  @if ($events->isEmpty())
  <x-ui.card>
- <x-ui.empty-state icon="📅"title="No Events Found"
+ <x-ui.empty-state icon="📅" title="No Events Found"
  description="Try changing your filters or create a new event."/>
  </x-ui.card>
  @else
@@ -85,9 +85,9 @@
  <x-ui.card>
  <div class="flex items-start justify-between gap-3">
  <h3 class="text-base font-semibold font-display text-bark">
- <a href="{{ route('events.show', $event->id) }}"class="hover:underline">{{ $event->title }}</a>
+ <a href="{{ route('events.show', $event->id) }}" class="hover:underline">{{ $event->title }}</a>
  </h3>
- <x-ui.badge variant="outline"size="sm">{{ $status }}</x-ui.badge>
+ <x-ui.badge variant="outline" size="sm">{{ $status }}</x-ui.badge>
  </div>
 
  <div class="mt-3 space-y-1 text-xs text-fur">
@@ -113,7 +113,7 @@
  </div>
 
  <div class="mt-4">
- <x-ui.button :href="route('events.show', $event->id)"variant="primary"size="sm"
+ <x-ui.button :href="route('events.show', $event->id)" variant="primary" size="sm"
  class="w-full">View Event</x-ui.button>
  </div>
  </x-ui.card>

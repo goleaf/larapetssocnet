@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -254,15 +255,9 @@ class Post extends Model implements HasMedia
             return;
         }
 
-        $blockedIds = $viewer->blocking()
-            ->pluck('users.id')
-            ->merge($viewer->blockedBy()->pluck('users.id'))
-            ->unique()
-            ->values();
-
-        if ($blockedIds->isNotEmpty()) {
-            $query->whereNotIn('user_id', $blockedIds);
-        }
+        $query
+            ->whereNotIn('posts.user_id', $viewer->blocking()->select('users.id'))
+            ->whereNotIn('posts.user_id', $viewer->blockedBy()->select('users.id'));
     }
 
     public function scopeByType(Builder $query, string $type)
@@ -535,9 +530,11 @@ class Post extends Model implements HasMedia
             ->withQueryString();
     }
 
-    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15): LengthAwarePaginator
+    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15): CursorPaginator
     {
-        $hasFollowing = $viewer->acceptedFollowing()->exists();
+        $hasFollowing = $viewer->relationLoaded('acceptedFollowing')
+            ? $viewer->acceptedFollowing->isNotEmpty()
+            : $viewer->acceptedFollowing()->exists();
 
         return self::query()
             ->when(
@@ -546,23 +543,23 @@ class Post extends Model implements HasMedia
                 fn (Builder $query) => $query->visibleTo($viewer)
             )
             ->with([
-                'user',
                 'author',
-                'author.media',
                 'pet',
-                'pet.media',
                 'media',
-                'postMedia',
-                'likes',
-                'comments.user',
+                'hashtags',
             ])
             ->withCount([
                 'comments',
                 'likes',
             ])
+            ->withExists([
+                'likes as liked_by_viewer' => fn (Builder $query) => $query
+                    ->where('likes.user_id', $viewer->getKey()),
+            ])
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
-            ->orderByDesc('posts.created_at')
-            ->paginate($perPage)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->cursorPaginate($perPage)
             ->withQueryString();
     }
 
@@ -601,23 +598,16 @@ class Post extends Model implements HasMedia
 
     public function scopeForFeed(Builder $query, User $user): Builder
     {
-        $followingIds = $user->acceptedFollowing()
-            ->pluck('users.id')
-            ->unique()
-            ->values();
+        $followingIdsQuery = $user->acceptedFollowing()->select('users.id');
 
         return $query
-            ->where(function (Builder $feedQuery) use ($user, $followingIds): void {
+            ->where(function (Builder $feedQuery) use ($user, $followingIdsQuery): void {
                 $feedQuery
-                    ->where('user_id', $user->getKey())
-                    ->orWhere(function (Builder $followingQuery) use ($followingIds): void {
+                    ->where('posts.user_id', $user->getKey())
+                    ->orWhere(function (Builder $followingQuery) use ($followingIdsQuery): void {
                         $followingQuery
-                            ->when(
-                                $followingIds->isNotEmpty(),
-                                fn (Builder $scopedQuery) => $scopedQuery->whereIn('user_id', $followingIds),
-                                fn (Builder $scopedQuery) => $scopedQuery->whereIn('user_id', [0])
-                            )
-                            ->whereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
+                            ->whereIn('posts.user_id', $followingIdsQuery)
+                            ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
                     });
             })
             ->whereHas('author', function (Builder $authorQuery): void {

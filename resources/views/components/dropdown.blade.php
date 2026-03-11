@@ -20,7 +20,7 @@
  };
 @endphp
 
-<div class="relative"x-data="dropdownState()"@click.outside="close()"@keydown.escape.window="close()">
+<div class="relative" x-data="dropdownState()" @click.outside="close()" @keydown.escape.window="close()">
  <div @click="toggle()">
  {{ $trigger }}
  </div>
@@ -37,7 +37,7 @@
  class="absolute z-50 mt-2 {{ $widthClass }} {{ $alignmentClasses }}"
  style="display: none;"
  >
- <div class="shell-card overflow-hidden p-1 {{ $contentClasses }}"@click="close()">
+ <div class="shell-card overflow-hidden p-1 {{ $contentClasses }}" @click="close()">
  {{ $content }}
  </div>
  </div>

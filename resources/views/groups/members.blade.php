@@ -27,10 +27,10 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header :title="$group->name"subtitle="Group Members">
+ <x-ui.page-header :title="$group->name" subtitle="Group Members">
  <x-slot:action>
  <x-ui.button href="{{ route('groups.show', ['group'=> $groupRouteKey,'tab'=>'feed']) }}"
- variant="ghost"size="sm">Back to Group</x-ui.button>
+ variant="ghost" size="sm">Back to Group</x-ui.button>
  </x-slot:action>
  </x-ui.page-header>
  </x-slot>
@@ -45,7 +45,7 @@
  $navTabs[] = ['label'=>'Requests','value'=>'requests','href'=> $requestsUrl];
  }
  @endphp
- <x-ui.tabs :tabs="$navTabs"active="members"/>
+ <x-ui.tabs :tabs="$navTabs" active="members"/>
  </div>
 
  <x-ui.card padding="lg">
@@ -55,14 +55,14 @@
  $roleValue = strtolower((string) ($member->role ??'member'));
  @endphp
 
- <x-ui.user-row :user="$member->user":role="$roleValue"
+ <x-ui.user-row :user="$member->user" :role="$roleValue"
  class="border border-whisker/30 rounded-xl px-4 bg-warm-white">
  <x-slot:action>
  @if ($canManage && $roleValue !=='owner')
- <div x-data="dropdownState()"class="relative">
- <x-ui.button variant="ghost"size="sm"@click="toggle()">Manage ▾</x-ui.button>
+ <div x-data="dropdownState()" class="relative">
+ <x-ui.button variant="ghost" size="sm" @click="toggle()">Manage ▾</x-ui.button>
 
- <div x-show="open"x-cloak @click.outside="close()"
+ <div x-show="open" x-cloak @click.outside="close()"
  class="absolute right-0 mt-1 min-w-[200px] bg-warm-white border border-whisker/30 shadow-card-hover rounded-lg z-30 p-2 space-y-2">
  <form method="POST"
  action="{{ route('groups.members.role', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}"
@@ -71,11 +71,11 @@
  @method('PATCH')
  <select name="role"
  class="block w-full rounded-md border-whisker/50 py-1.5 pl-3 pr-8 text-sm text-bark focus:border-paw focus:ring-paw bg-cream">
- <option value="member"@selected($roleValue ==='member')>Member</option>
- <option value="moderator"@selected($roleValue ==='moderator')>Moderator</option>
- <option value="admin"@selected($roleValue ==='admin')>Admin</option>
+ <option value="member" @selected($roleValue ==='member')>Member</option>
+ <option value="moderator" @selected($roleValue ==='moderator')>Moderator</option>
+ <option value="admin" @selected($roleValue ==='admin')>Admin</option>
  </select>
- <x-ui.icon-button type="submit"variant="ghost"size="sm"
+ <x-ui.icon-button type="submit" variant="ghost" size="sm"
  title="Save">✓</x-ui.icon-button>
  </form>
  <x-ui.divider class="!my-2"/>
@@ -83,7 +83,7 @@
  action="{{ route('groups.members.ban', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}">
  @csrf
  @method('PATCH')
- <x-ui.button type="submit"variant="danger":full="true"size="sm">Ban
+ <x-ui.button type="submit" variant="danger" :full="true" size="sm">Ban
  Member</x-ui.button>
  </form>
  </div>
@@ -92,7 +92,7 @@
  </x-slot:action>
  </x-ui.user-row>
  @empty
- <x-ui.empty-state title="No Members"description="There are no active members yet."icon="👥"/>
+ <x-ui.empty-state title="No Members" description="There are no active members yet." icon="👥"/>
  @endforelse
  </div>
 

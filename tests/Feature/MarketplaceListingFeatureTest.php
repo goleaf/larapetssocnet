@@ -1,7 +1,9 @@
 <?php
 
-test('example', function () {
+uses(Tests\TestCase::class);
+
+it('loads the homepage', function (): void {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(route('explore.index'));
 });

@@ -50,7 +50,7 @@
 
  <div class="flex items-center gap-3">
  @if($isOwner)
- <a href="{{ route('pets.edit', $petSlug) }}"class="text-sm text-indigo-600 hover:text-indigo-800">Edit
+ <a href="{{ route('pets.edit', $petSlug) }}" class="text-sm text-indigo-600 hover:text-indigo-800">Edit
  profile</a>
  <a href="{{ route('pets.health.index', $petSlug) }}"
  class="text-sm text-indigo-600 hover:text-indigo-800">Health logs</a>
@@ -97,7 +97,7 @@
  @auth
  @if(!$isOwner)
  <div class="text-right space-y-2">
- <button id="follow-toggle"type="button"
+ <button id="follow-toggle" type="button"
  class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
  data-follow-url="{{ route('pets.follow', $petSlug) }}"
  data-unfollow-url="{{ route('pets.unfollow', $petSlug) }}"
@@ -139,7 +139,7 @@
  @if($posts->isNotEmpty())
  <div class="space-y-4">
  @foreach($posts as $post)
- <x-post-card :post="$post":myReactions="$myReactions ?? collect()":mySaved="$mySaved ?? collect()"context="profile"/>
+ <x-post-card :post="$post" :myReactions="$myReactions ?? collect()" :mySaved="$mySaved ?? collect()" context="profile"/>
  @endforeach
  </div>
  @else
@@ -155,7 +155,7 @@
  @endphp
  <div class="rounded-lg border border-gray-200 overflow-hidden">
  @if($url)
- <img src="{{ $url }}"alt="{{ $label }}"class="h-48 w-full object-cover">
+ <img src="{{ $url }}" alt="{{ $label }}" class="h-48 w-full object-cover">
  @else
  <div class="h-48 w-full bg-gray-100"></div>
  @endif
@@ -178,7 +178,7 @@
  <p class="mt-1 text-xs text-gray-500">Last 30 weight entries.</p>
 
  @if(!empty($weightChartSvg))
- <div class="mt-3"aria-label="Weight history chart">
+ <div class="mt-3" aria-label="Weight history chart">
  {!! $weightChartSvg !!}
  </div>
  @else

@@ -5,7 +5,7 @@
  aria-live="polite"
  aria-atomic="true"
 >
- <template x-for="item in (($store.toast && $store.toast.items) ? $store.toast.items : [])":key="item.id">
+ <template x-for="item in (($store.toast && $store.toast.items) ? $store.toast.items : [])" :key="item.id">
  <div
  class="pointer-events-auto flex w-full overflow-hidden rounded-lg border bg-warm-white shadow-card-hover"
  :class="{
@@ -34,31 +34,31 @@
  <div class="flex w-full items-start gap-3 px-3 py-3">
  <div class="mt-0.5 shrink-0">
  <template x-if="item.type ==='success'">
- <svg class="h-5 w-5 text-leaf"xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+ <svg class="h-5 w-5 text-leaf" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
  </svg>
  </template>
 
  <template x-if="item.type ==='error'">
- <svg class="h-5 w-5 text-rose"xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+ <svg class="h-5 w-5 text-rose" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
  </svg>
  </template>
 
  <template x-if="item.type ==='warning'">
- <svg class="h-5 w-5 text-amber"xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+ <svg class="h-5 w-5 text-amber" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
  </svg>
  </template>
 
  <template x-if="item.type ==='info'">
- <svg class="h-5 w-5 text-sky"xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+ <svg class="h-5 w-5 text-sky" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
  </svg>
  </template>
  </div>
 
- <div class="flex-1 pr-2 text-sm font-medium text-bark"x-text="item.message"></div>
+ <div class="flex-1 pr-2 text-sm font-medium text-bark" x-text="item.message"></div>
 
  <button
  type="button"
@@ -66,7 +66,7 @@
  @click="if ($store.toast) { $store.toast.remove(item.id) }"
  >
  <span class="sr-only">Dismiss</span>
- <svg class="h-4 w-4"xmlns="http://www.w3.org/2000/svg"viewBox="0 0 20 20"fill="currentColor">
+ <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"/>
  </svg>
  </button>

@@ -101,7 +101,7 @@
  x-init="if ($store.confirm) { $watch('$store.confirm.open', value => { if (value) { globalMode = true; syncFromStore(); show(); } else if (globalMode && open) { hide(); } }); }"
 >
  @if($trigger && $triggerSlot)
- <div class="inline-block"@click="show()">
+ <div class="inline-block" @click="show()">
  {{ $triggerSlot }}
  </div>
  @endif
@@ -129,7 +129,7 @@
  aria-hidden="true"
  ></div>
 
- <span class="hidden sm:inline-block sm:h-screen sm:align-middle"aria-hidden="true">&#8203;</span>
+ <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
 
  <div
  x-show="open"
@@ -144,16 +144,16 @@
  >
  <div class="px-6 pb-6 pt-8 text-center sm:text-left">
  <div class="sm:flex sm:items-start">
- <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-pill sm:mx-0 sm:h-10 sm:w-10":class="iconClasses()">
- <svg class="h-6 w-6"xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor"aria-hidden="true">
- <path stroke-linecap="round"stroke-linejoin="round"d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+ <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-pill sm:mx-0 sm:h-10 sm:w-10" :class="iconClasses()">
+ <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
  </svg>
  </div>
 
  <div class="mt-4 sm:ml-4 sm:mt-0">
- <h3 class="text-lg font-semibold font-display text-bark"id="confirm-modal-title-{{ $modalId }}"x-text="title"></h3>
+ <h3 class="text-lg font-semibold font-display text-bark" id="confirm-modal-title-{{ $modalId }}" x-text="title"></h3>
  <div class="mt-2">
- <p class="text-sm text-fur"x-text="message"></p>
+ <p class="text-sm text-fur" x-text="message"></p>
  </div>
  </div>
  </div>

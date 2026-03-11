@@ -52,7 +52,7 @@
 @endphp
 
 <div {{ $attributes->merge(['class'=>'mb-6 w-full border-b border-whisker/40']) }}>
- <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar"aria-label="Tabs">
+ <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
  @foreach($normalizedTabs as $tab)
  <a
  href="{{ $tab['href'] }}"
@@ -64,7 +64,7 @@
  {{ $tab['label'] }}
 
  @if($tab['count'] !== null)
- <x-ui.badge :variant="$tab['active'] ?'primary':'default'"size="sm"pill class="ml-1.5">
+ <x-ui.badge :variant="$tab['active'] ?'primary':'default'" size="sm" pill class="ml-1.5">
  {{ $tab['count'] }}
  </x-ui.badge>
  @endif

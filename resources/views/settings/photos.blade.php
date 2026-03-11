@@ -16,16 +16,16 @@
  @csrf
  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
  <div class="sm:col-span-1">
- <x-input-label for="title"value="Title"/>
- <x-text-input id="title"name="title"type="text"class="mt-1 block w-full"
- :value="old('title')"required />
- <x-input-error class="mt-2":messages="$errors->get('title')"/>
+ <x-input-label for="title" value="Title"/>
+ <x-text-input id="title" name="title" type="text" class="mt-1 block w-full"
+ :value="old('title')" required />
+ <x-input-error class="mt-2" :messages="$errors->get('title')"/>
  </div>
  <div class="sm:col-span-1">
- <x-input-label for="description"value="Description (optional)"/>
- <textarea id="description"name="description"rows="2"
+ <x-input-label for="description" value="Description (optional)"/>
+ <textarea id="description" name="description" rows="2"
  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ old('description') }}</textarea>
- <x-input-error class="mt-2":messages="$errors->get('description')"/>
+ <x-input-error class="mt-2" :messages="$errors->get('description')"/>
  </div>
  </div>
  <div class="flex justify-end border-t border-gray-200 pt-4">
@@ -49,7 +49,7 @@
  @endphp
  <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
  @if ($coverUrl !=='')
- <img src="{{ $coverUrl }}"alt="{{ $gallery->title }} cover"
+ <img src="{{ $coverUrl }}" alt="{{ $gallery->title }} cover"
  class="h-32 w-full object-cover">
  @else
  <div class="flex h-32 w-full items-center justify-center bg-gray-50 text-3xl">

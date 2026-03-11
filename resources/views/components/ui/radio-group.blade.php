@@ -64,7 +64,7 @@
  <legend class="text-sm font-medium text-bark">
  {{ $label }}
  @if ($required)
- <span class="ml-0.5 text-rose"aria-hidden="true">*</span>
+ <span class="ml-0.5 text-rose" aria-hidden="true">*</span>
  <span class="sr-only">required</span>
  @endif
  </legend>
@@ -123,6 +123,6 @@
  </div>
 
  @if ($hasError || $resolvedHint)
- <x-ui.hint :id="$hintId":error="$resolvedError":message="$resolvedHint"/>
+ <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$resolvedHint"/>
  @endif
 </fieldset>

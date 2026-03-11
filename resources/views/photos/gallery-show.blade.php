@@ -37,7 +37,7 @@
 
  <x-ui.card>
  @if ($gallery->media->isEmpty())
- <x-ui.empty-state icon="📷"title="No photos in this gallery yet"
+ <x-ui.empty-state icon="📷" title="No photos in this gallery yet"
  description="When photos are added to this gallery, they will appear here."/>
  @else
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

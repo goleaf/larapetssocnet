@@ -40,28 +40,28 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header title="Community Feed":subtitle="$activeFeedThemeLabel"icon="📰">
+ <x-ui.page-header title="Community Feed" :subtitle="$activeFeedThemeLabel" icon="📰">
  <x-slot:action>
  <div class="flex flex-wrap items-center gap-2">
- <x-ui.button href="{{ route('saved.index') }}"variant="ghost"size="sm">Saved</x-ui.button>
- <x-ui.button href="{{ route('explore.index') }}"variant="ghost"size="sm">Explore</x-ui.button>
+ <x-ui.button href="{{ route('saved.index') }}" variant="ghost" size="sm">Saved</x-ui.button>
+ <x-ui.button href="{{ route('explore.index') }}" variant="ghost" size="sm">Explore</x-ui.button>
  </div>
  </x-slot:action>
  </x-ui.page-header>
  </x-slot>
 
- <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]"data-feed-theme="{{ $activeFeedTheme }}">
+ <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]" data-feed-theme="{{ $activeFeedTheme }}">
  <div class="space-y-4">
  <x-ui.card padding="lg">
  <div class="mb-4 flex items-center gap-3 border-b border-whisker/30 pb-4">
- <x-avatar :src="auth()->user()?->avatar_url":name="auth()->user()?->name"size="md"/>
+ <x-avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="md"/>
  <p class="text-sm font-semibold text-bark">Create a post</p>
  </div>
 
- <form action="{{ route('posts.store') }}"method="POST"enctype="multipart/form-data"class="space-y-4">
+ <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
  @csrf
  <div>
- <x-ui.textarea id="feed-post-body"name="body"rows="3"
+ <x-ui.textarea id="feed-post-body" name="body" rows="3"
  placeholder="Share an update about your pet..."
  class="!border-0 !bg-transparent !p-0 !shadow-none focus:!ring-0 text-lg placeholder:text-fur">{{ old('body') }}</x-ui.textarea>
  @error('body')
@@ -73,7 +73,7 @@
  <div>
  <x-ui.label for="feed-post-pet-id"
  class="!mb-1 text-xs uppercase tracking-wide">Pet</x-ui.label>
- <x-ui.select id="feed-post-pet-id"name="pet_id":options="collect([''=>'No pet tag'])->merge(auth()->user()->pets->pluck('name','id'))->all()":value="old('pet_id')"/>
+ <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect([''=>'No pet tag'])->merge(auth()->user()->pets->pluck('name','id'))->all()" :value="old('pet_id')"/>
  @error('pet_id')
  <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
  @enderror
@@ -82,7 +82,7 @@
  <div>
  <x-ui.label for="feed-post-photos"
  class="!mb-1 text-xs uppercase tracking-wide">Media</x-ui.label>
- <input id="feed-post-photos"type="file"name="media[]"multiple
+ <input id="feed-post-photos" type="file" name="media[]" multiple
  accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
  class="block w-full text-sm text-fur file:mr-4 file:rounded-full file:border-0 file:bg-paw/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paw hover:file:bg-paw/20 cursor-pointer">
  @error('media')
@@ -95,26 +95,26 @@
  </div>
 
  <div class="flex items-center justify-end pt-4 mt-4 border-t border-whisker/30">
- <x-ui.button type="submit"variant="primary">Post</x-ui.button>
+ <x-ui.button type="submit" variant="primary">Post</x-ui.button>
  </div>
  </form>
  </x-ui.card>
 
- <x-ui.card padding="base"class="bg-warm-white bg-opacity-50">
+ <x-ui.card padding="base" class="bg-warm-white bg-opacity-50">
  <p class="text-xs text-fur flex items-center gap-2">
  <span class="text-base">ℹ️</span> Feed note: private group posts only appear once you are an
  approved member of that group.
  </p>
  </x-ui.card>
 
- <div role="feed"aria-label="Pet feed"class="space-y-4">
+ <div role="feed" aria-label="Pet feed" class="space-y-4">
  @forelse ($posts as $post)
  @include('partials.post-card', ['post'=> $post,'viewer'=> $user])
  @empty
  <x-ui.empty-state title="Follow some pet owners to see their posts here! 🐾"
  description="Your feed is lonely right now.">
  <x-slot:action>
- <x-ui.button href="{{ route('explore.index', ['tab'=>'users']) }}"variant="secondary">Explore
+ <x-ui.button href="{{ route('explore.index', ['tab'=>'users']) }}" variant="secondary">Explore
  pet owners</x-ui.button>
  </x-slot:action>
  </x-ui.empty-state>
@@ -123,7 +123,7 @@
 
  @if ($posts->hasPages())
  <x-ui.card padding="base">
- {{ $posts->onEachSide(1)->links() }}
+ {{ $posts->links() }}
  </x-ui.card>
  @endif
  </div>
@@ -159,7 +159,7 @@
  </div>
 
  @auth
- <x-ui.button href="{{ route('groups.create') }}"variant="primary"
+ <x-ui.button href="{{ route('groups.create') }}" variant="primary"
  class="mt-4 w-full justify-center">Create a Group</x-ui.button>
  @endauth
  </x-ui.card>

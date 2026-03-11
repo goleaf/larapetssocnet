@@ -69,13 +69,13 @@
 
  @if($trendPath)
  <div class="mt-4 rounded-md bg-slate-50 p-4">
- <svg viewBox="0 0 100 100"class="h-48 w-full"role="img"aria-label="Weight trend">
- <line x1="0"y1="100"x2="100"y2="100"stroke="#CBD5E1"stroke-width="1"/>
- <line x1="0"y1="0"x2="0"y2="100"stroke="#CBD5E1"stroke-width="1"/>
- <path d="{{ $trendPath }}"fill="none"stroke="#4F46E5"stroke-width="2"
+ <svg viewBox="0 0 100 100" class="h-48 w-full" role="img" aria-label="Weight trend">
+ <line x1="0" y1="100" x2="100" y2="100" stroke="#CBD5E1" stroke-width="1"/>
+ <line x1="0" y1="0" x2="0" y2="100" stroke="#CBD5E1" stroke-width="1"/>
+ <path d="{{ $trendPath }}" fill="none" stroke="#4F46E5" stroke-width="2"
  vector-effect="non-scaling-stroke"/>
  @foreach($trendPoints as $point)
- <circle cx="{{ $point['x'] }}"cy="{{ $point['y'] }}"r="1.4"fill="#4F46E5"/>
+ <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="1.4" fill="#4F46E5"/>
  @endforeach
  </svg>
  </div>

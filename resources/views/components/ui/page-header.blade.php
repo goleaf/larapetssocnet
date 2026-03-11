@@ -14,7 +14,7 @@
 
 <div {{ $attributes->merge(['class'=>'shell-panel p-4 sm:p-5']) }}>
  @if ($breadcrumbItems !== [])
- <x-ui.breadcrumbs :items="$breadcrumbItems"class="mb-3"/>
+ <x-ui.breadcrumbs :items="$breadcrumbItems" class="mb-3"/>
  @endif
 
  <div class="flex flex-wrap items-start justify-between gap-4">
@@ -24,7 +24,7 @@
  @endif
 
  <div class="mt-1 flex items-start gap-3">
- <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl"style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">
+ <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">
  {{ $icon }}
  </span>
 
