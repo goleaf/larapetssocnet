@@ -5,7 +5,9 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'views:fix-tags', description: 'Fix malformed Blade attribute spacing and optionally remove dark: utility classes.')]
 class FixTagsCommand extends Command
 {
     protected $signature = 'views:fix-tags

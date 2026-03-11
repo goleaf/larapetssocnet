@@ -95,7 +95,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         ->whereUuid('notification')
         ->name('notifications.read');
 
-    Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
+    Route::livewire('/posts/create', 'pages::post.create')->name('posts.create');
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
