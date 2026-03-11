@@ -1,4 +1,4 @@
-@props(['messages'])
+@props(['messages' => []])
 
 @if ($messages)
  <ul {{ $attributes->merge(['class'=>'space-y-1 text-sm font-medium']) }} style="color: var(--ui-danger);">
