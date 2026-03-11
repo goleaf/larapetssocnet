@@ -37,6 +37,7 @@ class UserFactory extends Factory
 
         return [
             'name' => fake()->name(),
+            'display_name' => fake()->optional(0.4)->name(),
             'username' => $username,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
@@ -44,6 +45,8 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'bio' => fake()->optional()->sentence(),
             'bio_html' => fake()->optional(0.4)->paragraph(),
+            'headline' => fake()->optional(0.4)->sentence(6),
+            'pronouns' => fake()->optional(0.3)->randomElement(['she/her', 'he/him', 'they/them', 'she/they', 'he/they']),
             'avatar_path' => fake()->optional(0.35)->imageUrl(640, 640, 'pets', true),
             'cover_photo_path' => fake()->optional(0.15)->imageUrl(1280, 720, 'pets', true),
             'profile_photo_path' => fake()->optional(0.2)->imageUrl(640, 640, 'pets', true),
@@ -53,6 +56,14 @@ class UserFactory extends Factory
             'location_lat' => fake()->optional(0.75)->latitude(),
             'location_lng' => fake()->optional(0.75)->longitude(),
             'website' => fake()->optional(0.4)->url(),
+            'social_links' => fake()->optional(0.2)->randomElement([
+                ['twitter' => 'https://x.com/'.fake()->userName()],
+                ['instagram' => 'https://instagram.com/'.fake()->userName()],
+                ['website' => 'https://'.fake()->domainName()],
+            ]),
+            'profile_theme' => fake()->optional(0.2)->randomElement(['sunset', 'meadow', 'ocean', 'midnight']),
+            'locale' => fake()->optional(0.5)->randomElement(['en', 'en_US', 'en_GB', 'lt_LT']),
+            'timezone' => fake()->optional(0.5)->timezone(),
             'gender' => fake()->optional(0.7)->randomElement(['male', 'female', 'non_binary', 'prefer_not_to_say']),
             'gender_custom' => fake()->optional(0.05)->word(),
             'birthdate' => $birthdate,

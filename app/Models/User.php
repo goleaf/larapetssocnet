@@ -62,6 +62,7 @@ class User extends Authenticatable implements HasMedia
      */
     protected $fillable = [
         'name',
+        'display_name',
         'username',
         'username_changed_at',
         'email',
@@ -69,11 +70,17 @@ class User extends Authenticatable implements HasMedia
         'password_changed_at',
         'bio',
         'bio_html',
+        'headline',
+        'pronouns',
         'location',
         'website',
         'birth_date',
         'city',
         'country_code',
+        'locale',
+        'timezone',
+        'profile_theme',
+        'social_links',
         'interests_text',
         'profile_visibility',
         'messaging_permission',
@@ -137,6 +144,7 @@ class User extends Authenticatable implements HasMedia
             'show_in_explore' => 'boolean',
             'open_following' => 'boolean',
             'notification_preferences' => 'array',
+            'social_links' => 'array',
             'is_private' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'last_seen_at' => 'datetime',
@@ -435,6 +443,11 @@ class User extends Authenticatable implements HasMedia
     public function usernameRedirects(): HasMany
     {
         return $this->hasMany(UsernameRedirect::class);
+    }
+
+    public function usernameChanges(): HasMany
+    {
+        return $this->hasMany(UsernameChange::class);
     }
 
     public function sentMessages(): HasMany
