@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -314,6 +317,132 @@ class Post extends Model implements HasMedia
                 ->orWhereHas('hashtags', fn (Builder $hashtagQuery) => $hashtagQuery->where('name', 'like', "%{$clean}%"))
                 ->orWhere('location', 'like', "%{$clean}%");
         });
+    }
+
+    public function scopeSearchResultColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'posts.id',
+            'posts.user_id',
+            'posts.body',
+            'posts.location',
+            'posts.status',
+            'posts.visibility',
+            'posts.created_at',
+            'posts.is_pinned',
+        ]);
+    }
+
+    public static function paginateSearchResults(?User $viewer, string $term, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->searchResultColumns()
+            ->published()
+            ->visibleTo($viewer)
+            ->search($term)
+            ->latest('posts.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function scopeProfileTimelineColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'posts.id',
+            'posts.user_id',
+            'posts.body',
+            'posts.body_html',
+            'posts.status',
+            'posts.visibility',
+            'posts.location',
+            'posts.is_pinned',
+            'posts.likes_count',
+            'posts.comments_count',
+            'posts.shares_count',
+            'posts.created_at',
+        ]);
+    }
+
+    public function scopeForProfile(Builder $query, User $user): Builder
+    {
+        return $query->where('posts.user_id', $user->getKey());
+    }
+
+    public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 10): LengthAwarePaginator
+    {
+        return self::query()
+            ->profileTimelineColumns()
+            ->forProfile($profileOwner)
+            ->with(['user', 'hashtags'])
+            ->published()
+            ->visibleTo($viewer)
+            ->where('posts.visibility', '!=', self::VISIBILITY_PRIVATE)
+            ->orderByDesc('posts.is_pinned')
+            ->latest('posts.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function recentPrivateForProfileOwner(User $profileOwner, int $limit = 10): Collection
+    {
+        return self::query()
+            ->profileTimelineColumns()
+            ->forProfile($profileOwner)
+            ->where('posts.visibility', self::VISIBILITY_PRIVATE)
+            ->with(['user', 'hashtags'])
+            ->latest('posts.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public static function privateCountForProfile(User $profileOwner): int
+    {
+        return (int) self::query()
+            ->forProfile($profileOwner)
+            ->where('posts.visibility', self::VISIBILITY_PRIVATE)
+            ->count();
+    }
+
+    /**
+     * @return list<array{month: string, count: int}>
+     */
+    public static function monthlyActivitySummaryForUser(User $user, int $months = 6): array
+    {
+        $safeMonths = max(1, $months);
+        $startMonth = CarbonImmutable::now()->startOfMonth()->subMonths($safeMonths - 1);
+        $countsByMonth = [];
+
+        self::query()
+            ->select(['posts.id', 'posts.created_at'])
+            ->where('posts.user_id', $user->getKey())
+            ->where('posts.created_at', '>=', $startMonth)
+            ->orderBy('posts.created_at')
+            ->cursor()
+            ->each(function (self $post) use (&$countsByMonth): void {
+                if (! $post->created_at) {
+                    return;
+                }
+
+                $monthKey = $post->created_at->format('Y-m');
+                $countsByMonth[$monthKey] = ($countsByMonth[$monthKey] ?? 0) + 1;
+            });
+
+        $summary = [];
+
+        for ($index = 0; $index < $safeMonths; $index++) {
+            $month = $startMonth->addMonths($index);
+            $monthKey = $month->format('Y-m');
+
+            $summary[] = [
+                'month' => $month->format('M'),
+                'count' => (int) ($countsByMonth[$monthKey] ?? 0),
+            ];
+        }
+
+        return $summary;
     }
 
     public function scopePinned(Builder $query)

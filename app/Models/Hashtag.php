@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -30,20 +32,41 @@ class Hashtag extends Model
 
     // Relationships
 
-    public function posts()
+    public function posts(): BelongsToMany
     {
         return $this->belongsToMany(Post::class, 'post_hashtag');
     }
 
     // Scopes
 
-    public function scopeTrending(Builder $query, int $limit = 20)
+    public function scopeTrending(Builder $query, int $limit = 20): void
     {
         $query->orderByDesc('posts_count')->limit($limit);
     }
 
-    public function scopeSearch(Builder $query, string $term)
+    public function scopeSearch(Builder $query, string $term): void
     {
         $query->where('name', 'like', "%{$term}%");
+    }
+
+    public function scopeSearchResultColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'hashtags.id',
+            'hashtags.name',
+            'hashtags.slug',
+            'hashtags.posts_count',
+            'hashtags.created_at',
+        ]);
+    }
+
+    public static function paginateSearchResults(string $term, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->searchResultColumns()
+            ->when($term !== '', fn (Builder $query) => $query->search($term))
+            ->latest('hashtags.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 }

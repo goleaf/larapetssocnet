@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasCounterCache;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -169,6 +170,46 @@ class Group extends Model implements HasMedia
                 $speciesQuery->orWhere('species', $value);
             }
         });
+    }
+
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        if (! $term) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $subQuery) use ($term): void {
+            $subQuery
+                ->where('name', 'like', "%{$term}%")
+                ->orWhere('slug', 'like', "%{$term}%")
+                ->orWhere('description', 'like', "%{$term}%");
+        });
+    }
+
+    public function scopeSearchResultColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'groups.id',
+            'groups.owner_id',
+            'groups.owner_user_id',
+            'groups.name',
+            'groups.slug',
+            'groups.description',
+            'groups.type',
+            'groups.privacy',
+            'groups.created_at',
+        ]);
+    }
+
+    public static function paginateSearchResults(?User $viewer, string $term, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->searchResultColumns()
+            ->visible($viewer)
+            ->search($term !== '' ? $term : null)
+            ->latest('groups.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function getRouteKeyName(): string
