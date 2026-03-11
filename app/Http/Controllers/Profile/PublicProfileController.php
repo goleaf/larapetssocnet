@@ -11,7 +11,6 @@ use App\Models\User;
 use App\Services\VisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PublicProfileController extends Controller
@@ -97,36 +96,18 @@ class PublicProfileController extends Controller
             : collect();
 
         $posts = $tab === 'posts' && $canViewContent
-            ? Post::query()
-                ->where('user_id', $user->id)
-                ->with(['user', 'hashtags'])
-                ->published()
-                ->visibleTo($viewer)
-                ->where('visibility', '!=', Post::VISIBILITY_PRIVATE)
-                ->orderByDesc('is_pinned')
-                ->latest()
-                ->paginate(10)
-                ->withQueryString()
+            ? Post::paginateProfileTimeline($user, $viewer)
             : collect();
 
         $privatePosts = collect();
         $privateCount = 0;
 
         if ($tab === 'posts' && $viewer && $viewer->is($user)) {
-            $privatePosts = Post::query()
-                ->where('user_id', $user->id)
-                ->where('visibility', Post::VISIBILITY_PRIVATE)
-                ->with(['user', 'hashtags'])
-                ->latest()
-                ->limit(10)
-                ->get()
+            $privatePosts = Post::recentPrivateForProfileOwner($user)
                 ->filter(fn (Post $post): bool => $this->visibilityService->canViewOnProfile($viewer, $post))
                 ->values();
 
-            $privateCount = Post::query()
-                ->where('user_id', $user->id)
-                ->where('visibility', Post::VISIBILITY_PRIVATE)
-                ->count();
+            $privateCount = Post::privateCountForProfile($user);
         }
 
         // Badges — always load (up to 8 most recent)
@@ -148,12 +129,9 @@ class PublicProfileController extends Controller
         $upcomingEvents = collect();
         $pastEvents = collect();
         if ($tab === 'events' && $canViewContent) {
-            $eventQuery = fn () => Event::query()
-                ->whereHas('attendees', fn ($q) => $q->where('user_id', $user->id)->whereIn('status', ['going', 'interested']))
-                ->with('creator');
-
-            $upcomingEvents = $eventQuery()->upcoming()->limit(20)->get();
-            $pastEvents = $eventQuery()->past()->limit(5)->get();
+            $eventBuckets = Event::attendeeBucketsForProfile($user);
+            $upcomingEvents = $eventBuckets['upcoming'];
+            $pastEvents = $eventBuckets['past'];
         }
 
         // Contests tab data — entries + organized
@@ -193,19 +171,7 @@ class PublicProfileController extends Controller
 
         // Activity chart — posts per month for last 6 months
         $activityData = $canViewContent
-            ? DB::table('posts')
-                ->selectRaw("strftime('%Y-%m', created_at) as month, count(*) as count")
-                ->where('user_id', $user->id)
-                ->where('created_at', '>=', now()->subMonths(6))
-                ->groupBy('month')
-                ->orderBy('month')
-                ->get()
-                ->map(fn ($row) => [
-                    'month' => \Carbon\Carbon::createFromFormat('Y-m', $row->month)->format('M'),
-                    'count' => (int) $row->count,
-                ])
-                ->values()
-                ->all()
+            ? Post::monthlyActivitySummaryForUser($user)
             : [];
 
         return view('profile.show', [

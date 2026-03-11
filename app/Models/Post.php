@@ -296,8 +296,9 @@ class Post extends Model implements HasMedia
                     ->where('likes_count', '>', 0)
                     ->orWhere('comments_count', '>', 0);
             })
-            // Approved exception: computed ordering has no Eloquent equivalent.
-            ->orderByRaw('(likes_count + (comments_count * 2)) DESC, created_at DESC');
+            ->orderByDesc('likes_count')
+            ->orderByDesc('comments_count')
+            ->orderByDesc('created_at');
     }
 
     public function scopeTopRated(Builder $query)
@@ -339,7 +340,7 @@ class Post extends Model implements HasMedia
             ->searchResultColumns()
             ->published()
             ->visibleTo($viewer)
-            ->search($term)
+            ->when($term !== '', fn (Builder $query) => $query->search($term))
             ->latest('posts.created_at')
             ->paginate($perPage)
             ->withQueryString();
