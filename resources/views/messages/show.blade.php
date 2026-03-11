@@ -35,7 +35,7 @@
  @endif
 
  @if (! $canSend && $restriction)
- <x-ui.alert type="warning" title="Messaging Restricted"dismissible>
+ <x-ui.alert type="warning" title="Messaging Restricted" dismissible>
  {{ $restriction }}
  </x-ui.alert>
  @endif
@@ -51,7 +51,7 @@
  </div>
  </div>
 
- <x-ui.badge :variant="$canSend ?'success':'warning'" size="sm"dot>
+ <x-ui.badge :variant="$canSend ?'success':'warning'" size="sm" dot>
  {{ $canSend ?'Online':'Restricted'}}
  </x-ui.badge>
  </div>

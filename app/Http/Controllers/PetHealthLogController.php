@@ -19,7 +19,7 @@ class PetHealthLogController extends Controller
     public function index(Request $request, string $slug): View
     {
         $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->ensureOwner($pet, $request->user(), 404);
 
         $logsQuery = PetHealthLog::query()->where('pet_id', $pet->getKey());
 
@@ -60,7 +60,7 @@ class PetHealthLogController extends Controller
     public function create(Request $request, string $slug): View
     {
         $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->ensureOwner($pet, $request->user(), 404);
 
         return view('pets.health.create', [
             'pet' => $pet,
@@ -96,7 +96,7 @@ class PetHealthLogController extends Controller
     public function edit(Request $request, string $slug, string $healthLog): View
     {
         $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->ensureOwner($pet, $request->user(), 404);
 
         $log = $this->resolveHealthLog($pet, $healthLog);
 
@@ -218,9 +218,9 @@ class PetHealthLogController extends Controller
             ->firstOrFail();
     }
 
-    protected function ensureOwner(Pet $pet, ?Authenticatable $user): void
+    protected function ensureOwner(Pet $pet, ?Authenticatable $user, int $status = 403): void
     {
-        abort_unless($this->isOwner($pet, $user), 403);
+        abort_unless($this->isOwner($pet, $user), $status);
     }
 
     protected function isOwner(Pet $pet, ?Authenticatable $user): bool

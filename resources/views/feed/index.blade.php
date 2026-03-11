@@ -2,6 +2,16 @@
 
 <x-app-layout>
     @php
+        $feedThemes = [
+            'accessible-soft' => 'Accessible Soft',
+            'high-contrast' => 'High Contrast',
+            'minimalist-soothe' => 'Minimalist Soothe',
+        ];
+        $requestedTheme = request()->query('theme');
+        $activeFeedTheme = is_string($requestedTheme) && array_key_exists($requestedTheme, $feedThemes)
+            ? $requestedTheme
+            : 'accessible-soft';
+        $activeFeedThemeLabel = $feedThemes[$activeFeedTheme];
         $yourGroups = collect();
 
         try {
@@ -30,7 +40,7 @@
     @endphp
 
     <x-slot name="header">
-        <x-ui.page-header :title="__('en.your_feed')" :subtitle="__('en.home_feed')">
+        <x-ui.page-header title="Community Feed" :subtitle="$activeFeedThemeLabel" icon="📰">
             <x-slot:action>
                 <div class="flex flex-wrap items-center gap-2">
                     <x-ui.button href="{{ route('saved.index') }}" variant="ghost" size="sm">{{ __('en.saved_2') }}</x-ui.button>
@@ -40,7 +50,7 @@
         </x-ui.page-header>
     </x-slot>
 
-    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]" data-feed-theme="{{ $activeFeedTheme }}">
         <div class="space-y-4">
             <x-ui.card padding="lg">
                 <div class="mb-4 flex items-center gap-3 border-b border-whisker/30 pb-4">

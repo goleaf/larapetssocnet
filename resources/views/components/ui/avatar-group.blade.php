@@ -45,8 +45,8 @@
  ?? data_get($user,'avatar_path')
  ?? data_get($user,'src');
 
- if (! $src && is_object($user) && method_exists($user,'avatarUrl')) {
- $src = $user->avatarUrl();
+ if (! $src && is_object($user) && method_exists($user,'getAvatarUrl')) {
+ $src = $user->getAvatarUrl();
  }
 
  if (! $src && is_object($user) && method_exists($user,'getFirstMediaUrl')) {
