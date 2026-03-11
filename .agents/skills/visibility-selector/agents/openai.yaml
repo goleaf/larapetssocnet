@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visibility Selector"
+  short_description: "Help with Visibility Selector tasks"
+  default_prompt: "Use $visibility-selector to apply this project's visibility selector guidance."

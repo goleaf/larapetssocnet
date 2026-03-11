@@ -1,0 +1,4 @@
+interface:
+  display_name: "Form Requests"
+  short_description: "Help with Form Requests tasks"
+  default_prompt: "Use $form-requests to apply this project's form requests guidance."

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Workflow Guides"
+  short_description: "Route testing and repo workflow tasks to project guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C2410C"
+  default_prompt: "Use $larapetssocnet-workflow-guides to pick the right repo guide for testing, localization, light UI normalization, service patterns, or changelog flow."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailwindcss Development"
+  short_description: "Help with Tailwindcss Development tasks"
+  default_prompt: "Use $tailwindcss-development to apply this project's tailwindcss development guidance."

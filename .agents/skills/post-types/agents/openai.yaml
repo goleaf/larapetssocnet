@@ -1,0 +1,4 @@
+interface:
+  display_name: "Post Types"
+  short_description: "Help with Post Types tasks"
+  default_prompt: "Use $post-types to apply this project's post types guidance."

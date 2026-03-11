@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Select Columns"
+  short_description: "Help with Performance Select Columns tasks"
+  default_prompt: "Use $performance-select-columns to apply this project's performance select columns guidance."

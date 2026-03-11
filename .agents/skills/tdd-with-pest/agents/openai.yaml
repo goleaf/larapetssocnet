@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tdd with Pest"
+  short_description: "Help with Tdd with Pest tasks"
+  default_prompt: "Use $tdd-with-pest to apply this project's tdd with pest guidance."

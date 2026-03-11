@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quality Checks"
+  short_description: "Help with Quality Checks tasks"
+  default_prompt: "Use $quality-checks to apply this project's quality checks guidance."

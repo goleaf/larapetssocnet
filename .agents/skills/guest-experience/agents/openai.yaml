@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guest Experience"
+  short_description: "Help with Guest Experience tasks"
+  default_prompt: "Use $guest-experience to apply this project's guest experience guidance."

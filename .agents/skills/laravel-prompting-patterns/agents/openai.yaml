@@ -1,0 +1,4 @@
+interface:
+  display_name: "Laravel Prompting Patterns"
+  short_description: "Help with Laravel Prompting Patterns tasks"
+  default_prompt: "Use $laravel-prompting-patterns to apply this project's laravel prompting patterns guidance."

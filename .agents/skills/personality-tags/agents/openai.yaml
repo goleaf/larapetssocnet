@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personality Tags"
+  short_description: "Help with Personality Tags tasks"
+  default_prompt: "Use $personality-tags to apply this project's personality tags guidance."

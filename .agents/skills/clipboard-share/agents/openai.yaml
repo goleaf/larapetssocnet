@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clipboard Share"
+  short_description: "Help with Clipboard Share tasks"
+  default_prompt: "Use $clipboard-share to apply this project's clipboard share guidance."

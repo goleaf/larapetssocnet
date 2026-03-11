@@ -1,0 +1,4 @@
+interface:
+  display_name: "Events Listeners"
+  short_description: "Help with Events Listeners tasks"
+  default_prompt: "Use $events-listeners to apply this project's events listeners guidance."

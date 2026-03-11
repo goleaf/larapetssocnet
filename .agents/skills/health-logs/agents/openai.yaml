@@ -1,0 +1,4 @@
+interface:
+  display_name: "Health Logs"
+  short_description: "Help with Health Logs tasks"
+  default_prompt: "Use $health-logs to apply this project's health logs guidance."

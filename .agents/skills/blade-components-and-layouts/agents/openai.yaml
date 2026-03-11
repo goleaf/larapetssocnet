@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blade Components and Layouts"
+  short_description: "Help with Blade Components and Layouts tasks"
+  default_prompt: "Use $blade-components-and-layouts to apply this project's blade components and layouts guidance."

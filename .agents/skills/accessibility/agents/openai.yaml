@@ -1,0 +1,4 @@
+interface:
+  display_name: "Accessibility"
+  short_description: "Help with Accessibility tasks"
+  default_prompt: "Use $accessibility to apply this project's accessibility guidance."

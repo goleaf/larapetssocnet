@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bootstrap Check"
+  short_description: "Help with Bootstrap Check tasks"
+  default_prompt: "Use $bootstrap-check to apply this project's bootstrap check guidance."

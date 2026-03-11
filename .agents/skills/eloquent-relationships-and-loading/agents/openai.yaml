@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eloquent Relationships and Loading"
+  short_description: "Help with Eloquent Relationships and Loading tasks"
+  default_prompt: "Use $eloquent-relationships-and-loading to apply this project's eloquent relationships and loading guidance."

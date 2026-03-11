@@ -1,0 +1,4 @@
+interface:
+  display_name: "E2e Playwright"
+  short_description: "Help with E2e Playwright tasks"
+  default_prompt: "Use $e2e-playwright to apply this project's e2e playwright guidance."

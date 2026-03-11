@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pet Care Tips"
+  short_description: "Help with Pet Care Tips tasks"
+  default_prompt: "Use $pet-care-tips to apply this project's pet care tips guidance."

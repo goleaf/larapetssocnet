@@ -1,0 +1,4 @@
+interface:
+  display_name: "Strategy Pattern"
+  short_description: "Help with Strategy Pattern tasks"
+  default_prompt: "Use $strategy-pattern to apply this project's strategy pattern guidance."

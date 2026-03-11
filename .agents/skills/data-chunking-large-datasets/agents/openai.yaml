@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Chunking Large Datasets"
+  short_description: "Help with Data Chunking Large Datasets tasks"
+  default_prompt: "Use $data-chunking-large-datasets to apply this project's data chunking large datasets guidance."

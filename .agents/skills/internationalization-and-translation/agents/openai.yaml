@@ -1,0 +1,4 @@
+interface:
+  display_name: "Internationalization and Translation"
+  short_description: "Help with Internationalization and Translation tasks"
+  default_prompt: "Use $internationalization-and-translation to apply this project's internationalization and translation guidance."

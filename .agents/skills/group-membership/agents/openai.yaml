@@ -1,0 +1,4 @@
+interface:
+  display_name: "Group Membership"
+  short_description: "Help with Group Membership tasks"
+  default_prompt: "Use $group-membership to apply this project's group membership guidance."

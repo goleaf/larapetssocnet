@@ -1,0 +1,4 @@
+interface:
+  display_name: "Search Architecture"
+  short_description: "Help with Search Architecture tasks"
+  default_prompt: "Use $search-architecture to apply this project's search architecture guidance."

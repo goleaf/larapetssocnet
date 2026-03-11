@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pagination Patterns"
+  short_description: "Help with Pagination Patterns tasks"
+  default_prompt: "Use $pagination-patterns to apply this project's pagination patterns guidance."

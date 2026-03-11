@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Caching"
+  short_description: "Help with Performance Caching tasks"
+  default_prompt: "Use $performance-caching to apply this project's performance caching guidance."

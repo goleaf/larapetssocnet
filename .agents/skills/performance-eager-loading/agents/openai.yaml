@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Eager Loading"
+  short_description: "Help with Performance Eager Loading tasks"
+  default_prompt: "Use $performance-eager-loading to apply this project's performance eager loading guidance."

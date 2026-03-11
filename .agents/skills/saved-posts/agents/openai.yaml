@@ -1,0 +1,4 @@
+interface:
+  display_name: "Saved Posts"
+  short_description: "Help with Saved Posts tasks"
+  default_prompt: "Use $saved-posts to apply this project's saved posts guidance."

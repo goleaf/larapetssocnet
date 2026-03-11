@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Changelog Workflow"
+  short_description: "Help with Git Changelog Workflow tasks"
+  default_prompt: "Use $git-changelog-workflow to apply this project's git changelog workflow guidance."

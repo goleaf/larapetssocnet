@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dependencies Trim Packages"
+  short_description: "Help with Dependencies Trim Packages tasks"
+  default_prompt: "Use $dependencies-trim-packages to apply this project's dependencies trim packages guidance."

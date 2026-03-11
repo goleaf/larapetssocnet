@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailwind"
+  short_description: "Help with Tailwind tasks and workflows"
+  default_prompt: "Use $tailwind to apply this project's tailwind guidance."

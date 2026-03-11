@@ -1,0 +1,4 @@
+interface:
+  display_name: "Iterating On Code"
+  short_description: "Help with Iterating On Code tasks"
+  default_prompt: "Use $iterating-on-code to apply this project's iterating on code guidance."

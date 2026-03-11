@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pivot Models"
+  short_description: "Help with Pivot Models tasks"
+  default_prompt: "Use $pivot-models to apply this project's pivot models guidance."

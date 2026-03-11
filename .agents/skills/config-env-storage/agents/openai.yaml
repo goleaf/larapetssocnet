@@ -1,0 +1,4 @@
+interface:
+  display_name: "Config Env Storage"
+  short_description: "Help with Config Env Storage tasks"
+  default_prompt: "Use $config-env-storage to apply this project's config env storage guidance."

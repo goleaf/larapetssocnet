@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Sanitization"
+  short_description: "Help with Content Sanitization tasks"
+  default_prompt: "Use $content-sanitization to apply this project's content sanitization guidance."

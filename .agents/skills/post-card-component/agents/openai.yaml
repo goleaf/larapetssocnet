@@ -1,0 +1,4 @@
+interface:
+  display_name: "Post Card Component"
+  short_description: "Help with Post Card Component tasks"
+  default_prompt: "Use $post-card-component to apply this project's post card component guidance."

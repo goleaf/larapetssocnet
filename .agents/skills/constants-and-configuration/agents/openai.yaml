@@ -1,0 +1,4 @@
+interface:
+  display_name: "Constants and Configuration"
+  short_description: "Help with Constants and Configuration tasks"
+  default_prompt: "Use $constants-and-configuration to apply this project's constants and configuration guidance."

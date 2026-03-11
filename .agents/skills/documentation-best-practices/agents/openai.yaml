@@ -1,0 +1,4 @@
+interface:
+  display_name: "Documentation Best Practices"
+  short_description: "Help with Documentation Best Practices tasks"
+  default_prompt: "Use $documentation-best-practices to apply this project's documentation best practices guidance."

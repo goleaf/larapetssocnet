@@ -1,0 +1,4 @@
+interface:
+  display_name: "Routes Best Practices"
+  short_description: "Help with Routes Best Practices tasks"
+  default_prompt: "Use $routes-best-practices to apply this project's routes best practices guidance."

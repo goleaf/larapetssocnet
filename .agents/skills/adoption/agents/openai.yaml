@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adoption"
+  short_description: "Help with Adoption tasks and workflows"
+  default_prompt: "Use $adoption to apply this project's adoption guidance."

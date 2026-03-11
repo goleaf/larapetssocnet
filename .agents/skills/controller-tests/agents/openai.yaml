@@ -1,0 +1,4 @@
+interface:
+  display_name: "Controller Tests"
+  short_description: "Help with Controller Tests tasks"
+  default_prompt: "Use $controller-tests to apply this project's controller tests guidance."

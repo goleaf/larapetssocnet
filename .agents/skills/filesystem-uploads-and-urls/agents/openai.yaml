@@ -1,0 +1,4 @@
+interface:
+  display_name: "Filesystem Uploads and Urls"
+  short_description: "Help with Filesystem Uploads and Urls tasks"
+  default_prompt: "Use $filesystem-uploads-and-urls to apply this project's filesystem uploads and urls guidance."

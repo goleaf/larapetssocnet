@@ -1,0 +1,4 @@
+interface:
+  display_name: "Groups"
+  short_description: "Help with Groups tasks and workflows"
+  default_prompt: "Use $groups to apply this project's groups guidance."

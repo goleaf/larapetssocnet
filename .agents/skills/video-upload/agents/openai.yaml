@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Upload"
+  short_description: "Help with Video Upload tasks"
+  default_prompt: "Use $video-upload to apply this project's video upload guidance."

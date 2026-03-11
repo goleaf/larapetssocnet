@@ -1,0 +1,4 @@
+interface:
+  display_name: "Controller Cleanup"
+  short_description: "Help with Controller Cleanup tasks"
+  default_prompt: "Use $controller-cleanup to apply this project's controller cleanup guidance."

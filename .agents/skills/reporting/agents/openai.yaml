@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reporting"
+  short_description: "Help with Reporting tasks"
+  default_prompt: "Use $reporting to apply this project's reporting guidance."

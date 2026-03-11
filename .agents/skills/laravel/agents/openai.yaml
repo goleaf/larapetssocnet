@@ -1,0 +1,4 @@
+interface:
+  display_name: "Laravel"
+  short_description: "Help with Laravel tasks and workflows"
+  default_prompt: "Use $laravel to apply this project's laravel guidance."

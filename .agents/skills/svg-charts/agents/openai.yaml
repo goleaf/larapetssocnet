@@ -1,0 +1,4 @@
+interface:
+  display_name: "Svg Charts"
+  short_description: "Help with Svg Charts tasks"
+  default_prompt: "Use $svg-charts to apply this project's svg charts guidance."

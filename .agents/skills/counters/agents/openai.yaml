@@ -1,0 +1,4 @@
+interface:
+  display_name: "Counters"
+  short_description: "Help with Counters tasks and workflows"
+  default_prompt: "Use $counters to apply this project's counters guidance."

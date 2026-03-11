@@ -1,0 +1,4 @@
+interface:
+  display_name: "Query Optimization"
+  short_description: "Help with Query Optimization tasks"
+  default_prompt: "Use $query-optimization to apply this project's query optimization guidance."

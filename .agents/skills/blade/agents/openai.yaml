@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blade"
+  short_description: "Help with Blade tasks and workflows"
+  default_prompt: "Use $blade to apply this project's blade guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feed Architecture"
+  short_description: "Help with Feed Architecture tasks"
+  default_prompt: "Use $feed-architecture to apply this project's feed architecture guidance."

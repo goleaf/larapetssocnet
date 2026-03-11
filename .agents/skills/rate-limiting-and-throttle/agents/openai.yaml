@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rate Limiting and Throttle"
+  short_description: "Help with Rate Limiting and Throttle tasks"
+  default_prompt: "Use $rate-limiting-and-throttle to apply this project's rate limiting and throttle guidance."

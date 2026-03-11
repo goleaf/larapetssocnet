@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feed Filtering"
+  short_description: "Help with Feed Filtering tasks"
+  default_prompt: "Use $feed-filtering to apply this project's feed filtering guidance."

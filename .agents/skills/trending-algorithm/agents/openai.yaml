@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trending Algorithm"
+  short_description: "Help with Trending Algorithm tasks"
+  default_prompt: "Use $trending-algorithm to apply this project's trending algorithm guidance."

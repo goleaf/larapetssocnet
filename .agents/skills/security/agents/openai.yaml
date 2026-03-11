@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security"
+  short_description: "Help with Security tasks and workflows"
+  default_prompt: "Use $security to apply this project's security guidance."

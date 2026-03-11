@@ -1,0 +1,4 @@
+interface:
+  display_name: "Interfaces and Di"
+  short_description: "Help with Interfaces and Di tasks"
+  default_prompt: "Use $interfaces-and-di to apply this project's interfaces and di guidance."

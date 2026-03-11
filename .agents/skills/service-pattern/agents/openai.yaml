@@ -1,0 +1,4 @@
+interface:
+  display_name: "Service Pattern"
+  short_description: "Help with Service Pattern tasks"
+  default_prompt: "Use $service-pattern to apply this project's service pattern guidance."

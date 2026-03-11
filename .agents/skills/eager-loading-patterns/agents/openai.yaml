@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eager Loading Patterns"
+  short_description: "Help with Eager Loading Patterns tasks"
+  default_prompt: "Use $eager-loading-patterns to apply this project's eager loading patterns guidance."

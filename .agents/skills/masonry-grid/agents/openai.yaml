@@ -1,0 +1,4 @@
+interface:
+  display_name: "Masonry Grid"
+  short_description: "Help with Masonry Grid tasks"
+  default_prompt: "Use $masonry-grid to apply this project's masonry grid guidance."

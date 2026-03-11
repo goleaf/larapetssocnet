@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hashtag Extraction"
+  short_description: "Help with Hashtag Extraction tasks"
+  default_prompt: "Use $hashtag-extraction to apply this project's hashtag extraction guidance."

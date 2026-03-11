@@ -1,0 +1,4 @@
+interface:
+  display_name: "Notifications"
+  short_description: "Help with Notifications tasks"
+  default_prompt: "Use $notifications to apply this project's notifications guidance."

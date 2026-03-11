@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Scheduling"
+  short_description: "Help with Task Scheduling tasks"
+  default_prompt: "Use $task-scheduling to apply this project's task scheduling guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orm"
+  short_description: "Help with Orm tasks and workflows"
+  default_prompt: "Use $orm to apply this project's orm guidance."

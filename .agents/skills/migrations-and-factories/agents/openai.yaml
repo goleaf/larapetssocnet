@@ -1,0 +1,4 @@
+interface:
+  display_name: "Migrations and Factories"
+  short_description: "Help with Migrations and Factories tasks"
+  default_prompt: "Use $migrations-and-factories to apply this project's migrations and factories guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visibility Badge"
+  short_description: "Help with Visibility Badge tasks"
+  default_prompt: "Use $visibility-badge to apply this project's visibility badge guidance."

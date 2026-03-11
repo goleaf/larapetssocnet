@@ -1,0 +1,4 @@
+interface:
+  display_name: "Comments"
+  short_description: "Help with Comments tasks and workflows"
+  default_prompt: "Use $comments to apply this project's comments guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pet Profiles"
+  short_description: "Help with Pet Profiles tasks"
+  default_prompt: "Use $pet-profiles to apply this project's pet profiles guidance."

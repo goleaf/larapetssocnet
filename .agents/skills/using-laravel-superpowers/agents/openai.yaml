@@ -1,0 +1,4 @@
+interface:
+  display_name: "Using Laravel Superpowers"
+  short_description: "Help with Using Laravel Superpowers tasks"
+  default_prompt: "Use $using-laravel-superpowers to apply this project's using laravel superpowers guidance."

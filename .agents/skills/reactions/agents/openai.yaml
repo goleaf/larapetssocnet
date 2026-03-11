@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reactions"
+  short_description: "Help with Reactions tasks"
+  default_prompt: "Use $reactions to apply this project's reactions guidance."

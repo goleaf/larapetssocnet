@@ -1,0 +1,4 @@
+interface:
+  display_name: "Http Client Resilience"
+  short_description: "Help with Http Client Resilience tasks"
+  default_prompt: "Use $http-client-resilience to apply this project's http client resilience guidance."

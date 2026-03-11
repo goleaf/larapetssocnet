@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relations"
+  short_description: "Help with Relations tasks"
+  default_prompt: "Use $relations to apply this project's relations guidance."

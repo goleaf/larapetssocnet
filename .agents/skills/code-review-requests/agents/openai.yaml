@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Review Requests"
+  short_description: "Help with Code Review Requests tasks"
+  default_prompt: "Use $code-review-requests to apply this project's code review requests guidance."

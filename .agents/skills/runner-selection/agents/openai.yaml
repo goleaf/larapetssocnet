@@ -1,0 +1,4 @@
+interface:
+  display_name: "Runner Selection"
+  short_description: "Help with Runner Selection tasks"
+  default_prompt: "Use $runner-selection to apply this project's runner selection guidance."

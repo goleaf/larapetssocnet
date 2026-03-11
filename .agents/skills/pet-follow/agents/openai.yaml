@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pet Follow"
+  short_description: "Help with Pet Follow tasks"
+  default_prompt: "Use $pet-follow to apply this project's pet follow guidance."

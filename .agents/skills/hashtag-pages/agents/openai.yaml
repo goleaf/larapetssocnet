@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hashtag Pages"
+  short_description: "Help with Hashtag Pages tasks"
+  default_prompt: "Use $hashtag-pages to apply this project's hashtag pages guidance."

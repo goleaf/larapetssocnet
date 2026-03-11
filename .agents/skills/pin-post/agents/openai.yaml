@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pin Post"
+  short_description: "Help with Pin Post tasks and workflows"
+  default_prompt: "Use $pin-post to apply this project's pin post guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pest Testing"
+  short_description: "Help with Pest Testing tasks"
+  default_prompt: "Use $pest-testing to apply this project's pest testing guidance."

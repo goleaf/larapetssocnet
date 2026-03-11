@@ -1,0 +1,4 @@
+interface:
+  display_name: "Alpine"
+  short_description: "Help with Alpine tasks and workflows"
+  default_prompt: "Use $alpine to apply this project's alpine guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Service"
+  short_description: "Help with Content Service tasks"
+  default_prompt: "Use $content-service to apply this project's content service guidance."

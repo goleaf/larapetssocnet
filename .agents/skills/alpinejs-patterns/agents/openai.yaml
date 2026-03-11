@@ -1,0 +1,4 @@
+interface:
+  display_name: "Alpinejs Patterns"
+  short_description: "Help with Alpinejs Patterns tasks"
+  default_prompt: "Use $alpinejs-patterns to apply this project's alpinejs patterns guidance."

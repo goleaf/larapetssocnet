@@ -1,0 +1,4 @@
+interface:
+  display_name: "Complexity Guardrails"
+  short_description: "Help with Complexity Guardrails tasks"
+  default_prompt: "Use $complexity-guardrails to apply this project's complexity guardrails guidance."

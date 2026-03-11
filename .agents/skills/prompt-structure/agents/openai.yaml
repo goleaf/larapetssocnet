@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Structure"
+  short_description: "Help with Prompt Structure tasks"
+  default_prompt: "Use $prompt-structure to apply this project's prompt structure guidance."

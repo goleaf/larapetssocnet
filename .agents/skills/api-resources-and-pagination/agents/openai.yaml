@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Resources and Pagination"
+  short_description: "Help with API Resources and Pagination tasks"
+  default_prompt: "Use $api-resources-and-pagination to apply this project's api resources and pagination guidance."

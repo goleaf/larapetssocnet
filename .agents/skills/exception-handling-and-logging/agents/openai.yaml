@@ -1,0 +1,4 @@
+interface:
+  display_name: "Exception Handling and Logging"
+  short_description: "Help with Exception Handling and Logging tasks"
+  default_prompt: "Use $exception-handling-and-logging to apply this project's exception handling and logging guidance."

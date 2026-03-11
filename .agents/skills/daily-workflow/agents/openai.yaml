@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Workflow"
+  short_description: "Help with Daily Workflow tasks"
+  default_prompt: "Use $daily-workflow to apply this project's daily workflow guidance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Post Visibility"
+  short_description: "Help with Post Visibility tasks"
+  default_prompt: "Use $post-visibility to apply this project's post visibility guidance."
