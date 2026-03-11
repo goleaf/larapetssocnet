@@ -23,28 +23,12 @@ class ListingController extends Controller
         $status = $request->string('status')->trim()->lower()->value();
         $sort = $request->string('sort')->trim()->value() ?: 'newest';
 
-        $query = MarketplaceListing::query()
-            ->withTrashed()
-            ->where('user_id', $viewer->getKey())
-            ->with(['pet:id,name'])
-            ->search(trim((string) $request->input('q')));
-
-        if ($status === 'deleted') {
-            $query->onlyTrashed();
-        } elseif ($status !== '' && $status !== 'all') {
-            $query->where('status', $status);
-        }
-
-        match ($sort) {
-            'oldest' => $query->oldest('created_at'),
-            'price_low' => $query->orderBy('price'),
-            'price_high' => $query->orderByDesc('price'),
-            'most_viewed' => $query->orderByDesc('views_count'),
-            default => $query->latest('created_at'),
-        };
-
         return view('marketplace.my-listings', [
-            'listings' => $query->paginate(12)->withQueryString(),
+            'listings' => MarketplaceListing::paginateManagedBySeller($viewer, [
+                'q' => trim((string) $request->input('q')),
+                'status' => $status,
+                'sort' => $sort,
+            ]),
             'status' => $status === '' ? 'all' : $status,
             'sort' => $sort,
         ]);
@@ -249,12 +233,6 @@ class ListingController extends Controller
 
     private function findListing(int $listingId, bool $withTrashed = false): MarketplaceListing
     {
-        $query = MarketplaceListing::query();
-
-        if ($withTrashed) {
-            $query->withTrashed();
-        }
-
-        return $query->findOrFail($listingId);
+        return MarketplaceListing::findByIdOrFail($listingId, $withTrashed);
     }
 }
