@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MessageStatus;
 use App\Models\Conversation;
 use App\Models\MarketplaceListing;
 use App\Models\Message;
@@ -49,7 +50,9 @@ class ConversationService
         $message = Message::query()->create([
             'conversation_id' => $conversation->getKey(),
             'sender_id' => $sender->getKey(),
+            'receiver_id' => $recipient->getKey(),
             'body' => $normalizedBody,
+            'status' => MessageStatus::Sent->value,
         ]);
 
         $conversation->update([
@@ -73,7 +76,11 @@ class ConversationService
             ->where('sender_id', '!=', $viewer->getKey())
             ->whereNull('read_at')
             ->whereNull('deleted_at')
-            ->update(['read_at' => now(), 'is_read' => true]);
+            ->update([
+                'read_at' => now(),
+                'is_read' => true,
+                'status' => MessageStatus::Read->value,
+            ]);
 
         if ($viewer->getKey() === (int) $conversation->user_one_id) {
             $conversation->update(['user_one_unread_count' => 0]);

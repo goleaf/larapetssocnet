@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MessageStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,9 @@ class Message extends Model
     protected $fillable = [
         'conversation_id',
         'sender_id',
+        'receiver_id',
         'body',
+        'status',
         'is_read',
         'read_at',
     ];
@@ -28,6 +31,7 @@ class Message extends Model
     protected function casts(): array
     {
         return [
+            'status' => MessageStatus::class,
             'is_read' => 'boolean',
             'read_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -44,57 +48,125 @@ class Message extends Model
         return $this->belongsTo(User::class, 'sender_id');
     }
 
-    /**
-     * Scope to messages belonging to conversations that include the given user.
-     */
-    public function scopeForUser(Builder $query, User|int $user): Builder
+    public function receiver(): BelongsTo
     {
-        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    /**
+     * Scope to messages where a user is sender or receiver.
+     *
+     * Includes a legacy fallback for records that only have conversation participants.
+     */
+    public function scopeForUser(Builder $query, User|int $userId): Builder
+    {
+        $resolvedUserId = $userId instanceof User ? (int) $userId->getKey() : (int) $userId;
 
         return $query
             ->select(['messages.*'])
-            ->whereHas('conversation', function (Builder $conversationQuery) use ($userId): void {
-                $conversationQuery->where('user_one_id', $userId)->orWhere('user_two_id', $userId);
+            ->where(function (Builder $userQuery) use ($resolvedUserId): void {
+                $userQuery
+                    ->where('messages.sender_id', $resolvedUserId)
+                    ->orWhere('messages.receiver_id', $resolvedUserId)
+                    ->orWhere(function (Builder $legacyQuery) use ($resolvedUserId): void {
+                        $legacyQuery
+                            ->whereNull('messages.receiver_id')
+                            ->whereHas('conversation', function (Builder $conversationQuery) use ($resolvedUserId): void {
+                                $conversationQuery
+                                    ->where('user_one_id', $resolvedUserId)
+                                    ->orWhere('user_two_id', $resolvedUserId);
+                            });
+                    });
             });
     }
 
     /**
-     * Scope to messages in the conversation between two specific users.
+     * Scope to messages between two specific users.
      */
     public function scopeBetween(Builder $query, User|int $userA, User|int $userB): Builder
     {
         $userAId = $userA instanceof User ? (int) $userA->getKey() : (int) $userA;
         $userBId = $userB instanceof User ? (int) $userB->getKey() : (int) $userB;
 
-        return $query->whereHas('conversation', function (Builder $conversationQuery) use ($userAId, $userBId): void {
-            $conversationQuery->where(function (Builder $q) use ($userAId, $userBId): void {
-                $q->where('user_one_id', $userAId)->where('user_two_id', $userBId);
-            })->orWhere(function (Builder $q) use ($userAId, $userBId): void {
-                $q->where('user_one_id', $userBId)->where('user_two_id', $userAId);
-            });
+        return $query->where(function (Builder $threadQuery) use ($userAId, $userBId): void {
+            $threadQuery
+                ->where(function (Builder $directQuery) use ($userAId, $userBId): void {
+                    $directQuery
+                        ->where('messages.sender_id', $userAId)
+                        ->where('messages.receiver_id', $userBId);
+                })
+                ->orWhere(function (Builder $directQuery) use ($userAId, $userBId): void {
+                    $directQuery
+                        ->where('messages.sender_id', $userBId)
+                        ->where('messages.receiver_id', $userAId);
+                })
+                ->orWhere(function (Builder $legacyQuery) use ($userAId, $userBId): void {
+                    $legacyQuery
+                        ->whereNull('messages.receiver_id')
+                        ->whereHas('conversation', function (Builder $conversationQuery) use ($userAId, $userBId): void {
+                            $conversationQuery
+                                ->where(function (Builder $firstDirection) use ($userAId, $userBId): void {
+                                    $firstDirection
+                                        ->where('user_one_id', $userAId)
+                                        ->where('user_two_id', $userBId);
+                                })
+                                ->orWhere(function (Builder $secondDirection) use ($userAId, $userBId): void {
+                                    $secondDirection
+                                        ->where('user_one_id', $userBId)
+                                        ->where('user_two_id', $userAId);
+                                });
+                        });
+                });
         });
     }
 
-    public function scopeInThread(Builder $query, User|int $user, User|int $otherUser): Builder
+    public function scopeInThread(Builder $query, User|int $userA, User|int $userB): Builder
     {
         return $query
             ->select(['messages.*'])
-            ->between($user, $otherUser);
+            ->between($userA, $userB);
     }
 
-    public function scopeUnread(Builder $query, User|int $user): Builder
+    public function scopeUnread(Builder $query, User|int $userId): Builder
     {
-        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+        $resolvedUserId = $userId instanceof User ? (int) $userId->getKey() : (int) $userId;
 
         return $query
             ->select(['messages.*'])
-            ->where(function (Builder $unreadQuery): void {
+            ->where(function (Builder $unreadQuery) use ($resolvedUserId): void {
                 $unreadQuery
-                    ->where('is_read', false)
-                    ->orWhereNull('read_at');
-            })
-            ->forUser($userId)
-            ->where('sender_id', '!=', $userId);
+                    ->where(function (Builder $directUnreadQuery) use ($resolvedUserId): void {
+                        $directUnreadQuery
+                            ->where('messages.receiver_id', $resolvedUserId)
+                            ->whereNull('messages.read_at');
+                    })
+                    ->orWhere(function (Builder $legacyUnreadQuery) use ($resolvedUserId): void {
+                        $legacyUnreadQuery
+                            ->whereNull('messages.receiver_id')
+                            ->whereNull('messages.read_at')
+                            ->where('messages.sender_id', '!=', $resolvedUserId)
+                            ->whereHas('conversation', function (Builder $conversationQuery) use ($resolvedUserId): void {
+                                $conversationQuery
+                                    ->where('user_one_id', $resolvedUserId)
+                                    ->orWhere('user_two_id', $resolvedUserId);
+                            });
+                    });
+            });
+    }
+
+    public function partnerIdFor(User|int $userId): ?int
+    {
+        $resolvedUserId = $userId instanceof User ? (int) $userId->getKey() : (int) $userId;
+
+        if ((int) $this->sender_id === $resolvedUserId && $this->receiver_id) {
+            return (int) $this->receiver_id;
+        }
+
+        if ((int) $this->receiver_id === $resolvedUserId) {
+            return (int) $this->sender_id;
+        }
+
+        return null;
     }
 
     protected function displayBody(): Attribute

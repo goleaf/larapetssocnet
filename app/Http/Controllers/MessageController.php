@@ -2,27 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreMessageRequest;
+use App\Actions\SendMessageAction;
+use App\Enums\MessageStatus;
+use App\Http\Requests\SendMessageRequest;
 use App\Models\MarketplaceListing;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\ConversationService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class MessageController extends Controller
 {
-    public function __construct(private readonly ConversationService $conversations) {}
+    public function __construct(
+        private readonly ConversationService $conversations,
+        private readonly SendMessageAction $sendMessageAction,
+    ) {}
 
     public function index(Request $request): View
     {
         $viewer = $request->user();
-        $threads = $this->conversations->getInboxForUser($viewer);
+        $threads = $this->threadInboxFor($viewer);
 
         $search = trim((string) $request->input('q'));
 
@@ -47,57 +54,49 @@ class MessageController extends Controller
     public function show(Request $request, User $peer): View
     {
         $viewer = $request->user();
-        $activeListing = $this->resolveListingContext($request, $peer);
+        $this->authorize('viewThread', [Message::class, $peer]);
 
-        $restriction = null;
-
-        try {
-            $this->conversations->findOrCreate($viewer, $peer, $activeListing);
-            $this->conversations->markAsRead($viewer, $peer, $activeListing);
-        } catch (ValidationException $exception) {
-            $restriction = $this->firstValidationMessage($exception);
-        }
-
-        $messagesQuery = Message::query()
-            ->inThread($viewer, $peer)
-            ->with('sender:id,name,username,avatar_path')
-            ->orderByDesc('id');
-
-        $messages = $messagesQuery
-            ->paginate(20)
+        $messages = Message::query()
+            ->inThread($viewer->getKey(), $peer->getKey())
+            ->with([
+                'sender:id,name,username,avatar_path',
+                'receiver:id,name,username,avatar_path',
+            ])
+            ->orderByDesc('messages.created_at')
+            ->simplePaginate(30)
             ->withQueryString();
+
+        Message::query()
+            ->where('sender_id', $peer->getKey())
+            ->where('receiver_id', $viewer->getKey())
+            ->whereNull('read_at')
+            ->update([
+                'read_at' => now(),
+                'is_read' => true,
+                'status' => MessageStatus::Read->value,
+            ]);
+
+        Cache::forget('msg_unread:'.$viewer->getKey());
 
         return view('messages.show', [
             'peer' => $peer,
             'messages' => $messages,
-            'orderedMessages' => $messages->getCollection()->reverse()->values(),
-            'activeListing' => $activeListing,
-            'canSend' => $restriction === null,
-            'restriction' => $restriction,
         ]);
     }
 
-    public function store(StoreMessageRequest $request, User $peer): JsonResponse|RedirectResponse
+    public function store(SendMessageRequest $request, User $peer): JsonResponse|RedirectResponse
     {
         $validated = $request->validated();
 
-        $viewer = $request->user();
-        $listing = $this->resolveListingContext($request, $peer);
-
-        try {
-            $message = $this->conversations->sendMessage(
-                $viewer,
-                $peer,
-                (string) $validated['body'],
-                $listing,
-            );
-        } catch (ValidationException $exception) {
-            return $this->validationFailure($request, $exception);
-        }
+        $message = $this->sendMessageAction->handle(
+            sender: $request->user(),
+            receiver: $peer,
+            data: ['body' => (string) $validated['body']],
+        );
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Message sent.',
+                'message' => __('messages.flash_sent'),
                 'data' => [
                     'id' => $message->getKey(),
                     'body' => $message->body,
@@ -107,12 +106,7 @@ class MessageController extends Controller
             ], 201);
         }
 
-        return redirect()
-            ->route('messages.conversation', [
-                'peer' => $peer,
-                'listing' => $listing?->getKey(),
-            ])
-            ->with('success', 'Message sent.');
+        return redirect()->back()->with('success', __('messages.flash_sent'));
     }
 
     public function destroyMessage(Request $request, Message $message): JsonResponse|RedirectResponse
@@ -271,6 +265,78 @@ class MessageController extends Controller
     public function destroy(Request $request, Message $message): JsonResponse|RedirectResponse
     {
         return $this->destroyMessage($request, $message);
+    }
+
+    /**
+     * @return EloquentCollection<int, array{
+     *   peer: User,
+     *   latest_message: Message,
+     *   unread_count: int
+     * }>
+     */
+    private function threadInboxFor(User $viewer): EloquentCollection
+    {
+        $messages = Message::query()
+            ->forUser($viewer->getKey())
+            ->with([
+                'sender:id,name,username,avatar_path',
+                'receiver:id,name,username,avatar_path',
+                'conversation.userOne:id,name,username,avatar_path',
+                'conversation.userTwo:id,name,username,avatar_path',
+            ])
+            ->orderByDesc('messages.created_at')
+            ->get();
+
+        return $messages
+            ->groupBy(function (Message $message) use ($viewer): string {
+                $partnerId = $message->partnerIdFor($viewer->getKey());
+
+                if ($partnerId !== null) {
+                    return (string) $partnerId;
+                }
+
+                $conversation = $message->conversation;
+
+                if (! $conversation) {
+                    return '0';
+                }
+
+                $partner = (int) $conversation->user_one_id === (int) $viewer->getKey()
+                    ? $conversation->userTwo
+                    : $conversation->userOne;
+
+                return (string) ($partner?->getKey() ?? 0);
+            })
+            ->map(function (EloquentCollection $threadMessages) use ($viewer): array {
+                /** @var Message $latestMessage */
+                $latestMessage = $threadMessages->sortByDesc('created_at')->first();
+
+                $peer = null;
+
+                if ((int) $latestMessage->sender_id === (int) $viewer->getKey()) {
+                    $peer = $latestMessage->receiver;
+                } elseif ((int) $latestMessage->receiver_id === (int) $viewer->getKey()) {
+                    $peer = $latestMessage->sender;
+                } elseif ($latestMessage->conversation) {
+                    $peer = (int) $latestMessage->conversation->user_one_id === (int) $viewer->getKey()
+                        ? $latestMessage->conversation->userTwo
+                        : $latestMessage->conversation->userOne;
+                }
+
+                return [
+                    'peer' => $peer,
+                    'latest_message' => $latestMessage,
+                    'unread_count' => $threadMessages
+                        ->filter(function (Message $message) use ($viewer): bool {
+                            return (int) ($message->receiver_id ?? 0) === (int) $viewer->getKey()
+                                && $message->read_at === null;
+                        })
+                        ->count(),
+                ];
+            })
+            ->filter(fn (array $thread): bool => $thread['peer'] instanceof User)
+            ->sortByDesc(fn (array $thread): int => (int) optional($thread['latest_message']->created_at)->timestamp)
+            ->values();
     }
 
     private function resolveListingContext(Request $request, User $peer): ?MarketplaceListing

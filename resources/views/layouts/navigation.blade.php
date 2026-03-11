@@ -8,7 +8,7 @@
 
  $hasNotificationsTable = $user !== null && \Illuminate\Support\Facades\Schema::hasTable('notifications');
  $unreadNotificationsCount = $hasNotificationsTable ? (int) $user->unreadNotifications()->count() : 0;
- $unreadMessagesCount = $user ? (int) $user->unreadThreadsCount() : 0;
+ $unreadMessageCount ??= 0;
 @endphp
 
 <nav class="sticky top-0 z-40 border-b surface-glass" style="border-color: var(--ui-border);">
@@ -43,10 +43,10 @@
  stroke-linejoin="round"/>
  </svg>
 
- @if ($unreadMessagesCount > 0)
+ @if ($unreadMessageCount > 0)
  <span
  class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[0.65rem] font-semibold leading-5 text-white">
- {{ $unreadMessagesCount > 99 ?'99+': $unreadMessagesCount }}
+ {{ $unreadMessageCount > 99 ?'99+': $unreadMessageCount }}
  </span>
  @endif
  </a>

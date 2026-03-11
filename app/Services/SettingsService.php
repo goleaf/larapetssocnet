@@ -6,6 +6,7 @@ use App\Models\Group;
 use App\Models\User;
 use App\Models\UserBlock;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Fluent;
 use Illuminate\Validation\ValidationException;
 
 class SettingsService
@@ -44,24 +45,50 @@ class SettingsService
 
     public function savePrivacySettings(User $user, array $settings): User
     {
-        $user->update([
-            'profile_visibility' => $settings['profile_visibility'] ?? $user->profile_visibility,
-            'messaging_permission' => $settings['messaging_permission'] ?? $user->messaging_permission,
-            'pets_visibility' => $settings['pets_visibility'] ?? $user->pets_visibility,
-            'groups_visibility' => $settings['groups_visibility'] ?? $user->groups_visibility,
-            'show_in_explore' => $settings['show_in_explore'] ?? $user->show_in_explore,
-            'open_following' => $settings['open_following'] ?? $user->open_following,
-        ]);
+        $settingsPayload = new Fluent($settings);
+
+        if ($settingsPayload->isEmpty()) {
+            return $user;
+        }
+
+        $privacySettings = new Fluent($settingsPayload->only([
+            'profile_visibility',
+            'messaging_permission',
+            'pets_visibility',
+            'groups_visibility',
+            'show_in_explore',
+            'open_following',
+        ]));
+
+        if ($privacySettings->isNotEmpty()) {
+            $normalizedSettings = $privacySettings->toArray();
+
+            foreach (['show_in_explore', 'open_following'] as $booleanSetting) {
+                if (array_key_exists($booleanSetting, $normalizedSettings)) {
+                    $normalizedSettings[$booleanSetting] = (bool) $normalizedSettings[$booleanSetting];
+                }
+            }
+
+            $user->update($normalizedSettings);
+        }
 
         return $user;
     }
 
     public function saveNotificationPreferences(User $user, array $preferences): User
     {
+        $preferencesPayload = new Fluent($preferences);
+
+        if ($preferencesPayload->isEmpty()) {
+            $user->update(['notification_preferences' => []]);
+
+            return $user;
+        }
+
         $user->update([
-            'notification_preferences' => collect($preferences)
-                ->mapWithKeys(fn ($value, $key) => [$key => (bool) $value])
-                ->toArray(),
+            'notification_preferences' => collect($preferencesPayload->all())
+                ->mapWithKeys(fn ($value, $key) => [(string) $key => (bool) $value])
+                ->all(),
         ]);
 
         return $user;
