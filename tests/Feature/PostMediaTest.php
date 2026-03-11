@@ -22,7 +22,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'photos' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
+                'media' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
             ])->assertRedirect();
 
         $post = Post::query()->latest('id')->firstOrFail();
@@ -40,7 +40,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4'),
+                'media' => [UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4')],
             ])->assertRedirect();
 
         $post = Post::query()->latest('id')->firstOrFail();
@@ -58,7 +58,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('clip.mov', 1024, 'video/quicktime'),
+                'media' => [UploadedFile::fake()->create('clip.mov', 1024, 'video/quicktime')],
             ])->assertRedirect();
 
         $post = Post::query()->latest('id')->firstOrFail();
@@ -76,11 +76,11 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('clip.webm', 1024, 'video/webm'),
+                'media' => [UploadedFile::fake()->create('clip.webm', 1024, 'video/webm')],
             ]);
 
         $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['video']);
+        $response->assertSessionHasErrors(['media.0']);
         $this->assertSame(0, Post::query()->count());
     }
 
@@ -94,11 +94,11 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('clip.mp4', 20481, 'video/mp4'),
+                'media' => [UploadedFile::fake()->create('clip.mp4', 20481, 'video/mp4')],
             ]);
 
         $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['video']);
+        $response->assertSessionHasErrors(['media.0']);
         $this->assertSame(0, Post::query()->count());
     }
 
@@ -112,11 +112,11 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'video' => UploadedFile::fake()->create('doc.pdf', 256, 'application/pdf'),
+                'media' => [UploadedFile::fake()->create('doc.pdf', 256, 'application/pdf')],
             ]);
 
         $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['video']);
+        $response->assertSessionHasErrors(['media.0']);
         $this->assertSame(0, Post::query()->count());
     }
 
@@ -130,12 +130,35 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'photos' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
-                'video' => UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4'),
+                'media' => [
+                    UploadedFile::fake()->image('photo.jpg', 800, 600),
+                    UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4'),
+                ],
             ]);
 
         $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['video']);
+        $response->assertSessionHasErrors(['media']);
+        $this->assertSame(0, Post::query()->count());
+    }
+
+    public function test_rejects_more_than_one_video_in_media_array(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->from(route('posts.create'))
+            ->post(route('posts.store'), [
+                'body' => null,
+                'visibility' => 'public',
+                'media' => [
+                    UploadedFile::fake()->create('clip-1.mp4', 1024, 'video/mp4'),
+                    UploadedFile::fake()->create('clip-2.mov', 1024, 'video/quicktime'),
+                ],
+            ]);
+
+        $response->assertRedirect(route('posts.create'));
+        $response->assertSessionHasErrors(['media']);
         $this->assertSame(0, Post::query()->count());
     }
 
@@ -156,7 +179,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'photos' => $photos,
+                'media' => $photos,
             ])->assertRedirect();
 
         $post = Post::query()->latest('id')->firstOrFail();
@@ -184,11 +207,11 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'photos' => $photos,
+                'media' => $photos,
             ]);
 
         $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['photos']);
+        $response->assertSessionHasErrors(['media']);
         $this->assertSame(0, Post::query()->count());
     }
 
@@ -202,11 +225,11 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'photos' => [UploadedFile::fake()->image('large-photo.jpg')->size(20481)],
+                'media' => [UploadedFile::fake()->image('large-photo.jpg')->size(20481)],
             ]);
 
         $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['photos.0']);
+        $response->assertSessionHasErrors(['media.0']);
         $this->assertSame(0, Post::query()->count());
     }
 
@@ -219,7 +242,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'photos' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
+                'media' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
             ])
             ->assertRedirect();
 

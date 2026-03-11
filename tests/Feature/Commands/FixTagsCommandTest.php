@@ -52,3 +52,20 @@ it('removes dark utilities when the remove-dark option is set', function (): voi
 
     expect(File::get($file))->toBe('<div class="text-sm">Hi</div>');
 });
+
+it('preserves blade attribute spacing when removing dark utilities', function (): void {
+    $file = $this->workspace.'/component-attrs.blade.php';
+
+    File::put(
+        $file,
+        '<x-ui.button class="px-2 dark:bg-black" :href="route(\'login\')" variant="primary" size="sm">Log In</x-ui.button>'
+    );
+
+    $this->artisan('views:fix-tags', [
+        '--path' => [$this->workspace],
+        '--remove-dark' => true,
+    ])->assertExitCode(0);
+
+    expect(File::get($file))
+        ->toBe('<x-ui.button class="px-2" :href="route(\'login\')" variant="primary" size="sm">Log In</x-ui.button>');
+});

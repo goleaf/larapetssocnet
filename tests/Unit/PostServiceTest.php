@@ -20,7 +20,7 @@ class PostServiceTest extends TestCase
         $post = app(PostService::class)->create($user, [
             'body' => 'simple',
             'visibility' => Post::VISIBILITY_PUBLIC,
-        ], null, []);
+        ], []);
 
         $this->assertSame(Post::TYPE_TEXT, $post->type);
     }
@@ -33,8 +33,7 @@ class PostServiceTest extends TestCase
         $post = app(PostService::class)->create(
             $user,
             ['visibility' => Post::VISIBILITY_PUBLIC],
-            UploadedFile::fake()->create('video.mp4', 200, 'video/mp4'),
-            []
+            [UploadedFile::fake()->create('video.mp4', 200, 'video/mp4')]
         );
 
         $this->assertSame(Post::TYPE_VIDEO, $post->type);

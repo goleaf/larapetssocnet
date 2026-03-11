@@ -20,4 +20,5 @@ it('getFeed returns paginated posts and state collections', function (): void {
 
     expect($result)->toHaveKeys(['posts', 'myReactions', 'mySaved']);
     expect($result['posts']->count())->toBe(3);
+    expect($result['posts']->first()?->toArray())->not->toHaveKey('current_user_reaction');
 });

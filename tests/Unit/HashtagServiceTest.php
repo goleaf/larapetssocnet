@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Hashtag;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\HashtagService;
@@ -29,5 +30,28 @@ class HashtagServiceTest extends TestCase
         app(HashtagService::class)->syncHashtags($post);
 
         $this->assertCount(2, $post->fresh()->hashtags);
+    }
+
+    public function test_first_or_create_accepts_lazy_values_closure(): void
+    {
+        $existing = Hashtag::factory()->create([
+            'name' => 'pets',
+            'slug' => 'pets',
+        ]);
+
+        $closureExecuted = false;
+
+        $hashtag = Hashtag::query()->firstOrCreate(
+            ['name' => 'pets'],
+            function () use (&$closureExecuted): array {
+                $closureExecuted = true;
+
+                return ['slug' => 'should-not-be-used'];
+            }
+        );
+
+        $this->assertTrue($hashtag->is($existing));
+        $this->assertFalse($closureExecuted);
+        $this->assertSame('pets', $hashtag->slug);
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
-it('loads the feed query path in five queries or fewer', function (): void {
+it('loads the main feed pagination query in five queries or fewer', function (): void {
     $viewer = User::factory()->create();
     $followed = User::factory()->create();
 
@@ -22,24 +22,11 @@ it('loads the feed query path in five queries or fewer', function (): void {
         'visibility' => Post::VISIBILITY_PUBLIC,
     ]);
 
+    $viewer->load([
+        'acceptedFollowing:id',
+    ]);
+
     $this->assertQueryCount(5, function () use ($viewer): void {
-        Post::query()
-            ->forFeed($viewer)
-            ->with([
-                'author',
-                'pet',
-                'media',
-                'hashtags',
-            ])
-            ->withCount([
-                'likes',
-                'comments',
-            ])
-            ->withExists([
-                'likes as liked_by_viewer' => fn ($query) => $query->where('likes.user_id', $viewer->getKey()),
-            ])
-            ->orderByDesc('posts.created_at')
-            ->cursorPaginate(15)
-            ->items();
+        Post::paginateMainFeedResults($viewer, null, 15)->items();
     });
 });
