@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -268,13 +269,13 @@ class MessageController extends Controller
     }
 
     /**
-     * @return EloquentCollection<int, array{
+     * @return Collection<int, array{
      *   peer: User,
      *   latest_message: Message,
      *   unread_count: int
      * }>
      */
-    private function threadInboxFor(User $viewer): EloquentCollection
+    private function threadInboxFor(User $viewer): Collection
     {
         $messages = Message::query()
             ->forUser($viewer->getKey())

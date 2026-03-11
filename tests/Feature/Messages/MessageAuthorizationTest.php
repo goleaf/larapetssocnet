@@ -1,0 +1,40 @@
+<?php
+
+use App\Models\Message;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(Tests\TestCase::class, RefreshDatabase::class);
+
+it('prevents a third user from reading others direct messages', function (): void {
+    $firstUser = User::factory()->create(['is_private' => false]);
+    $secondUser = User::factory()->create(['is_private' => false]);
+    $intruder = User::factory()->create(['is_private' => false]);
+
+    Message::factory()->create([
+        'sender_id' => $firstUser->getKey(),
+        'receiver_id' => $secondUser->getKey(),
+        'body' => 'private-message-between-two-users',
+    ]);
+
+    $this->actingAs($intruder)
+        ->get(route('messages.conversation', ['peer' => $secondUser]))
+        ->assertOk()
+        ->assertDontSee('private-message-between-two-users');
+});
+
+it('prevents deleting message owned by another user', function (): void {
+    $owner = User::factory()->create(['is_private' => false]);
+    $peer = User::factory()->create(['is_private' => false]);
+    $intruder = User::factory()->create(['is_private' => false]);
+
+    $message = Message::factory()->create([
+        'sender_id' => $owner->getKey(),
+        'receiver_id' => $peer->getKey(),
+    ]);
+
+    $this->actingAs($intruder)
+        ->delete(route('messages.destroy', ['message' => $message]))
+        ->assertRedirect()
+        ->assertSessionHasErrors('message');
+});

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\MessageStatus;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -21,8 +22,18 @@ class MessageFactory extends Factory
     {
         return [
             'conversation_id' => Conversation::factory(),
-            'sender_id' => User::factory(),
+            'sender_id' => function (array $attributes): int {
+                $conversation = Conversation::query()->find((int) $attributes['conversation_id']);
+
+                return (int) ($conversation?->user_one_id ?? User::factory()->create()->getKey());
+            },
+            'receiver_id' => function (array $attributes): int {
+                $conversation = Conversation::query()->find((int) $attributes['conversation_id']);
+
+                return (int) ($conversation?->user_two_id ?? User::factory()->create()->getKey());
+            },
             'body' => $this->faker->sentence(),
+            'status' => MessageStatus::Sent->value,
             'is_read' => false,
             'read_at' => null,
         ];

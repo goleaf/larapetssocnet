@@ -142,7 +142,7 @@ class ConversationService
 
     public function getUnreadCountForUser(User $viewer): int
     {
-        return $viewer->totalUnreadMessages();
+        return (int) Message::query()->unread($viewer->getKey())->count();
     }
 
     /**
