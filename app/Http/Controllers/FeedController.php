@@ -14,8 +14,14 @@ class FeedController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user()->loadMissing('pets:id,user_id,name');
+        $user = $request->user();
         $viewerId = (int) $user->getKey();
+
+        $ownedPets = $user->pets()
+            ->without(['user', 'species', 'breed', 'media', 'tags'])
+            ->select(['pets.id', 'pets.user_id', 'pets.name', 'pets.species', 'pets.breed'])
+            ->orderBy('pets.name')
+            ->get();
 
         $type = in_array($request->string('type')->toString(), ['text', 'photo', 'video'], true)
             ? $request->string('type')->toString()
@@ -59,7 +65,7 @@ class FeedController extends Controller
             ->get();
 
         return view('feed.index', array_merge(
-            compact('posts', 'yourGroups'),
+            compact('posts', 'yourGroups', 'ownedPets'),
             $sidebarData,
             compact('user', 'type'),
         ));

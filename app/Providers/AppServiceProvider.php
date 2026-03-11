@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\FollowAbility;
 use App\Events\UserBlocked;
 use App\Listeners\CancelPendingRequestsOnBlock;
 use App\Listeners\RemoveFollowOnBlock;
@@ -76,10 +77,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MarketplaceListing::class, ListingPolicy::class);
         Gate::policy(Message::class, MessagePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
-        Gate::define('follow', [FollowPolicy::class, 'follow']);
-        Gate::define('unfollow', [FollowPolicy::class, 'unfollow']);
-        Gate::define('viewFollowers', [FollowPolicy::class, 'viewFollowers']);
-        Gate::define('viewFollowing', [FollowPolicy::class, 'viewFollowing']);
+        $this->defineFollowGate(FollowAbility::Follow, [FollowPolicy::class, 'follow']);
+        $this->defineFollowGate(FollowAbility::Unfollow, [FollowPolicy::class, 'unfollow']);
+        $this->defineFollowGate(FollowAbility::ViewFollowers, [FollowPolicy::class, 'viewFollowers']);
+        $this->defineFollowGate(FollowAbility::ViewFollowing, [FollowPolicy::class, 'viewFollowing']);
         Pet::observe(PetObserver::class);
         Post::observe(PostObserver::class);
         EventFacade::listen(UserBlocked::class, RemoveFollowOnBlock::class);
@@ -122,5 +123,15 @@ class AppServiceProvider extends ServiceProvider
 
             abort(404, 'User not found.');
         });
+    }
+
+    /**
+     * @param  array{0: class-string, 1: string}  $callback
+     */
+    private function defineFollowGate(FollowAbility $ability, array $callback): void
+    {
+        if (! Gate::has($ability)) {
+            Gate::define($ability, $callback);
+        }
     }
 }

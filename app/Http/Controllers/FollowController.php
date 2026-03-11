@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FollowAbility;
 use App\Models\User;
 use App\Services\FollowService;
 use Illuminate\Http\JsonResponse;
@@ -22,13 +23,13 @@ class FollowController extends Controller
         $actor = $request->user();
 
         if ($actor->isFollowing($user) || $actor->hasRequestedFollow($user)) {
-            $this->authorize('unfollow', $user);
+            $this->authorize(FollowAbility::Unfollow, $user);
             $this->followService->unfollow($actor, $user);
 
             return back()->with('success', "Unfollowed @{$user->username}.");
         }
 
-        $this->authorize('follow', $user);
+        $this->authorize(FollowAbility::Follow, $user);
         $status = $this->followService->follow($actor, $user);
 
         return back()->with(
@@ -41,7 +42,7 @@ class FollowController extends Controller
 
     public function follow(Request $request, User $user): JsonResponse
     {
-        $this->authorize('follow', $user);
+        $this->authorize(FollowAbility::Follow, $user);
 
         $status = $this->followService->follow($request->user(), $user);
         $followerCount = (int) $user->fresh()->followers_count;
@@ -63,7 +64,7 @@ class FollowController extends Controller
 
     public function unfollow(Request $request, User $user): JsonResponse
     {
-        $this->authorize('unfollow', $user);
+        $this->authorize(FollowAbility::Unfollow, $user);
 
         $this->followService->unfollow($request->user(), $user);
         $followerCount = (int) $user->fresh()->followers_count;
@@ -82,7 +83,7 @@ class FollowController extends Controller
 
     public function followers(Request $request, User $user): View
     {
-        $this->authorize('viewFollowers', $user);
+        $this->authorize(FollowAbility::ViewFollowers, $user);
 
         $followers = $user->acceptedFollowers()
             ->with('media')
@@ -102,7 +103,7 @@ class FollowController extends Controller
 
     public function following(Request $request, User $user): View
     {
-        $this->authorize('viewFollowing', $user);
+        $this->authorize(FollowAbility::ViewFollowing, $user);
 
         $following = $user->acceptedFollowing()
             ->with('media')

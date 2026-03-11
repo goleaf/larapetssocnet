@@ -19,7 +19,7 @@ class InstallSkywalkerUiPresetAction
         $packagePath = base_path('vendor/skywalker-labs/ui');
 
         if (! $this->files->isDirectory($packagePath)) {
-            $command->components->error('skywalker-labs/ui is not installed. Run composer require skywalker-labs/ui first.');
+            $command->error('skywalker-labs/ui is not installed. Run composer require skywalker-labs/ui first.');
 
             return Command::FAILURE;
         }
@@ -141,20 +141,20 @@ class InstallSkywalkerUiPresetAction
         array $skippedFiles,
     ): void {
         if ($writtenFiles !== []) {
-            $command->components->info('Skywalker UI scaffolding prepared in an isolated directory.');
-            $command->components->twoColumnDetail('Created', (string) count($writtenFiles));
+            $command->info('Skywalker UI scaffolding prepared in an isolated directory.');
+            $command->line('Created: '.count($writtenFiles));
         }
 
         if ($skippedFiles !== []) {
-            $command->components->warn(count($skippedFiles).' existing file(s) were skipped. Use --option=force to overwrite.');
+            $command->warn(count($skippedFiles).' existing file(s) were skipped. Use --option=force to overwrite.');
         }
 
         if ($writtenFiles === [] && $skippedFiles === []) {
-            $command->components->warn('No files were generated.');
+            $command->warn('No files were generated.');
         }
 
-        $command->components->twoColumnDetail('Target', $targetDirectory);
-        $command->components->twoColumnDetail('Auth stubs', $includeAuth ? 'yes' : 'no');
+        $command->line('Target: '.$targetDirectory);
+        $command->line('Auth stubs: '.($includeAuth ? 'yes' : 'no'));
     }
 
     private function resolveTargetDirectory(?string $targetRoot): string

@@ -16,7 +16,7 @@ class ChartService
      */
     public function weightChart(Collection $logs, string $unit = 'kg'): ?string
     {
-        if ($logs->count() < 2) {
+        if (! $logs->containsManyItems()) {
             return null;
         }
 
@@ -34,7 +34,7 @@ class ChartService
             return (object) ['date' => $date, 'value' => $value];
         })->filter(fn ($d) => $d->value > 0)->values();
 
-        if ($data->count() < 2) {
+        if (! $data->containsManyItems()) {
             return null;
         }
 

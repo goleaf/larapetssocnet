@@ -13,6 +13,7 @@
  :'accessible-soft';
  $activeFeedThemeLabel = $feedThemes[$activeFeedTheme];
  $yourGroups = $yourGroups ?? collect();
+ $ownedPets = $ownedPets ?? collect();
  @endphp
 
  <x-slot name="header">
@@ -49,7 +50,7 @@
  <div>
  <x-ui.label for="feed-post-pet-id"
  class="!mb-1 text-xs uppercase tracking-wide">{{ __('feed.pet_label') }}</x-ui.label>
- <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect(['' => __('feed.no_pet_tag')])->merge($user->pets->pluck('name','id'))->all()" :value="old('pet_id')"/>
+ <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect(['' => __('feed.no_pet_tag')])->merge($ownedPets->pluck('name','id'))->all()" :value="old('pet_id')"/>
  @error('pet_id')
  <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
  @enderror

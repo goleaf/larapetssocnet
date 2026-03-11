@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FollowAbility;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\ReservedUsername;
 use App\Models\User;
@@ -206,7 +207,7 @@ class ProfileController extends Controller
 
     public function followers(Request $request, User $user): View
     {
-        $this->authorize('viewFollowers', $user);
+        $this->authorize(FollowAbility::ViewFollowers, $user);
 
         $followers = $user->followers()
             ->notBlockedFor($request->user())
@@ -222,7 +223,7 @@ class ProfileController extends Controller
 
     public function following(Request $request, User $user): View
     {
-        $this->authorize('viewFollowing', $user);
+        $this->authorize(FollowAbility::ViewFollowing, $user);
 
         $following = $user->following()
             ->notBlockedFor($request->user())
