@@ -335,8 +335,8 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
- Alpine.data('profileActions', (config = {}) => ({
- isFollowing: Boolean(config.isFollowing),
+Alpine.data('profileActions', (config = {}) => ({
+ followStatus: toStringValue(config.followStatus) || (Boolean(config.isFollowing) ? 'following' : 'none'),
  isBlocked: Boolean(config.isBlocked),
  followersCount: toNumber(config.followersCount),
  followUrl: toStringValue(config.followUrl),
@@ -345,6 +345,27 @@ document.addEventListener('alpine:init', () => {
  unblockUrl: toStringValue(config.unblockUrl),
  busy: false,
  notice:'',
+
+ get isFollowing() {
+ return this.followStatus === 'following';
+ },
+
+ get followLabel() {
+ const map = { following: 'Following', pending: 'Requested', none: 'Follow' };
+ return map[this.followStatus] || 'Follow';
+ },
+
+ get followButtonClass() {
+ if (this.followStatus === 'following') {
+ return 'border border-whisker bg-warm-white text-bark hover:bg-cream';
+ }
+
+ if (this.followStatus === 'pending') {
+ return 'border border-whisker bg-cream text-fur';
+ }
+
+ return 'bg-paw text-white hover:bg-paw-dark shadow-button';
+ },
 
  formatCount(value) {
  return window.uiHelpers.formatCount(value);
@@ -377,15 +398,21 @@ document.addEventListener('alpine:init', () => {
 
  const data = payload.data || {};
 
- if (Object.hasOwn(data,'is_following')) {
- this.isFollowing = Boolean(data.is_following);
+ if (Object.hasOwn(payload,'follow_status')) {
+ this.followStatus = toStringValue(payload.follow_status);
+ } else if (Object.hasOwn(data,'follow_status')) {
+ this.followStatus = toStringValue(data.follow_status);
+ } else if (Object.hasOwn(data,'is_following')) {
+ this.followStatus = data.is_following ? 'following' : 'none';
  }
 
  if (Object.hasOwn(data,'is_blocked')) {
  this.isBlocked = Boolean(data.is_blocked);
  }
 
- if (Object.hasOwn(data,'followers_count')) {
+ if (Object.hasOwn(payload,'follower_count')) {
+ this.followersCount = toNumber(payload.follower_count);
+ } else if (Object.hasOwn(data,'followers_count')) {
  this.followersCount = toNumber(data.followers_count);
  }
 
@@ -406,12 +433,20 @@ document.addEventListener('alpine:init', () => {
  return;
  }
 
- if (this.isFollowing) {
+ if (this.followStatus === 'following' || this.followStatus === 'pending') {
  await this.send(this.unfollowUrl,'DELETE');
  return;
  }
 
  await this.send(this.followUrl,'POST');
+ },
+
+ async cancelRequest() {
+ if (this.busy || this.followStatus !== 'pending') {
+ return;
+ }
+
+ await this.send(this.unfollowUrl,'DELETE');
  },
 
  async toggleBlock() {

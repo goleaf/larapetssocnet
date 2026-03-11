@@ -1,6 +1,6 @@
-@php
- $suggestions = auth()->check() ? auth()->user()->getSuggestedUsersToFollow(4) : collect();
-@endphp
+@props([
+ 'suggestions' => collect(),
+])
 
 @if ($suggestions->count())
  <aside class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">

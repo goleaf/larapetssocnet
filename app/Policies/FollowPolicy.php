@@ -8,15 +8,7 @@ class FollowPolicy
 {
     public function follow(?User $auth, User $target): bool
     {
-        if (! $auth) {
-            return false;
-        }
-
-        if ($auth->is($target) || (bool) $target->is_banned) {
-            return false;
-        }
-
-        return ! $auth->hasBlocked($target) && ! $target->hasBlocked($auth);
+        return $target->canBeFollowedBy($auth);
     }
 
     public function unfollow(?User $auth, User $target): bool
@@ -26,27 +18,33 @@ class FollowPolicy
 
     public function viewFollowers(?User $viewer, User $user): bool
     {
-        if ((bool) $user->is_banned) {
-            return false;
-        }
-
-        if (! $viewer) {
-            return ! (bool) $user->is_private;
-        }
-
-        if ($viewer->is($user) || $viewer->hasAnyRole(['admin', 'moderator'])) {
-            return true;
-        }
-
-        if ((bool) $user->is_private) {
-            return $viewer->isFollowing($user);
-        }
-
-        return true;
+        return $user->canViewFollowersList($viewer);
     }
 
     public function viewFollowing(?User $viewer, User $user): bool
     {
-        return $this->viewFollowers($viewer, $user);
+        return $user->canViewFollowingList($viewer);
+    }
+
+    public function manageRequests(?User $auth, User $owner): bool
+    {
+        if (! $auth) {
+            return false;
+        }
+
+        if ((bool) $auth->is_banned) {
+            return false;
+        }
+
+        return $auth->is($owner);
+    }
+
+    public function removeFollower(?User $auth, User $follower): bool
+    {
+        if (! $auth) {
+            return false;
+        }
+
+        return $auth->canRemoveFollower($follower);
     }
 }

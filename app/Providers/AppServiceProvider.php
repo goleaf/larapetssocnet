@@ -82,6 +82,8 @@ class AppServiceProvider extends ServiceProvider
         $this->defineFollowGate(FollowAbility::Unfollow, [FollowPolicy::class, 'unfollow']);
         $this->defineFollowGate(FollowAbility::ViewFollowers, [FollowPolicy::class, 'viewFollowers']);
         $this->defineFollowGate(FollowAbility::ViewFollowing, [FollowPolicy::class, 'viewFollowing']);
+        $this->defineFollowGate(FollowAbility::ManageRequests, [FollowPolicy::class, 'manageRequests']);
+        $this->defineFollowGate(FollowAbility::RemoveFollower, [FollowPolicy::class, 'removeFollower']);
         Pet::observe(PetObserver::class);
         Message::observe(MessageObserver::class);
         Post::observe(PostObserver::class);

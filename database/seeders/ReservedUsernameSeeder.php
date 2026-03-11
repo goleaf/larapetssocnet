@@ -19,6 +19,11 @@ class ReservedUsernameSeeder extends Seeder
             'welcome',
         ];
 
+        $system = array_values(array_unique(array_merge(
+            $system,
+            is_array(config('usernames.reserved')) ? config('usernames.reserved') : []
+        )));
+
         $brand = [
             'petsocial', 'larapets', 'petbook', 'petgram', 'pawsbook', 'pawsocial',
         ];

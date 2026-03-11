@@ -24,11 +24,8 @@
  <x-ui.card>
  <x-ui.empty-state icon="🔒" title="This account is private" :description="'This profile is private. Follow @'.$user->username.'to see posts, photos, and pet profiles.'">
  @auth
- @php
- $followStatus = auth()->user()->getFollowStatus($user);
- @endphp
  <x-slot name="action">
- <x-follow-button :user="$user" :follow-status="$followStatus" size="lg"/>
+ <x-follow-button :user="$user" :follow-status="($followStatus ?? 'none')" size="lg"/>
  </x-slot>
  @else
  <x-slot name="action">

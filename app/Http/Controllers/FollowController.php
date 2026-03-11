@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\FollowAbility;
+use App\Models\Follow;
 use App\Models\User;
 use App\Services\FollowService;
 use Illuminate\Http\JsonResponse;
@@ -85,7 +86,11 @@ class FollowController extends Controller
     {
         $this->authorize(FollowAbility::ViewFollowers, $user);
 
+        $viewer = $request->user();
+
         $followers = $user->acceptedFollowers()
+            ->active()
+            ->notBlockedFor($viewer)
             ->with('media')
             ->withCount(['acceptedFollowers as followers_count', 'posts'])
             ->when($request->string('q')->toString(), function ($query, $term): void {
@@ -98,14 +103,22 @@ class FollowController extends Controller
             ->paginate(24)
             ->withQueryString();
 
-        return view('profile.followers', compact('user', 'followers'));
+        $followStatusMap = $viewer
+            ? $this->followService->followStatusMap($viewer, $followers->getCollection())
+            : [];
+
+        return view('profile.followers', compact('user', 'followers', 'followStatusMap'));
     }
 
     public function following(Request $request, User $user): View
     {
         $this->authorize(FollowAbility::ViewFollowing, $user);
 
+        $viewer = $request->user();
+
         $following = $user->acceptedFollowing()
+            ->active()
+            ->notBlockedFor($viewer)
             ->with('media')
             ->withCount(['acceptedFollowers as followers_count', 'posts'])
             ->when($request->string('q')->toString(), function ($query, $term): void {
@@ -118,7 +131,23 @@ class FollowController extends Controller
             ->paginate(24)
             ->withQueryString();
 
-        return view('profile.following', compact('user', 'following'));
+        $followsYouIds = [];
+        $followingIds = $following->getCollection()->modelKeys();
+
+        if ($followingIds !== []) {
+            $followsYouIds = Follow::query()
+                ->whereIn('follower_id', $followingIds)
+                ->where('following_id', $user->getKey())
+                ->where('status', 'accepted')
+                ->pluck('follower_id')
+                ->all();
+        }
+
+        $followStatusMap = $viewer
+            ? $this->followService->followStatusMap($viewer, $following->getCollection())
+            : [];
+
+        return view('profile.following', compact('user', 'following', 'followsYouIds', 'followStatusMap'));
     }
 
     public function removeFollower(Request $request, User $user): JsonResponse
@@ -129,10 +158,15 @@ class FollowController extends Controller
             abort(422, 'Cannot remove yourself.');
         }
 
+        $this->authorize(FollowAbility::RemoveFollower, $user);
+
         $this->followService->removeFollower($owner, $user);
+        $followerCount = (int) $owner->fresh()->followers_count;
 
         return response()->json([
             'success' => true,
+            'follow_status' => $owner->getFollowStatus($user),
+            'follower_count' => $followerCount,
             'message' => "@{$user->username} has been removed from your followers.",
         ]);
     }

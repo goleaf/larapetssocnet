@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Group;
 use App\Models\User;
 use App\Models\UserBlock;
+use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Fluent;
 use Illuminate\Validation\ValidationException;
@@ -13,7 +14,10 @@ class SettingsService
 {
     public function updateProfile(User $user, array $data, ?string $usernameConfirm = null): User
     {
-        if (isset($data['username']) && $data['username'] !== $user->username) {
+        $currentUsername = UsernameNormalizer::normalize((string) $user->username);
+        $incomingUsername = isset($data['username']) ? UsernameNormalizer::normalize((string) $data['username']) : null;
+
+        if ($incomingUsername !== null && $incomingUsername !== $currentUsername) {
             if ($usernameConfirm !== $user->username) {
                 throw ValidationException::withMessages([
                     'username_confirm' => 'The confirmation username does not match your current username.',

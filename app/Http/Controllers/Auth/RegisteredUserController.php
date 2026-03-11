@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Rules\NotReservedUsername;
 use App\Services\UsernameService;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,12 +33,12 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->merge([
-            'username' => User::normalizeUsername((string) $request->input('username')),
+            'username' => UsernameNormalizer::normalize((string) $request->input('username')),
         ]);
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['nullable', 'string', 'min:3', 'max:30', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:'.User::class, new NotReservedUsername],
+            'username' => UsernameRules::optionalRules(),
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);

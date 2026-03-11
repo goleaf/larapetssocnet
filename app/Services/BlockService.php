@@ -7,6 +7,7 @@ use App\Events\UserUnblocked;
 use App\Exceptions\CannotBlockAdminException;
 use App\Exceptions\CannotBlockSelfException;
 use App\Models\Block;
+use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -30,20 +31,46 @@ class BlockService
         }
 
         DB::transaction(function () use ($actor, $target): void {
-            $wasFollowing = $actor->following()->whereKey($target->getKey())->exists();
-            $wasFollowedBy = $actor->followers()->whereKey($target->getKey())->exists();
+            $followRows = Follow::query()
+                ->where(function ($query) use ($actor, $target): void {
+                    $query
+                        ->where('follower_id', $actor->getKey())
+                        ->where('following_id', $target->getKey());
+                })
+                ->orWhere(function ($query) use ($actor, $target): void {
+                    $query
+                        ->where('follower_id', $target->getKey())
+                        ->where('following_id', $actor->getKey());
+                })
+                ->lockForUpdate()
+                ->get();
 
-            $actor->following()->detach($target->getKey());
-            $actor->followers()->detach($target->getKey());
+            foreach ($followRows as $follow) {
+                $isActorFollower = (int) $follow->follower_id === (int) $actor->getKey();
 
-            if ($wasFollowing) {
-                $this->counterCacheService->safeDecrement($actor, 'following_count');
-                $this->counterCacheService->safeDecrement($target, 'followers_count');
+                if ($follow->status === 'accepted') {
+                    if ($isActorFollower) {
+                        $this->counterCacheService->safeDecrement($actor, 'following_count');
+                        $this->counterCacheService->safeDecrement($target, 'followers_count');
+                    } else {
+                        $this->counterCacheService->safeDecrement($target, 'following_count');
+                        $this->counterCacheService->safeDecrement($actor, 'followers_count');
+                    }
+                }
+
+                if ($follow->status === 'pending') {
+                    if ($isActorFollower) {
+                        $this->counterCacheService->safeDecrement($target, 'follow_requests_count');
+                    } else {
+                        $this->counterCacheService->safeDecrement($actor, 'follow_requests_count');
+                    }
+                }
             }
 
-            if ($wasFollowedBy) {
-                $this->counterCacheService->safeDecrement($target, 'following_count');
-                $this->counterCacheService->safeDecrement($actor, 'followers_count');
+            if ($followRows->isNotEmpty()) {
+                Follow::query()
+                    ->whereIn('id', $followRows->modelKeys())
+                    ->delete();
             }
 
             Block::query()->firstOrCreate([

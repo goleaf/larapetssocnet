@@ -5,9 +5,10 @@ namespace App\Services;
 use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
-use App\Models\ReservedUsername;
 use App\Models\User;
 use App\Models\UsernameRedirect;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -15,21 +16,22 @@ class UsernameService
 {
     public function generate(string $name): string
     {
-        $base = (string) Str::of($name)
-            ->lower()
-            ->replaceMatches('/[^a-z0-9_]+/', '_')
-            ->trim('_')
-            ->limit(25, '');
+        $base = UsernameNormalizer::generateBase($name);
 
-        if (strlen($base) < 3) {
+        $minLength = UsernameRules::minLength();
+        $maxLength = UsernameRules::maxLength();
+
+        if (strlen($base) < $minLength) {
             $base = 'user_'.random_int(100, 999);
         }
 
+        $base = (string) Str::of($base)->limit($maxLength, '');
+
         for ($i = 0; $i < 10; $i++) {
-            $candidate = $i === 0 ? $base : Str::limit($base, 25, '').random_int(100, 999);
+            $candidate = $i === 0 ? $base : (string) Str::of($base)->limit($maxLength - 3, '').random_int(100, 999);
 
             if ($this->isAvailable($candidate)) {
-                return strtolower($candidate);
+                return UsernameNormalizer::normalize($candidate);
             }
         }
 
@@ -42,27 +44,18 @@ class UsernameService
 
     public function isAvailable(string $username, ?int $excludeUserId = null): bool
     {
-        $normalized = strtolower(trim($username));
-
-        if (! preg_match('/^[a-zA-Z0-9_]{3,30}$/', $normalized)) {
-            return false;
-        }
-
-        if (ReservedUsername::isReserved($normalized)) {
-            return false;
-        }
-
-        return ! User::query()
-            ->where('username', $normalized)
-            ->when($excludeUserId, fn ($query, $id) => $query->where('id', '!=', $id))
-            ->exists();
+        return UsernameRules::isAvailable($username, $excludeUserId);
     }
 
     public function change(User $user, string $newUsername, bool $ignoreCooldown = false): bool
     {
-        $normalized = strtolower(trim($newUsername));
+        $normalized = UsernameNormalizer::normalize($newUsername);
 
-        if (ReservedUsername::isReserved($normalized)) {
+        if ($normalized === UsernameNormalizer::normalize($user->username)) {
+            return false;
+        }
+
+        if (UsernameRules::isReserved($normalized)) {
             throw new UsernameReservedException;
         }
 
@@ -79,7 +72,7 @@ class UsernameService
                 UsernameRedirect::query()->create([
                     'old_username' => $user->username,
                     'user_id' => $user->id,
-                    'redirects_until' => now()->addDays(90),
+                    'redirects_until' => now()->addDays((int) config('usernames.redirect_ttl_days', 90)),
                     'created_at' => now(),
                 ]);
             }

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Services\BlockService;
 use App\Services\FollowService;
+use App\Services\FollowSuggestionService;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use App\Traits\HasCounterCache;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -183,21 +186,23 @@ class User extends Authenticatable implements HasMedia
 
     public static function normalizeUsername(?string $username): string
     {
-        return (string) Str::of((string) $username)
-            ->lower()
-            ->replaceMatches('/[^a-z0-9_]/', '')
-            ->trim('_');
+        return UsernameNormalizer::normalize($username);
     }
 
     public static function generateUniqueUsername(string $seed): string
     {
-        $base = static::normalizeUsername($seed);
+        $base = UsernameNormalizer::generateBase($seed);
 
         if ($base === '') {
             $base = 'petlover';
         }
 
-        $base = Str::limit($base, 24, '');
+        if (UsernameRules::disallowNumericOnly() && preg_match('/^[0-9]+$/', $base)) {
+            $base = 'user_'.$base;
+        }
+
+        $maxLength = UsernameRules::maxLength();
+        $base = Str::limit($base, $maxLength, '');
         $username = $base;
         $suffix = 0;
 
@@ -205,10 +210,11 @@ class User extends Authenticatable implements HasMedia
             return $username;
         }
 
-        while (static::query()->where('username', $username)->exists()) {
+        while (! UsernameRules::isAvailable($username)) {
             $suffix++;
             $suffixText = (string) $suffix;
-            $username = Str::limit($base, 30 - strlen($suffixText) - 1, '').'_'.$suffixText;
+            $availableLength = $maxLength - strlen($suffixText) - 1;
+            $username = Str::limit($base, $availableLength, '').'_'.$suffixText;
         }
 
         return $username;
@@ -220,24 +226,12 @@ class User extends Authenticatable implements HasMedia
             return false;
         }
 
-        $normalized = static::normalizeUsername($username);
-
-        if (strlen($normalized) < 3) {
-            return false;
-        }
-
-        $query = static::query()->where('username', $normalized);
-
-        if ($ignore?->exists) {
-            $query->whereKeyNot($ignore->getKey());
-        }
-
-        return ! $query->exists();
+        return UsernameRules::isAvailable($username, $ignore?->getKey());
     }
 
     public function setUsernameAttribute(string $value): void
     {
-        $this->attributes['username'] = strtolower(trim($value));
+        $this->attributes['username'] = UsernameNormalizer::normalize($value);
     }
 
     public function canChangeUsername(): bool
@@ -768,7 +762,7 @@ class User extends Authenticatable implements HasMedia
                     ->orWhere(function (Builder $followers) use ($viewer): void {
                         $followers
                             ->where('is_private', true)
-                            ->whereIn('users.id', $viewer->following()->select('users.id'));
+                            ->whereIn('users.id', $viewer->acceptedFollowing()->select('users.id'));
                     });
             })
             ->notBlockedFor($viewer);
@@ -847,6 +841,50 @@ class User extends Authenticatable implements HasMedia
         };
     }
 
+    public function canBeFollowedBy(?self $viewer): bool
+    {
+        if (! $viewer) {
+            return false;
+        }
+
+        if ($viewer->is($this)) {
+            return false;
+        }
+
+        if ((bool) $this->is_banned || (bool) $viewer->is_banned) {
+            return false;
+        }
+
+        return ! $viewer->hasBlockingRelationshipWith($this);
+    }
+
+    public function followModeFor(self $viewer): string
+    {
+        return (bool) $this->is_private ? 'pending' : 'accepted';
+    }
+
+    public function canApproveFollowRequestFrom(self $requester): bool
+    {
+        if ($this->is($requester)) {
+            return false;
+        }
+
+        if ((bool) $this->is_banned) {
+            return false;
+        }
+
+        return ! $this->hasBlockingRelationshipWith($requester);
+    }
+
+    public function canRemoveFollower(self $follower): bool
+    {
+        if ($this->is($follower)) {
+            return false;
+        }
+
+        return ! $this->hasBlockingRelationshipWith($follower);
+    }
+
     public function follow(self $user): string
     {
         return app(FollowService::class)->follow($this, $user);
@@ -920,27 +958,7 @@ class User extends Authenticatable implements HasMedia
 
     public function getSuggestedUsersToFollow(int $limit = 6)
     {
-        $excludeIds = $this->acceptedFollowing()
-            ->pluck('users.id')
-            ->push($this->getKey());
-
-        if (static::hasBlocksTable()) {
-            $excludeIds = $excludeIds
-                ->merge($this->blocking()->pluck('users.id'))
-                ->merge($this->blockedBy()->pluck('users.id'));
-        }
-
-        $excludeIds = $excludeIds
-            ->unique();
-
-        return self::query()
-            ->whereNotIn('id', $excludeIds)
-            ->where('is_banned', false)
-            ->where('is_private', false)
-            ->orderByDesc('followers_count')
-            ->limit($limit)
-            ->with('media')
-            ->get();
+        return app(FollowSuggestionService::class)->forUser($this, $limit);
     }
 
     public function hasBlocked(self $user): bool
@@ -1097,12 +1115,56 @@ class User extends Authenticatable implements HasMedia
 
     public function canViewFollowersList(?self $viewer): bool
     {
-        return $this->canSeeFollowersList($viewer);
+        if ((bool) $this->is_banned) {
+            return false;
+        }
+
+        if (! $viewer) {
+            return ! (bool) $this->is_private;
+        }
+
+        if ($viewer->hasBlockingRelationshipWith($this)) {
+            return false;
+        }
+
+        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if (! (bool) $this->is_private) {
+            return true;
+        }
+
+        return $viewer->isFollowing($this);
     }
 
     public function canViewFollowingList(?self $viewer): bool
     {
-        return $this->canSeeFollowersList($viewer);
+        if ((bool) $this->is_banned) {
+            return false;
+        }
+
+        if (! $viewer) {
+            return ! (bool) $this->is_private && (bool) $this->open_following;
+        }
+
+        if ($viewer->hasBlockingRelationshipWith($this)) {
+            return false;
+        }
+
+        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if ((bool) $this->is_private) {
+            return $viewer->isFollowing($this);
+        }
+
+        if ((bool) $this->open_following) {
+            return true;
+        }
+
+        return $viewer->isFollowing($this);
     }
 
     public function canView(Model $model): bool
@@ -1146,19 +1208,7 @@ class User extends Authenticatable implements HasMedia
 
     public function canSeeFollowersList(?self $viewer): bool
     {
-        if (! $viewer) {
-            return ! (bool) $this->is_private;
-        }
-
-        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
-            return true;
-        }
-
-        if (! (bool) $this->is_private) {
-            return true;
-        }
-
-        return $viewer->isFollowing($this);
+        return $this->canViewFollowersList($viewer);
     }
 
     public function updateAvatar(UploadedFile $file): void

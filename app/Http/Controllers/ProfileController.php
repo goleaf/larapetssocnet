@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Enums\FollowAbility;
 use App\Http\Requests\UpdateProfileRequest;
-use App\Models\ReservedUsername;
 use App\Models\User;
-use App\Services\UsernameService;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Mews\Purifier\Facades\Purifier;
@@ -55,6 +56,8 @@ class ProfileController extends Controller
                 ->merge($user->getMedia(User::MEDIA_COLLECTION_COVER));
         }
 
+        $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
+
         return view('profile.show', [
             'profileUser' => $user,
             'tab' => $tab,
@@ -63,7 +66,8 @@ class ProfileController extends Controller
             'photos' => $photos,
             'posts' => collect(),
             'likes' => collect(),
-            'isFollowing' => $viewer ? $viewer->isFollowing($user) : false,
+            'followStatus' => $followStatus,
+            'isFollowing' => $followStatus === 'following',
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
         ]);
     }
@@ -237,36 +241,31 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function usernameAvailable(Request $request, UsernameService $usernames): JsonResponse
+    public function usernameAvailable(Request $request): JsonResponse
     {
-        $normalizedUsername = strtolower(trim((string) $request->input('username')));
+        $normalizedUsername = UsernameNormalizer::normalize((string) $request->input('username'));
 
-        if (strlen($normalizedUsername) < 3 || strlen($normalizedUsername) > 30) {
+        $validator = Validator::make([
+            'username' => $normalizedUsername,
+        ], [
+            'username' => UsernameRules::requiredRules($request->user()?->id),
+        ], [
+            'username.min' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
+            'username.max' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
+            'username.regex' => 'Only letters, numbers and underscores allowed.',
+            'username.unique' => 'Username is already taken.',
+        ]);
+
+        if ($validator->fails()) {
             return response()->json([
                 'available' => false,
-                'message' => 'Username must be 3-30 characters.',
+                'message' => $validator->errors()->first('username'),
             ]);
         }
-
-        if (! preg_match('/^[a-zA-Z0-9_]+$/', $normalizedUsername)) {
-            return response()->json([
-                'available' => false,
-                'message' => 'Only letters, numbers and underscores allowed.',
-            ]);
-        }
-
-        if (ReservedUsername::isReserved($normalizedUsername)) {
-            return response()->json([
-                'available' => false,
-                'message' => 'This username is reserved and cannot be used.',
-            ]);
-        }
-
-        $available = $usernames->isAvailable($normalizedUsername, $request->user()?->id);
 
         return response()->json([
-            'available' => $available,
-            'message' => $available ? 'Username is available!' : 'Username is already taken.',
+            'available' => true,
+            'message' => 'Username is available!',
         ]);
     }
 

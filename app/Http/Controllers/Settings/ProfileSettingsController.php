@@ -7,8 +7,9 @@ use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Rules\NotReservedUsername;
 use App\Services\UsernameService;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -33,23 +34,12 @@ class ProfileSettingsController extends Controller
         $user = $request->user();
 
         $request->merge([
-            'username' => (string) Str::of((string) $request->input('username'))
-                ->lower()
-                ->replaceMatches('/[^a-z0-9_]/', '')
-                ->trim('_'),
+            'username' => UsernameNormalizer::normalize((string) $request->input('username')),
         ]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => [
-                'required',
-                'string',
-                'min:3',
-                'max:30',
-                'regex:/^[a-zA-Z0-9_]+$/',
-                new NotReservedUsername,
-                Rule::unique(User::class)->ignore($user->id),
-            ],
+            'username' => UsernameRules::requiredRules($user->id),
             'email' => [
                 'required',
                 'string',

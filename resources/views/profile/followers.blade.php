@@ -30,7 +30,10 @@
 
  @auth
  @if (auth()->id() !== $follower->id)
- <x-follow-button :user="$follower" :follow-status="auth()->user()->getFollowStatus($follower)" size="sm"
+ @php
+ $followStatus = $followStatusMap[$follower->id] ?? 'none';
+ @endphp
+ <x-follow-button :user="$follower" :follow-status="$followStatus" size="sm"
  :show-remove="auth()->id() === $user->id"/>
  @endif
  @endauth

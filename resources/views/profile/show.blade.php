@@ -45,6 +45,7 @@
 
 <x-app-layout>
  <div class="space-y-5" x-data="profileActions({
+ followStatus: @js($followStatus),
  isFollowing: @js($isFollowing),
  isBlocked: @js($isBlocked),
  followersCount: @js($profileUser->followers_count),
@@ -108,11 +109,20 @@
  @elseif ($canInteract)
  <button
  class="inline-flex items-center justify-center rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150"
- :class="isFollowing ?'border border-whisker bg-warm-white text-bark hover:bg-cream':'bg-paw text-white hover:bg-paw-dark shadow-button'"
- x-bind:disabled="busy || isBlocked" x-bind:aria-pressed="isFollowing.toString()"
- x-bind:aria-label="isFollowing ?'Unfollow {{ addslashes($profileUser->name) }}':'Follow {{ addslashes($profileUser->name) }}'"
+ :class="followButtonClass"
+ x-bind:disabled="busy || isBlocked || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
+ x-bind:aria-label="followStatus === 'following' ?'Unfollow {{ addslashes($profileUser->name) }}': (followStatus === 'pending' ?'Requested to follow {{ addslashes($profileUser->name) }}' :'Follow {{ addslashes($profileUser->name) }}')"
  @click="toggleFollow">
- <span x-text="busy ?'Saving...': (isFollowing ?'Following':'Follow')"></span>
+ <span x-text="busy ?'Saving...': followLabel"></span>
+ </button>
+
+ <button
+ x-show="followStatus === 'pending'"
+ @click="cancelRequest"
+ type="button"
+ class="text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus:outline-none"
+ >
+ Cancel request
  </button>
 
  <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"

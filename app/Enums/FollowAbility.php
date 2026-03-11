@@ -11,4 +11,8 @@ enum FollowAbility
     case ViewFollowers;
 
     case ViewFollowing;
+
+    case ManageRequests;
+
+    case RemoveFollower;
 }

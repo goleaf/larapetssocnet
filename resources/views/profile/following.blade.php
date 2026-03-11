@@ -26,7 +26,7 @@
  <a href="{{ route('profile.show', ['user'=> $followedUser]) }}"
  class="truncate font-semibold hover:underline">{{ $followedUser->name }}</a>
  <p class="text-xs shell-text-muted">&#64;{{ $followedUser->username }}</p>
- @if ($followedUser->isFollowing($user))
+ @if (in_array($followedUser->id, $followsYouIds ?? [], true))
  <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Follows
  you</span>
  @endif
@@ -34,7 +34,10 @@
 
  @auth
  @if (auth()->id() !== $followedUser->id)
- <x-follow-button :user="$followedUser" :follow-status="auth()->user()->getFollowStatus($followedUser)"
+ @php
+ $followStatus = $followStatusMap[$followedUser->id] ?? 'none';
+ @endphp
+ <x-follow-button :user="$followedUser" :follow-status="$followStatus"
  size="sm"/>
  @endif
  @endauth

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\AccountExportService;
 use App\Services\SettingsService;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -34,16 +36,15 @@ class SettingsController extends Controller
     public function updateProfile(Request $request): RedirectResponse
     {
         $user = $request->user();
+        $normalizedUsername = UsernameNormalizer::normalize((string) $request->input('username'));
+
+        $request->merge([
+            'username' => $normalizedUsername,
+        ]);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => [
-                'required',
-                'string',
-                'max:255',
-                'alpha_dash',
-                Rule::unique('users')->ignore($user->id),
-            ],
+            'username' => UsernameRules::requiredRules($user->id),
             'email' => [
                 'required',
                 'string',
@@ -57,7 +58,7 @@ class SettingsController extends Controller
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
             'username_confirm' => [
-                Rule::requiredIf($request->input('username') !== $user->username),
+                Rule::requiredIf($normalizedUsername !== $user->username),
                 'nullable',
                 'string',
                 'in:'.$user->username,

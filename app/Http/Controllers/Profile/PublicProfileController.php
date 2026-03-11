@@ -45,12 +45,14 @@ class PublicProfileController extends Controller
             : 'posts';
 
         $canViewContent = $user->canViewPosts($viewer);
+        $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
 
         $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets', 'posts']);
 
         if (! $canViewContent && (bool) $user->is_private) {
             return view('profile.private', [
                 'user' => $user,
+                'followStatus' => $followStatus,
             ]);
         }
 
@@ -197,7 +199,8 @@ class PublicProfileController extends Controller
             'mutualConnections' => $mutualConnections,
             'commonGroups' => $commonGroups,
             'activityData' => $activityData,
-            'isFollowing' => $viewer ? $viewer->isFollowing($user) : false,
+            'followStatus' => $followStatus,
+            'isFollowing' => $followStatus === 'following',
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
         ]);
     }

@@ -3,7 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
-use App\Rules\NotReservedUsername;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,15 +36,7 @@ class UpdateProfileRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'username' => [
-                'required',
-                'string',
-                'min:3',
-                'max:30',
-                'regex:/^[a-zA-Z0-9_]+$/',
-                new NotReservedUsername,
-                Rule::unique('users', 'username')->ignore($userId),
-            ],
+            'username' => UsernameRules::requiredRules(is_numeric($userId) ? (int) $userId : null),
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'bio' => ['nullable', 'string', 'max:5000'],
             'website' => ['nullable', 'url:http,https', 'max:255'],
@@ -67,6 +60,8 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'username.regex' => 'Username may contain letters, numbers, and underscores only.',
+            'username.min' => 'Username must be at least '.UsernameRules::minLength().' characters.',
+            'username.max' => 'Username may not be greater than '.UsernameRules::maxLength().' characters.',
             'username.unique' => 'That username is already taken.',
             'country_code.alpha' => 'Country code must contain letters only.',
             'country_code.size' => 'Country code must be exactly 2 letters.',
@@ -78,7 +73,7 @@ class UpdateProfileRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $username = User::normalizeUsername((string) $this->input('username'));
+        $username = UsernameNormalizer::normalize((string) $this->input('username'));
 
         $website = trim((string) $this->input('website'));
         if ($website !== '' && ! preg_match('/^https?:\/\//i', $website)) {

@@ -106,6 +106,42 @@
  </div>
 
  <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
+ @php
+ $suggestions = $suggestions ?? collect();
+ @endphp
+
+ @if ($suggestions->isNotEmpty())
+ <x-ui.card padding="base">
+ <div class="mb-4 flex items-center justify-between">
+ <p class="text-xs font-bold uppercase tracking-wider text-fur">Who to Follow</p>
+ <a href="{{ route('search.index', ['type'=>'users']) }}"
+ class="text-xs font-semibold text-paw hover:underline">See all</a>
+ </div>
+
+ <div class="space-y-3">
+ @foreach ($suggestions as $suggested)
+ <div class="flex items-center justify-between gap-3">
+ <div class="min-w-0 flex items-center gap-3">
+ <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="shrink-0">
+ <x-ui.avatar :src="$suggested->avatar_url" :name="$suggested->name" size="md"/>
+ </a>
+ <div class="min-w-0">
+ <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="block truncate text-sm font-semibold text-bark hover:text-paw">
+ {{ $suggested->name }}
+ </a>
+ <p class="truncate text-xs text-fur">&#64;{{ $suggested->username }}</p>
+ @if ($suggested->suggestion_reason)
+ <p class="truncate text-[11px] text-fur/70">{{ $suggested->suggestion_reason }}</p>
+ @endif
+ </div>
+ </div>
+ <x-follow-button :user="$suggested" follow-status="none" size="sm"/>
+ </div>
+ @endforeach
+ </div>
+ </x-ui.card>
+ @endif
+
  <x-ui.card padding="base">
  <div class="mb-4 flex items-center justify-between">
  <p class="text-xs font-bold uppercase tracking-wider text-fur">{{ __('feed.groups_title') }}</p>

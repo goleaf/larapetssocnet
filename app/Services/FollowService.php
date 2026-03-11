@@ -10,11 +10,36 @@ use App\Models\User;
 use App\Notifications\FollowRequestApproved;
 use App\Notifications\NewFollower;
 use App\Notifications\NewFollowRequest;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class FollowService
 {
     public function __construct(private readonly CounterCacheService $counterCacheService) {}
+
+    /**
+     * @param  Collection<int, User>  $targets
+     * @return array<int, string>
+     */
+    public function followStatusMap(User $viewer, Collection $targets): array
+    {
+        if ($targets->isEmpty()) {
+            return [];
+        }
+
+        $targetIds = $targets->modelKeys();
+
+        return Follow::query()
+            ->where('follower_id', $viewer->getKey())
+            ->whereIn('following_id', $targetIds)
+            ->get(['following_id', 'status'])
+            ->mapWithKeys(function (Follow $follow): array {
+                $status = $follow->status === 'accepted' ? 'following' : 'pending';
+
+                return [(int) $follow->following_id => $status];
+            })
+            ->all();
+    }
 
     public function follow(User $actor, User $target): string
     {
@@ -22,20 +47,21 @@ class FollowService
             throw new CannotFollowSelfException;
         }
 
-        if ($actor->hasBlocked($target) || $target->hasBlocked($actor)) {
+        if ($actor->hasBlockingRelationshipWith($target)) {
             throw new UserBlockedException;
         }
 
-        if ((bool) $target->is_banned) {
+        if ((bool) $actor->is_banned || (bool) $target->is_banned) {
             throw new UserBannedException;
         }
 
-        $status = $target->is_private ? 'pending' : 'accepted';
+        $status = $target->followModeFor($actor);
 
         return DB::transaction(function () use ($actor, $target, $status): string {
             $existing = Follow::query()
                 ->where('follower_id', $actor->getKey())
                 ->where('following_id', $target->getKey())
+                ->lockForUpdate()
                 ->first();
 
             if ($existing?->status === 'accepted') {
@@ -78,6 +104,7 @@ class FollowService
             $row = Follow::query()
                 ->where('follower_id', $actor->getKey())
                 ->where('following_id', $target->getKey())
+                ->lockForUpdate()
                 ->first();
 
             if (! $row) {
@@ -104,9 +131,17 @@ class FollowService
                 ->where('follower_id', $requester->getKey())
                 ->where('following_id', $owner->getKey())
                 ->where('status', 'pending')
+                ->lockForUpdate()
                 ->first();
 
             if (! $follow) {
+                return;
+            }
+
+            if (! $owner->canApproveFollowRequestFrom($requester)) {
+                $follow->delete();
+                $this->counterCacheService->safeDecrement($owner, 'follow_requests_count');
+
                 return;
             }
 

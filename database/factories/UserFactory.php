@@ -25,8 +25,8 @@ class UserFactory extends Factory
     {
         $username = (string) Str::of(fake()->unique()->userName())
             ->lower()
-            ->replaceMatches('/[^a-z0-9._]/', '')
-            ->trim('._');
+            ->replaceMatches('/[^a-z0-9_]/', '')
+            ->trim('_');
 
         if ($username === '') {
             $username = 'petlover_'.fake()->unique()->numerify('###');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FollowAbility;
 use App\Models\User;
 use App\Services\FollowService;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,8 @@ class FollowRequestController extends Controller
 
     public function index(Request $request): View
     {
+        $this->authorize(FollowAbility::ManageRequests, $request->user());
+
         $requests = $request->user()
             ->pendingFollowRequests()
             ->with('media')
@@ -26,6 +29,15 @@ class FollowRequestController extends Controller
 
     public function approve(Request $request, User $user): JsonResponse
     {
+        $this->authorize(FollowAbility::ManageRequests, $request->user());
+
+        if (! $request->user()->canApproveFollowRequestFrom($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to approve this request.',
+            ], 403);
+        }
+
         if (! $request->user()->pendingFollowRequests()->where('users.id', $user->id)->exists()) {
             return response()->json([
                 'success' => false,
@@ -44,6 +56,8 @@ class FollowRequestController extends Controller
 
     public function reject(Request $request, User $user): JsonResponse
     {
+        $this->authorize(FollowAbility::ManageRequests, $request->user());
+
         $this->followService->reject($request->user(), $user);
 
         return response()->json([
@@ -54,6 +68,8 @@ class FollowRequestController extends Controller
 
     public function approveAll(Request $request): JsonResponse
     {
+        $this->authorize(FollowAbility::ManageRequests, $request->user());
+
         $count = $this->followService->approveAll($request->user());
 
         return response()->json([
