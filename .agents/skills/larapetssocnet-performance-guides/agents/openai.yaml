@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Performance Guides"
+  short_description: "Route query and feed optimization work to repo guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#16A34A"
+  default_prompt: "Use $larapetssocnet-performance-guides to pick the right repo guide for feed, query, eager-loading, pagination, or counter optimizations."

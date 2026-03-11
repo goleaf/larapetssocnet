@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\BlockService;
 use App\Services\FollowService;
 use App\Traits\HasCounterCache;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -623,6 +624,32 @@ class User extends Authenticatable implements HasMedia
                 ->orWhere('email', 'like', "%{$term}%")
                 ->orWhere('city', 'like', "%{$term}%");
         });
+    }
+
+    public function scopeSearchResultColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'users.id',
+            'users.name',
+            'users.username',
+            'users.email',
+            'users.city',
+            'users.created_at',
+            'users.is_private',
+            'users.is_banned',
+        ]);
+    }
+
+    public static function paginateSearchResults(?self $viewer, string $term, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->searchResultColumns()
+            ->discoverable()
+            ->notBlockedFor($viewer)
+            ->search($term !== '' ? $term : null)
+            ->latest('users.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function scopeDiscoverable(Builder $query): Builder

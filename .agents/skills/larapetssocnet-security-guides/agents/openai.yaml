@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Security Guides"
+  short_description: "Route security-sensitive work to repo-specific guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#B91C1C"
+  default_prompt: "Use $larapetssocnet-security-guides to pick the right repo guide for visibility, authorization, moderation, guest access, or sanitization changes."

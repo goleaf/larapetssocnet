@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project UI Guides"
+  short_description: "Route Blade, Alpine, and Tailwind work to repo guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"
+  default_prompt: "Use $larapetssocnet-ui-guides to pick the right repo guide for Blade, Alpine, Tailwind, forms, charts, or layout changes."

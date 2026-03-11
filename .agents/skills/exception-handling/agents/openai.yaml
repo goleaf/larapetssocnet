@@ -1,0 +1,7 @@
+interface:
+  display_name: "Exception Handling"
+  short_description: "Help with Exception Handling tasks"
+  default_prompt: "Use $exception-handling to enforce authorization, visibility, sanitization, and secure-by-default behavior."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#B91C1C"

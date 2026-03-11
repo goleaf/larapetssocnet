@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasCounterCache;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -156,6 +157,29 @@ class Pet extends Model implements HasMedia
                 ->orWhere('species', 'like', "%{$term}%")
                 ->orWhere('breed', 'like', "%{$term}%");
         });
+    }
+
+    public function scopeSearchResultColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'pets.id',
+            'pets.user_id',
+            'pets.name',
+            'pets.species',
+            'pets.breed',
+            'pets.bio',
+            'pets.created_at',
+        ]);
+    }
+
+    public static function paginateSearchResults(string $term, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->searchResultColumns()
+            ->search($term !== '' ? $term : null)
+            ->latest('pets.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function scopePublic(Builder $query): Builder

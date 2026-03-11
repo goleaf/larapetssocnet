@@ -1,0 +1,7 @@
+interface:
+  display_name: "Controller Cleanup"
+  short_description: "Help with Controller Cleanup tasks"
+  default_prompt: "Use $controller-cleanup to apply framework and platform integration patterns for robust Laravel delivery."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

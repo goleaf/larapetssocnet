@@ -1,0 +1,7 @@
+interface:
+  display_name: "Personality Tags"
+  short_description: "Help with Personality Tags tasks"
+  default_prompt: "Use $personality-tags to implement domain behavior and feature rules with consistent user-facing outcomes."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#10B981"

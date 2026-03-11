@@ -1,0 +1,7 @@
+interface:
+  display_name: "Transactions and Consistency"
+  short_description: "Help with Transactions and Consistency tasks"
+  default_prompt: "Use $transactions-and-consistency to apply framework and platform integration patterns for robust Laravel delivery."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

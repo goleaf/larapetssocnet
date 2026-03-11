@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasCounterCache;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -127,6 +129,48 @@ class Event extends Model implements HasMedia
                 ->orWhere('description', 'like', "%{$term}%")
                 ->orWhere('location_text', 'like', "%{$term}%");
         });
+    }
+
+    public function scopeSearchResultColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'events.id',
+            'events.group_id',
+            'events.creator_user_id',
+            'events.title',
+            'events.description',
+            'events.location_text',
+            'events.start_at',
+            'events.status',
+            'events.created_at',
+        ]);
+    }
+
+    public static function paginateSearchResults(string $term, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->searchResultColumns()
+            ->search($term !== '' ? $term : null)
+            ->latest('events.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * @return array{upcoming: Collection<int, self>, past: Collection<int, self>}
+     */
+    public static function attendeeBucketsForProfile(User $user, int $upcomingLimit = 20, int $pastLimit = 5): array
+    {
+        $baseQuery = self::query()
+            ->whereHas('attendees', fn (Builder $query) => $query
+                ->where('user_id', $user->getKey())
+                ->whereIn('status', [self::ATTENDEE_GOING, self::ATTENDEE_INTERESTED]))
+            ->with('creator');
+
+        return [
+            'upcoming' => (clone $baseQuery)->upcoming()->limit($upcomingLimit)->get(),
+            'past' => (clone $baseQuery)->past()->limit($pastLimit)->get(),
+        ];
     }
 
     public function getRouteKeyName(): string

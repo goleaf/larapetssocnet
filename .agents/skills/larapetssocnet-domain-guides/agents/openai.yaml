@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Domain Guides"
+  short_description: "Route social-feature work to repo-specific guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#10B981"
+  default_prompt: "Use $larapetssocnet-domain-guides to pick the right repo guide for feeds, posts, pets, follows, groups, or search before editing behavior."

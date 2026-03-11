@@ -1,0 +1,7 @@
+interface:
+  display_name: "Notifications"
+  short_description: "Help with Notifications tasks"
+  default_prompt: "Use $notifications to apply framework and platform integration patterns for robust Laravel delivery."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"
