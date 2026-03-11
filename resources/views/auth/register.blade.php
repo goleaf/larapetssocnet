@@ -6,7 +6,7 @@
             <!-- Name -->
             <div>
                 <x-ui.input id="name" type="text" name="name" label="Name" :value="old('name')" required autofocus
-                    autocomplete="name" />
+                    autocomplete="name"  />
             </div>
 
             <!-- Username -->
@@ -20,11 +20,11 @@
                             class="block w-full rounded-xl border border-whisker/30 bg-warm-white py-2 pl-8 pr-3 text-sm placeholder:text-fur focus:border-paw focus:outline-none focus:ring-1 focus:ring-paw transition-colors duration-200"
                             type="text" name="username" :value="old('username')" maxlength="30" autocomplete="username"
                             x-model="val" @input.debounce.400ms="check()"
-                            x-bind:class="{ '!border-success !focus:ring-success': status === 'ok', '!border-danger !focus:ring-danger': status === 'taken' }" />
+                            x-bind:class="{ '!border-success !focus:ring-success': status === 'ok', '!border-danger !focus:ring-danger': status === 'taken' }"  />
                     </div>
                     <div class="mt-1 flex items-center justify-between text-xs">
                         <span
-                            class="text-fur">{{ __('3–30 chars. Letters, numbers, underscores. If empty, one will be generated.') }}</span>
+                            class="text-fur">{{ __('en.3_30_chars_letters_numbers_underscores_if_empty_one_will_be_generated') }}</span>
                         <span x-show="checking" class="text-fur">Checking...</span>
                         <span x-show="status === 'ok'" class="text-success font-medium">✓ <span
                                 x-text="message"></span></span>
@@ -32,34 +32,34 @@
                                 x-text="message"></span></span>
                     </div>
                 </div>
-                <x-input-error :messages="$errors->get('username')" class="mt-2" />
+                <x-input-error :messages="$errors->get('username')" class="mt-2"  />
             </div>
 
             <!-- Email Address -->
             <div>
                 <x-ui.input id="email" type="email" name="email" label="Email" :value="old('email')" required
-                    autocomplete="username" />
+                    autocomplete="username"  />
             </div>
 
             <!-- Password -->
             <div>
                 <x-ui.input id="password" type="password" name="password" label="Password" required
-                    autocomplete="new-password" />
+                    autocomplete="new-password"  />
             </div>
 
             <!-- Confirm Password -->
             <div>
                 <x-ui.input id="password_confirmation" type="password" name="password_confirmation"
-                    label="Confirm Password" required autocomplete="new-password" />
+                    label="Confirm Password" required autocomplete="new-password"  />
             </div>
 
             <div class="flex flex-wrap items-center justify-end mt-6 gap-3 pt-6 border-t border-whisker/30">
                 <a class="text-sm text-paw hover:underline focus:outline-none" href="{{ route('login') }}">
-                    {{ __('Already registered?') }}
+                    {{ __('en.already_registered') }}
                 </a>
 
                 <x-ui.button type="submit" variant="primary">
-                    {{ __('Register') }}
+                    {{ __('en.register') }}
                 </x-ui.button>
             </div>
         </div>

@@ -59,7 +59,7 @@
  }"
  class="space-y-2"
 >
- <input type="hidden"name="{{ $name }}":value="selected"/>
+ <input type="hidden" name="{{ $name }}" :value="selected" />
 
  @foreach($options as $value => $option)
  <button
@@ -80,10 +80,10 @@
  :'bg-white ring-1 ring-gray-200 hover:ring-gray-300'"
  class="flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500"
  >
- <span class="text-xl"aria-hidden="true">{{ $option['icon'] }}</span>
+ <span class="text-xl" aria-hidden="true">{{ $option['icon'] }}</span>
  <span class="min-w-0 flex-1">
- <span class="block text-sm font-medium text-gray-900">{{ $option['label'] }}</span>
- <span class="block text-xs text-gray-500">{{ $option['sub'] }}</span>
+ <span class="block text-sm font-medium text-gray-400">{{ $option['label'] }}</span>
+ <span class="block text-xs text-gray-400">{{ $option['sub'] }}</span>
  </span>
  <span
  :class="selected ==='{{ $value }}'
@@ -91,7 +91,7 @@
  :'border-gray-300 bg-white'"
  class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
  >
- <span x-show="selected ==='{{ $value }}'"class="h-1.5 w-1.5 rounded-full bg-white"></span>
+ <span x-show="selected ==='{{ $value }}'" class="h-1.5 w-1.5 rounded-full bg-white"></span>
  </span>
  </button>
  @endforeach
@@ -104,7 +104,7 @@
  class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
  style="display: none;"
  >
- <span class="mt-0.5 text-base"aria-hidden="true">⚠️</span>
+ <span class="mt-0.5 text-base" aria-hidden="true">⚠️</span>
  <p>
  This post has
  @if((int) $postLikes > 0)

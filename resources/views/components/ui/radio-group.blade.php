@@ -64,7 +64,7 @@
  <legend class="text-sm font-medium text-bark">
  {{ $label }}
  @if ($required)
- <span class="ml-0.5 text-rose"aria-hidden="true">*</span>
+ <span class="ml-0.5 text-rose" aria-hidden="true">*</span>
  <span class="sr-only">required</span>
  @endif
  </legend>
@@ -106,7 +106,7 @@
  @if ($hasError || $resolvedHint)
  aria-describedby="{{ $hintId }}"
  @endif
- />
+  />
 
  <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-whisker bg-warm-white transition peer-checked:border-paw peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-paw">
  <span class="h-2.5 w-2.5 rounded-pill bg-paw scale-0 transition peer-checked:scale-100"></span>
@@ -123,6 +123,6 @@
  </div>
 
  @if ($hasError || $resolvedHint)
- <x-ui.hint :id="$hintId":error="$resolvedError":message="$resolvedHint"/>
+ <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$resolvedHint" />
  @endif
 </fieldset>

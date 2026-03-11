@@ -9,8 +9,8 @@
  <x-slot name="header">
  <div class="flex flex-wrap items-center justify-between gap-3">
  <div>
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $event->title }}</h2>
- <p class="mt-1 text-sm text-gray-500">
+ <h2 class="font-semibold text-xl text-gray-400 leading-tight">{{ $event->title }}</h2>
+ <p class="mt-1 text-sm text-gray-400">
  {{ $startAt ? $startAt->format('M j, Y g:i A') :'TBA'}}
  @if ($endAt)
  - {{ $endAt->format('M j, Y g:i A') }}
@@ -18,17 +18,17 @@
  </p>
  </div>
  <div class="flex flex-wrap items-center gap-2">
- <a href="{{ route('events.index') }}"class="btn-base btn-ghost px-3 py-2 text-sm">Back</a>
- <a href="{{ route('events.ics', $event->id) }}"class="btn-base btn-ghost px-3 py-2 text-sm">Download ICS</a>
+ <a href="{{ route('events.index') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Back</a>
+ <a href="{{ route('events.ics', $event->id) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Download ICS</a>
 
  @auth
  @if ($canManage)
- <a href="{{ route('events.edit', $event->id) }}"class="btn-base btn-ghost px-3 py-2 text-sm">Edit</a>
+ <a href="{{ route('events.edit', $event->id) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Edit</a>
  @if ($statusValue !=='cancelled')
- <form method="POST"action="{{ route('events.cancel', $event->id) }}">
+ <form method="POST" action="{{ route('events.cancel', $event->id) }}">
  @csrf
  @method('PATCH')
- <button type="submit"class="btn-base btn-danger px-3 py-2 text-sm">Cancel Event</button>
+ <button type="submit" class="btn-base btn-danger px-3 py-2 text-sm">Cancel Event</button>
  </form>
  @endif
  @endif
@@ -40,11 +40,11 @@
  <div class="py-8">
  <div class="mx-auto max-w-5xl space-y-5 px-4 sm:px-6 lg:px-8">
  @if (session('status'))
- <x-flash-message type="success":message="session('status')"/>
+ <x-flash-message type="success" :message="session('status')" />
  @endif
 
  @if ($errors->any())
- <x-flash-message type="error":message="$errors->first()"/>
+ <x-flash-message type="error" :message="$errors->first()" />
  @endif
 
  <section class="shell-card space-y-4 p-5">
@@ -73,7 +73,7 @@
  @if ($group)
  <p>
  Group:
- <a href="{{ route('groups.show', $groupRouteKey) }}"class="underline">
+ <a href="{{ route('groups.show', $groupRouteKey) }}" class="underline">
  {{ $group->name }}
  </a>
  </p>
@@ -85,15 +85,15 @@
  <section class="shell-card p-5">
  <h3 class="shell-title text-base">RSVP</h3>
  <p class="mt-1 text-sm shell-text-muted">Choose your attendance status. Clicking your current status removes your RSVP.</p>
- <form method="POST"action="{{ route('events.rsvp', $event->id) }}"class="mt-4 flex flex-wrap items-center gap-2">
+ <form method="POST" action="{{ route('events.rsvp', $event->id) }}" class="mt-4 flex flex-wrap items-center gap-2">
  @csrf
- <button type="submit"name="status"value="going"class="btn-base px-3 py-2 text-sm {{ $viewerRsvp ==='going'?'btn-primary':'btn-ghost'}}"@disabled($isFull && $viewerRsvp !=='going')>
+ <button type="submit" name="status" value="going" class="btn-base px-3 py-2 text-sm {{ $viewerRsvp ==='going'?'btn-primary':'btn-ghost'}}"@disabled($isFull && $viewerRsvp !=='going')>
  Going
  </button>
- <button type="submit"name="status"value="maybe"class="btn-base px-3 py-2 text-sm {{ $viewerRsvp ==='maybe'?'btn-primary':'btn-ghost'}}">
+ <button type="submit" name="status" value="maybe" class="btn-base px-3 py-2 text-sm {{ $viewerRsvp ==='maybe'?'btn-primary':'btn-ghost'}}">
  Maybe
  </button>
- <button type="submit"name="status"value="not_going"class="btn-base px-3 py-2 text-sm {{ $viewerRsvp ==='not_going'?'btn-primary':'btn-ghost'}}">
+ <button type="submit" name="status" value="not_going" class="btn-base px-3 py-2 text-sm {{ $viewerRsvp ==='not_going'?'btn-primary':'btn-ghost'}}">
  Not Going
  </button>
  </form>

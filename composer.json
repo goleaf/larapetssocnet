@@ -63,6 +63,12 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "i18n:sync": [
+            "@php scripts/sync_translations_en.php"
+        ],
+        "ui:light": [
+            "bash scripts/normalize_blade_light_colors.sh"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

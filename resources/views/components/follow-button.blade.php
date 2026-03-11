@@ -34,8 +34,8 @@
  return this.status ==='following'|| this.status ==='pending'
  },
  get btnStyle() {
- if (this.status ==='following') return'bg-white border border-gray-300 text-gray-700 hover:border-red-400 hover:text-red-500 hover:bg-red-50'
- if (this.status ==='pending') return'bg-gray-100 border border-gray-300 text-gray-500'
+ if (this.status ==='following') return'bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50'
+ if (this.status ==='pending') return'bg-gray-100 border border-gray-300 text-gray-400'
  return'bg-emerald-500 hover:bg-emerald-600 text-white border border-transparent'
  },
  async perform(url, method ='POST') {
@@ -101,7 +101,7 @@
  class="{{ $pad }} font-medium rounded-xl transition-all duration-200 min-w-[110px] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
  >
  <span x-show="loading"x-cloak>...</span>
- <span x-show="!loading"x-text="label"></span>
+ <span x-show="!loading" x-text="label"></span>
  </button>
 
  <button

@@ -4,7 +4,7 @@
 @section('content')
  <div class="max-w-5xl mx-auto">
  <div class="flex items-center justify-between mb-6">
- <h1 class="text-2xl font-bold text-gray-900">🏆 Pet Contests</h1>
+ <h1 class="text-2xl font-bold text-gray-400">🏆 Pet Contests</h1>
  @auth
  <a href="{{ route('contests.create') }}"
  class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700">
@@ -18,10 +18,10 @@
  <div class="flex justify-between items-start">
  <div>
  <a href="{{ route('contests.show', $contest->slug) }}"
- class="text-lg font-bold text-gray-900 hover:text-emerald-600">
+ class="text-lg font-bold text-gray-400 hover:text-emerald-600">
  {{ $contest->title }}
  </a>
- <p class="text-sm text-gray-500 mt-1">{{ Str::limit($contest->description, 120) }}</p>
+ <p class="text-sm text-gray-400 mt-1">{{ Str::limit($contest->description, 120) }}</p>
  <div class="flex items-center gap-3 mt-3 text-xs text-gray-400">
  <span>📅 {{ $contest->starts_at->format('M j') }} – {{ $contest->ends_at->format('M j, Y') }}</span>
  <span>📷 {{ $contest->entries_count ?? 0 }} entries</span>
@@ -34,7 +34,7 @@
  {{ match ($contest->status) {
 'active'=>'bg-green-100 text-green-800',
 'voting'=>'bg-blue-100 text-blue-800',
-'ended'=>'bg-gray-100 text-gray-600',
+'ended'=>'bg-gray-100 text-gray-400',
  default =>'bg-yellow-100 text-yellow-700',
  } }}">
  {{ ucfirst($contest->status) }}

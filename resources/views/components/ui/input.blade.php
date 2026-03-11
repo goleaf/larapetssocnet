@@ -53,16 +53,19 @@
  ]);
 
  $controlAttributes = $attributes->except(['class','name','id','value']);
+
+ $inputName = $fieldName ? 'name="'.$fieldName.'"' : '';
+ $inputValue = $fieldValue !== null ? 'value="'.e($fieldValue).'"' : '';
 @endphp
 
 <div {{ $attributes->only('class')->merge(['class'=>'flex flex-col gap-1']) }}>
  @if ($label)
- <x-ui.label :for="$fieldId":required="$required">{{ $label }}</x-ui.label>
+ <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
  @endif
 
  <div class="relative">
  @if ($prefix)
- <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fur"aria-hidden="true">
+ <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fur" aria-hidden="true">
  {{ $prefix }}
  </div>
  @endif
@@ -70,35 +73,23 @@
  <input
  type="{{ $type }}"
  id="{{ $fieldId }}"
- @if ($fieldName)
- name="{{ $fieldName }}"
- @endif
- @if ($fieldValue !== null)
- value="{{ $fieldValue }}"
- @endif
- @if ($required)
- required
- @endif
- @if ($disabled)
- disabled
- @endif
- @if ($hasError)
- aria-invalid="true"
- @endif
- @if ($hasError || $hint)
- aria-describedby="{{ $hintId }}"
- @endif
+ @if ($fieldName) name="{{ $fieldName }}" @endif
+ @if ($fieldValue !== null) value="{{ $fieldValue }}" @endif
+ @if ($required) required @endif
+ @if ($disabled) disabled @endif
+ @if ($hasError) aria-invalid="true" @endif
+ @if ($hasError || $hint) aria-describedby="{{ $hintId }}" @endif
  {{ $controlAttributes->merge(['class'=> $classes]) }}
- />
+  />
 
  @if ($suffix)
- <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-fur"aria-hidden="true">
+ <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-fur" aria-hidden="true">
  {{ $suffix }}
  </div>
  @endif
  </div>
 
  @if ($hasError || $hint)
- <x-ui.hint :id="$hintId":error="$resolvedError":message="$hint"/>
+ <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$hint"  />
  @endif
 </div>

@@ -1,6 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+ <h2 class="font-semibold text-xl text-gray-400 leading-tight">
  🐾 Pets Available for Adoption
  </h2>
  </x-slot>
@@ -9,11 +9,11 @@
  <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
  {{-- Filters --}}
  <div class="bg-white shadow-sm sm:rounded-lg p-6">
- <form method="GET"action="{{ route('adoption.index') }}"
+ <form method="GET" action="{{ route('adoption.index') }}"
  class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
  <div>
- <x-input-label for="species"value="Species"/>
- <select id="species"name="species"
+ <x-input-label for="species" value="Species" />
+ <select id="species" name="species"
  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
  <option value="">All species</option>
  @foreach($species as $s)
@@ -25,8 +25,8 @@
  </div>
 
  <div>
- <x-input-label for="size"value="Size"/>
- <select id="size"name="size"
+ <x-input-label for="size" value="Size" />
+ <select id="size" name="size"
  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
  <option value="">Any size</option>
  @foreach($sizes as $sz)
@@ -37,41 +37,41 @@
  </div>
 
  <div>
- <x-input-label for="location"value="Location"/>
- <x-text-input id="location"name="location"class="mt-1 block w-full"
- :value="$filters['location'] ??''"placeholder="City or region"/>
+ <x-input-label for="location" value="Location" />
+ <x-text-input id="location" name="location" class="mt-1 block w-full"
+ :value="$filters['location'] ??''" placeholder="City or region" />
  </div>
 
  <div class="flex items-end">
  <label class="inline-flex items-center gap-2 pb-2">
- <input type="checkbox"name="free"value="1"@checked($filters['free'] ?? false)
+ <input type="checkbox" name="free" value="1"@checked($filters['free'] ?? false)
  class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
- <span class="text-sm text-gray-700">Free only</span>
+ <span class="text-sm text-gray-400">Free only</span>
  </label>
  </div>
 
  <div class="flex items-end gap-2">
  <x-primary-button>Filter</x-primary-button>
  <a href="{{ route('adoption.index') }}"
- class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
+ class="text-sm text-gray-400 hover:text-gray-400">Reset</a>
  </div>
  </form>
  </div>
 
  {{-- Results --}}
  @if($listings->isEmpty())
- <div class="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+ <div class="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
  No adoptable pets match your filters.
  </div>
  @else
- <p class="text-sm text-gray-500">{{ $listings->total() }} pets available for adoption</p>
+ <p class="text-sm text-gray-400">{{ $listings->total() }} pets available for adoption</p>
 
  <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
  @foreach($listings as $pet)
  <article
  class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
  @if($pet->getFirstMediaUrl('avatar'))
- <img src="{{ $pet->getFirstMediaUrl('avatar') }}"alt="{{ $pet->name }}"
+ <img src="{{ $pet->getFirstMediaUrl('avatar') }}" alt="{{ $pet->name }}"
  class="w-full h-48 object-cover">
  @else
  <div class="w-full h-48 bg-emerald-50 flex items-center justify-center text-5xl">
@@ -90,18 +90,18 @@
  @endif
  </div>
 
- <h3 class="text-lg font-semibold text-gray-900">
+ <h3 class="text-lg font-semibold text-gray-400">
  {{ $pet->species_emoji }} {{ $pet->name }}
  </h3>
 
- <p class="mt-1 text-sm text-gray-600">
+ <p class="mt-1 text-sm text-gray-400">
  {{ ucfirst($pet->species) }}
  @if($pet->breed) &bull; {{ $pet->breed }} @endif
  @if($pet->age_formatted) &bull; {{ $pet->age_formatted }} @endif
  </p>
 
  @if($pet->owner?->location)
- <p class="mt-1 text-xs text-gray-500">📍 {{ $pet->owner->location }}</p>
+ <p class="mt-1 text-xs text-gray-400">📍 {{ $pet->owner->location }}</p>
  @endif
 
  @if($pet->personality_tags && is_array($pet->personality_tags))

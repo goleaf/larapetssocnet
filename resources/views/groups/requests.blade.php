@@ -60,14 +60,14 @@
     </x-slot>
 
     @if (!$canManage)
-        <x-ui.empty-state title="No access" description="Only group moderators and admins can review requests." icon="🔒" />
+        <x-ui.empty-state title="No access" description="Only group moderators and admins can review requests." icon="🔒"  />
     @else
         <div class="mb-6">
             <x-ui.tabs :tabs="[
                 ['label' => 'Overview', 'value' => 'feed', 'href' => route('groups.show', ['group' => $groupRouteKey, 'tab' => 'feed'])],
                 ['label' => 'Members', 'value' => 'members', 'href' => $membersUrl],
                 ['label' => 'Requests', 'value' => 'requests', 'href' => $requestsBaseUrl],
-            ]" active="requests" />
+            ]" active="requests"  />
         </div>
 
         <x-ui.card padding="lg">
@@ -76,7 +76,7 @@
                 ['label' => 'Pending', 'value' => 'pending', 'href' => $tabUrl('pending'), 'count' => $pendingCount],
                 ['label' => 'Approved', 'value' => 'approved', 'href' => $tabUrl('approved'), 'count' => $approvedCount],
                 ['label' => 'Rejected', 'value' => 'rejected', 'href' => $tabUrl('rejected'), 'count' => $rejectedCount],
-            ]" :active="$statusTab" paramName="status" />
+            ]" :active="$statusTab" paramName="status"  />
             </div>
 
             <div class="space-y-3">
@@ -114,7 +114,7 @@
                         </x-slot:action>
                     </x-ui.user-row>
                 @empty
-                    <x-ui.empty-state title="No Requests" description="No entries in this request state." icon="📩" />
+                    <x-ui.empty-state title="No Requests" description="No entries in this request state." icon="📩"  />
                 @endforelse
             </div>
 

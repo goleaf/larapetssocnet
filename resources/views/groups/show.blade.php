@@ -72,7 +72,7 @@
 
                     @auth
                         @if ($isOwner)
-                            <x-ui.role-badge role="owner" />
+                            <x-ui.role-badge role="owner"  />
                         @elseif ($isMember)
                             <form method="POST" action="{{ route('groups.leave', $groupRouteKey) }}">
                                 @csrf
@@ -110,7 +110,7 @@
 
         <div class="relative px-5 pb-5 pt-0 sm:px-6">
             <div class="-mt-10 flex flex-wrap items-end gap-4">
-                <x-avatar :src="$avatarUrl !== '' ? $avatarUrl : null" :name="$group->name" size="2xl" class="ring-4 ring-warm-white bg-warm-white bg-opacity-100" />
+                <x-avatar :src="$avatarUrl !== '' ? $avatarUrl : null" :name="$group->name" size="2xl" class="ring-4 ring-warm-white bg-warm-white bg-opacity-100"  />
                 
                 <div class="min-w-0 flex-1 pb-1">
                     <div class="flex flex-wrap items-center gap-2">
@@ -140,36 +140,36 @@
     @endphp
 
     <div class="mb-6">
-        <x-ui.tabs :tabs="$navTabs" :active="$currentActivityTab" paramName="tab" />
+        <x-ui.tabs :tabs="$navTabs" :active="$currentActivityTab" paramName="tab"  />
     </div>
 
     <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <section class="space-y-4">
             @if (session('status'))
-                <x-flash-message type="success" :message="session('status')" />
+                <x-flash-message type="success" :message="session('status')"  />
             @endif
 
             @if ($errors->any())
-                <x-flash-message type="error" :message="$errors->first()" />
+                <x-flash-message type="error" :message="$errors->first()"  />
             @endif
 
             @if ($activeTab === 'about')
                 <x-ui.card padding="lg" class="space-y-6">
                     <div>
-                        <x-ui.section title="About this group" tight />
+                        <x-ui.section title="About this group" tight  />
                         <p class="text-sm text-fur">{{ $group->description ?: 'No description yet.' }}</p>
                     </div>
 
-                    <x-ui.divider />
+                    <x-ui.divider  />
 
                     <div>
-                        <x-ui.section title="Rules" tight />
+                        <x-ui.section title="Rules" tight  />
                         <p class="mt-2 whitespace-pre-line text-sm text-fur">{{ $group->rules ?: 'No published rules yet.' }}</p>
                     </div>
                 </x-ui.card>
             @elseif ($activeTab === 'events')
                 <x-ui.card padding="lg">
-                    <x-ui.card-header title="Group Events" />
+                    <x-ui.card-header title="Group Events"  />
 
                     <div class="mt-4 space-y-3">
                         @forelse ($events ?? [] as $eventItem)
@@ -194,7 +194,7 @@
                                 </div>
                             </x-ui.card>
                         @empty
-                            <x-ui.empty-state title="No events yet" description="This group hasn't scheduled any events." icon="📅" />
+                            <x-ui.empty-state title="No events yet" description="This group hasn't scheduled any events." icon="📅"  />
                         @endforelse
                     </div>
 
@@ -205,7 +205,7 @@
             @elseif ($activeTab === 'members')
                 @if (request()->string('request_tab')->toString() === 'pending' && $canManageMembers)
                     <x-ui.card padding="lg">
-                        <x-ui.card-header title="Pending Requests" />
+                        <x-ui.card-header title="Pending Requests"  />
                         <div class="mt-4 space-y-3">
                             @forelse ($pendingMembers as $pending)
                                 <x-ui.user-row :user="$pending->user" subtitle="Pending member" class="border border-whisker/30 rounded-xl px-3 bg-warm-white">
@@ -224,13 +224,13 @@
                                     </x-slot:action>
                                 </x-ui.user-row>
                             @empty
-                                <x-ui.empty-state title="No pending requests" description="No one is waiting to join the group." icon="📩" />
+                                <x-ui.empty-state title="No pending requests" description="No one is waiting to join the group." icon="📩"  />
                             @endforelse
                         </div>
                     </x-ui.card>
                 @else
                     <x-ui.card padding="lg">
-                        <x-ui.card-header title="Members" />
+                        <x-ui.card-header title="Members"  />
                         <div class="mt-4 space-y-3">
                             @forelse ($membersForPage ?? [] as $memberItem)
                                 @php
@@ -253,7 +253,7 @@
                                                         </select>
                                                         <x-ui.icon-button type="submit" variant="ghost" size="sm" title="Save">✓</x-ui.icon-button>
                                                     </form>
-                                                    <x-ui.divider class="!my-2" />
+                                                    <x-ui.divider class="!my-2"  />
                                                     <form method="POST" action="{{ route('groups.members.ban', ['group' => $groupRouteKey, 'membership' => $memberItem->id]) }}">
                                                         @csrf
                                                         @method('PATCH')
@@ -265,7 +265,7 @@
                                     </x-slot:action>
                                 </x-ui.user-row>
                             @empty
-                                <x-ui.empty-state title="No members yet" description="This group currently has no members." icon="👥" />
+                                <x-ui.empty-state title="No members yet" description="This group currently has no members." icon="👥"  />
                             @endforelse
                         </div>
 
@@ -277,10 +277,10 @@
             @else
                 @if ($canPost)
                     <x-ui.card padding="lg">
-                        <x-ui.card-header title="Share in this group" />
+                        <x-ui.card-header title="Share in this group"  />
                         <form method="POST" action="{{ route('groups.posts.attach', $groupRouteKey) }}" class="space-y-4">
                             @csrf
-                            <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old('post_id')" min="1" />
+                            <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old('post_id')" min="1"  />
                             <x-ui.textarea name="body" label="Or create new post" rows="3" placeholder="Write something for this group...">{{ old('body') }}</x-ui.textarea>
                             <div class="flex justify-end">
                                 <x-ui.button type="submit" variant="primary">Publish</x-ui.button>
@@ -302,7 +302,7 @@
                             <x-empty-state
                                 title="No Group Posts Yet"
                                 description="Start the conversation by sharing the first post."
-                            />
+                             />
                         @endforelse
 
                         @if ($feedPosts instanceof \Illuminate\Pagination\LengthAwarePaginator)
@@ -315,7 +315,7 @@
 
         <aside class="space-y-4">
             <x-ui.card padding="md">
-                <x-ui.card-header title="Group Snapshot" />
+                <x-ui.card-header title="Group Snapshot"  />
                 <div class="grid grid-cols-3 gap-2 text-center">
                     <div class="rounded-lg border border-whisker/30 p-2 bg-warm-white">
                         <p class="text-sm font-semibold text-bark">{{ $membersCount }}</p>
@@ -343,7 +343,7 @@
 
                 <div class="space-y-1">
                     @forelse ($sidebarMembers as $memberItem)
-                        <x-ui.user-row :user="$memberItem->user" :role="strtolower((string) ($memberItem->role ?? 'member'))" class="border border-whisker/30 rounded-xl px-2.5 bg-warm-white !py-1" />
+                        <x-ui.user-row :user="$memberItem->user" :role="strtolower((string) ($memberItem->role ?? 'member'))" class="border border-whisker/30 rounded-xl px-2.5 bg-warm-white !py-1"  />
                     @empty
                         <p class="text-sm text-fur">No members yet.</p>
                     @endforelse

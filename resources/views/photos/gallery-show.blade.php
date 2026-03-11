@@ -37,8 +37,8 @@
 
  <x-ui.card>
  @if ($gallery->media->isEmpty())
- <x-ui.empty-state icon="📷"title="No photos in this gallery yet"
- description="When photos are added to this gallery, they will appear here."/>
+ <x-ui.empty-state icon="📷" title="No photos in this gallery yet"
+ description="When photos are added to this gallery, they will appear here." />
  @else
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
  @foreach ($gallery->media as $media)
@@ -46,7 +46,7 @@
  <img src="{{ $media->getUrl() }}"
  alt="{{ $gallery->title }} photo"
  class="h-64 w-full object-cover"
- loading="lazy"/>
+ loading="lazy" />
  </div>
  @endforeach
  </div>

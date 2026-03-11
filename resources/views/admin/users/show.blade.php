@@ -3,13 +3,13 @@
 
 @section('content')
  <div class="max-w-4xl mx-auto">
- <a href="{{ route('admin.users.index') }}"class="text-sm text-gray-500 hover:text-gray-700">← All Users</a>
+ <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-400 hover:text-gray-400">← All Users</a>
 
  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-4 mb-6">
  <div class="flex items-start justify-between">
  <div>
- <h1 class="text-xl font-bold text-gray-900">{{ $user->name }}</h1>
- <p class="text-sm text-gray-500">@ {{ $user->username }} · {{ $user->email }}</p>
+ <h1 class="text-xl font-bold text-gray-400">{{ $user->name }}</h1>
+ <p class="text-sm text-gray-400">@ {{ $user->username }} · {{ $user->email }}</p>
  <div class="flex gap-3 mt-2 text-xs text-gray-400">
  <span>{{ $user->posts_count ?? 0 }} posts</span>
  <span>{{ $user->pets_count ?? 0 }} pets</span>
@@ -36,10 +36,10 @@
  </div>
 
  @if ($recentReports->isNotEmpty())
- <h3 class="font-bold text-gray-900 mb-3">Recent Reports</h3>
+ <h3 class="font-bold text-gray-400 mb-3">Recent Reports</h3>
  @foreach ($recentReports as $report)
  <div class="bg-white rounded-lg border border-gray-100 p-4 mb-2 text-sm">
- <p class="text-gray-700">{{ $report->reason ??'No reason given'}}</p>
+ <p class="text-gray-400">{{ $report->reason ??'No reason given'}}</p>
  <p class="text-xs text-gray-400 mt-1">{{ $report->created_at->diffForHumans() }} · Status: {{ $report->status }}
  </p>
  </div>

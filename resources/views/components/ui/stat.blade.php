@@ -40,8 +40,8 @@
  <p class="text-2xl font-bold font-display text-bark">{{ $value }}</p>
 
  @if($showTrend)
- <x-ui.badge size="sm":variant="$resolvedDirection ==='up'?'success':'danger'"class="font-mono">
- <span class="mr-1"aria-hidden="true">{{ $resolvedDirection ==='up'?'▲':'▼'}}</span>{{ $resolvedTrend }}
+ <x-ui.badge size="sm" :variant="$resolvedDirection ==='up'?'success':'danger'" class="font-mono">
+ <span class="mr-1" aria-hidden="true">{{ $resolvedDirection ==='up'?'▲':'▼'}}</span>{{ $resolvedTrend }}
  </x-ui.badge>
  @endif
  </div>

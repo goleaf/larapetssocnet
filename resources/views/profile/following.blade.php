@@ -10,8 +10,8 @@
  </x-slot>
 
  <section class="shell-card p-5">
- <form method="GET"class="mb-4">
- <input type="search"name="q"value="{{ request('q') }}"placeholder="Search following..."
+ <form method="GET" class="mb-4">
+ <input type="search" name="q" value="{{ request('q') }}" placeholder="Search following..."
  class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
  </form>
 
@@ -19,7 +19,7 @@
  @forelse ($following as $followedUser)
  <article class="flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50">
  <a href="{{ route('profile.show', ['user'=> $followedUser]) }}">
- <x-avatar :user="$followedUser"size="md"/>
+ <x-avatar :user="$followedUser" size="md" />
  </a>
 
  <div class="min-w-0 flex-1">
@@ -34,14 +34,14 @@
 
  @auth
  @if (auth()->id() !== $followedUser->id)
- <x-follow-button :user="$followedUser":follow-status="auth()->user()->getFollowStatus($followedUser)"
- size="sm"/>
+ <x-follow-button :user="$followedUser" :follow-status="auth()->user()->getFollowStatus($followedUser)"
+ size="sm" />
  @endif
  @endauth
  </article>
  @empty
- <x-empty-state icon="user-plus"title="Not following anyone yet"
- description="Profiles followed by this user will appear here."/>
+ <x-empty-state icon="user-plus" title="Not following anyone yet"
+ description="Profiles followed by this user will appear here." />
  @endforelse
  </div>
 

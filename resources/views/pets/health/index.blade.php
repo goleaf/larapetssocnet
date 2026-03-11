@@ -39,13 +39,13 @@
 <x-app-layout>
  <x-slot name="header">
  <div class="flex items-center justify-between gap-4">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+ <h2 class="font-semibold text-xl text-gray-400 leading-tight">
  {{ $pet->name ??'Pet'}} Health Log
  </h2>
 
  <div class="flex items-center gap-3">
  <a href="{{ route('pets.show', $petSlug) }}"
- class="text-sm text-gray-600 hover:text-gray-900">Back to
+ class="text-sm text-gray-400 hover:text-gray-400">Back to
  profile</a>
  <a href="{{ route('pets.health.create', $petSlug) }}"
  class="text-sm text-indigo-600 hover:text-indigo-800">Add
@@ -64,31 +64,31 @@
 
  <div class="grid gap-6 lg:grid-cols-3">
  <div class="rounded-lg border border-gray-200 bg-white p-5 lg:col-span-2">
- <h3 class="text-sm font-semibold text-gray-900">Weight trend</h3>
- <p class="mt-1 text-xs text-gray-500">Basic trend prep for lightweight SVG rendering.</p>
+ <h3 class="text-sm font-semibold text-gray-400">Weight trend</h3>
+ <p class="mt-1 text-xs text-gray-400">Basic trend prep for lightweight SVG rendering.</p>
 
  @if($trendPath)
  <div class="mt-4 rounded-md bg-slate-50 p-4">
- <svg viewBox="0 0 100 100"class="h-48 w-full"role="img"aria-label="Weight trend">
- <line x1="0"y1="100"x2="100"y2="100"stroke="#CBD5E1"stroke-width="1"/>
- <line x1="0"y1="0"x2="0"y2="100"stroke="#CBD5E1"stroke-width="1"/>
- <path d="{{ $trendPath }}"fill="none"stroke="#4F46E5"stroke-width="2"
- vector-effect="non-scaling-stroke"/>
+ <svg viewBox="0 0 100 100" class="h-48 w-full" role="img" aria-label="Weight trend">
+ <line x1="0" y1="100" x2="100" y2="100" stroke="#CBD5E1" stroke-width="1" />
+ <line x1="0" y1="0" x2="0" y2="100" stroke="#CBD5E1" stroke-width="1" />
+ <path d="{{ $trendPath }}" fill="none" stroke="#4F46E5" stroke-width="2"
+ vector-effect="non-scaling-stroke" />
  @foreach($trendPoints as $point)
- <circle cx="{{ $point['x'] }}"cy="{{ $point['y'] }}"r="1.4"fill="#4F46E5"/>
+ <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="1.4" fill="#4F46E5" />
  @endforeach
  </svg>
  </div>
- <div class="mt-3 text-xs text-gray-500">
+ <div class="mt-3 text-xs text-gray-400">
  Min: {{ data_get($trendData,'min') }} | Max: {{ data_get($trendData,'max') }}
  </div>
  @else
- <p class="mt-3 text-sm text-gray-500">Add at least one weight entry to render trend data.</p>
+ <p class="mt-3 text-sm text-gray-400">Add at least one weight entry to render trend data.</p>
  @endif
  </div>
 
  <div class="rounded-lg border border-gray-200 bg-white p-5">
- <h3 class="text-sm font-semibold text-gray-900">Upcoming</h3>
+ <h3 class="text-sm font-semibold text-gray-400">Upcoming</h3>
  <div class="mt-3 space-y-3">
  @forelse($upcomingLogs as $upcoming)
  <div class="rounded-md bg-amber-50 p-3 text-sm">
@@ -101,27 +101,27 @@
  @endif
  </div>
  @empty
- <p class="text-sm text-gray-500">No upcoming reminders.</p>
+ <p class="text-sm text-gray-400">No upcoming reminders.</p>
  @endforelse
  </div>
  </div>
  </div>
 
  <div class="rounded-lg border border-gray-200 bg-white p-5">
- <h3 class="text-sm font-semibold text-gray-900">Log entries</h3>
+ <h3 class="text-sm font-semibold text-gray-400">Log entries</h3>
 
  @if($logs->isEmpty())
- <p class="mt-3 text-sm text-gray-500">No health entries yet.</p>
+ <p class="mt-3 text-sm text-gray-400">No health entries yet.</p>
  @else
  <div class="mt-4 overflow-x-auto">
  <table class="min-w-full divide-y divide-gray-200 text-sm">
  <thead class="bg-gray-50">
  <tr>
- <th class="px-3 py-2 text-left font-medium text-gray-600">Type</th>
- <th class="px-3 py-2 text-left font-medium text-gray-600">Value</th>
- <th class="px-3 py-2 text-left font-medium text-gray-600">Logged</th>
- <th class="px-3 py-2 text-left font-medium text-gray-600">Notes</th>
- <th class="px-3 py-2 text-left font-medium text-gray-600">Actions</th>
+ <th class="px-3 py-2 text-left font-medium text-gray-400">Type</th>
+ <th class="px-3 py-2 text-left font-medium text-gray-400">Value</th>
+ <th class="px-3 py-2 text-left font-medium text-gray-400">Logged</th>
+ <th class="px-3 py-2 text-left font-medium text-gray-400">Notes</th>
+ <th class="px-3 py-2 text-left font-medium text-gray-400">Actions</th>
  </tr>
  </thead>
  <tbody class="divide-y divide-gray-100">

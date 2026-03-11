@@ -49,7 +49,7 @@
  @endif
 >
  @if($trigger && $triggerSlot)
- <div @click="show()"class="inline-block">
+ <div @click="show()" class="inline-block">
  {{ $triggerSlot }}
  </div>
  @endif
@@ -77,7 +77,7 @@
  aria-hidden="true"
  ></div>
 
- <span class="hidden sm:inline-block sm:h-screen sm:align-middle"aria-hidden="true">&#8203;</span>
+ <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
 
  <div
  x-show="open"
@@ -95,7 +95,7 @@
  @elseif($title)
  <div class="flex items-start justify-between border-b border-whisker/40 px-6 py-4">
  <div>
- <h3 class="text-lg font-semibold font-display text-bark"id="modal-title-{{ $modalId }}">{{ $title }}</h3>
+ <h3 class="text-lg font-semibold font-display text-bark" id="modal-title-{{ $modalId }}">{{ $title }}</h3>
  @if(filled($description))
  <p class="mt-1 text-sm text-fur">{{ $description }}</p>
  @endif
@@ -107,8 +107,8 @@
  @click="hide()"
  >
  <span class="sr-only">Close</span>
- <svg class="h-6 w-6"xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor">
- <path stroke-linecap="round"stroke-linejoin="round"d="M6 18L18 6M6 6l12 12"/>
+ <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
  </svg>
  </button>
  </div>

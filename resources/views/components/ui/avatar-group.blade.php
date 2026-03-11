@@ -60,7 +60,7 @@
  :size="$size"
  class="{{ $index > 0 ? $marginClass :''}} relative ring-2 ring-warm-white"
  style="z-index: {{ 20 - $index }}"
- />
+  />
  @endforeach
 
  @if($remaining > 0)

@@ -23,8 +23,8 @@
 @if($messages->isNotEmpty())
  <div class="mb-6 space-y-3">
  @foreach($messages as $message)
- <x-ui.alert :type="$message['type']"dismissible :timeout="$timeout">
- {{ $message['message'] }}
+        <x-ui.alert :type="$message['type']" dismissible :timeout="$timeout">
+            {{ $message['message'] }}
  </x-ui.alert>
  @endforeach
  </div>

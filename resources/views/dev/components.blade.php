@@ -5,11 +5,11 @@
 <div class="max-w-5xl mx-auto space-y-10 py-6">
 
     {{-- Page Header --}}
-    <x-ui.page-header title="🐾 Warm Paw — Component Library" subtitle="Living style guide for PetsSocNet design system" />
+    <x-ui.page-header title="🐾 Warm Paw — Component Library" subtitle="Living style guide for PetsSocNet design system"  />
 
     {{-- ═══════════════════════════════════════ 1. TYPOGRAPHY ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Typography" icon="🔤" />
+        <x-ui.card-header title="Typography" icon="🔤"  />
         <div class="space-y-4">
             <h1 class="text-4xl font-display font-bold text-bark">Heading 1 — Playfair Display</h1>
             <h2 class="text-3xl font-display font-bold text-bark">Heading 2 — Playfair Display</h2>
@@ -17,7 +17,7 @@
             <h4 class="text-xl font-display font-semibold text-bark">Heading 4 — Playfair Display</h4>
             <h5 class="text-lg font-display font-semibold text-bark">Heading 5 — Playfair Display</h5>
             <h6 class="text-base font-display font-semibold text-bark">Heading 6 — Playfair Display</h6>
-            <x-ui.divider />
+            <x-ui.divider  />
             <p class="text-base text-bark font-body">Body text (DM Sans) — The quick brown fox jumps over the lazy dog. PetsSocNet is joyful, warm, and trustworthy.</p>
             <p class="text-sm text-fur font-body">Small muted text — Secondary information displayed in fur color.</p>
             <p class="text-xs text-whisker font-body">Extra small text — Timestamps, metadata, fine print.</p>
@@ -27,7 +27,7 @@
 
     {{-- ═══════════════════════════════════════ 2. COLOR PALETTE ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Color Palette" icon="🎨" />
+        <x-ui.card-header title="Color Palette" icon="🎨"  />
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             @foreach ([
                 ['Cream', 'bg-cream', '#FDF6EC'],
@@ -58,7 +58,7 @@
 
     {{-- ═══════════════════════════════════════ 3. BUTTONS ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Buttons" icon="👆" />
+        <x-ui.card-header title="Buttons" icon="👆"  />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Variants</p>
         <div class="flex flex-wrap items-center gap-3 mb-6">
@@ -98,7 +98,7 @@
 
     {{-- ═══════════════════════════════════════ 4. BADGES ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Badges" icon="🏷️" />
+        <x-ui.card-header title="Badges" icon="🏷️"  />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Variants</p>
         <div class="flex flex-wrap items-center gap-2 mb-6">
@@ -120,44 +120,44 @@
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Role Badges</p>
         <div class="flex flex-wrap items-center gap-2 mb-6">
-            <x-ui.role-badge role="owner" />
-            <x-ui.role-badge role="admin" />
-            <x-ui.role-badge role="moderator" />
-            <x-ui.role-badge role="member" />
+            <x-ui.role-badge role="owner"  />
+            <x-ui.role-badge role="admin"  />
+            <x-ui.role-badge role="moderator"  />
+            <x-ui.role-badge role="member"  />
         </div>
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Group Type Badges</p>
         <div class="flex flex-wrap items-center gap-2">
-            <x-ui.group-type-badge type="public" />
-            <x-ui.group-type-badge type="private" />
-            <x-ui.group-type-badge type="secret" />
+            <x-ui.group-type-badge type="public"  />
+            <x-ui.group-type-badge type="private"  />
+            <x-ui.group-type-badge type="secret"  />
         </div>
     </x-ui.card>
 
     {{-- ═══════════════════════════════════════ 5. FORM INPUTS ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Form Inputs" icon="📝" />
+        <x-ui.card-header title="Form Inputs" icon="📝"  />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <x-ui.input name="demo_name" label="Full Name" placeholder="Enter your name" required />
-            <x-ui.input name="demo_email" label="Email" type="email" placeholder="you@example.com" hint="We'll never share your email." />
-            <x-ui.input name="demo_error" label="With Error" value="bad value" error="This field has an error." />
-            <x-ui.input name="demo_disabled" label="Disabled" value="Can't edit me" :disabled="true" />
+            <x-ui.input name="demo_name" label="Full Name" placeholder="Enter your name" required  />
+            <x-ui.input name="demo_email" label="Email" type="email" placeholder="you@example.com" hint="We'll never share your email."  />
+            <x-ui.input name="demo_error" label="With Error" value="bad value" error="This field has an error."  />
+            <x-ui.input name="demo_disabled" label="Disabled" value="Can't edit me" :disabled="true"  />
             <div class="md:col-span-2">
-                <x-ui.textarea name="demo_bio" label="Bio" placeholder="Tell us about your pet..." :maxlength="200" />
+                <x-ui.textarea name="demo_bio" label="Bio" placeholder="Tell us about your pet..." :maxlength="200"  />
             </div>
             <x-ui.select name="demo_select" label="Select Option" :options="[
                 ['value' => 'dog', 'label' => '🐕 Dog'],
                 ['value' => 'cat', 'label' => '🐈 Cat'],
                 ['value' => 'bird', 'label' => '🐦 Bird'],
-            ]" placeholder="Choose a pet type" />
+            ]" placeholder="Choose a pet type"  />
             <div class="space-y-3">
-                <x-ui.checkbox name="demo_check" label="I agree to the terms and conditions" />
-                <x-ui.checkbox name="demo_check2" label="Subscribe to newsletter" :checked="true" />
+                <x-ui.checkbox name="demo_check" label="I agree to the terms and conditions"  />
+                <x-ui.checkbox name="demo_check2" label="Subscribe to newsletter" :checked="true"  />
             </div>
         </div>
 
-        <x-ui.divider label="Radio Group" />
+        <x-ui.divider label="Radio Group"  />
 
         <x-ui.radio-group
             name="demo_privacy"
@@ -168,19 +168,19 @@
                 ['value' => 'secret', 'label' => '🕵️ Secret', 'description' => 'Only invited members can find this group.'],
             ]"
             selected="public"
-        />
+         />
 
-        <x-ui.divider label="Search & File Upload" />
+        <x-ui.divider label="Search & File Upload"  />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <x-ui.search-input placeholder="Search pets..." />
-            <x-ui.file-upload name="demo_file" label="Upload Photo" accept="image/*" hint="Max 10MB. JPG, PNG only." />
+            <x-ui.search-input placeholder="Search pets..."  />
+            <x-ui.file-upload name="demo_file" label="Upload Photo" accept="image/*" hint="Max 10MB. JPG, PNG only."  />
         </div>
     </x-ui.card>
 
     {{-- ═══════════════════════════════════════ 6. CARDS & LAYOUT ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Cards & Layout" icon="📐" />
+        <x-ui.card-header title="Cards & Layout" icon="📐"  />
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <x-ui.card padding="sm">
@@ -219,19 +219,19 @@
             <p class="text-sm text-bark">This panel can be toggled open and closed.</p>
         </x-ui.panel>
 
-        <x-ui.divider label="Stats" />
+        <x-ui.divider label="Stats"  />
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <x-ui.stat label="Members" value="1,234" icon="👥" />
-            <x-ui.stat label="Posts" value="567" icon="📝" trend="+12%" :trendUp="true" />
-            <x-ui.stat label="Pets" value="89" icon="🐾" />
-            <x-ui.stat label="Likes" value="3.2K" icon="❤️" trend="-3%" :trendUp="false" />
+            <x-ui.stat label="Members" value="1,234" icon="👥"  />
+            <x-ui.stat label="Posts" value="567" icon="📝" trend="+12%" :trendUp="true"  />
+            <x-ui.stat label="Pets" value="89" icon="🐾"  />
+            <x-ui.stat label="Likes" value="3.2K" icon="❤️" trend="-3%" :trendUp="false"  />
         </div>
     </x-ui.card>
 
     {{-- ═══════════════════════════════════════ 7. FEEDBACK ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Feedback & Alerts" icon="💬" />
+        <x-ui.card-header title="Feedback & Alerts" icon="💬"  />
 
         <div class="space-y-3 mb-6">
             <x-ui.alert type="success" title="Success!">Your pet profile has been updated successfully.</x-ui.alert>
@@ -242,18 +242,18 @@
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Loading Spinners</p>
         <div class="flex items-center gap-4 mb-6">
-            <x-ui.loading-spinner size="sm" />
-            <x-ui.loading-spinner size="md" />
-            <x-ui.loading-spinner size="lg" />
-            <x-ui.loading-spinner size="md" color="fur" />
+            <x-ui.loading-spinner size="sm"  />
+            <x-ui.loading-spinner size="md"  />
+            <x-ui.loading-spinner size="lg"  />
+            <x-ui.loading-spinner size="md" color="fur"  />
         </div>
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Progress Bars</p>
         <div class="space-y-4 mb-6">
-            <x-ui.progress :value="75" label="Profile completeness" />
-            <x-ui.progress :value="45" label="Upload progress" color="sky" />
-            <x-ui.progress :value="90" label="Storage used" color="leaf" />
-            <x-ui.progress :value="15" label="Danger zone" color="rose" />
+            <x-ui.progress :value="75" label="Profile completeness"  />
+            <x-ui.progress :value="45" label="Upload progress" color="sky"  />
+            <x-ui.progress :value="90" label="Storage used" color="leaf"  />
+            <x-ui.progress :value="15" label="Danger zone" color="rose"  />
         </div>
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Toast Demo</p>
@@ -266,7 +266,7 @@
 
     {{-- ═══════════════════════════════════════ 8. OVERLAYS ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Overlays & Interactions" icon="🪟" />
+        <x-ui.card-header title="Overlays & Interactions" icon="🪟"  />
 
         <div class="flex flex-wrap gap-3 mb-6">
             {{-- Modal --}}
@@ -306,7 +306,7 @@
 
     {{-- ═══════════════════════════════════════ 9. NAVIGATION ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Navigation" icon="🧭" />
+        <x-ui.card-header title="Navigation" icon="🧭"  />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Breadcrumbs</p>
         <x-ui.breadcrumbs :items="[
@@ -314,7 +314,7 @@
             ['label' => 'Groups', 'href' => '#'],
             ['label' => 'Golden Retrievers', 'href' => '#'],
             ['label' => 'Members'],
-        ]" class="mb-6" />
+        ]" class="mb-6"  />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Tabs</p>
         <x-ui.tabs
@@ -325,7 +325,7 @@
             ]"
             active="pending"
             class="mb-6"
-        />
+         />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Sidebar Nav</p>
         <div class="max-w-xs">
@@ -337,21 +337,21 @@
                     ['label' => 'Requests', 'icon' => '📩', 'href' => '#', 'badge' => 3],
                     ['label' => 'Settings', 'icon' => '⚙️', 'href' => '#'],
                 ]"
-            />
+             />
         </div>
     </x-ui.card>
 
     {{-- ═══════════════════════════════════════ 10. DATA DISPLAY ═══════════════════════════════════════ --}}
     <x-ui.card padding="lg">
-        <x-ui.card-header title="Data Display" icon="📊" />
+        <x-ui.card-header title="Data Display" icon="📊"  />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Avatars</p>
         <div class="flex items-end gap-3 mb-6">
-            <x-avatar name="Alice" size="xs" />
-            <x-avatar name="Bob" size="sm" />
-            <x-avatar name="Charlie" size="md" />
-            <x-avatar name="Diana" size="lg" />
-            <x-avatar name="Eve" size="xl" />
+            <x-avatar name="Alice" size="xs"  />
+            <x-avatar name="Bob" size="sm"  />
+            <x-avatar name="Charlie" size="md"  />
+            <x-avatar name="Diana" size="lg"  />
+            <x-avatar name="Eve" size="xl"  />
         </div>
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Data List</p>
@@ -361,7 +361,7 @@
                 ['label' => 'Age', 'value' => '3 years'],
                 ['label' => 'Weight', 'value' => '32 kg'],
                 ['label' => 'Owner', 'value' => 'Alice Johnson'],
-            ]" />
+            ]"  />
         </div>
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Empty State</p>
@@ -371,15 +371,15 @@
             </x-slot:action>
         </x-ui.empty-state>
 
-        <x-ui.divider />
+        <x-ui.divider  />
 
         <p class="text-xs font-semibold text-fur uppercase tracking-wide mb-3">Dividers</p>
-        <x-ui.divider />
-        <x-ui.divider label="Or continue with" />
+        <x-ui.divider  />
+        <x-ui.divider label="Or continue with"  />
     </x-ui.card>
 
 </div>
 
 {{-- Toast container --}}
-<x-ui.toast-container />
+<x-ui.toast-container  />
 @endsection

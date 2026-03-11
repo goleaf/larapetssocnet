@@ -3,7 +3,7 @@
 <x-app-layout>
  <x-slot name="header">
  <x-ui.page-header title="Profile & Account"
- subtitle="Manage your public profile, password, and account safety settings."/>
+ subtitle="Manage your public profile, password, and account safety settings." />
  </x-slot>
 
  <div class="space-y-6 mt-6">
@@ -11,9 +11,9 @@
  subtitle="Edit display name, username, bio, avatar, and cover with live preview.">
  <x-slot name="action">
  <div class="flex flex-wrap gap-2">
- <x-ui.button href="{{ route('settings.profile') }}"variant="primary">Open Profile
+ <x-ui.button href="{{ route('settings.profile') }}" variant="primary">Open Profile
  Settings</x-ui.button>
- <x-ui.button href="{{ route('settings.data') }}"variant="ghost">Open Account
+ <x-ui.button href="{{ route('settings.data') }}" variant="ghost">Open Account
  Settings</x-ui.button>
  </div>
  </x-slot>

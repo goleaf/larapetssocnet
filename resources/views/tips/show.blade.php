@@ -6,10 +6,10 @@
 <x-app-layout>
  <x-slot name="header">
  <div class="flex items-center justify-between gap-4">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+ <h2 class="font-semibold text-xl text-gray-400 leading-tight">
  {{ $tip->title }}
  </h2>
- <a href="{{ route('tips.index') }}"class="text-sm text-gray-600 hover:text-gray-900">Back to tips</a>
+ <a href="{{ route('tips.index') }}" class="text-sm text-gray-400 hover:text-gray-400">Back to tips</a>
  </div>
  </x-slot>
 
@@ -30,7 +30,7 @@
  @endif
 
  @if(!empty($tip->species))
- <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ $tip->species }}</span>
+ <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{{ $tip->species }}</span>
  @endif
 
  @if(!empty($tip->category))
@@ -43,7 +43,7 @@
  </div>
 
  <div class="mt-6 flex items-center justify-between">
- <form method="POST"action="{{ route('tips.helpful', $tipSlug) }}">
+ <form method="POST" action="{{ route('tips.helpful', $tipSlug) }}">
  @csrf
  <x-secondary-button>
  Helpful ({{ data_get($tip,'helpful_count', 0) }})
@@ -52,11 +52,11 @@
 
  @if($isOwner && ! $isApproved)
  <div class="flex items-center gap-3">
- <a href="{{ route('tips.edit', $tipSlug) }}"class="text-sm text-indigo-600 hover:text-indigo-800">Edit</a>
- <form method="POST"action="{{ route('tips.destroy', $tipSlug) }}"onsubmit="return confirm('Delete this tip?');">
+ <a href="{{ route('tips.edit', $tipSlug) }}" class="text-sm text-indigo-600 hover:text-indigo-800">Edit</a>
+ <form method="POST" action="{{ route('tips.destroy', $tipSlug) }}" onsubmit="return confirm('Delete this tip?');">
  @csrf
  @method('DELETE')
- <button type="submit"class="text-sm text-red-600 hover:text-red-800">Delete</button>
+ <button type="submit" class="text-sm text-red-600 hover:text-red-800">Delete</button>
  </form>
  </div>
  @endif

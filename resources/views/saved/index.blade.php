@@ -2,11 +2,11 @@
  <x-slot name="header">
  <div class="flex items-center justify-between gap-3">
  <div>
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">Saved Posts</h2>
- <p class="mt-1 text-sm text-gray-500">Your bookmarked posts in one place.</p>
+ <h2 class="font-semibold text-xl text-gray-400 leading-tight">Saved Posts</h2>
+ <p class="mt-1 text-sm text-gray-400">Your bookmarked posts in one place.</p>
  </div>
  <a href="{{ route('feed.index') }}"
- class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back
+ class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-400 hover:bg-gray-50">Back
  to Feed</a>
  </div>
  </x-slot>
@@ -21,18 +21,18 @@
 
  @forelse ($savedPosts as $savedPost)
  @if ($savedPost->post)
- <div class="rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
+ <div class="rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-xs text-gray-400">
  Saved {{ $savedPost->created_at?->diffForHumans() }}
- <form method="POST"action="{{ route('posts.save', $savedPost->post) }}"class="ml-3 inline">
+ <form method="POST" action="{{ route('posts.save', $savedPost->post) }}" class="ml-3 inline">
  @csrf
  <button type="submit"
- class="font-semibold text-gray-700 underline hover:text-red-600">Unsave</button>
+ class="font-semibold text-gray-400 underline hover:text-red-600">Unsave</button>
  </form>
  </div>
  @include('posts.partials.card', ['post'=> $savedPost->post])
  @endif
  @empty
- <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
+ <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-400">
  You have no saved posts yet.
  </div>
  @endforelse

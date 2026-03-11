@@ -45,7 +45,7 @@
                 $navTabs[] = ['label' => 'Requests', 'value' => 'requests', 'href' => $requestsUrl];
             }
         @endphp
-        <x-ui.tabs :tabs="$navTabs" active="members" />
+        <x-ui.tabs :tabs="$navTabs" active="members"  />
     </div>
 
     <x-ui.card padding="lg">
@@ -78,7 +78,7 @@
                                         <x-ui.icon-button type="submit" variant="ghost" size="sm"
                                             title="Save">✓</x-ui.icon-button>
                                     </form>
-                                    <x-ui.divider class="!my-2" />
+                                    <x-ui.divider class="!my-2"  />
                                     <form method="POST"
                                         action="{{ route('groups.members.ban', ['group' => $groupRouteKey, 'membership' => $member->id]) }}">
                                         @csrf
@@ -92,7 +92,7 @@
                     </x-slot:action>
                 </x-ui.user-row>
             @empty
-                <x-ui.empty-state title="No Members" description="There are no active members yet." icon="👥" />
+                <x-ui.empty-state title="No Members" description="There are no active members yet." icon="👥"  />
             @endforelse
         </div>
 

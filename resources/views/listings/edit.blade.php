@@ -76,8 +76,8 @@
  icon="🛠️"
  >
  <x-slot name="actions">
- <x-ui.button variant="ghost":href="$showHref">View listing</x-ui.button>
- <x-ui.button variant="ghost":href="$indexHref">Back to listings</x-ui.button>
+ <x-ui.button variant="ghost" :href="$showHref">View listing</x-ui.button>
+ <x-ui.button variant="ghost" :href="$indexHref">Back to listings</x-ui.button>
  </x-slot>
  </x-ui.page-header>
  </x-slot>
@@ -119,7 +119,7 @@
  }
  }"
  >
- <form method="POST"action="{{ $updateAction }}"enctype="multipart/form-data"class="space-y-5">
+ <form method="POST" action="{{ $updateAction }}" enctype="multipart/form-data" class="space-y-5">
  @csrf
  @method('PATCH')
 
@@ -138,7 +138,7 @@
  :value="old('title', data_get($listing,'title'))"
  placeholder="Golden retriever puppy looking for a home"
  x-model="preview.title"
- />
+  />
 
  <x-ui.textarea
  class="md:col-span-2"
@@ -149,7 +149,7 @@
  :value="old('description', data_get($listing,'description'))"
  placeholder="Share temperament, health info, and what adopters should know."
  x-model="preview.description"
- />
+  />
 
  <x-ui.radio-group
  class="md:col-span-2"
@@ -158,7 +158,7 @@
  :options="$typeOptions"
  :value="old('listing_type', data_get($listing,'listing_type','adoption'))"
  x-model="preview.type"
- />
+  />
  </div>
  </x-ui.form-section>
 
@@ -175,15 +175,15 @@
  :value="old('status', data_get($listing,'status', \App\Models\MarketplaceListing::STATUS_DRAFT))"
  required
  x-model="preview.status"
- />
+  />
 
  <div
  class="rounded-xl border border-dashed p-3 text-sm"
  style="border-color: var(--ui-border-strong); background: color-mix(in srgb, var(--ui-surface-muted) 80%, var(--ui-surface) 20%);"
  >
- <p class="font-semibold"style="color: var(--ui-text);">Pricing behavior</p>
- <p class="mt-1 shell-text-muted"x-show="showPricing">Visible pricing is enabled for <span class="font-semibold"x-text="typeLabel"></span>.</p>
- <p class="mt-1 shell-text-muted"x-show="! showPricing">Pricing is hidden for this type. Buyers will see"Price on request".</p>
+ <p class="font-semibold" style="color: var(--ui-text);">Pricing behavior</p>
+ <p class="mt-1 shell-text-muted" x-show="showPricing">Visible pricing is enabled for <span class="font-semibold" x-text="typeLabel"></span>.</p>
+ <p class="mt-1 shell-text-muted" x-show="! showPricing">Pricing is hidden for this type. Buyers will see"Price on request".</p>
  </div>
 
  <div class="md:col-span-2"x-cloak x-show="showPricing">
@@ -197,7 +197,7 @@
  :value="old('price', data_get($listing,'price'))"
  placeholder="0.00"
  x-model="preview.price"
- />
+  />
 
  <x-ui.input
  name="currency"
@@ -206,7 +206,7 @@
  :value="strtoupper((string) old('currency', data_get($listing,'currency','USD')))"
  placeholder="USD"
  x-model="preview.currency"
- />
+  />
  </div>
  </div>
  </div>
@@ -224,7 +224,7 @@
  :value="old('location_text', data_get($listing,'location_text'))"
  placeholder="Austin, TX"
  x-model="preview.location"
- />
+  />
 
  <x-ui.input
  name="pet_id"
@@ -234,7 +234,7 @@
  :value="old('pet_id', data_get($listing,'pet_id'))"
  placeholder="Optional"
  x-model="preview.pet_id"
- />
+  />
 
  <x-ui.input
  name="contact_phone"
@@ -242,7 +242,7 @@
  :value="old('contact_phone', data_get($listing,'contact_phone'))"
  placeholder="+1 555 000 0000"
  x-model="preview.contact_phone"
- />
+  />
 
  <x-ui.input
  name="contact_email"
@@ -251,7 +251,7 @@
  :value="old('contact_email', data_get($listing,'contact_email'))"
  placeholder="you@example.com"
  x-model="preview.contact_email"
- />
+  />
  </div>
  </x-ui.form-section>
 
@@ -266,7 +266,7 @@
  label="Replace Cover Image"
  accept="image/*"
  help="Uploading a new cover replaces the existing one."
- />
+  />
 
  @if ($coverImageUrl !=='')
  <x-ui.checkbox
@@ -274,7 +274,7 @@
  label="Remove current cover image"
  description="Current cover will be removed when you save."
  :checked="(bool) old('remove_cover_image')"
- />
+  />
  @endif
 
  <x-ui.file-upload
@@ -283,7 +283,7 @@
  accept="image/*"
  multiple
  help="Upload up to 12 images."
- />
+  />
 
  @if ($existingGallery->isNotEmpty())
  <x-ui.checkbox
@@ -291,13 +291,13 @@
  label="Replace gallery with newly uploaded files"
  description="Enable this to clear current gallery before adding new uploads."
  :checked="(bool) old('replace_gallery')"
- />
+  />
  @endif
  </div>
  </x-ui.form-section>
 
  <div class="flex flex-wrap items-center justify-end gap-2">
- <x-ui.button variant="ghost":href="$showHref">Cancel</x-ui.button>
+ <x-ui.button variant="ghost" :href="$showHref">Cancel</x-ui.button>
  <x-ui.button type="submit">Save changes</x-ui.button>
  </div>
  </form>
@@ -309,9 +309,9 @@
  icon="✨"
  >
  <article class="shell-card overflow-hidden">
- <div class="aspect-[16/10] border-b"style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
+ <div class="aspect-[16/10] border-b" style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-secondary) 12%, var(--ui-surface) 88%);">
  @if ($coverImageUrl !=='')
- <img src="{{ $coverImageUrl }}"alt="Current cover"class="h-full w-full object-cover">
+ <img src="{{ $coverImageUrl }}" alt="Current cover" class="h-full w-full object-cover">
  @else
  <div class="flex h-full items-center justify-center text-4xl">🐾</div>
  @endif
@@ -319,16 +319,16 @@
 
  <div class="space-y-3 p-4">
  <div class="flex items-start justify-between gap-2">
- <h3 class="shell-title text-base"x-text="preview.title ||'Untitled listing'"></h3>
- <x-ui.badge tone="info"x-text="statusLabel"></x-ui.badge>
+ <h3 class="shell-title text-base" x-text="preview.title ||'Untitled listing'"></h3>
+ <x-ui.badge tone="info" x-text="statusLabel"></x-ui.badge>
  </div>
 
- <p class="shell-title text-lg"style="color: var(--ui-primary);"x-text="previewPrice"></p>
+ <p class="shell-title text-lg" style="color: var(--ui-primary);" x-text="previewPrice"></p>
 
- <p class="text-sm shell-text-muted"x-text="preview.description ||'Add a clear description to attract more responses.'"></p>
+ <p class="text-sm shell-text-muted" x-text="preview.description ||'Add a clear description to attract more responses.'"></p>
 
  <div class="flex flex-wrap gap-2 text-xs shell-text-muted">
- <span class="chip"x-text="typeLabel"></span>
+ <span class="chip" x-text="typeLabel"></span>
  <span x-text="preview.location ?`📍 ${preview.location}`:'📍 Location not provided'"></span>
  </div>
  </div>
@@ -345,17 +345,17 @@
  >
  <div class="space-y-4">
  @if ($coverImageUrl !=='')
- <div class="rounded-xl border p-3"style="border-color: var(--ui-border);">
- <p class="mb-2 text-sm font-semibold"style="color: var(--ui-text);">Cover</p>
+ <div class="rounded-xl border p-3" style="border-color: var(--ui-border);">
+ <p class="mb-2 text-sm font-semibold" style="color: var(--ui-text);">Cover</p>
 
  <div class="flex flex-wrap items-center gap-3">
- <img src="{{ $coverImageUrl }}"alt="Cover image"class="h-20 w-28 rounded-lg object-cover">
+ <img src="{{ $coverImageUrl }}" alt="Cover image" class="h-20 w-28 rounded-lg object-cover">
 
  @if ($mediaDestroyRouteName && $coverMedia)
- <form method="POST"action="{{ route($mediaDestroyRouteName, [$listing, data_get($coverMedia,'id')]) }}">
+ <form method="POST" action="{{ route($mediaDestroyRouteName, [$listing, data_get($coverMedia,'id')]) }}">
  @csrf
  @method('DELETE')
- <x-ui.button variant="danger"size="sm"type="submit">Remove cover</x-ui.button>
+ <x-ui.button variant="danger" size="sm" type="submit">Remove cover</x-ui.button>
  </form>
  @else
  <p class="text-xs shell-text-muted">Cover removal endpoint is not available. Use the checkbox above and save changes.</p>
@@ -365,21 +365,21 @@
  @endif
 
  <div>
- <p class="mb-2 text-sm font-semibold"style="color: var(--ui-text);">Gallery</p>
+ <p class="mb-2 text-sm font-semibold" style="color: var(--ui-text);">Gallery</p>
 
  @if ($existingGallery->isEmpty())
  <p class="text-sm shell-text-muted">No gallery images uploaded.</p>
  @else
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
  @foreach ($existingGallery as $media)
- <div class="rounded-xl border p-2"style="border-color: var(--ui-border);">
- <img src="{{ $media->getUrl() }}"alt="Gallery image"class="h-28 w-full rounded-lg object-cover">
+ <div class="rounded-xl border p-2" style="border-color: var(--ui-border);">
+ <img src="{{ $media->getUrl() }}" alt="Gallery image" class="h-28 w-full rounded-lg object-cover">
 
  @if ($mediaDestroyRouteName)
- <form method="POST"action="{{ route($mediaDestroyRouteName, [$listing, data_get($media,'id')]) }}"class="mt-2">
+ <form method="POST" action="{{ route($mediaDestroyRouteName, [$listing, data_get($media,'id')]) }}" class="mt-2">
  @csrf
  @method('DELETE')
- <x-ui.button variant="danger"size="xs"type="submit"class="w-full">Remove</x-ui.button>
+ <x-ui.button variant="danger" size="xs" type="submit" class="w-full">Remove</x-ui.button>
  </form>
  @else
  <p class="mt-2 text-xs shell-text-muted">Remove endpoint not available yet.</p>

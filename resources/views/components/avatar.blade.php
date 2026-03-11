@@ -44,13 +44,13 @@
  @endif
 >
  @if ($src)
- <img src="{{ $src }}"alt="{{ $avatarAlt }}"class="h-full w-full object-cover"loading="lazy">
+ <img src="{{ $src }}" alt="{{ $avatarAlt }}" class="h-full w-full object-cover" loading="lazy">
  @else
- <span class="font-heading font-bold"aria-hidden="true">{{ $initials }}</span>
+ <span class="font-heading font-bold" aria-hidden="true">{{ $initials }}</span>
  <span class="sr-only">{{ $avatarAlt }}</span>
  @endif
 
  @if ($statusClasses)
- <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 {{ $statusClasses }}"style="border-color: var(--ui-surface);"aria-hidden="true"></span>
+ <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 {{ $statusClasses }}" style="border-color: var(--ui-surface);" aria-hidden="true"></span>
  @endif
 </div>

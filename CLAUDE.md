@@ -26,6 +26,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
+- `using-laravel-superpowers` — Broad Laravel workflow router installed into this project from `jpcaparas/superpowers-laravel`; use it as the default companion skill for most Laravel changes here.
+- `larapetssocnet-domain-guides` — Project-specific router for feeds, posts, reactions, follows, pets, adoption, groups, privacy, moderation, hashtags, search, listings, media, and service/query patterns documented under `skills/`.
+- `larapetssocnet-ui-guides` — Project-specific router for Blade, Alpine, Tailwind, forms, accessibility, localization, charts, and layout conventions documented under `skills/`.
+- `larapetssocnet-security-guides` — Project-specific router for authorization, visibility, moderation, guest access, and sanitization rules documented under `skills/`.
+- `larapetssocnet-performance-guides` — Project-specific router for feed/query performance, eager loading, counters, pagination, and SQLite-aware data patterns documented under `skills/`.
+- `larapetssocnet-workflow-guides` — Project-specific router for testing, localization/light-UI workflow, changelog/commit flow, and common service/request patterns documented under `skills/`.
+- Every markdown guide in `skills/*.md` is also exposed as a same-name local skill under `.agents/skills/`; prefer the most specific matching skill before falling back to the broad routers above.
 - `pest-testing` — Tests applications using the Pest 3 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v3 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 

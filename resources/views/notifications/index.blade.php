@@ -1,27 +1,27 @@
 @php
  $sections = [
- ['title'=>'Today','items'=> $todayNotifications],
- ['title'=>'This Week','items'=> $thisWeekNotifications],
- ['title'=>'Older','items'=> $olderNotifications],
+ ['title'=>__('en.today'),'items'=> $todayNotifications],
+ ['title'=>__('en.this_week'),'items'=> $thisWeekNotifications],
+ ['title'=>__('en.older'),'items'=> $olderNotifications],
  ];
 @endphp
 
-@section('title','Notifications')
+@section('title', __('en.notifications'))
 
 <x-app-layout>
  <x-slot name="header">
  <div class="flex flex-wrap items-start justify-between gap-3">
  <div>
- <h1 class="shell-title text-xl">Notifications</h1>
- <p class="mt-1 text-sm shell-text-muted">Stay on top of activity around your pets and community.</p>
+ <h1 class="shell-title text-xl">{{ __('en.notifications') }}</h1>
+ <p class="mt-1 text-sm shell-text-muted">{{ __('en.stay_on_top_of_activity_around_your_pets_and_community') }}</p>
  </div>
 
  @if ($unreadCount > 0)
- <form method="POST"action="{{ route('notifications.read-all') }}">
+ <form method="POST" action="{{ route('notifications.read-all') }}">
  @csrf
  @method('PATCH')
 
- <button type="submit"class="btn-base btn-ghost px-3 py-2 text-sm">Mark all as read</button>
+ <button type="submit" class="btn-base btn-ghost px-3 py-2 text-sm">{{ __('en.mark_all_as_read') }}</button>
  </form>
  @endif
  </div>
@@ -31,9 +31,9 @@
  @if ($notifications->isEmpty())
  <x-empty-state
  icon="🔔"
- title="No notifications yet"
- description="New followers, comments, and other updates will appear here."
- />
+ :title="__('en.no_notifications_yet')"
+ :description="__('en.new_followers_comments_and_other_updates_will_appear_here')"
+  />
  @else
  <div class="space-y-7">
  @foreach ($sections as $section)
@@ -43,7 +43,7 @@
 
  @continue($sectionItems->isEmpty())
 
- <section class="{{ $loop->first ?'':'border-t pt-6'}}"style="{{ $loop->first ?'':'border-color: var(--ui-border);'}}">
+ <section class="{{ $loop->first ?'':'border-t pt-6'}}" style="{{ $loop->first ?'':'border-color: var(--ui-border);'}}">
  <div class="mb-3 flex items-center justify-between">
  <h2 class="shell-title text-sm uppercase tracking-[0.08em]">{{ $section['title'] }}</h2>
  <span class="chip">{{ $sectionItems->count() }}</span>
@@ -53,7 +53,7 @@
  @foreach ($sectionItems as $notification)
  @php
  $data = is_array($notification->data) ? $notification->data : [];
- $message = $data['message'] ??'You have a new notification.';
+ $message = $data['message'] ?? __('en.you_have_a_new_notification');
  $route = $data['route'] ?? route('notifications.index');
  $isUnread = $notification->read_at === null;
  $cardBackground = $isUnread
@@ -61,23 +61,23 @@
  :'color-mix(in srgb, var(--ui-surface) 95%, white 5%)';
  @endphp
 
- <article class="rounded-xl border px-4 py-3"style="border-color: var(--ui-border); background: {{ $cardBackground }};">
+ <article class="rounded-xl border px-4 py-3" style="border-color: var(--ui-border); background: {{ $cardBackground }};">
  <div class="flex items-start gap-3">
  <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ $isUnread ?'bg-emerald-500':'bg-slate-300'}}"></span>
 
  <div class="min-w-0 flex-1">
- <a href="{{ $route }}"class="block text-sm font-semibold leading-5 text-[var(--ui-text)] hover:underline">
+ <a href="{{ $route }}" class="block text-sm font-semibold leading-5 text-[var(--ui-text)] hover:underline">
  {{ $message }}
  </a>
  <p class="mt-1 text-xs shell-text-muted">{{ $notification->created_at?->diffForHumans() }}</p>
  </div>
 
  @if ($isUnread)
- <form method="POST"action="{{ route('notifications.read', ['notification'=> $notification->id]) }}">
+ <form method="POST" action="{{ route('notifications.read', ['notification'=> $notification->id]) }}">
  @csrf
  @method('PATCH')
 
- <button type="submit"class="btn-base btn-ghost px-2.5 py-1.5 text-xs">Mark read</button>
+ <button type="submit" class="btn-base btn-ghost px-2.5 py-1.5 text-xs">{{ __('en.mark_read') }}</button>
  </form>
  @endif
  </div>

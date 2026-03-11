@@ -28,7 +28,7 @@
  :name="$pet->name"
  :size="$avatarSize"
  class="mx-auto {{ $avatarDimension }} border-2 border-cream"
- />
+  />
  <p class="mt-2 truncate text-sm font-semibold text-bark">{{ $pet->name }}</p>
  @if ($pet->species)
  <span class="mt-1 inline-block rounded-full px-2 py-0.5 text-2xs font-medium {{ $speciesClass }}">

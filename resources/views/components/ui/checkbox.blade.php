@@ -63,7 +63,7 @@
  aria-describedby="{{ $hintId }}"
  @endif
  {{ $controlAttributes }}
- />
+  />
 
  <div class="min-w-0 space-y-1">
  @if ($label)
@@ -76,7 +76,7 @@
  @endif
 
  @if ($hasError || $resolvedDescription)
- <x-ui.hint :id="$hintId":error="$resolvedError":message="$resolvedDescription"/>
+ <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$resolvedDescription" />
  @endif
  </div>
 </div>

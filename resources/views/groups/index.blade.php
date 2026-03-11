@@ -17,10 +17,10 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header title="Groups"subtitle="Find and join communities for pet lovers.">
+ <x-ui.page-header title="Groups" subtitle="Find and join communities for pet lovers.">
  <x-slot name="action">
  @auth
- <x-ui.button :href="route('groups.create')"variant="primary"size="sm">Create Group</x-ui.button>
+ <x-ui.button :href="route('groups.create')" variant="primary" size="sm">Create Group</x-ui.button>
  @endauth
  </x-slot>
  </x-ui.page-header>
@@ -28,21 +28,21 @@
 
  <div class="space-y-5 max-w-5xl mx-auto">
  <x-ui.card>
- <form method="GET"action="{{ route('groups.index') }}"class="grid gap-3 md:grid-cols-12">
- <x-ui.input class="md:col-span-5"name="q"label="Search":value="$search"
- placeholder="Search groups"/>
+ <form method="GET" action="{{ route('groups.index') }}" class="grid gap-3 md:grid-cols-12">
+ <x-ui.input class="md:col-span-5" name="q" label="Search" :value="$search"
+ placeholder="Search groups" />
 
- <x-ui.select class="md:col-span-3"name="privacy"label="Type":options="$privacyOptions"
- :selected="$privacy"/>
+ <x-ui.select class="md:col-span-3" name="privacy" label="Type" :options="$privacyOptions"
+ :selected="$privacy" />
 
- <x-ui.select class="md:col-span-2"name="sort"label="Sort":options="$sortOptions":selected="$sort"/>
+ <x-ui.select class="md:col-span-2" name="sort" label="Sort" :options="$sortOptions" :selected="$sort" />
 
  <div class="flex items-end md:col-span-1">
- <x-ui.button type="submit"variant="primary"size="sm"class="w-full">Apply</x-ui.button>
+ <x-ui.button type="submit" variant="primary" size="sm" class="w-full">Apply</x-ui.button>
  </div>
 
  <div class="flex items-end md:col-span-1">
- <x-ui.button :href="route('groups.index')"variant="ghost"size="sm"
+ <x-ui.button :href="route('groups.index')" variant="ghost" size="sm"
  class="w-full">Reset</x-ui.button>
  </div>
  </form>
@@ -50,8 +50,8 @@
 
  @if ($groups->isEmpty())
  <x-ui.card>
- <x-ui.empty-state icon="👥"title="No Groups Found"
- description="Try a different search or filter option."/>
+ <x-ui.empty-state icon="👥" title="No Groups Found"
+ description="Try a different search or filter option." />
  </x-ui.card>
  @else
  <p class="text-sm text-fur">{{ number_format($groups->total()) }} groups found</p>
@@ -73,7 +73,7 @@
  </div>
 
  <x-ui.card>
- <x-ui.pagination :paginator="$groups"/>
+ <x-ui.pagination :paginator="$groups" />
  </x-ui.card>
  @endif
  </div>
