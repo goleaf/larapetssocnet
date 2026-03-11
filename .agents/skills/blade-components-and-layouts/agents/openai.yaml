@@ -1,7 +1,7 @@
 interface:
   display_name: "Blade Components and Layouts"
   short_description: "Help with Blade Components and Layouts tasks"
-  default_prompt: "Use $blade-components-and-layouts to guide this task with the blade components and layouts workflow."
+  default_prompt: "Use $blade-components-and-layouts to plan and implement UI changes with this skill's Blade, Alpine, and Tailwind patterns."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

@@ -1,7 +1,7 @@
 interface:
   display_name: "Visibility Badge"
   short_description: "Help with Visibility Badge tasks"
-  default_prompt: "Use $visibility-badge to guide this task with the visibility badge workflow."
+  default_prompt: "Use $visibility-badge to plan and implement UI changes with this skill's Blade, Alpine, and Tailwind patterns."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

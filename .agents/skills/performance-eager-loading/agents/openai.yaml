@@ -1,7 +1,7 @@
 interface:
   display_name: "Performance Eager Loading"
   short_description: "Help with Performance Eager Loading tasks"
-  default_prompt: "Use $performance-eager-loading to guide this task with the performance eager loading workflow."
+  default_prompt: "Use $performance-eager-loading to shape Eloquent queries, loading, and data integrity rules before coding."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#0F766E"

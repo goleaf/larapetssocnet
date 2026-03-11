@@ -1,7 +1,7 @@
 interface:
   display_name: "Routes Best Practices"
   short_description: "Help with Routes Best Practices tasks"
-  default_prompt: "Use $routes-best-practices to guide this task with the routes best practices workflow."
+  default_prompt: "Use $routes-best-practices to apply framework and platform integration patterns for robust Laravel delivery."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

@@ -1,7 +1,7 @@
 interface:
   display_name: "Post Types"
   short_description: "Help with Post Types tasks"
-  default_prompt: "Use $post-types to guide this task with the post types workflow."
+  default_prompt: "Use $post-types to implement domain behavior and feature rules with consistent user-facing outcomes."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

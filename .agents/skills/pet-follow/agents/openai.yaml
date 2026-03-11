@@ -1,7 +1,7 @@
 interface:
   display_name: "Pet Follow"
   short_description: "Help with Pet Follow tasks"
-  default_prompt: "Use $pet-follow to guide this task with the pet follow workflow."
+  default_prompt: "Use $pet-follow to implement domain behavior and feature rules with consistent user-facing outcomes."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

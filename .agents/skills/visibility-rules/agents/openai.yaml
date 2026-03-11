@@ -1,7 +1,7 @@
 interface:
   display_name: "Visibility Rules"
   short_description: "Help with Visibility Rules tasks"
-  default_prompt: "Use $visibility-rules to guide this task with the visibility rules workflow."
+  default_prompt: "Use $visibility-rules to enforce authorization, visibility, sanitization, and secure-by-default behavior."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#B91C1C"

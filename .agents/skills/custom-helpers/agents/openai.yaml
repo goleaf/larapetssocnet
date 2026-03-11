@@ -1,7 +1,7 @@
 interface:
   display_name: "Custom Helpers"
   short_description: "Help with Custom Helpers tasks"
-  default_prompt: "Use $custom-helpers to guide this task with the custom helpers workflow."
+  default_prompt: "Use $custom-helpers to apply framework and platform integration patterns for robust Laravel delivery."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

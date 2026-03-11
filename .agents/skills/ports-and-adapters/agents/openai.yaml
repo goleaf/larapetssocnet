@@ -1,7 +1,7 @@
 interface:
   display_name: "Ports and Adapters"
   short_description: "Help with Ports and Adapters tasks"
-  default_prompt: "Use $ports-and-adapters to guide this task with the ports and adapters workflow."
+  default_prompt: "Use $ports-and-adapters to apply framework and platform integration patterns for robust Laravel delivery."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

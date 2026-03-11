@@ -1,7 +1,7 @@
 interface:
   display_name: "Interfaces and DI"
   short_description: "Help with Interfaces and DI tasks"
-  default_prompt: "Use $interfaces-and-di to guide this task with the interfaces and di workflow."
+  default_prompt: "Use $interfaces-and-di to apply framework and platform integration patterns for robust Laravel delivery."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

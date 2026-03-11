@@ -1,7 +1,7 @@
 interface:
   display_name: "Specifying Constraints"
   short_description: "Help with Specifying Constraints tasks"
-  default_prompt: "Use $specifying-constraints to guide this task with the specifying constraints workflow."
+  default_prompt: "Use $specifying-constraints to follow a clear implementation and verification workflow from start to finish."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

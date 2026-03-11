@@ -1,7 +1,7 @@
 interface:
   display_name: "Reactions"
   short_description: "Help with Reactions tasks"
-  default_prompt: "Use $reactions to guide this task with the reactions workflow."
+  default_prompt: "Use $reactions to implement domain behavior and feature rules with consistent user-facing outcomes."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

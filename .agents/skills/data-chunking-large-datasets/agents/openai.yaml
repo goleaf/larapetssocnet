@@ -1,7 +1,7 @@
 interface:
   display_name: "Data Chunking Large Datasets"
   short_description: "Help with Data Chunking Large Datasets tasks"
-  default_prompt: "Use $data-chunking-large-datasets to guide this task with the data chunking large datasets workflow."
+  default_prompt: "Use $data-chunking-large-datasets to shape Eloquent queries, loading, and data integrity rules before coding."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#0F766E"
