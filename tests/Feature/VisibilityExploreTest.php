@@ -25,3 +25,56 @@ it('explore only shows public posts from public and non-banned authors', functio
         ->assertDontSee('explore-private-account-hidden')
         ->assertDontSee('explore-banned-hidden');
 });
+
+it('search posts only shows publicly visible posts for guests', function (): void {
+    $author = User::factory()->create([
+        'is_private' => false,
+        'is_banned' => false,
+    ]);
+
+    Post::factory()->for($author)->create([
+        'body' => 'search-visible-post',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+
+    Post::factory()->for($author)->create([
+        'body' => 'search-private-post',
+        'visibility' => Post::VISIBILITY_PRIVATE,
+        'status' => 'published',
+    ]);
+
+    $this->get(route('search.index', ['type' => 'posts', 'q' => 'search-']))
+        ->assertOk()
+        ->assertSee('search-visible-post')
+        ->assertDontSee('search-private-post');
+});
+
+it('search users only shows discoverable users', function (): void {
+    User::factory()->create([
+        'name' => 'Search Public User',
+        'username' => 'search_public_user',
+        'is_private' => false,
+        'is_banned' => false,
+    ]);
+
+    User::factory()->create([
+        'name' => 'Search Private User',
+        'username' => 'search_private_user',
+        'is_private' => true,
+        'is_banned' => false,
+    ]);
+
+    User::factory()->create([
+        'name' => 'Search Banned User',
+        'username' => 'search_banned_user',
+        'is_private' => false,
+        'is_banned' => true,
+    ]);
+
+    $this->get(route('search.index', ['type' => 'users', 'q' => 'Search']))
+        ->assertOk()
+        ->assertSee('Search Public User')
+        ->assertDontSee('Search Private User')
+        ->assertDontSee('Search Banned User');
+});
