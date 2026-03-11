@@ -51,12 +51,14 @@ class OnboardingController extends Controller
             $blockedUserIds = $user->blockedUsers()->pluck('users.id');
 
             $suggestedUsers = User::query()
+                ->active()
+                ->withPublicProfile()
                 ->whereKeyNot($user->id)
                 ->whereNotIn('id', $blockedUserIds)
                 ->whereDoesntHave('blockedUsers', fn ($query) => $query->whereKey($user->id))
-                ->withCount(['followers', 'following'])
                 ->orderByDesc('followers_count')
                 ->limit(8)
+                ->withCount(['followers', 'following'])
                 ->get();
 
             $suggestedGroups = Group::query()

@@ -1,5 +1,5 @@
 @php
- $author = $post->author ?? $post->user;
+ $author = $post->user ?? $post->author;
  $viewer = $viewer ?? auth()->user();
  $profileUrl = $author ? route('profile.show', $author) :'#';
  $petUrl = $post->pet ? route('pets.show', $post->pet->slug ?? $post->pet->getKey()) : null;

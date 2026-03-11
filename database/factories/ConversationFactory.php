@@ -19,7 +19,6 @@ class ConversationFactory extends Factory
     public function definition(): array
     {
         return [
-            'listing_id' => null,
             'user_one_id' => User::factory(),
             'user_two_id' => User::factory(),
             'blocked_by' => null,

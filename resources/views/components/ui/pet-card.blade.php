@@ -19,7 +19,7 @@
  ];
 
  $speciesClass = $speciesColors[strtolower((string) $pet->species)] ??'bg-cream text-fur';
- $petRoute = route('pets.show', ['slug'=> $pet->slug ?? $pet->getKey()]);
+ $petRoute = route('pets.show', ['pet'=> $pet->slug ?? $pet->getKey()]);
 @endphp
 
 <a href="{{ $petRoute }}" {{ $attributes->merge(['class'=>"flex-shrink-0 {$cardWidth} rounded-xl border border-whisker/30 bg-warm-white p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-card-hover snap-start"]) }}>

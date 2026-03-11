@@ -56,11 +56,11 @@ class Hashtag extends Model
             ->orderByDesc('hashtags.posts_count');
     }
 
-    public function scopeForType(Builder $query, string $postType): Builder
+    public function scopeForType(Builder $query, string $morphType): Builder
     {
         return $query
             ->select(['hashtags.*'])
-            ->whereHas('posts', fn (Builder $postQuery) => $postQuery->where('posts.type', $postType));
+            ->whereHas('posts', fn (Builder $postQuery) => $postQuery->where('posts.type', $morphType));
     }
 
     public function scopeSearchResultColumns(Builder $query): Builder

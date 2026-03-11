@@ -233,7 +233,7 @@ class PostMediaTest extends TestCase
         $this->assertSame(0, Post::query()->count());
     }
 
-    public function test_post_media_files_are_removed_when_post_is_deleted(): void
+    public function test_post_media_records_are_soft_deleted_when_post_is_deleted(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
@@ -258,8 +258,14 @@ class PostMediaTest extends TestCase
             ->delete(route('posts.destroy', $post))
             ->assertRedirect();
 
-        Storage::disk('public')->assertMissing($relativePath);
-        $this->assertDatabaseMissing('media', [
+        Storage::disk('public')->assertExists($relativePath);
+        $this->assertSoftDeleted('posts', [
+            'id' => $post->id,
+        ]);
+        $this->assertSoftDeleted('post_media', [
+            'post_id' => $post->id,
+        ]);
+        $this->assertDatabaseHas('media', [
             'id' => $media->id,
         ]);
     }

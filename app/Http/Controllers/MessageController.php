@@ -58,7 +58,7 @@ class MessageController extends Controller
         }
 
         $messagesQuery = Message::query()
-            ->between($viewer, $peer)
+            ->inThread($viewer, $peer)
             ->with('sender:id,name,username,avatar_path')
             ->orderByDesc('id');
 

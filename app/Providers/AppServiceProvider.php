@@ -15,6 +15,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UsernameRedirect;
 use App\Notifications\QueueBusyAlert;
+use App\Observers\PetObserver;
 use App\Observers\PostObserver;
 use App\Policies\CommentPolicy;
 use App\Policies\EventPolicy;
@@ -79,6 +80,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('unfollow', [FollowPolicy::class, 'unfollow']);
         Gate::define('viewFollowers', [FollowPolicy::class, 'viewFollowers']);
         Gate::define('viewFollowing', [FollowPolicy::class, 'viewFollowing']);
+        Pet::observe(PetObserver::class);
         Post::observe(PostObserver::class);
         EventFacade::listen(UserBlocked::class, RemoveFollowOnBlock::class);
         EventFacade::listen(UserBlocked::class, CancelPendingRequestsOnBlock::class);

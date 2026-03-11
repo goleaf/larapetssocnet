@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
-it('shows followed posts and falls back to discovery when user follows nobody', function () {
+it('shows followed posts and then an empty feed when user follows nobody', function () {
     $viewer = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,
@@ -22,8 +22,14 @@ it('shows followed posts and falls back to discovery when user follows nobody', 
         'is_banned' => false,
     ]);
 
-    Post::factory()->for($followed)->create(['body' => 'Followed pet post']);
-    Post::factory()->for($stranger)->create(['body' => 'Discovery pet post']);
+    Post::factory()->for($followed)->create([
+        'body' => 'Followed pet post',
+        'body_html' => '<p>Followed pet post</p>',
+    ]);
+    Post::factory()->for($stranger)->create([
+        'body' => 'Discovery pet post',
+        'body_html' => '<p>Discovery pet post</p>',
+    ]);
 
     Follow::query()->create([
         'follower_id' => $viewer->id,
@@ -46,8 +52,9 @@ it('shows followed posts and falls back to discovery when user follows nobody', 
     $this->actingAs($viewer)
         ->get(route('feed.index'))
         ->assertSuccessful()
-        ->assertSee('Followed pet post')
-        ->assertSee('Discovery pet post');
+        ->assertDontSee('Followed pet post')
+        ->assertDontSee('Discovery pet post')
+        ->assertSee('Follow some pets to see posts');
 });
 
 it('toggles post likes via json endpoint', function () {

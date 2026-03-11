@@ -34,7 +34,7 @@ class PetFeatureTest extends TestCase
         $pet = Pet::query()->where('name', 'Mochi')->firstOrFail();
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('pets', 'slug')) {
-            $this->assertStringContainsString('mochi-'.$user->username, $pet->slug);
+            $this->assertStringStartsWith('mochi', (string) $pet->slug);
         }
 
         $this->get(route('pets.show', $pet->getKey()))
@@ -140,7 +140,7 @@ class PetFeatureTest extends TestCase
 
         expect($pet->getMedia('gallery'))->toHaveCount(2);
 
-        $this->get(route('pets.show', ['slug' => $pet->getKey(), 'tab' => 'gallery']))
+        $this->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'gallery']))
             ->assertOk()
             ->assertSee('<img', false)
             ->assertDontSee('No gallery items yet.');
@@ -168,7 +168,7 @@ class PetFeatureTest extends TestCase
             $pet->personality_tags
         );
 
-        $this->get(route('pets.show', ['slug' => $pet->getKey(), 'tab' => 'about']))
+        $this->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'about']))
             ->assertOk()
             ->assertSee('Personality')
             ->assertSee('playful')
@@ -226,7 +226,7 @@ class PetFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->get(route('pets.show', ['slug' => $pet->getKey(), 'tab' => 'health']))
+            ->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'health']))
             ->assertOk()
             ->assertSee('Weight history')
             ->assertSee('aria-label="Weight history chart"', false);

@@ -97,11 +97,31 @@ class Pet extends Model implements HasMedia
         'age_formatted',
     ];
 
+    /**
+     * @var list<string>
+     */
+    protected $with = [
+        'user',
+        'species',
+        'breed',
+        'media',
+        'tags',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $withCount = [
+        'posts',
+        'followers',
+    ];
+
     protected function casts(): array
     {
         return [
             'birth_date' => 'date',
             'date_of_birth' => 'date',
+            'birthdate' => 'date',
             'adopted_at' => 'date',
             'adoption_listed_at' => 'datetime',
             'personality_tags' => 'array',
@@ -152,6 +172,21 @@ class Pet extends Model implements HasMedia
     public function marketplaceListings(): HasMany
     {
         return $this->hasMany(MarketplaceListing::class);
+    }
+
+    public function species(): BelongsTo
+    {
+        return $this->belongsTo(Species::class, 'species', 'slug');
+    }
+
+    public function breed(): BelongsTo
+    {
+        return $this->belongsTo(Breed::class, 'breed', 'name');
+    }
+
+    public function tags(): HasMany
+    {
+        return $this->hasMany(PetTag::class);
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
@@ -291,7 +326,9 @@ class Pet extends Model implements HasMedia
 
     public function scopePublic(Builder $query): Builder
     {
-        return $query->where(fn (Builder $subQuery) => $subQuery->whereNull('is_public')->orWhere('is_public', true));
+        return $query
+            ->select(['pets.*'])
+            ->where(fn (Builder $subQuery) => $subQuery->whereNull('is_public')->orWhere('is_public', true));
     }
 
     public function scopeLost(Builder $query): Builder
@@ -304,27 +341,27 @@ class Pet extends Model implements HasMedia
         return $query->where('is_adoptable', true);
     }
 
-    public function scopeBySpecies(Builder $query, string|int $species): Builder
+    public function scopeBySpecies(Builder $query, string|int $speciesId): Builder
     {
         return $query
             ->select(['pets.*'])
-            ->where('pets.species', (string) $species);
+            ->where('pets.species', (string) $speciesId);
     }
 
-    public function scopeByBreed(Builder $query, string $breed): Builder
+    public function scopeByBreed(Builder $query, string|int $breedId): Builder
     {
         return $query
             ->select(['pets.*'])
-            ->where('pets.breed', $breed);
+            ->where('pets.breed', (string) $breedId);
     }
 
-    public function scopeOwnedBy(Builder $query, User|int $user): Builder
+    public function scopeOwnedBy(Builder $query, User|int $userId): Builder
     {
-        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+        $resolvedUserId = $userId instanceof User ? (int) $userId->getKey() : (int) $userId;
 
         return $query
             ->select(['pets.*'])
-            ->where('pets.user_id', $userId);
+            ->where('pets.user_id', $resolvedUserId);
     }
 
     public function scopeAvailableForAdoption(Builder $query): Builder
@@ -348,6 +385,20 @@ class Pet extends Model implements HasMedia
         }
 
         return $query->first();
+    }
+
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $bindingField = $field ?? $this->getRouteKeyName();
+
+        if ($bindingField === 'slug') {
+            return static::query()
+                ->where('slug', $value)
+                ->orWhere($this->getQualifiedKeyName(), $value)
+                ->first();
+        }
+
+        return parent::resolveRouteBinding($value, $field);
     }
 
     public function isOwnedBy(?Authenticatable $user): bool
@@ -469,20 +520,23 @@ class Pet extends Model implements HasMedia
     protected function ageYears(): Attribute
     {
         return Attribute::get(function (): ?int {
-            if (! $this->birth_date) {
+            $birthDate = $this->getAttribute('birth_date');
+
+            if (! $birthDate) {
                 return null;
             }
 
-            return $this->birth_date->age;
+            return $birthDate->age;
         });
     }
 
     protected function ageFormatted(): Attribute
     {
         return Attribute::get(function (): ?string {
-            $birthDate = $this->date_of_birth ?? $this->birth_date;
+            $birthDate = $this->getAttribute('date_of_birth') ?? $this->getAttribute('birth_date');
+
             if (! $birthDate) {
-                return $this->age_text;
+                return $this->getAttribute('age_text');
             }
 
             $diff = now()->diff($birthDate);
@@ -500,12 +554,12 @@ class Pet extends Model implements HasMedia
 
     protected function speciesEmoji(): Attribute
     {
-        return Attribute::get(fn (): string => self::SPECIES_EMOJI[$this->species] ?? self::SPECIES_EMOJI['other']);
+        return Attribute::get(fn (): string => self::SPECIES_EMOJI[(string) $this->getAttribute('species')] ?? self::SPECIES_EMOJI['other']);
     }
 
     protected function isAvailableForAdoption(): Attribute
     {
-        return Attribute::get(fn (): bool => $this->adoption_status === 'available');
+        return Attribute::get(fn (): bool => $this->getAttribute('adoption_status') === 'available');
     }
 
     /**

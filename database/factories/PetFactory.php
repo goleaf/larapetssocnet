@@ -21,7 +21,7 @@ class PetFactory extends Factory
         return [
             'user_id' => \App\Models\User::factory(),
             'name' => fake()->firstName(),
-            'slug' => fake()->unique()->slug(2),
+            'slug' => null,
             'species' => fake()->randomElement(['dog', 'cat', 'bird', 'rabbit', 'hamster']),
             'breed' => fake()->optional(0.8)->word(),
             'sex' => fake()->randomElement(['male', 'female']),

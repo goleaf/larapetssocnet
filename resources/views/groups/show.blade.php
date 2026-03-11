@@ -305,7 +305,7 @@
  />
  @endforelse
 
- @if ($feedPosts instanceof \Illuminate\Pagination\LengthAwarePaginator)
+ @if ($feedPosts instanceof \Illuminate\Contracts\Pagination\Paginator)
  <div class="shell-card p-4">{{ $feedPosts->links() }}</div>
  @endif
  </div>

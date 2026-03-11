@@ -253,7 +253,7 @@
  @php
  $petRouteParam = $pet->slug ?? $pet->getKey();
  @endphp
- <a href="{{ route('pets.show', ['slug'=> $petRouteParam]) }}"
+                                <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
  class="rounded-lg border border-whisker/30 bg-cream p-2 text-center transition-colors hover:bg-paw-light/40">
  <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="sm"
  class="mx-auto"/>
@@ -369,7 +369,7 @@
  @php
  $petRouteParam = $pet->slug ?? $pet->getKey();
  @endphp
- <a href="{{ route('pets.show', ['slug'=> $petRouteParam]) }}"
+                                <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
  class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
  <div class="flex items-center gap-3">
  <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="md"/>

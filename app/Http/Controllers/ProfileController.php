@@ -41,9 +41,7 @@ class ProfileController extends Controller
             $petsQuery = $user->pets()->latest();
 
             if (! $viewer || ! $viewer->is($user)) {
-                $petsQuery->where(function ($query): void {
-                    $query->whereNull('is_public')->orWhere('is_public', true);
-                });
+                $petsQuery->public();
             }
 
             $pets = $petsQuery->get();

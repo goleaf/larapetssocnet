@@ -12,10 +12,10 @@ class HashtagController extends Controller
     public function show(Request $request, Hashtag $hashtag): View
     {
         $posts = Post::query()
-            ->with(['user', 'hashtags'])
+            ->byTag($hashtag->slug)
             ->published()
-            ->whereHas('hashtags', fn ($query) => $query->where('hashtags.id', $hashtag->id))
             ->visibleTo($request->user())
+            ->with(['user', 'hashtags'])
             ->latest()
             ->paginate(15)
             ->withQueryString();

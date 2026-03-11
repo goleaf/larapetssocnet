@@ -58,7 +58,7 @@ class GroupController extends Controller
 
     public function show(Request $request, Group $group): View
     {
-        $viewer = $request->user();
+        $viewer = $request->user()->loadFeedContext();
 
         if ($group->normalizedPrivacy() === 'secret' && Gate::forUser($viewer)->denies('view', $group)) {
             abort(404);

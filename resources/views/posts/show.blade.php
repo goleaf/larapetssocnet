@@ -2,12 +2,6 @@
  <div class="max-w-4xl mx-auto py-8">
  <x-post-card :post="$post"/>
 
- @php
- $taggedPets = collect($post->tagged_pets ?? [])
- ->filter()
- ->whenNotEmpty(fn($ids) => auth()->user()?->pets()->whereIn('id', $ids)->get(), fn() => collect());
- @endphp
-
  @if ($taggedPets->isNotEmpty())
  <div class="mt-4 rounded-lg border border-gray-200 bg-white p-4">
  <h3 class="mb-2 text-sm font-semibold text-gray-800">Tagged Pets</h3>
@@ -58,11 +52,6 @@
  </div>
  @endauth
 
- <!-- Comments List -->
- @php
- $comments = $post->comments()->topLevel()->with(['user','replies.user'])->latest()->get();
- @endphp
-
  @if($comments->isEmpty())
  <div class="py-8 text-center">
  <p class="text-gray-500 text-sm">No comments yet. Be the first to share your thoughts!</p>
@@ -72,6 +61,9 @@
  @foreach($comments as $comment)
  <x-comment-item :comment="$comment" :post="$post"/>
  @endforeach
+ </div>
+ <div class="mt-4">
+ {{ $comments->links() }}
  </div>
  @endif
  </div>

@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'page_title' => 'Feed — PetSocial',
+    'header_title' => 'Community Feed',
+    'saved' => 'Saved',
+    'explore' => 'Explore',
+    'create_post' => 'Create a post',
+    'placeholder_share_update' => 'Share an update about your pet...',
+    'pet_label' => 'Pet',
+    'no_pet_tag' => 'No pet tag',
+    'media_label' => 'Media',
+    'post_button' => 'Post',
+    'feed_note' => 'Feed note: private group posts only appear once you are an approved member of that group.',
+    'aria_feed' => 'Pet feed',
+    'empty_title' => 'Follow some pets to see posts',
+    'empty_description' => 'Your feed is lonely right now.',
+    'empty_action' => 'Explore pet owners',
+    'next_cursor' => 'Load more posts',
+    'groups_title' => 'Your Groups',
+    'browse' => 'Browse',
+    'no_groups' => 'You have not joined any groups yet.',
+    'create_group' => 'Create a Group',
+    'flash_post_created' => 'Post created successfully.',
+    'flash_post_updated' => 'Post updated successfully.',
+    'flash_post_deleted' => 'Post deleted successfully.',
+    'themes' => [
+        'accessible_soft' => 'Accessible Soft',
+        'high_contrast' => 'High Contrast',
+        'minimalist_soothe' => 'Minimalist Soothe',
+    ],
+];

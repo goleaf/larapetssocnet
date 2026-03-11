@@ -6,7 +6,6 @@ use App\Models\Pet;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PetService
 {
@@ -20,12 +19,10 @@ class PetService
         return DB::transaction(function () use ($owner, $data, $avatar): Pet {
             $bio = $data['bio'] ?? null;
             $bioHtml = $bio ? $this->content->process($bio) : null;
-            $slug = $this->generateSlug($data['name'], $owner->username ?? (string) $owner->id);
 
             $pet = Pet::create([
                 'user_id' => $owner->id,
                 'name' => $data['name'],
-                'slug' => $slug,
                 'species' => $data['species'] ?? 'other',
                 'breed' => $data['breed'] ?? null,
                 'gender' => $data['gender'] ?? 'unknown',
@@ -35,6 +32,8 @@ class PetService
                 'bio' => $bio,
                 'bio_html' => $bioHtml,
                 'is_deceased' => $data['is_deceased'] ?? false,
+                'is_public' => $data['is_public'] ?? true,
+                'is_adoptable' => $data['is_adoptable'] ?? false,
                 'personality_tags' => $data['personality_tags'] ?? [],
             ]);
 
@@ -65,6 +64,8 @@ class PetService
                 'bio' => $bio,
                 'bio_html' => $bioHtml,
                 'is_deceased' => $data['is_deceased'] ?? $pet->is_deceased,
+                'is_public' => $data['is_public'] ?? $pet->is_public,
+                'is_adoptable' => $data['is_adoptable'] ?? $pet->is_adoptable,
                 'personality_tags' => $data['personality_tags'] ?? $pet->personality_tags,
             ], fn ($v) => $v !== null));
 
@@ -105,18 +106,5 @@ class PetService
         }
 
         $media->delete();
-    }
-
-    private function generateSlug(string $name, string $username): string
-    {
-        $base = Str::slug($name.'-'.$username);
-        $slug = $base;
-        $i = 1;
-
-        while (Pet::where('slug', $slug)->exists()) {
-            $slug = $base.'-'.$i++;
-        }
-
-        return $slug;
     }
 }

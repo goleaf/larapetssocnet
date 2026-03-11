@@ -2,11 +2,12 @@
 
 namespace App\Observers;
 
+use App\Events\PostCreated;
 use App\Models\Post;
 use App\Services\BadgeService;
 use App\Services\HashtagService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class PostObserver
 {
@@ -21,6 +22,10 @@ class PostObserver
     public function created(Post $post): void
     {
         $this->hashtags->syncHashtags($post);
+
+        PostCreated::dispatch($post);
+
+        $this->bustFeedCache($post);
 
         $post->author->increment('posts_count');
 
@@ -42,6 +47,8 @@ class PostObserver
             $this->hashtags->syncHashtags($post);
         }
 
+        $this->bustFeedCache($post);
+
         $this->logActivity('updated', $post, auth()->user());
     }
 
@@ -50,19 +57,36 @@ class PostObserver
      */
     public function deleting(Post $post): void
     {
-        $post->loadMissing('postMedia');
+        if ($post->isForceDeleting()) {
+            $post->comments()->withTrashed()->forceDelete();
+            $post->postMedia()->withTrashed()->forceDelete();
 
-        foreach ($post->postMedia as $media) {
-            Storage::disk('public')->delete($media->file_path);
+            return;
         }
 
-        foreach ($post->media as $media) {
-            if ($media->disk !== 'public' && $media->conversions_disk !== 'public') {
-                continue;
-            }
+        $post->comments()->get()->each->delete();
+        $post->postMedia()->get()->each->delete();
+    }
 
-            $media->delete();
+    public function restoring(Post $post): void
+    {
+        $post->comments()->withTrashed()->restore();
+        $post->postMedia()->withTrashed()->restore();
+    }
+
+    public function restored(Post $post): void
+    {
+        $this->hashtags->syncHashtags($post);
+
+        $post->author->increment('posts_count');
+
+        if ($post->pet) {
+            $post->pet->increment('posts_count');
         }
+
+        $this->bustFeedCache($post);
+
+        $this->logActivity('restored', $post, auth()->user());
     }
 
     /**
@@ -78,7 +102,15 @@ class PostObserver
             $post->pet->decrement('posts_count');
         }
 
+        $this->bustFeedCache($post);
+
         $this->logActivity('deleted', $post, auth()->user());
+    }
+
+    private function bustFeedCache(Post $post): void
+    {
+        Cache::forget('feed:posts');
+        Cache::forget('feed:posts:user:'.$post->user_id);
     }
 
     private function logActivity(string $description, Post $post, mixed $causer): void

@@ -2,67 +2,76 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StorePetRequest;
+use App\Actions\Pets\CreatePetAction;
+use App\Actions\Pets\UpdatePetAction;
+use App\Http\Requests\CreatePetRequest;
 use App\Http\Requests\UpdatePetRequest;
 use App\Models\Pet;
 use App\Models\Post;
 use App\Services\ChartService;
-use App\Services\PetService;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PetController extends Controller
 {
-    public function __construct(
-        private PetService $petService,
-        private ChartService $chartService,
-    ) {}
+    public function __construct(private ChartService $chartService) {}
 
-    public function show(Request $request, string $slug): View
+    public function index(): View
     {
-        $pet = $this->resolvePet($slug);
+        $pets = Pet::query()
+            ->public()
+            ->latest('created_at')
+            ->cursorPaginate(12)
+            ->withQueryString();
+
+        return view('pets.index', [
+            'pets' => $pets,
+        ]);
+    }
+
+    public function show(Request $request, Pet $pet): View
+    {
+        $this->authorize('view', $pet);
+
+        $pet->loadMissing(['user', 'species', 'breed', 'media', 'tags']);
+
         $isOwner = $pet->isOwnedBy($request->user());
 
-        $tabs = ['posts', 'gallery', 'health', 'about'];
+        $tabs = ['posts', 'gallery', 'about'];
+
+        if ($isOwner) {
+            $tabs[] = 'health';
+        }
+
         $activeTab = $request->string('tab')->toString() ?: 'posts';
 
         if (! in_array($activeTab, $tabs, true)) {
             $activeTab = 'posts';
         }
 
-        if ($activeTab === 'health' && ! $isOwner) {
-            $activeTab = 'posts';
-        }
-
-        $posts = $pet->recentPostsForShow();
-
-        $myReactions = collect();
-        $mySaved = collect();
-
-        if ($request->user() && $posts->isNotEmpty()) {
-            $postIds = $posts->modelKeys();
-            $myReactions = Post::reactionMapForViewer($request->user(), $postIds);
-            $mySaved = Post::savedMapForViewer($request->user(), $postIds);
-        }
-
-        $gallery = $pet->galleryForShow();
+        $posts = $this->postsForShow($pet);
+        $gallery = $activeTab === 'gallery' ? $pet->galleryForShow() : collect();
 
         $healthLogs = collect();
         $weightChartSvg = null;
-        if ($isOwner) {
+
+        if ($isOwner && $activeTab === 'health') {
             $healthLogs = $pet->recentHealthLogs();
             $weightChartSvg = $this->chartService->weightChart($pet->weight_logs);
         }
+
+        $isFollowing = $request->user()?->isFollowingPet($pet) ?? false;
+        $pet->setAttribute('viewer_is_following', $isFollowing);
 
         return view('pets.show', [
             'pet' => $pet,
             'tabs' => $tabs,
             'activeTab' => $activeTab,
             'isOwner' => $isOwner,
+            'isFollowing' => $isFollowing,
             'posts' => $posts,
-            'myReactions' => $myReactions,
-            'mySaved' => $mySaved,
             'gallery' => $gallery,
             'healthLogs' => $healthLogs,
             'weightChartSvg' => $weightChartSvg,
@@ -76,26 +85,24 @@ class PetController extends Controller
         return view('pets.create');
     }
 
-    public function store(StorePetRequest $request): RedirectResponse
+    public function store(CreatePetRequest $request, CreatePetAction $createPetAction): RedirectResponse
     {
         $this->authorize('create', Pet::class);
 
-        $validated = $request->validated();
-        $avatar = $request->file('avatar');
-
-        $data = $this->prepareData($validated, $request);
-        $pet = $this->petService->create($request->user(), $data, $avatar);
-
-        $this->attachGalleryPhotos($pet, $request);
+        $pet = $createPetAction->handle(
+            $request->user(),
+            $this->payloadFromRequest($request),
+            $request->file('avatar'),
+            (array) $request->file('gallery_photos', [])
+        );
 
         return redirect()
-            ->route('pets.show', $pet->slug ?? $pet->getKey())
-            ->with('status', 'Pet profile created.');
+            ->route('pets.show', $pet)
+            ->with('status', __('pets.flash.created'));
     }
 
-    public function edit(Request $request, string $slug): View
+    public function edit(Pet $pet): View
     {
-        $pet = $this->resolvePet($slug);
         $this->authorize('update', $pet);
 
         return view('pets.edit', [
@@ -103,34 +110,34 @@ class PetController extends Controller
         ]);
     }
 
-    public function update(UpdatePetRequest $request, string $slug): RedirectResponse
+    public function update(UpdatePetRequest $request, Pet $pet, UpdatePetAction $updatePetAction): RedirectResponse
     {
-        $pet = $this->resolvePet($slug);
         $this->authorize('update', $pet);
 
-        $validated = $request->validated();
-        $avatar = $request->file('avatar');
-
-        $data = $this->prepareData($validated, $request);
-        $this->petService->update($pet, $data, $avatar);
-
-        $this->attachGalleryPhotos($pet, $request);
+        $pet = $updatePetAction->handle(
+            $pet,
+            $this->payloadFromRequest($request),
+            $request->file('avatar'),
+            (array) $request->file('gallery_photos', [])
+        );
 
         return redirect()
-            ->route('pets.show', $pet->slug ?? $pet->getKey())
-            ->with('status', 'Pet profile updated.');
+            ->route('pets.show', $pet)
+            ->with('status', __('pets.flash.updated'));
     }
 
-    public function destroy(Request $request, string $slug): RedirectResponse
+    public function destroy(Pet $pet): RedirectResponse
     {
-        $pet = $this->resolvePet($slug);
         $this->authorize('delete', $pet);
 
-        $this->petService->delete($pet);
+        if (! $pet->trashed()) {
+            $pet->delete();
+            $pet->owner()->decrement('pets_count');
+        }
 
         return redirect()
-            ->route('pets.explore')
-            ->with('status', 'Pet profile deleted.');
+            ->route('pets.index')
+            ->with('status', __('pets.flash.deleted'));
     }
 
     public function explore(Request $request): View
@@ -186,19 +193,40 @@ class PetController extends Controller
     }
 
     /**
-     * Map request data to the shape PetService expects.
-     *
+     * @return CursorPaginator<int, Post>
+     */
+    private function postsForShow(Pet $pet): CursorPaginator
+    {
+        return Post::query()
+            ->select([
+                'posts.id',
+                'posts.user_id',
+                'posts.pet_id',
+                'posts.body',
+                'posts.body_html',
+                'posts.created_at',
+            ])
+            ->where('posts.pet_id', $pet->getKey())
+            ->latest('posts.created_at')
+            ->cursorPaginate(12)
+            ->withQueryString();
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    private function prepareData(array $validated, Request $request): array
+    private function payloadFromRequest(Request $request): array
     {
+        $validated = method_exists($request, 'validated') ? $request->validated() : [];
+
         return [
             'name' => $validated['name'] ?? null,
             'species' => $validated['species'] ?? null,
             'breed' => $validated['breed'] ?? null,
+            'sex' => $validated['sex'] ?? ($validated['gender'] ?? 'unknown'),
             'gender' => $validated['gender'] ?? ($validated['sex'] ?? 'unknown'),
             'size' => $validated['size'] ?? null,
-            'date_of_birth' => $validated['date_of_birth'] ?? ($validated['birth_date'] ?? null),
+            'birthdate' => $validated['birth_date'] ?? ($validated['date_of_birth'] ?? null),
             'age_text' => $validated['age_text'] ?? null,
             'bio' => $validated['bio'] ?? null,
             'personality_tags' => $this->normalizePersonalityTags($validated['personality_tags'] ?? null),
@@ -208,11 +236,9 @@ class PetController extends Controller
         ];
     }
 
-    protected function resolvePet(string $slug): Pet
-    {
-        return Pet::resolveForRoute($slug) ?? abort(404);
-    }
-
+    /**
+     * @return array<int, string>
+     */
     private function normalizePersonalityTags(mixed $rawTags): array
     {
         if (is_array($rawTags)) {
@@ -232,12 +258,5 @@ class PetController extends Controller
             ->filter()
             ->values()
             ->all();
-    }
-
-    private function attachGalleryPhotos(Pet $pet, Request $request): void
-    {
-        foreach ((array) $request->file('gallery_photos', []) as $photo) {
-            $pet->addMedia($photo)->toMediaCollection('gallery');
-        }
     }
 }

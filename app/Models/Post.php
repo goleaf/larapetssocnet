@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PostStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -43,6 +44,8 @@ class Post extends Model implements HasMedia
         'body',
         'body_html',
         'type',
+        'status',
+        'published_at',
         'visibility',
         'location',
         'tagged_pets',
@@ -58,6 +61,8 @@ class Post extends Model implements HasMedia
             'is_pinned' => 'boolean',
             'tagged_pets' => 'array',
             'group_id' => 'integer',
+            'status' => PostStatus::class,
+            'published_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -147,6 +152,11 @@ class Post extends Model implements HasMedia
     public function hashtags(): BelongsToMany
     {
         return $this->belongsToMany(Hashtag::class, 'post_hashtag');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->hashtags();
     }
 
     public function postReactions(): HasMany
@@ -246,7 +256,9 @@ class Post extends Model implements HasMedia
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('posts.status', 'published');
+        return $query
+            ->select(['posts.*'])
+            ->where('posts.status', PostStatus::Published->value);
     }
 
     public function scopeNotBlockedFor(Builder $query, ?User $viewer): void
@@ -436,8 +448,11 @@ class Post extends Model implements HasMedia
         string $search = '',
         int $perPage = 15
     ): LengthAwarePaginator {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+
         return self::query()
             ->with(['user', 'hashtags'])
+            ->withListEngagement($viewerId)
             ->published()
             ->explorable($viewer)
             ->when($type === 'photos', fn (Builder $query) => $query->byType(self::TYPE_PHOTO))
@@ -471,8 +486,11 @@ class Post extends Model implements HasMedia
 
     public static function paginateSearchResults(?User $viewer, string $term, int $perPage = 15): LengthAwarePaginator
     {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+
         return self::query()
             ->searchResultColumns()
+            ->withListEngagement($viewerId)
             ->published()
             ->visibleTo($viewer)
             ->when($term !== '', fn (Builder $query) => $query->search($term))
@@ -506,10 +524,13 @@ class Post extends Model implements HasMedia
 
     public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 10): LengthAwarePaginator
     {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+
         return self::query()
             ->profileTimelineColumns()
             ->forProfile($profileOwner)
             ->with(['user', 'hashtags'])
+            ->withListEngagement($viewerId)
             ->published()
             ->visibleTo($viewer)
             ->where('posts.visibility', '!=', self::VISIBILITY_PRIVATE)
@@ -600,24 +621,24 @@ class Post extends Model implements HasMedia
         });
     }
 
-    public static function paginateGroupFeed(Group $group, int $perPage = 10, string $pageName = 'posts_page'): LengthAwarePaginator
+    public static function paginateGroupFeed(Group $group, int $perPage = 15, string $cursorName = 'posts_cursor'): CursorPaginator
     {
+        $viewerId = (int) (auth()->id() ?? 0);
+
         return self::query()
             ->inGroupFeed($group)
-            ->with([
-                'user:id,name,username,avatar_path',
-                'hashtags:id,name,slug',
-            ])
+            ->withFeedRelations()
+            ->withFeedLikeExistsForViewer($viewerId)
             ->latest('posts.created_at')
-            ->paginate($perPage, ['posts.*'], $pageName)
+            ->cursorPaginate($perPage, ['posts.*'], $cursorName)
             ->withQueryString();
     }
 
-    public static function paginateEmpty(int $perPage = 10, string $pageName = 'posts_page'): LengthAwarePaginator
+    public static function paginateEmpty(int $perPage = 15, string $cursorName = 'posts_cursor'): CursorPaginator
     {
         return self::query()
             ->whereKey(-1)
-            ->paginate($perPage, ['posts.*'], $pageName)
+            ->cursorPaginate($perPage, ['posts.*'], $cursorName)
             ->withQueryString();
     }
 
@@ -627,26 +648,16 @@ class Post extends Model implements HasMedia
             ? $viewer->acceptedFollowing->isNotEmpty()
             : $viewer->acceptedFollowing()->exists();
 
+        $viewerId = (int) $viewer->getKey();
+
         return self::query()
             ->when(
                 $hasFollowing,
-                fn (Builder $query) => $query->forFeed($viewer),
+                fn (Builder $query) => $query->forFeed($viewerId),
                 fn (Builder $query) => $query->visibleTo($viewer)
             )
-            ->with([
-                'author',
-                'pet',
-                'media',
-                'hashtags',
-            ])
-            ->withCount([
-                'comments',
-                'likes',
-            ])
-            ->withExists([
-                'likes as liked_by_viewer' => fn (Builder $query) => $query
-                    ->where('likes.user_id', $viewer->getKey()),
-            ])
+            ->withFeedRelations()
+            ->withFeedLikeExistsForViewer($viewerId)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -687,30 +698,86 @@ class Post extends Model implements HasMedia
             ->flip();
     }
 
-    public function scopeForFeed(Builder $query, User $user): Builder
+    public function scopeForFeed(Builder $query, int $userId): Builder
     {
-        if ($query->getQuery()->columns === null) {
-            $query->select(['posts.*']);
-        }
+        $query->select(['posts.*']);
 
-        $followingIdsQuery = $user->acceptedFollowing()->select('users.id');
+        $followedUserIdsQuery = Follow::query()
+            ->select('follows.following_id')
+            ->where('follows.follower_id', $userId)
+            ->where('follows.status', 'accepted');
 
         return $query
-            ->where(function (Builder $feedQuery) use ($user, $followingIdsQuery): void {
+            ->published()
+            ->where(function (Builder $feedQuery) use ($userId, $followedUserIdsQuery): void {
                 $feedQuery
-                    ->where('posts.user_id', $user->getKey())
-                    ->orWhere(function (Builder $followingQuery) use ($followingIdsQuery): void {
+                    ->where('posts.user_id', $userId)
+                    ->orWhere(function (Builder $followingQuery) use ($followedUserIdsQuery): void {
                         $followingQuery
-                            ->whereIn('posts.user_id', $followingIdsQuery)
+                            ->whereIn('posts.user_id', $followedUserIdsQuery)
                             ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
+                    })
+                    ->orWhere(function (Builder $followedPetsQuery) use ($userId): void {
+                        $followedPetsQuery
+                            ->where('posts.user_id', '!=', $userId)
+                            ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
+                            ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
                     });
             })
             ->whereHas('author', function (Builder $authorQuery): void {
                 $authorQuery->where('is_banned', false);
             })
             ->whereNull('posts.group_id')
-            ->whereNull('posts.deleted_at')
-            ->notBlockedFor($user);
+            ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocked_id')->where('blocks.blocker_id', $userId))
+            ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId))
+            ->whereNotIn('posts.user_id', UserBlock::query()->select('user_blocks.blocked_id')->where('user_blocks.blocker_id', $userId))
+            ->whereNotIn('posts.user_id', UserBlock::query()->select('user_blocks.blocker_id')->where('user_blocks.blocked_id', $userId));
+    }
+
+    public function scopeWithFeedRelations(Builder $query): Builder
+    {
+        return $query
+            ->with([
+                'user',
+                'author',
+                'pet',
+                'media',
+                'tags',
+            ])
+            ->withListEngagement();
+    }
+
+    public function scopeWithListEngagement(Builder $query, ?int $viewerId = null): Builder
+    {
+        $query->withCount([
+            'likes',
+            'comments',
+        ]);
+
+        $viewerId = (int) ($viewerId ?? 0);
+
+        if ($viewerId <= 0) {
+            return $query;
+        }
+
+        return $query->withExists([
+            'likes' => fn (Builder $likeQuery): Builder => $likeQuery
+                ->where('likes.user_id', $viewerId),
+            'likes as liked_by_viewer' => fn (Builder $likeQuery): Builder => $likeQuery
+                ->where('likes.user_id', $viewerId),
+        ]);
+    }
+
+    public function scopeWithFeedLikeExistsForViewer(Builder $query, ?int $viewerId): Builder
+    {
+        $viewerId = (int) ($viewerId ?? 0);
+
+        return $query->withExists([
+            'likes' => fn (Builder $likeQuery): Builder => $likeQuery
+                ->where('likes.user_id', $viewerId),
+            'likes as liked_by_viewer' => fn (Builder $likeQuery) => $likeQuery
+                ->where('likes.user_id', $viewerId),
+        ]);
     }
 
     // Accessors

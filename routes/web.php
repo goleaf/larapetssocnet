@@ -60,6 +60,7 @@ Route::get('/banned', function () {
 
 Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
+Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
 Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
 Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
 Route::get('/adoption', [AdoptionController::class, 'index'])->name('adoption.index');
@@ -75,8 +76,8 @@ Route::get('/posts/{post}', [PostController::class, 'show'])
     ->whereNumber('post')
     ->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
-Route::get('/pets/{slug}', [PetController::class, 'show'])
-    ->where('slug', '^(?!create$)[^/]+')
+Route::get('/pets/{pet:slug}', [PetController::class, 'show'])
+    ->where('pet', '^(?!create$)[^/]+')
     ->name('pets.show');
 Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
 Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
@@ -135,9 +136,9 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
 
     Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
     Route::post('/pets', [PetController::class, 'store'])->name('pets.store');
-    Route::get('/pets/{slug}/edit', [PetController::class, 'edit'])->name('pets.edit');
-    Route::patch('/pets/{slug}', [PetController::class, 'update'])->name('pets.update');
-    Route::delete('/pets/{slug}', [PetController::class, 'destroy'])->name('pets.destroy');
+    Route::get('/pets/{pet:slug}/edit', [PetController::class, 'edit'])->name('pets.edit');
+    Route::patch('/pets/{pet:slug}', [PetController::class, 'update'])->name('pets.update');
+    Route::delete('/pets/{pet:slug}', [PetController::class, 'destroy'])->name('pets.destroy');
     Route::post('/pets/{slug}/follow', [PetFollowController::class, 'store'])->name('pets.follow');
     Route::delete('/pets/{slug}/follow', [PetFollowController::class, 'destroy'])->name('pets.unfollow');
 

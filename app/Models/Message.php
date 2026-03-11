@@ -51,9 +51,11 @@ class Message extends Model
     {
         $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
 
-        return $query->whereHas('conversation', function (Builder $conversationQuery) use ($userId): void {
-            $conversationQuery->where('user_one_id', $userId)->orWhere('user_two_id', $userId);
-        });
+        return $query
+            ->select(['messages.*'])
+            ->whereHas('conversation', function (Builder $conversationQuery) use ($userId): void {
+                $conversationQuery->where('user_one_id', $userId)->orWhere('user_two_id', $userId);
+            });
     }
 
     /**
@@ -80,23 +82,17 @@ class Message extends Model
             ->between($user, $otherUser);
     }
 
-    public function scopeUnread(Builder $query, User|int|null $user = null): Builder
+    public function scopeUnread(Builder $query, User|int $user): Builder
     {
-        $query = $query
+        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+
+        return $query
             ->select(['messages.*'])
             ->where(function (Builder $unreadQuery): void {
                 $unreadQuery
                     ->where('is_read', false)
                     ->orWhereNull('read_at');
-            });
-
-        if ($user === null) {
-            return $query;
-        }
-
-        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
-
-        return $query
+            })
             ->forUser($userId)
             ->where('sender_id', '!=', $userId);
     }

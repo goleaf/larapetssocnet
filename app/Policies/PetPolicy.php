@@ -34,4 +34,9 @@ class PetPolicy
     {
         return $this->update($user, $pet);
     }
+
+    public function restore(User $user, Pet $pet): bool
+    {
+        return $this->update($user, $pet);
+    }
 }

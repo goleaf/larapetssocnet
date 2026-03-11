@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Like;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,11 +23,32 @@ it('loads the main feed pagination query in five queries or fewer', function ():
         'visibility' => Post::VISIBILITY_PUBLIC,
     ]);
 
+    $likedPost = Post::factory()->create([
+        'user_id' => $followed->getKey(),
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Like::query()->create([
+        'post_id' => $likedPost->getKey(),
+        'user_id' => $viewer->getKey(),
+        'created_at' => now(),
+    ]);
+
     $viewer->load([
         'acceptedFollowing:id',
     ]);
 
-    $this->assertQueryCount(5, function () use ($viewer): void {
-        Post::paginateMainFeedResults($viewer, null, 15)->items();
+    $this->actingAs($viewer);
+
+    $posts = null;
+
+    $this->assertQueryCount(5, function () use ($viewer, &$posts): void {
+        $posts = Post::paginateMainFeedResults($viewer, null, 15);
+        $posts->items();
     });
+
+    $loadedLikedPost = collect($posts?->items())->firstWhere('id', $likedPost->getKey());
+
+    expect($loadedLikedPost)->not->toBeNull();
+    expect((bool) ($loadedLikedPost->liked_by_viewer ?? false))->toBeTrue();
 });
