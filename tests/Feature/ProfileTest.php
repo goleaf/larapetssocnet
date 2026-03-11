@@ -122,8 +122,8 @@ test('avatar and cover images can be uploaded', function (): void {
     expect($avatarMedia)->not()->toBeNull();
     expect($coverMedia)->not()->toBeNull();
 
-    Storage::disk('public')->assertExists($avatarMedia->getPathRelativeToRoot());
-    Storage::disk('public')->assertExists($coverMedia->getPathRelativeToRoot());
+    Storage::disk($avatarMedia->disk)->assertExists($avatarMedia->getPathRelativeToRoot());
+    Storage::disk($coverMedia->disk)->assertExists($coverMedia->getPathRelativeToRoot());
 });
 
 test('avatar and cover images can be removed', function (): void {

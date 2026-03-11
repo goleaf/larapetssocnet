@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use Carbon\Carbon;
 use Faker\Generator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -73,7 +74,13 @@ class PostSeeder extends Seeder
     public function run(): void
     {
         $users = User::query()
-            ->with(['pets:id,user_id'])
+            ->with([
+                'pets' => static function (Builder $query): void {
+                    $query
+                        ->without(['user', 'species', 'breed', 'media', 'tags'])
+                        ->select(['id', 'user_id']);
+                },
+            ])
             ->orderBy('id')
             ->get(['id']);
 
