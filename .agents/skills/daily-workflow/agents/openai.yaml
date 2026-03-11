@@ -2,3 +2,6 @@ interface:
   display_name: "Daily Workflow"
   short_description: "Help with Daily Workflow tasks"
   default_prompt: "Use $daily-workflow to apply this project's daily workflow guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C2410C"

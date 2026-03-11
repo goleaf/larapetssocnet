@@ -2,3 +2,6 @@ interface:
   display_name: "Constants and Configuration"
   short_description: "Help with Constants and Configuration tasks"
   default_prompt: "Use $constants-and-configuration to apply this project's constants and configuration guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

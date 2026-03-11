@@ -2,3 +2,6 @@ interface:
   display_name: "Task Scheduling"
   short_description: "Help with Task Scheduling tasks"
   default_prompt: "Use $task-scheduling to apply this project's task scheduling guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

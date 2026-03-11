@@ -2,3 +2,6 @@ interface:
   display_name: "Visibility Badge"
   short_description: "Help with Visibility Badge tasks"
   default_prompt: "Use $visibility-badge to apply this project's visibility badge guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

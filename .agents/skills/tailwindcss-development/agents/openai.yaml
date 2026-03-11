@@ -1,4 +1,7 @@
 interface:
-  display_name: "Tailwindcss Development"
-  short_description: "Help with Tailwindcss Development tasks"
+  display_name: "TailwindCSS Development"
+  short_description: "Help with TailwindCSS Development tasks"
   default_prompt: "Use $tailwindcss-development to apply this project's tailwindcss development guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

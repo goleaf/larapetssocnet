@@ -2,3 +2,6 @@ interface:
   display_name: "Transactions and Consistency"
   short_description: "Help with Transactions and Consistency tasks"
   default_prompt: "Use $transactions-and-consistency to apply this project's transactions and consistency guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

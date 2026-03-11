@@ -2,3 +2,6 @@ interface:
   display_name: "Service Pattern"
   short_description: "Help with Service Pattern tasks"
   default_prompt: "Use $service-pattern to apply this project's service pattern guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C2410C"

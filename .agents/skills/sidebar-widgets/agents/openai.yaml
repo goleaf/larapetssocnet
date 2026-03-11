@@ -2,3 +2,6 @@ interface:
   display_name: "Sidebar Widgets"
   short_description: "Help with Sidebar Widgets tasks"
   default_prompt: "Use $sidebar-widgets to apply this project's sidebar widgets guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

@@ -2,3 +2,6 @@ interface:
   display_name: "Ports and Adapters"
   short_description: "Help with Ports and Adapters tasks"
   default_prompt: "Use $ports-and-adapters to apply this project's ports and adapters guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

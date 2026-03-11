@@ -2,3 +2,6 @@ interface:
   display_name: "Pivot Models"
   short_description: "Help with Pivot Models tasks"
   default_prompt: "Use $pivot-models to apply this project's pivot models guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

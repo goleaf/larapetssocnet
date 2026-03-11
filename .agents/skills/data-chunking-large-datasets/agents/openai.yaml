@@ -2,3 +2,6 @@ interface:
   display_name: "Data Chunking Large Datasets"
   short_description: "Help with Data Chunking Large Datasets tasks"
   default_prompt: "Use $data-chunking-large-datasets to apply this project's data chunking large datasets guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

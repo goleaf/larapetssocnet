@@ -2,3 +2,6 @@ interface:
   display_name: "Quality Checks"
   short_description: "Help with Quality Checks tasks"
   default_prompt: "Use $quality-checks to apply this project's quality checks guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C2410C"

@@ -1,4 +1,7 @@
 interface:
-  display_name: "E2e Playwright"
-  short_description: "Help with E2e Playwright tasks"
+  display_name: "E2E Playwright"
+  short_description: "Help with E2E Playwright tasks"
   default_prompt: "Use $e2e-playwright to apply this project's e2e playwright guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

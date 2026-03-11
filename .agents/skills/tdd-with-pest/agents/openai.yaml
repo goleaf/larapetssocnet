@@ -1,4 +1,7 @@
 interface:
-  display_name: "Tdd with Pest"
-  short_description: "Help with Tdd with Pest tasks"
+  display_name: "TDD with Pest"
+  short_description: "Help with TDD with Pest tasks"
   default_prompt: "Use $tdd-with-pest to apply this project's tdd with pest guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C2410C"

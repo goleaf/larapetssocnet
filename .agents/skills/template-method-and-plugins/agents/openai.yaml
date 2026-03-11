@@ -2,3 +2,6 @@ interface:
   display_name: "Template Method and Plugins"
   short_description: "Help with Template Method and Plugins tasks"
   default_prompt: "Use $template-method-and-plugins to apply this project's template method and plugins guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

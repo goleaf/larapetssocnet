@@ -2,3 +2,6 @@ interface:
   display_name: "Migrations and Factories"
   short_description: "Help with Migrations and Factories tasks"
   default_prompt: "Use $migrations-and-factories to apply this project's migrations and factories guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

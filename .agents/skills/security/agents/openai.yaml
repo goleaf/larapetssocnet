@@ -2,3 +2,6 @@ interface:
   display_name: "Security"
   short_description: "Help with Security tasks and workflows"
   default_prompt: "Use $security to apply this project's security guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#B91C1C"

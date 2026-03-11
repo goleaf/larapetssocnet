@@ -2,3 +2,6 @@ interface:
   display_name: "Laravel Prompting Patterns"
   short_description: "Help with Laravel Prompting Patterns tasks"
   default_prompt: "Use $laravel-prompting-patterns to apply this project's laravel prompting patterns guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

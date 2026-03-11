@@ -2,3 +2,6 @@ interface:
   display_name: "Debugging Prompts"
   short_description: "Help with Debugging Prompts tasks"
   default_prompt: "Use $debugging-prompts to apply this project's debugging prompts guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C2410C"

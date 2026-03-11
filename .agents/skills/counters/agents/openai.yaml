@@ -2,3 +2,6 @@ interface:
   display_name: "Counters"
   short_description: "Help with Counters tasks and workflows"
   default_prompt: "Use $counters to apply this project's counters guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

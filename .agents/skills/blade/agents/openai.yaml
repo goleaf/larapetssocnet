@@ -2,3 +2,6 @@ interface:
   display_name: "Blade"
   short_description: "Help with Blade tasks and workflows"
   default_prompt: "Use $blade to apply this project's blade guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

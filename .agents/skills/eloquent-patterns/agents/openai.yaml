@@ -2,3 +2,6 @@ interface:
   display_name: "Eloquent Patterns"
   short_description: "Help with Eloquent Patterns tasks"
   default_prompt: "Use $eloquent-patterns to apply this project's eloquent patterns guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

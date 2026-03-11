@@ -2,3 +2,6 @@ interface:
   display_name: "Events Listeners"
   short_description: "Help with Events Listeners tasks"
   default_prompt: "Use $events-listeners to apply this project's events listeners guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

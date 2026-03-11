@@ -2,3 +2,6 @@ interface:
   display_name: "Performance Eager Loading"
   short_description: "Help with Performance Eager Loading tasks"
   default_prompt: "Use $performance-eager-loading to apply this project's performance eager loading guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

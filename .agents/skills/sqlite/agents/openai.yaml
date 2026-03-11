@@ -2,3 +2,6 @@ interface:
   display_name: "SQLite"
   short_description: "Help with SQLite tasks and workflows"
   default_prompt: "Use $sqlite to apply this project's sqlite guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

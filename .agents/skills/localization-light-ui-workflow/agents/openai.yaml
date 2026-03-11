@@ -2,3 +2,6 @@ interface:
   display_name: "Localization Light UI Workflow"
   short_description: "Help with Localization Light UI Workflow tasks"
   default_prompt: "Use $localization-light-ui-workflow to apply this project's localization light ui workflow guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

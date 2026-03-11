@@ -2,3 +2,6 @@ interface:
   display_name: "Content Sanitization"
   short_description: "Help with Content Sanitization tasks"
   default_prompt: "Use $content-sanitization to apply this project's content sanitization guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#B91C1C"

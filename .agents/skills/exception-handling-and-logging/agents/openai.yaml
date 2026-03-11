@@ -2,3 +2,6 @@ interface:
   display_name: "Exception Handling and Logging"
   short_description: "Help with Exception Handling and Logging tasks"
   default_prompt: "Use $exception-handling-and-logging to apply this project's exception handling and logging guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

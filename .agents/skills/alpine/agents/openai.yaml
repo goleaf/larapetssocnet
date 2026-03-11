@@ -2,3 +2,6 @@ interface:
   display_name: "Alpine"
   short_description: "Help with Alpine tasks and workflows"
   default_prompt: "Use $alpine to apply this project's alpine guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

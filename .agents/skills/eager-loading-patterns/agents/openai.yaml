@@ -2,3 +2,6 @@ interface:
   display_name: "Eager Loading Patterns"
   short_description: "Help with Eager Loading Patterns tasks"
   default_prompt: "Use $eager-loading-patterns to apply this project's eager loading patterns guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

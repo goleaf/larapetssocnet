@@ -2,3 +2,6 @@ interface:
   display_name: "Form Requests and Validation"
   short_description: "Help with Form Requests and Validation tasks"
   default_prompt: "Use $form-requests-and-validation to apply this project's form requests and validation guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

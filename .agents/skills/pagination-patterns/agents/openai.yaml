@@ -2,3 +2,6 @@ interface:
   display_name: "Pagination Patterns"
   short_description: "Help with Pagination Patterns tasks"
   default_prompt: "Use $pagination-patterns to apply this project's pagination patterns guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"

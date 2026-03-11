@@ -2,3 +2,6 @@ interface:
   display_name: "Threaded Comments"
   short_description: "Help with Threaded Comments tasks"
   default_prompt: "Use $threaded-comments to apply this project's threaded comments guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#10B981"

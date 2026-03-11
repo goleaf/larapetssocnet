@@ -2,3 +2,6 @@ interface:
   display_name: "API Surface Evolution"
   short_description: "Help with API Surface Evolution tasks"
   default_prompt: "Use $api-surface-evolution to apply this project's api surface evolution guidance."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#0F766E"
