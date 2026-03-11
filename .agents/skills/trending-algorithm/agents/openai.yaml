@@ -1,7 +1,7 @@
 interface:
   display_name: "Trending Algorithm"
   short_description: "Help with Trending Algorithm tasks"
-  default_prompt: "Use $trending-algorithm to apply this project's trending algorithm guidance."
+  default_prompt: "Use $trending-algorithm to guide this task with the trending algorithm workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

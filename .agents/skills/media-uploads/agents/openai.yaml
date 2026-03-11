@@ -1,7 +1,7 @@
 interface:
   display_name: "Media Uploads"
   short_description: "Help with Media Uploads tasks"
-  default_prompt: "Use $media-uploads to apply this project's media uploads guidance."
+  default_prompt: "Use $media-uploads to guide this task with the media uploads workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

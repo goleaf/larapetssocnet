@@ -1,7 +1,7 @@
 interface:
   display_name: "Visibility Selector"
   short_description: "Help with Visibility Selector tasks"
-  default_prompt: "Use $visibility-selector to apply this project's visibility selector guidance."
+  default_prompt: "Use $visibility-selector to guide this task with the visibility selector workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

@@ -1,7 +1,7 @@
 interface:
   display_name: "Form Requests"
   short_description: "Help with Form Requests tasks"
-  default_prompt: "Use $form-requests to apply this project's form requests guidance."
+  default_prompt: "Use $form-requests to guide this task with the form requests workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

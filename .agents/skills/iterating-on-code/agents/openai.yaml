@@ -1,7 +1,7 @@
 interface:
   display_name: "Iterating On Code"
   short_description: "Help with Iterating On Code tasks"
-  default_prompt: "Use $iterating-on-code to apply this project's iterating on code guidance."
+  default_prompt: "Use $iterating-on-code to guide this task with the iterating on code workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

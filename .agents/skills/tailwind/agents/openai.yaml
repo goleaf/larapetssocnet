@@ -1,7 +1,7 @@
 interface:
   display_name: "Tailwind"
   short_description: "Help with Tailwind tasks and workflows"
-  default_prompt: "Use $tailwind to apply this project's tailwind guidance."
+  default_prompt: "Use $tailwind to guide this task with the tailwind workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

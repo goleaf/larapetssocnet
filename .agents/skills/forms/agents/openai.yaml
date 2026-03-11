@@ -1,7 +1,7 @@
 interface:
   display_name: "Forms"
   short_description: "Help with Forms tasks and workflows"
-  default_prompt: "Use $forms to apply this project's forms guidance."
+  default_prompt: "Use $forms to guide this task with the forms workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

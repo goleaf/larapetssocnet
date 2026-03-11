@@ -1,7 +1,7 @@
 interface:
   display_name: "Post Observer"
   short_description: "Help with Post Observer tasks"
-  default_prompt: "Use $post-observer to apply this project's post observer guidance."
+  default_prompt: "Use $post-observer to guide this task with the post observer workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

@@ -1,7 +1,7 @@
 interface:
   display_name: "Performance Select Columns"
   short_description: "Help with Performance Select Columns tasks"
-  default_prompt: "Use $performance-select-columns to apply this project's performance select columns guidance."
+  default_prompt: "Use $performance-select-columns to guide this task with the performance select columns workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#0F766E"

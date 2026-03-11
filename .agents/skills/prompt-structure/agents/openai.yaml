@@ -1,7 +1,7 @@
 interface:
   display_name: "Prompt Structure"
   short_description: "Help with Prompt Structure tasks"
-  default_prompt: "Use $prompt-structure to apply this project's prompt structure guidance."
+  default_prompt: "Use $prompt-structure to guide this task with the prompt structure workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

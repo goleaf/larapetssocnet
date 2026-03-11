@@ -1,7 +1,7 @@
 interface:
   display_name: "Accessibility"
   short_description: "Help with Accessibility tasks"
-  default_prompt: "Use $accessibility to apply this project's accessibility guidance."
+  default_prompt: "Use $accessibility to guide this task with the accessibility workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

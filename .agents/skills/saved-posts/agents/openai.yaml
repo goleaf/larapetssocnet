@@ -1,7 +1,7 @@
 interface:
   display_name: "Saved Posts"
   short_description: "Help with Saved Posts tasks"
-  default_prompt: "Use $saved-posts to apply this project's saved posts guidance."
+  default_prompt: "Use $saved-posts to guide this task with the saved posts workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

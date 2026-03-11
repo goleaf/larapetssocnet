@@ -1,7 +1,7 @@
 interface:
   display_name: "Controller Tests"
   short_description: "Help with Controller Tests tasks"
-  default_prompt: "Use $controller-tests to apply this project's controller tests guidance."
+  default_prompt: "Use $controller-tests to guide this task with the controller tests workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

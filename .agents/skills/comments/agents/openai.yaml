@@ -1,7 +1,7 @@
 interface:
   display_name: "Comments"
   short_description: "Help with Comments tasks and workflows"
-  default_prompt: "Use $comments to apply this project's comments guidance."
+  default_prompt: "Use $comments to guide this task with the comments workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

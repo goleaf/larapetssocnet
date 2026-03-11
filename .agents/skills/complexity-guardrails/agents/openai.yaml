@@ -1,7 +1,7 @@
 interface:
   display_name: "Complexity Guardrails"
   short_description: "Help with Complexity Guardrails tasks"
-  default_prompt: "Use $complexity-guardrails to apply this project's complexity guardrails guidance."
+  default_prompt: "Use $complexity-guardrails to guide this task with the complexity guardrails workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

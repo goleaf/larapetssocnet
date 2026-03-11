@@ -1,7 +1,7 @@
 interface:
   display_name: "Clipboard Share"
   short_description: "Help with Clipboard Share tasks"
-  default_prompt: "Use $clipboard-share to apply this project's clipboard share guidance."
+  default_prompt: "Use $clipboard-share to guide this task with the clipboard share workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

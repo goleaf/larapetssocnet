@@ -1,7 +1,7 @@
 interface:
   display_name: "Guest Experience"
   short_description: "Help with Guest Experience tasks"
-  default_prompt: "Use $guest-experience to apply this project's guest experience guidance."
+  default_prompt: "Use $guest-experience to guide this task with the guest experience workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

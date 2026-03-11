@@ -1,7 +1,7 @@
 interface:
   display_name: "Laravel"
   short_description: "Help with Laravel tasks and workflows"
-  default_prompt: "Use $laravel to apply this project's laravel guidance."
+  default_prompt: "Use $laravel to guide this task with the laravel workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

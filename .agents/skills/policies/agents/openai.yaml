@@ -1,7 +1,7 @@
 interface:
   display_name: "Policies"
   short_description: "Help with Policies tasks and workflows"
-  default_prompt: "Use $policies to apply this project's policies guidance."
+  default_prompt: "Use $policies to guide this task with the policies workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#B91C1C"

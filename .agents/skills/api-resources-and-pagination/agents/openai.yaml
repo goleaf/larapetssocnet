@@ -1,7 +1,7 @@
 interface:
   display_name: "API Resources and Pagination"
   short_description: "Help with API Resources and Pagination tasks"
-  default_prompt: "Use $api-resources-and-pagination to apply this project's api resources and pagination guidance."
+  default_prompt: "Use $api-resources-and-pagination to guide this task with the api resources and pagination workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#0F766E"

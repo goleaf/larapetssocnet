@@ -1,7 +1,7 @@
 interface:
   display_name: "Masonry Grid"
   short_description: "Help with Masonry Grid tasks"
-  default_prompt: "Use $masonry-grid to apply this project's masonry grid guidance."
+  default_prompt: "Use $masonry-grid to guide this task with the masonry grid workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

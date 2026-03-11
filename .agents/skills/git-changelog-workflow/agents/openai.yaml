@@ -1,7 +1,7 @@
 interface:
   display_name: "Git Changelog Workflow"
   short_description: "Help with Git Changelog Workflow tasks"
-  default_prompt: "Use $git-changelog-workflow to apply this project's git changelog workflow guidance."
+  default_prompt: "Use $git-changelog-workflow to guide this task with the git changelog workflow workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

@@ -1,7 +1,7 @@
 interface:
   display_name: "Effective Context"
   short_description: "Help with Effective Context tasks"
-  default_prompt: "Use $effective-context to apply this project's effective context guidance."
+  default_prompt: "Use $effective-context to guide this task with the effective context workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

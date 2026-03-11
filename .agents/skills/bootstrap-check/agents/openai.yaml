@@ -1,7 +1,7 @@
 interface:
   display_name: "Bootstrap Check"
   short_description: "Help with Bootstrap Check tasks"
-  default_prompt: "Use $bootstrap-check to apply this project's bootstrap check guidance."
+  default_prompt: "Use $bootstrap-check to guide this task with the bootstrap check workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

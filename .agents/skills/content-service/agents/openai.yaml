@@ -1,7 +1,7 @@
 interface:
   display_name: "Content Service"
   short_description: "Help with Content Service tasks"
-  default_prompt: "Use $content-service to apply this project's content service guidance."
+  default_prompt: "Use $content-service to guide this task with the content service workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

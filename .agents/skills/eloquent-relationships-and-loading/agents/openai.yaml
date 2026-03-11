@@ -1,7 +1,7 @@
 interface:
   display_name: "Eloquent Relationships and Loading"
   short_description: "Help with Eloquent Relationships and Loading tasks"
-  default_prompt: "Use $eloquent-relationships-and-loading to apply this project's eloquent relationships and loading guidance."
+  default_prompt: "Use $eloquent-relationships-and-loading to guide this task with the eloquent relationships and loading workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#0F766E"

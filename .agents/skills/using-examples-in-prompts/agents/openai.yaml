@@ -1,7 +1,7 @@
 interface:
   display_name: "Using Examples In Prompts"
   short_description: "Help with Using Examples In Prompts tasks"
-  default_prompt: "Use $using-examples-in-prompts to apply this project's using examples in prompts guidance."
+  default_prompt: "Use $using-examples-in-prompts to guide this task with the using examples in prompts workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#C2410C"

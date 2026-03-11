@@ -1,7 +1,7 @@
 interface:
   display_name: "Pet Care Tips"
   short_description: "Help with Pet Care Tips tasks"
-  default_prompt: "Use $pet-care-tips to apply this project's pet care tips guidance."
+  default_prompt: "Use $pet-care-tips to guide this task with the pet care tips workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

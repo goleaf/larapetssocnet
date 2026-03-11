@@ -1,7 +1,7 @@
 interface:
   display_name: "Policies and Authorization"
   short_description: "Help with Policies and Authorization tasks"
-  default_prompt: "Use $policies-and-authorization to apply this project's policies and authorization guidance."
+  default_prompt: "Use $policies-and-authorization to guide this task with the policies and authorization workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#B91C1C"

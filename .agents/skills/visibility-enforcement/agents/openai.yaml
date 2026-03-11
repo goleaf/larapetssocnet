@@ -1,7 +1,7 @@
 interface:
   display_name: "Visibility Enforcement"
   short_description: "Help with Visibility Enforcement tasks"
-  default_prompt: "Use $visibility-enforcement to apply this project's visibility enforcement guidance."
+  default_prompt: "Use $visibility-enforcement to guide this task with the visibility enforcement workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#B91C1C"

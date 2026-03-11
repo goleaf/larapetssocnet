@@ -1,7 +1,7 @@
 interface:
   display_name: "Pest Testing"
   short_description: "Help with Pest Testing tasks"
-  default_prompt: "Use $pest-testing to apply this project's pest testing guidance."
+  default_prompt: "Use $pest-testing to guide this task with the pest testing workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

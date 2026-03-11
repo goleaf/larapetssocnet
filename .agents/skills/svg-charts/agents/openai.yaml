@@ -1,7 +1,7 @@
 interface:
   display_name: "SVG Charts"
   short_description: "Help with SVG Charts tasks"
-  default_prompt: "Use $svg-charts to apply this project's svg charts guidance."
+  default_prompt: "Use $svg-charts to guide this task with the svg charts workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

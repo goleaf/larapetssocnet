@@ -1,7 +1,7 @@
 interface:
   display_name: "Using Laravel Superpowers"
   short_description: "Help with Using Laravel Superpowers tasks"
-  default_prompt: "Use $using-laravel-superpowers to apply this project's using laravel superpowers guidance."
+  default_prompt: "Use $using-laravel-superpowers to guide this task with the using laravel superpowers workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#4B5563"

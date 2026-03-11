@@ -1,7 +1,7 @@
 interface:
   display_name: "Groups"
   short_description: "Help with Groups tasks and workflows"
-  default_prompt: "Use $groups to apply this project's groups guidance."
+  default_prompt: "Use $groups to guide this task with the groups workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"

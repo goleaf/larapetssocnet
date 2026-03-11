@@ -1,7 +1,7 @@
 interface:
   display_name: "Blade"
   short_description: "Help with Blade tasks and workflows"
-  default_prompt: "Use $blade to apply this project's blade guidance."
+  default_prompt: "Use $blade to guide this task with the blade workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

@@ -1,7 +1,7 @@
 interface:
   display_name: "Alpinejs Patterns"
   short_description: "Help with Alpinejs Patterns tasks"
-  default_prompt: "Use $alpinejs-patterns to apply this project's alpinejs patterns guidance."
+  default_prompt: "Use $alpinejs-patterns to guide this task with the alpinejs patterns workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#2563EB"

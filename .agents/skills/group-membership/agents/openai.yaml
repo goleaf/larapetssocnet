@@ -1,7 +1,7 @@
 interface:
   display_name: "Group Membership"
   short_description: "Help with Group Membership tasks"
-  default_prompt: "Use $group-membership to apply this project's group membership guidance."
+  default_prompt: "Use $group-membership to guide this task with the group membership workflow."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"
   brand_color: "#10B981"
