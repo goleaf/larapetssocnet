@@ -73,13 +73,32 @@ class Message extends Model
         });
     }
 
-    public function scopeUnread(Builder $query): Builder
+    public function scopeInThread(Builder $query, User|int $user, User|int $otherUser): Builder
     {
-        return $query->where(function (Builder $unreadQuery): void {
-            $unreadQuery
-                ->where('is_read', false)
-                ->orWhereNull('read_at');
-        });
+        return $query
+            ->select(['messages.*'])
+            ->between($user, $otherUser);
+    }
+
+    public function scopeUnread(Builder $query, User|int|null $user = null): Builder
+    {
+        $query = $query
+            ->select(['messages.*'])
+            ->where(function (Builder $unreadQuery): void {
+                $unreadQuery
+                    ->where('is_read', false)
+                    ->orWhereNull('read_at');
+            });
+
+        if ($user === null) {
+            return $query;
+        }
+
+        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+
+        return $query
+            ->forUser($userId)
+            ->where('sender_id', '!=', $userId);
     }
 
     protected function displayBody(): Attribute

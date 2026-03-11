@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
@@ -33,13 +34,20 @@ class StorePostRequest extends FormRequest
             ],
             'visibility' => ['nullable', 'string', 'in:public,followers,private'],
             'location' => ['nullable', 'string', 'max:100'],
-            'photos' => ['nullable', 'array', 'max:5'],
-            'photos.*' => ['image', 'mimes:jpeg,png,gif,webp', 'max:20480'],
-            'video' => ['nullable', 'file', 'mimes:mp4,mov', 'max:20480'],
-            'media' => ['nullable', 'array'],
+            'media' => ['nullable', 'array', 'max:5'],
             'media.*' => [
                 'file',
                 File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'])->max('20mb'),
+            ],
+            'photos' => ['nullable', 'array', 'max:5'],
+            'photos.*' => [
+                'file',
+                File::image()->max('20mb'),
+            ],
+            'video' => [
+                'nullable',
+                'file',
+                File::types(['mp4', 'mov'])->max('20mb'),
             ],
         ];
     }
@@ -47,16 +55,49 @@ class StorePostRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            if ($this->hasFile('video') && is_array($this->file('photos')) && count($this->file('photos')) > 0) {
-                $validator->errors()->add('video', 'Video cannot be uploaded together with photos.');
+            $mediaFiles = collect($this->mediaFiles());
+
+            if ($mediaFiles->isEmpty()) {
+                return;
             }
 
-            if (
-                $this->hasFile('media')
-                && ($this->hasFile('video') || (is_array($this->file('photos')) && count($this->file('photos')) > 0))
-            ) {
-                $validator->errors()->add('media', 'Use either media[] uploads or legacy photos/video fields, not both.');
+            $videoFiles = $mediaFiles->filter(
+                fn ($file): bool => str_starts_with((string) $file->getMimeType(), 'video/')
+            );
+
+            $imageFiles = $mediaFiles->filter(
+                fn ($file): bool => str_starts_with((string) $file->getMimeType(), 'image/')
+            );
+
+            $errorKey = ($this->hasFile('photos') || $this->hasFile('video')) ? 'video' : 'media';
+
+            if ($videoFiles->hasMany()) {
+                $validator->errors()->add($errorKey, 'Only one video can be uploaded.');
+            }
+
+            if ($videoFiles->isNotEmpty() && $imageFiles->isNotEmpty()) {
+                $validator->errors()->add($errorKey, 'Video cannot be uploaded together with photos.');
             }
         });
+    }
+
+    /**
+     * @return array<int, UploadedFile>
+     */
+    public function mediaFiles(): array
+    {
+        $mediaFiles = collect($this->file('media', []))
+            ->merge($this->file('photos', []));
+
+        $videoFile = $this->file('video');
+
+        if ($videoFile instanceof UploadedFile) {
+            $mediaFiles->push($videoFile);
+        }
+
+        return $mediaFiles
+            ->filter(fn ($file): bool => $file instanceof UploadedFile)
+            ->values()
+            ->all();
     }
 }

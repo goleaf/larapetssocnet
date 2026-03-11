@@ -49,6 +49,20 @@ class Hashtag extends Model
         $query->where('name', 'like', "%{$term}%");
     }
 
+    public function scopePopular(Builder $query): Builder
+    {
+        return $query
+            ->select(['hashtags.*'])
+            ->orderByDesc('hashtags.posts_count');
+    }
+
+    public function scopeForType(Builder $query, string $postType): Builder
+    {
+        return $query
+            ->select(['hashtags.*'])
+            ->whereHas('posts', fn (Builder $postQuery) => $postQuery->where('posts.type', $postType));
+    }
+
     public function scopeSearchResultColumns(Builder $query): Builder
     {
         return $query->select([

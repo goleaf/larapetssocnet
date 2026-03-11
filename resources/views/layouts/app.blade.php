@@ -1,6 +1,7 @@
 @php
  $appName = config('app.name','LaraPets');
- $pageTitle = trim($__env->yieldContent('title'));
+ $livewireTitle = isset($title) ? (string) $title :'';
+ $pageTitle = trim($livewireTitle !=='' ? $livewireTitle : $__env->yieldContent('title'));
  $documentTitle = $pageTitle !==''?"{$pageTitle} · {$appName}": $appName;
  $currentRoute = Route::currentRouteName();
  $user = Auth::user();

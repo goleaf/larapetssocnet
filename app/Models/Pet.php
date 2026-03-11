@@ -304,9 +304,27 @@ class Pet extends Model implements HasMedia
         return $query->where('is_adoptable', true);
     }
 
-    public function scopeBySpecies(Builder $query, string $species): Builder
+    public function scopeBySpecies(Builder $query, string|int $species): Builder
     {
-        return $query->where('species', $species);
+        return $query
+            ->select(['pets.*'])
+            ->where('pets.species', (string) $species);
+    }
+
+    public function scopeByBreed(Builder $query, string $breed): Builder
+    {
+        return $query
+            ->select(['pets.*'])
+            ->where('pets.breed', $breed);
+    }
+
+    public function scopeOwnedBy(Builder $query, User|int $user): Builder
+    {
+        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+
+        return $query
+            ->select(['pets.*'])
+            ->where('pets.user_id', $userId);
     }
 
     public function scopeAvailableForAdoption(Builder $query): Builder

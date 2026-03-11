@@ -244,9 +244,9 @@ class Post extends Model implements HasMedia
         $query->where('visibility', 'public');
     }
 
-    public function scopePublished(Builder $query): void
+    public function scopePublished(Builder $query): Builder
     {
-        $query->where('status', 'published');
+        return $query->where('posts.status', 'published');
     }
 
     public function scopeNotBlockedFor(Builder $query, ?User $viewer): void
@@ -263,6 +263,97 @@ class Post extends Model implements HasMedia
     public function scopeByType(Builder $query, string $type)
     {
         $query->where('type', $type);
+    }
+
+    public function scopeByPet(Builder $query, int|string $petId): Builder
+    {
+        return $query->select([
+            'posts.id',
+            'posts.user_id',
+            'posts.group_id',
+            'posts.pet_id',
+            'posts.body',
+            'posts.body_html',
+            'posts.type',
+            'posts.visibility',
+            'posts.status',
+            'posts.location',
+            'posts.tagged_pets',
+            'posts.metadata',
+            'posts.is_pinned',
+            'posts.likes_count',
+            'posts.comments_count',
+            'posts.reactions_count',
+            'posts.shares_count',
+            'posts.published_at',
+            'posts.created_at',
+            'posts.updated_at',
+            'posts.deleted_at',
+        ])->where('posts.pet_id', (int) $petId);
+    }
+
+    public function scopeWithMedia(Builder $query): Builder
+    {
+        return $query->select([
+            'posts.id',
+            'posts.user_id',
+            'posts.group_id',
+            'posts.pet_id',
+            'posts.body',
+            'posts.body_html',
+            'posts.type',
+            'posts.visibility',
+            'posts.status',
+            'posts.location',
+            'posts.tagged_pets',
+            'posts.metadata',
+            'posts.is_pinned',
+            'posts.likes_count',
+            'posts.comments_count',
+            'posts.reactions_count',
+            'posts.shares_count',
+            'posts.published_at',
+            'posts.created_at',
+            'posts.updated_at',
+            'posts.deleted_at',
+        ])->where(function (Builder $mediaQuery): void {
+            $mediaQuery
+                ->whereHas('postMedia')
+                ->orWhereHas('media');
+        });
+    }
+
+    public function scopeByTag(Builder $query, string $slug): Builder
+    {
+        $normalizedSlug = Str::of($slug)->trim()->lower()->toString();
+
+        if ($normalizedSlug === '') {
+            return $query->whereKey(-1);
+        }
+
+        return $query->select([
+            'posts.id',
+            'posts.user_id',
+            'posts.group_id',
+            'posts.pet_id',
+            'posts.body',
+            'posts.body_html',
+            'posts.type',
+            'posts.visibility',
+            'posts.status',
+            'posts.location',
+            'posts.tagged_pets',
+            'posts.metadata',
+            'posts.is_pinned',
+            'posts.likes_count',
+            'posts.comments_count',
+            'posts.reactions_count',
+            'posts.shares_count',
+            'posts.published_at',
+            'posts.created_at',
+            'posts.updated_at',
+            'posts.deleted_at',
+        ])->whereHas('hashtags', fn (Builder $hashtagQuery): Builder => $hashtagQuery->where('hashtags.slug', $normalizedSlug));
     }
 
     public function scopeExplorable(Builder $query, ?User $viewer)
@@ -598,6 +689,10 @@ class Post extends Model implements HasMedia
 
     public function scopeForFeed(Builder $query, User $user): Builder
     {
+        if ($query->getQuery()->columns === null) {
+            $query->select(['posts.*']);
+        }
+
         $followingIdsQuery = $user->acceptedFollowing()->select('users.id');
 
         return $query

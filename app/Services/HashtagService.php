@@ -15,7 +15,7 @@ class HashtagService
         $ids = collect($tags)->map(function ($tag) {
             return Hashtag::firstOrCreate(
                 ['name' => strtolower($tag)],
-                ['slug' => Str::slug($tag)]
+                fn (): array => ['slug' => Str::slug($tag)]
             )->id;
         });
 

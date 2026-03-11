@@ -10,16 +10,26 @@ use Illuminate\Support\Facades\DB;
 class PostService
 {
     public function __construct(
-        private ContentService $content,
-        private HashtagService $hashtags
+        private ContentService $content
     ) {}
 
-    public function create(User $author, array $data, ?UploadedFile $video, array $photos): Post
-    {
-        return DB::transaction(function () use ($author, $data, $video, $photos) {
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<int, UploadedFile>|UploadedFile|null  $mediaFiles
+     * @param  array<int, mixed>  $legacyMediaMeta
+     */
+    public function create(
+        User $author,
+        array $data,
+        array|UploadedFile|null $mediaFiles = null,
+        array $legacyMediaMeta = []
+    ): Post {
+        return DB::transaction(function () use ($author, $data, $mediaFiles): Post {
+            $mediaFiles = $this->normalizeMediaFiles($mediaFiles);
+
             $body = $data['body'] ?? null;
             $bodyHtml = $body ? $this->content->process($body) : null;
-            $type = $this->resolveType($photos, $video);
+            $type = $this->resolveType($mediaFiles);
 
             $post = Post::create([
                 'user_id' => $author->id,
@@ -32,12 +42,16 @@ class PostService
                 'tagged_pets' => $data['tagged_pets'] ?? null,
             ]);
 
-            foreach ($photos as $photo) {
-                $post->addMedia($photo)->toMediaCollection('photos');
-            }
+            foreach ($mediaFiles as $index => $mediaFile) {
+                $isVideo = str_starts_with((string) $mediaFile->getMimeType(), 'video/');
+                $storedMedia = $post->addMedia($mediaFile)
+                    ->toMediaCollection($this->resolveMediaCollection($mediaFile), 'public');
 
-            if ($video) {
-                $post->addMedia($video)->toMediaCollection('videos');
+                $post->postMedia()->create([
+                    'file_path' => $storedMedia->getPathRelativeToRoot(),
+                    'media_type' => $isVideo ? 'video' : 'image',
+                    'order' => $index,
+                ]);
             }
 
             return $post;
@@ -86,15 +100,40 @@ class PostService
         $post->updateQuietly(['is_pinned' => false]);
     }
 
-    private function resolveType(array $photos, ?UploadedFile $video): string
+    /**
+     * @param  array<int, UploadedFile>  $mediaFiles
+     */
+    private function resolveType(array $mediaFiles): string
     {
-        if ($video) {
-            return 'video';
-        }
-        if (! empty($photos)) {
-            return 'photo';
+        if ($mediaFiles === []) {
+            return Post::TYPE_TEXT;
         }
 
-        return 'text';
+        foreach ($mediaFiles as $mediaFile) {
+            if (str_starts_with((string) $mediaFile->getMimeType(), 'video/')) {
+                return Post::TYPE_VIDEO;
+            }
+        }
+
+        return Post::TYPE_PHOTO;
+    }
+
+    /**
+     * @param  array<int, UploadedFile>|UploadedFile|null  $mediaFiles
+     * @return array<int, UploadedFile>
+     */
+    private function normalizeMediaFiles(array|UploadedFile|null $mediaFiles): array
+    {
+        return collect(is_array($mediaFiles) ? $mediaFiles : [$mediaFiles])
+            ->filter(fn ($file): bool => $file instanceof UploadedFile)
+            ->values()
+            ->all();
+    }
+
+    private function resolveMediaCollection(UploadedFile $mediaFile): string
+    {
+        return str_starts_with((string) $mediaFile->getMimeType(), 'video/')
+            ? 'videos'
+            : 'photos';
     }
 }

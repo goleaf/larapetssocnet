@@ -35,6 +35,8 @@ class FeedService
             ->cursorPaginate($perPage)
             ->withQueryString();
 
+        $posts->setCollection($posts->getCollection()->withoutAppends());
+
         $postIds = $posts->getCollection()->modelKeys();
 
         $myReactions = $user->reactions()

@@ -678,6 +678,31 @@ class User extends Authenticatable implements HasMedia
             ->where('is_banned', false);
     }
 
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query
+            ->select(['users.*'])
+            ->where('users.is_banned', false)
+            ->whereNull('users.scheduled_deletion_at');
+    }
+
+    public function scopeWithPublicProfile(Builder $query): Builder
+    {
+        return $query
+            ->select(['users.*'])
+            ->where(function (Builder $visibilityQuery): void {
+                $visibilityQuery
+                    ->whereNull('users.profile_visibility')
+                    ->orWhere('users.profile_visibility', 'public');
+            })
+            ->where(function (Builder $privacyQuery): void {
+                $privacyQuery
+                    ->whereNull('users.is_private')
+                    ->orWhere('users.is_private', false);
+            })
+            ->where('users.is_banned', false);
+    }
+
     public function scopeActiveRecently(Builder $query, int $days = 30): Builder
     {
         return $query->where('last_seen_at', '>=', now()->subDays($days));
@@ -736,9 +761,40 @@ class User extends Authenticatable implements HasMedia
             ->notBlockedFor($viewer);
     }
 
-    public function scopeFollowedBy(Builder $query, self $user): Builder
+    public function scopeFollowedBy(Builder $query, self|int $user): Builder
     {
-        return $query->whereIn('id', $user->acceptedFollowing()->pluck('users.id'));
+        $userId = $user instanceof self ? (int) $user->getKey() : (int) $user;
+
+        return $query
+            ->select(['users.*'])
+            ->whereIn('users.id', Follow::query()
+                ->select('following_id')
+                ->where('follower_id', $userId)
+                ->where('status', 'accepted'));
+    }
+
+    public function scopeNotBlocked(Builder $query, self|int|null $viewer): Builder
+    {
+        if ($viewer === null) {
+            return $query->select(['users.*']);
+        }
+
+        $viewerId = $viewer instanceof self ? (int) $viewer->getKey() : (int) $viewer;
+
+        return $query
+            ->select(['users.*'])
+            ->whereNotIn('users.id', Block::query()
+                ->select('blocked_id')
+                ->where('blocker_id', $viewerId))
+            ->whereNotIn('users.id', Block::query()
+                ->select('blocker_id')
+                ->where('blocked_id', $viewerId))
+            ->whereNotIn('users.id', UserBlock::query()
+                ->select('blocked_id')
+                ->where('blocker_id', $viewerId))
+            ->whereNotIn('users.id', UserBlock::query()
+                ->select('blocker_id')
+                ->where('blocked_id', $viewerId));
     }
 
     public function scopeNotFollowedBy(Builder $query, self $user): Builder

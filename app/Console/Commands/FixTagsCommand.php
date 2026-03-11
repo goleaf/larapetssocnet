@@ -282,11 +282,26 @@ class FixTagsCommand extends Command
             return $content;
         }
 
-        $updated = preg_replace('/ +(["\'`])/', '$1', $updated);
-        $updated = preg_replace('/(["\'`]) +/', '$1', $updated);
         $updated = preg_replace('/ {2,}/', ' ', $updated);
+
+        if ($updated === null) {
+            return $content;
+        }
+
+        $updated = preg_replace_callback('/class="([^"]*)"/', static function (array $matches): string {
+            $classes = preg_split('/\s+/', trim($matches[1])) ?: [];
+            $normalizedClasses = implode(' ', array_filter($classes, static fn (string $class): bool => $class !== ''));
+
+            return $normalizedClasses === ''
+                ? 'class=""'
+                : 'class="'.$normalizedClasses.'"';
+        }, $updated);
+
+        if ($updated === null) {
+            return $content;
+        }
+
         $updated = str_replace('class=""', '', $updated);
-        $updated = preg_replace('/class=" +/', 'class="', $updated);
 
         return $updated ?? $content;
     }

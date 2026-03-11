@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Blaze\Blaze;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -49,6 +50,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (class_exists(Blaze::class)) {
+            try {
+                Blaze::optimize()->in(resource_path('views/components'));
+            } catch (\Throwable) {
+            }
+        }
+
         if ($this->app->isLocal()) {
             DB::listen(function (QueryExecuted $query): void {
                 if ($query->time > 100) {
