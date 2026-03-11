@@ -54,7 +54,7 @@
  <div class="flex items-start gap-3">
  @if($icon)
  <div class="shrink-0">
- <svg xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor" class="h-6 w-6">
+ <svg xmlns="http://www.w3.org/2000/svg"fill="none"viewBox="0 0 24 24"stroke-width="1.5"stroke="currentColor"class="h-6 w-6">
  {!! $config['icon'] !!}
  </svg>
  </div>

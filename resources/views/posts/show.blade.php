@@ -23,7 +23,7 @@
  @endif
 
  <!-- Comments Section -->
- <x-ui.card class="mt-6 border-0 shadow-sm" id="comments">
+ <x-ui.card class="mt-6 border-0 shadow-sm"id="comments">
  <x-slot name="header">
  <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
  <h3 class="font-bold text-gray-900 text-lg">Comments <span
@@ -35,10 +35,10 @@
  @auth
  <!-- Add Top-Level Comment Form -->
  <div class="mb-6 flex gap-3 items-start">
- <x-ui.avatar :src="auth()->user()->avatar_url" :name="auth()->user()->name" size="sm"
+ <x-ui.avatar :src="auth()->user()->avatar_url":name="auth()->user()->name"size="sm"
  class="mt-1"/>
  <div class="flex-1">
- <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="relative">
+ <form action="{{ route('posts.comments.store', $post) }}"method="POST"class="relative">
  @csrf
  <textarea name="body"rows="1"
  class="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 pr-12 text-sm text-gray-900 placeholder-gray-500 focus:bg-white focus:border-paw focus:ring-1 focus:ring-paw resize-none overflow-hidden"
@@ -70,7 +70,7 @@
  @else
  <div class="space-y-4">
  @foreach($comments as $comment)
- <x-comment-item :comment="$comment" :post="$post"/>
+ <x-comment-item :comment="$comment":post="$post"/>
  @endforeach
  </div>
  @endif

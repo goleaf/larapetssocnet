@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasCounterCache;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -12,8 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Throwable;
 
 class Pet extends Model implements HasMedia
 {
@@ -40,6 +44,11 @@ class Pet extends Model implements HasMedia
         'reptile' => '🦎',
         'other' => '🐾',
     ];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected static array $petsColumnsCache = [];
 
     /**
      * @var list<string>
@@ -182,6 +191,104 @@ class Pet extends Model implements HasMedia
             ->withQueryString();
     }
 
+    /**
+     * @param  array{
+     *     q?: string,
+     *     species?: string,
+     *     breed?: string,
+     *     sex?: string,
+     *     is_adoptable?: bool|null,
+     *     sort?: string
+     * }  $filters
+     */
+    public static function paginateExploreCatalog(array $filters, int $perPage = 12): LengthAwarePaginator
+    {
+        $query = self::query()->with('owner:id,name');
+
+        if (self::hasPetsColumn('is_public')) {
+            $query->where('is_public', true);
+        }
+
+        $search = trim((string) ($filters['q'] ?? ''));
+        if ($search !== '') {
+            $query->where(function (Builder $innerQuery) use ($search): void {
+                foreach (['name', 'bio', 'breed', 'species'] as $column) {
+                    if (self::hasPetsColumn($column)) {
+                        $innerQuery->orWhere($column, 'like', "%{$search}%");
+                    }
+                }
+            });
+        }
+
+        foreach (['species', 'breed', 'sex'] as $column) {
+            $value = trim((string) ($filters[$column] ?? ''));
+
+            if ($value !== '' && self::hasPetsColumn($column)) {
+                $query->where($column, $value);
+            }
+        }
+
+        if (array_key_exists('is_adoptable', $filters) && $filters['is_adoptable'] !== null) {
+            $adoptable = (bool) $filters['is_adoptable'];
+
+            if (self::hasPetsColumn('is_adoptable')) {
+                $query->where('is_adoptable', $adoptable);
+            } elseif (self::hasPetsColumn('is_for_adoption')) {
+                $query->where('is_for_adoption', $adoptable);
+            }
+        }
+
+        self::applyCatalogSort($query, (string) ($filters['sort'] ?? 'newest'), true);
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    /**
+     * @param  array{
+     *     q?: string,
+     *     species?: string,
+     *     sex?: string,
+     *     sort?: string
+     * }  $filters
+     */
+    public static function paginateAdoptionCatalog(array $filters, int $perPage = 12): LengthAwarePaginator
+    {
+        $query = self::query()->with('owner:id,name');
+
+        if (self::hasPetsColumn('is_public')) {
+            $query->where('is_public', true);
+        }
+
+        if (self::hasPetsColumn('is_adoptable')) {
+            $query->where('is_adoptable', true);
+        } elseif (self::hasPetsColumn('is_for_adoption')) {
+            $query->where('is_for_adoption', true);
+        }
+
+        $search = trim((string) ($filters['q'] ?? ''));
+        if ($search !== '') {
+            $query->where(function (Builder $innerQuery) use ($search): void {
+                foreach (['name', 'bio', 'breed'] as $column) {
+                    if (self::hasPetsColumn($column)) {
+                        $innerQuery->orWhere($column, 'like', "%{$search}%");
+                    }
+                }
+            });
+        }
+
+        foreach (['species', 'sex'] as $column) {
+            $value = trim((string) ($filters[$column] ?? ''));
+
+            if ($value !== '' && self::hasPetsColumn($column)) {
+                $query->where($column, $value);
+            }
+        }
+
+        self::applyCatalogSort($query, (string) ($filters['sort'] ?? 'newest'), false);
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
     public function scopePublic(Builder $query): Builder
     {
         return $query->where(fn (Builder $subQuery) => $subQuery->whereNull('is_public')->orWhere('is_public', true));
@@ -210,6 +317,89 @@ class Pet extends Model implements HasMedia
     public function isFollowedBy(User $user): bool
     {
         return $this->followers()->whereKey($user->getKey())->exists();
+    }
+
+    public static function resolveForRoute(string $slug): ?self
+    {
+        $query = self::query();
+
+        if (self::hasPetsColumn('slug')) {
+            $query->where('slug', $slug)->orWhere('id', $slug);
+        } else {
+            $query->where('id', $slug);
+        }
+
+        return $query->first();
+    }
+
+    public function isOwnedBy(?Authenticatable $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        $ownerId = $this->getAttribute('user_id') ?? $this->getAttribute('owner_id');
+
+        return (int) $ownerId === (int) $user->getAuthIdentifier();
+    }
+
+    /**
+     * @return Collection<int, Post>
+     */
+    public function recentPostsForShow(int $limit = 12): Collection
+    {
+        return $this->posts()
+            ->with([
+                'user',
+                'author',
+                'author.media',
+                'pet',
+                'pet.media',
+                'media',
+                'postMedia',
+                'likes',
+                'comments.user',
+            ])
+            ->withCount([
+                'comments',
+                'likes',
+            ])
+            ->latest('posts.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    public function galleryForShow(int $limit = 24): Collection
+    {
+        if (method_exists($this, 'getMedia')) {
+            return collect($this->getMedia('gallery'))
+                ->sortByDesc(fn ($media) => $media->created_at)
+                ->take($limit)
+                ->values();
+        }
+
+        if (method_exists($this, 'galleryItems')) {
+            return $this->galleryItems()
+                ->latest()
+                ->limit($limit)
+                ->get();
+        }
+
+        return collect();
+    }
+
+    /**
+     * @return Collection<int, PetHealthLog>
+     */
+    public function recentHealthLogs(int $limit = 12): Collection
+    {
+        return $this->healthLogs()
+            ->latest('logged_at')
+            ->limit($limit)
+            ->get();
     }
 
     public function followedBy(User $user): bool
@@ -339,5 +529,52 @@ class Pet extends Model implements HasMedia
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    protected static function applyCatalogSort(Builder $query, string $sort, bool $allowWeightSort): void
+    {
+        match ($sort) {
+            'oldest' => $query->oldest('created_at'),
+            'name_asc' => $query->orderBy('name'),
+            'name_desc' => $query->orderByDesc('name'),
+            'weight_desc' => self::applyWeightSort($query, $allowWeightSort),
+            default => $query->latest('created_at'),
+        };
+    }
+
+    protected static function applyWeightSort(Builder $query, bool $allowWeightSort): void
+    {
+        if (! $allowWeightSort) {
+            $query->latest('created_at');
+
+            return;
+        }
+
+        if (self::hasPetsColumn('weight')) {
+            $query->orderByDesc('weight');
+
+            return;
+        }
+
+        if (self::hasPetsColumn('weight_kg')) {
+            $query->orderByDesc('weight_kg');
+
+            return;
+        }
+
+        $query->latest('created_at');
+    }
+
+    protected static function hasPetsColumn(string $column): bool
+    {
+        if (! array_key_exists($column, static::$petsColumnsCache)) {
+            try {
+                static::$petsColumnsCache[$column] = Schema::hasColumn('pets', $column);
+            } catch (Throwable) {
+                static::$petsColumnsCache[$column] = false;
+            }
+        }
+
+        return static::$petsColumnsCache[$column];
     }
 }

@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class PetHealthLog extends Model
 {
@@ -37,6 +42,11 @@ class PetHealthLog extends Model
         'logged_at',
         'next_due_at',
     ];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected static array $columnCache = [];
 
     protected function casts(): array
     {
@@ -72,6 +82,87 @@ class PetHealthLog extends Model
         return $query->where('log_type', $type);
     }
 
+    public function scopeForPet(Builder $query, Pet $pet): Builder
+    {
+        return $query->where('pet_id', $pet->getKey());
+    }
+
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('next_due_at')
+            ->where('next_due_at', '>=', now()->startOfDay())
+            ->orderBy('next_due_at');
+    }
+
+    public function scopeWeightTrendSeries(Builder $query): Builder
+    {
+        return $query
+            ->where('log_type', self::TYPE_WEIGHT)
+            ->whereNotNull('weight_kg')
+            ->orderBy('logged_at');
+    }
+
+    public static function paginateForPet(Pet $pet, int $perPage = 15): LengthAwarePaginator
+    {
+        return self::query()
+            ->forPet($pet)
+            ->latest('logged_at')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function upcomingForPet(Pet $pet, int $limit = 10): Collection
+    {
+        return self::query()
+            ->forPet($pet)
+            ->upcoming()
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function weightTrendForPet(Pet $pet, int $limit = 30): Collection
+    {
+        $query = self::query()
+            ->forPet($pet)
+            ->weightTrendSeries()
+            ->limit($limit);
+
+        if (self::hasColumn('pet_health_logs', 'title')) {
+            $query->select(['logged_at', 'weight_kg', 'title']);
+        } else {
+            $query->select(['logged_at', 'weight_kg']);
+        }
+
+        return $query->get();
+    }
+
+    public static function findForPet(Pet $pet, string|int $healthLogId): ?self
+    {
+        return self::query()
+            ->forPet($pet)
+            ->whereKey($healthLogId)
+            ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public static function createForPet(Pet $pet, ?Authenticatable $user, array $payload): self
+    {
+        return self::query()->create([
+            ...$payload,
+            'pet_id' => $pet->getKey(),
+            'logged_by_user_id' => $user?->getAuthIdentifier(),
+        ]);
+    }
+
     public function getTypeLabelAttribute(): string
     {
         $type = $this->log_type === self::TYPE_VACCINE_LEGACY
@@ -85,5 +176,20 @@ class PetHealthLog extends Model
             self::TYPE_VET_VISIT => 'Vet Visit',
             default => ucfirst(str_replace('_', ' ', (string) $type)),
         };
+    }
+
+    protected static function hasColumn(string $table, string $column): bool
+    {
+        $cacheKey = "{$table}.{$column}";
+
+        if (! array_key_exists($cacheKey, static::$columnCache)) {
+            try {
+                static::$columnCache[$cacheKey] = Schema::hasColumn($table, $column);
+            } catch (Throwable) {
+                static::$columnCache[$cacheKey] = false;
+            }
+        }
+
+        return static::$columnCache[$cacheKey];
     }
 }

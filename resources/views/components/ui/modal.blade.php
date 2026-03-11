@@ -49,7 +49,7 @@
  @endif
 >
  @if($trigger && $triggerSlot)
- <div @click="show()" class="inline-block">
+ <div @click="show()"class="inline-block">
  {{ $triggerSlot }}
  </div>
  @endif
@@ -95,7 +95,7 @@
  @elseif($title)
  <div class="flex items-start justify-between border-b border-whisker/40 px-6 py-4">
  <div>
- <h3 class="text-lg font-semibold font-display text-bark" id="modal-title-{{ $modalId }}">{{ $title }}</h3>
+ <h3 class="text-lg font-semibold font-display text-bark"id="modal-title-{{ $modalId }}">{{ $title }}</h3>
  @if(filled($description))
  <p class="mt-1 text-sm text-fur">{{ $description }}</p>
  @endif

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -154,6 +155,251 @@ class Event extends Model implements HasMedia
             ->latest('events.created_at')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    public static function paginateIndexResults(
+        ?User $viewer,
+        string $search,
+        string $scope,
+        int $groupId,
+        string $startColumn = 'start_at',
+        ?string $statusColumn = 'status',
+        string $locationColumn = 'location_text',
+        string $creatorColumn = 'creator_user_id',
+        ?string $groupPrivacyColumn = 'privacy',
+        ?string $groupOwnerColumn = 'owner_user_id',
+        int $perPage = 12
+    ): LengthAwarePaginator {
+        $query = self::query()
+            ->leftJoin('groups', 'groups.id', '=', 'events.group_id')
+            ->leftJoin('users as creators', 'creators.id', '=', "events.{$creatorColumn}")
+            ->select([
+                'events.*',
+                'groups.name as group_name',
+                'groups.slug as group_slug',
+                'creators.name as creator_name',
+                "events.{$locationColumn} as event_location",
+            ]);
+
+        if ($groupPrivacyColumn) {
+            $query->where(function (Builder $visibilityQuery) use ($groupPrivacyColumn, $groupOwnerColumn, $viewer): void {
+                $visibilityQuery
+                    ->whereNull('events.group_id')
+                    ->orWhereNull("groups.{$groupPrivacyColumn}")
+                    ->orWhere("groups.{$groupPrivacyColumn}", '!=', 'secret');
+
+                if ($viewer) {
+                    $viewerId = (int) $viewer->getKey();
+
+                    $visibilityQuery
+                        ->orWhereHas('group.members', function (Builder $memberQuery) use ($viewerId): void {
+                            $memberQuery->forUser($viewerId);
+                        });
+
+                    if ($groupOwnerColumn) {
+                        $visibilityQuery->orWhere("groups.{$groupOwnerColumn}", $viewerId);
+                    }
+                }
+            });
+        }
+
+        if ($search !== '') {
+            $query->where(function (Builder $searchQuery) use ($locationColumn, $search): void {
+                $searchQuery
+                    ->where('events.title', 'like', "%{$search}%")
+                    ->orWhere('events.description', 'like', "%{$search}%")
+                    ->orWhere("events.{$locationColumn}", 'like', "%{$search}%");
+            });
+        }
+
+        if ($groupId > 0) {
+            $query->where('events.group_id', $groupId);
+        }
+
+        if ($scope === 'mine' && $viewer) {
+            $query->where("events.{$creatorColumn}", $viewer->getKey());
+        }
+
+        if ($scope === 'upcoming') {
+            $query->where("events.{$startColumn}", '>=', now());
+
+            if ($statusColumn) {
+                $query->where("events.{$statusColumn}", '!=', 'cancelled');
+            }
+
+            $query->orderBy("events.{$startColumn}");
+        } elseif ($scope === 'past') {
+            $query->where("events.{$startColumn}", '<', now())
+                ->orderByDesc("events.{$startColumn}");
+        } elseif ($scope === 'cancelled' && $statusColumn) {
+            $query->where("events.{$statusColumn}", 'cancelled')
+                ->orderByDesc("events.{$startColumn}");
+        } else {
+            $query->orderBy("events.{$startColumn}");
+        }
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    public static function findFromRouteToken(string $event): ?self
+    {
+        if (! ctype_digit($event)) {
+            return null;
+        }
+
+        return self::query()->whereKey((int) $event)->first();
+    }
+
+    /**
+     * @return Collection<int, EventAttendee>
+     */
+    public function recentAttendees(int $limit = 50): Collection
+    {
+        return $this->attendees()
+            ->with('user:id,name,username')
+            ->latest('responded_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function rsvpStatusForUser(int $userId): ?string
+    {
+        return $this->attendees()
+            ->where('user_id', $userId)
+            ->value('status');
+    }
+
+    public function goingAttendeesCount(): int
+    {
+        return (int) $this->attendees()->going()->count();
+    }
+
+    public function creatorForDisplay(?int $creatorId): ?User
+    {
+        if (! $creatorId) {
+            return null;
+        }
+
+        return User::query()->find($creatorId, ['id', 'name', 'username']);
+    }
+
+    public function upsertAttendee(int $userId, string $status): EventAttendee
+    {
+        return $this->attendees()->updateOrCreate(
+            [
+                'event_id' => (int) $this->getKey(),
+                'user_id' => $userId,
+            ],
+            [
+                'status' => $status,
+                'responded_at' => now(),
+            ]
+        );
+    }
+
+    public function toggleRsvpStatus(
+        int $userId,
+        string $requestedStatus,
+        ?int $maxAttendees,
+        bool $syncAttendeesCount,
+        bool $syncInterestedCount
+    ): string {
+        return DB::transaction(function () use ($maxAttendees, $requestedStatus, $syncAttendeesCount, $syncInterestedCount, $userId): string {
+            $eventId = (int) $this->getKey();
+
+            self::query()
+                ->whereKey($eventId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $attendee = EventAttendee::query()
+                ->where('event_id', $eventId)
+                ->where('user_id', $userId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($attendee && self::normalizedRsvpStatus((string) $attendee->status) === $requestedStatus) {
+                $attendee->delete();
+                self::syncAttendeesCounters($eventId, $syncAttendeesCount, $syncInterestedCount);
+
+                return 'removed';
+            }
+
+            if ($requestedStatus === self::ATTENDEE_GOING && $maxAttendees !== null) {
+                $goingCount = EventAttendee::query()
+                    ->where('event_id', $eventId)
+                    ->going()
+                    ->when($attendee, fn (Builder $query) => $query->where('user_id', '!=', $userId))
+                    ->count();
+
+                if ($goingCount >= $maxAttendees) {
+                    throw ValidationException::withMessages([
+                        'status' => 'RSVP failed. This event has reached maximum attendees.',
+                    ]);
+                }
+            }
+
+            $storedStatus = self::storedRsvpStatus($requestedStatus);
+
+            if ($attendee) {
+                $attendee->forceFill([
+                    'status' => $storedStatus,
+                    'responded_at' => now(),
+                ])->save();
+            } else {
+                $this->upsertAttendee($userId, $storedStatus);
+            }
+
+            self::syncAttendeesCounters($eventId, $syncAttendeesCount, $syncInterestedCount);
+
+            return 'updated';
+        });
+    }
+
+    public static function syncAttendeesCounters(int $eventId, bool $syncAttendeesCount, bool $syncInterestedCount): void
+    {
+        $payload = [];
+
+        if ($syncAttendeesCount) {
+            $payload['attendees_count'] = (int) EventAttendee::query()
+                ->where('event_id', $eventId)
+                ->going()
+                ->count();
+        }
+
+        if ($syncInterestedCount) {
+            $payload['interested_count'] = (int) EventAttendee::query()
+                ->where('event_id', $eventId)
+                ->whereIn('status', ['maybe', self::ATTENDEE_INTERESTED])
+                ->count();
+        }
+
+        if ($payload === []) {
+            return;
+        }
+
+        self::query()
+            ->whereKey($eventId)
+            ->update($payload);
+    }
+
+    protected static function normalizedRsvpStatus(string $status): string
+    {
+        return match ($status) {
+            self::ATTENDEE_GOING => self::ATTENDEE_GOING,
+            self::ATTENDEE_INTERESTED, 'maybe' => 'maybe',
+            self::ATTENDEE_DECLINED, 'not_going' => 'not_going',
+            default => 'not_going',
+        };
+    }
+
+    protected static function storedRsvpStatus(string $status): string
+    {
+        return match ($status) {
+            self::ATTENDEE_GOING => self::ATTENDEE_GOING,
+            'maybe' => self::ATTENDEE_INTERESTED,
+            default => 'not_going',
+        };
     }
 
     /**

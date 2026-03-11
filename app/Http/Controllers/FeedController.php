@@ -17,60 +17,12 @@ class FeedController extends Controller
             ? $request->string('type')->toString()
             : null;
 
-        $user = $request->user()
-            ->load([
-                'acceptedFollowing:id',
-                'sentPendingRequests:id',
-            ])
-            ->loadCount([
-                'posts',
-                'acceptedFollowers as followers_count',
-                'acceptedFollowing as following_count',
-            ]);
-
-        $hasFollowing = $user->acceptedFollowing()->exists();
-
-        $posts = Post::query()
-            ->when(
-                $hasFollowing,
-                fn ($query) => $query->forFeed($user),
-                fn ($query) => $query->visibleTo($user)
-            )
-            ->whereDoesntHave('author', fn ($query) => $query->where('is_banned', true))
-            ->whereNotIn('user_id', $user->blocking()->select('users.id'))
-            ->whereNotIn('user_id', $user->blockedBy()->select('users.id'))
-            ->with([
-                'user',
-                'author',
-                'author.media',
-                'pet',
-                'pet.media',
-                'media',
-                'postMedia',
-                'likes',
-                'comments.user',
-            ])
-            ->withCount([
-                'comments',
-                'likes',
-            ])
-            ->when($type !== null, fn ($query) => $query->byType($type))
-            ->orderByDesc('posts.created_at')
-            ->paginate(15)
-            ->withQueryString();
+        $user = $request->user()->loadFeedContext();
+        $posts = Post::paginateMainFeedResults($user, $type);
 
         $postIds = $posts->getCollection()->modelKeys();
-
-        $myReactions = $user->reactions()
-            ->whereIn('reactable_id', $postIds)
-            ->where('reactable_type', Post::class)
-            ->get()
-            ->keyBy('reactable_id');
-
-        $mySaved = $user->savedPosts()
-            ->whereIn('posts.id', $postIds)
-            ->pluck('posts.id')
-            ->flip();
+        $myReactions = Post::reactionMapForViewer($user, $postIds);
+        $mySaved = Post::savedMapForViewer($user, $postIds);
 
         $sidebarData = $this->feed->getSidebarData($request->user());
 

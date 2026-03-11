@@ -24,7 +24,7 @@
 
 <a href="{{ $petRoute }}"{{ $attributes->merge(['class'=>"flex-shrink-0 {$cardWidth} rounded-xl border border-whisker/30 bg-warm-white p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-card-hover snap-start"]) }}>
  <x-ui.avatar
- :src="$pet->getFirstMediaUrl(' avatar')"
+ :src="$pet->getFirstMediaUrl('avatar')"
  :name="$pet->name"
  :size="$avatarSize"
  class="mx-auto {{ $avatarDimension }} border-2 border-cream"

@@ -18,15 +18,7 @@ class SavedPostController extends Controller
     {
         $viewer = $request->user();
 
-        $savedPosts = SavedPost::query()
-            ->where('user_id', $viewer->id)
-            ->with([
-                'post' => fn ($query) => $query
-                    ->with(['author', 'hashtags'])
-                    ->visibleTo($viewer),
-            ])
-            ->latest()
-            ->paginate(15);
+        $savedPosts = SavedPost::paginateForViewer($viewer);
 
         return view('saved.index', [
             'savedPosts' => $savedPosts,

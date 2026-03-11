@@ -3,13 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\EventAttendee;
 use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +13,6 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -44,66 +39,20 @@ class EventController extends Controller
         $locationColumn = $this->eventLocationColumn();
         $creatorColumn = $this->eventCreatorColumn();
 
-        $query = DB::table('events')
-            ->leftJoin('groups', 'groups.id', '=', 'events.group_id')
-            ->leftJoin('users as creators', 'creators.id', '=', "events.{$creatorColumn}")
-            ->select([
-                'events.*',
-                'groups.name as group_name',
-                'groups.slug as group_slug',
-                'creators.name as creator_name',
-                "events.{$locationColumn} as event_location",
-            ]);
+        $events = Event::paginateIndexResults(
+            $viewer,
+            $search,
+            $scope,
+            $groupId,
+            $startColumn,
+            $statusColumn,
+            $locationColumn,
+            $creatorColumn,
+            $this->groupPrivacyColumn(),
+            $this->groupOwnerColumn(),
+        );
 
-        $this->applyEventVisibility($query, $viewer);
-
-        if ($search !== '') {
-            $query->where(function ($searchQuery) use ($locationColumn, $search): void {
-                $searchQuery
-                    ->where('events.title', 'like', "%{$search}%")
-                    ->orWhere('events.description', 'like', "%{$search}%");
-
-                if ($locationColumn !== '') {
-                    $searchQuery->orWhere("events.{$locationColumn}", 'like', "%{$search}%");
-                }
-            });
-        }
-
-        if ($groupId > 0) {
-            $query->where('events.group_id', $groupId);
-        }
-
-        if ($scope === 'mine' && $viewer) {
-            $query->where("events.{$creatorColumn}", $viewer->getAuthIdentifier());
-        }
-
-        if ($scope === 'upcoming') {
-            $query->where("events.{$startColumn}", '>=', now());
-
-            if ($statusColumn) {
-                $query->where("events.{$statusColumn}", '!=', 'cancelled');
-            }
-
-            $query->orderBy("events.{$startColumn}");
-        } elseif ($scope === 'past') {
-            $query->where("events.{$startColumn}", '<', now())
-                ->orderByDesc("events.{$startColumn}");
-        } elseif ($scope === 'cancelled' && $statusColumn) {
-            $query->where("events.{$statusColumn}", 'cancelled')
-                ->orderByDesc("events.{$startColumn}");
-        } else {
-            $query->orderBy("events.{$startColumn}");
-        }
-
-        $events = $query
-            ->paginate(12)
-            ->withQueryString();
-
-        $groupOptions = DB::table('groups')
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->limit(100)
-            ->get();
+        $groupOptions = Group::eventFilterOptions();
 
         return view('events.index', [
             'events' => $events,
@@ -127,36 +76,18 @@ class EventController extends Controller
             abort_unless($this->canViewEvent($eventModel, $viewer), 403);
         }
 
-        $group = null;
-        if ($eventModel->group_id) {
-            $group = Group::query()->find($eventModel->group_id);
-        }
+        $eventModel->loadMissing('group');
+        $group = $eventModel->group;
 
-        $creator = null;
         $creatorId = $this->eventCreatorId($eventModel);
-        if ($creatorId) {
-            $creator = User::query()->find($creatorId, ['id', 'name', 'username']);
-        }
-
-        $attendees = EventAttendee::query()
-            ->where('event_id', $eventModel->getKey())
-            ->with('user:id,name,username')
-            ->latest('responded_at')
-            ->limit(50)
-            ->get();
-
-        $viewerRsvp = null;
-        if ($viewer) {
-            $viewerRsvp = EventAttendee::query()
-                ->where('event_id', $eventModel->getKey())
-                ->where('user_id', $viewer->getAuthIdentifier())
-                ->value('status');
-        }
+        $creator = $eventModel->creatorForDisplay($creatorId);
+        $attendees = $eventModel->recentAttendees();
+        $viewerRsvp = $viewer ? $eventModel->rsvpStatusForUser((int) $viewer->getAuthIdentifier()) : null;
 
         $startAt = $this->eventDateValue($eventModel, $this->eventStartColumn());
         $endAt = $this->eventDateValue($eventModel, $this->eventEndColumn());
         $maxAttendees = $this->eventMaxAttendees($eventModel);
-        $attendeesCount = $this->eventGoingCount((int) $eventModel->getKey());
+        $attendeesCount = $eventModel->goingAttendeesCount();
 
         return view('events.show', [
             'event' => $eventModel,
@@ -183,7 +114,7 @@ class EventController extends Controller
         }
 
         $viewer = $request->user();
-        $groups = $this->groupsUserCanCreateEventsIn((int) $viewer->getAuthIdentifier());
+        $groups = Group::eventCreatableForUser((int) $viewer->getAuthIdentifier(), $this->groupOwnerColumn());
         $selectedGroupId = $request->integer('group_id');
 
         if (! $groups->contains('id', $selectedGroupId)) {
@@ -211,7 +142,14 @@ class EventController extends Controller
         $viewer = $request->user();
 
         if (! empty($validated['group_id'])) {
-            abort_unless($this->canCreateEventInGroup((int) $validated['group_id'], (int) $viewer->getAuthIdentifier()), 403);
+            abort_unless(
+                Group::userCanCreateEventInGroup(
+                    (int) $validated['group_id'],
+                    (int) $viewer->getAuthIdentifier(),
+                    $this->groupOwnerColumn(),
+                ),
+                403
+            );
         }
 
         $event = DB::transaction(function () use ($validated, $viewer): Event {
@@ -219,18 +157,12 @@ class EventController extends Controller
             $payload = $this->buildEventPayload($validated, (int) $viewer->getAuthIdentifier());
             $event->forceFill($this->filterToExistingColumns('events', $payload))->save();
 
-            EventAttendee::query()->updateOrCreate(
-                [
-                    'event_id' => $event->getKey(),
-                    'user_id' => $viewer->getAuthIdentifier(),
-                ],
-                [
-                    'status' => 'going',
-                    'responded_at' => now(),
-                ]
+            $event->upsertAttendee((int) $viewer->getAuthIdentifier(), Event::ATTENDEE_GOING);
+            Event::syncAttendeesCounters(
+                (int) $event->getKey(),
+                $this->hasTableColumn('events', 'attendees_count'),
+                $this->hasTableColumn('events', 'interested_count'),
             );
-
-            $this->syncEventAttendeesCounters((int) $event->getKey());
 
             return $event;
         });
@@ -245,7 +177,7 @@ class EventController extends Controller
         $eventModel = $this->resolveEvent($event);
         $this->authorizeEventManagement($request, $eventModel);
 
-        $groups = $this->groupsUserCanCreateEventsIn((int) $request->user()->getAuthIdentifier());
+        $groups = Group::eventCreatableForUser((int) $request->user()->getAuthIdentifier(), $this->groupOwnerColumn());
         $startAt = $this->eventDateValue($eventModel, $this->eventStartColumn());
         $endAt = $this->eventDateValue($eventModel, $this->eventEndColumn());
 
@@ -270,7 +202,14 @@ class EventController extends Controller
 
         $validated = $request->validate($this->eventValidationRules());
         if (! empty($validated['group_id'])) {
-            abort_unless($this->canCreateEventInGroup((int) $validated['group_id'], (int) $request->user()->getAuthIdentifier()), 403);
+            abort_unless(
+                Group::userCanCreateEventInGroup(
+                    (int) $validated['group_id'],
+                    (int) $request->user()->getAuthIdentifier(),
+                    $this->groupOwnerColumn(),
+                ),
+                403
+            );
         }
 
         $payload = $this->buildEventPayload(
@@ -279,7 +218,11 @@ class EventController extends Controller
             $eventModel
         );
         $eventModel->forceFill($this->filterToExistingColumns('events', $payload))->save();
-        $this->syncEventAttendeesCounters((int) $eventModel->getKey());
+        Event::syncAttendeesCounters(
+            (int) $eventModel->getKey(),
+            $this->hasTableColumn('events', 'attendees_count'),
+            $this->hasTableColumn('events', 'interested_count'),
+        );
 
         return redirect()
             ->route('events.show', $eventModel->getKey())
@@ -315,67 +258,13 @@ class EventController extends Controller
             'status' => ['required', Rule::in(['going', 'maybe', 'not_going'])],
         ]);
 
-        $result = DB::transaction(function () use ($eventModel, $validated, $viewer): string {
-            $eventId = (int) $eventModel->getKey();
-            $userId = (int) $viewer->getAuthIdentifier();
-            $requestedStatus = $validated['status'];
-
-            $freshEvent = Event::query()
-                ->whereKey($eventId)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $attendee = EventAttendee::query()
-                ->where('event_id', $eventId)
-                ->where('user_id', $userId)
-                ->lockForUpdate()
-                ->first();
-
-            if ($attendee && $this->normalizedRsvpStatus($attendee->status) === $requestedStatus) {
-                $attendee->delete();
-                $this->syncEventAttendeesCounters($eventId);
-
-                return 'removed';
-            }
-
-            if ($requestedStatus === 'going') {
-                $maxAttendees = $this->eventMaxAttendees($freshEvent);
-
-                if ($maxAttendees !== null) {
-                    $goingCount = EventAttendee::query()
-                        ->where('event_id', $eventId)
-                        ->where('status', 'going')
-                        ->when($attendee, fn ($query) => $query->where('user_id', '!=', $userId))
-                        ->count();
-
-                    if ($goingCount >= $maxAttendees) {
-                        throw ValidationException::withMessages([
-                            'status' => 'RSVP failed. This event has reached maximum attendees.',
-                        ]);
-                    }
-                }
-            }
-
-            $storedStatus = $this->storedRsvpStatus($requestedStatus);
-
-            if ($attendee) {
-                $attendee->forceFill([
-                    'status' => $storedStatus,
-                    'responded_at' => now(),
-                ])->save();
-            } else {
-                EventAttendee::query()->create([
-                    'event_id' => $eventId,
-                    'user_id' => $userId,
-                    'status' => $storedStatus,
-                    'responded_at' => now(),
-                ]);
-            }
-
-            $this->syncEventAttendeesCounters($eventId);
-
-            return 'updated';
-        });
+        $result = $eventModel->toggleRsvpStatus(
+            (int) $viewer->getAuthIdentifier(),
+            $validated['status'],
+            $this->eventMaxAttendees($eventModel),
+            $this->hasTableColumn('events', 'attendees_count'),
+            $this->hasTableColumn('events', 'interested_count'),
+        );
 
         if ($result === 'removed') {
             return back()->with('status', 'RSVP removed.');
@@ -434,15 +323,7 @@ class EventController extends Controller
 
     protected function resolveEvent(string $event): Event
     {
-        $query = Event::query();
-
-        if (ctype_digit($event)) {
-            $query->whereKey((int) $event);
-        } else {
-            abort(404);
-        }
-
-        return $query->firstOrFail();
+        return Event::findFromRouteToken($event) ?? abort(404);
     }
 
     protected function eventValidationRules(): array
@@ -521,17 +402,15 @@ class EventController extends Controller
             return false;
         }
 
-        if ($this->isGroupOwnerById((int) $event->group_id, $viewerId)) {
+        if (Group::userOwnsGroupById((int) $event->group_id, $viewerId, $this->groupOwnerColumn())) {
             return true;
         }
 
-        $membership = GroupMember::query()
-            ->where('group_id', $event->group_id)
-            ->where('user_id', $viewerId)
-            ->first();
+        $event->loadMissing('group');
+        $membership = $event->group?->membershipForUserId($viewerId);
 
         return $membership !== null
-            && ($membership->status === null || $membership->status === 'active')
+            && $event->group?->isActiveMembership($membership)
             && in_array((string) $membership->role, ['owner', 'admin'], true);
     }
 
@@ -541,7 +420,8 @@ class EventController extends Controller
             return true;
         }
 
-        $group = Group::query()->find($event->group_id);
+        $event->loadMissing('group');
+        $group = $event->group;
         if (! $group) {
             return true;
         }
@@ -556,125 +436,11 @@ class EventController extends Controller
         }
 
         $viewerId = (int) $viewer->getAuthIdentifier();
-        if ($this->isGroupOwnerById((int) $group->getKey(), $viewerId)) {
+        if (Group::userOwnsGroupById((int) $group->getKey(), $viewerId, $this->groupOwnerColumn())) {
             return true;
         }
 
-        return GroupMember::query()
-            ->where('group_id', $group->getKey())
-            ->where('user_id', $viewerId)
-            ->exists();
-    }
-
-    protected function applyEventVisibility($query, ?Authenticatable $viewer): void
-    {
-        $privacyColumn = $this->groupPrivacyColumn();
-        if (! $privacyColumn) {
-            return;
-        }
-
-        $query->where(function ($visibilityQuery) use ($privacyColumn, $viewer): void {
-            $visibilityQuery
-                ->whereNull('events.group_id')
-                ->orWhereNull("groups.{$privacyColumn}")
-                ->orWhere("groups.{$privacyColumn}", '!=', 'secret');
-
-            if ($viewer) {
-                $viewerId = (int) $viewer->getAuthIdentifier();
-
-                $visibilityQuery
-                    ->orWhereExists(function ($membershipSubQuery) use ($viewerId): void {
-                        $membershipSubQuery
-                            ->selectRaw('1')
-                            ->from('group_members')
-                            ->whereColumn('group_members.group_id', 'events.group_id')
-                            ->where('group_members.user_id', $viewerId);
-                    });
-
-                if ($ownerColumn = $this->groupOwnerColumn()) {
-                    $visibilityQuery->orWhere("groups.{$ownerColumn}", $viewerId);
-                }
-            }
-        });
-    }
-
-    protected function canCreateEventInGroup(int $groupId, int $viewerId): bool
-    {
-        if ($groupId <= 0) {
-            return true;
-        }
-
-        if ($this->isGroupOwnerById($groupId, $viewerId)) {
-            return true;
-        }
-
-        return GroupMember::query()
-            ->where('group_id', $groupId)
-            ->where('user_id', $viewerId)
-            ->where(function (Builder $query): void {
-                $query->whereNull('status')->orWhere('status', 'active');
-            })
-            ->exists();
-    }
-
-    protected function groupsUserCanCreateEventsIn(int $viewerId)
-    {
-        if ($viewerId <= 0) {
-            return collect();
-        }
-
-        $ownerColumn = $this->groupOwnerColumn();
-
-        return DB::table('groups')
-            ->select('groups.id', 'groups.name')
-            ->where(function ($query) use ($ownerColumn, $viewerId): void {
-                $query->whereExists(function ($membershipSubQuery) use ($viewerId): void {
-                    $membershipSubQuery
-                        ->selectRaw('1')
-                        ->from('group_members')
-                        ->whereColumn('group_members.group_id', 'groups.id')
-                        ->where('group_members.user_id', $viewerId)
-                        ->where(function ($statusQuery): void {
-                            $statusQuery->whereNull('group_members.status')->orWhere('group_members.status', 'active');
-                        });
-                });
-
-                if ($ownerColumn) {
-                    $query->orWhere("groups.{$ownerColumn}", $viewerId);
-                }
-            })
-            ->orderBy('groups.name')
-            ->get();
-    }
-
-    protected function syncEventAttendeesCounters(int $eventId): void
-    {
-        $payload = [];
-
-        if ($this->hasTableColumn('events', 'attendees_count')) {
-            $payload['attendees_count'] = $this->eventGoingCount($eventId);
-        }
-
-        if ($this->hasTableColumn('events', 'interested_count')) {
-            $payload['interested_count'] = (int) EventAttendee::query()
-                ->where('event_id', $eventId)
-                ->whereIn('status', ['maybe', 'interested'])
-                ->count();
-        }
-
-        if ($payload !== []) {
-            DB::table('events')
-                ->where('id', $eventId)
-                ->update($payload);
-        }
-    }
-
-    protected function eventGoingCount(int $eventId): int
-    {
-        return (int) EventAttendee::query()
-            ->where('event_id', $eventId)
-            ->where('status', 'going')
-            ->count();
+        return $group->membershipForUserId($viewerId) !== null;
     }
 
     protected function eventMaxAttendees(Event $event): ?int
@@ -725,15 +491,6 @@ class EventController extends Controller
         };
     }
 
-    protected function storedRsvpStatus(string $status): string
-    {
-        return match ($status) {
-            'going' => 'going',
-            'maybe' => 'interested',
-            default => 'not_going',
-        };
-    }
-
     protected function escapeIcs(string $value): string
     {
         return str_replace(
@@ -758,23 +515,6 @@ class EventController extends Controller
         }
 
         return 'public';
-    }
-
-    protected function isGroupOwnerById(int $groupId, int $viewerId): bool
-    {
-        if ($groupId <= 0 || $viewerId <= 0) {
-            return false;
-        }
-
-        $ownerColumn = $this->groupOwnerColumn();
-        if (! $ownerColumn) {
-            return false;
-        }
-
-        return DB::table('groups')
-            ->where('id', $groupId)
-            ->where($ownerColumn, $viewerId)
-            ->exists();
     }
 
     protected function groupRouteKey(Group $group): string|int

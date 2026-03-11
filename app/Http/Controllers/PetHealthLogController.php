@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -21,33 +22,9 @@ class PetHealthLogController extends Controller
         $pet = $this->resolvePet($slug);
         $this->ensureOwner($pet, $request->user(), 404);
 
-        $logsQuery = PetHealthLog::query()->where('pet_id', $pet->getKey());
-
-        $logs = (clone $logsQuery)
-            ->latest('logged_at')
-            ->paginate(15)
-            ->withQueryString();
-
-        $upcomingLogs = (clone $logsQuery)
-            ->whereNotNull('next_due_at')
-            ->where('next_due_at', '>=', now()->startOfDay())
-            ->orderBy('next_due_at')
-            ->limit(10)
-            ->get();
-
-        $trendSeries = (clone $logsQuery)
-            ->where('log_type', 'weight')
-            ->whereNotNull('weight_kg')
-            ->orderBy('logged_at')
-            ->limit(30);
-
-        if (Schema::hasColumn('pet_health_logs', 'title')) {
-            $trendSeries->select(['logged_at', 'weight_kg', 'title']);
-        } else {
-            $trendSeries->select(['logged_at', 'weight_kg']);
-        }
-
-        $trendSeries = $trendSeries->get();
+        $logs = PetHealthLog::paginateForPet($pet);
+        $upcomingLogs = PetHealthLog::upcomingForPet($pet);
+        $trendSeries = PetHealthLog::weightTrendForPet($pet);
 
         return view('pets.health.index', [
             'pet' => $pet,
@@ -74,19 +51,18 @@ class PetHealthLogController extends Controller
 
         $validated = $request->validated();
         $type = $this->normalizeType((string) $validated['type']);
+        $nextDueAt = $this->resolveNextDueAt($request, $validated);
 
         $payload = $this->filterToExistingColumns('pet_health_logs', [
-            'pet_id' => $pet->getKey(),
-            'logged_by_user_id' => $request->user()?->getAuthIdentifier(),
             'log_type' => $type,
             'title' => $validated['title'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'weight_kg' => $type === 'weight' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
-            'next_due_at' => $validated['next_due_at'] ?? null,
+            'next_due_at' => $nextDueAt,
         ]);
 
-        PetHealthLog::query()->create($payload);
+        PetHealthLog::createForPet($pet, $request->user(), $payload);
 
         return redirect()
             ->route('pets.health.index', $pet->slug ?? $pet->getKey())
@@ -114,6 +90,7 @@ class PetHealthLogController extends Controller
         $log = $this->resolveHealthLog($pet, $healthLog);
         $validated = $request->validated();
         $type = $this->normalizeType((string) $validated['type']);
+        $nextDueAt = $this->resolveNextDueAt($request, $validated);
 
         $payload = $this->filterToExistingColumns('pet_health_logs', [
             'log_type' => $type,
@@ -121,7 +98,7 @@ class PetHealthLogController extends Controller
             'notes' => $validated['notes'] ?? null,
             'weight_kg' => $type === 'weight' ? ($validated['value'] ?? null) : null,
             'logged_at' => $validated['logged_at'],
-            'next_due_at' => $validated['next_due_at'] ?? null,
+            'next_due_at' => $nextDueAt,
         ]);
 
         $log->update($payload);
@@ -204,18 +181,12 @@ class PetHealthLogController extends Controller
 
     protected function resolvePet(string $slug): Pet
     {
-        return Pet::query()
-            ->where('slug', $slug)
-            ->orWhere('id', $slug)
-            ->firstOrFail();
+        return Pet::resolveForRoute($slug) ?? abort(404);
     }
 
     protected function resolveHealthLog(Pet $pet, string $healthLog): PetHealthLog
     {
-        return PetHealthLog::query()
-            ->where('pet_id', $pet->getKey())
-            ->whereKey($healthLog)
-            ->firstOrFail();
+        return PetHealthLog::findForPet($pet, $healthLog) ?? abort(404);
     }
 
     protected function ensureOwner(Pet $pet, ?Authenticatable $user, int $status = 403): void
@@ -225,13 +196,7 @@ class PetHealthLogController extends Controller
 
     protected function isOwner(Pet $pet, ?Authenticatable $user): bool
     {
-        if (! $user) {
-            return false;
-        }
-
-        $ownerId = data_get($pet, 'user_id') ?? data_get($pet, 'owner_id');
-
-        return (int) $ownerId === (int) $user->getAuthIdentifier();
+        return $pet->isOwnedBy($user);
     }
 
     protected function filterToExistingColumns(string $table, array $payload): array
@@ -254,5 +219,40 @@ class PetHealthLogController extends Controller
     protected function normalizeType(string $type): string
     {
         return $type === 'vaccine' ? 'vaccination' : $type;
+    }
+
+    protected function resolveNextDueAt(Request $request, array $validated): ?Carbon
+    {
+        if (filled($validated['next_due_at'] ?? null)) {
+            return Carbon::parse((string) $validated['next_due_at']);
+        }
+
+        if (filled($validated['next_due_interval'] ?? null)) {
+            try {
+                $interval = $request->interval('next_due_interval');
+            } catch (Throwable) {
+                throw ValidationException::withMessages([
+                    'next_due_interval' => 'Invalid interval format. Use ISO 8601 durations such as P7D.',
+                ]);
+            }
+
+            if ($interval === null) {
+                return null;
+            }
+
+            return Carbon::parse((string) $validated['logged_at'])->add($interval);
+        }
+
+        if (! filled($validated['next_due_in'] ?? null)) {
+            return null;
+        }
+
+        $interval = $request->interval('next_due_in', (string) $validated['next_due_unit']);
+
+        if ($interval === null) {
+            return null;
+        }
+
+        return Carbon::parse((string) $validated['logged_at'])->add($interval);
     }
 }

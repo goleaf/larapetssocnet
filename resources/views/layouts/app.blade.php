@@ -168,7 +168,7 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="{{ str_replace('_','-', app()->getLocale()) }}" data-theme="petssocnet">
+<html lang="{{ str_replace('_','-', app()->getLocale()) }}"data-theme="petssocnet">
  <head>
  <meta charset="utf-8">
  <meta name="viewport"content="width=device-width, initial-scale=1">
@@ -177,7 +177,7 @@
 
  <title>{{ $documentTitle }}</title>
 
- <link rel="preconnect" href="https://fonts.bunny.net">
+ <link rel="preconnect"href="https://fonts.bunny.net">
  <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap"rel="stylesheet"/>
 
  @livewireStyles
@@ -211,7 +211,7 @@
  <div class="sticky top-24 space-y-4">
  <x-ui.card>
  <div class="flex items-center gap-3">
- <x-ui.avatar :name="$user?->name ??' Guest User'" :src="$user?->avatar_url" size="lg"/>
+ <x-ui.avatar :name="$user?->name ??'Guest User'":src="$user?->avatar_url"size="lg"/>
  <div class="min-w-0">
  <p class="truncate text-base font-semibold text-bark">{{ $user?->name ??'Guest User'}}</p>
  <p class="truncate text-xs text-fur">{{ $user?->username ?'@'.$user->username : ($user?->email ??'community@larapets.test') }}</p>
@@ -244,14 +244,14 @@
  ];
  })->toArray();
  @endphp
- <x-ui.sidebar-nav :items="$mappedNav" class="!mb-0"/>
+ <x-ui.sidebar-nav :items="$mappedNav"class="!mb-0"/>
  </x-ui.card>
 
  <x-ui.card>
  <x-slot name="header">
- <x-ui.card-header title="Your Groups" subtitle="Communities you are active in">
+ <x-ui.card-header title="Your Groups"subtitle="Communities you are active in">
  <x-slot name="action">
- <x-ui.button href="{{ route('groups.index', ['privacy'=>'joined']) }}" variant="ghost" size="xs">
+ <x-ui.button href="{{ route('groups.index', ['privacy'=>'joined']) }}"variant="ghost"size="xs">
  Browse
  </x-ui.button>
  </x-slot>
@@ -266,7 +266,7 @@
 
  <x-ui.user-row
  :name="$group->name"
- :subtitle="\Illuminate\Support\Str::headline((string) ($group->privacy ??' public'))"
+ :subtitle="\Illuminate\Support\Str::headline((string) ($group->privacy ??'public'))"
  :href="route('groups.show', $groupRouteKey)"
  class="px-2"
  >
@@ -284,7 +284,7 @@
  </div>
 
  <div class="mt-4">
- <x-ui.button href="{{ route('groups.create') }}" variant="primary" full>
+ <x-ui.button href="{{ route('groups.create') }}"variant="primary"full>
  Create a Group
  </x-ui.button>
  </div>
@@ -292,18 +292,18 @@
 
  <x-ui.card>
  <x-slot name="header">
- <x-ui.card-header title="Suggested People" subtitle="Grow your pet network"/>
+ <x-ui.card-header title="Suggested People"subtitle="Grow your pet network"/>
  </x-slot>
 
  <div class="space-y-2">
  @forelse ($suggestedUsers as $suggestedUser)
  <x-ui.user-row
  :name="$suggestedUser->name"
- :subtitle="$suggestedUser->username ?' @'.$suggestedUser->username :' Pet lover'"
+ :subtitle="$suggestedUser->username ?'@'.$suggestedUser->username :'Pet lover'"
  :href="route('profile.show', $suggestedUser)"
  >
  <x-slot name="avatar">
- <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" size="sm"/>
+ <x-ui.avatar :src="$suggestedUser->avatar_url":name="$suggestedUser->name"size="sm"/>
  </x-slot>
  </x-ui.user-row>
  @empty
@@ -329,9 +329,9 @@
  @forelse ($suggestedUsers as $suggested)
  <x-ui.user-row 
  :name="$suggested->name"
- :subtitle="$suggested->username ?' @'.$suggested->username :' Pet lover'"
+ :subtitle="$suggested->username ?'@'.$suggested->username :'Pet lover'"
  :avatar="$suggested->avatar_url"
- :href="route('profile.show', ['user' => $suggested])"
+ :href="route('profile.show', ['user'=> $suggested])"
  class="px-2"
  >
  <x-slot name="action">
@@ -377,7 +377,7 @@
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between">
  <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Active Contests</h4>
- <x-ui.badge variant="success" size="sm" pill>{{ $activeContests->count() }}</x-ui.badge>
+ <x-ui.badge variant="success"size="sm"pill>{{ $activeContests->count() }}</x-ui.badge>
  </div>
 
  <div class="space-y-2 mt-3">
@@ -402,7 +402,7 @@
  <x-ui.card>
  <div class="mb-2 flex items-center justify-between">
  <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Trending Tags</h4>
- <x-ui.badge variant="success" size="sm" pill>Live</x-ui.badge>
+ <x-ui.badge variant="success"size="sm"pill>Live</x-ui.badge>
  </div>
 
  <div class="space-y-2 mt-3">
@@ -428,7 +428,7 @@
  <x-ui.card class="animate-fade-up">
  <div class="flex items-center justify-between gap-3">
  <div class="min-w-0">{{ $header }}</div>
- <x-ui.badge variant="primary" size="sm" pill>PetSocial</x-ui.badge>
+ <x-ui.badge variant="primary"size="sm"pill>PetSocial</x-ui.badge>
  </div>
  </x-ui.card>
  @endisset
@@ -461,5 +461,5 @@
  </nav>
  </div>
  @livewireScripts
-  </body>
+ </body>
 </html>

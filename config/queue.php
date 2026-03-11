@@ -126,4 +126,10 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    'monitor' => [
+        'queues' => env('QUEUE_MONITOR_QUEUES'),
+        'max' => (int) env('QUEUE_MONITOR_MAX', 100),
+        'alert_email' => env('QUEUE_MONITOR_ALERT_EMAIL'),
+    ],
+
 ];

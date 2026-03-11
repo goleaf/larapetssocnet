@@ -34,12 +34,12 @@
  @endphp
 
  <x-slot name="header">
- <x-ui.page-header title="Explore Pets" subtitle="Discover pet profiles across the community.">
+ <x-ui.page-header title="Explore Pets"subtitle="Discover pet profiles across the community.">
  <x-slot name="action">
  <div class="flex flex-wrap items-center gap-2">
- <x-ui.button :href="route('pets.adopt')" variant="outline" size="sm">Browse Adoption</x-ui.button>
+ <x-ui.button :href="route('pets.adopt')"variant="outline"size="sm">Browse Adoption</x-ui.button>
  @auth
- <x-ui.button :href="route('pets.create')" variant="primary" size="sm">Create Pet
+ <x-ui.button :href="route('pets.create')"variant="primary"size="sm">Create Pet
  Profile</x-ui.button>
  @endauth
  </div>
@@ -49,25 +49,25 @@
 
  <div class="space-y-5 max-w-5xl mx-auto">
  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
- <x-ui.stat label="Total Results" :value="number_format($totalCount)" icon="🐾"/>
- <x-ui.stat label="Adoptable in Results" :value="number_format($adoptionCount)" icon="🏡"/>
- <x-ui.stat label="Browse Mode" value="Public Profiles" icon="🧭"/>
+ <x-ui.stat label="Total Results":value="number_format($totalCount)"icon="🐾"/>
+ <x-ui.stat label="Adoptable in Results":value="number_format($adoptionCount)"icon="🏡"/>
+ <x-ui.stat label="Browse Mode"value="Public Profiles"icon="🧭"/>
  </div>
 
  <x-ui.card>
- <form method="GET" action="{{ route('pets.explore') }}" class="grid gap-3 md:grid-cols-12">
- <x-ui.input class="md:col-span-4" name="q" label="Search" :value="$filters['q']"
+ <form method="GET"action="{{ route('pets.explore') }}"class="grid gap-3 md:grid-cols-12">
+ <x-ui.input class="md:col-span-4"name="q"label="Search":value="$filters['q']"
  placeholder="Name, species, breed"/>
 
- <x-ui.select class="md:col-span-3" name="species" label="Species" :options="$speciesOptions"
+ <x-ui.select class="md:col-span-3"name="species"label="Species":options="$speciesOptions"
  :selected="$filters['species']"/>
 
- <x-ui.input class="md:col-span-2" name="breed" label="Breed" :value="$filters['breed']"/>
+ <x-ui.input class="md:col-span-2"name="breed"label="Breed":value="$filters['breed']"/>
 
- <x-ui.select class="md:col-span-3" name="sort" label="Sort" :options="$sortOptions"
+ <x-ui.select class="md:col-span-3"name="sort"label="Sort":options="$sortOptions"
  :selected="$filters['sort']"/>
 
- <x-ui.select class="md:col-span-3" name="sex" label="Sex" :options="$sexOptions"
+ <x-ui.select class="md:col-span-3"name="sex"label="Sex":options="$sexOptions"
  :selected="$filters['sex']"/>
 
  <div class="md:col-span-5">
@@ -79,11 +79,11 @@
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button type="submit" variant="primary" size="sm" class="w-full">Apply Filters</x-ui.button>
+ <x-ui.button type="submit"variant="primary"size="sm"class="w-full">Apply Filters</x-ui.button>
  </div>
 
  <div class="flex items-end md:col-span-2">
- <x-ui.button :href="route('pets.explore')" variant="ghost" size="sm"
+ <x-ui.button :href="route('pets.explore')"variant="ghost"size="sm"
  class="w-full">Reset</x-ui.button>
  </div>
  </form>
@@ -91,7 +91,7 @@
 
  @if ($pets->isEmpty())
  <x-ui.card>
- <x-ui.empty-state icon="🐾" title="No Pets Found"
+ <x-ui.empty-state icon="🐾"title="No Pets Found"
  description="Try different filters to find matching pet profiles."/>
  </x-ui.card>
  @else
@@ -104,8 +104,8 @@
  $imageUrl = $pet->avatar_url;
  @endphp
 
- <x-pet-card :name="$pet->name ??' Unnamed pet'" :species="\Illuminate\Support\Str::headline((string) ($pet->species ??' Unknown'))" :breed="$pet->breed ?:' Mixed'" :age="$pet->age_formatted ?: \Illuminate\Support\Str::headline((string) ($pet->sex ??' unknown'))" :location="$locationLabel"
- :image="$imageUrl" :owner="$pet->owner?->name" cta-label="View Profile"
+ <x-pet-card :name="$pet->name ??'Unnamed pet'":species="\Illuminate\Support\Str::headline((string) ($pet->species ??'Unknown'))":breed="$pet->breed ?:'Mixed'":age="$pet->age_formatted ?: \Illuminate\Support\Str::headline((string) ($pet->sex ??'unknown'))":location="$locationLabel"
+ :image="$imageUrl":owner="$pet->owner?->name"cta-label="View Profile"
  :cta-href="route('pets.show', $petSlug)"/>
  @endforeach
  </div>

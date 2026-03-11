@@ -5,14 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePetRequest;
 use App\Http\Requests\UpdatePetRequest;
 use App\Models\Pet;
+use App\Models\Post;
 use App\Services\ChartService;
 use App\Services\PetService;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
-use Throwable;
 
 class PetController extends Controller
 {
@@ -24,7 +22,7 @@ class PetController extends Controller
     public function show(Request $request, string $slug): View
     {
         $pet = $this->resolvePet($slug);
-        $isOwner = $this->isOwner($pet, $request->user());
+        $isOwner = $pet->isOwnedBy($request->user());
 
         $tabs = ['posts', 'gallery', 'health', 'about'];
         $activeTab = $request->string('tab')->toString() ?: 'posts';
@@ -37,60 +35,23 @@ class PetController extends Controller
             $activeTab = 'posts';
         }
 
-        $posts = collect();
-        if (method_exists($pet, 'posts')) {
-            $posts = $pet->posts()
-                ->with([
-                    'user',
-                    'author',
-                    'author.media',
-                    'pet',
-                    'pet.media',
-                    'media',
-                    'postMedia',
-                    'likes',
-                    'comments.user',
-                ])
-                ->withCount([
-                    'comments',
-                    'likes',
-                ])
-                ->latest()
-                ->limit(12)
-                ->get();
-        }
+        $posts = $pet->recentPostsForShow();
 
         $myReactions = collect();
         $mySaved = collect();
 
         if ($request->user() && $posts->isNotEmpty()) {
             $postIds = $posts->modelKeys();
-            $myReactions = $request->user()->reactions()
-                ->whereIn('reactable_id', $postIds)
-                ->where('reactable_type', \App\Models\Post::class)
-                ->get()
-                ->keyBy('reactable_id');
-
-            $mySaved = $request->user()->savedPosts()
-                ->whereIn('posts.id', $postIds)
-                ->pluck('posts.id')
-                ->flip();
+            $myReactions = Post::reactionMapForViewer($request->user(), $postIds);
+            $mySaved = Post::savedMapForViewer($request->user(), $postIds);
         }
 
-        $gallery = collect();
-        if (method_exists($pet, 'getMedia')) {
-            $gallery = collect($pet->getMedia('gallery'))
-                ->sortByDesc(fn ($media) => $media->created_at)
-                ->take(24)
-                ->values();
-        } elseif (method_exists($pet, 'galleryItems')) {
-            $gallery = $pet->galleryItems()->latest()->limit(24)->get();
-        }
+        $gallery = $pet->galleryForShow();
 
         $healthLogs = collect();
         $weightChartSvg = null;
-        if ($isOwner && method_exists($pet, 'healthLogs')) {
-            $healthLogs = $pet->healthLogs()->latest('logged_at')->limit(12)->get();
+        if ($isOwner) {
+            $healthLogs = $pet->recentHealthLogs();
             $weightChartSvg = $this->chartService->weightChart($pet->weight_logs);
         }
 
@@ -174,51 +135,20 @@ class PetController extends Controller
 
     public function explore(Request $request): View
     {
-        $query = Pet::query()->with('owner:id,name');
-
-        if ($this->petTableHasColumn('is_public')) {
-            $query->where('is_public', true);
-        }
-
         $search = trim((string) $request->string('q'));
-        if ($search !== '') {
-            $query->where(function ($innerQuery) use ($search) {
-                foreach (['name', 'bio', 'breed', 'species'] as $col) {
-                    if ($this->petTableHasColumn($col)) {
-                        $innerQuery->orWhere($col, 'like', "%{$search}%");
-                    }
-                }
-            });
-        }
-
-        foreach (['species', 'breed', 'sex'] as $filterColumn) {
-            $filterValue = trim((string) $request->string($filterColumn));
-
-            if ($filterValue !== '' && $this->petTableHasColumn($filterColumn)) {
-                $query->where($filterColumn, $filterValue);
-            }
-        }
-
-        if ($request->filled('is_adoptable') || $request->filled('is_for_adoption')) {
-            $adoptableFilterValue = $request->boolean('is_adoptable') || $request->boolean('is_for_adoption');
-            if ($this->petTableHasColumn('is_adoptable')) {
-                $query->where('is_adoptable', $adoptableFilterValue);
-            } elseif ($this->petTableHasColumn('is_for_adoption')) {
-                $query->where('is_for_adoption', $adoptableFilterValue);
-            }
-        }
-
         $sort = $request->string('sort')->toString() ?: 'newest';
+        $isAdoptableFilter = ($request->filled('is_adoptable') || $request->filled('is_for_adoption'))
+            ? ($request->boolean('is_adoptable') || $request->boolean('is_for_adoption'))
+            : null;
 
-        match ($sort) {
-            'oldest' => $query->oldest('created_at'),
-            'name_asc' => $query->orderBy('name'),
-            'name_desc' => $query->orderByDesc('name'),
-            'weight_desc' => $query->orderByDesc('weight'),
-            default => $query->latest('created_at'),
-        };
-
-        $pets = $query->paginate(12)->withQueryString();
+        $pets = Pet::paginateExploreCatalog([
+            'q' => $search,
+            'species' => (string) $request->string('species'),
+            'breed' => (string) $request->string('breed'),
+            'sex' => (string) $request->string('sex'),
+            'is_adoptable' => $isAdoptableFilter,
+            'sort' => $sort,
+        ]);
 
         return view('pets.explore', [
             'pets' => $pets,
@@ -227,9 +157,7 @@ class PetController extends Controller
                 'species' => (string) $request->string('species'),
                 'breed' => (string) $request->string('breed'),
                 'sex' => (string) $request->string('sex'),
-                'is_adoptable' => ($request->filled('is_adoptable') || $request->filled('is_for_adoption'))
-                    ? ($request->boolean('is_adoptable') || $request->boolean('is_for_adoption'))
-                    : null,
+                'is_adoptable' => $isAdoptableFilter,
                 'sort' => $sort,
             ],
         ]);
@@ -237,47 +165,14 @@ class PetController extends Controller
 
     public function adopt(Request $request): View
     {
-        $query = Pet::query()->with('owner:id,name');
-
-        if ($this->petTableHasColumn('is_public')) {
-            $query->where('is_public', true);
-        }
-
-        if ($this->petTableHasColumn('is_adoptable')) {
-            $query->where('is_adoptable', true);
-        } elseif ($this->petTableHasColumn('is_for_adoption')) {
-            $query->where('is_for_adoption', true);
-        }
-
         $search = trim((string) $request->string('q'));
-        if ($search !== '') {
-            $query->where(function ($innerQuery) use ($search) {
-                foreach (['name', 'bio', 'breed'] as $col) {
-                    if ($this->petTableHasColumn($col)) {
-                        $innerQuery->orWhere($col, 'like', "%{$search}%");
-                    }
-                }
-            });
-        }
-
-        foreach (['species', 'sex'] as $filterColumn) {
-            $filterValue = trim((string) $request->string($filterColumn));
-
-            if ($filterValue !== '' && $this->petTableHasColumn($filterColumn)) {
-                $query->where($filterColumn, $filterValue);
-            }
-        }
-
         $sort = $request->string('sort')->toString() ?: 'newest';
-
-        match ($sort) {
-            'oldest' => $query->oldest('created_at'),
-            'name_asc' => $query->orderBy('name'),
-            'name_desc' => $query->orderByDesc('name'),
-            default => $query->latest('created_at'),
-        };
-
-        $pets = $query->paginate(12)->withQueryString();
+        $pets = Pet::paginateAdoptionCatalog([
+            'q' => $search,
+            'species' => (string) $request->string('species'),
+            'sex' => (string) $request->string('sex'),
+            'sort' => $sort,
+        ]);
 
         return view('pets.adopt', [
             'pets' => $pets,
@@ -315,21 +210,7 @@ class PetController extends Controller
 
     protected function resolvePet(string $slug): Pet
     {
-        return Pet::query()
-            ->when($this->petTableHasColumn('slug'), fn ($query) => $query->where('slug', $slug))
-            ->orWhere('id', $slug)
-            ->firstOrFail();
-    }
-
-    protected function isOwner(Pet $pet, ?Authenticatable $user): bool
-    {
-        if (! $user) {
-            return false;
-        }
-
-        $ownerId = data_get($pet, 'user_id') ?? data_get($pet, 'owner_id');
-
-        return (int) $ownerId === (int) $user->getAuthIdentifier();
+        return Pet::resolveForRoute($slug) ?? abort(404);
     }
 
     private function normalizePersonalityTags(mixed $rawTags): array
@@ -351,15 +232,6 @@ class PetController extends Controller
             ->filter()
             ->values()
             ->all();
-    }
-
-    private function petTableHasColumn(string $column): bool
-    {
-        try {
-            return Schema::hasColumn('pets', $column);
-        } catch (Throwable) {
-            return false;
-        }
     }
 
     private function attachGalleryPhotos(Pet $pet, Request $request): void

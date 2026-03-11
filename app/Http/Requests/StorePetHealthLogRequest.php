@@ -20,7 +20,17 @@ class StorePetHealthLogRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:3000'],
             'value' => ['nullable', 'numeric', 'min:0'],
             'logged_at' => ['required', 'date'],
-            'next_due_at' => ['nullable', 'date', 'after_or_equal:logged_at'],
+            'next_due_at' => ['nullable', 'date', 'after_or_equal:logged_at', 'prohibits:next_due_in,next_due_unit,next_due_interval'],
+            'next_due_in' => ['nullable', 'numeric', 'min:1', 'prohibits:next_due_at,next_due_interval'],
+            'next_due_unit' => ['nullable', 'string', 'required_with:next_due_in', Rule::in([
+                'minutes',
+                'hours',
+                'days',
+                'weeks',
+                'months',
+                'years',
+            ]), 'prohibits:next_due_at,next_due_interval'],
+            'next_due_interval' => ['nullable', 'string', 'prohibits:next_due_at,next_due_in,next_due_unit'],
         ];
     }
 

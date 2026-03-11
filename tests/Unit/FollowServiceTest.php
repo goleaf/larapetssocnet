@@ -3,8 +3,10 @@
 namespace Tests\Unit;
 
 use App\Models\User;
+use App\Notifications\NewFollower;
 use App\Services\FollowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class FollowServiceTest extends TestCase
@@ -29,5 +31,32 @@ class FollowServiceTest extends TestCase
         app(FollowService::class)->unfollow($actor, $target);
 
         $this->assertTrue(true);
+    }
+
+    public function test_follow_notification_uses_relation_light_actor_model(): void
+    {
+        Notification::fake();
+
+        $actor = User::factory()->create();
+        $target = User::factory()->create();
+
+        $actor->load('media', 'followers', 'following', 'acceptedFollowers', 'acceptedFollowing');
+
+        $status = app(FollowService::class)->follow($actor, $target);
+
+        $this->assertSame('following', $status);
+        $this->assertTrue($actor->relationLoaded('media'));
+        $this->assertTrue($actor->relationLoaded('followers'));
+        $this->assertTrue($actor->relationLoaded('following'));
+        $this->assertTrue($actor->relationLoaded('acceptedFollowers'));
+        $this->assertTrue($actor->relationLoaded('acceptedFollowing'));
+
+        Notification::assertSentTo($target, NewFollower::class, function (NewFollower $notification): bool {
+            return ! $notification->follower->relationLoaded('followers')
+                && ! $notification->follower->relationLoaded('following')
+                && ! $notification->follower->relationLoaded('acceptedFollowers')
+                && ! $notification->follower->relationLoaded('acceptedFollowing')
+                && $notification->follower->relationLoaded('media');
+        });
     }
 }

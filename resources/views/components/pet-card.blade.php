@@ -13,7 +13,7 @@
 <article {{ $attributes->merge(['class'=>'shell-card overflow-hidden']) }}>
  <div class="aspect-[16/10] w-full overflow-hidden border-b"style="border-color: var(--ui-border); background: color-mix(in srgb, var(--ui-primary) 8%, var(--ui-surface) 92%);">
  @if ($image)
- <img src="{{ $image }}" alt="{{ $name }}" class="h-full w-full object-cover"loading="lazy">
+ <img src="{{ $image }}"alt="{{ $name }}"class="h-full w-full object-cover"loading="lazy">
  @else
  <div class="flex h-full items-center justify-center text-5xl">🐶</div>
  @endif
@@ -34,7 +34,7 @@
  <p class="text-xs shell-text-muted">Posted by {{ $owner }}</p>
  @endif
 
- <a href="{{ $ctaHref }}" class="btn-base btn-primary w-full justify-center text-sm">
+ <a href="{{ $ctaHref }}"class="btn-base btn-primary w-full justify-center text-sm">
  {{ $ctaLabel }}
  </a>
  </div>

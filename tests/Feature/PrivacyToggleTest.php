@@ -83,6 +83,8 @@ class PrivacyToggleTest extends TestCase
             'created_at' => now(),
         ]);
 
+        $owner->load('followers', 'following', 'acceptedFollowers', 'acceptedFollowing');
+
         $this->actingAs($owner)
             ->postJson(route('privacy.toggle'))
             ->assertOk()
@@ -109,8 +111,18 @@ class PrivacyToggleTest extends TestCase
         $this->assertSame(1, (int) $requesterA->following_count);
         $this->assertSame(1, (int) $requesterB->following_count);
 
-        Notification::assertSentTo($requesterA, FollowRequestApproved::class);
-        Notification::assertSentTo($requesterB, FollowRequestApproved::class);
+        Notification::assertSentTo($requesterA, FollowRequestApproved::class, function (FollowRequestApproved $notification): bool {
+            return ! $notification->approver->relationLoaded('followers')
+                && ! $notification->approver->relationLoaded('following')
+                && ! $notification->approver->relationLoaded('acceptedFollowers')
+                && ! $notification->approver->relationLoaded('acceptedFollowing');
+        });
+        Notification::assertSentTo($requesterB, FollowRequestApproved::class, function (FollowRequestApproved $notification): bool {
+            return ! $notification->approver->relationLoaded('followers')
+                && ! $notification->approver->relationLoaded('following')
+                && ! $notification->approver->relationLoaded('acceptedFollowers')
+                && ! $notification->approver->relationLoaded('acceptedFollowing');
+        });
     }
 
     public function test_toggle_public_to_private_updates_flag(): void

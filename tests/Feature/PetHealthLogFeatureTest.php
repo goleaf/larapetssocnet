@@ -8,6 +8,7 @@ use App\Models\PetHealthLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class PetHealthLogFeatureTest extends TestCase
@@ -110,6 +111,82 @@ class PetHealthLogFeatureTest extends TestCase
         $this->assertSoftDeleted('pet_health_logs', [
             'id' => $log->id,
         ]);
+    }
+
+    public function test_owner_can_set_next_due_date_with_interval_input(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+        $loggedAt = now()->toDateString();
+
+        $this->actingAs($owner)
+            ->post(route('pets.health.store', $pet->id), [
+                'type' => 'medication',
+                'title' => 'Deworming',
+                'notes' => 'Monthly schedule',
+                'logged_at' => $loggedAt,
+                'next_due_in' => 2,
+                'next_due_unit' => 'weeks',
+            ])
+            ->assertRedirect();
+
+        /** @var PetHealthLog $createdLog */
+        $createdLog = PetHealthLog::query()
+            ->where('pet_id', $pet->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertNotNull($createdLog->next_due_at);
+        $this->assertSame(
+            Carbon::parse($loggedAt)->addWeeks(2)->toDateString(),
+            $createdLog->next_due_at->toDateString(),
+        );
+    }
+
+    public function test_owner_can_set_next_due_date_with_iso_interval_input(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+        $loggedAt = now()->toDateString();
+
+        $this->actingAs($owner)
+            ->post(route('pets.health.store', $pet->id), [
+                'type' => 'medication',
+                'title' => 'Heartworm prevention',
+                'notes' => 'ISO interval schedule',
+                'logged_at' => $loggedAt,
+                'next_due_interval' => 'P10D',
+            ])
+            ->assertRedirect();
+
+        /** @var PetHealthLog $createdLog */
+        $createdLog = PetHealthLog::query()
+            ->where('pet_id', $pet->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertNotNull($createdLog->next_due_at);
+        $this->assertSame(
+            Carbon::parse($loggedAt)->addDays(10)->toDateString(),
+            $createdLog->next_due_at->toDateString(),
+        );
+    }
+
+    public function test_next_due_date_and_interval_inputs_are_mutually_exclusive(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+
+        $this->actingAs($owner)
+            ->post(route('pets.health.store', $pet->id), [
+                'type' => 'vaccination',
+                'title' => 'Parvo shot',
+                'logged_at' => now()->toDateString(),
+                'next_due_at' => now()->addMonths(12)->toDateString(),
+                'next_due_in' => 30,
+                'next_due_unit' => 'days',
+            ])
+            ->assertSessionHasErrors(['next_due_at', 'next_due_in']);
     }
 
     public function test_upcoming_reminders_are_driven_by_next_due_date_and_sorted_ascending(): void

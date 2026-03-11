@@ -33,7 +33,7 @@
  };
  @endphp
 
- <th scope="col" class="{{ $padding }} {{ $alignClass }} text-xs font-semibold uppercase tracking-wide text-fur {{ $class }}">
+ <th scope="col"class="{{ $padding }} {{ $alignClass }} text-xs font-semibold uppercase tracking-wide text-fur {{ $class }}">
  {{ $label }}
  </th>
  @endforeach
@@ -48,7 +48,7 @@
  @else
  <tbody>
  <tr>
- <td colspan="{{ max(count($resolvedHeaders), 1) }}" class="px-4 py-12 text-center text-fur">
+ <td colspan="{{ max(count($resolvedHeaders), 1) }}"class="px-4 py-12 text-center text-fur">
  <div class="flex flex-col items-center justify-center">
  <span class="mb-2 text-3xl opacity-50"aria-hidden="true">🐾</span>
  <p>{{ $empty }}</p>

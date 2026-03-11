@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
@@ -122,6 +124,82 @@ class Group extends Model implements HasMedia
         return $this->hasMany(Post::class);
     }
 
+    public function sharedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'group_posts', 'group_id', 'post_id')
+            ->withPivot(['added_by_user_id'])
+            ->withTimestamps();
+    }
+
+    public function attachSharedPost(Post $post, int $addedByUserId): void
+    {
+        if (! Schema::hasTable('group_posts')) {
+            return;
+        }
+
+        $this->sharedPosts()->syncWithoutDetaching([
+            $post->getKey() => [
+                'added_by_user_id' => $addedByUserId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+    }
+
+    public function detachSharedPost(Post $post): void
+    {
+        if (! Schema::hasTable('group_posts')) {
+            return;
+        }
+
+        $this->sharedPosts()->detach($post->getKey());
+    }
+
+    public function includesPost(Post $post): bool
+    {
+        if (Schema::hasColumn('posts', 'group_id') && (int) $post->group_id === (int) $this->getKey()) {
+            return true;
+        }
+
+        if (! Schema::hasTable('group_posts')) {
+            return false;
+        }
+
+        return $this->sharedPosts()
+            ->where('posts.id', $post->getKey())
+            ->exists();
+    }
+
+    public function calculatePostsCount(): int
+    {
+        $postIds = collect();
+
+        if (Schema::hasColumn('posts', 'group_id')) {
+            $postIds = $postIds->merge(
+                $this->posts()->pluck('posts.id')
+            );
+        }
+
+        if (Schema::hasTable('group_posts')) {
+            $postIds = $postIds->merge(
+                $this->sharedPosts()->pluck('posts.id')
+            );
+        }
+
+        return $postIds->unique()->count();
+    }
+
+    public function syncPostsCount(): void
+    {
+        if (! Schema::hasColumn('groups', 'posts_count')) {
+            return;
+        }
+
+        $this->forceFill([
+            'posts_count' => $this->calculatePostsCount(),
+        ])->save();
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
@@ -212,6 +290,164 @@ class Group extends Model implements HasMedia
             ->withQueryString();
     }
 
+    public static function paginateIndexResults(
+        User $viewer,
+        string $search,
+        string $privacy,
+        string $sort,
+        int $perPage = 12
+    ): LengthAwarePaginator {
+        $viewerId = (int) $viewer->getKey();
+        $ownerColumn = self::ownerColumnName();
+
+        $query = self::query()
+            ->with('owner:id,name,username')
+            ->where(function (Builder $visibilityQuery) use ($viewerId, $ownerColumn): void {
+                $visibilityQuery
+                    ->where(function (Builder $discoverableQuery): void {
+                        $discoverableQuery
+                            ->where(function (Builder $privacyQuery): void {
+                                $privacyQuery
+                                    ->whereNull('privacy')
+                                    ->orWhere('privacy', '!=', 'secret');
+                            })
+                            ->where(function (Builder $typeQuery): void {
+                                $typeQuery
+                                    ->whereNull('type')
+                                    ->orWhere('type', '!=', 'secret');
+                            });
+                    })
+                    ->orWhere($ownerColumn, $viewerId)
+                    ->orWhereHas('members', function (Builder $memberQuery) use ($viewerId): void {
+                        $memberQuery
+                            ->forUser($viewerId)
+                            ->active();
+                    });
+            });
+
+        if (in_array($privacy, ['public', 'private', 'secret'], true)) {
+            $query->where(function (Builder $privacyQuery) use ($privacy): void {
+                $privacyQuery
+                    ->where('privacy', $privacy)
+                    ->orWhere(function (Builder $fallbackTypeQuery) use ($privacy): void {
+                        $fallbackTypeQuery
+                            ->whereNull('privacy')
+                            ->where('type', $privacy);
+                    });
+            });
+        }
+
+        if ($privacy === 'joined') {
+            $query->whereHas('members', function (Builder $memberQuery) use ($viewerId): void {
+                $memberQuery
+                    ->forUser($viewerId)
+                    ->active();
+            });
+        }
+
+        if ($privacy === 'owned') {
+            $query->where($ownerColumn, $viewerId);
+        }
+
+        if ($search !== '') {
+            $query->where(function (Builder $searchQuery) use ($search): void {
+                $searchQuery
+                    ->where('groups.name', 'like', "%{$search}%")
+                    ->orWhere('groups.description', 'like', "%{$search}%")
+                    ->orWhere('groups.slug', 'like', "%{$search}%");
+            });
+        }
+
+        if ($sort === 'name') {
+            $query->orderBy('groups.name');
+        } elseif ($sort === 'members') {
+            $query->orderByDesc('groups.members_count')
+                ->orderByDesc('groups.created_at');
+        } else {
+            $query->latest('groups.created_at');
+        }
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    /**
+     * @param  Collection<int, int>  $groupIds
+     * @return Collection<int, GroupMember>
+     */
+    public static function membershipMapForUserAndGroups(User $viewer, Collection $groupIds): Collection
+    {
+        return GroupMember::membershipMapForUserAndGroups((int) $viewer->getKey(), $groupIds);
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function eventFilterOptions(int $limit = 100): Collection
+    {
+        return self::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function eventCreatableForUser(int $viewerId, ?string $ownerColumn = null): Collection
+    {
+        if ($viewerId <= 0) {
+            return collect();
+        }
+
+        $ownerColumn ??= self::ownerColumnName();
+
+        return self::query()
+            ->select('groups.id', 'groups.name')
+            ->where(function (Builder $query) use ($ownerColumn, $viewerId): void {
+                $query->whereHas('members', function (Builder $memberQuery) use ($viewerId): void {
+                    $memberQuery
+                        ->forUser($viewerId)
+                        ->active();
+                });
+
+                $query->orWhere($ownerColumn, $viewerId);
+            })
+            ->orderBy('groups.name')
+            ->get();
+    }
+
+    public static function userOwnsGroupById(int $groupId, int $viewerId, ?string $ownerColumn = null): bool
+    {
+        if ($groupId <= 0 || $viewerId <= 0) {
+            return false;
+        }
+
+        $ownerColumn ??= self::ownerColumnName();
+
+        return self::query()
+            ->whereKey($groupId)
+            ->where($ownerColumn, $viewerId)
+            ->exists();
+    }
+
+    public static function userCanCreateEventInGroup(int $groupId, int $viewerId, ?string $ownerColumn = null): bool
+    {
+        if ($groupId <= 0) {
+            return true;
+        }
+
+        if (self::userOwnsGroupById($groupId, $viewerId, $ownerColumn)) {
+            return true;
+        }
+
+        return GroupMember::query()
+            ->forGroup($groupId)
+            ->forUser($viewerId)
+            ->active()
+            ->exists();
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -267,6 +503,72 @@ class Group extends Model implements HasMedia
                 }
             })
             ->exists();
+    }
+
+    public function membershipForUserId(int $userId): ?GroupMember
+    {
+        return GroupMember::firstForGroupAndUser((int) $this->getKey(), $userId);
+    }
+
+    public function isActiveMembership(?GroupMember $membership): bool
+    {
+        if (! $membership) {
+            return false;
+        }
+
+        return $membership->status === null
+            || in_array((string) $membership->status, ['active', 'accepted'], true);
+    }
+
+    public function activeMembersCount(): int
+    {
+        return (int) $this->memberships()->active()->count();
+    }
+
+    public function syncMembersCount(): void
+    {
+        if (! Schema::hasColumn('groups', 'members_count')) {
+            return;
+        }
+
+        $this->forceFill([
+            'members_count' => $this->activeMembersCount(),
+        ])->save();
+    }
+
+    public function paginateActiveMembers(int $perPage = 20, string $pageName = 'members_page'): LengthAwarePaginator
+    {
+        return GroupMember::paginateActiveForGroup($this, $perPage, $pageName);
+    }
+
+    /**
+     * @return Collection<int, GroupMember>
+     */
+    public function pendingMembers(): Collection
+    {
+        return GroupMember::pendingForGroup($this);
+    }
+
+    public function paginateEventsForShow(string $startColumn = 'start_at', int $perPage = 12, string $pageName = 'events_page'): LengthAwarePaginator
+    {
+        return $this->events()
+            ->orderBy($startColumn)
+            ->paginate($perPage, ['*'], $pageName)
+            ->withQueryString();
+    }
+
+    public function eventsCount(): int
+    {
+        return (int) $this->events()->count();
+    }
+
+    public function normalizedPrivacy(): string
+    {
+        $privacy = strtolower((string) ($this->privacy ?: $this->type ?: 'public'));
+
+        return in_array($privacy, ['public', 'private', 'secret'], true)
+            ? $privacy
+            : 'public';
     }
 
     public function isOwner(User $user): bool
@@ -415,5 +717,12 @@ class Group extends Model implements HasMedia
                 $this->setAttribute('owner_user_id', (int) $ownerId);
             }
         }
+    }
+
+    protected static function ownerColumnName(): string
+    {
+        return Schema::hasColumn('groups', 'owner_user_id')
+            ? 'owner_user_id'
+            : 'owner_id';
     }
 }

@@ -350,6 +350,18 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Event::class, 'creator_user_id');
     }
 
+    public function loadFeedContext(): self
+    {
+        return $this->load([
+            'acceptedFollowing:id',
+            'sentPendingRequests:id',
+        ])->loadCount([
+            'posts',
+            'acceptedFollowers as followers_count',
+            'acceptedFollowing as following_count',
+        ]);
+    }
+
     public function eventAttendances(): HasMany
     {
         return $this->hasMany(EventAttendee::class);
@@ -811,10 +823,16 @@ class User extends Authenticatable implements HasMedia
 
                 $this->increment('followers_count', $pending->count());
                 $this->updateQuietly(['follow_requests_count' => 0]);
+                $notificationApprover = $this->withoutRelation([
+                    'followers',
+                    'following',
+                    'acceptedFollowers',
+                    'acceptedFollowing',
+                ]);
 
-                self::query()->whereIn('id', $requesterIds)->get()->each(function (self $requester): void {
+                self::query()->whereIn('id', $requesterIds)->get()->each(function (self $requester) use ($notificationApprover): void {
                     $requester->increment('following_count');
-                    $requester->notify(new \App\Notifications\FollowRequestApproved($this));
+                    $requester->notify(new \App\Notifications\FollowRequestApproved($notificationApprover));
                 });
             }
 

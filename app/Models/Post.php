@@ -158,6 +158,13 @@ class Post extends Model implements HasMedia
         return $this->belongsToMany(User::class, 'saved_posts');
     }
 
+    public function sharedGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_posts', 'post_id', 'group_id')
+            ->withPivot(['added_by_user_id'])
+            ->withTimestamps();
+    }
+
     // Scopes
 
     public function scopeVisibleTo(Builder $query, ?User $viewer): void
@@ -320,6 +327,48 @@ class Post extends Model implements HasMedia
         });
     }
 
+    public function scopeExploreSearch(Builder $query, string $term): void
+    {
+        $clean = Str::limit(trim($term), 100, '');
+
+        $query->where(function (Builder $searchQuery) use ($clean): void {
+            $searchQuery
+                ->where('body', 'like', "%{$clean}%")
+                ->orWhere('location', 'like', "%{$clean}%")
+                ->orWhereHas('hashtags', fn (Builder $hashtagQuery) => $hashtagQuery->where('name', 'like', '%'.strtolower($clean).'%'))
+                ->orWhereHas('user', function (Builder $userQuery) use ($clean): void {
+                    $userQuery
+                        ->where('name', 'like', "%{$clean}%")
+                        ->orWhere('username', 'like', "%{$clean}%");
+                });
+        });
+    }
+
+    public static function paginateExploreResults(
+        ?User $viewer,
+        string $type = 'all',
+        string $search = '',
+        int $perPage = 15
+    ): LengthAwarePaginator {
+        return self::query()
+            ->with(['user', 'hashtags'])
+            ->published()
+            ->explorable($viewer)
+            ->when($type === 'photos', fn (Builder $query) => $query->byType(self::TYPE_PHOTO))
+            ->when($type === 'videos', fn (Builder $query) => $query->byType(self::TYPE_VIDEO))
+            ->when($search !== '', fn (Builder $query) => $query->exploreSearch($search))
+            ->when(
+                $type === 'trending',
+                fn (Builder $query) => $query
+                    ->orderByDesc('likes_count')
+                    ->orderByDesc('comments_count')
+                    ->latest('posts.created_at'),
+                fn (Builder $query) => $query->latest('posts.created_at')
+            )
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
     public function scopeSearchResultColumns(Builder $query): Builder
     {
         return $query->select([
@@ -456,6 +505,100 @@ class Post extends Model implements HasMedia
         return $query->where('group_id', $groupId);
     }
 
+    public function scopeInGroupFeed(Builder $query, Group $group): Builder
+    {
+        return $query->where(function (Builder $groupQuery) use ($group): void {
+            $groupQuery
+                ->where('posts.group_id', $group->getKey())
+                ->orWhereHas('sharedGroups', fn (Builder $sharedQuery) => $sharedQuery->where('groups.id', $group->getKey()));
+        });
+    }
+
+    public static function paginateGroupFeed(Group $group, int $perPage = 10, string $pageName = 'posts_page'): LengthAwarePaginator
+    {
+        return self::query()
+            ->inGroupFeed($group)
+            ->with([
+                'user:id,name,username,avatar_path',
+                'hashtags:id,name,slug',
+            ])
+            ->latest('posts.created_at')
+            ->paginate($perPage, ['posts.*'], $pageName)
+            ->withQueryString();
+    }
+
+    public static function paginateEmpty(int $perPage = 10, string $pageName = 'posts_page'): LengthAwarePaginator
+    {
+        return self::query()
+            ->whereKey(-1)
+            ->paginate($perPage, ['posts.*'], $pageName)
+            ->withQueryString();
+    }
+
+    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15): LengthAwarePaginator
+    {
+        $hasFollowing = $viewer->acceptedFollowing()->exists();
+
+        return self::query()
+            ->when(
+                $hasFollowing,
+                fn (Builder $query) => $query->forFeed($viewer),
+                fn (Builder $query) => $query->visibleTo($viewer)
+            )
+            ->with([
+                'user',
+                'author',
+                'author.media',
+                'pet',
+                'pet.media',
+                'media',
+                'postMedia',
+                'likes',
+                'comments.user',
+            ])
+            ->withCount([
+                'comments',
+                'likes',
+            ])
+            ->when($type !== null, fn (Builder $query) => $query->byType($type))
+            ->orderByDesc('posts.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * @param  list<int|string>  $postIds
+     * @return Collection<int, Reaction>
+     */
+    public static function reactionMapForViewer(User $viewer, array $postIds): Collection
+    {
+        if ($postIds === []) {
+            return collect();
+        }
+
+        return $viewer->reactions()
+            ->whereIn('reactable_id', $postIds)
+            ->where('reactable_type', self::class)
+            ->get()
+            ->keyBy('reactable_id');
+    }
+
+    /**
+     * @param  list<int|string>  $postIds
+     * @return Collection<int|string, int|string>
+     */
+    public static function savedMapForViewer(User $viewer, array $postIds): Collection
+    {
+        if ($postIds === []) {
+            return collect();
+        }
+
+        return $viewer->savedPosts()
+            ->whereIn('posts.id', $postIds)
+            ->pluck('posts.id')
+            ->flip();
+    }
+
     public function scopeForFeed(Builder $query, User $user): Builder
     {
         $followingIds = $user->acceptedFollowing()
@@ -472,7 +615,7 @@ class Post extends Model implements HasMedia
                             ->when(
                                 $followingIds->isNotEmpty(),
                                 fn (Builder $scopedQuery) => $scopedQuery->whereIn('user_id', $followingIds),
-                                fn (Builder $scopedQuery) => $scopedQuery->whereRaw('1 = 0')
+                                fn (Builder $scopedQuery) => $scopedQuery->whereIn('user_id', [0])
                             )
                             ->whereIn('visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
                     });

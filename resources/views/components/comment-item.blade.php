@@ -19,11 +19,11 @@
  ];
 @endphp
 
-<div class="group py-2 {{ $comment->isReply() ?'ml-11 mt-1':'mt-4'}}" id="comment-{{ $comment->id }}">
+<div class="group py-2 {{ $comment->isReply() ?'ml-11 mt-1':'mt-4'}}"id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
  <!-- Avatar -->
- <a href="{{ route('profile.show', $comment->user->username) }}" class="shrink-0 mt-0.5">
- <x-ui.avatar :src="$comment->user->avatar_url" :name="$comment->user->name" size="sm"/>
+ <a href="{{ route('profile.show', $comment->user->username) }}"class="shrink-0 mt-0.5">
+ <x-ui.avatar :src="$comment->user->avatar_url":name="$comment->user->name"size="sm"/>
  </a>
 
  <div class="flex-1 min-w-0"x-data="{ showReply: false, editing: false }">
@@ -75,10 +75,10 @@
  @endif
 
  <!-- Action Links -->
- <div x-show="!editing" class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500">
+ <div x-show="!editing"class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500">
  @auth
  <!-- Like Button / Reactions -->
- <x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="$currentReaction"/>
+ <x-comment-reaction-bar :post="$post":comment="$comment":currentReaction="$currentReaction"/>
 
  <!-- Reply Button -->
  @if(!$comment->isReply())
@@ -97,12 +97,12 @@
  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
  <span class="text-gray-300 font-normal">&middot;</span>
  @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->user()->hasRole('admin')))
- <button @click="editing = true" class="hover:underline hover:text-gray-800">Edit</button>
+ <button @click="editing = true"class="hover:underline hover:text-gray-800">Edit</button>
  <form method="POST"
  action="{{ route('posts.comments.destroy', ['post'=> $post,'comment'=> $comment]) }}"
  class="inline m-0 p-0"onsubmit="return confirm('Delete this comment?');">
  @csrf @method('DELETE')
- <button type="submit" class="hover:underline hover:text-red-500">Delete</button>
+ <button type="submit"class="hover:underline hover:text-red-500">Delete</button>
  </form>
  @endif
  @if(auth()->check() && auth()->id() !== $comment->user_id)
@@ -110,8 +110,8 @@
  action="{{ route('comments.report', ['post'=> $post,'comment'=> $comment]) }}"
  class="inline m-0 p-0"onsubmit="return confirm('Report this comment?');">
  @csrf
- <input type="hidden" name="reason" value="spam">
- <button type="submit" class="hover:underline hover:text-amber-600">Report</button>
+ <input type="hidden"name="reason"value="spam">
+ <button type="submit"class="hover:underline hover:text-amber-600">Report</button>
  </form>
  @endif
  </div>
@@ -119,14 +119,14 @@
 
  <!-- Inline Reply Form -->
  <div x-show="showReply"x-cloak class="mt-2 w-full max-w-2xl flex items-start gap-2">
- <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="xs" class="mt-1"/>
+ <x-ui.avatar :src="auth()->user()?->avatar_url":name="auth()->user()?->name"size="xs"class="mt-1"/>
  <div class="flex-1">
- <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="relative">
+ <form action="{{ route('posts.comments.store', $post) }}"method="POST"class="relative">
  @csrf
- <input type="hidden" name="parent_id" value="{{ $comment->id }}">
- <textarea x-ref="replyInput" name="body"rows="1"
+ <input type="hidden"name="parent_id"value="{{ $comment->id }}">
+ <textarea x-ref="replyInput"name="body"rows="1"
  class="w-full py-2 pl-3 pr-10 text-sm bg-gray-100 border-transparent rounded-2xl focus:bg-white focus:border-paw focus:ring-1 focus:ring-paw resize-none overflow-hidden"
- placeholder="Write a reply..." required
+ placeholder="Write a reply..."required
  oninput="this.style.height =''; this.style.height = this.scrollHeight +'px'"
  @keydown.escape="showReply = false"></textarea>
  <button type="submit"
@@ -145,7 +145,7 @@
  @if($comment->replies->count() > 0)
  <div class="mt-1">
  @foreach($comment->replies as $reply)
- <x-comment-item :comment="$reply" :post="$post"/>
+ <x-comment-item :comment="$reply":post="$post"/>
  @endforeach
  </div>
  @endif

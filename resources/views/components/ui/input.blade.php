@@ -57,7 +57,7 @@
 
 <div {{ $attributes->only('class')->merge(['class'=>'flex flex-col gap-1']) }}>
  @if ($label)
- <x-ui.label :for="$fieldId" :required="$required">{{ $label }}</x-ui.label>
+ <x-ui.label :for="$fieldId":required="$required">{{ $label }}</x-ui.label>
  @endif
 
  <div class="relative">
@@ -99,6 +99,6 @@
  </div>
 
  @if ($hasError || $hint)
- <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$hint"/>
+ <x-ui.hint :id="$hintId":error="$resolvedError":message="$hint"/>
  @endif
 </div>

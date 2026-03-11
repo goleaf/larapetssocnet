@@ -9,8 +9,8 @@
 <body class="bg-gray-100 text-gray-900">
  <header class="border-b border-gray-200 bg-white">
  <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
- <a href="{{ route('explore.index') }}" class="text-lg font-semibold text-gray-900">{{ config('app.name','LaraPets') }}</a>
- <a href="{{ route('explore.index', ['q'=>'#'.$hashtag->name]) }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to Explore</a>
+ <a href="{{ route('explore.index') }}"class="text-lg font-semibold text-gray-900">{{ config('app.name','LaraPets') }}</a>
+ <a href="{{ route('explore.index', ['q'=>'#'.$hashtag->name]) }}"class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to Explore</a>
  </div>
  </header>
 

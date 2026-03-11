@@ -5,7 +5,7 @@
  <ul class="mt-3 space-y-2">
  @foreach ($hashtags as $hashtag)
  <li>
- <a href="{{ route('hashtags.show', $hashtag) }}" class="flex items-center justify-between text-sm text-gray-700 hover:text-emerald-600">
+ <a href="{{ route('hashtags.show', $hashtag) }}"class="flex items-center justify-between text-sm text-gray-700 hover:text-emerald-600">
  <span>#{{ $hashtag->name }}</span>
  <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{{ $hashtag->posts_count }}</span>
  </a>

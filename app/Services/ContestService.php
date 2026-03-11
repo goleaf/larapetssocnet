@@ -117,7 +117,10 @@ class ContestService
             $entry->updateQuietly(['is_winner' => true]);
 
             if ($entry->user->notificationEnabled('contest_updates')) {
-                $entry->user->notify(new ContestWinner($contest, $entry));
+                $notificationEntry = $entry->withoutRelation('user');
+                $notificationContest = $contest->withoutRelation('organizer');
+
+                $entry->user->notify(new ContestWinner($notificationContest, $notificationEntry));
             }
         });
     }

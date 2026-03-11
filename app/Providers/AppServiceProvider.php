@@ -14,6 +14,7 @@ use App\Models\Pet;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UsernameRedirect;
+use App\Notifications\QueueBusyAlert;
 use App\Observers\PostObserver;
 use App\Policies\CommentPolicy;
 use App\Policies\EventPolicy;
@@ -24,10 +25,12 @@ use App\Policies\MessagePolicy;
 use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Queue\Events\QueueBusy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -71,6 +74,20 @@ class AppServiceProvider extends ServiceProvider
         Post::observe(PostObserver::class);
         EventFacade::listen(UserBlocked::class, RemoveFollowOnBlock::class);
         EventFacade::listen(UserBlocked::class, CancelPendingRequestsOnBlock::class);
+        EventFacade::listen(function (QueueBusy $event): void {
+            Log::warning('Queue busy threshold exceeded.', [
+                'connection' => $event->connection,
+                'queue' => $event->queue,
+                'size' => $event->size,
+            ]);
+
+            $alertEmail = trim((string) config('queue.monitor.alert_email'));
+
+            if ($alertEmail !== '') {
+                Notification::route('mail', $alertEmail)
+                    ->notify(new QueueBusyAlert($event->connection, $event->queue, $event->size));
+            }
+        });
 
         Route::bind('user', function (string $value): User {
             $normalized = strtolower($value);

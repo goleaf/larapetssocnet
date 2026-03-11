@@ -17,7 +17,7 @@
  <li class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3"
  aria-label="Blocked user {{ $blockedUser->name }}">
  <div class="flex min-w-0 items-center gap-3">
- <x-avatar :src="$blockedUser->getFirstMediaUrl(' avatar')" :name="$blockedUser->name" size="md"/>
+ <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')":name="$blockedUser->name"size="md"/>
  <div class="min-w-0">
  <p class="truncate font-semibold">{{ $blockedUser->name }}</p>
  <p class="truncate text-xs shell-text-muted">&#64;{{ $blockedUser->username }}</p>
@@ -26,19 +26,19 @@
 
  <x-block-button
  size="sm"
- :aria-label="' Unblock'.$blockedUser->name"
- :aria-disabled="' unblocking ==='.$blockedUser->id"
- :aria-busy="' unblocking ==='.$blockedUser->id"
+ :aria-label="'Unblock'.$blockedUser->name"
+ :aria-disabled="'unblocking ==='.$blockedUser->id"
+ :aria-busy="'unblocking ==='.$blockedUser->id"
  @click="(async () => {
  unblocking = {{ $blockedUser->id }};
  notice ='';
 
  try {
  const response = await fetch('{{ route('users.unblock', ['user'=> $blockedUser]) }}', {
- method:' DELETE',
+ method:'DELETE',
  headers: {
-' Accept' :' application/json',
-' X-CSRF-TOKEN' : document.querySelector(' meta[name=csrf-token]').content,
+'Accept':'application/json',
+'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
  },
  });
 
@@ -48,7 +48,7 @@
  return;
  }
 
- notice = payload.message ||' Unable to unblock user.';
+ notice = payload.message ||'Unable to unblock user.';
  } catch (e) {
  notice ='Unable to unblock user.';
  } finally {
@@ -63,7 +63,7 @@
  <li>
  <x-empty-state
  icon="🛡️"
- title="You haven' t blocked anyone."
+ title="You haven't blocked anyone."
  description="When you block someone, they will appear here."
  />
  </li>

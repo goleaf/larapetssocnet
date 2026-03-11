@@ -7,7 +7,7 @@
 
  <title>{{ config('app.name','LaraPets') }}</title>
 
- <link rel="preconnect" href="https://fonts.bunny.net">
+ <link rel="preconnect"href="https://fonts.bunny.net">
  <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap"rel="stylesheet"/>
 
  <script>
@@ -33,7 +33,7 @@
  style="border-color: var(--ui-border); background: linear-gradient(145deg, color-mix(in srgb, var(--ui-primary) 14%, var(--ui-bg) 86%), color-mix(in srgb, var(--ui-accent) 11%, var(--ui-bg) 89%));"
  >
  <div class="relative z-10">
- <a href="/" class="inline-flex items-center gap-3">
+ <a href="/"class="inline-flex items-center gap-3">
  <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-xl"style="background: color-mix(in srgb, var(--ui-primary) 20%, var(--ui-surface) 80%);">🐾</span>
  <span class="shell-title text-xl">{{ config('app.name','LaraPets') }}</span>
  </a>
@@ -83,7 +83,7 @@
  </button>
 
  <div class="w-full max-w-md space-y-4">
- <a href="/" class="inline-flex items-center gap-2 lg:hidden">
+ <a href="/"class="inline-flex items-center gap-2 lg:hidden">
  <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg"style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">🐾</span>
  <span class="shell-title text-lg">{{ config('app.name','LaraPets') }}</span>
  </a>

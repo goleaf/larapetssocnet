@@ -65,7 +65,7 @@
  </div>
 
  @if ($dismissible)
- <button type="button" class="icon-button h-7 w-7"@click="close()"aria-label="Dismiss message">
+ <button type="button"class="icon-button h-7 w-7"@click="close()"aria-label="Dismiss message">
  <svg class="h-4 w-4"viewBox="0 0 20 20"fill="none"stroke="currentColor"stroke-width="1.8">
  <path d="M5 5l10 10M15 5L5 15"stroke-linecap="round"/>
  </svg>

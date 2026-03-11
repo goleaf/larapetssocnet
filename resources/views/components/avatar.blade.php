@@ -44,7 +44,7 @@
  @endif
 >
  @if ($src)
- <img src="{{ $src }}" alt="{{ $avatarAlt }}" class="h-full w-full object-cover"loading="lazy">
+ <img src="{{ $src }}"alt="{{ $avatarAlt }}"class="h-full w-full object-cover"loading="lazy">
  @else
  <span class="font-heading font-bold"aria-hidden="true">{{ $initials }}</span>
  <span class="sr-only">{{ $avatarAlt }}</span>

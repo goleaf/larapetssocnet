@@ -133,7 +133,12 @@ return [
             resource_path('views/vendor/mail'),
         ],
 
-        'extensions' => [],
+        'extensions' => array_values(array_filter(array_map(
+            static fn (string $extension): string => trim($extension),
+            explode(',', (string) env('MAIL_MARKDOWN_EXTENSIONS', ''))
+        ), static fn (string $extension): bool => $extension !== ''
+            && class_exists($extension)
+            && is_subclass_of($extension, \League\CommonMark\Extension\ExtensionInterface::class))),
     ],
 
 ];

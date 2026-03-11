@@ -16,7 +16,7 @@
 
  @if ($canManage)
  <div class="flex items-center gap-3">
- <x-ui.button :href="route('marketplace.edit', $listing)" variant="outline" size="sm"
+ <x-ui.button :href="route('marketplace.edit', $listing)"variant="outline"size="sm"
  class="flex items-center">
  <svg class="mr-2 -ml-1 h-4 w-4"xmlns="http://www.w3.org/2000/svg"fill="none"
  viewBox="0 0 24 24"stroke-width="2"stroke="currentColor">
@@ -79,7 +79,7 @@
  <div
  class="overflow-hidden rounded-3xl bg-gray-200 aspect-[16/10] relative group ring-1 ring-gray-900/5 shadow-sm">
  @if ($listing->cover_photo_url)
- <img src="{{ $listing->cover_photo_url }}" alt="{{ $listing->title }}"
+ <img src="{{ $listing->cover_photo_url }}"alt="{{ $listing->title }}"
  class="w-full h-full object-cover object-center transition duration-700 group-hover:scale-105">
  <div
  class="absolute inset-0 bg-gradient-to-t from-gray-900/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -93,9 +93,9 @@
  @if ($gallery->isNotEmpty())
  <div class="grid grid-cols-4 gap-4">
  @foreach ($gallery as $media)
- <a href="{{ $media->getUrl() }}" target="_blank"rel="noreferrer"
+ <a href="{{ $media->getUrl() }}"target="_blank"rel="noreferrer"
  class="overflow-hidden rounded-2xl bg-gray-100 aspect-square group block ring-2 ring-transparent hover:ring-blue-500 transition-all shadow-sm">
- <img src="{{ $media->getUrl() }}" alt="Listing image"
+ <img src="{{ $media->getUrl() }}"alt="Listing image"
  class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
  </a>
  @endforeach
@@ -194,7 +194,7 @@
 
  <div class="px-8 relative -mt-12">
  <div class="inline-block rounded-full bg-white p-1.5 ring-1 ring-gray-900/5 shadow-md">
- <x-avatar :src="$listing->seller?->avatar_url" :name="$listing->seller?->name"
+ <x-avatar :src="$listing->seller?->avatar_url":name="$listing->seller?->name"
  class="h-20 w-20"/>
  </div>
 
@@ -216,7 +216,7 @@
  @auth
  @if ($canManage)
  <div class="space-y-3">
- <form method="POST" action="{{ route('marketplace.destroy', $listing) }}"
+ <form method="POST"action="{{ route('marketplace.destroy', $listing) }}"
  onsubmit="return confirm('Are you sure you want to delete this listing? You cannot undo this action.')">
  @csrf
  @method('DELETE')
@@ -233,7 +233,7 @@
  </form>
  </div>
  @elseif ($canContactSeller)
- <form method="POST" action="{{ route('marketplace.contact', $listing) }}">
+ <form method="POST"action="{{ route('marketplace.contact', $listing) }}">
  @csrf
  <button type="submit"
  class="group w-full inline-flex justify-center items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-3.5 text-sm font-bold hover:bg-gray-800 transition-all shadow-md hover:shadow-lg focus:ring-2 focus:ring-gray-900/20 focus:outline-none focus:ring-offset-2">

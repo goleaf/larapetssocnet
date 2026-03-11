@@ -13,10 +13,10 @@
 
 <article {{ $attributes->merge(['class'=>'shell-card hover-lift p-4']) }}>
  <div class="flex items-start gap-3">
- <x-avatar :name="$name" :src="$avatar" size="md" :status="$following ?' online' : null"/>
+ <x-avatar :name="$name":src="$avatar"size="md":status="$following ?'online': null"/>
  <div class="min-w-0">
  @if ($profileHref)
- <a href="{{ $profileHref }}" class="truncate shell-title text-base hover:underline"aria-label="Open {{ $name }} profile">
+ <a href="{{ $profileHref }}"class="truncate shell-title text-base hover:underline"aria-label="Open {{ $name }} profile">
  {{ $name }}
  </a>
  @else
@@ -44,7 +44,7 @@
 
  @if ($actionLabel)
  @if ($actionHref)
- <a href="{{ $actionHref }}" class="btn-base btn-ghost mt-3 w-full justify-center text-xs"aria-label="{{ $actionLabel }} for {{ $name }}">
+ <a href="{{ $actionHref }}"class="btn-base btn-ghost mt-3 w-full justify-center text-xs"aria-label="{{ $actionLabel }} for {{ $name }}">
  {{ $actionLabel }}
  </a>
  @else

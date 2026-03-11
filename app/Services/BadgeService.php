@@ -42,7 +42,7 @@ class BadgeService
             ]);
 
             if ($user->notificationEnabled('system_announcements')) {
-                $user->notify(new BadgeAwarded($badge));
+                $user->notify(new BadgeAwarded($badge->withoutRelation('users')));
             }
         });
     }

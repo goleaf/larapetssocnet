@@ -8,7 +8,6 @@ use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
@@ -46,15 +45,7 @@ class GroupPostController extends Controller
             $post->addMedia($file)->toMediaCollection('photos');
         }
 
-        if (Schema::hasTable('group_posts')) {
-            DB::table('group_posts')->insertOrIgnore([
-                'group_id' => $group->getKey(),
-                'post_id' => $post->getKey(),
-                'added_by_user_id' => $request->user()->getKey(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        $group->attachSharedPost($post, (int) $request->user()->getKey());
 
         $this->syncPostsCount($group);
 
@@ -78,12 +69,7 @@ class GroupPostController extends Controller
 
         $post->delete();
 
-        if (Schema::hasTable('group_posts')) {
-            DB::table('group_posts')
-                ->where('group_id', $group->getKey())
-                ->where('post_id', $post->getKey())
-                ->delete();
-        }
+        $group->detachSharedPost($post);
 
         $this->syncPostsCount($group);
 
@@ -107,43 +93,12 @@ class GroupPostController extends Controller
 
     private function postBelongsToGroup(Post $post, Group $group): bool
     {
-        if (Schema::hasColumn('posts', 'group_id') && (int) $post->group_id === (int) $group->getKey()) {
-            return true;
-        }
-
-        if (! Schema::hasTable('group_posts')) {
-            return false;
-        }
-
-        return DB::table('group_posts')
-            ->where('group_id', $group->getKey())
-            ->where('post_id', $post->getKey())
-            ->exists();
+        return $group->includesPost($post);
     }
 
     private function syncPostsCount(Group $group): void
     {
-        if (! Schema::hasColumn('groups', 'posts_count')) {
-            return;
-        }
-
-        $postIds = collect();
-
-        if (Schema::hasColumn('posts', 'group_id')) {
-            $postIds = $postIds->merge(
-                DB::table('posts')->where('group_id', $group->getKey())->pluck('id')
-            );
-        }
-
-        if (Schema::hasTable('group_posts')) {
-            $postIds = $postIds->merge(
-                DB::table('group_posts')->where('group_id', $group->getKey())->pluck('post_id')
-            );
-        }
-
-        $group->forceFill([
-            'posts_count' => $postIds->unique()->count(),
-        ])->save();
+        $group->syncPostsCount();
     }
 
     private function filterPostPayload(array $payload): array

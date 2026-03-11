@@ -22,7 +22,7 @@
  <div class="space-y-3">
  @forelse ($requests as $requester)
  <article class="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
- <x-avatar :user="$requester" size="md"/>
+ <x-avatar :user="$requester"size="md"/>
  <div class="min-w-0 flex-1">
  <p class="truncate font-semibold">{{ $requester->name }}</p>
  <p class="text-xs shell-text-muted">&#64;{{ $requester->username }}</p>
@@ -43,7 +43,7 @@
  </div>
  </article>
  @empty
- <x-empty-state icon="mail" title="No pending requests" description="You' re all caught up."/>
+ <x-empty-state icon="mail"title="No pending requests"description="You're all caught up."/>
  @endforelse
  </div>
 

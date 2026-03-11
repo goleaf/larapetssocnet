@@ -15,59 +15,28 @@ class MarketplaceListingController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = MarketplaceListing::query()
-            ->with(['seller:id,name,username,avatar_path'])
-            ->search(trim((string) $request->input('q')))
-            ->ofType($request->string('listing_type')->trim()->value());
-
         $status = $request->string('status')->trim()->lower()->value();
-
-        if (in_array($status, [MarketplaceListing::STATUS_ACTIVE, MarketplaceListing::STATUS_SOLD], true)) {
-            $query->where('status', $status);
-        } else {
-            $query->where('status', MarketplaceListing::STATUS_ACTIVE);
-            $status = MarketplaceListing::STATUS_ACTIVE;
-        }
-
-        $minPrice = $request->input('min_price');
-        if ($minPrice !== null && $minPrice !== '') {
-            $query->where('price', '>=', (float) $minPrice);
-        }
-
-        $maxPrice = $request->input('max_price');
-        if ($maxPrice !== null && $maxPrice !== '') {
-            $query->where('price', '<=', (float) $maxPrice);
-        }
-
-        $location = trim((string) $request->input('location'));
-        if ($location !== '') {
-            $query->where('location_text', 'like', "%{$location}%");
-        }
-
         $sort = $request->string('sort')->trim()->value() ?: 'newest';
 
-        match ($sort) {
-            'oldest' => $query->oldest('created_at'),
-            'price_low' => $query->orderBy('price'),
-            'price_high' => $query->orderByDesc('price'),
-            'most_viewed' => $query->orderByDesc('views_count'),
-            default => $query->latest('created_at'),
-        };
+        $listings = MarketplaceListing::paginatePublicCatalog([
+            'q' => trim((string) $request->input('q')),
+            'listing_type' => $request->string('listing_type')->trim()->value(),
+            'status' => $status,
+            'min_price' => $request->input('min_price'),
+            'max_price' => $request->input('max_price'),
+            'location' => trim((string) $request->input('location')),
+            'sort' => $sort,
+        ]);
 
-        $listings = $query->paginate(12)->withQueryString();
+        if (! in_array($status, [MarketplaceListing::STATUS_ACTIVE, MarketplaceListing::STATUS_SOLD], true)) {
+            $status = MarketplaceListing::STATUS_ACTIVE;
+        }
 
         return view('marketplace.index', [
             'listings' => $listings,
             'status' => $status,
             'sort' => $sort,
-            'typeOptions' => MarketplaceListing::query()
-                ->select('listing_type')
-                ->whereNotNull('listing_type')
-                ->distinct()
-                ->orderBy('listing_type')
-                ->pluck('listing_type')
-                ->filter()
-                ->values(),
+            'typeOptions' => MarketplaceListing::listingTypeOptions(),
         ]);
     }
 
@@ -118,10 +87,7 @@ class MarketplaceListingController extends Controller
         $validated = $this->validateListing($request, $viewer);
 
         $listing = DB::transaction(function () use ($viewer, $validated, $request): MarketplaceListing {
-            $listing = MarketplaceListing::query()->create([
-                ...$validated,
-                'user_id' => $viewer->getKey(),
-            ]);
+            $listing = MarketplaceListing::createForSeller($viewer, $validated);
 
             $this->syncMediaFromRequest($listing, $request);
 
@@ -173,30 +139,15 @@ class MarketplaceListingController extends Controller
     public function myListings(Request $request): View
     {
         $viewer = $request->user();
-
-        $query = MarketplaceListing::query()
-            ->where('user_id', $viewer->getKey())
-            ->with(['pet:id,name'])
-            ->search(trim((string) $request->input('q')));
-
         $status = $request->string('status')->trim()->lower()->value();
-
-        if ($status !== '' && $status !== 'all') {
-            $query->where('status', $status);
-        }
-
         $sort = $request->string('sort')->trim()->value() ?: 'newest';
 
-        match ($sort) {
-            'oldest' => $query->oldest('created_at'),
-            'price_low' => $query->orderBy('price'),
-            'price_high' => $query->orderByDesc('price'),
-            'most_viewed' => $query->orderByDesc('views_count'),
-            default => $query->latest('created_at'),
-        };
-
         return view('marketplace.my-listings', [
-            'listings' => $query->paginate(12)->withQueryString(),
+            'listings' => MarketplaceListing::paginateForSellerDashboard($viewer, [
+                'q' => trim((string) $request->input('q')),
+                'status' => $status,
+                'sort' => $sort,
+            ]),
             'status' => $status,
             'sort' => $sort,
         ]);

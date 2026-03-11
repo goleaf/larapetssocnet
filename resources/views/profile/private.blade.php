@@ -11,7 +11,7 @@
 
  <div class="px-6 pb-6">
  <div class="-mt-12 flex items-end gap-4">
- <x-ui.avatar :src="$user->avatar_url" :name="$user->name" size="2xl" class="h-24 w-24 border-4 border-warm-white bg-warm-white shadow-xl"/>
+ <x-ui.avatar :src="$user->avatar_url":name="$user->name"size="2xl"class="h-24 w-24 border-4 border-warm-white bg-warm-white shadow-xl"/>
 
  <div class="pb-1">
  <h1 class="text-2xl font-bold font-display text-bark">{{ $user->name }}</h1>
@@ -22,17 +22,17 @@
  </section>
 
  <x-ui.card>
- <x-ui.empty-state icon="🔒" title="This account is private" :description="'This profile is private. Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
+ <x-ui.empty-state icon="🔒"title="This account is private":description="'This profile is private. Follow @'.$user->username.'to see posts, photos, and pet profiles.'">
  @auth
  @php
  $followStatus = auth()->user()->getFollowStatus($user);
  @endphp
  <x-slot name="action">
- <x-follow-button :user="$user" :follow-status="$followStatus" size="lg"/>
+ <x-follow-button :user="$user":follow-status="$followStatus"size="lg"/>
  </x-slot>
  @else
  <x-slot name="action">
- <x-ui.button :href="route('login')" variant="primary" size="sm">Log In to Follow</x-ui.button>
+ <x-ui.button :href="route('login')"variant="primary"size="sm">Log In to Follow</x-ui.button>
  </x-slot>
  @endauth
  </x-ui.empty-state>

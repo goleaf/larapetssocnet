@@ -60,7 +60,10 @@ class ReactionService
 
         if ($user->id !== $post->user_id) {
             if ($post->author->notificationEnabled('post_likes')) {
-                $post->author->notify(new NewReaction($user, $post, $type));
+                $notificationPost = $post->withoutRelation('author');
+                $notificationUser = $this->relationLightReactor($user);
+
+                $post->author->notify(new NewReaction($notificationUser, $notificationPost, $type));
             }
         }
 
@@ -92,6 +95,17 @@ class ReactionService
             'reactable_id' => $post->id,
             'reactable_type' => Post::class,
             'type' => $type,
+        ]);
+    }
+
+    private function relationLightReactor(User $user): User
+    {
+        return $user->withoutRelation([
+            'media',
+            'followers',
+            'following',
+            'acceptedFollowers',
+            'acceptedFollowing',
         ]);
     }
 }

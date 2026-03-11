@@ -18,12 +18,12 @@
 
  <div class="py-6">
  <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
- <form method="GET" action="{{ route('marketplace.my-listings') }}"
+ <form method="GET"action="{{ route('marketplace.my-listings') }}"
  class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-4">
  <div class="md:col-span-2">
  <label for="q"
  class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Search</label>
- <input id="q" name="q" type="text" value="{{ request('q') }}"
+ <input id="q"name="q"type="text"value="{{ request('q') }}"
  placeholder="Title, description, location"
  class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
  </div>
@@ -31,7 +31,7 @@
  <div>
  <label for="status"
  class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Status</label>
- <select id="status" name="status"
+ <select id="status"name="status"
  class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
  <option value="all"@selected($status ==='all')>All</option>
  <option value="{{ \App\Models\MarketplaceListing::STATUS_DRAFT }}"
@@ -48,7 +48,7 @@
  <div>
  <label for="sort"
  class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
- <select id="sort" name="sort"
+ <select id="sort"name="sort"
  class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
  <option value="newest"@selected($sort ==='newest')>Newest</option>
  <option value="oldest"@selected($sort ==='oldest')>Oldest</option>
@@ -75,7 +75,7 @@
  @foreach ($listings as $listing)
  <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
  @if ($listing->cover_photo_url)
- <img src="{{ $listing->cover_photo_url }}" alt="{{ $listing->title }}"
+ <img src="{{ $listing->cover_photo_url }}"alt="{{ $listing->title }}"
  class="h-44 w-full object-cover">
  @else
  <div class="flex h-44 items-center justify-center text-4xl text-gray-400">🛍️</div>
@@ -101,7 +101,7 @@
  class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Edit</a>
  </div>
 
- <form method="POST" action="{{ route('marketplace.destroy', $listing) }}"
+ <form method="POST"action="{{ route('marketplace.destroy', $listing) }}"
  onsubmit="return confirm('Delete this listing?')">
  @csrf
  @method('DELETE')

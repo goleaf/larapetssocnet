@@ -123,6 +123,6 @@
  </div>
 
  @if ($hasError || $resolvedHint)
- <x-ui.hint :id="$hintId" :error="$resolvedError" :message="$resolvedHint"/>
+ <x-ui.hint :id="$hintId":error="$resolvedError":message="$resolvedHint"/>
  @endif
 </fieldset>

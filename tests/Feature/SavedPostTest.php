@@ -33,3 +33,40 @@ it('saves and unsaves a post by toggling saved state', function (): void {
         'post_id' => $post->id,
     ]);
 });
+
+it('lists only saved posts visible to the viewer on saved index', function (): void {
+    $viewer = User::factory()->create([
+        'is_private' => false,
+        'is_banned' => false,
+    ]);
+
+    $publicAuthor = User::factory()->create([
+        'is_private' => false,
+        'is_banned' => false,
+    ]);
+
+    $privateAuthor = User::factory()->create([
+        'is_private' => true,
+        'is_banned' => false,
+    ]);
+
+    $visiblePost = Post::factory()->for($publicAuthor)->create([
+        'body' => 'saved-visible-post',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+
+    $hiddenPost = Post::factory()->for($privateAuthor)->create([
+        'body' => 'saved-hidden-post',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+
+    $viewer->savedPosts()->attach([$visiblePost->id, $hiddenPost->id]);
+
+    $this->actingAs($viewer)
+        ->get(route('saved.index'))
+        ->assertOk()
+        ->assertSee('saved-visible-post')
+        ->assertDontSee('saved-hidden-post');
+});

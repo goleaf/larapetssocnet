@@ -57,7 +57,7 @@ class FollowService
                 $this->counterCacheService->safeIncrement($actor, 'following_count');
                 $this->counterCacheService->safeIncrement($target, 'followers_count');
                 if ($target->notificationEnabled('new_follower')) {
-                    $target->notify(new NewFollower($actor));
+                    $target->notify(new NewFollower($this->relationLightUser($actor)));
                 }
 
                 return 'following';
@@ -65,7 +65,7 @@ class FollowService
 
             $this->counterCacheService->safeIncrement($target, 'follow_requests_count');
             if ($target->notificationEnabled('follow_requests')) {
-                $target->notify(new NewFollowRequest($actor));
+                $target->notify(new NewFollowRequest($this->relationLightUser($actor)));
             }
 
             return 'pending';
@@ -117,7 +117,7 @@ class FollowService
             $this->counterCacheService->safeDecrement($owner, 'follow_requests_count');
 
             if ($requester->notificationEnabled('follow_requests')) {
-                $requester->notify(new FollowRequestApproved($owner));
+                $requester->notify(new FollowRequestApproved($this->relationLightUser($owner)));
             }
         });
     }
@@ -161,7 +161,7 @@ class FollowService
             User::query()->whereIn('id', $requesterIds)->get()->each(function (User $requester) use ($owner): void {
                 $requester->increment('following_count');
                 if ($requester->notificationEnabled('follow_requests')) {
-                    $requester->notify(new FollowRequestApproved($owner));
+                    $requester->notify(new FollowRequestApproved($this->relationLightUser($owner)));
                 }
             });
 
@@ -183,5 +183,18 @@ class FollowService
                 $this->counterCacheService->safeDecrement($owner, 'followers_count');
             }
         });
+    }
+
+    private function relationLightUser(User $user): User
+    {
+        return $user->withoutRelation([
+            'followers',
+            'following',
+            'followings',
+            'acceptedFollowers',
+            'acceptedFollowing',
+            'acceptedFollowings',
+            'sentPendingRequests',
+        ]);
     }
 }

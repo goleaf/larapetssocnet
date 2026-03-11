@@ -46,7 +46,7 @@
  >
  </div>
 
- <button type="submit" class="btn-base btn-primary whitespace-nowrap px-3.5 py-2 text-sm">
+ <button type="submit"class="btn-base btn-primary whitespace-nowrap px-3.5 py-2 text-sm">
  {{ $buttonLabel }}
  </button>
 </form>

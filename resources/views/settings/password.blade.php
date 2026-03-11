@@ -6,33 +6,33 @@
  </p>
  </div>
 
- <form action="{{ route('settings.password.update') }}" method="POST" class="space-y-6">
+ <form action="{{ route('settings.password.update') }}"method="POST"class="space-y-6">
  @csrf
  @method('PUT')
 
  <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-6 sm:gap-x-6">
  <!-- Current Password -->
  <div class="sm:col-span-4">
- <x-input-label for="current_password" value="Current Password"/>
- <x-text-input id="current_password" name="current_password" type="password"
- class="mt-1 block w-full" autocomplete="current-password" required />
- <x-input-error class="mt-2" :messages="$errors->get(' current_password')"/>
+ <x-input-label for="current_password"value="Current Password"/>
+ <x-text-input id="current_password"name="current_password"type="password"
+ class="mt-1 block w-full"autocomplete="current-password"required />
+ <x-input-error class="mt-2":messages="$errors->get('current_password')"/>
  </div>
 
  <!-- New Password -->
  <div class="sm:col-span-4">
- <x-input-label for="password" value="New Password"/>
- <x-text-input id="password" name="password" type="password" class="mt-1 block w-full"
- autocomplete="new-password" required />
- <x-input-error class="mt-2" :messages="$errors->get(' password')"/>
+ <x-input-label for="password"value="New Password"/>
+ <x-text-input id="password"name="password"type="password"class="mt-1 block w-full"
+ autocomplete="new-password"required />
+ <x-input-error class="mt-2":messages="$errors->get('password')"/>
  </div>
 
  <!-- Confirm Password -->
  <div class="sm:col-span-4">
- <x-input-label for="password_confirmation" value="Confirm New Password"/>
- <x-text-input id="password_confirmation" name="password_confirmation" type="password"
- class="mt-1 block w-full" autocomplete="new-password" required />
- <x-input-error class="mt-2" :messages="$errors->get(' password_confirmation')"/>
+ <x-input-label for="password_confirmation"value="Confirm New Password"/>
+ <x-text-input id="password_confirmation"name="password_confirmation"type="password"
+ class="mt-1 block w-full"autocomplete="new-password"required />
+ <x-input-error class="mt-2":messages="$errors->get('password_confirmation')"/>
  </div>
  </div>
 

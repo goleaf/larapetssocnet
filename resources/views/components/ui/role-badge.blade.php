@@ -11,6 +11,6 @@
  };
 @endphp
 
-<x-ui.badge :tone="$config['tone']" {{ $attributes }}>
+<x-ui.badge :tone="$config['tone']"{{ $attributes }}>
  {{ $config['label'] }}
 </x-ui.badge>
