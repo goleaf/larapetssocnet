@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMessageRequest;
 use App\Models\MarketplaceListing;
 use App\Models\Message;
 use App\Models\User;
@@ -76,11 +77,9 @@ class MessageController extends Controller
         ]);
     }
 
-    public function store(Request $request, User $peer): JsonResponse|RedirectResponse
+    public function store(StoreMessageRequest $request, User $peer): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
-        ]);
+        $validated = $request->validated();
 
         $viewer = $request->user();
         $listing = $this->resolveListingContext($request, $peer);

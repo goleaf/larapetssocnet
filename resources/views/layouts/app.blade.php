@@ -174,7 +174,11 @@
  <meta charset="utf-8">
  <meta name="viewport" content="width=device-width, initial-scale=1">
  <meta name="csrf-token" content="{{ csrf_token() }}">
+ @hasStack('meta')
  @stack('meta')
+ @else
+ <meta name="description" content="PetSocial is a community for sharing pet moments, care tips, and adoption stories.">
+ @endif
 
  <title>{{ $documentTitle }}</title>
 
