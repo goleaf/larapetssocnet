@@ -1,0 +1,7 @@
+interface:
+  display_name: "Post Card Component"
+  short_description: "Help with Post Card Component tasks"
+  default_prompt: "Use $post-card-component to plan and implement UI changes with this skill's Blade, Alpine, and Tailwind patterns."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

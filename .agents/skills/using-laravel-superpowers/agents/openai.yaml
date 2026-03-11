@@ -1,0 +1,7 @@
+interface:
+  display_name: "Using Laravel Superpowers"
+  short_description: "Help with Using Laravel Superpowers tasks"
+  default_prompt: "Use $using-laravel-superpowers to apply framework and platform integration patterns for robust Laravel delivery."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Alpinejs Patterns"
+  short_description: "Help with Alpinejs Patterns tasks"
+  default_prompt: "Use $alpinejs-patterns to plan and implement UI changes with this skill's Blade, Alpine, and Tailwind patterns."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2563EB"

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Filesystem Uploads and Urls"
+  short_description: "Help with Filesystem Uploads and Urls tasks"
+  default_prompt: "Use $filesystem-uploads-and-urls to apply framework and platform integration patterns for robust Laravel delivery."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4B5563"

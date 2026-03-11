@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Upload"
+  short_description: "Help with Video Upload tasks"
+  default_prompt: "Use $video-upload to implement domain behavior and feature rules with consistent user-facing outcomes."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#10B981"

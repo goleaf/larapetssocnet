@@ -1,0 +1,7 @@
+interface:
+  display_name: "Security"
+  short_description: "Help with Security tasks and workflows"
+  default_prompt: "Use $security to enforce authorization, visibility, sanitization, and secure-by-default behavior."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#B91C1C"
