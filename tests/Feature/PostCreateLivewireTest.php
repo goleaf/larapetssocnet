@@ -6,35 +6,36 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Livewire;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
-it('renders the post create page with livewire', function (): void {
+it('renders the post create page', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('posts.create'))
         ->assertOk()
-        ->assertSeeLivewire('pages::post.create');
+        ->assertSee('Create Post')
+        ->assertSee('Visibility');
 });
 
-it('creates a post from the livewire page component', function (): void {
+it('creates a post from the create form', function (): void {
     Storage::fake('public');
     $user = User::factory()->create();
     $pet = Pet::factory()->for($user)->create();
 
-    Livewire::actingAs($user)
-        ->test('pages::post.create')
-        ->set('body', 'A Livewire post about #pets')
-        ->set('visibility', Post::VISIBILITY_PUBLIC)
-        ->set('pet_id', $pet->id)
-        ->set('tagged_pets', [$pet->id])
-        ->set('location', 'Dog park')
-        ->set('media', [UploadedFile::fake()->image('photo.jpg', 800, 600)])
-        ->call('save')
-        ->assertHasNoErrors()
-        ->assertRedirect();
+    $response = $this->actingAs($user)
+        ->from(route('posts.create'))
+        ->post(route('posts.store'), [
+            'body' => 'A form post about #pets',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+            'pet_id' => $pet->id,
+            'tagged_pets' => [$pet->id],
+            'location' => 'Dog park',
+            'media' => [UploadedFile::fake()->image('photo.jpg', 800, 600)],
+        ]);
+
+    $response->assertRedirect(route('posts.create'));
 
     $post = Post::query()->latest('id')->firstOrFail();
 
@@ -44,18 +45,23 @@ it('creates a post from the livewire page component', function (): void {
         ->and($post->getMedia('photos'))->toHaveCount(1);
 });
 
-it('rejects mixing photos and video in the livewire page component', function (): void {
+it('rejects mixing photos and video in the create form', function (): void {
     Storage::fake('public');
     $user = User::factory()->create();
 
-    Livewire::actingAs($user)
-        ->test('pages::post.create')
-        ->set('media', [
-            UploadedFile::fake()->image('photo.jpg', 800, 600),
-            UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4'),
-        ])
-        ->call('save')
-        ->assertHasErrors(['media']);
+    $response = $this->actingAs($user)
+        ->from(route('posts.create'))
+        ->post(route('posts.store'), [
+            'body' => 'Invalid media payload',
+            'media' => [
+                UploadedFile::fake()->image('photo.jpg', 800, 600),
+                UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4'),
+            ],
+        ]);
+
+    $response
+        ->assertRedirect(route('posts.create'))
+        ->assertSessionHasErrors(['media']);
 
     expect(Post::query()->count())->toBe(0);
 });

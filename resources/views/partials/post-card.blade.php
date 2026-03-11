@@ -237,9 +237,7 @@
  <div class="flex items-center gap-2">
  <button type="button" @click="toggleLike()" :disabled="likeBusy" data-testid="like-toggle"
  class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
- :class="liked
- ?'border-rose-200 bg-rose-50 text-rose-600'
- :'border-[color:var(--ui-border)] bg-[color:var(--ui-surface)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]'">
+ :class="liked ?'border-rose-200 bg-rose-50 text-rose-600' :'border-[color:var(--ui-border)] bg-[color:var(--ui-surface)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]'">
  <span x-text="liked ?'♥':'♡'"></span>
  <span x-text="liked ?'Liked':'Like'"></span>
  <span class="opacity-80" x-text="likes"></span>

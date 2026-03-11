@@ -171,12 +171,7 @@
  <button
  type="button"
  class="inline-flex w-full items-center justify-center rounded-md px-5 py-2.5 text-sm font-medium text-white shadow-button transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:w-auto"
- :class="{
-'bg-rose hover:bg-red-700': variant ==='danger',
-'bg-amber hover:bg-amber-600': variant ==='warning',
-'bg-leaf hover:bg-leaf/90': variant ==='success',
-'bg-paw hover:bg-paw-dark': !['danger','warning','success'].includes(variant),
- }"
+ :class="{ 'bg-rose hover:bg-red-700': variant ==='danger', 'bg-amber hover:bg-amber-600': variant ==='warning', 'bg-leaf hover:bg-leaf/90': variant ==='success', 'bg-paw hover:bg-paw-dark': !['danger','warning','success'].includes(variant), }"
  @click="confirm()"
  >
  <span x-text="confirmLabel"></span>

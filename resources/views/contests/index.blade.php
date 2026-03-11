@@ -30,13 +30,7 @@
  @endif
  </div>
  </div>
- <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
- {{ match ($contest->status) {
-'active'=>'bg-green-100 text-green-800',
-'voting'=>'bg-blue-100 text-blue-800',
-'ended'=>'bg-gray-100 text-gray-600',
- default =>'bg-yellow-100 text-yellow-700',
- } }}">
+ <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ match ($contest->status) { 'active'=>'bg-green-100 text-green-800', 'voting'=>'bg-blue-100 text-blue-800', 'ended'=>'bg-gray-100 text-gray-600', default =>'bg-yellow-100 text-yellow-700', } }}">
  {{ ucfirst($contest->status) }}
  </span>
  </div>

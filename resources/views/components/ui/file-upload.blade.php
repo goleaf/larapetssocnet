@@ -159,12 +159,7 @@
 
  <div
  class="relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-all duration-150"
- :class="{
-'border-paw bg-paw-light/60': dragging && !disabled,
-'border-rose bg-rose-light/20': errorMessage,
-'border-whisker bg-warm-white hover:bg-cream': !dragging && !errorMessage && !disabled,
-'border-whisker bg-cream cursor-not-allowed opacity-70': disabled,
- }"
+ :class="{ 'border-paw bg-paw-light/60': dragging && !disabled, 'border-rose bg-rose-light/20': errorMessage, 'border-whisker bg-warm-white hover:bg-cream': !dragging && !errorMessage && !disabled, 'border-whisker bg-cream cursor-not-allowed opacity-70': disabled, }"
  role="button"
  tabindex="0"
  aria-controls="{{ $fieldId }}"

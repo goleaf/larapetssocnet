@@ -75,9 +75,7 @@
  @keydown.arrow-up.prevent="onArrow('{{ $value }}', -1)"
  :tabindex="selected ==='{{ $value }}'? 0 : -1"
  :aria-checked="selected ==='{{ $value }}'"
- :class="selected ==='{{ $value }}'
- ?'{{ $option['ring'] }} ring-2'
- :'bg-white ring-1 ring-gray-200 hover:ring-gray-300'"
+ :class="selected ==='{{ $value }}' ?'{{ $option['ring'] }} ring-2' :'bg-white ring-1 ring-gray-200 hover:ring-gray-300'"
  class="flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500"
  >
  <span class="text-xl" aria-hidden="true">{{ $option['icon'] }}</span>
@@ -86,9 +84,7 @@
  <span class="block text-xs text-gray-500">{{ $option['sub'] }}</span>
  </span>
  <span
- :class="selected ==='{{ $value }}'
- ?'border-emerald-500 bg-emerald-500'
- :'border-gray-300 bg-white'"
+ :class="selected ==='{{ $value }}' ?'border-emerald-500 bg-emerald-500' :'border-gray-300 bg-white'"
  class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
  >
  <span x-show="selected ==='{{ $value }}'" class="h-1.5 w-1.5 rounded-full bg-white"></span>

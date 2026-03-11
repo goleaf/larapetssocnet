@@ -71,7 +71,9 @@ Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])
     ->whereNumber('event')
     ->name('events.ics');
 Route::get('/hashtags/{hashtag:slug}', [HashtagController::class, 'show'])->name('hashtags.show');
-Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
+Route::get('/posts/{post}', [PostController::class, 'show'])
+    ->whereNumber('post')
+    ->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
 Route::get('/pets/{slug}', [PetController::class, 'show'])
     ->where('slug', '^(?!create$)[^/]+')
@@ -95,7 +97,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         ->whereUuid('notification')
         ->name('notifications.read');
 
-    Route::livewire('/posts/create', 'pages::post.create')->name('posts.create');
+    Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');

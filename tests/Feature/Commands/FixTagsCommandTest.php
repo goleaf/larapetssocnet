@@ -69,3 +69,39 @@ it('preserves blade attribute spacing when removing dark utilities', function ()
     expect(File::get($file))
         ->toBe('<x-ui.button class="px-2" :href="route(\'login\')" variant="primary" size="sm">Log In</x-ui.button>');
 });
+
+it('inserts space before a blade attribute bag after a quoted attribute value', function (): void {
+    $file = $this->workspace.'/attribute-bag.blade.php';
+
+    File::put($file, '<x-ui.input class="w-full"{{ $attributes }} />');
+
+    $this->artisan('views:fix-tags', [
+        '--path' => [$this->workspace],
+    ])->assertExitCode(0);
+
+    expect(File::get($file))->toBe('<x-ui.input class="w-full" {{ $attributes }} />');
+});
+
+it('inserts space after single-quoted values before boolean attributes', function (): void {
+    $file = $this->workspace.'/single-quotes.blade.php';
+
+    File::put($file, "<x-ui.button type='button'disabled>Save</x-ui.button>");
+
+    $this->artisan('views:fix-tags', [
+        '--path' => [$this->workspace],
+    ])->assertExitCode(0);
+
+    expect(File::get($file))->toBe("<x-ui.button type='button' disabled>Save</x-ui.button>");
+});
+
+it('inserts space when an attribute name follows a bracket-terminated expression', function (): void {
+    $file = $this->workspace.'/bracket-expression.blade.php';
+
+    File::put($file, '<x-ui.tabs :tabs="$tabs[$active]"icon="paw" />');
+
+    $this->artisan('views:fix-tags', [
+        '--path' => [$this->workspace],
+    ])->assertExitCode(0);
+
+    expect(File::get($file))->toBe('<x-ui.tabs :tabs="$tabs[$active]" icon="paw" />');
+});

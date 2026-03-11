@@ -8,12 +8,7 @@
  <template x-for="item in (($store.toast && $store.toast.items) ? $store.toast.items : [])" :key="item.id">
  <div
  class="pointer-events-auto flex w-full overflow-hidden rounded-lg border bg-warm-white shadow-card-hover"
- :class="{
-'border-leaf-light': item.type ==='success',
-'border-rose-light': item.type ==='error',
-'border-amber-light': item.type ==='warning',
-'border-sky-light': item.type ==='info',
- }"
+ :class="{ 'border-leaf-light': item.type ==='success', 'border-rose-light': item.type ==='error', 'border-amber-light': item.type ==='warning', 'border-sky-light': item.type ==='info', }"
  x-transition:enter="transition transform ease-out duration-300"
  x-transition:enter-start="translate-x-full opacity-0"
  x-transition:enter-end="translate-x-0 opacity-100"
@@ -23,12 +18,7 @@
  >
  <div
  class="w-1.5 shrink-0"
- :class="{
-'bg-leaf': item.type ==='success',
-'bg-rose': item.type ==='error',
-'bg-amber': item.type ==='warning',
-'bg-sky': item.type ==='info',
- }"
+ :class="{ 'bg-leaf': item.type ==='success', 'bg-rose': item.type ==='error', 'bg-amber': item.type ==='warning', 'bg-sky': item.type ==='info', }"
  ></div>
 
  <div class="flex w-full items-start gap-3 px-3 py-3">

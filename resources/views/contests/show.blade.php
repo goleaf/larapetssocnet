@@ -9,13 +9,7 @@
  <h1 class="text-2xl font-bold text-gray-900">{{ $contest->title }}</h1>
  <p class="text-sm text-gray-500 mt-1">by {{ $contest->organizer->name ??'Unknown'}}</p>
  </div>
- <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium
- {{ match ($contest->status) {
-'active'=>'bg-green-100 text-green-800',
-'voting'=>'bg-blue-100 text-blue-800',
-'ended'=>'bg-gray-100 text-gray-600',
- default =>'bg-yellow-100 text-yellow-700',
- } }}">
+ <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {{ match ($contest->status) { 'active'=>'bg-green-100 text-green-800', 'voting'=>'bg-blue-100 text-blue-800', 'ended'=>'bg-gray-100 text-gray-600', default =>'bg-yellow-100 text-yellow-700', } }}">
  {{ ucfirst($contest->status) }}
  </span>
  </div>
