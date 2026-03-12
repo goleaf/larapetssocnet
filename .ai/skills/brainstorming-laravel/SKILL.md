@@ -216,7 +216,7 @@ Claude: Excellent. Let me present the design...
 - Multi-tenancy approach
 - Payment integration (Stripe, Paddle, Cashier)
 - Search implementation (Scout, Elasticsearch)
-- Admin panel (Nova, Filament, custom)
+- Admin panel (Nova, custom)
 
 ## Remember
 

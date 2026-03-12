@@ -20,7 +20,7 @@ opcache.preload=/app/scripts/preload.php
 ---
 
 ## 💾 2. OPcache Preloading
-Preloading allows you to compile your entire framework (Laravel/Filament) into memory once when the server starts.
+Preloading allows you to compile your entire framework (Laravel) into memory once when the server starts.
 
 **Benefit:** Zero file-system lookups during requests.
 **Requirement:** You must restart the PHP-FPM service to apply code changes.
