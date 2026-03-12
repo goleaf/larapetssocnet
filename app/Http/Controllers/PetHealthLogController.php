@@ -59,7 +59,7 @@ class PetHealthLogController extends Controller
         PetHealthLog::createForPet($pet, $request->user(), $payload);
 
         return redirect()
-            ->route('pets.health.index', $pet->slug ?? $pet->getKey())
+            ->route('pets.health.index', $pet)
             ->with('status', 'Health log saved.');
     }
 
@@ -94,7 +94,7 @@ class PetHealthLogController extends Controller
         $log->update($payload);
 
         return redirect()
-            ->route('pets.health.index', $pet->slug ?? $pet->getKey())
+            ->route('pets.health.index', $pet)
             ->with('status', 'Health log updated.');
     }
 
@@ -106,7 +106,7 @@ class PetHealthLogController extends Controller
         $log->delete();
 
         return redirect()
-            ->route('pets.health.index', $pet->slug ?? $pet->getKey())
+            ->route('pets.health.index', $pet)
             ->with('status', 'Health log deleted.');
     }
 

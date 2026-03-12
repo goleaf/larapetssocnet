@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\ProfileVisibility;
 use App\Services\BlockService;
 use App\Services\FollowService;
 use App\Services\FollowSuggestionService;
 use App\Services\PetFollowService;
+use App\Services\ProfileVisibilityService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use App\Traits\HasCounterCache;

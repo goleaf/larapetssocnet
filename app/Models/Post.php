@@ -754,7 +754,9 @@ class Post extends Model implements HasMedia
             ->with([
                 'user',
                 'author',
-                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+                'pet' => fn (Builder $petQuery): Builder => $petQuery
+                    ->visibleTo($viewer)
+                    ->with('media'),
                 'media',
                 'tags',
             ])

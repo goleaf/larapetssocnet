@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class PetFollowService
 {
-    public function __construct() {}
-
     public function follow(User $user, Pet $pet): bool
     {
         if ($user->id === $pet->user_id) {

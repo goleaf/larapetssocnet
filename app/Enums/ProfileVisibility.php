@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum ProfileVisibility
+enum ProfileVisibility: string
 {
     case Public = 'public';
 

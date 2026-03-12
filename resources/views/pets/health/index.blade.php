@@ -142,10 +142,10 @@
  {{ \Illuminate\Support\Str::limit((string) $log->notes, 70) ?:'—'}}</td>
  <td class="px-3 py-2">
  <div class="flex items-center gap-2">
- <a href="{{ route('pets.health.edit', ['slug'=> $petSlug,'healthLog'=> $log->getKey()]) }}"
+ <a href="{{ route('pets.health.edit', ['pet'=> $petSlug,'healthLog'=> $log->getKey()]) }}"
  class="text-indigo-600 hover:text-indigo-800">Edit</a>
  <form method="POST"
- action="{{ route('pets.health.destroy', ['slug'=> $petSlug,'healthLog'=> $log->getKey()]) }}"
+ action="{{ route('pets.health.destroy', ['pet'=> $petSlug,'healthLog'=> $log->getKey()]) }}"
  onsubmit="return confirm('Delete this log entry?');">
  @csrf
  @method('DELETE')

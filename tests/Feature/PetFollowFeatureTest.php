@@ -20,7 +20,7 @@ class PetFollowFeatureTest extends TestCase
         ]);
 
         $this->actingAs($follower)
-            ->postJson(route('pets.follow', $pet->getKey()))
+            ->postJson(route('pets.follow', $pet))
             ->assertOk()
             ->assertJsonPath('followed', true)
             ->assertJsonPath('followers_count', 1);
@@ -47,7 +47,7 @@ class PetFollowFeatureTest extends TestCase
         $follower->followPet($pet);
 
         $this->actingAs($follower)
-            ->deleteJson(route('pets.unfollow', $pet->getKey()))
+            ->deleteJson(route('pets.unfollow', $pet))
             ->assertOk()
             ->assertJsonPath('followed', false)
             ->assertJsonPath('followers_count', 0);
@@ -67,7 +67,7 @@ class PetFollowFeatureTest extends TestCase
         $pet = Pet::factory()->for($owner)->create();
 
         $this->actingAs($owner)
-            ->postJson(route('pets.follow', $pet->getKey()))
+            ->postJson(route('pets.follow', $pet))
             ->assertForbidden();
     }
 
@@ -79,8 +79,8 @@ class PetFollowFeatureTest extends TestCase
             'followers_count' => 0,
         ]);
 
-        $this->actingAs($follower)->postJson(route('pets.follow', $pet->getKey()))->assertOk();
-        $this->actingAs($follower)->postJson(route('pets.follow', $pet->getKey()))->assertOk();
+        $this->actingAs($follower)->postJson(route('pets.follow', $pet))->assertOk();
+        $this->actingAs($follower)->postJson(route('pets.follow', $pet))->assertOk();
 
         $this->assertSame(
             1,

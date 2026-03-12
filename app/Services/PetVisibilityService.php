@@ -30,7 +30,9 @@ class PetVisibilityService
             return true;
         }
 
-        if (! (bool) $pet->is_public) {
+        $rawIsPublic = $pet->getRawOriginal('is_public');
+
+        if (in_array($rawIsPublic, [0, '0', false], true)) {
             return false;
         }
 

@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\PetHealthLogController;
 use App\Models\Pet;
 use App\Models\PetHealthLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
@@ -20,7 +18,7 @@ class PetHealthLogFeatureTest extends TestCase
         $owner = User::factory()->create();
         $pet = Pet::factory()->for($owner)->create();
 
-        $this->actingAs($owner)->post(route('pets.health.store', $pet->id), [
+        $this->actingAs($owner)->post(route('pets.health.store', $pet), [
             'type' => 'weight',
             'value' => 12.4,
             'title' => 'Weekly weight',
@@ -28,14 +26,14 @@ class PetHealthLogFeatureTest extends TestCase
             'logged_at' => now()->toDateString(),
         ])->assertRedirect();
 
-        $this->actingAs($owner)->post(route('pets.health.store', $pet->id), [
+        $this->actingAs($owner)->post(route('pets.health.store', $pet), [
             'type' => 'vet_visit',
             'title' => 'Annual checkup',
             'notes' => 'All good',
             'logged_at' => now()->subDay()->toDateString(),
         ])->assertRedirect();
 
-        $this->actingAs($owner)->post(route('pets.health.store', $pet->id), [
+        $this->actingAs($owner)->post(route('pets.health.store', $pet), [
             'type' => 'vaccination',
             'title' => 'Rabies shot',
             'notes' => 'Next due in 12 months',
@@ -43,7 +41,7 @@ class PetHealthLogFeatureTest extends TestCase
             'next_due_at' => now()->addMonths(12)->toDateString(),
         ])->assertRedirect();
 
-        $this->actingAs($owner)->post(route('pets.health.store', $pet->id), [
+        $this->actingAs($owner)->post(route('pets.health.store', $pet), [
             'type' => 'medication',
             'title' => 'Antibiotic course',
             'notes' => 'Twice daily',
@@ -64,11 +62,11 @@ class PetHealthLogFeatureTest extends TestCase
         $pet = Pet::factory()->for($owner)->create();
 
         $this->actingAs($other)
-            ->get(route('pets.health.index', $pet->id))
+            ->get(route('pets.health.index', $pet))
             ->assertForbidden();
 
         $this->actingAs($other)
-            ->post(route('pets.health.store', $pet->id), [
+            ->post(route('pets.health.store', $pet), [
                 'type' => 'weight',
                 'value' => 10,
                 'logged_at' => now()->toDateString(),
@@ -90,7 +88,7 @@ class PetHealthLogFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->patch(route('pets.health.update', ['pet' => $pet->id, 'healthLog' => $log->id]), [
+            ->patch(route('pets.health.update', ['pet' => $pet, 'healthLog' => $log->id]), [
                 'type' => 'vet_visit',
                 'title' => 'Updated title',
                 'notes' => 'Updated notes',
@@ -105,7 +103,7 @@ class PetHealthLogFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->delete(route('pets.health.destroy', ['pet' => $pet->id, 'healthLog' => $log->id]))
+            ->delete(route('pets.health.destroy', ['pet' => $pet, 'healthLog' => $log->id]))
             ->assertRedirect();
 
         $this->assertSoftDeleted('pet_health_logs', [
@@ -120,7 +118,7 @@ class PetHealthLogFeatureTest extends TestCase
         $loggedAt = now()->toDateString();
 
         $this->actingAs($owner)
-            ->post(route('pets.health.store', $pet->id), [
+            ->post(route('pets.health.store', $pet), [
                 'type' => 'medication',
                 'title' => 'Deworming',
                 'notes' => 'Monthly schedule',
@@ -150,7 +148,7 @@ class PetHealthLogFeatureTest extends TestCase
         $loggedAt = now()->toDateString();
 
         $this->actingAs($owner)
-            ->post(route('pets.health.store', $pet->id), [
+            ->post(route('pets.health.store', $pet), [
                 'type' => 'medication',
                 'title' => 'Heartworm prevention',
                 'notes' => 'ISO interval schedule',
@@ -178,7 +176,7 @@ class PetHealthLogFeatureTest extends TestCase
         $pet = Pet::factory()->for($owner)->create();
 
         $this->actingAs($owner)
-            ->post(route('pets.health.store', $pet->id), [
+            ->post(route('pets.health.store', $pet), [
                 'type' => 'vaccination',
                 'title' => 'Parvo shot',
                 'logged_at' => now()->toDateString(),
@@ -214,14 +212,14 @@ class PetHealthLogFeatureTest extends TestCase
             'next_due_at' => now()->addDays(2),
         ]);
 
-        $request = Request::create(route('pets.health.index', ['pet' => $pet->id]), 'GET');
-        $request->setUserResolver(fn () => $owner);
+        $response = $this->actingAs($owner)
+            ->get(route('pets.health.index', $pet))
+            ->assertOk();
 
-        /** @var \Illuminate\View\View $view */
-        $view = app(PetHealthLogController::class)->index($request, (string) $pet->id);
-        $data = $view->getData();
-
-        $titles = collect($data['upcomingLogs'])->pluck('title')->values()->all();
+        $titles = collect($response->viewData('upcomingLogs'))
+            ->pluck('title')
+            ->values()
+            ->all();
         $this->assertSame(['Soon reminder', 'Later reminder'], $titles);
     }
 }

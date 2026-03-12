@@ -37,7 +37,7 @@ class PetFeatureTest extends TestCase
             $this->assertStringStartsWith('mochi', (string) $pet->slug);
         }
 
-        $this->get(route('pets.show', $pet->getKey()))
+        $this->get(route('pets.show', $pet))
             ->assertOk()
             ->assertSee('Mochi')
             ->assertSee('cat')
@@ -57,7 +57,7 @@ class PetFeatureTest extends TestCase
             'is_public' => true,
         ]);
 
-        $this->get(route('pets.show', $pet->getKey()))
+        $this->get(route('pets.show', $pet))
             ->assertOk()
             ->assertSee('Age:')
             ->assertSee('years');
@@ -78,7 +78,7 @@ class PetFeatureTest extends TestCase
         $originalSlug = $pet->slug;
 
         $this->actingAs($owner)
-            ->patch(route('pets.update', $pet->getKey()), [
+            ->patch(route('pets.update', $pet), [
                 'name' => 'Milo Updated',
                 'species' => 'dog',
                 'breed' => 'Labrador',
@@ -87,7 +87,7 @@ class PetFeatureTest extends TestCase
                 'bio' => 'After update',
                 'is_public' => '1',
             ])
-            ->assertRedirect(route('pets.show', $pet->slug ?? $pet->getKey()));
+            ->assertRedirect(route('pets.show', $pet));
 
         $this->assertDatabaseHas('pets', [
             'id' => $pet->id,
@@ -109,7 +109,7 @@ class PetFeatureTest extends TestCase
         $pet = Pet::factory()->for($owner)->create();
 
         $this->actingAs($intruder)
-            ->patch(route('pets.update', $pet->getKey()), [
+            ->patch(route('pets.update', $pet), [
                 'name' => 'Hacked Name',
                 'species' => $pet->species,
             ])
@@ -140,7 +140,7 @@ class PetFeatureTest extends TestCase
 
         expect($pet->getMedia('gallery'))->toHaveCount(2);
 
-        $this->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'gallery']))
+        $this->get(route('pets.show', ['pet' => $pet, 'tab' => 'gallery']))
             ->assertOk()
             ->assertSee('<img', false)
             ->assertDontSee('No gallery items yet.');
@@ -168,7 +168,7 @@ class PetFeatureTest extends TestCase
             $pet->personality_tags
         );
 
-        $this->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'about']))
+        $this->get(route('pets.show', ['pet' => $pet, 'tab' => 'about']))
             ->assertOk()
             ->assertSee('Personality')
             ->assertSee('Playful')
@@ -221,7 +221,7 @@ class PetFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->patch(route('pets.update', $pet->getKey()), [
+            ->patch(route('pets.update', $pet), [
                 'name' => 'Sunny',
                 'species' => $pet->species,
                 'personality_tags' => ['Playful', ' Calm ', 'playful'],
@@ -246,11 +246,11 @@ class PetFeatureTest extends TestCase
             'is_adoptable' => false,
         ]);
 
-        $this->get(route('pets.show', $adoptable->getKey()))
+        $this->get(route('pets.show', $adoptable))
             ->assertOk()
             ->assertSee(__('pets.status.adoptable'));
 
-        $this->get(route('pets.show', $notAdoptable->getKey()))
+        $this->get(route('pets.show', $notAdoptable))
             ->assertOk()
             ->assertDontSee(__('pets.status.adoptable'));
     }
@@ -265,7 +265,7 @@ class PetFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->patch(route('pets.update', $pet->getKey()), [
+            ->patch(route('pets.update', $pet), [
                 'name' => 'Toggle Pet',
                 'species' => $pet->species,
                 'is_adoptable' => '1',
@@ -297,7 +297,7 @@ class PetFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'health']))
+            ->get(route('pets.show', ['pet' => $pet, 'tab' => 'health']))
             ->assertOk()
             ->assertSee('Weight history')
             ->assertSee('aria-label="Weight history chart"', false);
