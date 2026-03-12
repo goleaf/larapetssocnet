@@ -35,22 +35,18 @@
             </header>
 
             <section class="bg-gradient-to-b from-cream/60 via-warm-white to-cream/70">
-                <div class="h-[58vh] min-h-[22rem] overflow-y-auto px-4 py-4 sm:px-5">
-                    <div class="space-y-3">
-                        @forelse ($messages as $message)
-                            @php
-                                $isOwn = (int) $message->sender_id === (int) auth()->id();
-                            @endphp
-
-                            <article class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }}">
-                                <div
-                                    class="w-fit max-w-[88%] px-3.5 py-2.5 {{ $isOwn ? 'bg-paw text-white rounded-2xl rounded-br-md shadow-button' : 'bg-warm-white text-bark border border-whisker/30 rounded-2xl rounded-bl-md shadow-sm' }}">
-                                    <p class="whitespace-pre-line text-sm leading-6">{{ $message->body }}</p>
-                                    <time datetime="{{ optional($message->created_at)->toIso8601String() }}"
-                                        class="mt-1.5 block text-[11px] {{ $isOwn ? 'text-white/85' : 'text-fur' }}">
-                                        {{ optional($message->created_at)->diffForHumans() }}
-                                    </time>
-                                </div>
+	                <div class="h-[58vh] min-h-[22rem] overflow-y-auto px-4 py-4 sm:px-5">
+	                    <div class="space-y-3">
+	                        @forelse ($messages as $message)
+	                            <article class="flex {{ (int) $message->sender_id === (int) auth()->id() ? 'justify-end' : 'justify-start' }}">
+	                                <div
+	                                    class="w-fit max-w-[88%] px-3.5 py-2.5 {{ (int) $message->sender_id === (int) auth()->id() ? 'bg-paw text-white rounded-2xl rounded-br-md shadow-button' : 'bg-warm-white text-bark border border-whisker/30 rounded-2xl rounded-bl-md shadow-sm' }}">
+	                                    <p class="whitespace-pre-line text-sm leading-6">{{ $message->body }}</p>
+	                                    <time datetime="{{ optional($message->created_at)->toIso8601String() }}"
+	                                        class="mt-1.5 block text-[11px] {{ (int) $message->sender_id === (int) auth()->id() ? 'text-white/85' : 'text-fur' }}">
+	                                        {{ optional($message->created_at)->diffForHumans() }}
+	                                    </time>
+	                                </div>
                             </article>
                         @empty
                             <x-ui.empty-state

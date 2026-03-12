@@ -2,13 +2,11 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div class="flex flex-wrap items-center justify-between gap-3">
- <div>
- <h1 class="shell-title text-xl">Followers</h1>
- <p class="mt-1 text-sm shell-text-muted">{{ $pet->name }} · {{ number_format((int) ($pet->followers_count ?? 0)) }} followers</p>
- </div>
+ <x-ui.page-header title="Followers" :description="$pet->name.' · '.number_format((int) ($pet->followers_count ?? 0)).' followers'" icon="👥">
+ <x-slot name="action">
  <a href="{{ route('pets.show', $pet) }}" class="text-sm text-indigo-600 hover:text-indigo-800">Back to profile</a>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <section class="shell-card p-5">

@@ -3,28 +3,12 @@
 'hover'=> false,
 'as'=>'div',
 ])
-
-@php
- $paddings = [
-'none'=>'',
-'0'=>'',
-'sm'=>'p-3',
-'md'=>'p-5',
-'lg'=>'p-7',
- ];
-
- $paddingKey = (string) $padding;
- $paddingClass = $paddings[$paddingKey] ?? $paddings['md'];
-
- $classes = \Illuminate\Support\Arr::toCssClasses([
+<{{ $as }} {{ $attributes->except('class')->merge(['class'=> \Illuminate\Support\Arr::toCssClasses([
 'shell-card',
  $hover ?'cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-card-hover':'',
  $attributes->get('class'),
- ]);
-@endphp
-
-<{{ $as }} {{ $attributes->except('class')->merge(['class'=> $classes]) }}>
- <div class="{{ $paddingClass }}">
+])]) }}>
+ <div class="{{ ['none' => '', '0' => '', 'sm' => 'p-3', 'md' => 'p-5', 'lg' => 'p-7'][(string) $padding] ?? 'p-5' }}">
  @isset($header)
  {{ $header }}
  @endisset

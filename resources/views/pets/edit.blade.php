@@ -1,8 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
- Edit {{ $pet->name ??'Pet'}}
- </h2>
+ <x-ui.page-header :title="'Edit '.($pet->name ?? 'Pet')" description="Update profile details, gallery, and avatar settings." icon="🛠️" />
  </x-slot>
 
  <div class="py-8">

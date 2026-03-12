@@ -4,17 +4,13 @@
 'size'=>'md',
 ])
 
-@php
- $sizeClasses = [
-'sm'=>'px-3 py-2 text-xs',
-'md'=>'px-4 py-2.5 text-sm',
-'lg'=>'px-5 py-3 text-sm',
- ][$size] ??'px-4 py-2.5 text-sm';
-@endphp
-
 <button
  type="button"
- {{ $attributes->merge(['class'=>"btn-base btn-ghost {$sizeClasses}"]) }}
+ {{ $attributes->merge(['class'=>"btn-base btn-ghost ".match ($size) {
+ 'sm' => 'px-3 py-2 text-xs',
+ 'lg' => 'px-5 py-3 text-sm',
+ default => 'px-4 py-2.5 text-sm',
+ }]) }}
  @if (! $attributes->has(':disabled') && ! $attributes->has('x-bind:disabled'))
  @disabled($busy)
  @endif

@@ -36,44 +36,35 @@
                 :description="__('messages.index.empty_description')"
             />
         @else
-            <x-ui.card padding="none" class="overflow-hidden">
-                <div class="divide-y divide-whisker/25">
-                    @foreach ($threads as $thread)
-                        @php
-                            /** @var \App\Models\User $peer */
-                            $peer = $thread['peer'];
-                            /** @var \App\Models\Message $latest */
-                            $latest = $thread['latest_message'];
-                            $isUnread = ((int) ($thread['unread_count'] ?? 0)) > 0;
-                            $preview = trim((string) ($latest->body ?? __('messages.index.unavailable_preview')));
-                        @endphp
+	            <x-ui.card padding="none" class="overflow-hidden">
+	                <div class="divide-y divide-whisker/25">
+	                    @foreach ($threads as $thread)
+	                        <a
+	                            href="{{ route('messages.conversation', ['peer' => $thread['peer']]) }}"
+	                            class="block px-4 py-3 transition-colors duration-150 hover:bg-cream/60 {{ ((int) ($thread['unread_count'] ?? 0)) > 0 ? 'bg-paw-light/25' : 'bg-warm-white' }}"
+	                        >
+	                            <div class="flex items-center justify-between gap-3">
+	                                <div class="flex min-w-0 items-center gap-3">
+	                                    <x-user-avatar :user="$thread['peer']" size="sm" />
 
-                        <a
-                            href="{{ route('messages.conversation', ['peer' => $peer]) }}"
-                            class="block px-4 py-3 transition-colors duration-150 hover:bg-cream/60 {{ $isUnread ? 'bg-paw-light/25' : 'bg-warm-white' }}"
-                        >
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    <x-user-avatar :user="$peer" size="sm" />
+	                                    <div class="min-w-0">
+	                                        <p class="truncate text-sm font-semibold text-bark">{{ $thread['peer']->name }}</p>
+	                                        <p class="truncate text-xs text-fur">
+	                                            {{ $thread['peer']->username ? '@'.$thread['peer']->username : __('messages.index.default_peer_label') }}
+	                                        </p>
+	                                        <p class="mt-0.5 truncate text-sm {{ ((int) ($thread['unread_count'] ?? 0)) > 0 ? 'font-medium text-bark' : 'text-fur' }}">
+	                                            {{ trim((string) (($thread['latest_message']->body ?? __('messages.index.unavailable_preview')))) }}
+	                                        </p>
+	                                    </div>
+	                                </div>
 
-                                    <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-bark">{{ $peer->name }}</p>
-                                        <p class="truncate text-xs text-fur">
-                                            {{ $peer->username ? '@'.$peer->username : __('messages.index.default_peer_label') }}
-                                        </p>
-                                        <p class="mt-0.5 truncate text-sm {{ $isUnread ? 'font-medium text-bark' : 'text-fur' }}">
-                                            {{ $preview }}
-                                        </p>
-                                    </div>
-                                </div>
+	                                <div class="shrink-0 text-right">
+	                                    <p class="text-xs text-fur">{{ optional($thread['latest_message']->created_at)->diffForHumans() }}</p>
 
-                                <div class="shrink-0 text-right">
-                                    <p class="text-xs text-fur">{{ optional($latest->created_at)->diffForHumans() }}</p>
-
-                                    @if ($isUnread)
-                                        <x-ui.badge variant="success" size="sm" class="mt-1">
-                                            {{ (int) $thread['unread_count'] }}
-                                        </x-ui.badge>
+	                                    @if (((int) ($thread['unread_count'] ?? 0)) > 0)
+	                                        <x-ui.badge variant="success" size="sm" class="mt-1">
+	                                            {{ (int) $thread['unread_count'] }}
+	                                        </x-ui.badge>
                                     @endif
                                 </div>
                             </div>

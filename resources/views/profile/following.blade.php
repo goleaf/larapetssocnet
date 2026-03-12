@@ -2,11 +2,7 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div>
- <h1 class="shell-title text-xl">Following</h1>
- <p class="mt-1 text-sm shell-text-muted">&#64;{{ $user->username }} ·
- {{ number_format((int) $user->following_count) }} following</p>
- </div>
+ <x-ui.page-header title="Following" :description="'@'.$user->username.' · '.number_format((int) $user->following_count).' following'" icon="🧑‍🤝‍🧑" />
  </x-slot>
 
  <section class="shell-card p-5">
@@ -32,15 +28,12 @@
  @endif
  </div>
 
- @auth
- @if (auth()->id() !== $followedUser->id)
- @php
- $followStatus = $followStatusMap[$followedUser->id] ?? 'none';
- @endphp
- <x-follow-button :user="$followedUser" :follow-status="$followStatus"
- size="sm"/>
- @endif
- @endauth
+	 @auth
+	 @if (auth()->id() !== $followedUser->id)
+	 <x-follow-button :user="$followedUser" :follow-status="$followStatusMap[$followedUser->id] ?? 'none'"
+	 size="sm"/>
+	 @endif
+	 @endauth
  </article>
  @empty
  <x-ui.empty-state icon="user-plus" title="Not following anyone yet"

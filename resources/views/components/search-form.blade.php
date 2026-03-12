@@ -7,24 +7,18 @@
 'buttonLabel'=>'Search',
 ])
 
-@php
- $httpMethod = strtoupper($method);
- $formMethod = in_array($httpMethod, ['GET','POST'], true) ? $httpMethod :'POST';
- $queryValue = $value ?? request($name);
-@endphp
-
 <form
- method="{{ $formMethod }}"
+ method="{{ in_array(strtoupper($method), ['GET', 'POST'], true) ? strtoupper($method) : 'POST' }}"
  action="{{ $action }}"
  {{ $attributes->merge(['class'=>'flex items-center gap-2']) }}
- x-data="searchFormState(@js($queryValue ??''))"
+ x-data="searchFormState(@js(($value ?? request($name)) ?? ''))"
 >
- @if ($formMethod !=='GET')
+ @if ((in_array(strtoupper($method), ['GET', 'POST'], true) ? strtoupper($method) : 'POST') !== 'GET')
  @csrf
  @endif
 
- @if (! in_array($httpMethod, ['GET','POST'], true))
- @method($httpMethod)
+ @if (! in_array(strtoupper($method), ['GET','POST'], true))
+ @method(strtoupper($method))
  @endif
 
  <div class="relative flex-1">
@@ -39,7 +33,7 @@
  type="search"
  name="{{ $name }}"
  x-model="query"
- value="{{ $queryValue }}"
+ value="{{ $value ?? request($name) }}"
  class="form-input w-full pl-9"
  placeholder="{{ $placeholder }}"
  autocomplete="off"

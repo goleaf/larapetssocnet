@@ -1,9 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <div>
- <h1 class="shell-title text-xl">Onboarding: Step 1 of 3</h1>
- <p class="mt-1 text-sm shell-text-muted">Choose what interests you most so we can tailor your feed.</p>
- </div>
+ <x-ui.page-header title="Onboarding: Step 1 of 3" description="Choose what interests you most so we can tailor your feed." icon="🧭" />
  </x-slot>
 
  <div class="shell-card p-6 sm:p-8">

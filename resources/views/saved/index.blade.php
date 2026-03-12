@@ -1,14 +1,12 @@
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between gap-3">
- <div>
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">Saved Posts</h2>
- <p class="mt-1 text-sm text-gray-500">Your bookmarked posts in one place.</p>
- </div>
+ <x-ui.page-header title="Saved Posts" description="Your bookmarked posts in one place." icon="🔖">
+ <x-slot name="action">
  <a href="{{ route('feed.index') }}"
  class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back
  to Feed</a>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">

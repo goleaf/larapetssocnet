@@ -6,24 +6,11 @@
     'showRemove' => false,
 ])
 
-@php
-    $pad = match ($size) {
-        'sm' => 'px-3 py-1 text-xs',
-        'lg' => 'px-6 py-2.5 text-base',
-        default => 'px-4 py-1.5 text-sm',
-    };
-@endphp
-
 @if ($target !== null && $user === null)
-    @php
-        $petRouteKey = $target->slug ?? $target->getKey();
-        $initiallyFollowing = $followStatus === 'following' || (bool) data_get($target, 'viewer_is_following', false);
-    @endphp
-
     @auth
         <div
             x-data="{
-                followed: @js($initiallyFollowing),
+                followed: @js($followStatus === 'following' || (bool) data_get($target, 'viewer_is_following', false)),
                 count: {{ (int) ($target->followers_count ?? 0) }},
                 loading: false,
                 async toggle() {
@@ -34,7 +21,7 @@
                     this.loading = true
 
                     try {
-                        const response = await fetch(this.followed ? @js(route('pets.unfollow', ['pet' => $petRouteKey])) : @js(route('pets.follow', ['pet' => $petRouteKey])), {
+                        const response = await fetch(this.followed ? @js(route('pets.unfollow', ['pet' => $target->slug ?? $target->getKey()])) : @js(route('pets.follow', ['pet' => $target->slug ?? $target->getKey()])), {
                             method: this.followed ? 'DELETE' : 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -66,7 +53,11 @@
                 @click="toggle()"
                 :disabled="loading"
                 :aria-busy="loading"
-                class="{{ $pad }} bg-paw text-white transition hover:bg-paw-dark disabled:opacity-60"
+                class="{{ match ($size) {
+                    'sm' => 'px-3 py-1 text-xs',
+                    'lg' => 'px-6 py-2.5 text-base',
+                    default => 'px-4 py-1.5 text-sm',
+                } }} bg-paw text-white transition hover:bg-paw-dark disabled:opacity-60"
             >
                 <span x-text="label"></span>
             </button>
@@ -76,7 +67,11 @@
     @else
         <a
             href="{{ route('login') }}"
-            class="{{ $pad }} bg-paw text-white transition hover:bg-paw-dark"
+            class="{{ match ($size) {
+                'sm' => 'px-3 py-1 text-xs',
+                'lg' => 'px-6 py-2.5 text-base',
+                default => 'px-4 py-1.5 text-sm',
+            } }} bg-paw text-white transition hover:bg-paw-dark"
         >
             {{ __('pets.actions.sign_in_to_follow') }}
         </a>
@@ -84,7 +79,11 @@
 @elseif ($user === null)
     <button
         type="button"
-        {{ $attributes->merge(['class' => "{$pad} btn-base btn-primary"]) }}
+        {{ $attributes->merge(['class' => match ($size) {
+            'sm' => 'px-3 py-1 text-xs',
+            'lg' => 'px-6 py-2.5 text-base',
+            default => 'px-4 py-1.5 text-sm',
+        }.' btn-base btn-primary']) }}
     >
         {{ $slot }}
     </button>
@@ -166,7 +165,11 @@
             :aria-busy="loading"
             type="button"
             :class="btnStyle"
-            class="{{ $pad }} min-w-[110px] font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            class="{{ match ($size) {
+                'sm' => 'px-3 py-1 text-xs',
+                'lg' => 'px-6 py-2.5 text-base',
+                default => 'px-4 py-1.5 text-sm',
+            } }} min-w-[110px] font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <span x-show="loading" x-cloak>...</span>
             <span x-show="!loading" x-text="label"></span>

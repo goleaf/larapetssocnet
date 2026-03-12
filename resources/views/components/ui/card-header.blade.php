@@ -5,11 +5,6 @@
 'icon'=> null,
 ])
 
-@php
- $subtitleText = $description ?? $subtitle;
- $actionSlot = $action ?? $actions ?? null;
-@endphp
-
 <div {{ $attributes->merge(['class'=>'mb-4 flex items-start justify-between gap-4 border-b border-whisker/40 pb-4']) }}>
  <div class="min-w-0">
  <div class="flex items-start gap-3">
@@ -22,8 +17,8 @@
  <h3 class="text-base font-semibold font-display text-bark">{{ $title }}</h3>
  @endif
 
- @if(filled($subtitleText))
- <p class="mt-1 text-sm text-fur">{{ $subtitleText }}</p>
+ @if(filled($description ?? $subtitle))
+ <p class="mt-1 text-sm text-fur">{{ $description ?? $subtitle }}</p>
  @endif
 
  @if($slot->isNotEmpty())
@@ -35,9 +30,9 @@
  </div>
  </div>
 
- @if($actionSlot)
+ @if(isset($action) || isset($actions))
  <div class="shrink-0">
- {{ $actionSlot }}
+ {{ $action ?? $actions }}
  </div>
  @endif
 </div>

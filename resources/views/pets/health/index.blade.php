@@ -38,11 +38,8 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between gap-4">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
- {{ $pet->name ??'Pet'}} Health Log
- </h2>
-
+ <x-ui.page-header :title="($pet->name ?? 'Pet').' Health Log'" description="Track and review health events over time." icon="📋">
+ <x-slot name="action">
  <div class="flex items-center gap-3">
  <a href="{{ route('pets.show', $petSlug) }}"
  class="text-sm text-gray-600 hover:text-gray-900">Back to
@@ -51,7 +48,8 @@
  class="text-sm text-indigo-600 hover:text-indigo-800">Add
  health entry</a>
  </div>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">

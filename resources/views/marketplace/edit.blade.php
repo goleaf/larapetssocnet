@@ -1,9 +1,10 @@
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between gap-3">
- <h2 class="text-xl font-semibold text-gray-800 leading-tight">Edit Listing</h2>
+ <x-ui.page-header title="Edit Listing" description="Update listing details, media, and publish status." icon="✏️">
+ <x-slot name="action">
  <a href="{{ route('marketplace.show', $listing) }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to Listing</a>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">

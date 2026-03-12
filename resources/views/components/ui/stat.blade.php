@@ -8,24 +8,6 @@
 'trendUp'=> true,
 ])
 
-@php
- $trendToken = is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null;
-
- $resolvedDirection = match ($trendDirection ?? $trendToken) {
-'up','increase','positive'=>'up',
-'down','decrease','negative'=>'down',
- default => $trendUp ?'up':'down',
- };
-
- $resolvedTrend = $trendValue;
-
- if ($resolvedTrend === null && filled($trendToken) && ! in_array($trendToken, ['up','down','increase','decrease','positive','negative'], true)) {
- $resolvedTrend = $trend;
- }
-
- $showTrend = filled($resolvedTrend);
-@endphp
-
 <div {{ $attributes->merge(['class'=>'shell-card flex items-start gap-4 p-4']) }}>
  @if($icon)
  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-paw-light text-xl text-paw-dark">
@@ -39,9 +21,17 @@
  <div class="mt-1 flex flex-wrap items-center gap-2">
  <p class="text-2xl font-bold font-display text-bark">{{ $value }}</p>
 
- @if($showTrend)
- <x-ui.badge size="sm" :variant="$resolvedDirection ==='up'?'success':'danger'" class="font-mono">
- <span class="mr-1" aria-hidden="true">{{ $resolvedDirection ==='up'?'▲':'▼'}}</span>{{ $resolvedTrend }}
+ @if(filled($trendValue ?? (filled(is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null) && ! in_array(is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null, ['up', 'down', 'increase', 'decrease', 'positive', 'negative'], true) ? $trend : null)))
+ <x-ui.badge size="sm" :variant="match ($trendDirection ?? (is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null)) {
+ 'up', 'increase', 'positive' => 'success',
+ 'down', 'decrease', 'negative' => 'danger',
+ default => ($trendUp ? 'success' : 'danger'),
+}" class="font-mono">
+ <span class="mr-1" aria-hidden="true">{{ match ($trendDirection ?? (is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null)) {
+ 'up', 'increase', 'positive' => '▲',
+ 'down', 'decrease', 'negative' => '▼',
+ default => ($trendUp ? '▲' : '▼'),
+} }}</span>{{ $trendValue ?? (filled(is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null) && ! in_array(is_string($trend) ? \Illuminate\Support\Str::of($trend)->trim()->lower()->value() : null, ['up', 'down', 'increase', 'decrease', 'positive', 'negative'], true) ? $trend : null) }}
  </x-ui.badge>
  @endif
  </div>

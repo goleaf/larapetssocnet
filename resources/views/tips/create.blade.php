@@ -1,8 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
- Share a Pet Care Tip
- </h2>
+ <x-ui.page-header title="Share a Pet Care Tip" description="Write a practical tip for other pet owners." icon="🧠" />
  </x-slot>
 
  <div class="py-8">

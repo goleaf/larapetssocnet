@@ -3,10 +3,6 @@
 'selectedPrivacy'=>'public',
 ])
 
-@php
- $privacyValue = old('privacy', $selectedPrivacy ?:'public');
-@endphp
-
 <div class="space-y-5">
  <div>
  <x-input-label for="name" :value="'Group Name'"/>
@@ -36,14 +32,14 @@
  <div>
  <x-input-label for="privacy" :value="'Group Type'"/>
  <select
- id="privacy"
- name="privacy"
- class="mt-1 block w-full rounded-md border border-[var(--ui-border)] bg-white px-3 py-2 text-sm focus:border-[var(--ui-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/25"
- >
- <option value="public" @selected($privacyValue ==='public')>Public (anyone can join)</option>
- <option value="private" @selected($privacyValue ==='private')>Private (join requests)</option>
- <option value="secret" @selected($privacyValue ==='secret')>Secret (hidden group)</option>
- </select>
+	 id="privacy"
+	 name="privacy"
+	 class="mt-1 block w-full rounded-md border border-[var(--ui-border)] bg-white px-3 py-2 text-sm focus:border-[var(--ui-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ui-primary)]/25"
+	 >
+	 <option value="public" @selected(old('privacy', $selectedPrivacy ?: 'public') === 'public')>Public (anyone can join)</option>
+	 <option value="private" @selected(old('privacy', $selectedPrivacy ?: 'public') === 'private')>Private (join requests)</option>
+	 <option value="secret" @selected(old('privacy', $selectedPrivacy ?: 'public') === 'secret')>Secret (hidden group)</option>
+	 </select>
  <x-input-error :messages="$errors->get('privacy')" class="mt-2"/>
  </div>
 

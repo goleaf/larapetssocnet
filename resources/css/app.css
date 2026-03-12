@@ -75,6 +75,14 @@
         border-color: var(--border-default);
     }
 
+    *,
+    ::before,
+    ::after,
+    ::backdrop,
+    ::file-selector-button {
+        border-radius: 0 !important;
+    }
+
     html,
     body {
         min-height: 100%;
@@ -129,7 +137,7 @@
 
     ::-webkit-scrollbar-thumb {
         background: var(--color-whisker);
-        border-radius: var(--radius-pill);
+        border-radius: 0;
     }
 
     *:focus-visible {

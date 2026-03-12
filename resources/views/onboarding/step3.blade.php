@@ -1,9 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <div>
- <h1 class="shell-title text-xl">Onboarding: Step 3 of 3</h1>
- <p class="mt-1 text-sm shell-text-muted">Follow people and join groups to jump-start your community.</p>
- </div>
+ <x-ui.page-header title="Onboarding: Step 3 of 3" description="Follow people and join groups to jump-start your community." icon="🤝" />
  </x-slot>
 
  <div class="space-y-5">

@@ -11,6 +11,7 @@ export default {
         './resources/**/*.vue',
         './vendor/robsontenorio/mary/src/View/Components/**/*.php',
     ],
+    blocklist: ['[file:line]'],
 
     theme: {
         extend: {

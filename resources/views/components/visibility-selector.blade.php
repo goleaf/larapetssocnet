@@ -6,30 +6,6 @@
 'postComments'=> 0,
 ])
 
-@php
- $options = [
-'public'=> [
-'icon'=>'🌍',
-'label'=>'Public',
-'sub'=>'Anyone can see this post',
-'ring'=>'ring-emerald-500 bg-emerald-50',
- ],
-'followers'=> [
-'icon'=>'👥',
-'label'=>'Followers',
-'sub'=>'Only your followers can see this',
-'ring'=>'ring-blue-500 bg-blue-50',
- ],
-'private'=> [
-'icon'=>'🔒',
-'label'=>'Only me',
-'sub'=>'Only you can see this',
-'ring'=>'ring-gray-400 bg-gray-100',
- ],
- ];
- $hasEngagement = (int) $postLikes > 0 || (int) $postComments > 0;
-@endphp
-
 <div
  role="radiogroup"
  aria-label="Post visibility"
@@ -37,7 +13,7 @@
  selected:'{{ $selected }}',
  original:'{{ $selected }}',
  showWarn: false,
- hasEngagement: {{ $hasEngagement ?'true':'false'}},
+ hasEngagement: {{ ((int) $postLikes > 0 || (int) $postComments > 0) ? 'true' : 'false' }},
  enabledWarning: {{ $showWarn ?'true':'false'}},
  order: { public: 0, followers: 1, private: 2 },
  values: ['public','followers','private'],
@@ -61,7 +37,26 @@
 >
  <input type="hidden" name="{{ $name }}" :value="selected"/>
 
- @foreach($options as $value => $option)
+ @foreach([
+ 'public'=> [
+ 'icon'=>'🌍',
+ 'label'=>'Public',
+ 'sub'=>'Anyone can see this post',
+ 'ring'=>'ring-emerald-500 bg-emerald-50',
+ ],
+ 'followers'=> [
+ 'icon'=>'👥',
+ 'label'=>'Followers',
+ 'sub'=>'Only your followers can see this',
+ 'ring'=>'ring-blue-500 bg-blue-50',
+ ],
+ 'private'=> [
+ 'icon'=>'🔒',
+ 'label'=>'Only me',
+ 'sub'=>'Only you can see this',
+ 'ring'=>'ring-gray-400 bg-gray-100',
+ ],
+ ] as $value => $option)
  <button
  x-ref="{{ $value }}"
  type="button"
@@ -116,4 +111,3 @@
  </p>
  </div>
 </div>
-

@@ -7,16 +7,12 @@
  @endphp
 
  <x-slot name="header">
- <div class="flex flex-wrap items-center justify-between gap-3">
- <div>
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $event->title }}</h2>
- <p class="mt-1 text-sm text-gray-500">
- {{ $startAt ? $startAt->format('M j, Y g:i A') :'TBA'}}
- @if ($endAt)
- - {{ $endAt->format('M j, Y g:i A') }}
- @endif
- </p>
- </div>
+ <x-ui.page-header
+ :title="$event->title"
+ :description="$startAt ? ($startAt->format('M j, Y g:i A').($endAt ? ' - '.$endAt->format('M j, Y g:i A') : '')) : 'TBA'"
+ icon="📅"
+ >
+ <x-slot name="action">
  <div class="flex flex-wrap items-center gap-2">
  <a href="{{ route('events.index') }}" class="btn-base btn-ghost px-3 py-2 text-sm">Back</a>
  <a href="{{ route('events.ics', $event->id) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Download ICS</a>
@@ -34,7 +30,8 @@
  @endif
  @endauth
  </div>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">

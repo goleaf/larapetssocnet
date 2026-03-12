@@ -1,8 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
- 🐾 Pets Available for Adoption
- </h2>
+ <x-ui.page-header title="Pets Available for Adoption" description="Browse adoptable pets and filter by location, species, and size." icon="🏡" />
  </x-slot>
 
  <div class="py-8">

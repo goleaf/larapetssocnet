@@ -3,10 +3,6 @@
 'availablePets' => collect(),
 ])
 
-@php
- $availablePets = collect($availablePets);
-@endphp
-
 <form action="{{ $post ? route('posts.update', $post) : route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
  @csrf
  @if($post)
@@ -45,7 +41,7 @@
  :value="old('pet_id', $post?->pet_id)"
  >
  <option value="">-- None --</option>
- @foreach($availablePets as $pet)
+ @foreach(collect($availablePets) as $pet)
  <option value="{{ $pet->id }}" @selected((string) old('pet_id', $post?->pet_id) === (string) $pet->id)>{{ $pet->name }}</option>
  @endforeach
  </x-ui.select>

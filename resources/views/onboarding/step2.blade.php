@@ -1,9 +1,6 @@
 <x-app-layout>
  <x-slot name="header">
- <div>
- <h1 class="shell-title text-xl">Onboarding: Step 2 of 3</h1>
- <p class="mt-1 text-sm shell-text-muted">Add your first pet now or skip and do it later.</p>
- </div>
+ <x-ui.page-header title="Onboarding: Step 2 of 3" description="Add your first pet now or skip and do it later." icon="🐾" />
  </x-slot>
 
  <div class="shell-card p-6 sm:p-8">

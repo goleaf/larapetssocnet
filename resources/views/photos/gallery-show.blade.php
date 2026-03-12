@@ -1,8 +1,3 @@
-@php
- /** @var \App\Models\User $profileUser */
- /** @var \App\Models\PhotoGallery $gallery */
-@endphp
-
 @section('title', $gallery->title .'— @'. $profileUser->username .'— PetSocial')
 
 <x-app-layout>

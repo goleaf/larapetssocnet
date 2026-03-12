@@ -1,4 +1,8 @@
 <x-app-layout>
+ <x-slot name="header">
+ <x-ui.page-header title="Post Details" :description="'Comments ('.$post->comments_count.')'" icon="📝" />
+ </x-slot>
+
  <div class="mx-auto max-w-4xl space-y-5 py-8">
  <x-post-card :post="$post"/>
 

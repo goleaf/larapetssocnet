@@ -1,9 +1,4 @@
-@php
- $deletingUser = $user ?? auth()->user();
- $requiredUsername = (string) ($deletingUser?->username ??'');
-@endphp
-
-<section class="space-y-4" x-data="dangerZoneConfirm(@js($requiredUsername))" aria-label="Danger zone section">
+<section class="space-y-4" x-data="dangerZoneConfirm(@js((string) (($user ?? auth()->user())?->username ?? '')))" aria-label="Danger zone section">
  <header>
  <h2 class="shell-title text-lg" style="color: color-mix(in srgb, var(--ui-danger) 70%, var(--ui-text) 30%);">Danger Zone</h2>
  <p class="mt-1 text-sm shell-text-muted">
@@ -13,11 +8,11 @@
 
  <div class="rounded-2xl border p-4" style="border-color: color-mix(in srgb, var(--ui-danger) 38%, var(--ui-border) 62%); background: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-surface) 92%);">
  <p class="text-sm font-semibold">Confirm account deletion</p>
- <p class="mt-1 text-sm shell-text-muted">
- Type
- <span class="font-semibold" style="color: var(--ui-text);">{{ $requiredUsername !==''? $requiredUsername :'your username'}}</span>
- and enter your password.
- </p>
+	 <p class="mt-1 text-sm shell-text-muted">
+	 Type
+	 <span class="font-semibold" style="color: var(--ui-text);">{{ ($user ?? auth()->user())?->username ? (string) ($user ?? auth()->user())->username : 'your username' }}</span>
+	 and enter your password.
+	 </p>
 
  <form
  method="post"

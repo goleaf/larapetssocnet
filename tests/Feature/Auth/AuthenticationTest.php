@@ -17,6 +17,21 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_login_screen_displays_quick_login_usernames_and_password_hint(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'pet_parent',
+            'email' => 'pet-parent@example.com',
+        ]);
+
+        $response = $this->get('/login');
+
+        $response
+            ->assertOk()
+            ->assertSee('@'.$user->username)
+            ->assertSee('password');
+    }
+
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
         $user = User::factory()->create();
@@ -40,6 +55,21 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_users_can_authenticate_using_their_username_on_the_login_screen(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'username_login',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->username,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_users_can_logout(): void

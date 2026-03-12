@@ -3,28 +3,9 @@
 'links'=> [],
 ])
 
-@php
- $resolvedItems = ! empty($items) ? $items : $links;
-@endphp
-
 <nav {{ $attributes->merge(['class'=>'flex']) }} aria-label="Breadcrumb">
  <ol role="list" class="flex items-center space-x-2">
- @foreach($resolvedItems as $index => $item)
- @php
- $isLast = $index === count($resolvedItems) - 1;
-
- if (is_array($item)) {
- $label = $item['label'] ??'';
- $href = $item['href'] ?? $item['url'] ?? null;
-
- if (! $href && ! empty($item['route']) && Route::has($item['route'])) {
- $href = route($item['route'], $item['params'] ?? []);
- }
- } else {
- $label = $item;
- $href = null;
- }
- @endphp
+ @foreach((! empty($items) ? $items : $links) as $index => $item)
 
  <li>
  <div class="flex items-center">
@@ -34,10 +15,16 @@
  </svg>
  @endif
 
- @if($href && ! $isLast)
- <a href="{{ $href }}" class="text-sm font-medium text-fur transition-colors hover:text-bark">{{ $label }}</a>
+ @if((is_array($item)
+    ? (($item['href'] ?? $item['url'] ?? null)
+        ?: ((! empty($item['route']) && Route::has($item['route'])) ? route($item['route'], $item['params'] ?? []) : null))
+    : null) && $index !== count((! empty($items) ? $items : $links)) - 1)
+ <a href="{{ is_array($item)
+    ? (($item['href'] ?? $item['url'] ?? null)
+        ?: ((! empty($item['route']) && Route::has($item['route'])) ? route($item['route'], $item['params'] ?? []) : null))
+    : null }}" class="text-sm font-medium text-fur transition-colors hover:text-bark">{{ is_array($item) ? ($item['label'] ?? '') : $item }}</a>
  @else
- <span class="text-sm font-medium {{ $isLast ?'text-bark':'text-fur'}}" @if($isLast) aria-current="page" @endif>{{ $label }}</span>
+ <span class="text-sm font-medium {{ $index === count((! empty($items) ? $items : $links)) - 1 ?'text-bark':'text-fur'}}" @if($index === count((! empty($items) ? $items : $links)) - 1) aria-current="page" @endif>{{ is_array($item) ? ($item['label'] ?? '') : $item }}</span>
  @endif
  </div>
  </li>

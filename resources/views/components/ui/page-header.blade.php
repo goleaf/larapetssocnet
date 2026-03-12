@@ -7,15 +7,9 @@
 'breadcrumbs'=> [],
 ])
 
-@php
- $resolvedTitle = filled($title) ? (string) $title : null;
- $resolvedDescription = $description ?? $subtitle;
- $breadcrumbItems = collect($breadcrumbs)->filter()->values()->all();
-@endphp
-
 <div {{ $attributes->merge(['class'=>'shell-panel p-4 sm:p-5']) }}>
- @if ($breadcrumbItems !== [])
- <x-ui.breadcrumbs :items="$breadcrumbItems" class="mb-3"/>
+ @if (collect($breadcrumbs)->filter()->isNotEmpty())
+ <x-ui.breadcrumbs :items="collect($breadcrumbs)->filter()->values()->all()" class="mb-3"/>
  @endif
 
  <div class="flex flex-wrap items-start justify-between gap-4">
@@ -30,12 +24,12 @@
  </span>
 
  <div class="min-w-0">
- @if ($resolvedTitle)
- <h1 class="shell-title text-2xl sm:text-[1.7rem]">{{ $resolvedTitle }}</h1>
+ @if (filled($title))
+ <h1 class="shell-title text-2xl sm:text-[1.7rem]">{{ $title }}</h1>
  @endif
 
- @if ($resolvedDescription)
- <p class="mt-1 text-sm shell-text-muted">{{ $resolvedDescription }}</p>
+ @if ($description ?? $subtitle)
+ <p class="mt-1 text-sm shell-text-muted">{{ $description ?? $subtitle }}</p>
  @endif
  </div>
  </div>

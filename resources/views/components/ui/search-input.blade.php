@@ -6,18 +6,13 @@
 'action'=>'',
 ])
 
-@php
- $fieldId = $id ?: ($name ?:'search-'.\Illuminate\Support\Str::random(6));
- $resolvedValue = $value ?? request()->query($name,'');
-@endphp
-
 <form
  action="{{ $action }}"
  method="GET"
  role="search"
  {{ $attributes->except('class')->merge(['class'=>'relative w-full max-w-full lg:w-64 '.trim((string) $attributes->get('class'))]) }}
 >
- <label for="{{ $fieldId }}" class="sr-only">Search</label>
+ <label for="{{ $id ?: ($name ?: 'search-input') }}" class="sr-only">Search</label>
 
  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fur" aria-hidden="true">
  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
@@ -26,10 +21,10 @@
  </span>
 
  <input
- id="{{ $fieldId }}"
+ id="{{ $id ?: ($name ?: 'search-input') }}"
  type="search"
  name="{{ $name }}"
- value="{{ $resolvedValue }}"
+ value="{{ $value ?? request()->query($name,'') }}"
  placeholder="{{ $placeholder }}"
  class="h-[var(--control-height-md)] w-full rounded-[var(--radius-control)] border border-whisker bg-[color:var(--surface-form)] py-2 pl-10 pr-3 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:border-paw focus:bg-warm-white focus:outline-none focus:shadow-input"
  />

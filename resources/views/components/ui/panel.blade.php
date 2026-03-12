@@ -7,27 +7,13 @@
 'padding'=>'md',
 ])
 
-@php
- $summary = $description ?? $subtitle;
-
- $paddings = [
-'none'=>'',
-'0'=>'',
-'sm'=>'p-3',
-'md'=>'p-4',
-'lg'=>'p-6',
- ];
-
- $paddingClass = $paddings[(string) $padding] ?? $paddings['md'];
-@endphp
-
 <div
  {{ $attributes->merge(['class'=>'ui-panel overflow-hidden']) }}
  x-data="{ open: {{ $open ?'true':'false'}} }"
 >
  @if(isset($header))
  {{ $header }}
- @elseif(filled($title) || filled($summary) || $collapsible)
+ @elseif(filled($title) || filled($description ?? $subtitle) || $collapsible)
  <div
  class="flex items-center justify-between border-b border-whisker/40 px-4 py-3 transition-colors {{ $collapsible ?'cursor-pointer hover:bg-cream':''}}"
  @if($collapsible)
@@ -44,8 +30,8 @@
  <h4 class="font-semibold font-display text-bark">{{ $title }}</h4>
  @endif
 
- @if(filled($summary))
- <p class="mt-0.5 text-xs text-fur">{{ $summary }}</p>
+ @if(filled($description ?? $subtitle))
+ <p class="mt-0.5 text-xs text-fur">{{ $description ?? $subtitle }}</p>
  @endif
  </div>
 
@@ -60,7 +46,7 @@
  @endif
 
  <div
- class="{{ $paddingClass }}"
+ class="{{ ['none' => '', '0' => '', 'sm' => 'p-3', 'md' => 'p-4', 'lg' => 'p-6'][(string) $padding] ?? 'p-4' }}"
  @if($collapsible)
  x-show="open"
  x-collapse

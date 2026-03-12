@@ -5,11 +5,6 @@
 'message'=> null,
 ])
 
-@php
- $resolvedDescription = $description ?? $message;
- $actionSlot = $action ?? $actions ?? null;
-@endphp
-
 <div {{ $attributes->merge(['class'=>'flex w-full flex-col items-center justify-center px-4 py-16 text-center']) }}>
  @if(filled($icon))
  <div class="mb-4 text-5xl opacity-80">{{ $icon }}</div>
@@ -19,8 +14,8 @@
  <h3 class="text-lg font-semibold font-display text-bark">{{ $title }}</h3>
  @endif
 
- @if(filled($resolvedDescription))
- <p class="mx-auto mt-1 max-w-md text-sm text-fur">{{ $resolvedDescription }}</p>
+ @if(filled($description ?? $message))
+ <p class="mx-auto mt-1 max-w-md text-sm text-fur">{{ $description ?? $message }}</p>
  @endif
 
  @if($slot->isNotEmpty())
@@ -29,9 +24,9 @@
  </div>
  @endif
 
- @if($actionSlot)
+ @if(isset($action) || isset($actions))
  <div class="mt-6">
- {{ $actionSlot }}
+ {{ $action ?? $actions }}
  </div>
  @endif
 </div>

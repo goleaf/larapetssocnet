@@ -2,10 +2,7 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div>
- <h1 class="shell-title text-xl">Blocked Users</h1>
- <p class="mt-1 text-sm shell-text-muted">Manage people you blocked. Unblocking does not restore follow relationships.</p>
- </div>
+ <x-ui.page-header title="Blocked Users" description="Manage people you blocked. Unblocking does not restore follow relationships." icon="🛡️" />
  </x-slot>
 
  <section class="shell-card p-6"

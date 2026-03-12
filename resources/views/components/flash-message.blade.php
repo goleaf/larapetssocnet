@@ -6,12 +6,8 @@
 'timeout'=> 5000,
 ])
 
-@php
- $content = $message ?? trim((string) $slot);
-@endphp
-
-@if (filled($content))
+@if (filled($message ?? trim((string) $slot)))
  <x-ui.alert :type="$type" :title="$title" :dismissible="$dismissible" :timeout="$timeout" {{ $attributes }}>
- {{ $content }}
+ {{ $message ?? trim((string) $slot) }}
  </x-ui.alert>
 @endif

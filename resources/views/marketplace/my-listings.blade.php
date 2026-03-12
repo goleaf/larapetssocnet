@@ -1,11 +1,7 @@
 <x-app-layout>
  <x-slot name="header">
- <div class="flex flex-wrap items-center justify-between gap-3">
- <div>
- <h2 class="text-xl font-semibold text-gray-800 leading-tight">My Listings</h2>
- <p class="mt-1 text-sm text-gray-600">Manage your marketplace inventory and listing status.</p>
- </div>
-
+ <x-ui.page-header title="My Listings" description="Manage your marketplace inventory and listing status." icon="📦">
+ <x-slot name="action">
  <div class="flex items-center gap-2">
  <a href="{{ route('messages.index') }}"
  class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Messages</a>
@@ -13,7 +9,8 @@
  class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create
  Listing</a>
  </div>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-6">

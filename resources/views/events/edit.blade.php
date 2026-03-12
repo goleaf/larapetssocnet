@@ -1,9 +1,10 @@
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between gap-3">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Event</h2>
+ <x-ui.page-header title="Edit Event" description="Update event details, schedule, and availability." icon="✏️">
+ <x-slot name="action">
  <a href="{{ route('events.show', $event->id) }}" class="btn-base btn-ghost px-3 py-2 text-sm">Back to Event</a>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">

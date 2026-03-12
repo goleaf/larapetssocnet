@@ -1,9 +1,5 @@
 @props(['messages' => []])
 
-@php
- $message = collect((array) $messages)->filter()->first();
-@endphp
-
-@if ($message)
- <x-ui.hint :error="$message" {{ $attributes }}/>
+@if (collect((array) $messages)->filter()->first())
+ <x-ui.hint :error="collect((array) $messages)->filter()->first()" {{ $attributes }}/>
 @endif

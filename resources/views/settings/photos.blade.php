@@ -41,16 +41,13 @@
  <p class="mt-2 text-sm text-fur">
  You haven't created any galleries yet. Create your first gallery above, then add photos from your profile Photos tab.
  </p>
- @else
- <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
- @foreach ($galleries as $gallery)
- @php
- $coverUrl = $gallery->coverUrl();
- @endphp
- <div class="shell-card overflow-hidden">
- @if ($coverUrl !=='')
- <img src="{{ $coverUrl }}" alt="{{ $gallery->title }} cover"
- class="h-32 w-full object-cover">
+	 @else
+	 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+	 @foreach ($galleries as $gallery)
+	 <div class="shell-card overflow-hidden">
+	 @if ($gallery->coverUrl() !== '')
+	 <img src="{{ $gallery->coverUrl() }}" alt="{{ $gallery->title }} cover"
+	 class="h-32 w-full object-cover">
  @else
  <div class="flex h-32 w-full items-center justify-center bg-cream/60 text-3xl">
  📷

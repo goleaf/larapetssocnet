@@ -1,21 +1,6 @@
 @section('title', __('feed.page_title'))
 
 <x-app-layout>
- @php
- $feedThemes = [
- 'accessible-soft' => __('feed.themes.accessible_soft'),
- 'high-contrast' => __('feed.themes.high_contrast'),
- 'minimalist-soothe' => __('feed.themes.minimalist_soothe'),
- ];
- $requestedTheme = request()->query('theme');
- $activeFeedTheme = is_string($requestedTheme) && array_key_exists($requestedTheme, $feedThemes)
- ? $requestedTheme
- :'accessible-soft';
- $activeFeedThemeLabel = $feedThemes[$activeFeedTheme];
- $yourGroups = $yourGroups ?? collect();
- $ownedPets = $ownedPets ?? collect();
- @endphp
-
  <x-slot name="header">
  <x-ui.page-header :title="__('feed.header_title')" :subtitle="$activeFeedThemeLabel" icon="📰">
  <x-slot:action>
@@ -50,7 +35,7 @@
  <div>
  <x-ui.label for="feed-post-pet-id"
  class="!mb-1 text-xs uppercase tracking-wide">{{ __('feed.pet_label') }}</x-ui.label>
- <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect(['' => __('feed.no_pet_tag')])->merge($ownedPets->pluck('name','id'))->all()" :value="old('pet_id')"/>
+ <x-ui.select id="feed-post-pet-id" name="pet_id" :options="collect(['' => __('feed.no_pet_tag')])->merge(collect($ownedPets ?? [])->pluck('name','id'))->all()" :value="old('pet_id')"/>
  @error('pet_id')
  <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
  @enderror
@@ -106,11 +91,7 @@
  </div>
 
  <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
- @php
- $suggestions = $suggestions ?? collect();
- @endphp
-
- @if ($suggestions->isNotEmpty())
+ @if (collect($suggestions ?? [])->isNotEmpty())
  <x-ui.card padding="base">
  <div class="mb-4 flex items-center justify-between">
  <p class="text-xs font-bold uppercase tracking-wider text-fur">Who to Follow</p>
@@ -119,7 +100,7 @@
  </div>
 
  <div class="space-y-3">
- @foreach ($suggestions as $suggested)
+ @foreach (collect($suggestions ?? []) as $suggested)
  <div class="flex items-center justify-between gap-3">
  <div class="min-w-0 flex items-center gap-3">
  <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="shrink-0">
@@ -150,12 +131,8 @@
  </div>
 
  <div class="space-y-2.5">
- @forelse ($yourGroups as $group)
- @php
- $groupRouteKey = filled((string) ($group->slug ??'')) ? $group->slug : $group->id;
- @endphp
-
- <a href="{{ route('groups.show', $groupRouteKey) }}"
+ @forelse (collect($yourGroups ?? []) as $group)
+ <a href="{{ route('groups.show', filled((string) ($group->slug ?? '')) ? $group->slug : $group->id) }}"
  class="flex items-center justify-between rounded-xl border border-whisker/30 px-3 py-2 hover:bg-warm-white transition-colors group">
  <div class="min-w-0">
  <p class="truncate text-sm font-semibold text-bark group-hover:text-paw transition-colors">

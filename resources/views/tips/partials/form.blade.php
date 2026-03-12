@@ -1,7 +1,3 @@
-@php
- $tip = $tip ?? null;
-@endphp
-
 <div class="space-y-6">
  <div>
  <x-input-label for="title" value="Title"/>

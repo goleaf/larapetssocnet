@@ -1,24 +1,5 @@
 @props(['comment','post'])
 
-@php
- $currentReaction = auth()->check() ? $comment->reactions->where('user_id', auth()->id())->first()?->type : null;
- $reactionCounts = collect([
-'like'=> $comment->reactions->where('type','like')->count(),
-'love'=> $comment->reactions->where('type','love')->count(),
-'laugh'=> $comment->reactions->where('type','laugh')->count(),
-'wow'=> $comment->reactions->where('type','wow')->count(),
-'sad'=> $comment->reactions->where('type','sad')->count(),
- ])->filter(fn($count) => $count > 0)->sortDesc();
-
- $reactionEmojis = [
-'like'=>'👍',
-'love'=>'❤️',
-'laugh'=>'😆',
-'wow'=>'😮',
-'sad'=>'😢',
- ];
-@endphp
-
 <div class="group py-2 {{ $comment->isReply() ?'ml-11 mt-1':'mt-4'}}" id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
  <!-- Avatar -->
@@ -41,15 +22,27 @@
  </div>
  </div>
 
- @if($comment->reactions_count > 0)
- <div class="flex items-center gap-1 flex-wrap">
- @foreach($reactionCounts as $type => $count)
- <div class="inline-flex items-center justify-center bg-white shadow-sm border border-gray-100/50 rounded-lg px-1.5 py-0.5"
- title="{{ ucfirst($type) }}">
- <span class="text-xs">{{ $reactionEmojis[$type] ??'👍'}}</span>
- <span class="text-[0.65rem] font-medium text-gray-500 ml-1">{{ $count }}</span>
- </div>
- @endforeach
+	 @if($comment->reactions_count > 0)
+	 <div class="flex items-center gap-1 flex-wrap">
+	 @foreach(collect([
+	'like'=> $comment->reactions->where('type','like')->count(),
+	'love'=> $comment->reactions->where('type','love')->count(),
+	'laugh'=> $comment->reactions->where('type','laugh')->count(),
+	'wow'=> $comment->reactions->where('type','wow')->count(),
+	'sad'=> $comment->reactions->where('type','sad')->count(),
+	 ])->filter(fn($count) => $count > 0)->sortDesc() as $type => $count)
+	 <div class="inline-flex items-center justify-center bg-white shadow-sm border border-gray-100/50 rounded-lg px-1.5 py-0.5"
+	 title="{{ ucfirst($type) }}">
+	 <span class="text-xs">{{ [
+	'like'=>'👍',
+	'love'=>'❤️',
+	'laugh'=>'😆',
+	'wow'=>'😮',
+	'sad'=>'😢',
+	 ][$type] ??'👍'}}</span>
+	 <span class="text-[0.65rem] font-medium text-gray-500 ml-1">{{ $count }}</span>
+	 </div>
+	 @endforeach
  </div>
  @endif
  </div>
@@ -76,9 +69,9 @@
 
  <!-- Action Links -->
  <div x-show="!editing" class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500">
- @auth
- <!-- Like Button / Reactions -->
- <x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="$currentReaction"/>
+	 @auth
+	 <!-- Like Button / Reactions -->
+	 <x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="auth()->check() ? $comment->reactions->where('user_id', auth()->id())->first()?->type : null"/>
 
  <!-- Reply Button -->
  @if(!$comment->isReply())

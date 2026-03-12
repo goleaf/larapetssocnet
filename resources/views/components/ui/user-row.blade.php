@@ -6,15 +6,11 @@
 'href'=> null,
 ])
 
-@php
- $avatarSource = $src ?? $avatar;
-@endphp
-
 <div {{ $attributes->merge(['class'=>'flex items-center justify-between gap-3 rounded-[var(--radius-soft)] p-3 transition-colors hover:bg-cream']) }}>
  <div class="min-w-0 flex items-center gap-3">
  @if($href)
  <a href="{{ $href }}" class="shrink-0">
- <x-ui.avatar :name="$name" :src="$avatarSource" size="md"/>
+ <x-ui.avatar :name="$name" :src="$src ?? $avatar" size="md"/>
  </a>
 
  <div class="min-w-0">
@@ -25,7 +21,7 @@
  </div>
  @else
  <div class="shrink-0">
- <x-ui.avatar :name="$name" :src="$avatarSource" size="md"/>
+ <x-ui.avatar :name="$name" :src="$src ?? $avatar" size="md"/>
  </div>
 
  <div class="min-w-0">

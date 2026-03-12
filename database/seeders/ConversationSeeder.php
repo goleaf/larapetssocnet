@@ -2,95 +2,192 @@
 
 namespace Database\Seeders;
 
-use Carbon\Carbon;
+use App\Enums\MessageStatus;
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Faker\Generator;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class ConversationSeeder extends Seeder
 {
-    private const TARGET_CONVERSATION_COUNT = 60;
+    private const MIN_MESSAGES_PER_CONVERSATION = 4;
 
-    private const TARGET_MESSAGES_PER_CONVERSATION = 8;
+    private const MAX_MESSAGES_PER_CONVERSATION = 9;
+
+    /**
+     * @var list<int>
+     */
+    private const PAIR_OFFSETS = [1, 2];
 
     public function run(): void
     {
-        $userIds = DB::table('users')->pluck('id')->all();
+        $userIds = User::query()
+            ->select(['id'])
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (int|string $id): int => (int) $id)
+            ->all();
 
         if (count($userIds) < 2) {
             return;
         }
 
         $faker = fake();
-        $faker->seed(20260222);
+        $faker->seed(20260312);
 
-        $conversationKeys = [];
-        $conversationIds = [];
+        $pairs = $this->buildUserPairs($userIds);
 
-        $attempts = 0;
-        while (count($conversationIds) < self::TARGET_CONVERSATION_COUNT && $attempts < self::TARGET_CONVERSATION_COUNT * 5) {
-            $attempts++;
-            $userOneId = $userIds[array_rand($userIds)];
-            $userTwoId = $userIds[array_rand($userIds)];
+        foreach ($pairs as $pairIndex => [$userOneId, $userTwoId]) {
+            $conversationStartedAt = CarbonImmutable::now()
+                ->subDays(45)
+                ->addMinutes(($pairIndex * 40) + $faker->numberBetween(0, 20));
 
-            if ($userOneId === $userTwoId) {
+            $conversation = Conversation::query()->firstOrCreate(
+                [
+                    'user_one_id' => $userOneId,
+                    'user_two_id' => $userTwoId,
+                ],
+                [
+                    'last_message_at' => $conversationStartedAt,
+                    'last_message_preview' => null,
+                    'user_one_unread_count' => 0,
+                    'user_two_unread_count' => 0,
+                    'blocked_by' => null,
+                    'created_at' => $conversationStartedAt,
+                    'updated_at' => $conversationStartedAt,
+                ]
+            );
+
+            if ($conversation->messages()->exists()) {
                 continue;
             }
 
-            $key = min($userOneId, $userTwoId).':'.max($userOneId, $userTwoId);
+            $summary = $this->seedConversationMessages(
+                conversation: $conversation,
+                userOneId: $userOneId,
+                userTwoId: $userTwoId,
+                startedAt: $conversationStartedAt,
+                faker: $faker,
+            );
 
-            if (isset($conversationKeys[$key])) {
+            $conversation->update($summary);
+        }
+    }
+
+    /**
+     * @param  list<int>  $userIds
+     * @return list<array{0: int, 1: int}>
+     */
+    private function buildUserPairs(array $userIds): array
+    {
+        $pairs = [];
+        $pairIndex = [];
+        $userCount = count($userIds);
+
+        foreach (self::PAIR_OFFSETS as $offset) {
+            if ($offset >= $userCount) {
                 continue;
             }
 
-            $conversationKeys[$key] = true;
-            $createdAt = Carbon::instance($faker->dateTimeBetween('-60 days', 'now'));
-
-            $conversationIds[] = DB::table('conversations')->insertGetId([
-                'user_one_id' => min($userOneId, $userTwoId),
-                'user_two_id' => max($userOneId, $userTwoId),
-                'last_message_at' => $createdAt,
-                'last_message_preview' => null,
-                'user_one_unread_count' => 0,
-                'user_two_unread_count' => 0,
-                'blocked_by' => null,
-                'created_at' => $createdAt,
-                'updated_at' => $createdAt,
-            ]);
-        }
-
-        $messages = [];
-
-        foreach ($conversationIds as $conversationId) {
-            $conversation = DB::table('conversations')->where('id', $conversationId)->first();
-            $participants = [(int) $conversation->user_one_id, (int) $conversation->user_two_id];
-            $messageCount = $faker->numberBetween(2, self::TARGET_MESSAGES_PER_CONVERSATION);
-
-            $lastAt = Carbon::instance($faker->dateTimeBetween('-60 days', 'now'));
-
-            for ($i = 0; $i < $messageCount; $i++) {
-                $senderId = $participants[$i % 2];
-                $sentAt = (clone $lastAt)->addMinutes($faker->numberBetween(1, 120));
-                $lastAt = $sentAt;
-
-                $messages[] = [
-                    'conversation_id' => $conversationId,
-                    'sender_id' => $senderId,
-                    'body' => $faker->sentence($faker->numberBetween(4, 14)),
-                    'is_read' => $faker->boolean(70),
-                    'read_at' => $faker->boolean(60) ? $sentAt : null,
-                    'created_at' => $sentAt,
-                    'updated_at' => $sentAt,
-                ];
+            for ($index = 0; $index < $userCount; $index++) {
+                $this->appendPair(
+                    pairs: $pairs,
+                    pairIndex: $pairIndex,
+                    firstUserId: $userIds[$index],
+                    secondUserId: $userIds[($index + $offset) % $userCount],
+                );
             }
+        }
 
-            DB::table('conversations')->where('id', $conversationId)->update([
-                'last_message_at' => $lastAt,
-                'last_message_preview' => mb_substr($messages[count($messages) - 1]['body'], 0, 100),
+        return $pairs;
+    }
+
+    /**
+     * @param  array<int, array{0: int, 1: int}>  $pairs
+     * @param  array<string, true>  $pairIndex
+     */
+    private function appendPair(array &$pairs, array &$pairIndex, int $firstUserId, int $secondUserId): void
+    {
+        if ($firstUserId === $secondUserId) {
+            return;
+        }
+
+        $userOneId = min($firstUserId, $secondUserId);
+        $userTwoId = max($firstUserId, $secondUserId);
+        $pairKey = $userOneId.':'.$userTwoId;
+
+        if (isset($pairIndex[$pairKey])) {
+            return;
+        }
+
+        $pairIndex[$pairKey] = true;
+        $pairs[] = [$userOneId, $userTwoId];
+    }
+
+    /**
+     * @return array{
+     *   last_message_at: CarbonImmutable,
+     *   last_message_preview: string,
+     *   user_one_unread_count: int,
+     *   user_two_unread_count: int
+     * }
+     */
+    private function seedConversationMessages(
+        Conversation $conversation,
+        int $userOneId,
+        int $userTwoId,
+        CarbonImmutable $startedAt,
+        Generator $faker,
+    ): array {
+        $messageCount = $faker->numberBetween(
+            self::MIN_MESSAGES_PER_CONVERSATION,
+            self::MAX_MESSAGES_PER_CONVERSATION,
+        );
+
+        $messageAt = $startedAt;
+        $lastBody = '';
+        $userOneUnreadCount = 0;
+        $userTwoUnreadCount = 0;
+
+        for ($index = 0; $index < $messageCount; $index++) {
+            $senderId = $index % 2 === 0 ? $userOneId : $userTwoId;
+            $receiverId = $senderId === $userOneId ? $userTwoId : $userOneId;
+            $messageAt = $messageAt->addMinutes($faker->numberBetween(4, 100));
+
+            $isRead = $index < ($messageCount - 1) ? $faker->boolean(70) : false;
+            $status = $isRead ? MessageStatus::Read->value : MessageStatus::Delivered->value;
+            $body = $faker->sentence($faker->numberBetween(5, 12));
+
+            $lastBody = $body;
+
+            Message::query()->create([
+                'conversation_id' => $conversation->getKey(),
+                'sender_id' => $senderId,
+                'receiver_id' => $receiverId,
+                'body' => $body,
+                'status' => $status,
+                'is_read' => $isRead,
+                'read_at' => $isRead ? $messageAt : null,
+                'created_at' => $messageAt,
+                'updated_at' => $messageAt,
             ]);
+
+            if (! $isRead) {
+                if ($receiverId === $userOneId) {
+                    $userOneUnreadCount++;
+                } else {
+                    $userTwoUnreadCount++;
+                }
+            }
         }
 
-        foreach (array_chunk($messages, 500) as $chunk) {
-            DB::table('messages')->insert($chunk);
-        }
+        return [
+            'last_message_at' => $messageAt,
+            'last_message_preview' => mb_substr($lastBody, 0, 100),
+            'user_one_unread_count' => $userOneUnreadCount,
+            'user_two_unread_count' => $userTwoUnreadCount,
+        ];
     }
 }

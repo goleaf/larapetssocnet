@@ -1,11 +1,3 @@
-@php
- $sections = [
- ['title' => 'Today', 'items' => $todayNotifications],
- ['title' => 'This Week', 'items' => $thisWeekNotifications],
- ['title' => 'Older', 'items' => $olderNotifications],
- ];
-@endphp
-
 @section('title','Notifications')
 
 <x-app-layout>
@@ -32,43 +24,29 @@
  />
  @else
  <div class="space-y-7">
- @foreach ($sections as $section)
- @php
- $sectionItems = $section['items'];
- @endphp
-
- @continue($sectionItems->isEmpty())
+ @foreach ([['title' => 'Today', 'items' => $todayNotifications], ['title' => 'This Week', 'items' => $thisWeekNotifications], ['title' => 'Older', 'items' => $olderNotifications]] as $section)
+ @continue($section['items']->isEmpty())
 
  <section class="{{ $loop->first ? '' : 'border-t pt-6' }}" style="{{ $loop->first ? '' : 'border-color: var(--ui-border);' }}">
  <div class="mb-3 flex items-center justify-between">
  <h2 class="shell-title text-sm uppercase tracking-[0.08em]">{{ $section['title'] }}</h2>
- <x-ui.badge size="sm">{{ $sectionItems->count() }}</x-ui.badge>
+ <x-ui.badge size="sm">{{ $section['items']->count() }}</x-ui.badge>
  </div>
 
  <div class="space-y-3">
- @foreach ($sectionItems as $notification)
- @php
- $data = is_array($notification->data) ? $notification->data : [];
- $message = $data['message'] ?? 'You have a new notification.';
- $route = $data['route'] ?? route('notifications.index');
- $isUnread = $notification->read_at === null;
- $cardBackground = $isUnread
- ? 'color-mix(in srgb, var(--ui-primary) 7%, var(--ui-surface) 93%)'
- : 'color-mix(in srgb, var(--ui-surface) 95%, white 5%)';
- @endphp
-
- <article class="border px-4 py-3" style="border-color: var(--ui-border); background: {{ $cardBackground }};">
+ @foreach ($section['items'] as $notification)
+ <article class="border px-4 py-3" style="border-color: var(--ui-border); background: {{ $notification->read_at === null ? 'color-mix(in srgb, var(--ui-primary) 7%, var(--ui-surface) 93%)' : 'color-mix(in srgb, var(--ui-surface) 95%, white 5%)' }};">
  <div class="flex items-start gap-3">
- <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-[var(--radius-soft)] {{ $isUnread ? 'bg-emerald-500' : 'bg-slate-300' }}"></span>
+ <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-[var(--radius-soft)] {{ $notification->read_at === null ? 'bg-emerald-500' : 'bg-slate-300' }}"></span>
 
  <div class="min-w-0 flex-1">
- <a href="{{ $route }}" class="block text-sm font-semibold leading-5 text-[var(--ui-text)] hover:underline">
- {{ $message }}
+ <a href="{{ data_get($notification->data, 'route', route('notifications.index')) }}" class="block text-sm font-semibold leading-5 text-[var(--ui-text)] hover:underline">
+ {{ data_get($notification->data, 'message', 'You have a new notification.') }}
  </a>
  <p class="mt-1 text-xs shell-text-muted">{{ $notification->created_at?->diffForHumans() }}</p>
  </div>
 
- @if ($isUnread)
+ @if ($notification->read_at === null)
  <form method="POST" action="{{ route('notifications.read', ['notification' => $notification->id]) }}">
  @csrf
  @method('PATCH')

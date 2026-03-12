@@ -1,8 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('pets.title') }}
-        </h2>
+        <x-ui.page-header :title="__('pets.title')" description="Browse and manage community pet profiles." icon="🐕" />
     </x-slot>
 
     <div class="py-8">

@@ -1,9 +1,10 @@
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between gap-3">
- <h2 class="text-xl font-semibold text-gray-800 leading-tight">Create Marketplace Listing</h2>
+ <x-ui.page-header title="Create Marketplace Listing" description="Publish a new listing with photos, details, and pricing." icon="🛍️">
+ <x-slot name="action">
  <a href="{{ route('marketplace.index') }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to Marketplace</a>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">

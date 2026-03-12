@@ -2,11 +2,8 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between">
- <div>
- <h1 class="shell-title text-xl">Follow Requests</h1>
- <p class="mt-1 text-sm shell-text-muted">Review pending requests for your private profile.</p>
- </div>
+ <x-ui.page-header title="Follow Requests" description="Review pending requests for your private profile." icon="✅">
+ <x-slot name="action">
  <button
  type="button"
  class="btn-base btn-primary px-3 py-2 text-xs"
@@ -15,7 +12,8 @@
  >
  Approve all
  </button>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <section class="shell-card p-5">

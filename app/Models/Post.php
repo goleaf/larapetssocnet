@@ -456,7 +456,6 @@ class Post extends Model implements HasMedia
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
-            ->withListEngagement($viewerId)
             ->published()
             ->explorable($viewer)
             ->when($type === 'photos', fn (Builder $query) => $query->byType(self::TYPE_PHOTO))
@@ -470,6 +469,7 @@ class Post extends Model implements HasMedia
                     ->latest('posts.created_at'),
                 fn (Builder $query) => $query->latest('posts.created_at')
             )
+            ->withListEngagement($viewerId)
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -494,7 +494,6 @@ class Post extends Model implements HasMedia
 
         return self::query()
             ->searchResultColumns()
-            ->withListEngagement($viewerId)
             ->published()
             ->visibleTo($viewer)
             ->with([
@@ -502,6 +501,7 @@ class Post extends Model implements HasMedia
             ])
             ->when($term !== '', fn (Builder $query) => $query->search($term))
             ->latest('posts.created_at')
+            ->withListEngagement($viewerId)
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -541,12 +541,12 @@ class Post extends Model implements HasMedia
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
-            ->withListEngagement($viewerId)
             ->published()
             ->visibleTo($viewer)
             ->where('posts.visibility', '!=', self::VISIBILITY_PRIVATE)
             ->orderByDesc('posts.is_pinned')
             ->latest('posts.created_at')
+            ->withListEngagement($viewerId)
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -863,6 +863,41 @@ class Post extends Model implements HasMedia
         }
 
         return $this->postReactions()->where('user_id', auth()->id())->value('type');
+    }
+
+    public function displayAuthor(): ?User
+    {
+        return $this->user;
+    }
+
+    public function displayPhotos(): Collection
+    {
+        return collect($this->getMedia('photos'))->merge($this->getMedia('images'));
+    }
+
+    public function displayVideo(): ?Media
+    {
+        return $this->getFirstMedia('video');
+    }
+
+    public function visibilityLabel(): string
+    {
+        return ucfirst((string) ($this->visibility ?: self::VISIBILITY_PUBLIC));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function reactionEmojiMap(): array
+    {
+        return [
+            'love' => '❤️',
+            'cute' => '🥹',
+            'funny' => '😂',
+            'wow' => '😮',
+            'sad' => '😢',
+            'support' => '🤝',
+        ];
     }
 
     public function canBeViewedBy(?User $viewer): bool

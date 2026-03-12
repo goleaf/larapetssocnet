@@ -1,11 +1,10 @@
 <x-app-layout>
  <x-slot name="header">
- <div class="flex items-center justify-between gap-4">
- <h2 class="font-semibold text-xl text-gray-800 leading-tight">
- Pet Care Tips
- </h2>
+ <x-ui.page-header title="Pet Care Tips" description="Discover, filter, and share practical pet advice." icon="📚">
+ <x-slot name="action">
  <a href="{{ route('tips.create') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Share a tip</a>
- </div>
+ </x-slot>
+ </x-ui.page-header>
  </x-slot>
 
  <div class="py-8">
@@ -48,20 +47,16 @@
  <div class="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
  No tips found.
  </div>
- @else
- <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
- @foreach($tips as $tip)
- @php
- $tipSlug = $tip->slug ?? $tip->getKey();
- $isApproved = (bool) data_get($tip,'is_approved', true);
- @endphp
- <article class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
- <div class="flex items-center gap-2">
- @if($isApproved)
- <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Approved</span>
- @else
- <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">Pending approval</span>
- @endif
+	 @else
+	 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+	 @foreach($tips as $tip)
+	 <article class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+	 <div class="flex items-center gap-2">
+	 @if((bool) data_get($tip, 'is_approved', true))
+	 <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Approved</span>
+	 @else
+	 <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">Pending approval</span>
+	 @endif
 
  @if(!empty($tip->species))
  <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ $tip->species }}</span>
@@ -71,12 +66,12 @@
  <h3 class="mt-3 text-lg font-semibold text-gray-900">{{ $tip->title }}</h3>
  <p class="mt-2 text-sm text-gray-600">{{ \Illuminate\Support\Str::limit((string) $tip->content, 140) }}</p>
 
- <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
- <span>{{ data_get($tip,'helpful_count', 0) }} helpful</span>
- <a href="{{ route('tips.show', $tipSlug) }}" class="text-indigo-600 hover:text-indigo-800">Read tip</a>
- </div>
- </article>
- @endforeach
+	 <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
+	 <span>{{ data_get($tip,'helpful_count', 0) }} helpful</span>
+	 <a href="{{ route('tips.show', $tip->slug ?? $tip->getKey()) }}" class="text-indigo-600 hover:text-indigo-800">Read tip</a>
+	 </div>
+	 </article>
+	 @endforeach
  </div>
 
  <div>

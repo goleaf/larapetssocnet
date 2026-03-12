@@ -2,10 +2,7 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div>
- <h1 class="shell-title text-xl">Account Settings</h1>
- <p class="mt-1 text-sm shell-text-muted">Manage privacy, blocked users, security, and the account danger zone.</p>
- </div>
+ <x-ui.page-header title="Account Settings" description="Manage privacy, blocked users, security, and the account danger zone." icon="⚙️" />
  </x-slot>
 
  <div class="space-y-5">
@@ -123,13 +120,9 @@
  <h2 class="shell-title text-lg">Blocked Users</h2>
  <p class="mt-1 text-sm shell-text-muted">Blocked users cannot follow you or interact with your profile.</p>
 
- <div class="mt-4 space-y-3">
- @forelse ($blockedUsers as $blockedUser)
- @php
- $canUnblock = filled($blockedUser->username);
- $unblockUrl = $canUnblock ? route('users.unblock', ['user'=> $blockedUser]) : null;
- @endphp
- <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+	 <div class="mt-4 space-y-3">
+	 @forelse ($blockedUsers as $blockedUser)
+	 <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
  <div class="flex min-w-0 items-center gap-3">
  <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')" :name="$blockedUser->name" size="md"/>
  <div class="min-w-0">
@@ -138,23 +131,23 @@
  </div>
  </div>
 
- <button
- type="button"
- class="btn-base btn-ghost px-3 py-2 text-xs"
- :disabled="!{{ $canUnblock ?'true':'false'}} || unblocking === {{ $blockedUser->id }}"
- aria-label="Unblock {{ $blockedUser->name }}"
- @click="(async () => {
- if (!{{ $canUnblock ?'true':'false'}}) {
- return;
- }
- unblocking = {{ $blockedUser->id }};
- notice ='';
+	 <button
+	 type="button"
+	 class="btn-base btn-ghost px-3 py-2 text-xs"
+	 :disabled="!{{ filled($blockedUser->username) ? 'true' : 'false' }} || unblocking === {{ $blockedUser->id }}"
+	 aria-label="Unblock {{ $blockedUser->name }}"
+	 @click="(async () => {
+	 if (!{{ filled($blockedUser->username) ? 'true' : 'false' }}) {
+	 return;
+	 }
+	 unblocking = {{ $blockedUser->id }};
+	 notice ='';
 
- try {
- const response = await fetch('{{ $unblockUrl }}', {
- method:'DELETE',
- headers: {
-'Accept':'application/json',
+	 try {
+	 const response = await fetch('{{ filled($blockedUser->username) ? route('users.unblock', ['user' => $blockedUser]) : '' }}', {
+	 method:'DELETE',
+	 headers: {
+	'Accept':'application/json',
 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
  },
  });
@@ -173,10 +166,10 @@
  unblocking = null;
  }
  })()"
- >
- <span x-text="unblocking === {{ $blockedUser->id }} ?'Updating...':'{{ $canUnblock ?'Unblock':'Unavailable'}}'"></span>
- </button>
- </div>
+	 >
+	 <span x-text="unblocking === {{ $blockedUser->id }} ?'Updating...':'{{ filled($blockedUser->username) ? 'Unblock' : 'Unavailable' }}'"></span>
+	 </button>
+	 </div>
  @empty
  <x-ui.empty-state
  icon="🛡️"
