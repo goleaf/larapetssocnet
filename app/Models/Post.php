@@ -454,7 +454,7 @@ class Post extends Model implements HasMedia
             ->with([
                 'user',
                 'hashtags',
-                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
             ->withListEngagement($viewerId)
             ->published()
@@ -498,7 +498,7 @@ class Post extends Model implements HasMedia
             ->published()
             ->visibleTo($viewer)
             ->with([
-                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
             ->when($term !== '', fn (Builder $query) => $query->search($term))
             ->latest('posts.created_at')
@@ -539,7 +539,7 @@ class Post extends Model implements HasMedia
             ->with([
                 'user',
                 'hashtags',
-                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
             ->withListEngagement($viewerId)
             ->published()
@@ -563,7 +563,7 @@ class Post extends Model implements HasMedia
             ->with([
                 'user',
                 'hashtags',
-                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($profileOwner),
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($profileOwner),
             ])
             ->latest('posts.created_at')
             ->limit($limit)
@@ -754,7 +754,7 @@ class Post extends Model implements HasMedia
             ->with([
                 'user',
                 'author',
-                'pet' => fn (Builder $petQuery): Builder => $petQuery
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery
                     ->visibleTo($viewer)
                     ->with('media'),
                 'media',

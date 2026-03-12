@@ -10,6 +10,7 @@ use App\Models\Pet;
 use App\Models\Post;
 use App\Services\PostService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -37,7 +38,7 @@ class PostController extends Controller
         $post->load([
             'user',
             'author',
-            'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($request->user()),
+            'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($request->user()),
             'media',
             'tags',
         ]);
