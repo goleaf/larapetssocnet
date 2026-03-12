@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Pet;
 use App\Models\User;
+use App\Services\PetSlugService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PetService
 {
@@ -14,6 +16,7 @@ class PetService
         private MediaService $media,
         private PersonalityTagService $personalityTags,
         private PetGalleryService $galleryService,
+        private PetSlugService $slugService,
     ) {}
 
     public function create(User $owner, array $data, ?UploadedFile $avatar = null): Pet
@@ -23,10 +26,19 @@ class PetService
             $bioHtml = $bio ? $this->content->process($bio) : null;
 
             $tags = $this->personalityTags->normalize($data['personality_tags'] ?? []);
+            $slug = null;
+
+            if (Schema::hasColumn('pets', 'slug')) {
+                $slug = $this->slugService->generateUnique(
+                    (string) $data['name'],
+                    (string) ($owner->username ?? 'pet')
+                );
+            }
 
             $pet = Pet::create([
                 'user_id' => $owner->id,
                 'name' => $data['name'],
+                'slug' => $slug,
                 'species' => $data['species'] ?? 'other',
                 'breed' => $data['breed'] ?? null,
                 'gender' => $data['gender'] ?? 'unknown',

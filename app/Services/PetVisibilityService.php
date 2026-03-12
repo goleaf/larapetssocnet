@@ -43,6 +43,26 @@ class PetVisibilityService
         return $this->petsVisibilityAllows($viewer, $owner);
     }
 
+    public function canViewPetShell(?User $viewer, Pet $pet): bool
+    {
+        return $this->canView($viewer, $pet);
+    }
+
+    public function canViewPetPosts(?User $viewer, Pet $pet): bool
+    {
+        return $this->canView($viewer, $pet);
+    }
+
+    public function canViewPetGallery(?User $viewer, Pet $pet): bool
+    {
+        return $this->canView($viewer, $pet);
+    }
+
+    public function canViewPetFollowers(?User $viewer, Pet $pet): bool
+    {
+        return $this->canViewFollowers($viewer, $pet);
+    }
+
     public function canViewFollowers(?User $viewer, Pet $pet): bool
     {
         if (! $this->canView($viewer, $pet)) {

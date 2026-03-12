@@ -9,6 +9,7 @@ return [
     'not_available' => 'N/A',
     'species' => 'Species',
     'breed' => 'Breed',
+    'sex' => 'Sex',
     'bio' => 'Bio',
     'not_available' => 'N/A',
     'no_bio' => 'No bio yet.',
@@ -40,6 +41,7 @@ return [
     'status' => [
         'adoptable' => 'Up for adoption',
         'public' => 'Public',
+        'private' => 'Private',
         'visible_profile' => 'Visible profile',
     ],
     'adoption' => [

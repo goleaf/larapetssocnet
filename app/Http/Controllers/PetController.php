@@ -15,7 +15,12 @@ use App\Services\PersonalityTagService;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 class PetController extends Controller
 {
@@ -56,7 +61,11 @@ class PetController extends Controller
         }
 
         $posts = $this->postsForShow($pet, $request->user());
-        $gallery = $activeTab === 'gallery' ? $pet->galleryForShow() : collect();
+        $gallery = $activeTab === 'gallery'
+            ? $pet->galleryForShow()
+                ->map(fn (mixed $item): array => $this->mapGalleryItem($item))
+                ->values()
+            : collect();
 
         $healthLogs = collect();
         $weightChartSvg = null;
@@ -69,6 +78,17 @@ class PetController extends Controller
         $isFollowing = $request->user()?->isFollowingPet($pet) ?? false;
         $pet->setAttribute('viewer_is_following', $isFollowing);
 
+        $petSlug = $pet->slug ?? $pet->getKey();
+        $avatarUrl = $pet->avatar_url;
+        $personalityTags = $this->normalizePersonalityTags($pet->personality_tags);
+        $birthdateLabel = $this->resolveBirthdateLabel($pet);
+        $ageLabel = $pet->age_formatted;
+        $speciesLabel = $this->resolveSpeciesLabel($pet);
+        $breedLabel = $this->resolveBreedLabel($pet);
+        $sexLabel = $this->resolveSexLabel($pet);
+        $postsCount = (int) ($pet->posts_count ?? 0);
+        $followersCount = (int) ($pet->followers_count ?? 0);
+
         return view('pets.show', [
             'pet' => $pet,
             'tabs' => $tabs,
@@ -79,6 +99,16 @@ class PetController extends Controller
             'gallery' => $gallery,
             'healthLogs' => $healthLogs,
             'weightChartSvg' => $weightChartSvg,
+            'petSlug' => $petSlug,
+            'avatarUrl' => $avatarUrl,
+            'personalityTags' => $personalityTags,
+            'birthdateLabel' => $birthdateLabel,
+            'ageLabel' => $ageLabel,
+            'speciesLabel' => $speciesLabel,
+            'breedLabel' => $breedLabel,
+            'sexLabel' => $sexLabel,
+            'postsCount' => $postsCount,
+            'followersCount' => $followersCount,
         ]);
     }
 
@@ -86,7 +116,7 @@ class PetController extends Controller
     {
         $this->authorize('create', Pet::class);
 
-        return view('pets.create', $this->petFormDefaults());
+        return view('pets.create', $this->petFormData(request()));
     }
 
     public function store(CreatePetRequest $request, CreatePetAction $createPetAction): RedirectResponse
@@ -111,22 +141,20 @@ class PetController extends Controller
 
         $pet->loadMissing('media');
 
-        $galleryItems = collect($pet->getMedia(Pet::MEDIA_COLLECTION_GALLERY))
-            ->sortBy(function ($media): string {
-                $order = (int) ($media->order_column ?? 0);
-                $timestamp = (int) (optional($media->created_at)->timestamp ?? 0);
-
-                return sprintf('%05d-%010d', $order, $timestamp);
-            })
-            ->values();
-
+        $galleryItems = $this->buildGalleryManagerItems($pet);
         $galleryMax = (int) config('pets.gallery.max_photos', 30);
+        $galleryUploadMax = (int) config('pets.gallery.max_upload', 5);
+        $galleryCount = $galleryItems->count();
+        $galleryRemaining = max($galleryMax - $galleryCount, 0);
 
         return view('pets.edit', [
             'pet' => $pet,
             'galleryItems' => $galleryItems,
             'galleryMax' => $galleryMax,
-            ...$this->petFormDefaults(),
+            'galleryUploadMax' => $galleryUploadMax,
+            'galleryCount' => $galleryCount,
+            'galleryRemaining' => $galleryRemaining,
+            ...$this->petFormData(request(), $pet),
         ]);
     }
 
@@ -268,13 +296,21 @@ class PetController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function petFormDefaults(): array
+    private function petFormData(Request $request, ?Pet $pet = null): array
     {
         $service = app(PersonalityTagService::class);
+        $speciesOptions = $this->resolveSelectOptions(Pet::SPECIES);
+        $genderOptions = $this->resolveSelectOptions(Pet::GENDERS);
+        $sizeOptions = $this->resolveSelectOptions(Pet::SIZES);
 
         return [
             'personalityTagSuggestions' => $service->getSuggestions(),
             'personalityTagMax' => $service->maxTags(),
+            'personalityTagsInitial' => $this->resolvePersonalityTagsInitial($request, $pet),
+            'birthdateValue' => $this->resolveBirthdateValue($request, $pet),
+            'speciesOptions' => $speciesOptions,
+            'genderOptions' => $genderOptions,
+            'sizeOptions' => $sizeOptions,
         ];
     }
 
@@ -288,5 +324,222 @@ class PetController extends Controller
         }
 
         return app(PersonalityTagService::class)->normalize($rawTags);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolvePersonalityTagsInitial(Request $request, ?Pet $pet): array
+    {
+        $tags = $request->old('personality_tags');
+
+        if ($tags === null && $pet) {
+            $tags = $pet->personality_tags ?? [];
+        }
+
+        if (is_string($tags)) {
+            $tags = explode(',', $tags);
+        }
+
+        return collect($tags ?? [])
+            ->map(static fn (mixed $tag): string => trim((string) $tag))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function resolveBirthdateValue(Request $request, ?Pet $pet): ?string
+    {
+        $birthdateValue = $request->old('birth_date', $request->old('birthdate'));
+
+        if ($birthdateValue !== null && $birthdateValue !== '') {
+            return (string) $birthdateValue;
+        }
+
+        if (! $pet) {
+            return null;
+        }
+
+        $rawBirthdate = data_get($pet, 'birth_date') ?? data_get($pet, 'birthdate');
+
+        if ($rawBirthdate instanceof \Illuminate\Support\CarbonInterface) {
+            return $rawBirthdate->toDateString();
+        }
+
+        if (is_string($rawBirthdate) && $rawBirthdate !== '') {
+            try {
+                return Carbon::parse($rawBirthdate)->toDateString();
+            } catch (Throwable) {
+                return substr($rawBirthdate, 0, 10);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<string>  $values
+     * @return array<string, string>
+     */
+    private function resolveSelectOptions(array $values): array
+    {
+        $options = ['' => 'Select'];
+
+        foreach ($values as $value) {
+            $options[$value] = Str::headline($value);
+        }
+
+        return $options;
+    }
+
+    private function resolveBirthdateLabel(Pet $pet): ?string
+    {
+        $birthdate = $pet->birth_date ?? $pet->date_of_birth;
+
+        if ($birthdate instanceof \Illuminate\Support\CarbonInterface) {
+            return $birthdate->toFormattedDateString();
+        }
+
+        if (is_string($birthdate) && $birthdate !== '') {
+            try {
+                return Carbon::parse($birthdate)->toFormattedDateString();
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function normalizePersonalityTags(mixed $tags): array
+    {
+        if ($tags === null) {
+            return [];
+        }
+
+        if (is_string($tags)) {
+            $decoded = json_decode($tags, true);
+            $tags = is_array($decoded) ? $decoded : [];
+        }
+
+        return collect((array) $tags)
+            ->map(static fn (mixed $tag): string => trim((string) $tag))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function resolveSpeciesLabel(Pet $pet): string
+    {
+        $species = (string) ($pet->species ?? '');
+
+        return $species !== '' ? Str::headline($species) : __('pets.not_available');
+    }
+
+    private function resolveBreedLabel(Pet $pet): ?string
+    {
+        $breed = (string) ($pet->breed ?? '');
+
+        return $breed !== '' ? Str::headline($breed) : null;
+    }
+
+    private function resolveSexLabel(Pet $pet): ?string
+    {
+        $sex = $pet->sex ?? $pet->gender;
+
+        if (! $sex) {
+            return null;
+        }
+
+        return Str::headline((string) $sex);
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function buildGalleryManagerItems(Pet $pet): Collection
+    {
+        $galleryItems = collect($pet->getMedia(Pet::MEDIA_COLLECTION_GALLERY))
+            ->sortBy(function (Media $media): string {
+                $order = (int) ($media->order_column ?? 0);
+                $timestamp = (int) (optional($media->created_at)->timestamp ?? 0);
+
+                return sprintf('%05d-%010d', $order, $timestamp);
+            })
+            ->values();
+
+        $galleryIds = $galleryItems->pluck('id')->values()->all();
+        $galleryLastIndex = count($galleryIds) - 1;
+
+        return $galleryItems->map(function (Media $media, int $index) use ($galleryIds, $galleryLastIndex): array {
+            $thumbUrl = $media->getUrl(Pet::MEDIA_CONVERSION_GALLERY_THUMB);
+            $thumbUrl = $thumbUrl !== '' ? $thumbUrl : $media->getUrl();
+            $caption = (string) ($media->getCustomProperty('caption') ?? '');
+            $altText = (string) ($media->getCustomProperty('alt_text') ?? '');
+
+            $moveLeft = null;
+            $moveRight = null;
+
+            if ($index > 0) {
+                $moveLeft = $this->swapGalleryOrder($galleryIds, $index, $index - 1);
+            }
+
+            if ($index < $galleryLastIndex) {
+                $moveRight = $this->swapGalleryOrder($galleryIds, $index, $index + 1);
+            }
+
+            return [
+                'id' => $media->getKey(),
+                'thumb_url' => $thumbUrl,
+                'caption' => $caption,
+                'alt_text' => $altText,
+                'move_left' => $moveLeft,
+                'move_right' => $moveRight,
+            ];
+        })->values();
+    }
+
+    /**
+     * @param  array<int, int>  $order
+     * @return array<int, int>
+     */
+    private function swapGalleryOrder(array $order, int $from, int $to): array
+    {
+        $swapped = $order;
+
+        [$swapped[$from], $swapped[$to]] = [$swapped[$to], $swapped[$from]];
+
+        return $swapped;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapGalleryItem(mixed $item): array
+    {
+        $url = null;
+        $label = __('pets.gallery_item');
+        $caption = '';
+        $altText = '';
+
+        if (is_object($item) && method_exists($item, 'getUrl')) {
+            $url = $item->getUrl(Pet::MEDIA_CONVERSION_GALLERY_MEDIUM) ?: $item->getUrl();
+            $label = (string) ($item->name ?? $item->file_name ?? $label);
+            $caption = (string) ($item->getCustomProperty('caption') ?? '');
+            $altText = (string) ($item->getCustomProperty('alt_text') ?? '');
+        }
+
+        $alt = $altText !== '' ? $altText : $label;
+
+        return [
+            'id' => data_get($item, 'id'),
+            'url' => $url,
+            'label' => $label,
+            'caption' => $caption,
+            'alt' => $alt,
+        ];
     }
 }

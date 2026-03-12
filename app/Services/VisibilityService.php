@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\PetVisibilityService;
 
 class VisibilityService
 {
@@ -15,7 +16,7 @@ class VisibilityService
 
     public function canView(?User $viewer, Post $post): bool
     {
-        $post->loadMissing('author');
+        $post->loadMissing(['author', 'pet']);
 
         if ((bool) $post->author->is_banned) {
             return false;
@@ -27,6 +28,10 @@ class VisibilityService
 
         if ($viewer?->is($post->author)) {
             return true;
+        }
+
+        if ($post->pet && ! app(PetVisibilityService::class)->canViewPetPosts($viewer, $post->pet)) {
+            return false;
         }
 
         if ($viewer && $viewer->hasBlockingRelationshipWith($post->author)) {

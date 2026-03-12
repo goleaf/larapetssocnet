@@ -16,7 +16,22 @@ class PetPolicy
 
     public function view(?User $user, Pet $pet): bool
     {
-        return app(PetVisibilityService::class)->canView($user, $pet);
+        return app(PetVisibilityService::class)->canViewPetShell($user, $pet);
+    }
+
+    public function viewShell(?User $user, Pet $pet): bool
+    {
+        return app(PetVisibilityService::class)->canViewPetShell($user, $pet);
+    }
+
+    public function viewPosts(?User $user, Pet $pet): bool
+    {
+        return app(PetVisibilityService::class)->canViewPetPosts($user, $pet);
+    }
+
+    public function viewGallery(?User $user, Pet $pet): bool
+    {
+        return app(PetVisibilityService::class)->canViewPetGallery($user, $pet);
     }
 
     public function create(User $user): bool
@@ -56,7 +71,7 @@ class PetPolicy
 
     public function viewFollowers(?User $user, Pet $pet): bool
     {
-        return app(PetVisibilityService::class)->canViewFollowers($user, $pet);
+        return app(PetVisibilityService::class)->canViewPetFollowers($user, $pet);
     }
 
     public function createPostForPet(User $user, Pet $pet): bool
@@ -76,6 +91,16 @@ class PetPolicy
     public function detachPost(User $user, Pet $pet, Post $post): bool
     {
         return $this->attachPost($user, $pet, $post);
+    }
+
+    public function attachToPost(User $user, Pet $pet, Post $post): bool
+    {
+        return $this->attachPost($user, $pet, $post);
+    }
+
+    public function detachFromPost(User $user, Pet $pet, Post $post): bool
+    {
+        return $this->detachPost($user, $pet, $post);
     }
 
     public function follow(User $user, Pet $pet): bool

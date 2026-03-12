@@ -6,6 +6,7 @@ use App\Models\Pet;
 use App\Services\PersonalityTagService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class StorePetRequest extends FormRequest
@@ -50,6 +51,42 @@ class StorePetRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $name = Str::squish((string) $this->input('name'));
+
+        if ($name !== '') {
+            $this->merge(['name' => $name]);
+        }
+
+        if ($this->has('species')) {
+            $species = strtolower(trim((string) $this->input('species')));
+            $this->merge(['species' => $species]);
+        }
+
+        if ($this->has('breed')) {
+            $breed = Str::squish((string) $this->input('breed'));
+            $this->merge(['breed' => $breed === '' ? null : $breed]);
+        }
+
+        if ($this->has('bio')) {
+            $bio = Str::squish((string) $this->input('bio'));
+            $this->merge(['bio' => $bio === '' ? null : $bio]);
+        }
+
+        if ($this->has('age_text')) {
+            $ageText = Str::squish((string) $this->input('age_text'));
+            $this->merge(['age_text' => $ageText === '' ? null : $ageText]);
+        }
+
+        if ($this->has('sex')) {
+            $sex = strtolower(trim((string) $this->input('sex')));
+            $this->merge(['sex' => $sex === '' ? null : $sex]);
+        }
+
+        if ($this->has('gender')) {
+            $gender = strtolower(trim((string) $this->input('gender')));
+            $this->merge(['gender' => $gender === '' ? null : $gender]);
+        }
+
         $visibility = $this->input('visibility');
         if ($visibility !== null && ! $this->has('is_public')) {
             $normalized = strtolower(trim((string) $visibility));

@@ -1,36 +1,12 @@
 @php
- use Illuminate\Support\Carbon;
-
  $pet = $pet ?? null;
  $personalityTagSuggestions = $personalityTagSuggestions ?? [];
  $personalityTagMax = $personalityTagMax ?? 10;
- $personalityTagsInitial = old('personality_tags');
- if ($personalityTagsInitial === null && $pet) {
- $personalityTagsInitial = $pet->personality_tags ?? [];
- }
- if (is_string($personalityTagsInitial)) {
- $personalityTagsInitial = explode(',', $personalityTagsInitial);
- }
- $personalityTagsInitial = collect($personalityTagsInitial)
- ->map(static fn ($tag): string => trim((string) $tag))
- ->filter()
- ->values()
- ->all();
-
- $birthdateValue = old('birth_date', old('birthdate'));
- if ($birthdateValue === null && $pet) {
- $rawBirthdate = data_get($pet,'birth_date') ?? data_get($pet,'birthdate');
-
- if ($rawBirthdate instanceof \Illuminate\Support\CarbonInterface) {
- $birthdateValue = $rawBirthdate->toDateString();
- } elseif (is_string($rawBirthdate) && $rawBirthdate !=='') {
- try {
- $birthdateValue = Carbon::parse($rawBirthdate)->toDateString();
- } catch (Throwable) {
- $birthdateValue = substr($rawBirthdate, 0, 10);
- }
- }
- }
+ $personalityTagsInitial = $personalityTagsInitial ?? [];
+ $birthdateValue = $birthdateValue ?? null;
+ $speciesOptions = $speciesOptions ?? [];
+ $genderOptions = $genderOptions ?? [];
+ $sizeOptions = $sizeOptions ?? [];
 @endphp
 
 <div class="space-y-6">
@@ -40,7 +16,14 @@
  </div>
 
  <div>
- <x-ui.input id="species" name="species" type="text" label="Species" :value="old('species', $pet?->species)" required/>
+ <x-ui.select
+ id="species"
+ name="species"
+ label="Species"
+ :options="$speciesOptions"
+ :selected="old('species', $pet?->species)"
+ required
+ />
  </div>
 
  <div>
@@ -52,12 +35,7 @@
  id="sex"
  name="sex"
  label="Sex"
- :options="[
- '' => 'Select',
- 'male' => 'Male',
- 'female' => 'Female',
- 'unknown' => 'Unknown',
- ]"
+ :options="$genderOptions"
  :selected="old('sex', old('gender', $pet?->sex))"
  />
  </div>
@@ -75,13 +53,7 @@
  id="size"
  name="size"
  label="Size"
- :options="[
- '' => 'Select',
- 'small' => 'Small',
- 'medium' => 'Medium',
- 'large' => 'Large',
- 'xlarge' => 'XLarge',
- ]"
+ :options="$sizeOptions"
  :selected="old('size', $pet?->size)"
  />
  </div>
@@ -90,6 +62,19 @@
  <div>
  <x-ui.textarea id="bio" name="bio" rows="5" label="Bio" :value="old('bio', $pet?->bio)"/>
  </div>
+
+ @if (empty($pet))
+ <div>
+ <x-ui.file-upload
+ id="avatar"
+ name="avatar"
+ label="Avatar"
+ accept="image/jpeg,image/png,image/webp,image/gif"
+ help="Upload a profile photo (max 5MB)."
+ />
+ <x-ui.hint :error="$errors->first('avatar')" />
+ </div>
+ @endif
 
  <div
  x-data="{

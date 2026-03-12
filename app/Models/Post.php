@@ -210,6 +210,8 @@ class Post extends Model implements HasMedia
                 $authorQuery->where('is_banned', false);
             });
 
+            $this->applyPetVisibilityScope($query, $viewer);
+
             return;
         }
 
@@ -226,6 +228,8 @@ class Post extends Model implements HasMedia
                         ->where('is_private', false)
                         ->where('is_banned', false);
                 });
+
+            $this->applyPetVisibilityScope($query, $viewer);
 
             return;
         }
@@ -283,6 +287,17 @@ class Post extends Model implements HasMedia
                                 });
                         });
                 });
+        });
+
+        $this->applyPetVisibilityScope($query, $viewer);
+    }
+
+    protected function applyPetVisibilityScope(Builder $query, ?User $viewer): void
+    {
+        $query->where(function (Builder $petQuery) use ($viewer): void {
+            $petQuery
+                ->whereNull('posts.pet_id')
+                ->orWhereHas('pet', fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer));
         });
     }
 

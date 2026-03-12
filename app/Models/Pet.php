@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\PetVisibilityService;
+use App\Services\PetSlugService;
 use App\Traits\HasCounterCache;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -157,6 +158,41 @@ class Pet extends Model implements HasMedia
             'posts_count' => 'integer',
             'health_logs_count' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $pet): void {
+            if (! self::hasPetsColumn('slug')) {
+                return;
+            }
+
+            $currentSlug = (string) ($pet->getAttribute('slug') ?? '');
+
+            if ($currentSlug !== '') {
+                return;
+            }
+
+            $ownerUsername = null;
+
+            if ($pet->relationLoaded('owner') && $pet->owner) {
+                $ownerUsername = $pet->owner->username;
+            }
+
+            if (! $ownerUsername && $pet->getAttribute('user_id')) {
+                $ownerUsername = User::query()
+                    ->select(['id', 'username'])
+                    ->whereKey((int) $pet->getAttribute('user_id'))
+                    ->value('username');
+            }
+
+            $ownerUsername = $ownerUsername ?: 'pet';
+
+            $pet->slug = app(PetSlugService::class)->generateUnique(
+                (string) $pet->getAttribute('name'),
+                (string) $ownerUsername
+            );
+        });
     }
 
     public function registerMediaCollections(): void
@@ -647,6 +683,26 @@ class Pet extends Model implements HasMedia
     protected function profilePhotoUrl(): Attribute
     {
         return Attribute::get(fn (): string => $this->avatar_url);
+    }
+
+    protected function visibility(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $raw = $this->getRawOriginal('is_public');
+
+                return in_array($raw, [0, '0', false], true) ? 'private' : 'public';
+            },
+            set: function (mixed $value): array {
+                if (is_bool($value)) {
+                    return ['is_public' => $value];
+                }
+
+                $normalized = strtolower(trim((string) $value));
+
+                return ['is_public' => $normalized === 'public'];
+            }
+        );
     }
 
     protected function ageYears(): Attribute

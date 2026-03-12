@@ -1,40 +1,3 @@
-@php
-    use Illuminate\Support\Carbon;
-    use Illuminate\Support\Facades\Storage;
-
-    $petSlug = $pet->slug ?? $pet->getKey();
-
-    $avatarUrl = null;
-    if (filled($pet->avatar_path)) {
-        $avatarUrl = Storage::url((string) $pet->avatar_path);
-    }
-
-    if (! $avatarUrl) {
-        $mediaAvatarUrl = $pet->getFirstMediaUrl('avatar');
-        $avatarUrl = $mediaAvatarUrl !== '' ? $mediaAvatarUrl : asset('images/default-avatar.png');
-    }
-
-    $personalityTags = $pet->personality_tags ?? [];
-    if (is_string($personalityTags)) {
-        $decodedTags = json_decode($personalityTags, true);
-        $personalityTags = is_array($decodedTags) ? $decodedTags : [];
-    }
-
-    $birthdate = $pet->birthdate ?? $pet->birth_date ?? $pet->date_of_birth;
-    $birthdateLabel = null;
-    if ($birthdate instanceof \Illuminate\Support\CarbonInterface) {
-        $birthdateLabel = $birthdate->toFormattedDateString();
-    } elseif (is_string($birthdate) && $birthdate !== '') {
-        try {
-            $birthdateLabel = Carbon::parse($birthdate)->toFormattedDateString();
-        } catch (Throwable) {
-            $birthdateLabel = null;
-        }
-    }
-
-    $ageLabel = $pet->age_formatted;
-@endphp
-
 <x-app-layout>
     <x-slot name="header">
         <x-ui.page-header :title="$pet->name ?? __('pets.title')" description="Profile overview, gallery, and activity." icon="🐾">
@@ -61,7 +24,15 @@
                         <img src="{{ $avatarUrl }}" alt="{{ $pet->name }}" class="h-20 w-20 rounded-full object-cover border border-gray-200">
 
                         <div class="space-y-2">
-                            <div class="text-sm text-gray-500">{{ __('pets.species') }}: {{ $pet->species ?? __('pets.not_available') }} @if(!empty($pet->breed)) • {{ __('pets.breed') }}: {{ $pet->breed }} @endif</div>
+                            <div class="text-sm text-gray-500">
+                                {{ __('pets.species') }}: {{ $speciesLabel }}
+                                @if($breedLabel)
+                                    • {{ __('pets.breed') }}: {{ $breedLabel }}
+                                @endif
+                                @if($sexLabel)
+                                    • {{ __('pets.sex') }}: {{ $sexLabel }}
+                                @endif
+                            </div>
                             @if($ageLabel)
                                 <div class="text-sm text-gray-500">{{ __('pets.age') }}: {{ $ageLabel }}</div>
                             @endif
@@ -73,10 +44,14 @@
                                 @if(!empty($pet->is_adoptable))
                                     <x-ui.badge variant="success" size="sm">{{ __('pets.status.adoptable') }}</x-ui.badge>
                                 @endif
-                                @if(!empty($pet->is_public))
+                                @if($isOwner)
+                                    @if(!empty($pet->is_public))
+                                        <x-ui.badge variant="info" size="sm">{{ __('pets.status.public') }}</x-ui.badge>
+                                    @else
+                                        <x-ui.badge variant="warning" size="sm">{{ __('pets.status.private') }}</x-ui.badge>
+                                    @endif
+                                @elseif(!empty($pet->is_public))
                                     <x-ui.badge variant="info" size="sm">{{ __('pets.status.public') }}</x-ui.badge>
-                                @endif
-                                @if(!$isOwner && !empty($pet->is_public))
                                     <x-ui.badge variant="default" size="sm">{{ __('pets.status.visible_profile') }}</x-ui.badge>
                                 @endif
                             </div>
@@ -89,12 +64,14 @@
                             <span class="text-sm text-gray-600">{{ $pet->user?->name }}</span>
                         </div>
 
+                        <p class="text-xs text-gray-500">{{ $postsCount }} {{ __('pets.tabs.posts') }}</p>
+
                         @can('viewFollowers', $pet)
                             <a href="{{ route('pets.followers.index', ['pet' => $petSlug]) }}" class="text-xs text-gray-500 hover:underline">
-                                {{ (int) ($pet->followers_count ?? 0) }} {{ __('pets.followers') }}
+                                {{ $followersCount }} {{ __('pets.followers') }}
                             </a>
                         @else
-                            <p class="text-xs text-gray-500">{{ (int) ($pet->followers_count ?? 0) }} {{ __('pets.followers') }}</p>
+                            <p class="text-xs text-gray-500">{{ $followersCount }} {{ __('pets.followers') }}</p>
                         @endcan
 
                         @if(!$isOwner)
@@ -144,25 +121,16 @@
                         @else
                             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 @foreach($gallery as $item)
-                                    @php
-                                        $url = method_exists($item, 'getUrl')
-                                            ? ($item->getUrl(\App\Models\Pet::MEDIA_CONVERSION_GALLERY_MEDIUM) ?: $item->getUrl())
-                                            : data_get($item, 'url');
-                                        $label = (string) (data_get($item, 'name') ?: data_get($item, 'file_name', __('pets.gallery_item')));
-                                        $caption = method_exists($item, 'getCustomProperty') ? (string) ($item->getCustomProperty('caption') ?? '') : '';
-                                        $altText = method_exists($item, 'getCustomProperty') ? (string) ($item->getCustomProperty('alt_text') ?? '') : '';
-                                        $alt = $altText !== '' ? $altText : $label;
-                                    @endphp
                                     <x-ui.card padding="none" class="overflow-hidden">
-                                        @if($url)
-                                            <img src="{{ $url }}" alt="{{ $alt }}" class="h-48 w-full object-cover">
+                                        @if(!empty($item['url']))
+                                            <img src="{{ $item['url'] }}" alt="{{ $item['alt'] }}" class="h-48 w-full object-cover">
                                         @else
                                             <div class="h-48 w-full bg-gray-100"></div>
                                         @endif
                                         <div class="p-3 text-sm text-gray-600">
-                                            <div class="font-medium">{{ $label }}</div>
-                                            @if($caption !== '')
-                                                <div class="mt-1 text-xs text-gray-500">{{ $caption }}</div>
+                                            <div class="font-medium">{{ $item['label'] }}</div>
+                                            @if($item['caption'] !== '')
+                                                <div class="mt-1 text-xs text-gray-500">{{ $item['caption'] }}</div>
                                             @endif
                                         </div>
                                     </x-ui.card>

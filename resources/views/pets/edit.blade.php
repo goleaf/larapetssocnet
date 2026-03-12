@@ -26,7 +26,14 @@
  </div>
  </div>
 
- @include('pets.partials.gallery-manager', ['pet' => $pet, 'galleryItems' => $galleryItems ?? collect(), 'galleryMax' => $galleryMax ?? (int) config('pets.gallery.max_photos', 30)])
+ @include('pets.partials.gallery-manager', [
+     'pet' => $pet,
+     'galleryItems' => $galleryItems ?? collect(),
+     'galleryMax' => $galleryMax ?? (int) config('pets.gallery.max_photos', 30),
+     'galleryUploadMax' => $galleryUploadMax ?? (int) config('pets.gallery.max_upload', 5),
+     'galleryCount' => $galleryCount ?? 0,
+     'galleryRemaining' => $galleryRemaining ?? 0,
+ ])
 
  <div class="bg-white shadow-sm sm:rounded-lg">
  <div class="p-6 space-y-4">

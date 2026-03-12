@@ -6,8 +6,10 @@ use App\Models\Pet;
 use App\Models\User;
 use App\Services\ContentService;
 use App\Services\PersonalityTagService;
+use App\Services\PetSlugService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CreatePetAction
 {
@@ -15,6 +17,7 @@ class CreatePetAction
         private ContentService $contentService,
         private PersonalityTagService $personalityTags,
         private UploadPetGalleryPhotosAction $uploadGallery,
+        private PetSlugService $slugService,
     ) {}
 
     /**
@@ -27,10 +30,19 @@ class CreatePetAction
             $bio = isset($attributes['bio']) ? (string) $attributes['bio'] : null;
             $birthdate = $attributes['birthdate'] ?? $attributes['date_of_birth'] ?? $attributes['birth_date'] ?? null;
             $tags = $this->personalityTags->normalize($attributes['personality_tags'] ?? []);
+            $slug = null;
+
+            if (Schema::hasColumn('pets', 'slug')) {
+                $slug = $this->slugService->generateUnique(
+                    (string) $attributes['name'],
+                    (string) ($owner->username ?? 'pet')
+                );
+            }
 
             $pet = Pet::query()->create([
                 'user_id' => $owner->getKey(),
                 'name' => (string) $attributes['name'],
+                'slug' => $slug,
                 'species' => (string) $attributes['species'],
                 'breed' => $attributes['breed'] ?? null,
                 'sex' => $attributes['sex'] ?? ($attributes['gender'] ?? 'unknown'),

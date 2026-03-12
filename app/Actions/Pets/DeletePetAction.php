@@ -19,9 +19,9 @@ class DeletePetAction
             $this->detachFollowers($pet);
             $this->detachFromPosts($pet);
 
-            $pet->clearMediaCollection('avatar');
-            $pet->clearMediaCollection('gallery');
-            $pet->clearMediaCollection('cover');
+            $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
+            $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_GALLERY);
+            $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_COVER);
 
             if ($pet->owner) {
                 $pet->owner->decrementCounter('pets_count');

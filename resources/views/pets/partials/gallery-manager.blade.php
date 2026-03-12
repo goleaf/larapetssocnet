@@ -1,13 +1,3 @@
-@php
-    $galleryItems = $galleryItems ?? collect();
-    $galleryMax = $galleryMax ?? (int) config('pets.gallery.max_photos', 30);
-    $galleryUploadMax = (int) config('pets.gallery.max_upload', 5);
-    $galleryCount = $galleryItems->count();
-    $galleryRemaining = max($galleryMax - $galleryCount, 0);
-    $galleryIds = $galleryItems->pluck('id')->values()->all();
-    $galleryLastIndex = count($galleryIds) - 1;
-@endphp
-
 <x-ui.card padding="lg">
         <div>
             <h3 class="text-lg font-semibold text-gray-900">Gallery</h3>
@@ -39,43 +29,27 @@
                 <p class="mt-2 text-sm text-gray-500">No gallery photos uploaded yet.</p>
             @else
                 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ($galleryItems as $index => $media)
-                        @php
-                            $thumbUrl = $media->getUrl(\App\Models\Pet::MEDIA_CONVERSION_GALLERY_THUMB);
-                            $thumbUrl = $thumbUrl !== '' ? $thumbUrl : $media->getUrl();
-                            $caption = (string) ($media->getCustomProperty('caption') ?? '');
-                            $altText = (string) ($media->getCustomProperty('alt_text') ?? '');
-
-                            $moveLeft = $galleryIds;
-                            if ($index > 0) {
-                                [$moveLeft[$index - 1], $moveLeft[$index]] = [$moveLeft[$index], $moveLeft[$index - 1]];
-                            }
-
-                            $moveRight = $galleryIds;
-                            if ($index < $galleryLastIndex) {
-                                [$moveRight[$index + 1], $moveRight[$index]] = [$moveRight[$index], $moveRight[$index + 1]];
-                            }
-                        @endphp
+                    @foreach ($galleryItems as $media)
                         <div class="shell-card p-3 space-y-3">
                             <div class="flex items-start gap-3">
-                                <img src="{{ $thumbUrl }}" alt="{{ $altText !== '' ? $altText : 'Pet gallery photo' }}" class="h-24 w-24 rounded-[var(--radius-soft)] object-cover border border-whisker/30">
+                                <img src="{{ $media['thumb_url'] }}" alt="{{ $media['alt_text'] !== '' ? $media['alt_text'] : 'Pet gallery photo' }}" class="h-24 w-24 rounded-[var(--radius-soft)] object-cover border border-whisker/30">
                                 <div class="flex-1 space-y-2">
                                     <div class="flex flex-wrap gap-2">
-                                        @if ($index > 0)
+                                        @if (!empty($media['move_left']))
                                             <form method="POST" action="{{ route('pets.gallery.reorder', $pet) }}">
                                                 @csrf
                                                 @method('PATCH')
-                                                @foreach ($moveLeft as $id)
+                                                @foreach ($media['move_left'] as $id)
                                                     <input type="hidden" name="order[]" value="{{ $id }}">
                                                 @endforeach
                                                 <x-ui.button variant="secondary" type="submit" class="text-xs">Move left</x-ui.button>
                                             </form>
                                         @endif
-                                        @if ($index < $galleryLastIndex)
+                                        @if (!empty($media['move_right']))
                                             <form method="POST" action="{{ route('pets.gallery.reorder', $pet) }}">
                                                 @csrf
                                                 @method('PATCH')
-                                                @foreach ($moveRight as $id)
+                                                @foreach ($media['move_right'] as $id)
                                                     <input type="hidden" name="order[]" value="{{ $id }}">
                                                 @endforeach
                                                 <x-ui.button variant="secondary" type="submit" class="text-xs">Move right</x-ui.button>
@@ -83,19 +57,19 @@
                                         @endif
                                     </div>
 
-                                    <form method="POST" action="{{ route('pets.gallery.update', ['pet' => $pet, 'media' => $media]) }}" class="space-y-2">
+                                    <form method="POST" action="{{ route('pets.gallery.update', ['pet' => $pet, 'media' => $media['id']]) }}" class="space-y-2">
                                         @csrf
                                         @method('PATCH')
                                         <div>
-                                            <x-ui.input id="caption-{{ $media->id }}" name="caption" type="text" label="Caption" :value="old('caption', $caption)"/>
+                                            <x-ui.input id="caption-{{ $media['id'] }}" name="caption" type="text" label="Caption" :value="old('caption', $media['caption'])"/>
                                         </div>
                                         <div>
-                                            <x-ui.input id="alt-{{ $media->id }}" name="alt_text" type="text" label="Alt text" :value="old('alt_text', $altText)"/>
+                                            <x-ui.input id="alt-{{ $media['id'] }}" name="alt_text" type="text" label="Alt text" :value="old('alt_text', $media['alt_text'])"/>
                                         </div>
                                         <x-ui.button variant="secondary" type="submit" class="text-xs">Save details</x-ui.button>
                                     </form>
 
-                                    <form method="POST" action="{{ route('pets.gallery.destroy', ['pet' => $pet, 'media' => $media]) }}" onsubmit="return confirm('Remove this photo from the gallery?');">
+                                    <form method="POST" action="{{ route('pets.gallery.destroy', ['pet' => $pet, 'media' => $media['id']]) }}" onsubmit="return confirm('Remove this photo from the gallery?');">
                                         @csrf
                                         @method('DELETE')
                                         <x-ui.button variant="danger" type="submit" class="text-xs">Remove</x-ui.button>

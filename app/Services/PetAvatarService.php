@@ -13,8 +13,8 @@ class PetAvatarService
     public function updateAvatar(User $actor, Pet $pet, UploadedFile $file): void
     {
         DB::transaction(function () use ($pet, $file): void {
-            $pet->clearMediaCollection('avatar');
-            $pet->addMedia($file)->toMediaCollection('avatar');
+            $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
+            $pet->addMedia($file)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
 
             $pet->forceFill([
                 'avatar_path' => null,
@@ -27,7 +27,7 @@ class PetAvatarService
     public function removeAvatar(User $actor, Pet $pet): void
     {
         DB::transaction(function () use ($pet): void {
-            $pet->clearMediaCollection('avatar');
+            $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
 
             $pet->forceFill([
                 'avatar_path' => null,
