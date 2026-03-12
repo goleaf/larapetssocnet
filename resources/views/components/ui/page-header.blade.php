@@ -1,5 +1,5 @@
 @props([
-'title',
+'title'=> null,
 'description'=> null,
 'subtitle'=> null,
 'eyebrow'=> null,
@@ -8,6 +8,7 @@
 ])
 
 @php
+ $resolvedTitle = filled($title) ? (string) $title : null;
  $resolvedDescription = $description ?? $subtitle;
  $breadcrumbItems = collect($breadcrumbs)->filter()->values()->all();
 @endphp
@@ -29,7 +30,9 @@
  </span>
 
  <div class="min-w-0">
- <h1 class="shell-title text-2xl sm:text-[1.7rem]">{{ $title }}</h1>
+ @if ($resolvedTitle)
+ <h1 class="shell-title text-2xl sm:text-[1.7rem]">{{ $resolvedTitle }}</h1>
+ @endif
 
  @if ($resolvedDescription)
  <p class="mt-1 text-sm shell-text-muted">{{ $resolvedDescription }}</p>
