@@ -36,7 +36,7 @@
  </div>
  </label>
  @empty
- <x-empty-state
+ <x-ui.empty-state
  icon="👋"
  title="No suggestions yet"
  description="As more members join, we'll suggest profiles for you here."
@@ -72,7 +72,7 @@
  </div>
  </label>
  @empty
- <x-empty-state
+ <x-ui.empty-state
  icon="👥"
  title="No groups available"
  description="Groups will appear here once they are created."

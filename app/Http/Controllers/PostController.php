@@ -24,9 +24,17 @@ class PostController extends Controller
         private readonly PostService $posts,
     ) {}
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('posts.create');
+        $availablePets = $request->user()
+            ?->pets()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get() ?? collect();
+
+        return view('posts.create', [
+            'availablePets' => $availablePets,
+        ]);
     }
 
     public function show(Request $request, Post $post): View
@@ -83,11 +91,20 @@ class PostController extends Controller
         ]);
     }
 
-    public function edit(Post $post): View
+    public function edit(Request $request, Post $post): View
     {
         Gate::authorize('update', $post);
 
-        return view('posts.edit', compact('post'));
+        $availablePets = $request->user()
+            ?->pets()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get() ?? collect();
+
+        return view('posts.edit', [
+            'post' => $post,
+            'availablePets' => $availablePets,
+        ]);
     }
 
     public function store(CreatePostRequest $request): RedirectResponse

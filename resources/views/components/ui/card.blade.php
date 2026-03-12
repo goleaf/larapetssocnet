@@ -17,7 +17,7 @@
  $paddingClass = $paddings[$paddingKey] ?? $paddings['md'];
 
  $classes = \Illuminate\Support\Arr::toCssClasses([
-'rounded-lg border border-whisker/30 bg-warm-white shadow-card',
+'shell-card',
  $hover ?'cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-card-hover':'',
  $attributes->get('class'),
  ]);

@@ -15,7 +15,7 @@
  @include('pets.partials.form')
 
  <div class="flex items-center gap-3">
- <x-primary-button>Create profile</x-primary-button>
+ <x-ui.button variant="primary">Create profile</x-ui.button>
  <a href="{{ route('pets.explore') }}" class="text-sm text-gray-600 hover:text-gray-900">Cancel</a>
  </div>
  </form>

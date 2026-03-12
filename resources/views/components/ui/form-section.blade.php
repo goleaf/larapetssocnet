@@ -9,7 +9,7 @@
  <div class="w-full shrink-0 md:w-1/3">
  <div class="flex items-start gap-3">
  @if ($icon)
- <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-pill bg-paw-light text-base" aria-hidden="true">
+ <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-soft)] bg-paw-light text-base" aria-hidden="true">
  {{ $icon }}
  </span>
  @endif

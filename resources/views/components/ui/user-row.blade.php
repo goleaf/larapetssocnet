@@ -10,7 +10,7 @@
  $avatarSource = $src ?? $avatar;
 @endphp
 
-<div {{ $attributes->merge(['class'=>'flex items-center justify-between gap-3 rounded-lg p-3 transition-colors hover:bg-cream']) }}>
+<div {{ $attributes->merge(['class'=>'flex items-center justify-between gap-3 rounded-[var(--radius-soft)] p-3 transition-colors hover:bg-cream']) }}>
  <div class="min-w-0 flex items-center gap-3">
  @if($href)
  <a href="{{ $href }}" class="shrink-0">

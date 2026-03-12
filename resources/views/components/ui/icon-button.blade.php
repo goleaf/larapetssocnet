@@ -5,37 +5,37 @@
 'type'=>'button',
 'disabled'=> false,
 'icon'=> null,
-'pill'=> true,
+'pill'=> false,
 'label'=> null,
 ])
 
 @php
  $isDisabled = (bool) $disabled;
 
- $baseClasses ='inline-flex items-center justify-center aspect-square transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw';
+ $baseClasses = 'icon-button shrink-0 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw';
 
  $variants = [
-'default'=>'bg-warm-white text-bark border border-whisker/50 hover:bg-cream shadow-sm',
-'primary'=>'bg-paw text-white hover:bg-paw-dark shadow-button',
-'secondary'=>'bg-paw-light text-paw-dark hover:bg-orange-200',
-'ghost'=>'bg-transparent text-fur hover:bg-cream border border-whisker/40',
-'danger'=>'bg-rose text-white hover:bg-red-700 shadow-button',
-'success'=>'bg-leaf text-white hover:bg-green-700 shadow-button',
-'outline'=>'bg-transparent text-bark border border-whisker hover:bg-cream',
+'default' => 'border border-whisker/50 bg-warm-white text-bark shadow-sm hover:bg-cream',
+'primary' => 'bg-paw text-white shadow-button hover:bg-paw-dark',
+'secondary' => 'bg-paw-light text-paw-dark hover:bg-orange-200',
+'ghost' => 'border border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark',
+'danger' => 'bg-rose text-white shadow-button hover:bg-red-700',
+'success' => 'bg-leaf text-white shadow-button hover:bg-green-700',
+'outline' => 'border border-whisker bg-transparent text-bark hover:bg-cream',
  ];
 
  $sizes = [
-'xs'=>'w-6 h-6 text-xs',
-'sm'=>'w-8 h-8 text-sm',
-'md'=>'w-10 h-10 text-base',
-'lg'=>'w-12 h-12 text-lg',
+'xs' => 'h-[var(--control-height-sm)] w-[var(--control-height-sm)] text-xs',
+'sm' => 'h-[var(--control-height-sm)] w-[var(--control-height-sm)] text-sm',
+'md' => 'h-[var(--control-height-md)] w-[var(--control-height-md)] text-base',
+'lg' => 'h-[var(--control-height-lg)] w-[var(--control-height-lg)] text-lg',
  ];
 
  $classes = \Illuminate\Support\Arr::toCssClasses([
  $baseClasses,
  $variants[$variant] ?? $variants['ghost'],
  $sizes[$size] ?? $sizes['md'],
- $pill ?'rounded-pill':'rounded-md',
+ $pill ?'rounded-[var(--radius-soft)]':'rounded-none',
 'opacity-60 cursor-not-allowed pointer-events-none'=> $isDisabled,
  ]);
 
@@ -51,7 +51,7 @@
 @if ($href)
  <a
  href="{{ $isDisabled ?'#': $href }}"
- {{ $attributes->merge(['class'=> $classes]) }}
+ {{ $attributes->merge(['class'=> $classes,'data-ui-control'=>'button']) }}
  @if ($isDisabled)
  aria-disabled="true"
  tabindex="-1"
@@ -63,7 +63,7 @@
 @else
  <button
  type="{{ $type }}"
- {{ $attributes->merge(['class'=> $classes]) }}
+ {{ $attributes->merge(['class'=> $classes,'data-ui-control'=>'button']) }}
  @if ($isDisabled)
  disabled
  @endif

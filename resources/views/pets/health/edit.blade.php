@@ -20,7 +20,7 @@
  @include('pets.health._form', ['log'=> $log])
 
  <div class="flex items-center gap-3">
- <x-primary-button>Save changes</x-primary-button>
+ <x-ui.button variant="primary">Save changes</x-ui.button>
  <a href="{{ route('pets.health.index', $petSlug) }}" class="text-sm text-gray-600 hover:text-gray-900">Back</a>
  </div>
  </form>

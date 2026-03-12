@@ -39,7 +39,7 @@
  @endauth
  </article>
  @empty
- <x-empty-state icon="users" title="No followers yet" description="Followers will appear here."/>
+ <x-ui.empty-state icon="users" title="No followers yet" description="Followers will appear here."/>
  @endforelse
  </div>
 

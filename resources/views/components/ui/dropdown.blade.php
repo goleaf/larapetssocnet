@@ -43,7 +43,7 @@
  class="absolute z-50 mt-2 {{ $widthClasses }} {{ $alignmentClasses }}"
  @click="close()"
  >
- <div class="rounded-lg border border-whisker/30 bg-warm-white shadow-card-hover {{ $contentClasses }}">
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-[color:var(--surface-dropdown)] shadow-card-hover {{ $contentClasses }}">
  {{ $contentSlot }}
  </div>
  </div>

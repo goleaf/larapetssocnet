@@ -48,7 +48,7 @@
  name="{{ $fieldName }}"
  @endif
  value="{{ $value }}"
- class="mt-0.5 h-4 w-4 rounded border-whisker text-paw focus:ring-paw"
+ class="mt-0.5 h-4 w-4 rounded-[var(--radius-control)] border-whisker bg-[color:var(--surface-form)] text-paw focus:ring-paw"
  @checked($isChecked)
  @if ($required)
  required

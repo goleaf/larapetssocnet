@@ -1,8 +1,8 @@
 <x-settings-layout>
  <div class="space-y-6">
  <div>
- <h3 class="text-lg font-medium leading-6 text-gray-900">Notifications</h3>
- <p class="mt-1 text-sm text-gray-500">Choose what updates you want to receive.</p>
+ <h3 class="text-lg font-medium leading-6 text-bark">Notifications</h3>
+ <p class="mt-1 text-sm text-fur">Choose what updates you want to receive.</p>
  </div>
 
  <form action="{{ route('settings.notifications.update') }}" method="POST" class="space-y-8">
@@ -12,7 +12,7 @@
  <div class="space-y-6">
  <!-- Posts & Engagement -->
  <div>
- <h4 class="text-base font-medium text-gray-900">Posts & Engagement</h4>
+ <h4 class="text-base font-medium text-bark">Posts & Engagement</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[post_likes]" label="Likes on your posts"
  :checked="$user->notificationEnabled('post_likes')"/>
@@ -26,11 +26,11 @@
  </div>
  </div>
 
- <hr class="border-gray-200">
+ <hr class="border-whisker/30">
 
  <!-- Connections -->
  <div>
- <h4 class="text-base font-medium text-gray-900">Connections</h4>
+ <h4 class="text-base font-medium text-bark">Connections</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[follow_requests]" label="Follow requests"
  :checked="$user->notificationEnabled('follow_requests')"/>
@@ -41,11 +41,11 @@
  </div>
  </div>
 
- <hr class="border-gray-200">
+ <hr class="border-whisker/30">
 
  <!-- Groups & Events -->
  <div>
- <h4 class="text-base font-medium text-gray-900">Groups & Events</h4>
+ <h4 class="text-base font-medium text-bark">Groups & Events</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[group_invites]" label="Group invitations"
  :checked="$user->notificationEnabled('group_invites')"/>
@@ -58,11 +58,11 @@
  </div>
  </div>
 
- <hr class="border-gray-200">
+ <hr class="border-whisker/30">
 
  <!-- Marketplace & More -->
  <div>
- <h4 class="text-base font-medium text-gray-900">Marketplace & More</h4>
+ <h4 class="text-base font-medium text-bark">Marketplace & More</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[marketplace_messages]" label="Marketplace inquiries"
  :checked="$user->notificationEnabled('marketplace_messages')"/>
@@ -74,8 +74,8 @@
  </div>
  </div>
 
- <div class="flex justify-end border-t border-gray-200 pt-5">
- <x-primary-button>Save Preferences</x-primary-button>
+ <div class="flex justify-end border-t border-whisker/30 pt-5">
+ <x-ui.button variant="primary">Save Preferences</x-ui.button>
  </div>
  </form>
  </div>

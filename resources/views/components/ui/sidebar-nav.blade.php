@@ -65,7 +65,7 @@
 
  <a
  href="{{ $href }}"
- class="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors {{ $isActive ?'bg-paw-light font-medium text-paw-dark':'text-fur hover:bg-cream hover:text-bark'}}"
+ class="flex items-center justify-between rounded-[var(--radius-soft)] px-3 py-2 text-sm transition-colors {{ $isActive ?'bg-paw-light font-medium text-paw-dark':'text-fur hover:bg-cream hover:text-bark'}}"
  @if($isActive)
  aria-current="page"
  @endif

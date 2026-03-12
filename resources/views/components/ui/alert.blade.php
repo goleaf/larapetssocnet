@@ -38,7 +38,7 @@
 @endphp
 
 <div
- {{ $attributes->merge(['class'=>'relative rounded-r-md p-4'. $config['classes']]) }}
+ {{ $attributes->merge(['class'=>'relative rounded-[var(--radius-soft)] p-4'. $config['classes']]) }}
  role="alert"
  @if($usesAlpine)
  x-data="{ open: true }"
@@ -73,7 +73,7 @@
  @if($dismissible)
  <button
  type="button"
- class="-mr-1 -mt-1 shrink-0 rounded-md p-1 opacity-70 transition-opacity hover:opacity-100"
+ class="-mr-1 -mt-1 shrink-0 p-1 opacity-70 transition-opacity hover:opacity-100"
  @click="open = false"
  >
  <span class="sr-only">Dismiss</span>

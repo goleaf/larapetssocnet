@@ -21,7 +21,7 @@
  @include('pets.partials.form', ['pet'=> $pet])
 
  <div class="flex items-center gap-3">
- <x-primary-button>Save changes</x-primary-button>
+ <x-ui.button variant="primary">Save changes</x-ui.button>
  <a href="{{ route('pets.show', $pet->slug ?? $pet->getKey()) }}" class="text-sm text-gray-600 hover:text-gray-900">Back to profile</a>
  </div>
  </form>
@@ -41,14 +41,14 @@
  @csrf
  <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif"
  class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-indigo-700 hover:file:bg-indigo-100"/>
- <x-primary-button>Update avatar</x-primary-button>
+ <x-ui.button variant="primary">Update avatar</x-ui.button>
  <x-input-error :messages="$errors->get('avatar')" class="mt-1"/>
  </form>
 
  <form method="POST" action="{{ route('pets.avatar.destroy', $pet) }}" onsubmit="return confirm('Remove this avatar?');">
  @csrf
  @method('DELETE')
- <x-danger-button>Remove avatar</x-danger-button>
+ <x-ui.button variant="danger">Remove avatar</x-ui.button>
  </form>
  </div>
  </div>
@@ -62,7 +62,7 @@
  <form method="POST" action="{{ route('pets.destroy', $pet->slug ?? $pet->getKey()) }}" class="mt-4" onsubmit="return confirm('Delete this pet profile?');">
  @csrf
  @method('DELETE')
- <x-danger-button>Delete profile</x-danger-button>
+ <x-ui.button variant="danger">Delete profile</x-ui.button>
  </form>
  </div>
  </div>

@@ -61,7 +61,7 @@
  </li>
  @empty
  <li>
- <x-empty-state
+ <x-ui.empty-state
  icon="🛡️"
  title="You haven't blocked anyone."
  description="When you block someone, they will appear here."

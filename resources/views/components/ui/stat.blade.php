@@ -26,9 +26,9 @@
  $showTrend = filled($resolvedTrend);
 @endphp
 
-<div {{ $attributes->merge(['class'=>'flex items-start gap-4 rounded-lg border border-whisker/30 bg-warm-white p-4 shadow-sm']) }}>
+<div {{ $attributes->merge(['class'=>'shell-card flex items-start gap-4 p-4']) }}>
  @if($icon)
- <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-paw-light text-xl text-paw-dark">
+ <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-paw-light text-xl text-paw-dark">
  {{ $icon }}
  </div>
  @endif

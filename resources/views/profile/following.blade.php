@@ -43,7 +43,7 @@
  @endauth
  </article>
  @empty
- <x-empty-state icon="user-plus" title="Not following anyone yet"
+ <x-ui.empty-state icon="user-plus" title="Not following anyone yet"
  description="Profiles followed by this user will appear here."/>
  @endforelse
  </div>

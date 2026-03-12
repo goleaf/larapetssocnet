@@ -25,7 +25,7 @@
  @endif
 
  <div class="mt-1 flex items-start gap-3">
- <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">
+ <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-soft)] text-xl" style="background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);">
  {{ $icon }}
  </span>
 

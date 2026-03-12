@@ -2,39 +2,30 @@
 
 <x-app-layout>
  <x-slot name="header">
- <div>
- <p class="shell-kicker">Global Search</p>
- <h1 class="shell-title text-2xl">Find Pets, People, and Posts</h1>
- <p class="mt-1 text-sm shell-text-muted">Search across users, pets, groups, events, hashtags, and more.</p>
- </div>
+ <x-ui.page-header
+ title="Find Pets, People, and Posts"
+ description="Search across users, pets, groups, events, hashtags, and more."
+ eyebrow="Global Search"
+ icon="🔎"
+ />
  </x-slot>
 
  <div class="space-y-5">
- <section class="shell-panel p-4 sm:p-5">
+ <x-ui.panel padding="md">
  <form method="GET" action="{{ route('search.index') }}" class="grid gap-4 md:grid-cols-4">
- <div class="md:col-span-3">
- <x-input-label for="q" value="Search Query"/>
- <x-text-input id="q" name="q" type="text" class="mt-1 block w-full" :value="$q" placeholder="Search users, pets, posts..."/>
- </div>
+ <x-ui.input class="md:col-span-3" id="q" name="q" label="Search Query" type="text" :value="$q" placeholder="Search users, pets, posts..." />
 
- <div>
- <x-input-label for="type" value="Result Type"/>
- <select id="type" name="type" class="form-select mt-1 block w-full">
- @foreach($types as $searchType)
- <option value="{{ $searchType }}" @selected($type === $searchType)>{{ ucfirst($searchType) }}</option>
- @endforeach
- </select>
- </div>
+ <x-ui.select id="type" name="type" label="Result Type" :options="collect($types)->mapWithKeys(fn ($searchType) => [$searchType => ucfirst($searchType)])->all()" :value="$type" />
 
  <div class="md:col-span-4 flex justify-end">
- <x-primary-button>Search</x-primary-button>
+ <x-ui.button type="submit">Search</x-ui.button>
  </div>
  </form>
- </section>
+ </x-ui.panel>
 
- <section class="shell-card p-4 sm:p-5">
+ <x-ui.card>
  @if($results->isEmpty())
- <x-empty-state
+ <x-ui.empty-state
  icon="🔎"
  title="No results found"
  description="Try a broader keyword or switch the result type filter."
@@ -42,33 +33,33 @@
  @else
  <div class="space-y-3">
  @foreach($results as $row)
- <article class="hover-lift rounded-xl border p-4" style="border-color: var(--ui-border);">
- @if($type ==='users')
- <div class="font-semibold" style="color: var(--ui-text);">{{ $row->name }}</div>
- <div class="text-sm shell-text-muted">&#64;{{ $row->username }}</div>
- @elseif($type ==='pets')
- <div class="font-semibold" style="color: var(--ui-text);">{{ $row->name }}</div>
- <div class="text-sm shell-text-muted">{{ $row->species }} @if($row->breed) · {{ $row->breed }} @endif</div>
- @elseif($type ==='posts')
- <div class="text-sm" style="color: var(--ui-text);">{{ \Illuminate\Support\Str::limit(strip_tags((string) $row->body), 180) }}</div>
- @elseif($type ==='groups')
- <div class="font-semibold" style="color: var(--ui-text);">{{ $row->name }}</div>
- <div class="text-sm shell-text-muted">{{ \Illuminate\Support\Str::limit((string) $row->description, 150) }}</div>
- @elseif($type ==='events')
- <div class="font-semibold" style="color: var(--ui-text);">{{ $row->title }}</div>
- <div class="text-sm shell-text-muted">{{ \Illuminate\Support\Str::limit((string) $row->description, 150) }}</div>
+ <article class="ui-surface hover-lift p-4">
+ @if($type === 'users')
+ <div class="font-semibold text-bark">{{ $row->name }}</div>
+ <div class="text-sm text-fur">&#64;{{ $row->username }}</div>
+ @elseif($type === 'pets')
+ <div class="font-semibold text-bark">{{ $row->name }}</div>
+ <div class="text-sm text-fur">{{ $row->species }} @if($row->breed) · {{ $row->breed }} @endif</div>
+ @elseif($type === 'posts')
+ <div class="text-sm text-bark">{{ \Illuminate\Support\Str::limit(strip_tags((string) $row->body), 180) }}</div>
+ @elseif($type === 'groups')
+ <div class="font-semibold text-bark">{{ $row->name }}</div>
+ <div class="text-sm text-fur">{{ \Illuminate\Support\Str::limit((string) $row->description, 150) }}</div>
+ @elseif($type === 'events')
+ <div class="font-semibold text-bark">{{ $row->title }}</div>
+ <div class="text-sm text-fur">{{ \Illuminate\Support\Str::limit((string) $row->description, 150) }}</div>
  @else
- <div class="font-semibold" style="color: var(--ui-text);">#{{ $row->name }}</div>
- <div class="text-sm shell-text-muted">{{ $row->posts_count ?? 0 }} posts</div>
+ <div class="font-semibold text-bark">#{{ $row->name }}</div>
+ <div class="text-sm text-fur">{{ $row->posts_count ?? 0 }} posts</div>
  @endif
  </article>
  @endforeach
  </div>
 
- <div class="mt-4 shell-card-muted p-3">
+ <div class="mt-4">
  {{ $results->links() }}
  </div>
  @endif
- </section>
+ </x-ui.card>
  </div>
 </x-app-layout>

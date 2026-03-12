@@ -15,7 +15,7 @@
  action="{{ $action }}"
  method="GET"
  role="search"
- {{ $attributes->except('class')->merge(['class'=>'relative w-full max-w-full lg:w-64'.$attributes->get('class')]) }}
+ {{ $attributes->except('class')->merge(['class'=>'relative w-full max-w-full lg:w-64 '.trim((string) $attributes->get('class'))]) }}
 >
  <label for="{{ $fieldId }}" class="sr-only">Search</label>
 
@@ -31,6 +31,6 @@
  name="{{ $name }}"
  value="{{ $resolvedValue }}"
  placeholder="{{ $placeholder }}"
- class="w-full rounded-md border border-whisker bg-cream py-2 pl-10 pr-3 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:border-paw focus:bg-warm-white focus:outline-none focus:shadow-input"
+ class="h-[var(--control-height-md)] w-full rounded-[var(--radius-control)] border border-whisker bg-[color:var(--surface-form)] py-2 pl-10 pr-3 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:border-paw focus:bg-warm-white focus:outline-none focus:shadow-input"
  />
 </form>

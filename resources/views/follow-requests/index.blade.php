@@ -43,7 +43,7 @@
  </div>
  </article>
  @empty
- <x-empty-state icon="mail" title="No pending requests" description="You're all caught up."/>
+ <x-ui.empty-state icon="mail" title="No pending requests" description="You're all caught up."/>
  @endforelse
  </div>
 

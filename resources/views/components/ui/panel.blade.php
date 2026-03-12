@@ -22,7 +22,7 @@
 @endphp
 
 <div
- {{ $attributes->merge(['class'=>'overflow-hidden rounded-lg border border-whisker/30 bg-warm-white shadow-card']) }}
+ {{ $attributes->merge(['class'=>'ui-panel overflow-hidden']) }}
  x-data="{ open: {{ $open ?'true':'false'}} }"
 >
  @if(isset($header))

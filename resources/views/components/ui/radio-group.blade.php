@@ -80,7 +80,7 @@
 
  <label
  for="{{ $optionId }}"
- class="relative flex w-full cursor-pointer items-start gap-4 rounded-lg border bg-warm-white p-3 transition-all duration-150 hover:bg-cream"
+ class="relative flex w-full cursor-pointer items-start gap-4 rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] p-3 transition-all duration-150 hover:bg-cream"
  >
  <input
  type="radio"

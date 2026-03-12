@@ -33,7 +33,7 @@
             </div>
 
             <div>
-                <x-primary-button type="submit">Upload photos</x-primary-button>
+                <x-ui.button variant="primary" type="submit">Upload photos</x-ui.button>
             </div>
         </form>
 
@@ -73,7 +73,7 @@
                                                 @foreach ($moveLeft as $id)
                                                     <input type="hidden" name="order[]" value="{{ $id }}">
                                                 @endforeach
-                                                <x-secondary-button type="submit" class="text-xs">Move left</x-secondary-button>
+                                                <x-ui.button variant="secondary" type="submit" class="text-xs">Move left</x-ui.button>
                                             </form>
                                         @endif
                                         @if ($index < $galleryLastIndex)
@@ -83,7 +83,7 @@
                                                 @foreach ($moveRight as $id)
                                                     <input type="hidden" name="order[]" value="{{ $id }}">
                                                 @endforeach
-                                                <x-secondary-button type="submit" class="text-xs">Move right</x-secondary-button>
+                                                <x-ui.button variant="secondary" type="submit" class="text-xs">Move right</x-ui.button>
                                             </form>
                                         @endif
                                     </div>
@@ -99,13 +99,13 @@
                                             <x-input-label for="alt-{{ $media->id }}" value="Alt text"/>
                                             <x-text-input id="alt-{{ $media->id }}" name="alt_text" type="text" class="mt-1 block w-full" :value="old('alt_text', $altText)" />
                                         </div>
-                                        <x-secondary-button type="submit" class="text-xs">Save details</x-secondary-button>
+                                        <x-ui.button variant="secondary" type="submit" class="text-xs">Save details</x-ui.button>
                                     </form>
 
                                     <form method="POST" action="{{ route('pets.gallery.destroy', ['pet' => $pet, 'media' => $media]) }}" onsubmit="return confirm('Remove this photo from the gallery?');">
                                         @csrf
                                         @method('DELETE')
-                                        <x-danger-button type="submit" class="text-xs">Remove</x-danger-button>
+                                        <x-ui.button variant="danger" type="submit" class="text-xs">Remove</x-ui.button>
                                     </form>
                                 </div>
                             </div>

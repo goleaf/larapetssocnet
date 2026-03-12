@@ -1,8 +1,8 @@
 <x-settings-layout>
  <div class="space-y-6">
  <div>
- <h3 class="text-lg font-medium leading-6 text-gray-900">Password</h3>
- <p class="mt-1 text-sm text-gray-500">Ensure your account is using a long, random password to stay secure.
+ <h3 class="text-lg font-semibold text-bark">Password</h3>
+ <p class="mt-1 text-sm text-fur">Ensure your account is using a long, random password to stay secure.
  </p>
  </div>
 
@@ -36,23 +36,23 @@
  </div>
  </div>
 
- <div class="flex justify-start border-t border-gray-200 pt-5">
- <x-primary-button>Save Password</x-primary-button>
+ <div class="flex justify-start border-t border-whisker/30 pt-5">
+ <x-ui.button variant="primary">Save Password</x-ui.button>
  </div>
  </form>
 
- <div class="mt-10 border-t border-gray-200 pt-6">
- <h3 class="text-lg font-medium leading-6 text-gray-900">Security Information</h3>
- <dl class="mt-4 divide-y divide-gray-200">
+ <div class="mt-10 border-t border-whisker/30 pt-6">
+ <h3 class="text-lg font-semibold text-bark">Security Information</h3>
+ <dl class="mt-4 divide-y divide-whisker/30">
  <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
- <dt class="text-sm font-medium text-gray-500">Last password change</dt>
- <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+ <dt class="text-sm font-medium text-fur">Last password change</dt>
+ <dd class="mt-1 text-sm text-bark sm:col-span-2 sm:mt-0">
  {{ auth()->user()->password_changed_at ? auth()->user()->password_changed_at->diffForHumans() :'Never'}}
  </dd>
  </div>
  <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
- <dt class="text-sm font-medium text-gray-500">Active sessions</dt>
- <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+ <dt class="text-sm font-medium text-fur">Active sessions</dt>
+ <dd class="mt-1 text-sm text-bark sm:col-span-2 sm:mt-0">
  Logged in from this browser. You can log out of all other active sessions via the main logout
  action.
  </dd>

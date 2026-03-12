@@ -87,7 +87,7 @@
  x-transition:leave="ease-in duration-200 transform"
  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
- class="inline-block w-full transform overflow-hidden rounded-xl bg-warm-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle {{ $maxWidthClass }}"
+ class="inline-block w-full transform overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--surface-modal)] text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle {{ $maxWidthClass }}"
  @click.stop
  >
  @isset($header)
@@ -103,7 +103,7 @@
 
  <button
  type="button"
- class="rounded-sm text-whisker transition-colors hover:text-bark focus:outline-none focus:ring-2 focus:ring-paw"
+ class="text-whisker transition-colors hover:text-bark focus:outline-none focus:ring-2 focus:ring-paw"
  @click="hide()"
  >
  <span class="sr-only">Close</span>

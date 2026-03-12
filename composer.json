@@ -15,7 +15,6 @@
         "mews/purifier": "^3.4",
         "mischasigtermans/laravel-toon": "^1.0",
         "robsontenorio/mary": "^2.7",
-        "skywalker-labs/ui": "^1.0",
         "spatie/laravel-activitylog": "^4.11",
         "spatie/laravel-medialibrary": "^11.20",
         "spatie/laravel-permission": "^7.2",
@@ -97,8 +96,13 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "skywalker-labs/ui"
+            ]
         }
+    },
+    "conflict": {
+        "skywalker-labs/ui": "*"
     },
     "config": {
         "optimize-autoloader": true,

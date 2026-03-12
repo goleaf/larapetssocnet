@@ -20,7 +20,7 @@
 
  $buttonClasses = $isFollowingState
  ?'border border-[color:var(--ui-border)] bg-[color:var(--ui-surface)] text-[color:var(--ui-text)] hover:bg-[color:var(--ui-surface-muted)]'
- :'border border-transparent bg-emerald-600 text-white hover:bg-emerald-700';
+ :'border border-transparent bg-paw text-white hover:bg-paw-dark';
 @endphp
 
 @if ($viewer && $user && $viewer->getKey() !== $user->getKey())
@@ -33,7 +33,7 @@
  <button
  type="submit"
  data-testid="follow-toggle"
- class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors {{ $buttonClasses }}"
+ class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold transition-colors {{ $buttonClasses }}"
  >
  {{ $label }}
  </button>

@@ -1,8 +1,8 @@
 <x-settings-layout>
  <div class="space-y-6">
  <div>
- <h3 class="text-lg font-medium leading-6 text-gray-900">Profile Information</h3>
- <p class="mt-1 text-sm text-gray-500">Update your account's profile information and email address.</p>
+ <h3 class="text-lg font-semibold text-bark">Profile Information</h3>
+ <p class="mt-1 text-sm text-fur">Update your account's profile information and email address.</p>
  </div>
 
  <form action="{{ route('settings.profile.update') }}" method="POST" class="space-y-6">
@@ -26,8 +26,8 @@
  <x-input-error class="mt-2" :messages="$errors->get('username')"/>
 
  <div x-show="currentUsername !== newUsername && newUsername !==''"
- class="mt-3 p-3 bg-yellow-50 rounded-md border border-yellow-200" style="display: none;">
- <p class="text-sm border-l-4 border-yellow-400 pl-3 py-1 text-yellow-700">
+ class="mt-3 border border-amber-200 bg-amber-50 p-3" style="display: none;">
+ <p class="border-l-4 border-amber-400 py-1 pl-3 text-sm text-amber-700">
  <strong>Warning:</strong> Changing your username will change your profile URL
  (<code>{{ url('/@') }}<span x-text="newUsername"></span></code>). Old links leading to your
  profile may break.
@@ -53,7 +53,7 @@
  <div class="sm:col-span-6">
  <x-input-label for="bio" value="Bio"/>
  <textarea id="bio" name="bio" rows="4"
- class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ old('bio', $user->bio) }}</textarea>
+ class="form-textarea mt-1 block w-full">{{ old('bio', $user->bio) }}</textarea>
  <x-input-error class="mt-2" :messages="$errors->get('bio')"/>
  <p class="mt-2 text-sm text-gray-500">Brief description for your profile. URLs are hyperlinked.</p>
  </div>
@@ -78,7 +78,7 @@
  <div class="sm:col-span-3">
  <x-input-label for="gender" value="Gender"/>
  <select id="gender" name="gender"
- class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+ class="form-select mt-1 block w-full">
  <option value="">Select...</option>
  <option value="male" @selected(old('gender', $user->gender) =='male')>Male</option>
  <option value="female" @selected(old('gender', $user->gender) =='female')>Female</option>
@@ -98,8 +98,8 @@
  </div>
  </div>
 
- <div class="flex justify-end border-t border-gray-200 pt-5">
- <x-primary-button>Save Profile</x-primary-button>
+ <div class="flex justify-end border-t border-whisker/30 pt-5">
+ <x-ui.button variant="primary">Save Profile</x-ui.button>
  </div>
  </form>
  </div>

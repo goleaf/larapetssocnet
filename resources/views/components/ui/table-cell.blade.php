@@ -13,6 +13,6 @@
  $paddingClass = $compact ?'px-3 py-2':'px-4 py-3';
 @endphp
 
-<td {{ $attributes->merge(['class'=> $paddingClass .''. $alignClass .'text-bark']) }}>
+<td {{ $attributes->merge(['class'=> $paddingClass.' '.$alignClass.' text-bark']) }}>
  {{ $slot }}
 </td>

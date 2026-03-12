@@ -1,9 +1,9 @@
 @props(['messages' => []])
 
-@if ($messages)
- <ul {{ $attributes->merge(['class'=>'space-y-1 text-sm font-medium']) }} style="color: var(--ui-danger);">
- @foreach ((array) $messages as $message)
- <li>{{ $message }}</li>
- @endforeach
- </ul>
+@php
+ $message = collect((array) $messages)->filter()->first();
+@endphp
+
+@if ($message)
+ <x-ui.hint :error="$message" {{ $attributes }}/>
 @endif

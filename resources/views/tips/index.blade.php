@@ -38,7 +38,7 @@
  </div>
 
  <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-end gap-2">
- <x-primary-button>Apply filters</x-primary-button>
+ <x-ui.button variant="primary">Apply filters</x-ui.button>
  <a href="{{ route('tips.index') }}" class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
  </div>
  </form>

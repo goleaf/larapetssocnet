@@ -7,7 +7,7 @@
 >
  <template x-for="item in (($store.toast && $store.toast.items) ? $store.toast.items : [])" :key="item.id">
  <div
- class="pointer-events-auto flex w-full overflow-hidden rounded-lg border bg-warm-white shadow-card-hover"
+ class="pointer-events-auto flex w-full overflow-hidden rounded-[var(--radius-soft)] border bg-warm-white shadow-card-hover"
  :class="{ 'border-leaf-light': item.type ==='success', 'border-rose-light': item.type ==='error', 'border-amber-light': item.type ==='warning', 'border-sky-light': item.type ==='info', }"
  x-transition:enter="transition transform ease-out duration-300"
  x-transition:enter-start="translate-x-full opacity-0"
@@ -52,7 +52,7 @@
 
  <button
  type="button"
- class="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-whisker transition-colors hover:text-bark focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-1"
+ class="-mr-1 -mt-1 shrink-0 p-1 text-whisker transition-colors hover:text-bark focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-1"
  @click="if ($store.toast) { $store.toast.remove(item.id) }"
  >
  <span class="sr-only">Dismiss</span>

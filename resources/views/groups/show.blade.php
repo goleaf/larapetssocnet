@@ -299,7 +299,7 @@
  @forelse ($feedPosts ?? [] as $post)
  @include('partials.post-card', ['post'=> $post,'viewer'=> $viewer])
  @empty
- <x-empty-state
+ <x-ui.empty-state
  title="No Group Posts Yet"
  description="Start the conversation by sharing the first post."
  />

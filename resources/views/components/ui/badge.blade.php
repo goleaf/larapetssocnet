@@ -3,7 +3,7 @@
 'tone'=> null,
 'size'=>'md',
 'dot'=> false,
-'pill'=> true,
+'pill'=> false,
 'icon'=> null,
 ])
 
@@ -52,13 +52,13 @@
  $baseClasses,
  $variants[$resolvedVariant] ?? $variants['default'],
  $sizes[$size] ?? $sizes['md'],
- $pill ?'rounded-pill':'rounded-md',
+ $pill ?'rounded-[var(--radius-soft)]':'rounded-none',
  ]);
 @endphp
 
 <span {{ $attributes->merge(['class'=> $classes]) }}>
  @if ($dot)
- <span class="h-1.5 w-1.5 rounded-pill {{ $dotColors[$resolvedVariant] ??'bg-fur'}}"></span>
+ <span class="h-1.5 w-1.5 rounded-[var(--radius-soft)] {{ $dotColors[$resolvedVariant] ??'bg-fur'}}"></span>
  @endif
 
  @if ($iconString !=='')

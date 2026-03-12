@@ -2,24 +2,24 @@
  <div class="space-y-10">
  <!-- Download Data Section -->
  <div>
- <h3 class="text-lg font-medium leading-6 text-gray-900">Download Your Data</h3>
- <p class="mt-1 text-sm text-gray-500">Get a copy of your content. We will prepare an archive containing your
+ <h3 class="text-lg font-semibold text-bark">Download Your Data</h3>
+ <p class="mt-1 text-sm text-fur">Get a copy of your content. We will prepare an archive containing your
  profile, posts, groups, and pets.</p>
 
  <form action="{{ route('settings.export-data') }}" method="POST" class="mt-4">
  @csrf
- <x-secondary-button type="submit">
+ <x-ui.button variant="secondary" type="submit">
  Download Archive (JSON)
- </x-secondary-button>
+ </x-ui.button>
  </form>
  </div>
 
- <hr class="border-gray-200">
+ <hr class="border-whisker/30">
 
  <!-- Account Deletion Section -->
  <div>
- <h3 class="text-lg font-medium leading-6 text-red-600">Delete Account</h3>
- <p class="mt-1 text-sm text-gray-500">
+ <h3 class="text-lg font-semibold text-rose">Delete Account</h3>
+ <p class="mt-1 text-sm text-fur">
  Deleting your account is permanent. All your data, posts, and pet profiles will be removed.
  Any groups you own will be transferred to the next oldest admin, or dissolved if no admins remain.
  <br><br>
@@ -29,15 +29,13 @@
  </p>
 
  <div class="mt-6" x-data="{ confirmingDeletion: false }">
- <button type="button"
- class="inline-flex items-center justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
- @click="confirmingDeletion = true" x-show="!confirmingDeletion">
+ <x-ui.button type="button" variant="danger" @click="confirmingDeletion = true" x-show="!confirmingDeletion">
  Delete my account
- </button>
+ </x-ui.button>
 
  <div x-show="confirmingDeletion" style="display: none;"
- class="bg-red-50 border border-red-200 rounded-lg p-5 mt-4">
- <h4 class="text-md font-bold text-red-800 mb-4">Confirm Account Deletion</h4>
+ class="mt-4 border border-rose-200 bg-rose-light/60 p-5">
+ <h4 class="mb-4 text-md font-bold text-rose-700">Confirm Account Deletion</h4>
  <form action="{{ route('settings.delete-account') }}" method="POST" class="space-y-4">
  @csrf
  @method('DELETE')
@@ -46,13 +44,13 @@
  <x-input-label for="deletion_reason" value="Optional: Why are you leaving?"
  class="text-red-800"/>
  <x-text-input id="deletion_reason" name="deletion_reason" type="text"
- class="mt-1 block w-full border-red-300 focus:border-red-500 focus:ring-red-500"/>
+ class="mt-1 block w-full border-rose-300 focus:border-rose-500 focus:ring-rose-500"/>
  </div>
 
  <div>
  <x-input-label for="password" value="Confirm Password" class="text-red-800"/>
  <x-text-input id="password" name="password" type="password"
- class="mt-1 block w-full border-red-300 focus:border-red-500 focus:ring-red-500"
+ class="mt-1 block w-full border-rose-300 focus:border-rose-500 focus:ring-rose-500"
  required />
  <x-input-error class="mt-2 text-red-800" :messages="$errors->get('password')"/>
  </div>
@@ -61,20 +59,18 @@
  <x-input-label for="delete_confirmation" value="Type'DELETE'to confirm"
  class="text-red-800"/>
  <x-text-input id="delete_confirmation" name="delete_confirmation" type="text"
- class="mt-1 block w-full border-red-300 focus:border-red-500 focus:ring-red-500 font-mono"
+ class="mt-1 block w-full border-rose-300 font-mono focus:border-rose-500 focus:ring-rose-500"
  required />
  <x-input-error class="mt-2 text-red-800" :messages="$errors->get('delete_confirmation')"/>
  </div>
 
  <div class="flex gap-3 pt-2">
- <button type="button" @click="confirmingDeletion = false"
- class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+ <x-ui.button type="button" variant="outline" @click="confirmingDeletion = false">
  Cancel
- </button>
- <button type="submit"
- class="inline-flex items-center justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+ </x-ui.button>
+ <x-ui.button type="submit" variant="danger">
  Yes, set my account for deletion
- </button>
+ </x-ui.button>
  </div>
  </form>
  </div>

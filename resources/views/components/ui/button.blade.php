@@ -14,23 +14,23 @@
 @php
  $isDisabled = (bool) $disabled || (bool) $loading;
 
- $baseClasses ='inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:opacity-60 disabled:cursor-not-allowed';
+ $baseClasses = 'btn-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60';
 
  $variants = [
-'default'=>'bg-warm-white text-bark border border-whisker/50 hover:bg-cream shadow-sm',
-'primary'=>'bg-paw text-white hover:bg-paw-dark shadow-button',
-'secondary'=>'bg-paw-light text-paw-dark hover:bg-orange-200',
-'ghost'=>'bg-transparent text-fur hover:bg-cream border border-whisker/40',
-'danger'=>'bg-rose text-white hover:bg-red-700 shadow-button',
-'success'=>'bg-leaf text-white hover:bg-green-700 shadow-button',
-'outline'=>'bg-transparent text-bark border border-whisker hover:bg-cream',
+'default' => 'border border-whisker/50 bg-warm-white text-bark shadow-sm hover:bg-cream',
+'primary' => 'bg-paw text-white shadow-button hover:bg-paw-dark',
+'secondary' => 'bg-paw-light text-paw-dark hover:bg-orange-200',
+'ghost' => 'border border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark',
+'danger' => 'bg-rose text-white shadow-button hover:bg-red-700',
+'success' => 'bg-leaf text-white shadow-button hover:bg-green-700',
+'outline' => 'border border-whisker bg-transparent text-bark hover:bg-cream',
  ];
 
  $sizes = [
-'xs'=>'px-2.5 py-1 text-xs rounded-md',
-'sm'=>'px-3.5 py-1.5 text-sm rounded-md',
-'md'=>'px-5 py-2.5 text-sm rounded-md',
-'lg'=>'px-7 py-3.5 text-base rounded-lg',
+'xs' => 'h-[var(--control-height-sm)] px-2.5 text-xs',
+'sm' => 'h-[var(--control-height-sm)] px-3 text-sm',
+'md' => 'h-[var(--control-height-md)] px-4 text-sm',
+'lg' => 'h-[var(--control-height-lg)] px-5 text-base',
  ];
 
  $resolvedVariant = $variants[$variant] ?? $variants['primary'];
@@ -73,7 +73,7 @@
 @if ($href)
  <a
  href="{{ $isDisabled ?'#': $href }}"
- {{ $attributes->merge(['class'=> $classes]) }}
+ {{ $attributes->merge(['class'=> $classes,'data-ui-control'=>'button']) }}
  @if ($isDisabled)
  aria-disabled="true"
  tabindex="-1"
@@ -85,7 +85,7 @@
 @else
  <button
  type="{{ $type }}"
- {{ $attributes->merge(['class'=> $classes]) }}
+ {{ $attributes->merge(['class'=> $classes,'data-ui-control'=>'button']) }}
  @if ($isDisabled)
  disabled
  @endif

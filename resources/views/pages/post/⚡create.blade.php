@@ -17,7 +17,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new
-#[Layout('layouts::app')]
+#[Layout('layouts.app')]
 #[Title('Create Post')]
 class extends Component
 {

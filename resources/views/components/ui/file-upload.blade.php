@@ -158,7 +158,7 @@
  @endif
 
  <div
- class="relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-all duration-150"
+ class="relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-soft)] border-2 border-dashed px-4 py-6 text-center transition-all duration-150"
  :class="{ 'border-paw bg-paw-light/60': dragging && !disabled, 'border-rose bg-rose-light/20': errorMessage, 'border-whisker bg-warm-white hover:bg-cream': !dragging && !errorMessage && !disabled, 'border-whisker bg-cream cursor-not-allowed opacity-70': disabled, }"
  role="button"
  tabindex="0"
@@ -195,7 +195,7 @@
  {{ $controlAttributes }}
  />
 
- <span class="inline-flex h-11 w-11 items-center justify-center rounded-pill bg-paw-light text-xl" aria-hidden="true">🐾</span>
+ <span class="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-soft)] bg-paw-light text-xl" aria-hidden="true">🐾</span>
  <p class="text-sm font-medium text-bark">Drop files here or click to browse</p>
  <p class="text-xs text-fur">
  @if ($accept)
@@ -212,7 +212,7 @@
 
  <div x-show="previews.length && previewEnabled" x-cloak class="mt-2 flex flex-wrap gap-3">
  <template x-for="(previewItem, index) in previews" :key="index">
- <div class="h-24 w-24 overflow-hidden rounded-md border border-whisker bg-cream">
+ <div class="h-24 w-24 overflow-hidden rounded-[var(--radius-soft)] border border-whisker bg-cream">
  <template x-if="previewItem.image">
  <img :src="previewItem.url" :alt="previewItem.name" class="h-full w-full object-cover"/>
  </template>

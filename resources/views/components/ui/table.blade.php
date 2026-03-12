@@ -14,7 +14,7 @@
  $padding = $compact ?'px-3 py-2':'px-4 py-3';
 @endphp
 
-<div {{ $attributes->merge(['class'=>'overflow-hidden rounded-lg border border-whisker/30 bg-warm-white text-sm shadow-card']) }}>
+<div {{ $attributes->merge(['class'=>'shell-card overflow-hidden text-sm']) }}>
  <div class="w-full overflow-x-auto">
  <table class="w-full border-collapse text-left">
  @if(! empty($resolvedHeaders))

@@ -66,17 +66,17 @@
                 @click="toggle()"
                 :disabled="loading"
                 :aria-busy="loading"
-                class="{{ $pad }} rounded-lg bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                class="{{ $pad }} bg-paw text-white transition hover:bg-paw-dark disabled:opacity-60"
             >
                 <span x-text="label"></span>
             </button>
 
-            <span class="text-xs text-gray-500" x-text="count"></span>
+            <span class="text-xs text-fur" x-text="count"></span>
         </div>
     @else
         <a
             href="{{ route('login') }}"
-            class="{{ $pad }} rounded-lg bg-emerald-600 text-white transition hover:bg-emerald-700"
+            class="{{ $pad }} bg-paw text-white transition hover:bg-paw-dark"
         >
             {{ __('pets.actions.sign_in_to_follow') }}
         </a>
@@ -102,9 +102,9 @@
                 return this.status === 'following' || this.status === 'pending'
             },
             get btnStyle() {
-                if (this.status === 'following') return 'bg-white border border-gray-300 text-gray-700 hover:border-red-400 hover:text-red-500 hover:bg-red-50'
-                if (this.status === 'pending') return 'bg-gray-100 border border-gray-300 text-gray-500'
-                return 'bg-emerald-500 hover:bg-emerald-600 text-white border border-transparent'
+                if (this.status === 'following') return 'bg-white border border-whisker/40 text-bark hover:border-red-400 hover:text-red-500 hover:bg-red-50'
+                if (this.status === 'pending') return 'bg-cream border border-whisker/40 text-fur'
+                return 'bg-paw hover:bg-paw-dark text-white border border-transparent'
             },
             async perform(url, method = 'POST') {
                 if (this.loading) return
@@ -166,7 +166,7 @@
             :aria-busy="loading"
             type="button"
             :class="btnStyle"
-            class="{{ $pad }} min-w-[110px] rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            class="{{ $pad }} min-w-[110px] font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
             <span x-show="loading" x-cloak>...</span>
             <span x-show="!loading" x-text="label"></span>
@@ -176,7 +176,7 @@
             x-show="status === 'pending'"
             @click="perform('/users/{{ $user->username }}/unfollow')"
             type="button"
-            class="text-xs text-gray-400 underline transition-colors hover:text-red-500 focus:outline-none"
+            class="text-xs text-fur underline transition-colors hover:text-red-500 focus:outline-none"
         >
             Cancel request
         </button>
@@ -185,7 +185,7 @@
             <button
                 @click="perform('/users/{{ $user->username }}/follower', 'DELETE').then(() => $el.closest('[data-user-card]')?.remove())"
                 type="button"
-                class="text-xs text-gray-400 underline transition-colors hover:text-red-500 focus:outline-none"
+                class="text-xs text-fur underline transition-colors hover:text-red-500 focus:outline-none"
             >
                 Remove
             </button>

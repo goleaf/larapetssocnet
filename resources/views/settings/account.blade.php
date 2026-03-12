@@ -178,7 +178,7 @@
  </button>
  </div>
  @empty
- <x-empty-state
+ <x-ui.empty-state
  icon="🛡️"
  title="No blocked users"
  description="When you block someone, they will appear here."

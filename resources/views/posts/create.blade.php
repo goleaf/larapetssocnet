@@ -1,9 +1,11 @@
 <x-app-layout>
- <div class="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
- <div class="mb-6">
- <h1 class="text-2xl font-bold text-gray-900">Create Post</h1>
- </div>
+ <x-slot name="header">
+ <x-ui.page-header title="Create Post" description="Share an update, photo, or story with the community." icon="✍️" />
+ </x-slot>
 
- <x-post-form/>
+ <div class="mx-auto max-w-3xl">
+ <x-ui.card>
+ <x-post-form :available-pets="$availablePets"/>
+ </x-ui.card>
  </div>
 </x-app-layout>

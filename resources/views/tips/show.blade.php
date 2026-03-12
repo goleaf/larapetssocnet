@@ -45,9 +45,9 @@
  <div class="mt-6 flex items-center justify-between">
  <form method="POST" action="{{ route('tips.helpful', $tipSlug) }}">
  @csrf
- <x-secondary-button>
+ <x-ui.button variant="secondary">
  Helpful ({{ data_get($tip,'helpful_count', 0) }})
- </x-secondary-button>
+ </x-ui.button>
  </form>
 
  @if($isOwner && ! $isApproved)

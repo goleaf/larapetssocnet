@@ -22,7 +22,7 @@
  $petRoute = route('pets.show', ['pet'=> $pet->slug ?? $pet->getKey()]);
 @endphp
 
-<a href="{{ $petRoute }}" {{ $attributes->merge(['class'=>"flex-shrink-0 {$cardWidth} rounded-xl border border-whisker/30 bg-warm-white p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-card-hover snap-start"]) }}>
+<a href="{{ $petRoute }}" {{ $attributes->merge(['class'=>"shell-card flex-shrink-0 {$cardWidth} p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-card-hover snap-start"]) }}>
  <x-ui.avatar
  :src="$pet->getFirstMediaUrl('avatar')"
  :name="$pet->name"
@@ -31,7 +31,7 @@
  />
  <p class="mt-2 truncate text-sm font-semibold text-bark">{{ $pet->name }}</p>
  @if ($pet->species)
- <span class="mt-1 inline-block rounded-full px-2 py-0.5 text-2xs font-medium {{ $speciesClass }}">
+ <span class="mt-1 inline-block rounded-[var(--radius-soft)] px-2 py-0.5 text-2xs font-medium {{ $speciesClass }}">
  {{ ucfirst((string) $pet->species) }}
  </span>
  @endif

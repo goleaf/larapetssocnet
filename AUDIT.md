@@ -674,7 +674,6 @@
 | tests/Feature/Commands/FixTagsCommandTest.php | 7 |
 | tests/Feature/Commands/QueueMonitorCommandTest.php | 4 |
 | tests/Feature/Commands/QueuePauseForCommandTest.php | 2 |
-| tests/Feature/Commands/SkywalkerUiIntegrationTest.php | 3 |
 | tests/Feature/EventIndexTest.php | 2 |
 | tests/Feature/ExampleTest.php | 1 |
 | tests/Feature/ExploreFilterSanitizationTest.php | 2 |
@@ -858,7 +857,6 @@
 | mews/purifier | ^3.4 | require |
 | mischasigtermans/laravel-toon | ^1.0 | require |
 | robsontenorio/mary | ^2.7 | require |
-| skywalker-labs/ui | ^1.0 | require |
 | spatie/laravel-activitylog | ^4.11 | require |
 | spatie/laravel-medialibrary | ^11.20 | require |
 | spatie/laravel-permission | ^7.2 | require |
@@ -998,8 +996,6 @@
 | sebastian/recursion-context | 6.0.3 |
 | sebastian/type | 5.1.3 |
 | sebastian/version | 5.0.2 |
-| skywalker-labs/toolkit | v1.6.0 |
-| skywalker-labs/ui | v1.0.0 |
 | spatie/image | 3.9.1 |
 | spatie/image-optimizer | 1.8.1 |
 | spatie/laravel-activitylog | 4.11.0 |
@@ -1610,7 +1606,6 @@ app/Actions/Posts/UpdatePostAction.php
 app/Actions/Posts/UploadMediaAction.php
 app/Actions/SendMessageAction.php
 app/Actions/Ui
-app/Actions/Ui/InstallSkywalkerUiPresetAction.php
 
 ## app/Services
 app/Services
@@ -1858,7 +1853,6 @@ resources/views/hashtags/show.blade.php
 resources/views/layouts
 resources/views/layouts/app.blade.php
 resources/views/layouts/guest.blade.php
-resources/views/layouts/navigation.blade.php
 resources/views/listings
 resources/views/listings/create.blade.php
 resources/views/listings/edit.blade.php

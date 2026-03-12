@@ -31,7 +31,7 @@
  <!-- Comment Bubble -->
  <div x-show="!editing">
  <div class="flex items-center gap-2">
- <div class="inline-block bg-gray-100/80 rounded-2xl px-3.5 py-2.5 max-w-[85%]">
+ <div class="inline-block max-w-[85%] border border-whisker/30 bg-cream/60 px-3.5 py-2.5">
  <a href="{{ route('profile.show', $comment->user->username) }}"
  class="font-bold text-sm text-gray-900 hover:underline">
  {{ $comment->user->name }}
@@ -57,12 +57,12 @@
 
  <!-- Edit Form -->
  @if(auth()->check() && auth()->id() === $comment->user_id)
- <div x-show="editing" x-cloak class="w-full max-w-2xl bg-gray-50 rounded-2xl p-2 border border-gray-200">
+ <div x-show="editing" x-cloak class="w-full max-w-2xl border border-whisker/30 bg-cream/60 p-2">
  <form action="{{ route('posts.comments.update', ['post'=> $post,'comment'=> $comment]) }}"
  method="POST">
  @csrf @method('PATCH')
  <textarea name="body" rows="2"
- class="w-full bg-transparent border-0 focus:ring-0 p-1 text-sm resize-none"
+ class="form-textarea w-full border-0 bg-transparent p-1 text-sm resize-none focus:ring-0"
  required>{{ $comment->body }}</textarea>
  <div class="mt-2 flex justify-end gap-2 pr-1 pb-1">
  <button type="button" @click="editing = false"
@@ -125,12 +125,12 @@
  @csrf
  <input type="hidden" name="parent_id" value="{{ $comment->id }}">
  <textarea x-ref="replyInput" name="body" rows="1"
- class="w-full py-2 pl-3 pr-10 text-sm bg-gray-100 border-transparent rounded-2xl focus:bg-white focus:border-paw focus:ring-1 focus:ring-paw resize-none overflow-hidden"
+ class="form-textarea w-full resize-none overflow-hidden py-2 pl-3 pr-10 text-sm"
  placeholder="Write a reply..." required
  oninput="this.style.height =''; this.style.height = this.scrollHeight +'px'"
  @keydown.escape="showReply = false"></textarea>
  <button type="submit"
- class="absolute right-2 bottom-1.5 p-1 text-paw hover:bg-paw-light/30 rounded-full transition-colors">
+ class="absolute bottom-1.5 right-2 p-1 text-paw transition-colors hover:bg-paw-light/30">
  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
  class="w-4 h-4">
  <path

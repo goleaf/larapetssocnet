@@ -1,173 +1,3 @@
-@php
- $appName = config('app.name','LaraPets');
- $livewireTitle = isset($title) ? (string) $title :'';
- $pageTitle = trim($livewireTitle !=='' ? $livewireTitle : $__env->yieldContent('title'));
- $documentTitle = $pageTitle !==''?"{$pageTitle} · {$appName}": $appName;
- $currentRoute = Route::currentRouteName();
- $user = Auth::user();
-
- $isAuthenticated = $user !== null;
-
- $desktopNav = [
- [
-'label'=> $isAuthenticated ?'Feed':'Explore Feed',
-'icon'=>'🏠',
-'route'=> $isAuthenticated ?'feed.index':'explore.index',
-'patterns'=> $isAuthenticated ? ['feed.*','posts.*','saved.*'] : ['explore.*','search.*','hashtags.*'],
- ],
- ['label'=>'Explore','icon'=>'🧭','route'=>'explore.index','patterns'=> ['explore.*','search.*','hashtags.*']],
- ['label'=>'Pets','icon'=>'🐾','route'=>'pets.explore','patterns'=> ['pets.*','tips.*'],'exclude'=> ['pets.adopt']],
- ['label'=>'Adopt','icon'=>'🏡','route'=>'pets.adopt','patterns'=> ['pets.adopt']],
- ['label'=>'Groups','icon'=>'👥','route'=>'groups.index','patterns'=> ['groups.*']],
- ['label'=>'Events','icon'=>'📅','route'=>'events.index','patterns'=> ['events.*']],
- ['label'=>'Marketplace','icon'=>'🛍️','route'=>'marketplace.index','patterns'=> ['marketplace.*','messages.*']],
- ];
-
- $mobileNav = [
- [
-'label'=>'Home',
-'icon'=>'🏠',
-'route'=> $isAuthenticated ?'feed.index':'explore.index',
-'patterns'=> $isAuthenticated ? ['feed.*','posts.*'] : ['explore.*','search.*','hashtags.*'],
- ],
- ['label'=>'Explore','icon'=>'🧭','route'=>'explore.index','patterns'=> ['explore.*','search.*']],
- ['label'=>'Post','icon'=>'✚','route'=>'posts.create','patterns'=> ['posts.create']],
- ['label'=>'Groups','icon'=>'👥','route'=>'groups.index','patterns'=> ['groups.*']],
- ['label'=>'Profile','icon'=>'🙂','route'=>'settings.profile','patterns'=> ['profile.*','settings.*']],
- ];
-
- $searchTarget = Route::has('search.index') ? route('search.index') : url('/');
-
- $flashMessages = collect([
- ['type'=>'success','message'=> session('success')],
- ['type'=>'error','message'=> session('error')],
- ['type'=>'warning','message'=> session('warning')],
- ['type'=>'info','message'=> session('status')],
- ])->filter(fn ($item) => filled($item['message']))->values();
-
- if ($errors->any()) {
- $flashMessages = $flashMessages->prepend([
-'type'=>'error',
-'message'=> $errors->first(),
- ]);
- }
-
- $routeIsActive = static function (array $patterns, array $except = []) use ($currentRoute): bool {
- if (! $currentRoute) {
- return false;
- }
-
- foreach ($except as $pattern) {
- if (\Illuminate\Support\Str::is($pattern, $currentRoute)) {
- return false;
- }
- }
-
- foreach ($patterns as $pattern) {
- if (\Illuminate\Support\Str::is($pattern, $currentRoute)) {
- return true;
- }
- }
-
- return false;
- };
-
- $hideLeftRail = $routeIsActive([
-'profile.show',
-'profile.followers',
-'profile.following',
-'profile.edit',
-'profile.update',
-'settings.*',
-'settings.profile.*',
-'pets.show',
-'pets.edit',
-'pets.update',
-'pets.create',
- ]);
-
- $trendingHashtags = collect();
- $upcomingEvents = collect();
- $suggestedUsers = collect();
- $activeContests = collect();
- $yourGroups = collect();
-
- $communityStats = [
- ['label'=>'Members','value'=>'--'],
- ['label'=>'Pets','value'=>'--'],
- ['label'=>'Posts','value'=>'--'],
- ];
-
- try {
- if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
- $communityStats[0]['value'] = number_format((int) \App\Models\User::query()->count());
- }
-
- if (\Illuminate\Support\Facades\Schema::hasTable('pets')) {
- $communityStats[1]['value'] = number_format((int) \App\Models\Pet::query()->count());
- }
-
- if (\Illuminate\Support\Facades\Schema::hasTable('posts')) {
- $communityStats[2]['value'] = number_format((int) \App\Models\Post::query()->count());
- }
-
- if (\Illuminate\Support\Facades\Schema::hasTable('hashtags')) {
- $trendingHashtags = \App\Models\Hashtag::query()
- ->orderByDesc('posts_count')
- ->limit(5)
- ->get(['id','name','slug','posts_count']);
- }
-
- if (\Illuminate\Support\Facades\Schema::hasTable('events')) {
- $upcomingEvents = \App\Models\Event::query()
- ->where('start_at','>=', now())
- ->orderBy('start_at')
- ->limit(2)
- ->get(['id','title','start_at','location_text','attendees_count']);
- }
-
- if ($user && \Illuminate\Support\Facades\Schema::hasTable('users')) {
- $suggestedUsers = \App\Models\User::query()
- ->whereKeyNot($user->getKey())
- ->where('is_private', false)
- ->where('is_banned', false)
- ->orderByDesc('followers_count')
- ->limit(3)
- ->get(['id','name','username','avatar_path','followers_count']);
- }
-
- if (\Illuminate\Support\Facades\Schema::hasTable('contests')) {
- $activeContests = \App\Models\Contest::query()
- ->whereIn('status', ['active','voting'])
- ->orderBy('ends_at')
- ->limit(2)
- ->get(['id','title','slug','status','ends_at','entries_count']);
- }
-
- if (
- $user
- && \Illuminate\Support\Facades\Schema::hasTable('groups')
- && \Illuminate\Support\Facades\Schema::hasTable('group_members')
- ) {
- $yourGroups = \App\Models\Group::query()
- ->whereIn('groups.id', function ($query) use ($user): void {
- $query->select('group_members.group_id')
- ->from('group_members')
- ->where('group_members.user_id', $user->getKey())
- ->where(function ($statusQuery): void {
- $statusQuery->whereNull('group_members.status')
- ->orWhereIn('group_members.status', ['active','accepted']);
- });
- })
- ->orderByDesc('groups.members_count')
- ->limit(6)
- ->get();
- }
- } catch (\Throwable $exception) {
- // Keep layout resilient when schema is in flux.
- }
-@endphp
-
 <!DOCTYPE html>
 <html lang="{{ str_replace('_','-', app()->getLocale()) }}" data-theme="petssocnet">
  <head>
@@ -180,12 +10,12 @@
  <meta name="description" content="PetSocial is a community for sharing pet moments, care tips, and adoption stories.">
  @endif
 
- <title>{{ $documentTitle }}</title>
+ <title>{{ trim((string) ($title ?? $__env->yieldContent('title'))) !== '' ? trim((string) ($title ?? $__env->yieldContent('title'))).' · '.($appName ?? config('app.name', 'LaraPets')) : ($appName ?? config('app.name', 'LaraPets')) }}</title>
 
  <link rel="preconnect" href="https://fonts.bunny.net">
  <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap" rel="stylesheet"/>
 
- @livewireStyles
+ <livewire:styles />
  @vite(['resources/css/app.css','resources/js/app.js'])
  </head>
  <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
@@ -235,21 +65,7 @@
 
  <x-ui.card>
  <h4 class="px-1 text-xs font-bold font-display uppercase tracking-wider text-fur mb-2">Navigate</h4>
- @php
- $mappedNav = collect($desktopNav)->map(function ($item) use ($routeIsActive) {
- $patterns = $item['patterns'] ?? [];
- $except = $item['exclude'] ?? [];
-
- return [
-'label'=> $item['label'],
-'href'=> isset($item['route']) && Route::has($item['route']) ? route($item['route']) :'#',
-'icon'=>'<span class="text-lg leading-none">'. $item['icon'] .'</span>',
-'patterns'=> $patterns,
-'active'=> $routeIsActive($patterns, $except),
- ];
- })->toArray();
- @endphp
- <x-ui.sidebar-nav :items="$mappedNav" class="!mb-0"/>
+ <x-ui.sidebar-nav :items="$desktopNav" class="!mb-0"/>
  </x-ui.card>
 
  <x-ui.card>
@@ -265,14 +81,10 @@
 
  <div class="space-y-1 -mx-2">
  @forelse ($yourGroups as $group)
- @php
- $groupRouteKey = filled((string) ($group->slug ??'')) ? $group->slug : $group->id;
- @endphp
-
  <x-ui.user-row
  :name="$group->name"
  :subtitle="\Illuminate\Support\Str::headline((string) ($group->privacy ??'public'))"
- :href="route('groups.show', $groupRouteKey)"
+ :href="route('groups.show', filled((string) ($group->slug ?? '')) ? $group->slug : $group->id)"
  class="px-2"
  >
  <x-slot name="action">
@@ -439,7 +251,12 @@
  @endisset
 
  <section class="space-y-5 animate-fade-up">
+ @isset($slot)
  {{ $slot }}
+ @endisset
+ @hasSection('content')
+ @yield('content')
+ @endif
  </section>
  </main>
  </div>
@@ -448,15 +265,9 @@
  <nav class="fixed inset-x-3 bottom-3 z-40 lg:hidden">
  <div class="bg-warm-white rounded-2xl shadow-card-hover border border-whisker/30 flex items-center justify-between px-2 py-1.5">
  @foreach ($mobileNav as $item)
- @php
- $href = ($item['route'] && Route::has($item['route'])) ? route($item['route']) :'#';
- $isActive = $routeIsActive($item['patterns'] ?? []);
- $isPrimaryAction = ($item['route'] ?? null) ==='posts.create';
- @endphp
-
  <a
- href="{{ $href }}"
- class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1 text-[0.65rem] font-semibold transition-colors {{ $isPrimaryAction ?'bg-paw text-white shadow-button hover:bg-paw-dark': ($isActive ?'text-paw':'text-fur hover:bg-cream hover:text-bark') }}"
+ href="{{ $item['href'] }}"
+ class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1 text-[0.65rem] font-semibold transition-colors {{ $item['isPrimaryAction'] ? 'bg-paw text-white shadow-button hover:bg-paw-dark' : ($item['active'] ? 'text-paw' : 'text-fur hover:bg-cream hover:text-bark') }}"
  >
  <span class="text-base" aria-hidden="true">{{ $item['icon'] }}</span>
  <span class="truncate">{{ $item['label'] }}</span>
@@ -465,6 +276,6 @@
  </div>
  </nav>
  </div>
- @livewireScripts
+ <livewire:scripts />
  </body>
 </html>

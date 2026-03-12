@@ -78,7 +78,7 @@
 
  <div class="hidden items-center space-x-6 md:flex">
  <button type="button"
- class="relative rounded-full p-1 text-fur transition-colors hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ class="relative p-1 text-fur transition-colors hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="sr-only">View notifications</span>
  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
  stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -91,7 +91,7 @@
  <x-ui.dropdown align="right" width="48">
  <x-slot name="trigger">
  <button type="button"
- class="flex items-center gap-2 rounded-full text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ class="flex items-center gap-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  id="user-menu-button">
  <span class="sr-only">Open user menu</span>
  <x-ui.avatar size="sm" :name="auth()->user()->name ??'User'"
@@ -132,7 +132,7 @@
 
  <div class="flex items-center md:hidden">
  <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
- class="inline-flex items-center justify-center rounded-md p-2 text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ class="inline-flex items-center justify-center p-2 text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="sr-only">Open main menu</span>
  <svg x-show="!mobileMenuOpen" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none"
  viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">

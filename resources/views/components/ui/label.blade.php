@@ -1,6 +1,7 @@
 @props([
 'for'=> null,
 'required'=> false,
+'value'=> null,
 ])
 
 <label
@@ -9,7 +10,7 @@
  @endif
  {{ $attributes->merge(['class'=>'block text-sm font-medium text-bark']) }}
 >
- {{ $slot }}
+ {{ $value ?? $slot }}
 
  @if ($required)
  <span class="ml-0.5 text-rose" aria-hidden="true">*</span>

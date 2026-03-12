@@ -44,14 +44,14 @@
  $maxlength ? $counterId : null,
  ])->filter()->implode(''));
 
- $baseClasses ='w-full resize-y rounded-md border px-3.5 py-2.5 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:outline-none';
+ $baseClasses = 'w-full resize-y border bg-[color:var(--surface-form)] px-3.5 py-2.5 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:outline-none rounded-[var(--radius-control)]';
 
  if ($hasError) {
- $stateClasses ='border-rose bg-rose-light/20 focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]';
+ $stateClasses = 'border-rose bg-rose-light/20 focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]';
  } elseif ($disabled) {
- $stateClasses ='border-whisker bg-cream opacity-60 cursor-not-allowed';
+ $stateClasses = 'cursor-not-allowed border-whisker bg-cream opacity-60';
  } else {
- $stateClasses ='border-whisker bg-warm-white focus:border-paw focus:shadow-input';
+ $stateClasses = 'border-whisker focus:border-paw focus:shadow-input';
  }
 
  $classes = \Illuminate\Support\Arr::toCssClasses([

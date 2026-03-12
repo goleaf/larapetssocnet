@@ -15,7 +15,7 @@
  @include('tips.partials.form')
 
  <div class="flex items-center gap-3">
- <x-primary-button>Submit tip</x-primary-button>
+ <x-ui.button variant="primary">Submit tip</x-ui.button>
  <a href="{{ route('tips.index') }}" class="text-sm text-gray-600 hover:text-gray-900">Cancel</a>
  </div>
  </form>

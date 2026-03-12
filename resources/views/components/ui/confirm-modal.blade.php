@@ -139,12 +139,12 @@
  x-transition:leave="ease-in duration-200 transform"
  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
- class="inline-block w-full transform overflow-hidden rounded-xl bg-warm-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:max-w-md sm:align-middle"
+ class="inline-block w-full transform overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--surface-modal)] text-left align-bottom shadow-2xl transition-all sm:my-8 sm:max-w-md sm:align-middle"
  @click.stop
  >
  <div class="px-6 pb-6 pt-8 text-center sm:text-left">
  <div class="sm:flex sm:items-start">
- <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-pill sm:mx-0 sm:h-10 sm:w-10" :class="iconClasses()">
+ <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-soft)] sm:mx-0 sm:h-10 sm:w-10" :class="iconClasses()">
  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
  </svg>
@@ -162,7 +162,8 @@
  <div class="flex flex-col-reverse items-center justify-end gap-3 border-t border-whisker/40 bg-cream/50 px-6 py-4 sm:flex-row">
  <button
  type="button"
- class="inline-flex w-full items-center justify-center rounded-md border border-whisker bg-transparent px-5 py-2.5 text-sm font-medium text-bark shadow-sm transition-all duration-150 hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:w-auto"
+ class="btn-base btn-ghost w-full px-5 sm:w-auto"
+ data-ui-control="button"
  @click="cancel()"
  >
  <span x-text="cancelLabel"></span>
@@ -170,7 +171,8 @@
 
  <button
  type="button"
- class="inline-flex w-full items-center justify-center rounded-md px-5 py-2.5 text-sm font-medium text-white shadow-button transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:w-auto"
+ class="btn-base w-full px-5 text-white shadow-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:w-auto"
+ data-ui-control="button"
  :class="{ 'bg-rose hover:bg-red-700': variant ==='danger', 'bg-amber hover:bg-amber-600': variant ==='warning', 'bg-leaf hover:bg-leaf/90': variant ==='success', 'bg-paw hover:bg-paw-dark': !['danger','warning','success'].includes(variant), }"
  @click="confirm()"
  >

@@ -51,7 +51,7 @@
  </div>
 
  <div class="flex items-end gap-2">
- <x-primary-button>Filter</x-primary-button>
+ <x-ui.button variant="primary">Filter</x-ui.button>
  <a href="{{ route('adoption.index') }}"
  class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
  </div>
