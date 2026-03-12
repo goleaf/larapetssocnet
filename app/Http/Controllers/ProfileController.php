@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Users\BuildProfileSettingsViewDataAction;
+use App\Actions\Users\UpdateProfileAction;
 use App\Enums\FollowAbility;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
@@ -11,12 +13,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Mews\Purifier\Facades\Purifier;
 
 class ProfileController extends Controller
 {
@@ -73,97 +72,20 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function edit(Request $request): View
+    public function edit(Request $request, BuildProfileSettingsViewDataAction $buildProfileSettingsViewData): View
     {
         $user = $request->user();
         $this->authorize('update', $user);
 
-        return view('settings.profile', [
-            'user' => $user,
-        ]);
+        return view('settings.profile', $buildProfileSettingsViewData->handle($user));
     }
 
-    public function update(UpdateProfileRequest $request): RedirectResponse
+    public function update(UpdateProfileRequest $request, UpdateProfileAction $updateProfile): RedirectResponse
     {
         $user = $request->user();
         $this->authorize('update', $user);
 
-        $validated = $request->validated();
-
-        $bioHtml = $this->sanitizeBioHtml($validated['bio'] ?? null);
-        $plainBio = $bioHtml ? trim(strip_tags($bioHtml)) : null;
-
-        $username = User::normalizeUsername((string) ($validated['username'] ?? ''));
-        if ($username === '') {
-            $username = $user->username ?: User::generateUniqueUsername((string) ($validated['name'] ?? $user->name));
-        }
-
-        $location = $validated['location'] ?? $validated['city'] ?? null;
-
-        $payload = [
-            'name' => $validated['name'],
-            'username' => $username,
-            'email' => Str::lower((string) $validated['email']),
-        ];
-
-        if (array_key_exists('bio', $validated)) {
-            $payload['bio'] = $plainBio !== '' ? $plainBio : null;
-            $payload['bio_html'] = $bioHtml;
-        }
-
-        if (array_key_exists('website', $validated)) {
-            $payload['website'] = $validated['website'] ?? null;
-        }
-
-        if (array_key_exists('location', $validated) || array_key_exists('city', $validated)) {
-            $payload['location'] = $location;
-            $payload['city'] = $validated['city'] ?? $location;
-        }
-
-        if (array_key_exists('country_code', $validated)) {
-            $payload['country_code'] = $validated['country_code'] ?? null;
-        }
-
-        if (array_key_exists('birth_date', $validated)) {
-            $payload['birth_date'] = $validated['birth_date'] ?? null;
-        }
-
-        if (array_key_exists('is_private', $validated)) {
-            $payload['is_private'] = (bool) $validated['is_private'];
-        }
-
-        DB::transaction(function () use ($user, $payload): void {
-            $user->fill($payload);
-
-            if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
-            }
-
-            $user->save();
-        });
-
-        if ($request->hasFile('avatar')) {
-            $user->updateAvatar($request->file('avatar'));
-        }
-
-        if ($request->hasFile('cover')) {
-            $user->updateCover($request->file('cover'));
-        }
-
-        if ((bool) ($validated['remove_avatar'] ?? false)) {
-            $user->clearMediaCollection(User::MEDIA_COLLECTION_AVATAR);
-            $user->forceFill([
-                'avatar_path' => null,
-                'profile_photo_path' => null,
-            ])->saveQuietly();
-        }
-
-        if ((bool) ($validated['remove_cover'] ?? false)) {
-            $user->clearMediaCollection(User::MEDIA_COLLECTION_COVER);
-            $user->forceFill([
-                'cover_photo_path' => null,
-            ])->saveQuietly();
-        }
+        $updateProfile->handle($user, $request->validated());
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -287,18 +209,5 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
-    }
-
-    protected function sanitizeBioHtml(?string $rawBio): ?string
-    {
-        $rawBio = trim((string) $rawBio);
-
-        if ($rawBio === '') {
-            return null;
-        }
-
-        $cleaned = trim((string) Purifier::clean($rawBio));
-
-        return $cleaned !== '' ? $cleaned : null;
     }
 }

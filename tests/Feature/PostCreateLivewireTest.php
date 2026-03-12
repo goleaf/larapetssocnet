@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Livewire\LivewireServiceProvider;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
@@ -21,6 +22,10 @@ it('renders the post create page', function (): void {
 });
 
 it('renders the livewire post create component', function (): void {
+    if (! $this->app->providerIsLoaded(LivewireServiceProvider::class)) {
+        $this->app->register(LivewireServiceProvider::class);
+    }
+
     $user = User::factory()->create();
 
     Livewire::actingAs($user)

@@ -81,6 +81,7 @@ class User extends Authenticatable implements HasMedia
         'location',
         'website',
         'birth_date',
+        'gender',
         'city',
         'country_code',
         'locale',
@@ -1169,6 +1170,21 @@ class User extends Authenticatable implements HasMedia
         $this->forceFill([
             'cover_photo_path' => null,
         ])->saveQuietly();
+    }
+
+    public function coverImageUrl(): ?string
+    {
+        $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER_BANNER);
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        if (! empty($this->cover_photo_path)) {
+            return (string) $this->cover_photo_path;
+        }
+
+        return null;
     }
 
     public function getAvatarUrl(): string

@@ -5,11 +5,54 @@
  <p class="mt-1 text-sm text-fur">Update your account's profile information and email address.</p>
  </div>
 
- <form action="{{ route('settings.profile.update') }}" method="POST" class="space-y-6">
+ <form action="{{ route('settings.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
  @csrf
  @method('PUT')
 
  <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-6 sm:gap-x-6">
+ <!-- Avatar -->
+ <div class="sm:col-span-6 space-y-4">
+ <x-ui.file-upload
+ name="avatar"
+ label="Avatar"
+ accept="image/jpeg,image/png,image/webp"
+ maxSize="10MB"
+ preview
+ help="JPG, PNG, or WEBP. Square image recommended."
+ />
+
+ <div class="space-y-3">
+ <p class="text-sm font-medium text-bark">Current avatar</p>
+ <div class="flex items-center gap-4">
+ <x-ui.avatar :src="$avatarUrl" :name="$user->name" size="xl"/>
+ <span class="text-sm text-fur">Visible across your profile and posts.</span>
+ </div>
+ @if ($hasAvatar)
+ <x-ui.checkbox name="remove_avatar" label="Remove current avatar"/>
+ @endif
+ </div>
+ </div>
+
+ <!-- Cover -->
+ <div class="sm:col-span-6 space-y-4">
+ <x-ui.file-upload
+ name="cover"
+ label="Cover Photo"
+ accept="image/jpeg,image/png,image/webp,image/gif"
+ maxSize="5MB"
+ preview
+ help="JPG, PNG, WEBP, or GIF. Recommended 1600×480."
+ />
+
+ @if ($hasCover)
+ <div class="space-y-3">
+ <p class="text-sm font-medium text-bark">Current cover</p>
+ <img src="{{ $coverUrl }}" alt="{{ $user->name }} cover" class="h-36 w-full rounded-xl object-cover">
+ <x-ui.checkbox name="remove_cover" label="Remove current cover photo"/>
+ </div>
+ @endif
+ </div>
+
  <!-- Name -->
  <div class="sm:col-span-3">
  <x-input-label for="name" value="Name"/>
@@ -33,7 +76,7 @@
  profile may break.
  </p>
  <div class="mt-3">
- <x-input-label for="username_confirm" value="Type your new username again to confirm"
+ <x-input-label for="username_confirm" value="Type your current username to confirm"
  class="text-yellow-800"/>
  <x-text-input id="username_confirm" name="username_confirm" type="text"
  class="mt-1 block w-full border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500"/>

@@ -24,8 +24,12 @@ class ProfileSettingsController extends Controller
 {
     public function edit(Request $request): View
     {
+        $coverUrl = $request->user()->coverImageUrl();
+
         return view('settings.profile', [
             'user' => $request->user(),
+            'coverUrl' => $coverUrl,
+            'hasCover' => $coverUrl !== null && $coverUrl !== '',
         ]);
     }
 

@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -18,7 +20,8 @@ class SettingsTest extends TestCase
         $this->actingAs($user)
             ->get('/settings/profile')
             ->assertOk()
-            ->assertViewIs('settings.profile');
+            ->assertViewIs('settings.profile')
+            ->assertSee('aria-label="Sidebar"', false);
     }
 
     public function test_allows_user_to_update_profile_information(): void
@@ -39,6 +42,30 @@ class SettingsTest extends TestCase
         $this->assertSame('New Name', $user->name);
         $this->assertSame('new@example.com', $user->email);
         $this->assertSame('New bio', $user->bio);
+    }
+
+    public function test_allows_user_to_update_profile_avatar(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->put('/settings/profile', [
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'avatar' => UploadedFile::fake()->image('avatar.jpg', 640, 640),
+            ])
+            ->assertRedirect('/settings/profile')
+            ->assertSessionHas('success');
+
+        $user->refresh();
+
+        $avatarMedia = $user->getFirstMedia('avatar');
+
+        $this->assertNotNull($avatarMedia);
+        Storage::disk($avatarMedia->disk)->assertExists($avatarMedia->getPathRelativeToRoot());
     }
 
     public function test_requires_confirmation_when_changing_username(): void

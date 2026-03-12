@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Users\BuildProfileSettingsViewDataAction;
+use App\Actions\Users\UpdateProfileAction;
 use App\Exceptions\CannotBlockAdminException;
 use App\Exceptions\CannotBlockSelfException;
 use App\Http\Requests\BlockUserByUsernameRequest;
 use App\Http\Requests\BlockUserRequest;
+use App\Http\Requests\UpdateSettingsProfileRequest;
 use App\Models\User;
 use App\Services\AccountExportService;
 use App\Services\BlockService;
 use App\Services\SettingsService;
-use App\Support\Usernames\UsernameNormalizer;
-use App\Support\Usernames\UsernameRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -32,53 +32,20 @@ class SettingsController extends Controller
         return redirect()->route('settings.profile');
     }
 
-    public function editProfile(Request $request): View
-    {
-        return view('settings.profile', [
-            'user' => $request->user(),
-        ]);
-    }
-
-    public function updateProfile(Request $request): RedirectResponse
+    public function editProfile(Request $request, BuildProfileSettingsViewDataAction $buildProfileSettingsViewData): View
     {
         $user = $request->user();
-        $normalizedUsername = UsernameNormalizer::normalize((string) $request->input('username'));
+        $this->authorize('update', $user);
 
-        $request->merge([
-            'username' => $normalizedUsername,
-        ]);
+        return view('settings.profile', $buildProfileSettingsViewData->handle($user));
+    }
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'username' => UsernameRules::requiredRules($user->id),
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique('users')->ignore($user->id),
-            ],
-            'bio' => ['nullable', 'string', 'max:1000'],
-            'location' => ['nullable', 'string', 'max:255'],
-            'website' => ['nullable', 'url', 'max:255'],
-            'birth_date' => ['nullable', 'date', 'before:today'],
-            'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
-            'username_confirm' => [
-                Rule::requiredIf($normalizedUsername !== $user->username),
-                'nullable',
-                'string',
-                'in:'.$user->username,
-            ],
-        ], [
-            'username_confirm.in' => 'You must type your CURRENT username exactly to confirm the change.',
-            'username_confirm.required' => 'Confirming your current username is required.',
-        ]);
+    public function updateProfile(UpdateSettingsProfileRequest $request, UpdateProfileAction $updateProfile): RedirectResponse
+    {
+        $user = $request->user();
+        $this->authorize('update', $user);
 
-        try {
-            $this->settingsService->updateProfile($user, $validated, $request->input('username_confirm'));
-        } catch (\InvalidArgumentException $e) {
-            return back()->withErrors(['username_confirm' => $e->getMessage()]);
-        }
+        $updateProfile->handle($user, $request->validated(), true);
 
         return redirect()->route('settings.profile')->with('success', 'Profile updated successfully.');
     }
