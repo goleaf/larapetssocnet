@@ -3,10 +3,9 @@
 Trending posts are computed at query time.
 No stored trending score column.
 
-- Score formula: `likes_count + (comments_count * 2)`.
 - Window: last 48 hours.
-- Minimum engagement: at least one interaction.
-- Tie-breaker: newer post first.
+- Minimum engagement: at least one like or comment.
+- Ordering: highest `likes_count`, then `comments_count`, then newest first.
 
 ## Post Scope
 
@@ -20,8 +19,9 @@ public function scopeTrending(Builder $query): Builder
                 ->where('likes_count', '>', 0)
                 ->orWhere('comments_count', '>', 0);
         })
-        // Approved exception: computed ordering has no Eloquent equivalent.
-        ->orderByRaw('(likes_count + (comments_count * 2)) DESC, created_at DESC');
+        ->orderByDesc('likes_count')
+        ->orderByDesc('comments_count')
+        ->orderByDesc('created_at');
 }
 ```
 

@@ -1,31 +1,25 @@
 # Health Logs
 
-Health logs belong to a pet.
+Health logs belong to a pet and are stored in `pet_health_logs`.
 
 ## Types
 - `weight`
 - `vet_visit`
-- `vaccination`
+- `vaccination` (legacy `vaccine` is normalized)
 - `medication`
-- `note`
 
 ## Fields
-- `pet_id`, `type`, `title`
-- `value` nullable numeric
-- `unit` nullable string
-- `notes` nullable text
-- `log_date`
-- `next_due_date` nullable
+- `pet_id`, `logged_by_user_id`
+- `log_type`, `title`, `notes`
+- `weight_kg` nullable
+- `temperature_c` nullable
+- `logged_at`
+- `next_due_at` nullable
 
-## Reminders (UI-only)
-- No queue/email jobs in v1.
-- Show reminders due in next 30 days.
-- Show urgent badge if due in 7 days.
-
-## Views
-- Logs paginated (20/page).
-- Tabs: All, Weight, Vet, Vaccines, Medication, Notes.
+## Queries
+- `PetHealthLog::paginateForPet($pet, $perPage = 15)`
+- `PetHealthLog::upcomingForPet($pet, $limit = 10)`
+- `PetHealthLog::weightTrendForPet($pet, $limit = 30)`
 
 ## Ownership
-- `HealthLogService` owns CRUD.
-- `HealthLogPolicy` is owner-only.
+- Access is controlled via `PetPolicy::update` (see `PetHealthLogController`).

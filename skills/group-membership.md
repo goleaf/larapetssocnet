@@ -1,24 +1,28 @@
 # Group Membership
 
-Pivot: `group_members` with composite key (`group_id`, `user_id`).
+Membership is stored in the `group_members` table and modeled by `GroupMember` (pivot-like model with `id`).
 
-## Pivot columns
+## Columns
+- `group_id`, `user_id` (unique pair)
 - `role`: `owner|admin|moderator|member`
-- `status`: `accepted|pending|banned`
-- `invited_by`
+- `status`: `active|accepted|pending|rejected|removed|banned`
+- `joined_at` timestamp
+- `invited_by` nullable user id
 - timestamps
 
-## Join logic
-- Public group: immediate `accepted`.
+## Join Logic (GroupService)
+- Public group: immediate `active`.
 - Private group: `pending` until approval.
 - Secret group: no open join.
+- Rejoin after rejection: blocked for 7 days.
 
-## Leave logic
+## Leave Logic
 - Non-owner can leave.
 - Owner cannot leave until ownership transfer.
 
-## Ban logic
+## Ban Logic
 - `status=banned` blocks rejoin until unbanned.
 
-## Pivot model
-Use `Group::using(GroupMember::class)` and helper methods on pivot for approve/promote/demote.
+## Queries
+- `GroupMember::paginateActiveForGroup($group, $perPage = 20)`
+- `GroupMember::pendingForGroup($group)`

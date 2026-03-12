@@ -14,11 +14,14 @@ Prevent N+1 in social-network pages.
 
 ## Correct patterns
 ```php
-Post::with(['author.media', 'media', 'hashtags'])
-    ->withCount(['comments', 'reactions'])
-    ->paginate(15);
+Post::query()
+    ->forFeed($viewerId)
+    ->with(['author.media', 'media', 'hashtags'])
+    ->withCount(['comments', 'likes'])
+    ->cursorPaginate(15);
 
-User::with(['media'])
+User::query()
+    ->with(['media'])
     ->withCount(['followers', 'posts', 'pets'])
     ->paginate(24);
 ```

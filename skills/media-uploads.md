@@ -8,35 +8,35 @@ All uploads go through Spatie MediaLibrary.
 - Define collections in `registerMediaCollections()`.
 - Define conversions in `registerMediaConversions()`.
 
-## Images
-- Mime: jpeg/png/webp/gif
-- Max per file: 5MB
-- Max files: 5
-- Conversions:
-  - `thumb` 150x150 crop webp q80
-  - `medium` width 800 webp q85
-  - `large` width 1200 webp q90
+## Post Media (StorePostRequest)
+- Max files: 5 images or 1 video.
+- Max file size: 20MB per file.
+- Image types: `jpg`, `jpeg`, `png`, `gif`, `webp`.
+- Video types: `mp4`, `mov`.
+- Videos cannot be uploaded together with photos.
 
-## Videos
-- Mime: mp4/mov/webm
-- Max file: 50MB
-- Max files: 1
-- No conversion, serve original.
+Post collections:
+- `photos` (multiple)
+- `videos` (singleFile)
 
-## PET MEDIA COLLECTIONS
+Post image conversions:
+- `thumb` 150x150 crop webp q80
+- `medium` width 800 webp q85
+- `large` width 1200 webp q90
 
+## Pet Media
 Pet media uses public disk.
 
-### Avatar
-- single file
-- max 5MB
-- conversions:
-  - `thumb` 80x80 webp
-  - `small` 150x150 webp
-  - `medium` 400x400 webp
+Collections:
+- `avatar` (single file)
+- `cover` (single file)
+- `gallery` (multiple)
 
-### Gallery
-- multiple files, max 30
-- conversions:
-  - `thumb` 150x150 webp
-  - `medium` width 800 webp
+Conversions:
+- `avatar_thumb` 80x80
+- `avatar_small` 150x150
+- `avatar_medium` 400x400
+- `gallery_thumb` 150x150
+- `gallery_medium` width 800
+
+Gallery limits are configured via `config/pets.php`.

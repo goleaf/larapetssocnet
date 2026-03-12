@@ -1,53 +1,33 @@
 # Feed Architecture
 
 The feed is the most read-heavy page in the app.
-Every decision must optimize for read performance.
+Keep the feed query centralized and cursor-paginated.
 
-## Feed Query Strategy
-- Simple pull-based feed. No fan-out and no pre-computed tables.
-- On each request: query posts from followed users plus own posts.
-- Filter by visibility, block relationships, and account status.
-- Order by `created_at DESC` (newest first).
-- Paginate with page-based pagination (not cursor-based).
-- Eager load everything needed in one query set.
-- Never lazy load inside the feed loop.
+## Source of Truth
+- Query scope: `Post::scopeForFeed(int $viewerId)` in `app/Models/Post.php`.
+- Controller: `FeedController@index` in `app/Http/Controllers/FeedController.php`.
+- Sidebar data: `FeedService::getSidebarData(User $viewer)`.
 
-## What Belongs In The Feed
-- Own posts (all visibilities).
-- Posts from accepted-following users where visibility is `public`.
-- Posts from accepted-following users where visibility is `followers`.
-- Pinned posts are not elevated in feed order. Pinning only affects profile pages.
+## Inclusion Rules
+- Viewer’s own posts (all visibilities).
+- Posts from accepted follows with visibility `public` or `followers`.
+- Posts from pets the viewer follows (non-owner) with visibility `public` or `followers`.
 
-## What Never Appears In Feed
-- Posts from blocked users in both directions.
-- Posts from banned users.
-- Posts from private accounts that are not followed.
-- Private-visibility posts from other users.
-- Soft-deleted posts.
+## Exclusions
+- Unpublished posts (`published()` scope).
+- Group posts (`posts.group_id` must be `null`).
+- Authors marked `is_banned`.
+- Users blocked by or blocking the viewer.
 
-## Feed Scope
-- Define `scopeForFeed(User $user)` on `Post`.
-- Use it from `FeedService`; do not duplicate logic in controller.
-- Always chain `->with([...])->withCount([...])` after the scope, never inside the scope.
+## Ordering & Pagination
+- Order by `posts.created_at DESC`, then `posts.id DESC`.
+- Use `cursorPaginate(15)` and always chain `->withQueryString()`.
+- Feed UI uses a “next” cursor link rather than numbered pages.
 
-## Pagination
-- Use 15 posts per page.
-- Use `->paginate(15)` and not `simplePaginate`.
-- Preserve query string on pagination links.
-- Show `You're all caught up!` on last page when total posts are under 50.
+## Eager Loading & Engagement
+- `with(['user', 'author', 'author.media', 'pet', 'media', 'tags'])`.
+- `withCount(['likes', 'comments'])`.
+- `withExists(['likes as liked_by_viewer' => ...])`.
 
-## Empty State
-- New user following 0 people:
-  - Show `Your feed is empty` and suggestions widget.
-  - Show `Who to Follow` prominently.
-  - Show `Explore` link to public posts.
-- Following users with no posts:
-  - Same layout with a different message.
-
-## Performance Rules
-- Target max 3 DB queries for feed page load:
-  1. Fetch paginated posts with eager loads.
-  2. Fetch who-to-follow suggestions.
-  3. Fetch trending hashtags for sidebar.
-- Measure via query count assertions in tests.
-- In local development, log queries exceeding 100ms via `DB::listen()`.
+## Pinning
+- Pinning only affects profile timelines, not feed ordering.

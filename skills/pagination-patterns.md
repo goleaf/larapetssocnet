@@ -3,27 +3,16 @@
 Laravel pagination best practices for this project.
 
 ## Core Rules
-- Always use `->paginate(N)` on feed queries.
+- Feed uses `cursorPaginate(15)`.
+- Most list pages use `paginate($perPage)` when totals are needed.
 - Always preserve query string with `->withQueryString()`.
-- Never use `simplePaginate` on pages showing total counts.
-- Pass paginator to the view and render `->links()`.
+- Avoid `simplePaginate` unless a page explicitly does not need totals.
 
-## Custom Pagination View
-- Publish templates: `php artisan vendor:publish --tag=laravel-pagination`.
-- Customize: `resources/views/vendor/pagination/tailwind.blade.php`.
-- Style active page emerald and inactive gray.
-- Display range label: `Showing 1-15 of 243 posts`.
-- Mobile: previous/next only.
-- Desktop: page numbers with ellipsis.
+## UI Components
+- Default numbered pagination uses `<x-ui.pagination :paginator="$paginator"/>`.
+- Cursor-based feeds render a “next” link using `$posts->nextPageUrl()`.
 
-## Load More Pattern
-- Use a `Load more posts` button linking to `?page=N+1`.
-- Full page navigation only (not AJAX).
+## Load More Pattern (Feed)
+- Cursor pagination only (no numbered pages).
+- Show “next” link only when `$posts->nextPageUrl()` exists.
 - Keep URL bookmarkable and JS-optional.
-- Show button only when `$posts->hasMorePages()` is true.
-
-## HTMX Future Option
-If HTMX is adopted later:
-- GET `/feed?page=N`.
-- `hx-target="#feed"` and `hx-swap="beforeend"`.
-- Not implemented now.

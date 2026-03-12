@@ -2,47 +2,33 @@
 
 ## Loading Pattern
 
-Use eager loading for top-level comments and replies in one structured query:
+Thread loading is centralized in `CommentService::paginateThread()`.
+It loads top-level comments, replies, and reactions in one structured query set.
 
 ```php
-$comments = $post->comments()
-    ->whereNull('parent_id')
-    ->with([
-        'author.media',
-        'reactions',
-        'replies' => fn ($query) => $query
-            ->with(['author.media', 'reactions'])
-            ->withCount('reactions')
-            ->oldest(),
-    ])
-    ->withCount('reactions')
-    ->oldest()
-    ->paginate(20);
+$comments = app(CommentService::class)
+    ->paginateThread($post, $viewer, 20);
 ```
 
+Implementation details:
+- Top-level comments: `topLevel()` scope (`parent_id` is null).
+- Replies are eager loaded via `replies` relation.
+- `withTrashed()` keeps tombstoned comments visible in-thread.
+- Reaction summaries are hydrated in-memory after pagination.
+
 ## Tombstones
-
-For soft-deleted comments:
-
-- Show placeholder text `[comment removed]` styled muted/italic.
-- Keep replies visible under tombstoned parent.
+- Soft-deleted comments remain in the thread.
+- Body and body_html are replaced with `[comment removed]`.
+- Replies remain visible under the tombstone.
 
 ## Reply UX
-
-- Reply action only on top-level comments.
-- Inline reply form toggled with Alpine.
-- Submit reply through `POST /comments/{comment}/replies`.
-- On success: append reply and close form.
+- Replies are created by posting `parent_id` to `POST /posts/{post}/comments`.
+- Only one reply level is allowed (enforced in `CommentService`).
 
 ## Pagination
-
 - Paginate only top-level comments (`20/page`).
 - Replies are not paginated.
-- Provide load-more behavior preserving scroll position.
+- Always chain `->withQueryString()`.
 
 ## Collapse
-
-Top-level comments can collapse/expand replies:
-
-- `x-data="{ collapsed: false }"`
-- Collapsed state shows `Show N replies` trigger.
+Top-level comments can collapse/expand replies with Alpine state.

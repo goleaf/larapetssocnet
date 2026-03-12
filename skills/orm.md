@@ -11,7 +11,7 @@ All database interactions must go through Eloquent ORM or the Query Builder usin
 - Always use `Model::query()` as the starting point.
 - Always use relationship methods (`$user->followers()`, `$user->blocking()`, etc.) instead of manual joins.
 - Counter increments/decrements: use `$model->increment('col')` and `$model->decrement('col')`.
-- Counter rebuilds: use `Model::withCount()` and update via `$model->update([...])`.
+- Counter rebuilds: use `withCount()` and `updateQuietly()`.
 - Bulk updates: use `Model::whereIn()->update([])`.
 - Existence checks: use relationship/query `->exists()`.
 - Pivots: use `sync()`, `syncWithoutDetaching()`, `attach()`, `detach()`, `updateExistingPivot()`.
@@ -40,40 +40,30 @@ All database interactions must go through Eloquent ORM or the Query Builder usin
 ## FEED QUERY ORM PATTERN
 The feed query must use only ORM relationships.
 
-Correct pattern:
-
 ```php
-Post::with([...eager loads...])
-    ->withCount([...])
-    ->forFeed(auth()->user())
-    ->when($type, fn ($q) => $q->byType($type))
-    ->latest()
-    ->paginate(15);
+Post::query()
+    ->forFeed($viewerId)
+    ->with(['user', 'author', 'author.media', 'pet', 'media', 'tags'])
+    ->withCount(['likes', 'comments'])
+    ->withExists([
+        'likes as liked_by_viewer' => fn ($q) => $q->where('likes.user_id', $viewerId),
+    ])
+    ->orderByDesc('posts.created_at')
+    ->orderByDesc('posts.id')
+    ->cursorPaginate(15);
 ```
 
-Never join the follows table manually.
-Use relationship `pluck` for followed IDs:
+Never join the follows table manually in controllers.
 
-```php
-->whereIn('user_id',
-    $user->acceptedFollowing()
-        ->pluck('users.id')
-        ->push($user->id)
-)
-```
-
-## Approved Raw Exception: Explore Trending
-`orderByRaw('(likes_count + (comments_count * 2)) DESC, created_at DESC')` is approved only in `Post::scopeTrending()`.
-
-Reason: computed column ordering has no direct Eloquent equivalent.
-All other raw expressions should be avoided and refactored to ORM-first patterns.
+## Approved Raw Usage
+Raw expressions are only permitted inside model internals where no Eloquent alternative exists.
+Example: `HasReactions::reactionCounts()` uses a grouped `DB::raw('COUNT(*)')` inside the model trait.
+Do not use raw ordering or selects in controllers or services.
 
 ## Visibility Query Patterns
 - `Post::query()->visibleTo($viewer)` is the canonical visibility enforcement pattern.
 - Never duplicate visibility `where` clauses outside the scope in user-facing queries.
 - Keep visibility logic in ORM scopes and relationships only (no raw SQL).
-- Query flow should compose as:
-  - `Post::query()->visibleTo($viewer)->...`
 
 ## SAVED POSTS ORM PATTERN
 
@@ -93,7 +83,7 @@ $comment->reactions();
 $user->reactions();
 ```
 
-Aggregate counts can use grouped selects where needed. Avoid per-item query loops.
+Aggregate counts should come from grouped queries or preloaded collections. Avoid per-item query loops.
 
 ## REPORTING ORM PATTERN
 
@@ -119,14 +109,16 @@ $user->petFollowing()->where('pet_id', $id)->exists();
 
 ## GROUP MEMBERSHIP ORM PATTERN
 
+Group membership is modeled by `GroupMember` (hasMany), not a belongsToMany pivot.
+
 ```php
-$group->members()->attach($user->id, [
+$group->members()->create([
+    'user_id' => $user->id,
     'role' => 'member',
-    'status' => 'accepted',
+    'status' => 'active',
 ]);
 
-$group->members()->updateExistingPivot($userId, [...]);
-$group->members()->detach($userId);
+$group->members()->where('user_id', $userId)->delete();
 ```
 
 ## HEALTH LOG ORM PATTERN
