@@ -12,6 +12,7 @@ class PetService
     public function __construct(
         private ContentService $content,
         private MediaService $media,
+        private PersonalityTagService $personalityTags,
     ) {}
 
     public function create(User $owner, array $data, ?UploadedFile $avatar = null): Pet
@@ -19,6 +20,8 @@ class PetService
         return DB::transaction(function () use ($owner, $data, $avatar): Pet {
             $bio = $data['bio'] ?? null;
             $bioHtml = $bio ? $this->content->process($bio) : null;
+
+            $tags = $this->personalityTags->normalize($data['personality_tags'] ?? []);
 
             $pet = Pet::create([
                 'user_id' => $owner->id,
@@ -34,13 +37,14 @@ class PetService
                 'is_deceased' => $data['is_deceased'] ?? false,
                 'is_public' => $data['is_public'] ?? true,
                 'is_adoptable' => $data['is_adoptable'] ?? false,
-                'personality_tags' => $data['personality_tags'] ?? [],
+                'personality_tags' => $tags,
             ]);
 
             if ($avatar) {
                 $pet->addMedia($avatar)->toMediaCollection('avatar');
             }
 
+            $this->personalityTags->syncTagRecords($pet, $tags);
             $owner->increment('pets_count');
 
             return $pet;
@@ -52,6 +56,10 @@ class PetService
         return DB::transaction(function () use ($pet, $data, $avatar): Pet {
             $bio = $data['bio'] ?? $pet->bio;
             $bioHtml = $bio ? $this->content->process($bio) : null;
+
+            $tags = array_key_exists('personality_tags', $data)
+                ? $this->personalityTags->normalize($data['personality_tags'])
+                : (array) $pet->personality_tags;
 
             $pet->update(array_filter([
                 'name' => $data['name'] ?? $pet->name,
@@ -66,12 +74,16 @@ class PetService
                 'is_deceased' => $data['is_deceased'] ?? $pet->is_deceased,
                 'is_public' => $data['is_public'] ?? $pet->is_public,
                 'is_adoptable' => $data['is_adoptable'] ?? $pet->is_adoptable,
-                'personality_tags' => $data['personality_tags'] ?? $pet->personality_tags,
+                'personality_tags' => $tags,
             ], fn ($v) => $v !== null));
 
             if ($avatar) {
                 $pet->clearMediaCollection('avatar');
                 $pet->addMedia($avatar)->toMediaCollection('avatar');
+            }
+
+            if (array_key_exists('personality_tags', $data)) {
+                $this->personalityTags->syncTagRecords($pet, $tags);
             }
 
             return $pet->fresh();

@@ -392,8 +392,24 @@ test('blocked users cannot view each others profile', function (): void {
         ->get(route('profile.show', ['user' => $other]))
         ->assertNotFound();
 
+    $this->actingAs($actor)
+        ->get(route('profile.followers', ['user' => $other]))
+        ->assertNotFound();
+
+    $this->actingAs($actor)
+        ->get(route('profile.following', ['user' => $other]))
+        ->assertNotFound();
+
     $this->actingAs($other)
         ->get(route('profile.show', ['user' => $actor]))
+        ->assertNotFound();
+
+    $this->actingAs($other)
+        ->get(route('profile.followers', ['user' => $actor]))
+        ->assertNotFound();
+
+    $this->actingAs($other)
+        ->get(route('profile.following', ['user' => $actor]))
         ->assertNotFound();
 });
 

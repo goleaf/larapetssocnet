@@ -108,7 +108,7 @@
  <div class="mt-2 flex flex-wrap gap-1">
  @foreach(array_slice($pet->personality_tags, 0, 3) as $tag)
  <span
- class="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700">{{ $tag }}</span>
+ class="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700">{{ \Illuminate\Support\Str::headline((string) $tag) }}</span>
  @endforeach
  </div>
  @endif

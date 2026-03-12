@@ -26,10 +26,6 @@ class BlockService
             throw new CannotBlockAdminException;
         }
 
-        if ($actor->hasBlocked($target)) {
-            return;
-        }
-
         DB::transaction(function () use ($actor, $target): void {
             $followRows = Follow::query()
                 ->where(function ($query) use ($actor, $target): void {
@@ -73,16 +69,19 @@ class BlockService
                     ->delete();
             }
 
-            Block::query()->firstOrCreate([
+            $block = Block::query()->firstOrCreate([
                 'blocker_id' => $actor->getKey(),
                 'blocked_id' => $target->getKey(),
             ], [
                 'created_at' => now(),
             ]);
-            $actor->increment('blocked_users_count');
-            $target->increment('blocked_by_count');
 
-            event(new UserBlocked($actor->fresh(), $target->fresh()));
+            if ($block->wasRecentlyCreated) {
+                $this->counterCacheService->safeIncrement($actor, 'blocked_users_count');
+                $this->counterCacheService->safeIncrement($target, 'blocked_by_count');
+
+                event(new UserBlocked($actor->fresh(), $target->fresh()));
+            }
         });
     }
 
@@ -93,11 +92,14 @@ class BlockService
         }
 
         DB::transaction(function () use ($actor, $target): void {
-            $actor->blocking()->detach($target->getKey());
-            $this->counterCacheService->safeDecrement($actor, 'blocked_users_count');
-            $this->counterCacheService->safeDecrement($target, 'blocked_by_count');
+            $detached = $actor->blocking()->detach($target->getKey());
 
-            event(new UserUnblocked($actor->fresh(), $target->fresh()));
+            if ($detached > 0) {
+                $this->counterCacheService->safeDecrement($actor, 'blocked_users_count');
+                $this->counterCacheService->safeDecrement($target, 'blocked_by_count');
+
+                event(new UserUnblocked($actor->fresh(), $target->fresh()));
+            }
         });
     }
 

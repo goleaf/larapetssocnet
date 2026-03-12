@@ -215,7 +215,7 @@
                                 @if(!empty($personalityTags))
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         @foreach($personalityTags as $tag)
-                                            <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ trim((string) $tag) }}</span>
+                                            <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ \Illuminate\Support\Str::headline(trim((string) $tag)) }}</span>
                                         @endforeach
                                     </div>
                                 @else
@@ -223,6 +223,47 @@
                                 @endif
                             </div>
                         </div>
+
+                        @if(!empty($pet->is_adoptable) || ($pet->adoption_status ?? 'not_listed') !== 'not_listed')
+                            <div class="mt-6 rounded-lg border border-emerald-100 bg-emerald-50/60 p-4">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    @if(!empty($pet->is_adoptable))
+                                        <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{{ __('pets.status.adoptable') }}</span>
+                                        <span class="text-sm text-emerald-700">{{ __('pets.adoption.badge_note') }}</span>
+                                    @endif
+
+                                    @if(($pet->adoption_status ?? 'not_listed') === 'available')
+                                        <span class="inline-flex rounded-full bg-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800">{{ __('pets.adoption.listed') }}</span>
+                                    @elseif(($pet->adoption_status ?? 'not_listed') === 'pending')
+                                        <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{{ __('pets.adoption.pending') }}</span>
+                                    @elseif(($pet->adoption_status ?? 'not_listed') === 'adopted')
+                                        <span class="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">{{ __('pets.adoption.adopted') }}</span>
+                                    @endif
+                                </div>
+
+                                @if(($pet->adoption_status ?? 'not_listed') === 'available')
+                                    <div class="mt-3 grid gap-2 text-sm text-emerald-800 sm:grid-cols-2">
+                                        <div>
+                                            <div class="text-xs uppercase tracking-wide text-emerald-500">{{ __('pets.adoption.fee') }}</div>
+                                            <div class="font-semibold">
+                                                {{ filled($pet->adoption_fee) ? '$'.number_format((int) $pet->adoption_fee) : __('pets.adoption.fee_free') }}
+                                            </div>
+                                        </div>
+
+                                        @if(!empty($pet->adoption_contact))
+                                            <div>
+                                                <div class="text-xs uppercase tracking-wide text-emerald-500">{{ __('pets.adoption.contact') }}</div>
+                                                <div class="font-semibold">{{ $pet->adoption_contact }}</div>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    @if(!empty($pet->adoption_notes))
+                                        <p class="mt-3 text-sm text-emerald-700">{{ $pet->adoption_notes }}</p>
+                                    @endif
+                                @endif
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>

@@ -3,16 +3,17 @@
 namespace App\Actions\Pets;
 
 use App\Models\Pet;
-use App\Models\PetTag;
 use App\Services\ContentService;
+use App\Services\PersonalityTagService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class UpdatePetAction
 {
-    public function __construct(private ContentService $contentService) {}
+    public function __construct(
+        private ContentService $contentService,
+        private PersonalityTagService $personalityTags,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -24,7 +25,7 @@ class UpdatePetAction
             $bio = array_key_exists('bio', $attributes) ? (string) ($attributes['bio'] ?? '') : $pet->bio;
             $birthdate = $attributes['birthdate'] ?? $attributes['date_of_birth'] ?? $attributes['birth_date'] ?? null;
             $tags = array_key_exists('personality_tags', $attributes)
-                ? $this->normalizeTags($attributes['personality_tags'])
+                ? $this->personalityTags->normalize($attributes['personality_tags'])
                 : (array) $pet->personality_tags;
 
             $pet->fill([
@@ -48,7 +49,7 @@ class UpdatePetAction
             $pet->save();
 
             if (array_key_exists('personality_tags', $attributes)) {
-                $this->syncTags($pet, $tags);
+                $this->personalityTags->syncTagRecords($pet, $tags);
             }
 
             if ($avatar instanceof UploadedFile) {
@@ -64,45 +65,5 @@ class UpdatePetAction
 
             return $pet->refresh();
         });
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function normalizeTags(mixed $rawTags): array
-    {
-        $tags = is_string($rawTags) ? explode(',', $rawTags) : Arr::wrap($rawTags);
-
-        return collect($tags)
-            ->map(static fn ($tag): string => trim((string) $tag))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  list<string>  $tags
-     */
-    private function syncTags(Pet $pet, array $tags): void
-    {
-        $slugs = collect($tags)
-            ->map(static fn (string $tag): array => ['slug' => Str::slug($tag), 'name' => $tag])
-            ->filter(static fn (array $tag): bool => $tag['slug'] !== '')
-            ->values();
-
-        PetTag::query()
-            ->where('pet_id', $pet->getKey())
-            ->whereNotIn('slug', $slugs->pluck('slug'))
-            ->delete();
-
-        foreach ($slugs as $tag) {
-            PetTag::query()->updateOrCreate([
-                'pet_id' => $pet->getKey(),
-                'slug' => $tag['slug'],
-            ], [
-                'name' => $tag['name'],
-            ]);
-        }
     }
 }

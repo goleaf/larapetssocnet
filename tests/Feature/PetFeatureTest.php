@@ -171,9 +171,9 @@ class PetFeatureTest extends TestCase
         $this->get(route('pets.show', ['pet' => $pet->getKey(), 'tab' => 'about']))
             ->assertOk()
             ->assertSee('Personality')
-            ->assertSee('playful')
-            ->assertSee('curious')
-            ->assertSee('affectionate');
+            ->assertSee('Playful')
+            ->assertSee('Curious')
+            ->assertSee('Affectionate');
     }
 
     public function test_adopt_page_shows_only_pets_marked_as_adoptable(): void
@@ -185,6 +185,11 @@ class PetFeatureTest extends TestCase
             'is_public' => true,
         ]);
 
+        $privateAdoptable = Pet::factory()->for($owner)->create([
+            'name' => 'Private Adoptable',
+            'is_public' => false,
+        ]);
+
         $notAdoptable = Pet::factory()->for($owner)->create([
             'name' => 'Not Adoptable',
             'is_public' => true,
@@ -192,16 +197,82 @@ class PetFeatureTest extends TestCase
 
         if (Schema::hasColumn('pets', 'is_adoptable')) {
             $adoptable->update(['is_adoptable' => true]);
+            $privateAdoptable->update(['is_adoptable' => true]);
             $notAdoptable->update(['is_adoptable' => false]);
         } elseif (Schema::hasColumn('pets', 'is_for_adoption')) {
             $adoptable->update(['is_for_adoption' => true]);
+            $privateAdoptable->update(['is_for_adoption' => true]);
             $notAdoptable->update(['is_for_adoption' => false]);
         }
 
         $this->get(route('pets.adopt'))
             ->assertOk()
             ->assertSee($adoptable->name)
+            ->assertDontSee($privateAdoptable->name)
             ->assertDontSee($notAdoptable->name);
+    }
+
+    public function test_owner_can_update_personality_tags(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create([
+            'name' => 'Sunny',
+            'is_public' => true,
+        ]);
+
+        $this->actingAs($owner)
+            ->patch(route('pets.update', $pet->getKey()), [
+                'name' => 'Sunny',
+                'species' => $pet->species,
+                'personality_tags' => ['Playful', ' Calm ', 'playful'],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(['playful', 'calm'], $pet->fresh()->personality_tags);
+    }
+
+    public function test_pet_profile_shows_adoptable_badge_only_when_true(): void
+    {
+        $owner = User::factory()->create();
+        $adoptable = Pet::factory()->for($owner)->create([
+            'name' => 'Badge Pet',
+            'is_public' => true,
+            'is_adoptable' => true,
+        ]);
+
+        $notAdoptable = Pet::factory()->for($owner)->create([
+            'name' => 'No Badge',
+            'is_public' => true,
+            'is_adoptable' => false,
+        ]);
+
+        $this->get(route('pets.show', $adoptable->getKey()))
+            ->assertOk()
+            ->assertSee(__('pets.status.adoptable'));
+
+        $this->get(route('pets.show', $notAdoptable->getKey()))
+            ->assertOk()
+            ->assertDontSee(__('pets.status.adoptable'));
+    }
+
+    public function test_owner_can_toggle_adoptable_flag(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create([
+            'name' => 'Toggle Pet',
+            'is_public' => true,
+            'is_adoptable' => false,
+        ]);
+
+        $this->actingAs($owner)
+            ->patch(route('pets.update', $pet->getKey()), [
+                'name' => 'Toggle Pet',
+                'species' => $pet->species,
+                'is_adoptable' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue((bool) $pet->fresh()->is_adoptable);
     }
 
     public function test_owner_health_tab_shows_weight_history_chart_when_weight_logs_exist(): void

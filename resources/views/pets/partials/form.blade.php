@@ -2,15 +2,20 @@
  use Illuminate\Support\Carbon;
 
  $pet = $pet ?? null;
- $personalityTagsValue = old('personality_tags');
- if ($personalityTagsValue === null && $pet) {
- $existingTags = $pet->personality_tags ?? [];
- if (is_array($existingTags)) {
- $personalityTagsValue = implode(',', $existingTags);
- } else {
- $personalityTagsValue = (string) $existingTags;
+ $personalityTagSuggestions = $personalityTagSuggestions ?? [];
+ $personalityTagMax = $personalityTagMax ?? 10;
+ $personalityTagsInitial = old('personality_tags');
+ if ($personalityTagsInitial === null && $pet) {
+ $personalityTagsInitial = $pet->personality_tags ?? [];
  }
+ if (is_string($personalityTagsInitial)) {
+ $personalityTagsInitial = explode(',', $personalityTagsInitial);
  }
+ $personalityTagsInitial = collect($personalityTagsInitial)
+ ->map(static fn ($tag): string => trim((string) $tag))
+ ->filter()
+ ->values()
+ ->all();
 
  $birthdateValue = old('birth_date', old('birthdate'));
  if ($birthdateValue === null && $pet) {
@@ -90,18 +95,105 @@
  <x-input-error :messages="$errors->get('bio')" class="mt-2"/>
  </div>
 
- <div>
- <x-input-label for="personality_tags" value="Personality tags"/>
- <x-text-input
- id="personality_tags"
- name="personality_tags"
+ <div
+ x-data="{
+ tags: @js($personalityTagsInitial),
+ suggestions: @js($personalityTagSuggestions),
+ max: @js($personalityTagMax),
+ newTag: '',
+ get normalizedNewTag() {
+ const cleaned = this.newTag
+ .toLowerCase()
+ .replace(/[^a-z0-9 ]/gi, '')
+ .replace(/\s+/g, ' ')
+ .trim();
+
+ return cleaned;
+ },
+ get canAddMore() {
+ return this.tags.length < this.max;
+ },
+ get filteredSuggestions() {
+ if (this.newTag.trim() === '') {
+ return this.suggestions.filter((tag) => !this.tags.includes(tag)).slice(0, 8);
+ }
+
+ const search = this.normalizedNewTag;
+ if (search === '') {
+ return [];
+ }
+
+ return this.suggestions
+ .filter((tag) => tag.includes(search) && !this.tags.includes(tag))
+ .slice(0, 8);
+ },
+ addTag(tag = null) {
+ const candidate = tag ?? this.normalizedNewTag;
+
+ if (!candidate || !this.canAddMore) {
+ this.newTag = '';
+ return;
+ }
+
+ if (this.tags.includes(candidate)) {
+ this.newTag = '';
+ return;
+ }
+
+ this.tags.push(candidate);
+ this.newTag = '';
+ },
+ removeTag(index) {
+ this.tags.splice(index, 1);
+ }
+ }"
+ >
+ <x-input-label for="personality_tags_input" value="Personality tags"/>
+ <div class="mt-1 flex flex-wrap gap-2">
+ <template x-for="(tag, index) in tags" :key="tag">
+ <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+ <span x-text="tag"></span>
+ <button type="button" class="text-slate-400 hover:text-slate-600" @click="removeTag(index)" aria-label="Remove tag">
+ &times;
+ </button>
+ </span>
+ </template>
+ </div>
+
+ <div class="mt-2 flex flex-wrap items-center gap-2">
+ <input
+ id="personality_tags_input"
  type="text"
- class="mt-1 block w-full"
- :value="$personalityTagsValue"
- placeholder="playful, curious, friendly"
+ class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+ placeholder="Add a tag and press Enter"
+ x-model="newTag"
+ @keydown.enter.prevent="addTag()"
+ @keydown.comma.prevent="addTag()"
+ @blur="addTag()"
+ :disabled="!canAddMore"
  />
- <p class="mt-1 text-xs text-gray-500">Comma-separated tags.</p>
+ <span class="text-xs text-gray-500" x-text="tags.length + '/' + max + ' tags'"></span>
+ </div>
+
+ <div class="mt-2 flex flex-wrap gap-2" x-show="filteredSuggestions.length" x-transition>
+ <template x-for="suggestion in filteredSuggestions" :key="suggestion">
+ <button
+ type="button"
+ class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+ @click="addTag(suggestion)"
+ x-text="suggestion"
+ ></button>
+ </template>
+ </div>
+
+ <p class="mt-1 text-xs text-gray-500">Pick up to {{ $personalityTagMax }} tags.</p>
  <x-input-error :messages="$errors->get('personality_tags')" class="mt-2"/>
+ <x-input-error :messages="$errors->get('personality_tags.*')" class="mt-2"/>
+
+ <input type="hidden" name="personality_tags[]" value="">
+ <template x-for="tag in tags" :key="`input-${tag}`">
+ <input type="hidden" name="personality_tags[]" :value="tag">
+ </template>
  </div>
 
  <div>
@@ -140,6 +232,7 @@
  <input type="checkbox" name="is_adoptable" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked(old('is_adoptable', old('is_for_adoption', $pet?->is_adoptable ?? false)))>
  <span class="text-sm text-gray-700">Available for adoption</span>
  </label>
+ <p class="ml-7 text-xs text-gray-500">{{ __('pets.adoption.toggle_hint') }}</p>
 
  <label class="inline-flex items-center gap-2">
  <input type="checkbox" name="is_deceased" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked(old('is_deceased', $pet?->is_deceased ?? false))>

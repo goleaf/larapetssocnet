@@ -42,6 +42,21 @@ return [
         'public' => 'Public',
         'visible_profile' => 'Visible profile',
     ],
+    'adoption' => [
+        'badge_note' => 'Looking for a home.',
+        'listed' => 'Listed for adoption',
+        'pending' => 'Adoption pending',
+        'adopted' => 'Already adopted',
+        'fee' => 'Adoption fee',
+        'fee_free' => 'Free adoption',
+        'contact' => 'Contact',
+        'toggle_hint' => 'Adds an adoptable badge to the profile without publishing a listing.',
+    ],
+    'validation' => [
+        'personality_tags_max' => 'You can select up to :max personality tags.',
+        'personality_tag_min' => 'Each personality tag must be at least :min characters.',
+        'personality_tag_max' => 'Each personality tag may not be greater than :max characters.',
+    ],
     'flash' => [
         'created' => 'Pet profile created.',
         'updated' => 'Pet profile updated.',

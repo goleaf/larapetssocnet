@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Pet;
+use App\Models\PetTag;
 use App\Models\User;
 use App\Services\PersonalityTagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,4 +78,18 @@ it('returns correct suggestions list', function (): void {
     expect($suggestions)->toBeArray();
     expect($suggestions)->toContain('playful', 'calm', 'adventurous');
     expect($suggestions)->toHaveCount(16);
+});
+
+it('syncs personality tag records for search', function (): void {
+    $pet = Pet::factory()->create(['user_id' => $this->user->id]);
+
+    $this->service->sync($pet, ['Playful', 'Calm']);
+
+    $slugs = PetTag::query()
+        ->where('pet_id', $pet->getKey())
+        ->pluck('slug')
+        ->all();
+
+    expect($slugs)->toContain('playful');
+    expect($slugs)->toContain('calm');
 });

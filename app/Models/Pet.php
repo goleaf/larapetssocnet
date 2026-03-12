@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Throwable;
@@ -195,11 +196,20 @@ class Pet extends Model implements HasMedia
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($term): void {
+        $slug = Str::slug($term);
+
+        return $query->where(function (Builder $subQuery) use ($term, $slug): void {
             $subQuery
                 ->where('name', 'like', "%{$term}%")
                 ->orWhere('species', 'like', "%{$term}%")
-                ->orWhere('breed', 'like', "%{$term}%");
+                ->orWhere('breed', 'like', "%{$term}%")
+                ->orWhereHas('tags', function (Builder $tagQuery) use ($term, $slug): void {
+                    $tagQuery->where('name', 'like', "%{$term}%");
+
+                    if ($slug !== '') {
+                        $tagQuery->orWhere('slug', 'like', "%{$slug}%");
+                    }
+                });
         });
     }
 
@@ -232,6 +242,7 @@ class Pet extends Model implements HasMedia
      *     species?: string,
      *     breed?: string,
      *     sex?: string,
+     *     personality_tags?: list<string>,
      *     is_adoptable?: bool|null,
      *     sort?: string
      * }  $filters
@@ -263,6 +274,10 @@ class Pet extends Model implements HasMedia
             }
         }
 
+        if (! empty($filters['personality_tags']) && is_array($filters['personality_tags'])) {
+            $query->withAnyPersonalityTags($filters['personality_tags']);
+        }
+
         if (array_key_exists('is_adoptable', $filters) && $filters['is_adoptable'] !== null) {
             $adoptable = (bool) $filters['is_adoptable'];
 
@@ -283,6 +298,7 @@ class Pet extends Model implements HasMedia
      *     q?: string,
      *     species?: string,
      *     sex?: string,
+     *     personality_tags?: list<string>,
      *     sort?: string
      * }  $filters
      */
@@ -319,6 +335,10 @@ class Pet extends Model implements HasMedia
             }
         }
 
+        if (! empty($filters['personality_tags']) && is_array($filters['personality_tags'])) {
+            $query->withAnyPersonalityTags($filters['personality_tags']);
+        }
+
         self::applyCatalogSort($query, (string) ($filters['sort'] ?? 'newest'), false);
 
         return $query->paginate($perPage)->withQueryString();
@@ -339,6 +359,39 @@ class Pet extends Model implements HasMedia
     public function scopeAdoptable(Builder $query): Builder
     {
         return $query->where('is_adoptable', true);
+    }
+
+    public function scopeWithPersonalityTag(Builder $query, string $tag): Builder
+    {
+        $slug = Str::slug($tag);
+
+        if ($slug === '') {
+            return $query;
+        }
+
+        return $query
+            ->select(['pets.*'])
+            ->whereHas('tags', fn (Builder $tagQuery) => $tagQuery->where('slug', $slug));
+    }
+
+    /**
+     * @param  list<string>  $tags
+     */
+    public function scopeWithAnyPersonalityTags(Builder $query, array $tags): Builder
+    {
+        $slugs = collect($tags)
+            ->map(static fn (string $tag): string => Str::slug($tag))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($slugs->isEmpty()) {
+            return $query;
+        }
+
+        return $query
+            ->select(['pets.*'])
+            ->whereHas('tags', fn (Builder $tagQuery) => $tagQuery->whereIn('slug', $slugs->all()));
     }
 
     public function scopeBySpecies(Builder $query, string|int $speciesId): Builder

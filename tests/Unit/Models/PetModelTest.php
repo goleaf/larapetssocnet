@@ -5,6 +5,7 @@ use App\Models\Pet;
 use App\Models\PetTag;
 use App\Models\Species;
 use App\Models\User;
+use App\Services\PersonalityTagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
@@ -20,6 +21,12 @@ it('applies the public scope', function (): void {
     expect($petIds)
         ->toContain($publicPet->getKey())
         ->not->toContain($privatePet->getKey());
+});
+
+it('defaults to not adoptable', function (): void {
+    $pet = Pet::factory()->create();
+
+    expect((bool) $pet->is_adoptable)->toBeFalse();
 });
 
 it('applies the ownedBy scope', function (): void {
@@ -38,6 +45,19 @@ it('applies the ownedBy scope', function (): void {
         ->not->toContain($otherPet->getKey());
 });
 
+it('applies the adoptable scope', function (): void {
+    $adoptable = Pet::factory()->create(['is_adoptable' => true]);
+    $notAdoptable = Pet::factory()->create(['is_adoptable' => false]);
+
+    $petIds = Pet::query()
+        ->adoptable()
+        ->pluck('pets.id');
+
+    expect($petIds)
+        ->toContain($adoptable->getKey())
+        ->not->toContain($notAdoptable->getKey());
+});
+
 it('applies species and breed scopes', function (): void {
     $dog = Pet::factory()->create(['species' => 'dog', 'breed' => 'beagle']);
     $cat = Pet::factory()->create(['species' => 'cat', 'breed' => 'siamese']);
@@ -52,6 +72,32 @@ it('applies species and breed scopes', function (): void {
     expect($breedIds)
         ->toContain($dog->getKey())
         ->not->toContain($cat->getKey());
+});
+
+it('applies personality tag scopes', function (): void {
+    $service = app(PersonalityTagService::class);
+
+    $playful = Pet::factory()->create(['name' => 'Playful']);
+    $calm = Pet::factory()->create(['name' => 'Calm']);
+
+    $service->sync($playful, ['playful', 'gentle']);
+    $service->sync($calm, ['calm']);
+
+    $tagIds = Pet::query()
+        ->withPersonalityTag('playful')
+        ->pluck('pets.id');
+
+    expect($tagIds)
+        ->toContain($playful->getKey())
+        ->not->toContain($calm->getKey());
+
+    $anyTagIds = Pet::query()
+        ->withAnyPersonalityTags(['gentle', 'calm'])
+        ->pluck('pets.id');
+
+    expect($anyTagIds)
+        ->toContain($playful->getKey())
+        ->toContain($calm->getKey());
 });
 
 it('generates slug on create via observer', function (): void {

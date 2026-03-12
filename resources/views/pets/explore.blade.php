@@ -27,6 +27,10 @@
  ['value'=>'weight_desc','label'=>'Heaviest'],
  ];
 
+ $personalityTagsValue = collect($filters['personality_tags'] ?? [])
+ ->filter()
+ ->implode(', ');
+
  $totalCount = $pets->total();
  $adoptionCount = $pets->getCollection()->filter(static function ($pet): bool {
  return (bool) ($pet->is_adoptable ?? $pet->is_for_adoption ?? false);
@@ -63,6 +67,14 @@
  :selected="$filters['species']"/>
 
  <x-ui.input class="md:col-span-2" name="breed" label="Breed" :value="$filters['breed']"/>
+
+ <x-ui.input
+ class="md:col-span-3"
+ name="personality_tags"
+ label="Personality tags"
+ :value="$personalityTagsValue"
+ placeholder="playful, calm"
+ />
 
  <x-ui.select class="md:col-span-3" name="sort" label="Sort" :options="$sortOptions"
  :selected="$filters['sort']"/>

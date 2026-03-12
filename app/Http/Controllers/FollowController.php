@@ -84,9 +84,13 @@ class FollowController extends Controller
 
     public function followers(Request $request, User $user): View
     {
-        $this->authorize(FollowAbility::ViewFollowers, $user);
-
         $viewer = $request->user();
+
+        if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
+            abort(404);
+        }
+
+        $this->authorize(FollowAbility::ViewFollowers, $user);
 
         $followers = $user->acceptedFollowers()
             ->active()
@@ -112,9 +116,13 @@ class FollowController extends Controller
 
     public function following(Request $request, User $user): View
     {
-        $this->authorize(FollowAbility::ViewFollowing, $user);
-
         $viewer = $request->user();
+
+        if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
+            abort(404);
+        }
+
+        $this->authorize(FollowAbility::ViewFollowing, $user);
 
         $following = $user->acceptedFollowing()
             ->active()

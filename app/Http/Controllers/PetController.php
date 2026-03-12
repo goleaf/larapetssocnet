@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatePetRequest;
 use App\Models\Pet;
 use App\Models\Post;
 use App\Services\ChartService;
+use App\Services\PersonalityTagService;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -82,7 +83,7 @@ class PetController extends Controller
     {
         $this->authorize('create', Pet::class);
 
-        return view('pets.create');
+        return view('pets.create', $this->petFormDefaults());
     }
 
     public function store(CreatePetRequest $request, CreatePetAction $createPetAction): RedirectResponse
@@ -107,6 +108,7 @@ class PetController extends Controller
 
         return view('pets.edit', [
             'pet' => $pet,
+            ...$this->petFormDefaults(),
         ]);
     }
 
@@ -147,12 +149,14 @@ class PetController extends Controller
         $isAdoptableFilter = ($request->filled('is_adoptable') || $request->filled('is_for_adoption'))
             ? ($request->boolean('is_adoptable') || $request->boolean('is_for_adoption'))
             : null;
+        $personalityTags = $this->normalizePersonalityTagsFilter($request->input('personality_tags'));
 
         $pets = Pet::paginateExploreCatalog([
             'q' => $search,
             'species' => (string) $request->string('species'),
             'breed' => (string) $request->string('breed'),
             'sex' => (string) $request->string('sex'),
+            'personality_tags' => $personalityTags,
             'is_adoptable' => $isAdoptableFilter,
             'sort' => $sort,
         ]);
@@ -164,9 +168,11 @@ class PetController extends Controller
                 'species' => (string) $request->string('species'),
                 'breed' => (string) $request->string('breed'),
                 'sex' => (string) $request->string('sex'),
+                'personality_tags' => $personalityTags,
                 'is_adoptable' => $isAdoptableFilter,
                 'sort' => $sort,
             ],
+            'personalityTagSuggestions' => app(PersonalityTagService::class)->getSuggestions(),
         ]);
     }
 
@@ -174,10 +180,12 @@ class PetController extends Controller
     {
         $search = trim((string) $request->string('q'));
         $sort = $request->string('sort')->toString() ?: 'newest';
+        $personalityTags = $this->normalizePersonalityTagsFilter($request->input('personality_tags'));
         $pets = Pet::paginateAdoptionCatalog([
             'q' => $search,
             'species' => (string) $request->string('species'),
             'sex' => (string) $request->string('sex'),
+            'personality_tags' => $personalityTags,
             'sort' => $sort,
         ]);
 
@@ -187,8 +195,10 @@ class PetController extends Controller
                 'q' => $search,
                 'species' => (string) $request->string('species'),
                 'sex' => (string) $request->string('sex'),
+                'personality_tags' => $personalityTags,
                 'sort' => $sort,
             ],
+            'personalityTagSuggestions' => app(PersonalityTagService::class)->getSuggestions(),
         ]);
     }
 
@@ -229,7 +239,7 @@ class PetController extends Controller
             'birthdate' => $validated['birth_date'] ?? ($validated['date_of_birth'] ?? null),
             'age_text' => $validated['age_text'] ?? null,
             'bio' => $validated['bio'] ?? null,
-            'personality_tags' => $this->normalizePersonalityTags($validated['personality_tags'] ?? null),
+            'personality_tags' => $validated['personality_tags'] ?? null,
             'is_public' => $request->boolean('is_public'),
             'is_adoptable' => $request->boolean('is_adoptable') || $request->boolean('is_for_adoption'),
             'is_deceased' => $request->boolean('is_deceased'),
@@ -237,26 +247,27 @@ class PetController extends Controller
     }
 
     /**
-     * @return array<int, string>
+     * @return array<string, mixed>
      */
-    private function normalizePersonalityTags(mixed $rawTags): array
+    private function petFormDefaults(): array
     {
-        if (is_array($rawTags)) {
-            return collect($rawTags)
-                ->map(static fn ($tag) => trim((string) $tag))
-                ->filter()
-                ->values()
-                ->all();
-        }
+        $service = app(PersonalityTagService::class);
 
-        if (! is_string($rawTags) || trim($rawTags) === '') {
+        return [
+            'personalityTagSuggestions' => $service->getSuggestions(),
+            'personalityTagMax' => $service->maxTags(),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizePersonalityTagsFilter(mixed $rawTags): array
+    {
+        if ($rawTags === null || $rawTags === '') {
             return [];
         }
 
-        return collect(explode(',', $rawTags))
-            ->map(static fn ($tag) => trim($tag))
-            ->filter()
-            ->values()
-            ->all();
+        return app(PersonalityTagService::class)->normalize($rawTags);
     }
 }

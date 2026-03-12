@@ -26,6 +26,10 @@
  ['value'=>'name_desc','label'=>'Name Z-A'],
  ];
 
+ $personalityTagsValue = collect($filters['personality_tags'] ?? [])
+ ->filter()
+ ->implode(', ');
+
  $availableCount = $pets->total();
  $speciesCount = $pets->getCollection()->pluck('species')->filter()->unique()->count();
  @endphp
@@ -66,6 +70,14 @@
  label="Species"
  :options="$speciesOptions"
  :selected="$filters['species']"
+ />
+
+ <x-ui.input
+ class="md:col-span-3"
+ name="personality_tags"
+ label="Personality tags"
+ :value="$personalityTagsValue"
+ placeholder="playful, calm"
  />
 
  <x-ui.select

@@ -3,17 +3,18 @@
 namespace App\Actions\Pets;
 
 use App\Models\Pet;
-use App\Models\PetTag;
 use App\Models\User;
 use App\Services\ContentService;
+use App\Services\PersonalityTagService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CreatePetAction
 {
-    public function __construct(private ContentService $contentService) {}
+    public function __construct(
+        private ContentService $contentService,
+        private PersonalityTagService $personalityTags,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -24,7 +25,7 @@ class CreatePetAction
         return DB::transaction(function () use ($owner, $attributes, $avatar, $galleryPhotos): Pet {
             $bio = isset($attributes['bio']) ? (string) $attributes['bio'] : null;
             $birthdate = $attributes['birthdate'] ?? $attributes['date_of_birth'] ?? $attributes['birth_date'] ?? null;
-            $tags = $this->normalizeTags($attributes['personality_tags'] ?? []);
+            $tags = $this->personalityTags->normalize($attributes['personality_tags'] ?? []);
 
             $pet = Pet::query()->create([
                 'user_id' => $owner->getKey(),
@@ -49,7 +50,7 @@ class CreatePetAction
                 $pet->addMedia($avatar)->toMediaCollection('avatar');
             }
 
-            $this->syncTags($pet, $tags);
+            $this->personalityTags->syncTagRecords($pet, $tags);
 
             foreach ($galleryPhotos as $photo) {
                 if ($photo instanceof UploadedFile) {
@@ -61,45 +62,5 @@ class CreatePetAction
 
             return $pet->refresh();
         });
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function normalizeTags(mixed $rawTags): array
-    {
-        $tags = is_string($rawTags) ? explode(',', $rawTags) : Arr::wrap($rawTags);
-
-        return collect($tags)
-            ->map(static fn ($tag): string => trim((string) $tag))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  list<string>  $tags
-     */
-    private function syncTags(Pet $pet, array $tags): void
-    {
-        if ($tags === []) {
-            return;
-        }
-
-        foreach ($tags as $tag) {
-            $slug = Str::slug($tag);
-
-            if ($slug === '') {
-                continue;
-            }
-
-            PetTag::query()->firstOrCreate([
-                'pet_id' => $pet->getKey(),
-                'slug' => $slug,
-            ], [
-                'name' => $tag,
-            ]);
-        }
     }
 }
