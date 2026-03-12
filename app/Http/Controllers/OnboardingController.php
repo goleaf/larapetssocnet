@@ -48,14 +48,11 @@ class OnboardingController extends Controller
         $joinedGroupIds = [];
 
         if ($step === 3) {
-            $blockedUserIds = $user->blockedUsers()->pluck('users.id');
-
             $suggestedUsers = User::query()
                 ->active()
                 ->withPublicProfile()
                 ->whereKeyNot($user->id)
-                ->whereNotIn('id', $blockedUserIds)
-                ->whereDoesntHave('blockedUsers', fn ($query) => $query->whereKey($user->id))
+                ->notBlockedFor($user)
                 ->orderByDesc('followers_count')
                 ->limit(8)
                 ->withCount(['followers', 'following'])
@@ -136,12 +133,10 @@ class OnboardingController extends Controller
                 ->unique()
                 ->values();
 
-            $blockedUserIds = $user->blockedUsers()->pluck('users.id');
-            $followUserIds = $followUserIds->diff($blockedUserIds);
-
             if ($followUserIds->isNotEmpty()) {
                 User::query()
                     ->whereIn('id', $followUserIds->all())
+                    ->notBlockedFor($user)
                     ->each(fn (User $suggestedUser) => $user->follow($suggestedUser));
             }
 

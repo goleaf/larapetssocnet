@@ -69,6 +69,7 @@ class ProfileController extends Controller
             'followStatus' => $followStatus,
             'isFollowing' => $followStatus === 'following',
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
+            'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
         ]);
     }
 

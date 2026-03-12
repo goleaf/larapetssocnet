@@ -28,6 +28,8 @@ class BlockController extends Controller
         return $this->successResponse("@{$user->username} has been blocked.", [
             'is_blocked' => true,
             'blocked_users_count' => $request->user()->fresh()?->blocked_users_count,
+            'follow_status' => 'none',
+            'followers_count' => $user->fresh()?->followers_count,
         ]);
     }
 
@@ -38,6 +40,8 @@ class BlockController extends Controller
         return $this->successResponse("@{$user->username} has been unblocked.", [
             'is_blocked' => false,
             'blocked_users_count' => $request->user()->fresh()?->blocked_users_count,
+            'follow_status' => 'none',
+            'followers_count' => $user->fresh()?->followers_count,
         ]);
     }
 

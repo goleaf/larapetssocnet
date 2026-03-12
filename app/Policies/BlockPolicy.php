@@ -17,6 +17,6 @@ class BlockPolicy
 
     public function unblock(User $auth, User $target): bool
     {
-        return $auth->hasBlocked($target);
+        return ! $auth->is($target);
     }
 }

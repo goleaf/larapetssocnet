@@ -66,6 +66,6 @@ class UserPolicy
 
     public function unblock(User $actor, User $target): bool
     {
-        return $actor->hasBlocked($target);
+        return ! $actor->is($target);
     }
 }

@@ -48,6 +48,7 @@
  followStatus: @js($followStatus),
  isFollowing: @js($isFollowing),
  isBlocked: @js($isBlocked),
+ isBlockedBy: @js($isBlockedBy ?? false),
  followersCount: @js($profileUser->followers_count),
  followUrl: @js(route('users.follow', ['user'=> $profileUser])),
  unfollowUrl: @js(route('users.unfollow', ['user'=> $profileUser])),
@@ -110,7 +111,7 @@
  <button
  class="inline-flex items-center justify-center rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150"
  :class="followButtonClass"
- x-bind:disabled="busy || isBlocked || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
+ x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
  x-bind:aria-label="followStatus === 'following' ?'Unfollow {{ addslashes($profileUser->name) }}': (followStatus === 'pending' ?'Requested to follow {{ addslashes($profileUser->name) }}' :'Follow {{ addslashes($profileUser->name) }}')"
  @click="toggleFollow">
  <span x-text="busy ?'Saving...': followLabel"></span>

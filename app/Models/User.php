@@ -577,21 +577,14 @@ class User extends Authenticatable implements HasMedia
             ->withPivot('created_at');
     }
 
-    public function userBlocks(): HasMany
-    {
-        return $this->hasMany(UserBlock::class, 'blocker_id');
-    }
-
     public function blockedUsers(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
-            ->withTimestamps();
+        return $this->blocking();
     }
 
     public function blockedByUsers(): BelongsToMany
     {
-        return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
-            ->withTimestamps();
+        return $this->blockedBy();
     }
 
     public function badges(): BelongsToMany
@@ -721,27 +714,19 @@ class User extends Authenticatable implements HasMedia
             return $query;
         }
 
+        if (! static::hasBlocksTable()) {
+            return $query;
+        }
+
         $query = $query
             ->whereNotIn(
                 'users.id',
-                $viewer->blockedUsers()->select('users.id')
+                $viewer->blocking()->select('users.id')
             )
             ->whereNotIn(
                 'users.id',
-                $viewer->blockedByUsers()->select('users.id')
+                $viewer->blockedBy()->select('users.id')
             );
-
-        if (static::hasBlocksTable()) {
-            $query = $query
-                ->whereNotIn(
-                    'users.id',
-                    $viewer->blocking()->select('users.id')
-                )
-                ->whereNotIn(
-                    'users.id',
-                    $viewer->blockedBy()->select('users.id')
-                );
-        }
 
         return $query;
     }
@@ -786,6 +771,10 @@ class User extends Authenticatable implements HasMedia
             return $query->select(['users.*']);
         }
 
+        if (! static::hasBlocksTable()) {
+            return $query->select(['users.*']);
+        }
+
         $viewerId = $viewer instanceof self ? (int) $viewer->getKey() : (int) $viewer;
 
         return $query
@@ -794,12 +783,6 @@ class User extends Authenticatable implements HasMedia
                 ->select('blocked_id')
                 ->where('blocker_id', $viewerId))
             ->whereNotIn('users.id', Block::query()
-                ->select('blocker_id')
-                ->where('blocked_id', $viewerId))
-            ->whereNotIn('users.id', UserBlock::query()
-                ->select('blocked_id')
-                ->where('blocker_id', $viewerId))
-            ->whereNotIn('users.id', UserBlock::query()
                 ->select('blocker_id')
                 ->where('blocked_id', $viewerId));
     }
@@ -963,28 +946,20 @@ class User extends Authenticatable implements HasMedia
 
     public function hasBlocked(self $user): bool
     {
-        if ($this->blockedUsers()->whereKey($user->getKey())->exists()) {
-            return true;
+        if (! static::hasBlocksTable()) {
+            return false;
         }
 
-        if (static::hasBlocksTable() && $this->blocking()->whereKey($user->getKey())->exists()) {
-            return true;
-        }
-
-        return false;
+        return $this->blocking()->whereKey($user->getKey())->exists();
     }
 
     public function isBlockedBy(self $user): bool
     {
-        if ($this->blockedByUsers()->whereKey($user->getKey())->exists()) {
-            return true;
+        if (! static::hasBlocksTable()) {
+            return false;
         }
 
-        if (static::hasBlocksTable() && $this->blockedBy()->whereKey($user->getKey())->exists()) {
-            return true;
-        }
-
-        return false;
+        return $this->blockedBy()->whereKey($user->getKey())->exists();
     }
 
     public function hasBlockingRelationshipWith(self $user): bool
@@ -1023,11 +998,11 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeNotBlockedBy(Builder $query, self $user): Builder
     {
-        $query = $query->whereNotIn('users.id', $user->blockedUsers()->select('users.id'));
-
-        if (static::hasBlocksTable()) {
-            $query = $query->whereNotIn('users.id', $user->blocking()->select('users.id'));
+        if (! static::hasBlocksTable()) {
+            return $query;
         }
+
+        $query = $query->whereNotIn('users.id', $user->blocking()->select('users.id'));
 
         return $query;
     }

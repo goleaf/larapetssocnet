@@ -23,7 +23,7 @@ class VisibilityService
             return true;
         }
 
-        if ($viewer && ($viewer->hasBlocked($post->author) || $post->author->hasBlocked($viewer))) {
+        if ($viewer && $viewer->hasBlockingRelationshipWith($post->author)) {
             return false;
         }
 

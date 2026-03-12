@@ -53,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (class_exists(Blaze::class)) {
+        if (class_exists(Blaze::class) && ! $this->app->runningUnitTests()) {
             try {
                 Blaze::optimize()->in(resource_path('views/components'));
             } catch (\Throwable) {

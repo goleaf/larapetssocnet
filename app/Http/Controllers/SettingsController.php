@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CannotBlockAdminException;
+use App\Exceptions\CannotBlockSelfException;
+use App\Http\Requests\BlockUserByUsernameRequest;
+use App\Http\Requests\BlockUserRequest;
 use App\Models\User;
 use App\Services\AccountExportService;
+use App\Services\BlockService;
 use App\Services\SettingsService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
@@ -18,7 +23,8 @@ class SettingsController extends Controller
 {
     public function __construct(
         private readonly SettingsService $settingsService,
-        private readonly AccountExportService $exportService
+        private readonly AccountExportService $exportService,
+        private readonly BlockService $blockService
     ) {}
 
     public function index(): RedirectResponse
@@ -149,33 +155,29 @@ class SettingsController extends Controller
 
     public function blockedUsers(Request $request): View
     {
-        $blockedUsers = $request->user()->blockedUsers()->paginate(20);
+        $blockedUsers = $this->blockService->getBlockedUsers($request->user());
 
         return view('settings.blocked', [
             'blockedUsers' => $blockedUsers,
         ]);
     }
 
-    public function blockUser(Request $request): RedirectResponse
+    public function blockUser(BlockUserByUsernameRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'username' => ['required', 'string', 'exists:users,username'],
-        ]);
+        $userToBlock = $request->target();
 
-        $userToBlock = User::where('username', $validated['username'])->firstOrFail();
-
-        if ($userToBlock->id === $request->user()->id) {
-            return back()->withErrors(['username' => 'You cannot block yourself.']);
+        try {
+            $this->blockService->block($request->user(), $userToBlock);
+        } catch (CannotBlockSelfException|CannotBlockAdminException $exception) {
+            return back()->withErrors(['username' => $exception->getMessage()]);
         }
-
-        $this->settingsService->blockUser($request->user(), $userToBlock);
 
         return back()->with('success', "Blocked {$userToBlock->username}.");
     }
 
-    public function unblockUser(Request $request, User $user): RedirectResponse
+    public function unblockUser(BlockUserRequest $request, User $user): RedirectResponse
     {
-        $this->settingsService->unblockUser($request->user(), $user);
+        $this->blockService->unblock($request->user(), $user);
 
         return back()->with('success', "Unblocked {$user->username}.");
     }

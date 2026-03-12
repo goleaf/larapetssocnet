@@ -67,7 +67,9 @@ class PrivacyService
                                 ->where('is_banned', false);
 
                             if (User::hasBlocksTable()) {
-                                $author->whereNotIn('id', $viewer->blocking()->pluck('users.id'));
+                                $author
+                                    ->whereNotIn('id', $viewer->blocking()->select('users.id'))
+                                    ->whereNotIn('id', $viewer->blockedBy()->select('users.id'));
                             }
                         });
                 })

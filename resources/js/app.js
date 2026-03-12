@@ -338,6 +338,7 @@ document.addEventListener('alpine:init', () => {
 Alpine.data('profileActions', (config = {}) => ({
  followStatus: toStringValue(config.followStatus) || (Boolean(config.isFollowing) ? 'following' : 'none'),
  isBlocked: Boolean(config.isBlocked),
+ isBlockedBy: Boolean(config.isBlockedBy),
  followersCount: toNumber(config.followersCount),
  followUrl: toStringValue(config.followUrl),
  unfollowUrl: toStringValue(config.unfollowUrl),
@@ -348,6 +349,10 @@ Alpine.data('profileActions', (config = {}) => ({
 
  get isFollowing() {
  return this.followStatus === 'following';
+ },
+
+ get hasBlockingRelationship() {
+ return this.isBlocked || this.isBlockedBy;
  },
 
  get followLabel() {
@@ -429,7 +434,7 @@ Alpine.data('profileActions', (config = {}) => ({
  },
 
  async toggleFollow() {
- if (this.busy || this.isBlocked) {
+ if (this.busy || this.hasBlockingRelationship) {
  return;
  }
 

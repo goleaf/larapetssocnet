@@ -138,7 +138,7 @@ class SettingsTest extends TestCase
             ->assertRedirect();
 
         $this->assertTrue($viewer->hasBlocked($target));
-        $this->assertDatabaseHas('user_blocks', [
+        $this->assertDatabaseHas('blocks', [
             'blocker_id' => $viewer->id,
             'blocked_id' => $target->id,
         ]);
@@ -195,5 +195,18 @@ class SettingsTest extends TestCase
             ->post('/settings/export-data')
             ->assertDownload()
             ->assertHeader('Content-Type', 'application/json');
+    }
+
+    public function test_blocked_users_page_lists_blocked_users(): void
+    {
+        $viewer = User::factory()->create();
+        $target = User::factory()->create();
+
+        $viewer->block($target);
+
+        $this->actingAs($viewer)
+            ->get('/settings/blocked')
+            ->assertOk()
+            ->assertSee($target->username);
     }
 }

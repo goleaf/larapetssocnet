@@ -87,7 +87,7 @@ class AccountExportService
             })->toArray(),
             'followers_count' => $user->followers_count,
             'following_count' => $user->following_count,
-            'blocked_users_count' => $user->blockedUsers()->count(),
+            'blocked_users_count' => $user->blocking()->count(),
         ];
     }
 }

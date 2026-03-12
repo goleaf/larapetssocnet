@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Group;
 use App\Models\User;
-use App\Models\UserBlock;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Fluent;
@@ -137,27 +136,5 @@ class SettingsService
         ]);
 
         return $user;
-    }
-
-    public function blockUser(User $blocker, User $blocked): void
-    {
-        UserBlock::firstOrCreate([
-            'blocker_id' => $blocker->id,
-            'blocked_id' => $blocked->id,
-        ]);
-
-        if (method_exists($blocker, 'unfollow') && $blocker->isFollowing($blocked)) {
-            $blocker->unfollow($blocked);
-        }
-        if (method_exists($blocked, 'unfollow') && $blocked->isFollowing($blocker)) {
-            $blocked->unfollow($blocker);
-        }
-    }
-
-    public function unblockUser(User $blocker, User $blocked): void
-    {
-        UserBlock::where('blocker_id', $blocker->id)
-            ->where('blocked_id', $blocked->id)
-            ->delete();
     }
 }

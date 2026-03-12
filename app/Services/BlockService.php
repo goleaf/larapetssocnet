@@ -106,7 +106,8 @@ class BlockService
         return $user->blocking()
             ->with('media')
             ->orderByPivot('created_at', 'desc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function isBlocked(User $actor, User $target): bool

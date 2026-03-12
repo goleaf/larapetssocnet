@@ -729,9 +729,7 @@ class Post extends Model implements HasMedia
             })
             ->whereNull('posts.group_id')
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocked_id')->where('blocks.blocker_id', $userId))
-            ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId))
-            ->whereNotIn('posts.user_id', UserBlock::query()->select('user_blocks.blocked_id')->where('user_blocks.blocker_id', $userId))
-            ->whereNotIn('posts.user_id', UserBlock::query()->select('user_blocks.blocker_id')->where('user_blocks.blocked_id', $userId));
+            ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId));
     }
 
     public function scopeWithFeedRelations(Builder $query): Builder

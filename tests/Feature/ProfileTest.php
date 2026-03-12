@@ -299,6 +299,89 @@ test('blocking removes follows and prevents future follows until unblocked', fun
         ->assertJsonPath('follow_status', 'following');
 });
 
+test('blocking removes pending follow requests in both directions', function (): void {
+    $actor = User::factory()->create(['is_private' => true]);
+    $other = User::factory()->create(['is_private' => true]);
+
+    $this->actingAs($actor)
+        ->postJson(route('users.follow', ['user' => $other]))
+        ->assertOk()
+        ->assertJsonPath('follow_status', 'pending');
+
+    $this->actingAs($other)
+        ->postJson(route('users.follow', ['user' => $actor]))
+        ->assertOk()
+        ->assertJsonPath('follow_status', 'pending');
+
+    $actor->refresh();
+    $other->refresh();
+
+    expect($actor->follow_requests_count)->toBe(1);
+    expect($other->follow_requests_count)->toBe(1);
+
+    $this->actingAs($actor)
+        ->postJson(route('users.block', ['user' => $other]))
+        ->assertOk();
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $actor->id,
+        'following_id' => $other->id,
+    ]);
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $other->id,
+        'following_id' => $actor->id,
+    ]);
+
+    $actor->refresh();
+    $other->refresh();
+
+    expect($actor->follow_requests_count)->toBe(0);
+    expect($other->follow_requests_count)->toBe(0);
+});
+
+test('blocked users cannot request to follow private accounts', function (): void {
+    $actor = User::factory()->create(['is_private' => true]);
+    $blocked = User::factory()->create();
+
+    $actor->block($blocked);
+
+    $this->actingAs($blocked)
+        ->postJson(route('users.follow', ['user' => $actor]))
+        ->assertStatus(403);
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $blocked->id,
+        'following_id' => $actor->id,
+    ]);
+});
+
+test('unblocking does not restore previous follow relationships', function (): void {
+    $actor = User::factory()->create();
+    $other = User::factory()->create();
+
+    $actor->follow($other);
+    $other->follow($actor);
+
+    $this->actingAs($actor)
+        ->postJson(route('users.block', ['user' => $other]))
+        ->assertOk();
+
+    $this->actingAs($actor)
+        ->deleteJson(route('users.unblock', ['user' => $other]))
+        ->assertOk();
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $actor->id,
+        'following_id' => $other->id,
+    ]);
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $other->id,
+        'following_id' => $actor->id,
+    ]);
+});
+
 test('blocked users cannot view each others profile', function (): void {
     $actor = User::factory()->create();
     $other = User::factory()->create();

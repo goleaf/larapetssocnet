@@ -35,7 +35,7 @@ class PublicProfileController extends Controller
 
         $viewer = $request->user();
 
-        if ($viewer && ($viewer->hasBlocked($user) || $viewer->isBlockedBy($user))) {
+        if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
             abort(404);
         }
 
@@ -202,6 +202,7 @@ class PublicProfileController extends Controller
             'followStatus' => $followStatus,
             'isFollowing' => $followStatus === 'following',
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
+            'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
         ]);
     }
 
