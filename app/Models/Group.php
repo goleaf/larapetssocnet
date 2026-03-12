@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\GroupMemberStatus;
 use App\Services\GroupSlugService;
 use App\Traits\HasCounterCache;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

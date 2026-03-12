@@ -7,6 +7,7 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\Schema;
 
 class SyncGroupCountersService
@@ -33,7 +34,7 @@ class SyncGroupCountersService
             return;
         }
 
-        $postIdsQuery = function (Builder $query) use ($group): void {
+        $postIdsQuery = function (QueryBuilder $query) use ($group): void {
             $query->select('post_id')
                 ->from('group_posts')
                 ->where('group_id', $group->getKey());

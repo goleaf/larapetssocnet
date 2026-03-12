@@ -36,6 +36,7 @@ class StorePetRequest extends FormRequest
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'age_text' => ['nullable', 'string', 'max:50'],
             'bio' => ['nullable', 'string', 'max:500'],
+            'visibility' => ['nullable', 'string', Rule::in(Pet::VISIBILITY)],
             'personality_tags' => ['nullable', 'array', 'max:'.$personalityTagsMax],
             'personality_tags.*' => ['string', 'min:'.$personalityTagMinLength, 'max:'.$personalityTagMaxLength],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
@@ -49,6 +50,17 @@ class StorePetRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $visibility = $this->input('visibility');
+        if ($visibility !== null && ! $this->has('is_public')) {
+            $normalized = strtolower(trim((string) $visibility));
+
+            if (in_array($normalized, Pet::VISIBILITY, true)) {
+                $this->merge([
+                    'is_public' => $normalized === 'public',
+                ]);
+            }
+        }
+
         if (! $this->has('personality_tags')) {
             return;
         }

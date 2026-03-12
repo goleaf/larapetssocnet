@@ -11,6 +11,7 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowRequestController;
 use App\Http\Controllers\GroupBanController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupCoverController;
 use App\Http\Controllers\GroupJoinRequestController;
 use App\Http\Controllers\GroupMemberController;
 use App\Http\Controllers\GroupPostController;
@@ -209,6 +210,9 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
         Route::get('/{group:slug}/edit', [GroupController::class, 'edit'])->name('edit');
         Route::patch('/{group:slug}', [GroupController::class, 'update'])->name('update');
         Route::delete('/{group:slug}', [GroupController::class, 'destroy'])->name('destroy');
+
+        Route::post('/{group:slug}/cover', [GroupCoverController::class, 'store'])->name('cover.store');
+        Route::delete('/{group:slug}/cover', [GroupCoverController::class, 'destroy'])->name('cover.destroy');
 
         Route::post('/{group:slug}/join', [GroupController::class, 'join'])->name('join');
         Route::delete('/{group:slug}/leave', [GroupController::class, 'leave'])->name('leave');

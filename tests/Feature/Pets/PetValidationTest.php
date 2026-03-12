@@ -55,3 +55,20 @@ it('ignores empty personality tags safely', function (): void {
 
     expect($pet->personality_tags)->toBeArray()->toHaveCount(0);
 });
+
+it('accepts visibility input and maps to private pets', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)
+        ->post(route('pets.store'), [
+            'name' => 'Private Buddy',
+            'species' => 'dog',
+            'sex' => 'male',
+            'visibility' => 'private',
+        ])
+        ->assertRedirect();
+
+    $pet = Pet::query()->where('name', 'Private Buddy')->firstOrFail();
+
+    expect((bool) $pet->is_public)->toBeFalse();
+});

@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
 use App\Models\Group;
-use App\Models\GroupBan;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Services\GroupVisibilityService;
@@ -101,22 +100,7 @@ class GroupPolicy
 
     public function join(User $user, Group $group): bool
     {
-        if ($group->normalizedPrivacy() === 'secret') {
-            return false;
-        }
-
-        if (GroupBan::query()
-            ->where('group_id', $group->getKey())
-            ->where('user_id', $user->getKey())
-            ->exists()) {
-            return false;
-        }
-
-        if ($this->isActiveMembership($this->membership($user, $group))) {
-            return false;
-        }
-
-        return true;
+        return $this->visibility->canJoinGroup($user, $group);
     }
 
     public function requestJoin(User $user, Group $group): bool

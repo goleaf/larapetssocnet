@@ -65,13 +65,21 @@ class GroupController extends Controller
         ]);
     }
 
-    public function show(Request $request, Group $group, GroupVisibilityService $visibility): View
+    public function show(Request $request, Group $group, GroupVisibilityService $visibility): View|RedirectResponse
     {
         $viewer = $request->user()->loadFeedContext();
 
-        $routeValue = (string) $request->route('group');
+        $routeValue = $request->route()?->originalParameter('group');
+        $routeValue = is_string($routeValue) || is_numeric($routeValue) ? (string) $routeValue : '';
         if ($routeValue !== '' && $routeValue !== $group->slug) {
-            return redirect()->route('groups.show', $group->slug)->withQueryString();
+            $target = route('groups.show', $group->slug);
+            $queryString = $request->getQueryString();
+
+            if ($queryString) {
+                $target .= '?'.$queryString;
+            }
+
+            return redirect($target);
         }
 
         if ($group->normalizedPrivacy() === 'secret' && Gate::forUser($viewer)->denies('view', $group)) {
@@ -155,6 +163,7 @@ class GroupController extends Controller
         }
 
         return view('groups.show', [
+            'viewer' => $viewer,
             'group' => $group,
             'owner' => $group->owner,
             'membership' => $membership,
@@ -215,13 +224,21 @@ class GroupController extends Controller
             ->with('status', 'Group created successfully.');
     }
 
-    public function edit(Request $request, Group $group): View
+    public function edit(Request $request, Group $group): View|RedirectResponse
     {
         $this->authorize('update', $group);
 
-        $routeValue = (string) $request->route('group');
+        $routeValue = $request->route()?->originalParameter('group');
+        $routeValue = is_string($routeValue) || is_numeric($routeValue) ? (string) $routeValue : '';
         if ($routeValue !== '' && $routeValue !== $group->slug) {
-            return redirect()->route('groups.edit', $group->slug)->withQueryString();
+            $target = route('groups.edit', $group->slug);
+            $queryString = $request->getQueryString();
+
+            if ($queryString) {
+                $target .= '?'.$queryString;
+            }
+
+            return redirect($target);
         }
 
         return view('groups.edit', [

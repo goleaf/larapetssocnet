@@ -39,6 +39,8 @@ class Pet extends Model implements HasMedia
 
     public const ADOPTION_STATUSES = ['not_listed', 'available', 'pending', 'adopted'];
 
+    public const VISIBILITY = ['public', 'private'];
+
     public const MEDIA_COLLECTION_AVATAR = 'avatar';
 
     public const MEDIA_COLLECTION_COVER = 'cover';

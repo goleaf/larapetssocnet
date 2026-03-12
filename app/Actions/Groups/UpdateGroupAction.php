@@ -9,6 +9,7 @@ use App\Services\GroupCoverImageService;
 use App\Services\GroupSlugService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class UpdateGroupAction
 {
@@ -36,9 +37,15 @@ class UpdateGroupAction
                 'type' => $data['privacy'] ?? $group->type,
                 'location' => $this->normalizeNullableString($data['location'] ?? $group->location),
                 'website' => $this->normalizeNullableString($data['website'] ?? $group->website),
-                'species_focus' => $data['species_focus'] ?? $group->species_focus,
-                'species' => $data['species'] ?? $group->species,
             ];
+
+            if (Schema::hasColumn('groups', 'species_focus')) {
+                $updates['species_focus'] = $data['species_focus'] ?? $group->species_focus;
+            }
+
+            if (Schema::hasColumn('groups', 'species')) {
+                $updates['species'] = $data['species'] ?? $group->species;
+            }
 
             if (array_key_exists('slug', $data) && $data['slug']) {
                 $updates['slug'] = $this->slugs->generateUnique((string) $data['slug'], (int) $group->getKey());

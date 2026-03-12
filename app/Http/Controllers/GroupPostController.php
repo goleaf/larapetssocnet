@@ -38,7 +38,9 @@ class GroupPostController extends Controller
             'group_id' => $group->getKey(),
         ];
 
-        $action->handle($request->user(), $data);
+        $post = $action->handle($request->user(), $data);
+
+        $group->attachSharedPost($post, (int) $request->user()->getKey());
 
         $counters->syncPostsCount($group);
 

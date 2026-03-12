@@ -13,6 +13,7 @@ use App\Services\GroupSlugService;
 use App\Services\SyncGroupCountersService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CreateGroupAction
 {
@@ -35,7 +36,7 @@ class CreateGroupAction
             $privacy = (string) ($data['privacy'] ?? 'public');
             $slugSeed = $this->normalizeNullableString($data['slug'] ?? null) ?? $name;
 
-            $group = Group::query()->create([
+            $payload = [
                 'owner_user_id' => $owner->getKey(),
                 'owner_id' => $owner->getKey(),
                 'name' => $name,
@@ -47,9 +48,17 @@ class CreateGroupAction
                 'type' => $privacy,
                 'location' => $this->normalizeNullableString($data['location'] ?? null),
                 'website' => $this->normalizeNullableString($data['website'] ?? null),
-                'species_focus' => $data['species_focus'] ?? null,
-                'species' => $data['species'] ?? null,
-            ]);
+            ];
+
+            if (Schema::hasColumn('groups', 'species_focus')) {
+                $payload['species_focus'] = $data['species_focus'] ?? null;
+            }
+
+            if (Schema::hasColumn('groups', 'species')) {
+                $payload['species'] = $data['species'] ?? null;
+            }
+
+            $group = Group::query()->create($payload);
 
             GroupMember::query()->updateOrCreate(
                 [

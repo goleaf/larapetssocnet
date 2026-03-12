@@ -15,6 +15,10 @@ class GroupVisibilityService
     {
         $privacy = $group->normalizedPrivacy();
 
+        if ($viewer && $this->isBanned($viewer, $group)) {
+            return false;
+        }
+
         if ($privacy === 'public') {
             return ! $this->isBlockedBetween($viewer, $group);
         }

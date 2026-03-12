@@ -100,13 +100,7 @@
 
  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
  <section class="space-y-4">
- @if (session('status'))
- <x-flash-message type="success" :message="session('status')"/>
- @endif
-
- @if ($errors->any())
- <x-flash-message type="error" :message="$errors->first()"/>
- @endif
+ <x-ui.flash-messages />
 
  @if ($activeTab ==='about')
  <x-ui.card padding="lg" class="space-y-6">
