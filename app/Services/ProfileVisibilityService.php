@@ -12,6 +12,10 @@ class ProfileVisibilityService
         $resolved = ProfileVisibility::fromValue($owner->profile_visibility);
 
         if ($resolved) {
+            if ($resolved === ProfileVisibility::Public && (bool) $owner->is_private) {
+                return ProfileVisibility::FollowersOnly;
+            }
+
             return $resolved;
         }
 

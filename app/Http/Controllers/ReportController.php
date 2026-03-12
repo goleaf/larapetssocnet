@@ -2,62 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Engagement\CreateReportAction;
+use App\Http\Requests\StoreGenericReportRequest;
 use App\Http\Requests\StoreReportRequest;
 use App\Models\Comment;
 use App\Models\Post;
-use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ReportController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function __construct(private readonly CreateReportAction $createReport) {}
+
+    public function store(StoreGenericReportRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'reportable_type' => ['required', 'string', 'in:post,comment,user'],
-            'reportable_id' => ['required', 'integer', 'min:1'],
-            'reason' => ['required', 'string', 'max:100'],
-            'details' => ['nullable', 'string', 'max:2000'],
-        ]);
-
         $viewer = $request->user();
-        abort_unless($viewer !== null, 401);
 
-        $reportableType = match ($validated['reportable_type']) {
-            'post' => Post::class,
-            'comment' => Comment::class,
-            'user' => User::class,
-        };
+        $reportable = $this->resolveReportable(
+            $request->validated('reportable_type'),
+            (int) $request->validated('reportable_id'),
+            $viewer
+        );
 
-        $reportable = match ($validated['reportable_type']) {
-            'post' => Post::query()->findOrFail($validated['reportable_id']),
-            'comment' => Comment::query()->findOrFail($validated['reportable_id']),
-            'user' => User::query()->findOrFail($validated['reportable_id']),
-        };
+        $this->authorize('report', $reportable);
 
-        if ((int) ($reportable->user_id ?? $reportable->id) === (int) $viewer->id) {
+        try {
+            $this->createReport->handle(
+                $viewer,
+                $reportable,
+                (string) $request->validated('reason'),
+                $request->validated('details')
+            );
+        } catch (ValidationException $exception) {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot report your own content.',
+                'message' => $exception->getMessage(),
             ], 422);
         }
-
-        Report::query()->updateOrCreate(
-            [
-                'reporter_user_id' => $viewer->id,
-                'reportable_type' => $reportableType,
-                'reportable_id' => (int) $validated['reportable_id'],
-            ],
-            [
-                'reason' => $validated['reason'],
-                'details' => $validated['details'] ?? null,
-                'status' => Report::STATUS_PENDING,
-                'reviewed_by_user_id' => null,
-                'reviewed_at' => null,
-            ]
-        );
 
         return response()->json([
             'success' => true,
@@ -72,14 +55,18 @@ class ReportController extends Controller
 
         abort_unless($post->canBeViewedBy($viewer), 403);
 
-        return $this->upsertReport(
-            reporter: $viewer,
-            reportableType: Post::class,
-            reportableId: (int) $post->id,
-            reason: (string) $request->string('reason'),
-            details: $request->string('details')->toString() ?: null,
-            successMessage: 'Post reported. Thank you.'
-        );
+        try {
+            $this->createReport->handle(
+                $viewer,
+                $post,
+                (string) $request->string('reason'),
+                $request->string('details')->toString() ?: null
+            );
+        } catch (ValidationException $exception) {
+            return back()->withErrors(['report' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'Post reported. Thank you.');
     }
 
     public function reportComment(StoreReportRequest $request, Post $post, Comment $comment): RedirectResponse
@@ -92,18 +79,20 @@ class ReportController extends Controller
 
         abort_unless($post->canBeViewedBy($viewer), 403);
 
-        if ((int) $comment->user_id === (int) $viewer->id) {
-            return back()->withErrors(['report' => 'You cannot report your own comment.']);
+        $this->authorize('report', $comment);
+
+        try {
+            $this->createReport->handle(
+                $viewer,
+                $comment,
+                (string) $request->string('reason'),
+                $request->string('details')->toString() ?: null
+            );
+        } catch (ValidationException $exception) {
+            return back()->withErrors(['report' => $exception->getMessage()]);
         }
 
-        return $this->upsertReport(
-            reporter: $viewer,
-            reportableType: Comment::class,
-            reportableId: (int) $comment->id,
-            reason: (string) $request->string('reason'),
-            details: $request->string('details')->toString() ?: null,
-            successMessage: 'Comment reported. Thank you.'
-        );
+        return back()->with('status', 'Comment reported. Thank you.');
     }
 
     public function reportUser(StoreReportRequest $request, User $user): RedirectResponse
@@ -114,39 +103,35 @@ class ReportController extends Controller
             return back()->withErrors(['report' => 'You cannot report yourself.']);
         }
 
-        return $this->upsertReport(
-            reporter: $viewer,
-            reportableType: User::class,
-            reportableId: (int) $user->id,
-            reason: (string) $request->string('reason'),
-            details: $request->string('details')->toString() ?: null,
-            successMessage: 'User reported. Thank you.'
-        );
+        $this->authorize('report', $user);
+
+        try {
+            $this->createReport->handle(
+                $viewer,
+                $user,
+                (string) $request->string('reason'),
+                $request->string('details')->toString() ?: null
+            );
+        } catch (ValidationException $exception) {
+            return back()->withErrors(['report' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'User reported. Thank you.');
     }
 
-    private function upsertReport(
-        User $reporter,
-        string $reportableType,
-        int $reportableId,
-        string $reason,
-        ?string $details,
-        string $successMessage
-    ): RedirectResponse {
-        Report::query()->updateOrCreate(
-            [
-                'reporter_user_id' => $reporter->id,
-                'reportable_type' => $reportableType,
-                'reportable_id' => $reportableId,
-            ],
-            [
-                'reason' => $reason,
-                'details' => $details,
-                'status' => Report::STATUS_PENDING,
-                'reviewed_by_user_id' => null,
-                'reviewed_at' => null,
-            ]
-        );
-
-        return back()->with('status', $successMessage);
+    private function resolveReportable(string $type, int $id, User $viewer): Post|Comment|User
+    {
+        return match ($type) {
+            'post' => Post::query()
+                ->visibleTo($viewer)
+                ->findOrFail($id),
+            'comment' => tap(Comment::query()->findOrFail($id), function (Comment $comment) use ($viewer): void {
+                $post = $comment->post;
+                abort_unless($post && $post->canBeViewedBy($viewer), 404);
+            }),
+            'user' => tap(User::query()->findOrFail($id), function (User $user) use ($viewer): void {
+                abort_unless($user->canBeViewedBy($viewer), 404);
+            }),
+        };
     }
 }

@@ -87,3 +87,18 @@ it('sends reaction notification with relation-light models', function (): void {
             && $notification->reactor->relationLoaded('posts');
     });
 });
+
+it('prevents blocked users from reacting to posts', function (): void {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $viewer->blocking()->attach($author->id);
+
+    $this->actingAs($viewer)
+        ->postJson(route('posts.react', $post), ['type' => 'love'])
+        ->assertForbidden();
+});

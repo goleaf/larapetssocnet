@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GroupMemberStatus;
 use App\Models\Post;
 use App\Services\FeedService;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,6 +43,7 @@ class FeedController extends Controller
             ->with([
                 'user',
                 'author',
+                'author.media',
                 'pet',
                 'media',
                 'tags',
@@ -68,7 +70,7 @@ class FeedController extends Controller
             ->where(function (Builder $query): void {
                 $query
                     ->whereNull('group_members.status')
-                    ->orWhereIn('group_members.status', ['active', 'accepted']);
+                    ->orWhereIn('group_members.status', GroupMemberStatus::activeValues());
             })
             ->orderByDesc('groups.members_count')
             ->limit(6)

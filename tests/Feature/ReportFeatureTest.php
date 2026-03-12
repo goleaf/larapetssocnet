@@ -47,6 +47,7 @@ class ReportFeatureTest extends TestCase
             'post_id' => $post->id,
             'user_id' => $author->id,
             'body' => 'Bad comment',
+            'body_html' => 'Bad comment',
         ]);
 
         $this->actingAs($reporter)

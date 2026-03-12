@@ -22,6 +22,7 @@ it('saves and unsaves a post by toggling saved state', function (): void {
         'user_id' => $user->id,
         'post_id' => $post->id,
     ]);
+    expect((int) $post->fresh()->save_count)->toBe(1);
 
     $this->actingAs($user)
         ->postJson(route('posts.save', $post))
@@ -32,6 +33,7 @@ it('saves and unsaves a post by toggling saved state', function (): void {
         'user_id' => $user->id,
         'post_id' => $post->id,
     ]);
+    expect((int) $post->fresh()->save_count)->toBe(0);
 });
 
 it('lists only saved posts visible to the viewer on saved index', function (): void {
@@ -52,12 +54,14 @@ it('lists only saved posts visible to the viewer on saved index', function (): v
 
     $visiblePost = Post::factory()->for($publicAuthor)->create([
         'body' => 'saved-visible-post',
+        'body_html' => '<p>saved-visible-post</p>',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'status' => 'published',
     ]);
 
     $hiddenPost = Post::factory()->for($privateAuthor)->create([
         'body' => 'saved-hidden-post',
+        'body_html' => '<p>saved-hidden-post</p>',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'status' => 'published',
     ]);

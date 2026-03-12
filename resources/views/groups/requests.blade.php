@@ -1,53 +1,15 @@
 <x-app-layout>
  @php
  $groupRouteKey = filled((string) ($group->slug ??'')) ? $group->slug : $group->id;
- $statusTab = request()->string('status')->toString();
-
- if (!in_array($statusTab, ['pending','approved','rejected'], true)) {
- $statusTab ='pending';
- }
-
+ $statusTab = $statusTab ?? 'pending';
  $canManage = (bool) ($canManageMembers ?? $isAdmin ?? $isOwner ?? false);
-
- $baseQuery = \App\Models\GroupMember::query()
- ->where('group_id', $group->id)
- ->with('user:id,name,username')
- ->latest('created_at');
-
- $pendingCount = (clone $baseQuery)->where('status','pending')->count();
- $approvedCount = (clone $baseQuery)->where(function ($query): void {
- $query->whereNull('status')->orWhereIn('status', ['active','accepted']);
- })->count();
- $rejectedCount = (clone $baseQuery)->whereIn('status', ['rejected','denied','banned'])->count();
-
- $requestsPaginator = match ($statusTab) {
-'approved'=> (clone $baseQuery)
- ->where(function ($query): void {
- $query->whereNull('status')->orWhereIn('status', ['active','accepted']);
- })
- ->paginate(20)
- ->withQueryString(),
-'rejected'=> (clone $baseQuery)
- ->whereIn('status', ['rejected','denied','banned'])
- ->paginate(20)
- ->withQueryString(),
- default => (clone $baseQuery)
- ->where('status','pending')
- ->paginate(20)
- ->withQueryString(),
- };
-
- $membersUrl = Route::has('groups.members')
- ? route('groups.members', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members']);
-
- $requestsBaseUrl = Route::has('groups.requests')
- ? route('groups.requests', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members','request_tab'=>'pending']);
-
- $tabUrl = static fn(string $status): string => Route::has('groups.requests')
- ? route('groups.requests', ['group'=> $groupRouteKey,'status'=> $status])
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members','request_tab'=>'pending','status'=> $status]);
+ $pendingCount = $pendingCount ?? 0;
+ $approvedCount = $approvedCount ?? 0;
+ $rejectedCount = $rejectedCount ?? 0;
+ $requestsPaginator = $requestsPaginator ?? collect();
+ $membersUrl = $membersUrl ?? route('groups.members.index', $groupRouteKey);
+ $requestsBaseUrl = $requestsBaseUrl ?? route('groups.requests.index', $groupRouteKey);
+ $tabUrl = $tabUrl ?? static fn (string $status): string => route('groups.requests.index', ['group'=> $groupRouteKey,'status'=> $status]);
  @endphp
 
  <x-slot name="header">
@@ -82,7 +44,7 @@
  <div class="space-y-3">
  @forelse ($requestsPaginator as $requestMember)
  @php
- $statusValue = strtolower((string) ($requestMember->status ??'active'));
+ $statusValue = strtolower((string) ($requestMember->status?->value ??'active'));
  $statusBadgeVariant = match ($statusValue) {
 'pending'=>'warning',
 'rejected','denied','banned'=>'danger',
@@ -104,9 +66,8 @@
  </form>
 
  <form method="POST"
- action="{{ route('groups.members.reject', ['group'=> $groupRouteKey,'membership'=> $requestMember->id]) }}">
+ action="{{ route('groups.requests.reject', ['group'=> $groupRouteKey,'membership'=> $requestMember->id]) }}">
  @csrf
- @method('DELETE')
  <x-ui.button type="submit" variant="ghost" size="sm">Reject</x-ui.button>
  </form>
  @endif

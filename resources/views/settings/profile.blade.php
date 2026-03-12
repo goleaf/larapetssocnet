@@ -55,89 +55,134 @@
 
  <!-- Name -->
  <div class="sm:col-span-3">
- <x-input-label for="name" value="Name"/>
- <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name"/>
- <x-input-error class="mt-2" :messages="$errors->get('name')"/>
+ <x-ui.input id="name" name="name" label="Name" :value="old('name', $user->name)" required autofocus autocomplete="name"/>
+ </div>
+
+ <!-- Display Name -->
+ <div class="sm:col-span-3">
+ <x-ui.input id="display_name" name="display_name" type="text" label="Display name" :value="old('display_name', $user->display_name)" autocomplete="nickname"
+ hint="Shown publicly instead of your account name when set."/>
  </div>
 
  <!-- Username -->
  <div class="sm:col-span-3"
  x-data="{ currentUsername:'{{ $user->username }}', newUsername:'{{ old('username', $user->username) }}'}">
- <x-input-label for="username" value="Username"/>
- <x-text-input id="username" name="username" type="text" class="mt-1 block w-full"
+ <x-ui.input id="username" name="username" label="Username"
  x-model="newUsername" required autocomplete="username"/>
- <x-input-error class="mt-2" :messages="$errors->get('username')"/>
 
- <div x-show="currentUsername !== newUsername && newUsername !==''"
- class="mt-3 border border-amber-200 bg-amber-50 p-3" style="display: none;">
- <p class="border-l-4 border-amber-400 py-1 pl-3 text-sm text-amber-700">
- <strong>Warning:</strong> Changing your username will change your profile URL
- (<code>{{ url('/@') }}<span x-text="newUsername"></span></code>). Old links leading to your
- profile may break.
+ @if (! $user->canChangeUsername())
+ <p class="mt-2 text-xs text-amber-700">
+ You can change your username again in {{ $user->daysUntilUsernameChange() }} day(s).
+ </p>
+ @endif
+
+ <div x-show="currentUsername !== newUsername && newUsername !==''" style="display: none;">
+ <x-ui.alert type="warning" title="Username change warning">
+ <p>
+ Changing your username will change your profile URL
+ (<code>{{ url('/@') }}<span x-text="newUsername"></span></code>). Old links will redirect,
+ and your previous username will be reserved.
  </p>
  <div class="mt-3">
- <x-input-label for="username_confirm" value="Type your current username to confirm"
- class="text-yellow-800"/>
- <x-text-input id="username_confirm" name="username_confirm" type="text"
- class="mt-1 block w-full border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500"/>
- <x-input-error class="mt-2 text-yellow-800" :messages="$errors->get('username_confirm')"/>
+ <x-ui.input id="username_confirm" name="username_confirm" label="Type your current username to confirm"/>
  </div>
+ </x-ui.alert>
  </div>
  </div>
 
  <!-- Email -->
  <div class="sm:col-span-6">
- <x-input-label for="email" value="Email Address"/>
- <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="email"/>
- <x-input-error class="mt-2" :messages="$errors->get('email')"/>
+ <x-ui.input id="email" name="email" type="email" label="Email Address" :value="old('email', $user->email)" required autocomplete="email"/>
  </div>
 
  <!-- Bio -->
  <div class="sm:col-span-6">
- <x-input-label for="bio" value="Bio"/>
- <textarea id="bio" name="bio" rows="4"
- class="form-textarea mt-1 block w-full">{{ old('bio', $user->bio) }}</textarea>
- <x-input-error class="mt-2" :messages="$errors->get('bio')"/>
- <p class="mt-2 text-sm text-gray-500">Brief description for your profile. URLs are hyperlinked.</p>
+ <x-ui.textarea id="bio" name="bio" rows="4" label="Bio" :value="old('bio', $user->bio)"
+ hint="Brief description for your profile. URLs are hyperlinked."/>
+ </div>
+
+ <!-- Headline -->
+ <div class="sm:col-span-6">
+ <x-ui.input id="headline" name="headline" type="text" label="Headline" :value="old('headline', $user->headline)"
+ hint="Short status or tagline shown near your name."/>
+ </div>
+
+ <!-- Pronouns -->
+ <div class="sm:col-span-3">
+ <x-ui.input id="pronouns" name="pronouns" type="text" label="Pronouns" :value="old('pronouns', $user->pronouns)" placeholder="she/her, he/him, they/them"/>
  </div>
 
  <!-- Location -->
  <div class="sm:col-span-3">
- <x-input-label for="location" value="Location"/>
- <x-text-input id="location" name="location" type="text" class="mt-1 block w-full"
+ <x-ui.input id="location" name="location" type="text" label="Location"
  :value="old('location', $user->location)"/>
- <x-input-error class="mt-2" :messages="$errors->get('location')"/>
  </div>
 
  <!-- Website -->
  <div class="sm:col-span-3">
- <x-input-label for="website" value="Website"/>
- <x-text-input id="website" name="website" type="url" class="mt-1 block w-full"
+ <x-ui.input id="website" name="website" type="url" label="Website"
  :value="old('website', $user->website)"/>
- <x-input-error class="mt-2" :messages="$errors->get('website')"/>
+ </div>
+
+ <!-- Social Links -->
+ <div class="sm:col-span-6">
+ <p class="text-sm font-medium text-bark">Social links</p>
+ <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+ <div>
+ <x-ui.input id="social_links_x" name="social_links[x]" type="url" label="X / Twitter"
+ :value="old('social_links.x', $user->social_links['x'] ?? null)" placeholder="https://x.com/username"/>
+ </div>
+ <div>
+ <x-ui.input id="social_links_instagram" name="social_links[instagram]" type="url" label="Instagram"
+ :value="old('social_links.instagram', $user->social_links['instagram'] ?? null)" placeholder="https://instagram.com/username"/>
+ </div>
+ <div>
+ <x-ui.input id="social_links_tiktok" name="social_links[tiktok]" type="url" label="TikTok"
+ :value="old('social_links.tiktok', $user->social_links['tiktok'] ?? null)" placeholder="https://tiktok.com/@username"/>
+ </div>
+ <div>
+ <x-ui.input id="social_links_youtube" name="social_links[youtube]" type="url" label="YouTube"
+ :value="old('social_links.youtube', $user->social_links['youtube'] ?? null)" placeholder="https://youtube.com/@username"/>
+ </div>
+ </div>
  </div>
 
  <!-- Gender -->
  <div class="sm:col-span-3">
- <x-input-label for="gender" value="Gender"/>
- <select id="gender" name="gender"
- class="form-select mt-1 block w-full">
- <option value="">Select...</option>
- <option value="male" @selected(old('gender', $user->gender) =='male')>Male</option>
- <option value="female" @selected(old('gender', $user->gender) =='female')>Female</option>
- <option value="other" @selected(old('gender', $user->gender) =='other')>Other</option>
- <option value="prefer_not_to_say" @selected(old('gender', $user->gender) =='prefer_not_to_say')>
- Prefer not to say</option>
- </select>
- <x-input-error class="mt-2" :messages="$errors->get('gender')"/>
+ <x-ui.select
+ id="gender"
+ name="gender"
+ label="Gender"
+ :options="[
+ '' => 'Select...',
+ 'male' => 'Male',
+ 'female' => 'Female',
+ 'other' => 'Other',
+ 'prefer_not_to_say' => 'Prefer not to say',
+ ]"
+ :selected="old('gender', $user->gender)"
+ />
  </div>
 
  <!-- Birth Date -->
  <div class="sm:col-span-3">
- <x-input-label for="birth_date" value="Birth Date"/>
- <x-text-input id="birth_date" name="birth_date" type="date" class="mt-1 block w-full"
- :value="old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') :'')"/>
- <x-input-error class="mt-2" :messages="$errors->get('birth_date')"/>
+ <x-ui.input id="birth_date" name="birth_date" type="date" label="Birth Date"
+ :value="old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : '')"/>
+ </div>
+
+ <!-- Locale -->
+ <div class="sm:col-span-3">
+ <x-ui.input id="locale" name="locale" type="text" label="Language" :value="old('locale', $user->locale)" placeholder="en, en_US"/>
+ </div>
+
+ <!-- Timezone -->
+ <div class="sm:col-span-3">
+ <x-ui.input id="timezone" name="timezone" type="text" label="Timezone" :value="old('timezone', $user->timezone)" placeholder="Europe/Vilnius"/>
+ </div>
+
+ <!-- Profile Theme -->
+ <div class="sm:col-span-3">
+ <x-ui.input id="profile_theme" name="profile_theme" type="text" label="Profile theme" :value="old('profile_theme', $user->profile_theme)" placeholder="sunset, meadow, ocean"/>
  </div>
  </div>
 

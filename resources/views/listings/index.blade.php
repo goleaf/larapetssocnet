@@ -96,7 +96,7 @@
  <div class="grid gap-4 md:hidden">
  @foreach ($listingItems as $listing)
  <div class="space-y-2">
- @include('partials.listing-card', ['listing'=> $listing])
+    <x-listing-card :listing="$listing"/>
 
  @php
  $listingId = (int) data_get($listing,'id');

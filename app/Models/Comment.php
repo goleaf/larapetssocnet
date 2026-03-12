@@ -30,10 +30,8 @@ class Comment extends Model
         'user_id',
         'parent_id',
         'body',
-        'status',
+        'body_html',
         'edited_at',
-        'commentable_type',
-        'commentable_id',
         'replies_count',
         'reactions_count',
     ];
@@ -87,6 +85,47 @@ class Comment extends Model
     public function scopeTopLevel(Builder $query): Builder
     {
         return $query->whereNull('parent_id');
+    }
+
+    public function scopeThreadColumns(Builder $query): Builder
+    {
+        return $query->select([
+            'comments.id',
+            'comments.post_id',
+            'comments.user_id',
+            'comments.parent_id',
+            'comments.body',
+            'comments.body_html',
+            'comments.edited_at',
+            'comments.replies_count',
+            'comments.reactions_count',
+            'comments.created_at',
+            'comments.updated_at',
+            'comments.deleted_at',
+        ]);
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $viewer): Builder
+    {
+        $query->whereHas('user', function (Builder $userQuery): void {
+            $userQuery->where('is_banned', false);
+        });
+
+        if (! $viewer || ! User::hasBlocksTable()) {
+            return $query;
+        }
+
+        $blockedIds = $viewer->blocking()
+            ->pluck('blocked_id')
+            ->merge($viewer->blockedBy()->pluck('blocker_id'))
+            ->unique()
+            ->values();
+
+        if ($blockedIds->isNotEmpty()) {
+            $query->whereNotIn('comments.user_id', $blockedIds);
+        }
+
+        return $query;
     }
 
     public function scopeRecent(Builder $query): Builder

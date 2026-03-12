@@ -36,13 +36,13 @@
 
  <div class="py-8">
  <div class="mx-auto max-w-5xl space-y-5 px-4 sm:px-6 lg:px-8">
- @if (session('status'))
- <x-flash-message type="success" :message="session('status')"/>
- @endif
+@if (session('status'))
+<x-ui.alert type="success">{{ session('status') }}</x-ui.alert>
+@endif
 
- @if ($errors->any())
- <x-flash-message type="error" :message="$errors->first()"/>
- @endif
+@if ($errors->any())
+<x-ui.alert type="error">{{ $errors->first() }}</x-ui.alert>
+@endif
 
  <section class="shell-card space-y-4 p-5">
  <div class="flex flex-wrap items-center gap-3">

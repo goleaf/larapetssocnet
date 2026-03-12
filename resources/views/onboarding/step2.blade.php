@@ -3,37 +3,32 @@
  <x-ui.page-header title="Onboarding: Step 2 of 3" description="Add your first pet now or skip and do it later." icon="🐾" />
  </x-slot>
 
- <div class="shell-card p-6 sm:p-8">
+ <x-ui.card padding="lg">
  <form method="POST" action="{{ route('onboarding.store', ['step'=> 2]) }}" class="space-y-5">
  @csrf
 
  <div>
- <label for="pet_name" class="mb-1 block text-sm font-semibold">Pet Name</label>
- <input id="pet_name" name="pet_name" type="text" class="form-input" value="{{ old('pet_name') }}" placeholder="Milo"/>
- <x-input-error :messages="$errors->get('pet_name')" class="mt-2"/>
+ <x-ui.input id="pet_name" name="pet_name" type="text" label="Pet Name" :value="old('pet_name')" placeholder="Milo"/>
  </div>
 
  <div>
- <label for="pet_species" class="mb-1 block text-sm font-semibold">Species</label>
- <select id="pet_species" name="pet_species" class="form-select">
- <option value="">Select species (optional)</option>
- @foreach ($speciesOptions as $species)
- <option value="{{ $species }}" @selected(old('pet_species') === $species)>{{ $species }}</option>
- @endforeach
- </select>
- <x-input-error :messages="$errors->get('pet_species')" class="mt-2"/>
+ <x-ui.select
+ id="pet_species"
+ name="pet_species"
+ label="Species"
+ :options="collect(['' => 'Select species (optional)'])->merge(collect($speciesOptions)->mapWithKeys(fn ($species) => [$species => $species]))->all()"
+ :selected="old('pet_species')"
+ />
  </div>
 
  <div>
- <label for="pet_bio" class="mb-1 block text-sm font-semibold">Short Bio</label>
- <textarea id="pet_bio" name="pet_bio" rows="4" class="form-textarea" placeholder="Friendly, playful, and loves park walks.">{{ old('pet_bio') }}</textarea>
- <x-input-error :messages="$errors->get('pet_bio')" class="mt-2"/>
+ <x-ui.textarea id="pet_bio" name="pet_bio" rows="4" label="Short Bio" placeholder="Friendly, playful, and loves park walks." :value="old('pet_bio')"/>
  </div>
 
  <div class="flex flex-wrap items-center justify-between gap-3">
- <button type="submit" class="btn-base btn-primary">Save and Continue</button>
- <button type="submit" form="skip-step-2" class="btn-base btn-ghost">Skip this step</button>
- </div>
+ <x-ui.button type="submit" variant="primary">Save and Continue</x-ui.button>
+ <x-ui.button type="submit" form="skip-step-2" variant="ghost">Skip this step</x-ui.button>
+ </x-ui.card>
  </form>
 
  <form id="skip-step-2" method="POST" action="{{ route('onboarding.skip', ['step'=> 2]) }}">

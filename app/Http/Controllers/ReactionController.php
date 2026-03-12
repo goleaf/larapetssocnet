@@ -2,24 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Engagement\SetReactionAction;
+use App\Http\Requests\ReactToPostRequest;
 use App\Models\Post;
-use App\Services\ReactionService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class ReactionController extends Controller
 {
-    public function __construct(private readonly ReactionService $reactionService) {}
+    public function __construct(private readonly SetReactionAction $setReaction) {}
 
-    public function react(Request $request, Post $post): JsonResponse
+    public function react(ReactToPostRequest $request, Post $post): JsonResponse
     {
-        $this->authorize('view', $post);
+        $this->authorize('react', $post);
 
-        $validated = $request->validate([
-            'type' => ['required', 'string', 'in:love,cute,funny,wow,sad,support'],
-        ]);
-
-        $result = $this->reactionService->react($request->user(), $post, $validated['type']);
+        $result = $this->setReaction->handle($request->user(), $post, $request->validated('type'));
 
         return response()->json([
             'success' => true,

@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Models\Post;
-use App\Models\PostReaction;
 use App\Models\Reaction;
 use App\Models\User;
 use App\Notifications\NewReaction;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReactionService
@@ -14,88 +14,79 @@ class ReactionService
     /**
      * @var list<string>
      */
-    public const TYPES = ['love', 'cute', 'funny', 'wow', 'sad', 'support'];
+    public const TYPES = [
+        Reaction::TYPE_LOVE,
+        Reaction::TYPE_CUTE,
+        Reaction::TYPE_FUNNY,
+        Reaction::TYPE_WOW,
+        Reaction::TYPE_SAD,
+        Reaction::TYPE_SUPPORT,
+    ];
 
     /**
      * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int}
      */
     public function react(User $user, Post $post, string $type): array
     {
-        if (! in_array($type, self::TYPES, true)) {
+        $normalizedType = Reaction::normalizeType($type);
+
+        if (! in_array($normalizedType, self::TYPES, true)) {
             throw ValidationException::withMessages(['type' => 'Invalid reaction type.']);
         }
 
-        $existing = PostReaction::query()
-            ->where('post_id', $post->id)
-            ->where('user_id', $user->id)
-            ->first();
+        $result = DB::transaction(function () use ($user, $post, $normalizedType): array {
+            $existing = Reaction::query()
+                ->where('reactable_type', Post::class)
+                ->where('reactable_id', $post->id)
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
 
-        if ($existing?->type === $type) {
-            $existing->delete();
-            $this->syncLegacyReaction($user, $post, null);
-            $likesCount = max(0, (int) $post->reactions()->count());
-            $post->update(['likes_count' => $likesCount]);
+            if ($existing?->type === $normalizedType) {
+                $existing->delete();
+                $post->decrementCounter('likes_count');
+                $post->decrementCounter('reactions_count');
 
-            return ['action' => 'removed', 'current_reaction' => null, 'likes_count' => $likesCount];
-        }
+                return ['action' => 'removed', 'current_reaction' => null];
+            }
 
-        if ($existing) {
-            $existing->update(['type' => $type]);
-            $this->syncLegacyReaction($user, $post, $type);
-            $likesCount = max(0, (int) $post->reactions()->count());
-            $post->update(['likes_count' => $likesCount]);
+            if ($existing) {
+                $existing->update(['type' => $normalizedType]);
 
-            return ['action' => 'changed', 'current_reaction' => $type, 'likes_count' => $likesCount];
-        }
+                return ['action' => 'changed', 'current_reaction' => $normalizedType];
+            }
 
-        PostReaction::query()->create([
-            'post_id' => $post->id,
-            'user_id' => $user->id,
-            'type' => $type,
-        ]);
-        $this->syncLegacyReaction($user, $post, $type);
+            Reaction::query()->create([
+                'user_id' => $user->id,
+                'reactable_id' => $post->id,
+                'reactable_type' => Post::class,
+                'type' => $normalizedType,
+            ]);
 
-        $likesCount = max(0, (int) $post->reactions()->count());
-        $post->update(['likes_count' => $likesCount]);
+            $post->incrementCounter('likes_count');
+            $post->incrementCounter('reactions_count');
 
-        if ($user->id !== $post->user_id) {
+            return ['action' => 'added', 'current_reaction' => $normalizedType];
+        });
+
+        $likesCount = (int) ($post->fresh()?->likes_count ?? $post->likes_count ?? 0);
+
+        if ($result['action'] === 'added' && $user->id !== $post->user_id) {
+            $post->loadMissing('author');
+
             if ($post->author->notificationEnabled('post_likes')) {
                 $notificationPost = $post->withoutRelation('author');
                 $notificationUser = $this->relationLightReactor($user);
 
-                $post->author->notify(new NewReaction($notificationUser, $notificationPost, $type));
+                $post->author->notify(new NewReaction($notificationUser, $notificationPost, $result['current_reaction']));
             }
         }
 
-        return ['action' => 'added', 'current_reaction' => $type, 'likes_count' => $likesCount];
-    }
-
-    private function syncLegacyReaction(User $user, Post $post, ?string $type): void
-    {
-        $existing = Reaction::query()
-            ->where('user_id', $user->id)
-            ->where('reactable_id', $post->id)
-            ->where('reactable_type', Post::class)
-            ->first();
-
-        if ($type === null) {
-            $existing?->delete();
-
-            return;
-        }
-
-        if ($existing) {
-            $existing->update(['type' => $type]);
-
-            return;
-        }
-
-        Reaction::query()->create([
-            'user_id' => $user->id,
-            'reactable_id' => $post->id,
-            'reactable_type' => Post::class,
-            'type' => $type,
-        ]);
+        return [
+            'action' => $result['action'],
+            'current_reaction' => $result['current_reaction'],
+            'likes_count' => $likesCount,
+        ];
     }
 
     private function relationLightReactor(User $user): User

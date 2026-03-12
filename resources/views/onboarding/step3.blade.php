@@ -7,13 +7,13 @@
  <form method="POST" action="{{ route('onboarding.store', ['step'=> 3]) }}" class="space-y-5">
  @csrf
 
- <section class="shell-card p-6">
+ <x-ui.card padding="md">
  <h2 class="shell-title text-lg">Suggested People</h2>
  <p class="mt-1 text-sm shell-text-muted">Select anyone you'd like to follow now.</p>
 
  <div class="mt-4 space-y-3">
  @forelse ($suggestedUsers as $suggestedUser)
- <label class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+ <label class="flex items-center justify-between gap-3 rounded-[var(--radius-soft)] border ui-border bg-[color:var(--ui-surface)] px-4 py-3">
  <div class="min-w-0">
  <p class="truncate font-semibold">{{ $suggestedUser->name }}</p>
  <p class="truncate text-xs shell-text-muted">
@@ -28,7 +28,7 @@
  type="checkbox"
  name="follow_user_ids[]"
  value="{{ $suggestedUser->id }}"
- class="h-4 w-4 rounded border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]"
+ class="h-4 w-4 rounded-full border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]"
  >
  </div>
  </label>
@@ -41,15 +41,15 @@
  />
  @endforelse
  </div>
- </section>
+ </x-ui.card>
 
- <section class="shell-card p-6">
+ <x-ui.card padding="md">
  <h2 class="shell-title text-lg">Suggested Groups</h2>
  <p class="mt-1 text-sm shell-text-muted">Choose groups that match your interests.</p>
 
  <div class="mt-4 space-y-3">
  @forelse ($suggestedGroups as $group)
- <label class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+ <label class="flex items-center justify-between gap-3 rounded-[var(--radius-soft)] border ui-border bg-[color:var(--ui-surface)] px-4 py-3">
  <div class="min-w-0">
  <p class="truncate font-semibold">{{ $group->name }}</p>
  <p class="truncate text-xs shell-text-muted">
@@ -64,7 +64,7 @@
  type="checkbox"
  name="join_group_ids[]"
  value="{{ $group->id }}"
- class="h-4 w-4 rounded border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]"
+ class="h-4 w-4 rounded-full border-[var(--ui-border)] text-[var(--ui-primary)] focus:ring-[var(--ui-primary)]"
  >
  </div>
  </label>
@@ -77,14 +77,14 @@
  />
  @endforelse
  </div>
- </section>
+ </x-ui.card>
 
- <x-input-error :messages="$errors->get('follow_user_ids')" class="mt-2"/>
- <x-input-error :messages="$errors->get('join_group_ids')" class="mt-2"/>
+ <x-ui.hint :error="$errors->first('follow_user_ids')" />
+ <x-ui.hint :error="$errors->first('join_group_ids')" />
 
  <div class="flex flex-wrap items-center justify-between gap-3">
- <button type="submit" class="btn-base btn-primary">Finish Onboarding</button>
- <button type="submit" form="skip-step-3" class="btn-base btn-ghost">Skip and Finish</button>
+ <x-ui.button type="submit" variant="primary">Finish Onboarding</x-ui.button>
+ <x-ui.button type="submit" form="skip-step-3" variant="ghost">Skip and Finish</x-ui.button>
  </div>
  </form>
 

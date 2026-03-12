@@ -36,13 +36,21 @@ class UpdateProfileRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
+            'display_name' => ['nullable', 'string', 'max:120'],
             'username' => UsernameRules::requiredRules(is_numeric($userId) ? (int) $userId : null),
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'bio' => ['nullable', 'string', 'max:5000'],
+            'headline' => ['nullable', 'string', 'max:120'],
+            'pronouns' => ['nullable', 'string', 'max:32'],
             'website' => ['nullable', 'url:http,https', 'max:255'],
             'location' => ['nullable', 'string', 'max:120'],
             'city' => ['nullable', 'string', 'max:120'],
             'country_code' => ['nullable', 'string', 'size:2', 'alpha'],
+            'social_links' => ['nullable', 'array', 'max:6'],
+            'social_links.*' => ['nullable', 'url', 'max:255'],
+            'locale' => ['nullable', 'string', 'max:20'],
+            'timezone' => ['nullable', 'timezone'],
+            'profile_theme' => ['nullable', 'string', 'max:40'],
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
             'is_private' => ['nullable', 'boolean'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
@@ -81,11 +89,32 @@ class UpdateProfileRequest extends FormRequest
         }
 
         $countryCode = strtoupper(trim((string) $this->input('country_code')));
+        $socialLinks = $this->input('social_links', []);
+
+        if (! is_array($socialLinks)) {
+            $socialLinks = [];
+        }
+
+        $normalizedSocialLinks = [];
+        foreach ($socialLinks as $key => $value) {
+            $cleanValue = trim((string) $value);
+
+            if ($cleanValue === '') {
+                continue;
+            }
+
+            if (! preg_match('/^https?:\\/\\//i', $cleanValue)) {
+                $cleanValue = 'https://'.$cleanValue;
+            }
+
+            $normalizedSocialLinks[$key] = $cleanValue;
+        }
 
         $this->merge([
             'username' => $username,
             'website' => $website !== '' ? $website : null,
             'country_code' => $countryCode !== '' ? $countryCode : null,
+            'social_links' => $normalizedSocialLinks !== [] ? $normalizedSocialLinks : null,
         ]);
     }
 }

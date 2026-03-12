@@ -42,7 +42,12 @@ class UserController extends Controller
             ->limit(5)
             ->get();
 
-        return view('admin.users.show', compact('user', 'recentReports'));
+        $usernameChanges = $user->usernameChanges()
+            ->latest('changed_at')
+            ->limit(10)
+            ->get();
+
+        return view('admin.users.show', compact('user', 'recentReports', 'usernameChanges'));
     }
 
     public function ban(User $user): JsonResponse

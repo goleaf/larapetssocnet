@@ -3,7 +3,6 @@
 'tone'=> null,
 'size'=>'md',
 'dot'=> false,
-'pill'=> false,
 'icon'=> null,
 ])
 <span {{ $attributes->merge(['class'=> \Illuminate\Support\Arr::toCssClasses([
@@ -24,7 +23,7 @@
  'md'=>'px-2.5 py-1 text-xs',
  'lg'=>'px-3 py-1.5 text-sm',
  ][$size] ?? 'px-2.5 py-1 text-xs',
- $pill ?'rounded-[var(--radius-soft)]':'rounded-none',
+ 'rounded-[var(--radius-soft)]',
  ])]) }}>
  @if ($dot)
  <span class="h-1.5 w-1.5 rounded-[var(--radius-soft)] {{ [

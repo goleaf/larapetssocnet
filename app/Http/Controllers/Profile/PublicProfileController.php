@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\PetVisibilityService;
+use App\Services\ProfileVisibilityService;
 use App\Services\VisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,28 +20,39 @@ class PublicProfileController extends Controller
     public function __construct(
         private readonly VisibilityService $visibilityService,
         private readonly PetVisibilityService $petVisibilityService,
+        private readonly ProfileVisibilityService $profileVisibilityService,
     ) {}
 
     public function show(Request $request, User $user): View|RedirectResponse
     {
-        $redirect = $request->attributes->get('username_redirect');
-        if ($redirect) {
-            return redirect()
-                ->route('profile.show', ['user' => $redirect->user->username])
-                ->setStatusCode(301);
-        }
-
-        $rawUsername = (string) $request->attributes->get('username_raw', $user->username);
-        if ($rawUsername !== $user->username) {
-            return redirect()
-                ->route('profile.show', ['user' => $user->username])
-                ->setStatusCode(301);
-        }
-
         $viewer = $request->user();
 
         if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
             abort(404);
+        }
+
+        $redirect = $request->attributes->get('username_redirect');
+        if ($redirect) {
+            $target = route('profile.show', ['user' => $redirect->user->username]);
+            $query = $request->getQueryString();
+
+            if ($query) {
+                $target .= '?'.$query;
+            }
+
+            return redirect()->to($target, 301);
+        }
+
+        $rawUsername = (string) $request->attributes->get('username_raw', $user->username);
+        if ($rawUsername !== $user->username) {
+            $target = route('profile.show', ['user' => $user->username]);
+            $query = $request->getQueryString();
+
+            if ($query) {
+                $target .= '?'.$query;
+            }
+
+            return redirect()->to($target, 301);
         }
 
         $allowedTabs = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests'];
@@ -48,15 +60,17 @@ class PublicProfileController extends Controller
             ? $request->string('tab')->toString()
             : 'posts';
 
-        $canViewContent = $user->canViewPosts($viewer);
+        $profileVisibility = $this->profileVisibilityService->resolve($user);
+        $canViewContent = $this->profileVisibilityService->canViewFullProfile($viewer, $user);
         $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
 
         $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets', 'posts']);
 
-        if (! $canViewContent && (bool) $user->is_private) {
+        if (! $canViewContent) {
             return view('profile.private', [
                 'user' => $user,
                 'followStatus' => $followStatus,
+                'profileVisibility' => $profileVisibility->value,
             ]);
         }
 
@@ -105,6 +119,10 @@ class PublicProfileController extends Controller
 
         $privatePosts = collect();
         $privateCount = 0;
+        $draftPosts = collect();
+        $draftCount = 0;
+        $scheduledPosts = collect();
+        $scheduledCount = 0;
 
         if ($tab === 'posts' && $viewer && $viewer->is($user)) {
             $privatePosts = Post::recentPrivateForProfileOwner($user)
@@ -112,6 +130,12 @@ class PublicProfileController extends Controller
                 ->values();
 
             $privateCount = Post::privateCountForProfile($user);
+
+            $draftPosts = Post::recentDraftsForProfileOwner($user);
+            $draftCount = Post::draftCountForProfile($user);
+
+            $scheduledPosts = Post::recentScheduledForProfileOwner($user);
+            $scheduledCount = Post::scheduledCountForProfile($user);
         }
 
         // Badges — always load (up to 8 most recent)
@@ -182,6 +206,9 @@ class PublicProfileController extends Controller
             'profileUser' => $user,
             'tab' => $tab,
             'canViewContent' => $canViewContent,
+            'profileVisibility' => $profileVisibility->value,
+            'profileVisibilityLabel' => $profileVisibility->label(),
+            'profileVisibilityIcon' => $profileVisibility->icon(),
             'pets' => $pets,
             'featuredPets' => $featuredPets,
             'photos' => $photos,
@@ -191,6 +218,10 @@ class PublicProfileController extends Controller
             'posts' => $posts,
             'privatePosts' => $privatePosts,
             'privateCount' => $privateCount,
+            'draftPosts' => $draftPosts,
+            'draftCount' => $draftCount,
+            'scheduledPosts' => $scheduledPosts,
+            'scheduledCount' => $scheduledCount,
             'likes' => collect(),
             'badges' => $badges,
             'groups' => $groups,

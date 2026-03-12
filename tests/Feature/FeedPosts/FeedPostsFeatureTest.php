@@ -81,8 +81,9 @@ class FeedPostsFeatureTest extends TestCase
             ->assertJsonPath('data.likes_count', 1)
             ->assertJsonPath('data.current_reaction', 'love');
 
-        $this->assertDatabaseHas('post_reactions', [
-            'post_id' => $post->id,
+        $this->assertDatabaseHas('reactions', [
+            'reactable_type' => Post::class,
+            'reactable_id' => $post->id,
             'user_id' => $user->id,
             'type' => 'love',
         ]);
@@ -101,8 +102,9 @@ class FeedPostsFeatureTest extends TestCase
             ->assertJsonPath('data.likes_count', 0)
             ->assertJsonPath('data.current_reaction', null);
 
-        $this->assertDatabaseMissing('post_reactions', [
-            'post_id' => $post->id,
+        $this->assertDatabaseMissing('reactions', [
+            'reactable_type' => Post::class,
+            'reactable_id' => $post->id,
             'user_id' => $user->id,
         ]);
 
@@ -205,7 +207,21 @@ class FeedPostsFeatureTest extends TestCase
 
         $this->assertDatabaseHas('posts', [
             'id' => $post->id,
-            'comments_count' => 0,
+            'comments_count' => 1,
+        ]);
+
+        $this->assertSoftDeleted('comments', [
+            'id' => $topLevelComment->id,
+        ]);
+
+        $this->assertDatabaseHas('comments', [
+            'id' => $topLevelComment->id,
+            'body' => '[comment removed]',
+        ]);
+
+        $this->assertDatabaseHas('comments', [
+            'id' => $replyComment->id,
+            'deleted_at' => null,
         ]);
     }
 
@@ -223,6 +239,7 @@ class FeedPostsFeatureTest extends TestCase
             'post_id' => $post->id,
             'user_id' => $author->id,
             'body' => 'comment-to-react',
+            'body_html' => 'comment-to-react',
         ]);
 
         $this->actingAs($reactor)
@@ -265,6 +282,7 @@ class FeedPostsFeatureTest extends TestCase
             'post_id' => $post->id,
             'user_id' => $author->id,
             'body' => 'comment-to-react-invalid',
+            'body_html' => 'comment-to-react-invalid',
         ]);
 
         $this->actingAs($reactor)
@@ -292,6 +310,7 @@ class FeedPostsFeatureTest extends TestCase
         ]);
 
         $this->assertSame(1, SavedPost::query()->where('post_id', $post->id)->where('user_id', $user->id)->count());
+        $this->assertSame(1, $post->fresh()->save_count);
 
         $this->actingAs($user)
             ->post(route('posts.save', $post))
@@ -301,6 +320,7 @@ class FeedPostsFeatureTest extends TestCase
             'post_id' => $post->id,
             'user_id' => $user->id,
         ]);
+        $this->assertSame(0, $post->fresh()->save_count);
     }
 
     public function test_saved_posts_page_shows_only_user_saved_posts(): void

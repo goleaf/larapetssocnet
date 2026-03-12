@@ -24,6 +24,8 @@ it('creates a post and dispatches the post created event', function (): void {
     expect($post->user_id)->toBe($user->getKey());
     expect($post->body)->toBe('New post from action #action');
     expect($post->tags()->where('slug', 'action')->exists())->toBeTrue();
+    expect($post->status->value ?? $post->status)->toBe(\App\Enums\PostStatus::Published->value);
+    expect($post->published_at)->not->toBeNull();
 
     Event::assertDispatched(PostCreated::class);
 });

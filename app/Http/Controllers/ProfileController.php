@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Actions\Users\BuildProfileSettingsViewDataAction;
 use App\Actions\Users\UpdateProfileAction;
 use App\Enums\FollowAbility;
-use App\Http\Requests\UpdateProfileRequest;
+use App\Exceptions\UsernameChangeCooldownException;
+use App\Exceptions\UsernameNotAvailableException;
+use App\Exceptions\UsernameReservedException;
+use App\Http\Requests\UpdateSettingsProfileRequest;
 use App\Models\User;
+use App\Services\ProfileVisibilityService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +38,7 @@ class ProfileController extends Controller
             : 'posts';
 
         $canViewContent = $user->canBeViewedBy($viewer);
+        $profileVisibility = app(ProfileVisibilityService::class)->resolve($user);
 
         $user->loadCount(['followers', 'following', 'pets']);
 
@@ -61,6 +66,9 @@ class ProfileController extends Controller
             'profileUser' => $user,
             'tab' => $tab,
             'canViewContent' => $canViewContent,
+            'profileVisibility' => $profileVisibility->value,
+            'profileVisibilityLabel' => $profileVisibility->label(),
+            'profileVisibilityIcon' => $profileVisibility->icon(),
             'pets' => $pets,
             'photos' => $photos,
             'posts' => collect(),
@@ -80,12 +88,18 @@ class ProfileController extends Controller
         return view('settings.profile', $buildProfileSettingsViewData->handle($user));
     }
 
-    public function update(UpdateProfileRequest $request, UpdateProfileAction $updateProfile): RedirectResponse
+    public function update(UpdateSettingsProfileRequest $request, UpdateProfileAction $updateProfile): RedirectResponse
     {
         $user = $request->user();
         $this->authorize('update', $user);
 
-        $updateProfile->handle($user, $request->validated());
+        try {
+            $updateProfile->handle($user, $request->validated());
+        } catch (UsernameChangeCooldownException|UsernameReservedException|UsernameNotAvailableException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['username' => $exception->getMessage()]);
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

@@ -3,11 +3,8 @@
  <x-ui.page-header title="My Listings" description="Manage your marketplace inventory and listing status." icon="📦">
  <x-slot name="action">
  <div class="flex items-center gap-2">
- <a href="{{ route('messages.index') }}"
- class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Messages</a>
- <a href="{{ route('marketplace.create') }}"
- class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create
- Listing</a>
+ <x-ui.button :href="route('messages.index')" variant="ghost" size="sm">Messages</x-ui.button>
+ <x-ui.button :href="route('marketplace.create')" variant="primary" size="sm">Create Listing</x-ui.button>
  </div>
  </x-slot>
  </x-ui.page-header>
@@ -15,62 +12,61 @@
 
  <div class="py-6">
  <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
- <form method="GET" action="{{ route('marketplace.my-listings') }}"
- class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-4">
+ <x-ui.card padding="md">
+ <form method="GET" action="{{ route('marketplace.my-listings') }}" class="grid gap-3 md:grid-cols-4">
  <div class="md:col-span-2">
- <label for="q"
- class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Search</label>
- <input id="q" name="q" type="text" value="{{ request('q') }}"
- placeholder="Title, description, location"
- class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+ <x-ui.input id="q" name="q" label="Search" :value="request('q')" placeholder="Title, description, location"/>
  </div>
 
  <div>
- <label for="status"
- class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Status</label>
- <select id="status" name="status"
- class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
- <option value="all" @selected($status ==='all')>All</option>
- <option value="{{ \App\Models\MarketplaceListing::STATUS_DRAFT }}"
- @selected($status === \App\Models\MarketplaceListing::STATUS_DRAFT)>Draft</option>
- <option value="{{ \App\Models\MarketplaceListing::STATUS_ACTIVE }}"
- @selected($status === \App\Models\MarketplaceListing::STATUS_ACTIVE)>Active</option>
- <option value="{{ \App\Models\MarketplaceListing::STATUS_SOLD }}"
- @selected($status === \App\Models\MarketplaceListing::STATUS_SOLD)>Sold</option>
- <option value="{{ \App\Models\MarketplaceListing::STATUS_ARCHIVED }}"
- @selected($status === \App\Models\MarketplaceListing::STATUS_ARCHIVED)>Archived</option>
- </select>
+ <x-ui.select
+ id="status"
+ name="status"
+ label="Status"
+ :options="[
+ 'all' => 'All',
+ \App\Models\MarketplaceListing::STATUS_DRAFT => 'Draft',
+ \App\Models\MarketplaceListing::STATUS_ACTIVE => 'Active',
+ \App\Models\MarketplaceListing::STATUS_SOLD => 'Sold',
+ \App\Models\MarketplaceListing::STATUS_ARCHIVED => 'Archived',
+ ]"
+ :selected="$status"
+ />
  </div>
 
  <div>
- <label for="sort"
- class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
- <select id="sort" name="sort"
- class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
- <option value="newest" @selected($sort ==='newest')>Newest</option>
- <option value="oldest" @selected($sort ==='oldest')>Oldest</option>
- <option value="price_low" @selected($sort ==='price_low')>Price: Low to High</option>
- <option value="price_high" @selected($sort ==='price_high')>Price: High to Low</option>
- <option value="most_viewed" @selected($sort ==='most_viewed')>Most Viewed</option>
- </select>
+ <x-ui.select
+ id="sort"
+ name="sort"
+ label="Sort"
+ :options="[
+ 'newest' => 'Newest',
+ 'oldest' => 'Oldest',
+ 'price_low' => 'Price: Low to High',
+ 'price_high' => 'Price: High to Low',
+ 'most_viewed' => 'Most Viewed',
+ ]"
+ :selected="$sort"
+ />
  </div>
 
  <div class="md:col-span-4 flex justify-end gap-2">
- <a href="{{ route('marketplace.my-listings') }}"
- class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Reset</a>
- <button type="submit"
- class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Apply</button>
+ <x-ui.button :href="route('marketplace.my-listings')" variant="ghost">Reset</x-ui.button>
+ <x-ui.button type="submit" variant="primary">Apply</x-ui.button>
  </div>
  </form>
+ </x-ui.card>
 
  @if ($listings->isEmpty())
- <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">
+ <x-ui.card padding="lg" class="border-dashed">
+ <div class="text-center text-sm text-gray-600">
  You do not have listings yet.
  </div>
+ </x-ui.card>
  @else
  <div class="mt-4 flex flex-col gap-4 max-w-5xl mx-auto">
  @foreach ($listings as $listing)
- <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+ <x-ui.card padding="none" class="overflow-hidden">
  @if ($listing->cover_photo_url)
  <img src="{{ $listing->cover_photo_url }}" alt="{{ $listing->title }}"
  class="h-44 w-full object-cover">
@@ -81,8 +77,7 @@
  <div class="space-y-3 p-4">
  <div class="flex items-start justify-between gap-2">
  <h3 class="font-semibold text-gray-900">{{ $listing->title }}</h3>
- <span
- class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">{{ ucfirst($listing->status) }}</span>
+ <x-ui.badge variant="default" size="sm">{{ ucfirst($listing->status) }}</x-ui.badge>
  </div>
 
  <p class="text-sm text-blue-700 font-semibold">
@@ -92,21 +87,18 @@
  <p class="text-xs text-gray-500">Views: {{ number_format((int) $listing->views_count) }}</p>
 
  <div class="flex items-center gap-2">
- <a href="{{ route('marketplace.show', $listing) }}"
- class="inline-flex flex-1 items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">View</a>
- <a href="{{ route('marketplace.edit', $listing) }}"
- class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Edit</a>
+ <x-ui.button :href="route('marketplace.show', $listing)" variant="ghost" class="flex-1">View</x-ui.button>
+ <x-ui.button :href="route('marketplace.edit', $listing)" variant="primary" class="flex-1">Edit</x-ui.button>
  </div>
 
  <form method="POST" action="{{ route('marketplace.destroy', $listing) }}"
  onsubmit="return confirm('Delete this listing?')">
  @csrf
  @method('DELETE')
- <button type="submit"
- class="inline-flex w-full items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">Delete</button>
+ <x-ui.button type="submit" variant="danger" class="w-full">Delete</x-ui.button>
  </form>
  </div>
- </article>
+ </x-ui.card>
  @endforeach
  </div>
 

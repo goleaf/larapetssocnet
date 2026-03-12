@@ -35,9 +35,9 @@
  </x-slot>
 
  <div class="space-y-5">
- @if (session('status'))
- <x-flash-message type="success" :message="session('status')"/>
- @endif
+@if (session('status'))
+<x-ui.alert type="success">{{ session('status') }}</x-ui.alert>
+@endif
 
  <x-ui.card>
  <form method="GET" action="{{ route('events.index') }}" class="grid gap-3 md:grid-cols-12">

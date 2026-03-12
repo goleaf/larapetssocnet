@@ -53,6 +53,15 @@
     --control-height-md: 2.5rem;
     --control-height-lg: 3rem;
 
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-7: 2rem;
+    --space-8: 2.5rem;
+
     --text-2xs: 0.625rem;
     --text-2xs-line-height: 0.875rem;
 
@@ -73,14 +82,6 @@
 @layer base {
     * {
         border-color: var(--border-default);
-    }
-
-    *,
-    ::before,
-    ::after,
-    ::backdrop,
-    ::file-selector-button {
-        border-radius: 0 !important;
     }
 
     html,
@@ -162,6 +163,22 @@
 }
 
 @layer components {
+    .ui-border {
+        border-color: var(--border-default);
+    }
+
+    .ui-border-strong {
+        border-color: var(--border-strong);
+    }
+
+    .ui-text {
+        color: var(--text-default);
+    }
+
+    .ui-text-muted {
+        color: var(--text-muted);
+    }
+
     .shell-card,
     .ui-surface {
         background: var(--surface-panel);
@@ -186,6 +203,26 @@
         box-shadow: var(--shadow-card);
     }
 
+    .ui-surface-form {
+        background: var(--surface-form);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-control);
+    }
+
+    .ui-surface-modal {
+        background: var(--surface-modal);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-panel);
+        box-shadow: var(--shadow-card-hover);
+    }
+
+    .ui-surface-dropdown {
+        background: var(--surface-dropdown);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-soft);
+        box-shadow: var(--shadow-card-hover);
+    }
+
     .shell-title {
         color: var(--text-default);
         font-family: var(--font-display);
@@ -208,6 +245,20 @@
         color: var(--text-default);
         font-family: var(--font-display);
         font-weight: 700;
+    }
+
+    .ui-icon-well {
+        background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);
+        border-radius: var(--radius-soft);
+        color: var(--ui-text);
+    }
+
+    .ui-gradient-soft {
+        background: linear-gradient(
+            120deg,
+            color-mix(in srgb, var(--ui-primary) 22%, var(--ui-surface) 78%),
+            color-mix(in srgb, var(--ui-accent) 20%, var(--ui-surface) 80%)
+        );
     }
 
     .btn-base {
@@ -248,7 +299,7 @@
 
     .shell-nav-link {
         @apply flex items-center gap-2 px-3 py-2 text-sm text-fur transition-all duration-150 hover:bg-cream hover:text-bark;
-        border-radius: var(--radius-control);
+        border-radius: var(--radius-soft);
     }
 
     .shell-nav-link.active {

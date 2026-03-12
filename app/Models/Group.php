@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\GroupSlugService;
 use App\Traits\HasCounterCache;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,9 +14,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Group extends Model implements HasMedia
 {
@@ -23,6 +25,16 @@ class Group extends Model implements HasMedia
     use HasFactory;
     use InteractsWithMedia;
     use SoftDeletes;
+
+    public const MEDIA_COLLECTION_AVATAR = 'avatar';
+
+    public const MEDIA_COLLECTION_COVER = 'cover';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_MEDIUM = 'medium';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
 
     /**
      * @var list<string>
@@ -33,6 +45,7 @@ class Group extends Model implements HasMedia
         'name',
         'slug',
         'description',
+        'description_html',
         'avatar',
         'avatar_path',
         'cover_image',
@@ -71,15 +84,26 @@ class Group extends Model implements HasMedia
         static::saving(function (self $group): void {
             $group->syncOwnerColumns();
 
-            if (! $group->exists || $group->isDirty('name') || blank($group->slug)) {
-                $group->slug = static::generateUniqueSlug(
-                    (string) ($group->name ?: $group->slug),
+            if (blank($group->slug)) {
+                $group->slug = app(GroupSlugService::class)->generateUnique(
+                    (string) ($group->name ?: 'group'),
                     $group->exists ? (int) $group->getKey() : null,
                 );
             }
 
+            if ($group->isDirty('slug')) {
+                $group->slug = app(GroupSlugService::class)->generateUnique(
+                    (string) $group->slug,
+                    $group->exists ? (int) $group->getKey() : null,
+                );
+            }
+
+            if (blank($group->privacy)) {
+                $group->privacy = 'public';
+            }
+
             if (blank($group->type)) {
-                $group->type = 'public';
+                $group->type = $group->privacy;
             }
 
             if (blank($group->species_focus)) {
@@ -90,8 +114,39 @@ class Group extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('avatar')->singleFile();
-        $this->addMediaCollection('cover')->singleFile();
+        $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)
+            ->singleFile()
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
+            ->singleFile()
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
+            ->fit(Fit::Crop, 150, 150)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_COVER)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_MEDIUM)
+            ->width(800)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1200)
+            ->format('webp')
+            ->quality(90)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
+            ->nonQueued();
     }
 
     public function owner(): BelongsTo
@@ -453,9 +508,23 @@ class Group extends Model implements HasMedia
         return 'slug';
     }
 
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $bindingField = $field ?? $this->getRouteKeyName();
+
+        if ($bindingField === 'slug') {
+            return static::query()
+                ->where('slug', $value)
+                ->orWhere($this->getQualifiedKeyName(), $value)
+                ->first();
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
     public function avatarUrl(): string
     {
-        $mediaUrl = $this->getFirstMediaUrl('avatar');
+        $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_CONVERSION_THUMB);
 
         if ($mediaUrl !== '') {
             return $mediaUrl;
@@ -474,7 +543,7 @@ class Group extends Model implements HasMedia
 
     public function coverUrl(): string
     {
-        $mediaUrl = $this->getFirstMediaUrl('cover');
+        $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_LARGE);
 
         if ($mediaUrl !== '') {
             return $mediaUrl;
@@ -517,7 +586,7 @@ class Group extends Model implements HasMedia
         }
 
         return $membership->status === null
-            || in_array((string) $membership->status, ['active', 'accepted'], true);
+            || in_array((string) ($membership->status?->value ?? ''), GroupMemberStatus::activeValues(), true);
     }
 
     public function activeMembersCount(): int
@@ -685,25 +754,7 @@ class Group extends Model implements HasMedia
 
     protected static function generateUniqueSlug(string $seed, ?int $ignoreId = null): string
     {
-        $base = Str::slug($seed);
-
-        if ($base === '') {
-            $base = 'group';
-        }
-
-        $slug = $base;
-        $suffix = 1;
-
-        while (static::query()
-            ->withTrashed()
-            ->where('slug', $slug)
-            ->when($ignoreId, fn (Builder $query): Builder => $query->whereKeyNot($ignoreId))
-            ->exists()) {
-            $slug = $base.'-'.$suffix;
-            $suffix++;
-        }
-
-        return $slug;
+        return app(GroupSlugService::class)->generateUnique($seed, $ignoreId);
     }
 
     protected function syncOwnerColumns(): void

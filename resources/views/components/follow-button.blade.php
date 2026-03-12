@@ -48,45 +48,40 @@
             }"
             class="inline-flex items-center gap-2"
         >
-            <button
+            <x-ui.button
                 type="button"
+                :size="$size"
+                variant="outline"
                 @click="toggle()"
-                :disabled="loading"
-                :aria-busy="loading"
-                class="{{ match ($size) {
-                    'sm' => 'px-3 py-1 text-xs',
-                    'lg' => 'px-6 py-2.5 text-base',
-                    default => 'px-4 py-1.5 text-sm',
-                } }} bg-paw text-white transition hover:bg-paw-dark disabled:opacity-60"
+                x-bind:disabled="loading"
+                x-bind:aria-busy="loading"
+                x-bind:class="followed ? 'border-whisker/40 text-bark bg-warm-white hover:bg-cream' : 'border-transparent bg-paw text-white hover:bg-paw-dark'"
+                class="min-w-[110px] justify-center"
             >
                 <span x-text="label"></span>
-            </button>
+            </x-ui.button>
 
             <span class="text-xs text-fur" x-text="count"></span>
         </div>
     @else
-        <a
-            href="{{ route('login') }}"
-            class="{{ match ($size) {
-                'sm' => 'px-3 py-1 text-xs',
-                'lg' => 'px-6 py-2.5 text-base',
-                default => 'px-4 py-1.5 text-sm',
-            } }} bg-paw text-white transition hover:bg-paw-dark"
+        <x-ui.button
+            :href="route('login')"
+            :size="$size"
+            variant="primary"
+            class="min-w-[110px] justify-center"
         >
             {{ __('pets.actions.sign_in_to_follow') }}
-        </a>
+        </x-ui.button>
     @endauth
 @elseif ($user === null)
-    <button
+    <x-ui.button
         type="button"
-        {{ $attributes->merge(['class' => match ($size) {
-            'sm' => 'px-3 py-1 text-xs',
-            'lg' => 'px-6 py-2.5 text-base',
-            default => 'px-4 py-1.5 text-sm',
-        }.' btn-base btn-primary']) }}
+        :size="$size"
+        variant="primary"
+        {{ $attributes->merge(['class' => 'min-w-[110px] justify-center']) }}
     >
         {{ $slot }}
-    </button>
+    </x-ui.button>
 @else
     <div
         x-data="{
@@ -99,11 +94,6 @@
             },
             get isActive() {
                 return this.status === 'following' || this.status === 'pending'
-            },
-            get btnStyle() {
-                if (this.status === 'following') return 'bg-white border border-whisker/40 text-bark hover:border-red-400 hover:text-red-500 hover:bg-red-50'
-                if (this.status === 'pending') return 'bg-cream border border-whisker/40 text-fur'
-                return 'bg-paw hover:bg-paw-dark text-white border border-transparent'
             },
             async perform(url, method = 'POST') {
                 if (this.loading) return
@@ -159,21 +149,24 @@
         }"
         class="inline-flex flex-col items-center gap-1"
     >
-        <button
-            @click="toggle()"
-            :disabled="loading || status === 'pending'"
-            :aria-busy="loading"
+        <x-ui.button
             type="button"
-            :class="btnStyle"
-            class="{{ match ($size) {
-                'sm' => 'px-3 py-1 text-xs',
-                'lg' => 'px-6 py-2.5 text-base',
-                default => 'px-4 py-1.5 text-sm',
-            } }} min-w-[110px] font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-paw focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            :size="$size"
+            :disabled="false"
+            @click="toggle()"
+            x-bind:aria-busy="loading"
+            x-bind:disabled="loading || status === 'pending'"
+            x-bind:class="status === 'following'
+                ? 'border-rose/40 text-rose hover:bg-rose-light/40'
+                : (status === 'pending'
+                    ? 'border-whisker/40 text-fur bg-cream'
+                    : 'border-transparent bg-paw text-white hover:bg-paw-dark')"
+            variant="outline"
+            class="min-w-[110px] justify-center"
         >
             <span x-show="loading" x-cloak>...</span>
             <span x-show="!loading" x-text="label"></span>
-        </button>
+        </x-ui.button>
 
         <button
             x-show="status === 'pending'"

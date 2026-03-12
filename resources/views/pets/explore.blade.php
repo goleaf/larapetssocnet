@@ -116,9 +116,17 @@
  $imageUrl = $pet->avatar_url;
  @endphp
 
- <x-pet-card :name="$pet->name ??'Unnamed pet'" :species="\Illuminate\Support\Str::headline((string) ($pet->species ??'Unknown'))" :breed="$pet->breed ?:'Mixed'" :age="$pet->age_formatted ?: \Illuminate\Support\Str::headline((string) ($pet->sex ??'unknown'))" :location="$locationLabel"
- :image="$imageUrl" :owner="$pet->owner?->name" cta-label="View Profile"
- :cta-href="route('pets.show', $petSlug)"/>
+<x-ui.pet-card
+    :name="$pet->name ?? 'Unnamed pet'"
+    :species="\Illuminate\Support\Str::headline((string) ($pet->species ?? 'Unknown'))"
+    :breed="$pet->breed ?: 'Mixed'"
+    :age="$pet->age_formatted ?: \Illuminate\Support\Str::headline((string) ($pet->sex ?? 'unknown'))"
+    :location="$locationLabel"
+    :image="$imageUrl"
+    :owner="$pet->owner?->name"
+    cta-label="View Profile"
+    :cta-href="route('pets.show', $petSlug)"
+/>
  @endforeach
  </div>
 

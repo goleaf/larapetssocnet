@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\Hashtag;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Hashtag>
@@ -24,7 +23,8 @@ class HashtagFactory extends Factory
 
         return [
             'name' => $name,
-            'slug' => Str::slug($name),
+            'slug' => $name,
+            'normalized_name' => $name,
             'posts_count' => $this->faker->numberBetween(0, 100),
         ];
     }

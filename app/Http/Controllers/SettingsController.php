@@ -6,8 +6,12 @@ use App\Actions\Users\BuildProfileSettingsViewDataAction;
 use App\Actions\Users\UpdateProfileAction;
 use App\Exceptions\CannotBlockAdminException;
 use App\Exceptions\CannotBlockSelfException;
+use App\Exceptions\UsernameChangeCooldownException;
+use App\Exceptions\UsernameNotAvailableException;
+use App\Exceptions\UsernameReservedException;
 use App\Http\Requests\BlockUserByUsernameRequest;
 use App\Http\Requests\BlockUserRequest;
+use App\Http\Requests\UpdatePrivacySettingsRequest;
 use App\Http\Requests\UpdateSettingsProfileRequest;
 use App\Models\User;
 use App\Services\AccountExportService;
@@ -45,7 +49,13 @@ class SettingsController extends Controller
         $user = $request->user();
         $this->authorize('update', $user);
 
-        $updateProfile->handle($user, $request->validated(), true);
+        try {
+            $updateProfile->handle($user, $request->validated(), true);
+        } catch (UsernameChangeCooldownException|UsernameReservedException|UsernameNotAvailableException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['username' => $exception->getMessage()]);
+        }
 
         return redirect()->route('settings.profile')->with('success', 'Profile updated successfully.');
     }
@@ -78,16 +88,9 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function updatePrivacy(Request $request): RedirectResponse
+    public function updatePrivacy(UpdatePrivacySettingsRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'profile_visibility' => ['required', 'string', 'in:public,followers_only'],
-            'messaging_permission' => ['required', 'string', 'in:everyone,followers_only'],
-            'pets_visibility' => ['required', 'string', 'in:everyone,followers_only'],
-            'groups_visibility' => ['required', 'string', 'in:everyone,followers_only'],
-            'show_in_explore' => ['boolean'],
-            'open_following' => ['boolean'],
-        ]);
+        $validated = $request->validated();
 
         $settings = array_merge([
             'show_in_explore' => false,

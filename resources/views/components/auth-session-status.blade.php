@@ -1,5 +1,5 @@
 @props(['status'])
 
 @if ($status)
- <x-flash-message :message="$status" type="success" :timeout="0" {{ $attributes }} />
+ <x-ui.alert type="success" {{ $attributes }}>{{ $status }}</x-ui.alert>
 @endif

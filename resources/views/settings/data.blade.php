@@ -34,34 +34,25 @@
  </x-ui.button>
 
  <div x-show="confirmingDeletion" style="display: none;"
- class="mt-4 border border-rose-200 bg-rose-light/60 p-5">
+ class="mt-4 ui-panel border-rose/40 bg-rose-light/30 p-5">
  <h4 class="mb-4 text-md font-bold text-rose-700">Confirm Account Deletion</h4>
  <form action="{{ route('settings.delete-account') }}" method="POST" class="space-y-4">
  @csrf
  @method('DELETE')
 
  <div>
- <x-input-label for="deletion_reason" value="Optional: Why are you leaving?"
- class="text-red-800"/>
- <x-text-input id="deletion_reason" name="deletion_reason" type="text"
- class="mt-1 block w-full border-rose-300 focus:border-rose-500 focus:ring-rose-500"/>
+ <x-ui.input id="deletion_reason" name="deletion_reason" type="text" label="Optional: Why are you leaving?"
+ class="border-rose/40 focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]"/>
  </div>
 
  <div>
- <x-input-label for="password" value="Confirm Password" class="text-red-800"/>
- <x-text-input id="password" name="password" type="password"
- class="mt-1 block w-full border-rose-300 focus:border-rose-500 focus:ring-rose-500"
- required />
- <x-input-error class="mt-2 text-red-800" :messages="$errors->get('password')"/>
+ <x-ui.input id="password" name="password" type="password" label="Confirm Password"
+ class="border-rose/40 focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]" required/>
  </div>
 
  <div>
- <x-input-label for="delete_confirmation" value="Type'DELETE'to confirm"
- class="text-red-800"/>
- <x-text-input id="delete_confirmation" name="delete_confirmation" type="text"
- class="mt-1 block w-full border-rose-300 font-mono focus:border-rose-500 focus:ring-rose-500"
- required />
- <x-input-error class="mt-2 text-red-800" :messages="$errors->get('delete_confirmation')"/>
+ <x-ui.input id="delete_confirmation" name="delete_confirmation" type="text" label="Type 'DELETE' to confirm"
+ class="border-rose/40 font-mono focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]" required/>
  </div>
 
  <div class="flex gap-3 pt-2">

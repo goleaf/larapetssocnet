@@ -30,6 +30,8 @@ class GroupFactory extends Factory
             'name' => Str::title($name),
             'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(1000, 9999),
             'description' => fake()->sentence(fake()->numberBetween(10, 18)),
+            'description_html' => fake()->sentence(fake()->numberBetween(10, 18)),
+            'rules' => fake()->optional(0.3)->sentence(fake()->numberBetween(6, 12)),
             'type' => $type,
             'privacy' => $type,
             'species_focus' => fake()->randomElement(['dog', 'cat', 'bird', 'rabbit', 'fish', 'reptile', 'all']),

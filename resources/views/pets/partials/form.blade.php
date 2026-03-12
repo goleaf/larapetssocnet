@@ -36,63 +36,59 @@
 <div class="space-y-6">
  <div class="grid gap-6 sm:grid-cols-2">
  <div>
- <x-input-label for="name" value="Pet name"/>
- <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $pet?->name)" required />
- <x-input-error :messages="$errors->get('name')" class="mt-2"/>
+ <x-ui.input id="name" name="name" type="text" label="Pet name" :value="old('name', $pet?->name)" required/>
  </div>
 
  <div>
- <x-input-label for="species" value="Species"/>
- <x-text-input id="species" name="species" type="text" class="mt-1 block w-full" :value="old('species', $pet?->species)" required />
- <x-input-error :messages="$errors->get('species')" class="mt-2"/>
+ <x-ui.input id="species" name="species" type="text" label="Species" :value="old('species', $pet?->species)" required/>
  </div>
 
  <div>
- <x-input-label for="breed" value="Breed"/>
- <x-text-input id="breed" name="breed" type="text" class="mt-1 block w-full" :value="old('breed', $pet?->breed)"/>
- <x-input-error :messages="$errors->get('breed')" class="mt-2"/>
+ <x-ui.input id="breed" name="breed" type="text" label="Breed" :value="old('breed', $pet?->breed)"/>
  </div>
 
  <div>
- <x-input-label for="sex" value="Sex"/>
- <select id="sex" name="sex" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
- <option value="">Select</option>
- <option value="male" @selected(old('sex', old('gender', $pet?->sex)) ==='male')>Male</option>
- <option value="female" @selected(old('sex', old('gender', $pet?->sex)) ==='female')>Female</option>
- <option value="unknown" @selected(old('sex', old('gender', $pet?->sex)) ==='unknown')>Unknown</option>
- </select>
- <x-input-error :messages="$errors->get('sex')" class="mt-2"/>
+ <x-ui.select
+ id="sex"
+ name="sex"
+ label="Sex"
+ :options="[
+ '' => 'Select',
+ 'male' => 'Male',
+ 'female' => 'Female',
+ 'unknown' => 'Unknown',
+ ]"
+ :selected="old('sex', old('gender', $pet?->sex))"
+ />
  </div>
 
  <div>
- <x-input-label for="birth_date" value="Birth date"/>
- <x-text-input id="birth_date" name="birth_date" type="date" class="mt-1 block w-full" :value="$birthdateValue"/>
- <x-input-error :messages="$errors->get('birth_date')" class="mt-2"/>
+ <x-ui.input id="birth_date" name="birth_date" type="date" label="Birth date" :value="$birthdateValue"/>
  </div>
 
  <div>
- <x-input-label for="age_text" value="Approx age (if birth date unknown)"/>
- <x-text-input id="age_text" name="age_text" type="text" class="mt-1 block w-full" :value="old('age_text', $pet?->age_text)" placeholder="~2 years"/>
- <x-input-error :messages="$errors->get('age_text')" class="mt-2"/>
+ <x-ui.input id="age_text" name="age_text" type="text" label="Approx age (if birth date unknown)" :value="old('age_text', $pet?->age_text)" placeholder="~2 years"/>
  </div>
 
  <div>
- <x-input-label for="size" value="Size"/>
- <select id="size" name="size" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
- <option value="">Select</option>
- <option value="small" @selected(old('size', $pet?->size) ==='small')>Small</option>
- <option value="medium" @selected(old('size', $pet?->size) ==='medium')>Medium</option>
- <option value="large" @selected(old('size', $pet?->size) ==='large')>Large</option>
- <option value="xlarge" @selected(old('size', $pet?->size) ==='xlarge')>XLarge</option>
- </select>
- <x-input-error :messages="$errors->get('size')" class="mt-2"/>
+ <x-ui.select
+ id="size"
+ name="size"
+ label="Size"
+ :options="[
+ '' => 'Select',
+ 'small' => 'Small',
+ 'medium' => 'Medium',
+ 'large' => 'Large',
+ 'xlarge' => 'XLarge',
+ ]"
+ :selected="old('size', $pet?->size)"
+ />
  </div>
  </div>
 
  <div>
- <x-input-label for="bio" value="Bio"/>
- <textarea id="bio" name="bio" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('bio', $pet?->bio) }}</textarea>
- <x-input-error :messages="$errors->get('bio')" class="mt-2"/>
+ <x-ui.textarea id="bio" name="bio" rows="5" label="Bio" :value="old('bio', $pet?->bio)"/>
  </div>
 
  <div
@@ -148,7 +144,7 @@
  }
  }"
  >
- <x-input-label for="personality_tags_input" value="Personality tags"/>
+ <x-ui.label for="personality_tags_input">Personality tags</x-ui.label>
  <div class="mt-1 flex flex-wrap gap-2">
  <template x-for="(tag, index) in tags" :key="tag">
  <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
@@ -187,8 +183,8 @@
  </div>
 
  <p class="mt-1 text-xs text-gray-500">Pick up to {{ $personalityTagMax }} tags.</p>
- <x-input-error :messages="$errors->get('personality_tags')" class="mt-2"/>
- <x-input-error :messages="$errors->get('personality_tags.*')" class="mt-2"/>
+ <x-ui.hint :error="$errors->first('personality_tags')" />
+ <x-ui.hint :error="$errors->first('personality_tags.*')" />
 
  <input type="hidden" name="personality_tags[]" value="">
  <template x-for="tag in tags" :key="`input-${tag}`">
@@ -198,36 +194,23 @@
 
  @if (empty($pet))
  <div>
- <x-input-label for="gallery_photos" value="Photo Gallery"/>
- <input
+ <x-ui.file-upload
  id="gallery_photos"
  name="gallery_photos[]"
- type="file"
- multiple
+ label="Photo Gallery"
  accept="image/jpeg,image/png,image/webp,image/gif"
- class="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-indigo-700 hover:file:bg-indigo-100"
+ multiple
+ help="Upload up to {{ (int) config('pets.gallery.max_upload', 5) }} photos, max 5MB each."
  />
- <p class="mt-1 text-xs text-gray-500">Upload up to {{ (int) config('pets.gallery.max_upload', 5) }} photos, max 5MB each.</p>
- <x-input-error :messages="$errors->get('gallery_photos')" class="mt-2"/>
- <x-input-error :messages="$errors->get('gallery_photos.*')" class="mt-2"/>
  </div>
  @endif
 
  <div class="space-y-3">
- <label class="inline-flex items-center gap-2">
- <input type="checkbox" name="is_public" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked(old('is_public', $pet?->is_public ?? true))>
- <span class="text-sm text-gray-700">Public profile</span>
- </label>
+ <x-ui.checkbox name="is_public" label="Public profile" :checked="old('is_public', $pet?->is_public ?? true)"/>
 
- <label class="inline-flex items-center gap-2">
- <input type="checkbox" name="is_adoptable" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked(old('is_adoptable', old('is_for_adoption', $pet?->is_adoptable ?? false)))>
- <span class="text-sm text-gray-700">Available for adoption</span>
- </label>
+ <x-ui.checkbox name="is_adoptable" label="Available for adoption" :checked="old('is_adoptable', old('is_for_adoption', $pet?->is_adoptable ?? false))"/>
  <p class="ml-7 text-xs text-gray-500">{{ __('pets.adoption.toggle_hint') }}</p>
 
- <label class="inline-flex items-center gap-2">
- <input type="checkbox" name="is_deceased" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @checked(old('is_deceased', $pet?->is_deceased ?? false))>
- <span class="text-sm text-gray-700">Mark as deceased (Rainbow Bridge)</span>
- </label>
+ <x-ui.checkbox name="is_deceased" label="Mark as deceased (Rainbow Bridge)" :checked="old('is_deceased', $pet?->is_deceased ?? false)"/>
  </div>
 </div>

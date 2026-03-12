@@ -1,13 +1,13 @@
 @props(['comment','post'])
 
-<div class="group py-2 {{ $comment->isReply() ?'ml-11 mt-1':'mt-4'}}" id="comment-{{ $comment->id }}">
+<div class="group py-2 {{ $comment->isReply() ? 'ml-11 mt-1' : 'mt-4' }}" id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
  <!-- Avatar -->
  <a href="{{ route('profile.show', $comment->user->username) }}" class="shrink-0 mt-0.5">
  <x-ui.avatar :src="$comment->user->avatar_url" :name="$comment->user->name" size="sm"/>
  </a>
 
- <div class="flex-1 min-w-0" x-data="{ showReply: false, editing: false }">
+ <div class="flex-1 min-w-0" x-data="{ showReply: false, editing: false, collapsed: false }">
 
  <!-- Comment Bubble -->
  <div x-show="!editing">
@@ -17,39 +17,42 @@
  class="font-bold text-sm text-gray-900 hover:underline">
  {{ $comment->user->name }}
  </a>
+
+ @if($comment->trashed())
+ <div class="text-sm text-gray-500 italic mt-0.5 leading-snug">[comment removed]</div>
+ @else
  <div class="text-sm text-gray-800 whitespace-pre-wrap break-words mt-0.5 leading-snug">
- {{ $comment->body }}
+ {!! $comment->body_html !!}
  </div>
+ @if($comment->edited_at)
+ <div class="mt-1 text-[0.65rem] uppercase tracking-wide text-gray-400">Edited</div>
+ @endif
+ @endif
  </div>
 
-	 @if($comment->reactions_count > 0)
-	 <div class="flex items-center gap-1 flex-wrap">
-	 @foreach(collect([
-	'like'=> $comment->reactions->where('type','like')->count(),
-	'love'=> $comment->reactions->where('type','love')->count(),
-	'laugh'=> $comment->reactions->where('type','laugh')->count(),
-	'wow'=> $comment->reactions->where('type','wow')->count(),
-	'sad'=> $comment->reactions->where('type','sad')->count(),
-	 ])->filter(fn($count) => $count > 0)->sortDesc() as $type => $count)
-	 <div class="inline-flex items-center justify-center bg-white shadow-sm border border-gray-100/50 rounded-lg px-1.5 py-0.5"
-	 title="{{ ucfirst($type) }}">
-	 <span class="text-xs">{{ [
-	'like'=>'👍',
-	'love'=>'❤️',
-	'laugh'=>'😆',
-	'wow'=>'😮',
-	'sad'=>'😢',
-	 ][$type] ??'👍'}}</span>
-	 <span class="text-[0.65rem] font-medium text-gray-500 ml-1">{{ $count }}</span>
-	 </div>
-	 @endforeach
+ @if(!empty($comment->reaction_summary ?? []))
+ <div class="flex items-center gap-1 flex-wrap">
+ @foreach($comment->reaction_summary as $type => $count)
+ <div class="inline-flex items-center justify-center bg-white shadow-sm border border-gray-100/50 rounded-lg px-1.5 py-0.5"
+ title="{{ ucfirst($type) }}">
+<span class="text-xs">{{ [
+ 'love' => '❤️',
+ 'cute' => '🥹',
+ 'funny' => '😂',
+ 'wow' => '😮',
+ 'sad' => '😢',
+ 'support' => '🤝',
+ ][$type] ?? '👍' }}</span>
+ <span class="text-[0.65rem] font-medium text-gray-500 ml-1">{{ $count }}</span>
+ </div>
+ @endforeach
  </div>
  @endif
  </div>
  </div>
 
  <!-- Edit Form -->
- @if(auth()->check() && auth()->id() === $comment->user_id)
+ @can('update', $comment)
  <div x-show="editing" x-cloak class="w-full max-w-2xl border border-whisker/30 bg-cream/60 p-2">
  <form action="{{ route('posts.comments.update', ['post'=> $post,'comment'=> $comment]) }}"
  method="POST">
@@ -65,19 +68,25 @@
  </div>
  </form>
  </div>
- @endif
+ @endcan
 
  <!-- Action Links -->
  <div x-show="!editing" class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500">
-	 @auth
-	 <!-- Like Button / Reactions -->
-	 <x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="auth()->check() ? $comment->reactions->where('user_id', auth()->id())->first()?->type : null"/>
+@auth
+@if(! $comment->trashed())
+<!-- Like Button / Reactions -->
+@can('react', $comment)
+<x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="$comment->current_viewer_reaction"/>
+@endcan
+@endif
 
  <!-- Reply Button -->
- @if(!$comment->isReply())
+ @can('reply', $comment)
+ @if(! $comment->isReply())
  <button @click="showReply = !showReply; if(showReply) { $nextTick(() => $refs.replyInput.focus()); }"
  class="hover:underline">Reply</button>
  @endif
+ @endcan
  @endauth
 
  <!-- Timestamp -->
@@ -89,28 +98,32 @@
  <!-- Hover Actions (Edit/Delete/Report) -->
  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
  <span class="text-gray-300 font-normal">&middot;</span>
- @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->user()->hasRole('admin')))
+ @can('update', $comment)
  <button @click="editing = true" class="hover:underline hover:text-gray-800">Edit</button>
+ @endcan
+ @can('delete', $comment)
  <form method="POST"
  action="{{ route('posts.comments.destroy', ['post'=> $post,'comment'=> $comment]) }}"
  class="inline m-0 p-0" onsubmit="return confirm('Delete this comment?');">
  @csrf @method('DELETE')
  <button type="submit" class="hover:underline hover:text-red-500">Delete</button>
  </form>
- @endif
- @if(auth()->check() && auth()->id() !== $comment->user_id)
- <form method="POST"
+ @endcan
+@can('report', $comment)
+<form method="POST"
  action="{{ route('comments.report', ['post'=> $post,'comment'=> $comment]) }}"
  class="inline m-0 p-0" onsubmit="return confirm('Report this comment?');">
  @csrf
  <input type="hidden" name="reason" value="spam">
  <button type="submit" class="hover:underline hover:text-amber-600">Report</button>
- </form>
- @endif
+</form>
+@endcan
  </div>
  </div>
 
  <!-- Inline Reply Form -->
+ @can('reply', $comment)
+ @if(! $comment->isReply())
  <div x-show="showReply" x-cloak class="mt-2 w-full max-w-2xl flex items-start gap-2">
  <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="xs" class="mt-1"/>
  <div class="flex-1">
@@ -133,13 +146,23 @@
  </form>
  </div>
  </div>
+ @endif
+ @endcan
 
  <!-- Children / Replies -->
- @if($comment->replies->count() > 0)
+ @if($comment->replies_count > 0)
  <div class="mt-1">
+ <div class="flex items-center gap-2 px-3 text-xs font-semibold text-gray-500">
+ <button type="button" class="hover:underline" @click="collapsed = !collapsed">
+ <span x-show="!collapsed">Hide {{ $comment->replies_count }} replies</span>
+ <span x-show="collapsed">Show {{ $comment->replies_count }} replies</span>
+ </button>
+ </div>
+ <div class="mt-2" x-show="!collapsed" x-cloak>
  @foreach($comment->replies as $reply)
  <x-comment-item :comment="$reply" :post="$post"/>
  @endforeach
+ </div>
  </div>
  @endif
  </div>

@@ -6,68 +6,57 @@
  <div class="py-8">
  <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
  {{-- Filters --}}
- <div class="bg-white shadow-sm sm:rounded-lg p-6">
+ <x-ui.card padding="lg">
  <form method="GET" action="{{ route('adoption.index') }}"
  class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
  <div>
- <x-input-label for="species" value="Species"/>
- <select id="species" name="species"
- class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
- <option value="">All species</option>
- @foreach($species as $s)
- <option value="{{ $s }}" @selected(($filters['species'] ??'') === $s)>
- {{ \App\Models\Pet::SPECIES_EMOJI[$s] ??'🐾'}} {{ ucfirst($s) }}
- </option>
- @endforeach
- </select>
+ <x-ui.select
+ id="species"
+ name="species"
+ label="Species"
+ :options="collect(['' => 'All species'])->merge(collect($species)->mapWithKeys(fn ($s) => [$s => (\App\Models\Pet::SPECIES_EMOJI[$s] ?? '🐾').' '.ucfirst($s)]))->all()"
+ :selected="$filters['species'] ?? ''"
+ />
  </div>
 
  <div>
- <x-input-label for="size" value="Size"/>
- <select id="size" name="size"
- class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
- <option value="">Any size</option>
- @foreach($sizes as $sz)
- <option value="{{ $sz }}" @selected(($filters['size'] ??'') === $sz)>{{ ucfirst($sz) }}
- </option>
- @endforeach
- </select>
+ <x-ui.select
+ id="size"
+ name="size"
+ label="Size"
+ :options="collect(['' => 'Any size'])->merge(collect($sizes)->mapWithKeys(fn ($sz) => [$sz => ucfirst($sz)]))->all()"
+ :selected="$filters['size'] ?? ''"
+ />
  </div>
 
  <div>
- <x-input-label for="location" value="Location"/>
- <x-text-input id="location" name="location" class="mt-1 block w-full"
- :value="$filters['location'] ??''" placeholder="City or region"/>
+ <x-ui.input id="location" name="location" label="Location" :value="$filters['location'] ?? ''" placeholder="City or region"/>
  </div>
 
  <div class="flex items-end">
- <label class="inline-flex items-center gap-2 pb-2">
- <input type="checkbox" name="free" value="1" @checked($filters['free'] ?? false)
- class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
- <span class="text-sm text-gray-700">Free only</span>
- </label>
+ <x-ui.checkbox name="free" label="Free only" :checked="$filters['free'] ?? false"/>
  </div>
 
  <div class="flex items-end gap-2">
  <x-ui.button variant="primary">Filter</x-ui.button>
- <a href="{{ route('adoption.index') }}"
- class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
+ <x-ui.button :href="route('adoption.index')" variant="ghost">Reset</x-ui.button>
  </div>
  </form>
- </div>
+ </x-ui.card>
 
  {{-- Results --}}
  @if($listings->isEmpty())
- <div class="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+ <x-ui.card padding="lg" class="border-dashed">
+ <div class="text-center text-sm text-gray-500">
  No adoptable pets match your filters.
  </div>
+ </x-ui.card>
  @else
  <p class="text-sm text-gray-500">{{ $listings->total() }} pets available for adoption</p>
 
  <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
  @foreach($listings as $pet)
- <article
- class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+ <x-ui.card padding="none" class="border-emerald-200 overflow-hidden hover:shadow-card-hover transition-shadow">
  @if($pet->getFirstMediaUrl('avatar'))
  <img src="{{ $pet->getFirstMediaUrl('avatar') }}" alt="{{ $pet->name }}"
  class="w-full h-48 object-cover">
@@ -79,12 +68,9 @@
 
  <div class="p-5">
  <div class="flex items-center gap-2 mb-2">
- <span
- class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">For
- adoption</span>
+ <x-ui.badge variant="success" size="sm">For adoption</x-ui.badge>
  @if(!$pet->adoption_fee)
- <span
- class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Free</span>
+ <x-ui.badge variant="info" size="sm">Free</x-ui.badge>
  @endif
  </div>
 
@@ -105,8 +91,7 @@
  @if($pet->personality_tags && is_array($pet->personality_tags))
  <div class="mt-2 flex flex-wrap gap-1">
  @foreach(array_slice($pet->personality_tags, 0, 3) as $tag)
- <span
- class="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700">{{ \Illuminate\Support\Str::headline((string) $tag) }}</span>
+ <x-ui.badge variant="secondary" size="sm">{{ \Illuminate\Support\Str::headline((string) $tag) }}</x-ui.badge>
  @endforeach
  </div>
  @endif
@@ -116,12 +101,11 @@
  </p>
  @endif
 
- <a href="{{ route('pets.show', $pet->slug) }}"
- class="mt-4 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-800">
+ <x-ui.button :href="route('pets.show', $pet->slug)" variant="ghost" size="sm" class="mt-4">
  View profile →
- </a>
+ </x-ui.button>
  </div>
- </article>
+ </x-ui.card>
  @endforeach
  </div>
 

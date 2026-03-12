@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Reaction;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReactToCommentRequest extends FormRequest
 {
@@ -15,7 +16,7 @@ class ReactToCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', 'in:'.implode(',', Reaction::TYPES)],
+            'type' => ['required', 'string', Rule::in(Reaction::allowedTypes())],
         ];
     }
 }

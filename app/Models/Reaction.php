@@ -24,6 +24,10 @@ class Reaction extends Model
 
     public const TYPE_SUPPORT = 'support';
 
+    public const TYPE_LIKE = 'like';
+
+    public const TYPE_LAUGH = 'laugh';
+
     /**
      * @var list<string>
      */
@@ -34,6 +38,14 @@ class Reaction extends Model
         self::TYPE_WOW,
         self::TYPE_SAD,
         self::TYPE_SUPPORT,
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    public const TYPE_ALIASES = [
+        self::TYPE_LIKE => self::TYPE_LOVE,
+        self::TYPE_LAUGH => self::TYPE_FUNNY,
     ];
 
     /**
@@ -68,6 +80,39 @@ class Reaction extends Model
 
     public function isType(string $type): bool
     {
-        return $this->type === $type;
+        return $this->type === static::normalizeType($type);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function allowedTypes(): array
+    {
+        return array_values(array_unique([
+            ...self::TYPES,
+            ...array_keys(self::TYPE_ALIASES),
+        ]));
+    }
+
+    public static function normalizeType(string $type): string
+    {
+        $normalized = strtolower($type);
+
+        return self::TYPE_ALIASES[$normalized] ?? $normalized;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function emojiMap(): array
+    {
+        return [
+            self::TYPE_LOVE => '❤️',
+            self::TYPE_CUTE => '🥹',
+            self::TYPE_FUNNY => '😂',
+            self::TYPE_WOW => '😮',
+            self::TYPE_SAD => '😢',
+            self::TYPE_SUPPORT => '🤝',
+        ];
     }
 }

@@ -2,16 +2,24 @@
 
 namespace App\Models;
 
+use App\Enums\GroupMemberRole;
+use App\Enums\GroupMemberStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Collection;
 
-class GroupMember extends Model
+class GroupMember extends Pivot
 {
     use HasFactory;
+
+    protected $table = 'group_members';
+
+    public $incrementing = true;
+
+    public $timestamps = true;
 
     /**
      * @var list<string>
@@ -29,6 +37,8 @@ class GroupMember extends Model
     {
         return [
             'joined_at' => 'datetime',
+            'role' => GroupMemberRole::class,
+            'status' => GroupMemberStatus::class,
         ];
     }
 
@@ -64,7 +74,10 @@ class GroupMember extends Model
 
     public function scopeManagers(Builder $query): Builder
     {
-        return $query->whereIn('role', ['owner', 'admin']);
+        return $query->whereIn('role', [
+            GroupMemberRole::Owner->value,
+            GroupMemberRole::Admin->value,
+        ]);
     }
 
     public function scopeActive(Builder $query): Builder
@@ -72,13 +85,13 @@ class GroupMember extends Model
         return $query->where(function (Builder $statusQuery): void {
             $statusQuery
                 ->whereNull('status')
-                ->orWhereIn('status', ['active', 'accepted']);
+                ->orWhereIn('status', GroupMemberStatus::activeValues());
         });
     }
 
     public function scopePending(Builder $query): Builder
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', GroupMemberStatus::Pending->value);
     }
 
     /**
@@ -129,5 +142,19 @@ class GroupMember extends Model
             ->with('user:id,name,username')
             ->latest('created_at')
             ->get();
+    }
+
+    public function isActive(): bool
+    {
+        if ($this->status === null) {
+            return true;
+        }
+
+        return in_array((string) $this->status->value, GroupMemberStatus::activeValues(), true);
+    }
+
+    public function isPending(): bool
+    {
+        return (string) ($this->status?->value ?? '') === GroupMemberStatus::Pending->value;
     }
 }

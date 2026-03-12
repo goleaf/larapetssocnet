@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
+use App\Models\ReservedUsername;
 use App\Models\User;
 use App\Models\UsernameRedirect;
+use App\Notifications\UsernameChanged;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Illuminate\Support\Facades\DB;
@@ -47,8 +49,13 @@ class UsernameService
         return UsernameRules::isAvailable($username, $excludeUserId);
     }
 
-    public function change(User $user, string $newUsername, bool $ignoreCooldown = false): bool
-    {
+    public function change(
+        User $user,
+        string $newUsername,
+        ?User $actor = null,
+        ?string $reason = null,
+        bool $ignoreCooldown = false
+    ): bool {
         $normalized = UsernameNormalizer::normalize($newUsername);
 
         if ($normalized === UsernameNormalizer::normalize($user->username)) {
@@ -67,12 +74,14 @@ class UsernameService
             throw new UsernameNotAvailableException;
         }
 
-        DB::transaction(function () use ($user, $normalized): void {
-            if ($user->username !== null && $user->username !== '') {
+        $oldUsername = (string) $user->username;
+
+        DB::transaction(function () use ($user, $normalized, $oldUsername, $actor, $reason): void {
+            if ($oldUsername !== '') {
                 UsernameRedirect::query()->create([
-                    'old_username' => $user->username,
+                    'old_username' => $oldUsername,
                     'user_id' => $user->id,
-                    'redirects_until' => now()->addDays((int) config('usernames.redirect_ttl_days', 90)),
+                    'redirects_until' => now()->addDays((int) config('usernames.redirect_ttl_days', 36500)),
                     'created_at' => now(),
                 ]);
             }
@@ -86,7 +95,28 @@ class UsernameService
                 'username' => $normalized,
                 'username_changed_at' => now(),
             ]);
+
+            if ($oldUsername !== '' && (bool) config('usernames.reserve_old_usernames', true)) {
+                ReservedUsername::query()->firstOrCreate(
+                    ['username' => $oldUsername],
+                    ['reason' => 'previous_username']
+                );
+            }
+
+            app(UsernameChangeService::class)->record(
+                $user,
+                $oldUsername,
+                $normalized,
+                $actor ?? $user,
+                $reason,
+                request()?->ip(),
+                request()?->userAgent()
+            );
         });
+
+        if ($user->notificationEnabled('username_changed')) {
+            $user->notify(new UsernameChanged($oldUsername, $normalized));
+        }
 
         return true;
     }

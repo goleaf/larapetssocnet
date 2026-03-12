@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Group;
+use App\Models\GroupBan;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class GroupBanFactory extends Factory
 {
+    protected $model = GroupBan::class;
+
     /**
      * Define the model's default state.
      *
@@ -17,7 +22,11 @@ class GroupBanFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'group_id' => Group::factory(),
+            'user_id' => User::factory(),
+            'banned_by' => User::factory(),
+            'reason' => fake()->optional()->sentence(),
+            'created_at' => now(),
         ];
     }
 }

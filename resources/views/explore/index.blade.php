@@ -40,7 +40,7 @@
 
  <div class="mt-4 flex flex-wrap gap-2">
  @foreach (['all'=>'All','photos'=>'Photos','videos'=>'Videos','trending'=>'Trending'] as $option => $label)
- <x-ui.badge :variant="$type === $option ?'primary':'default'" pill>
+<x-ui.badge :variant="$type === $option ?'primary':'default'">
  <a
  href="{{ route('explore.index', array_merge(request()->except('page','type'), ['type'=> $option])) }}">
  {{ $label }}
@@ -51,7 +51,7 @@
  </div>
 
  @forelse ($posts as $post)
- @include('partials.post-card', ['post'=> $post])
+<x-post-card :post="$post"/>
  @empty
  <x-ui.empty-state icon="🔎" title="No public posts found"
  description="Try a different search term, media type, or check back soon for new activity."/>

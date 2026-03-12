@@ -18,11 +18,15 @@ class CommentFactory extends Factory
      */
     public function definition(): array
     {
+        $body = fake()->sentence();
+
         return [
             'post_id' => \App\Models\Post::factory(),
             'user_id' => \App\Models\User::factory(),
             'parent_id' => null,
-            'body' => fake()->sentence(),
+            'body' => $body,
+            'body_html' => $body,
+            'replies_count' => 0,
             'reactions_count' => 0,
         ];
     }

@@ -29,6 +29,28 @@
  </x-ui.select>
 
  <x-ui.select
+ id="status"
+ name="status"
+ label="Status"
+ wire:model="status"
+ >
+ <option value="published">Publish now</option>
+ <option value="draft">Save draft</option>
+ <option value="scheduled">Schedule</option>
+ </x-ui.select>
+
+ <x-ui.select
+ id="status"
+ name="status"
+ label="Status"
+ wire:model="status"
+ >
+ <option value="published">Publish now</option>
+ <option value="scheduled">Schedule</option>
+ <option value="draft">Draft</option>
+ </x-ui.select>
+
+ <x-ui.select
  id="pet_id"
  name="pet_id"
  label="Associate with Pet (optional)"
@@ -42,6 +64,19 @@
  @endforelse
  </x-ui.select>
  </div>
+
+ @if ($status === 'scheduled')
+ <x-ui.input
+ id="published_at"
+ name="published_at"
+ type="datetime-local"
+ label="Publish on"
+ wire:model.blur="published_at"
+ />
+ @error('published_at')
+ <span class="mt-1 block text-xs text-rose">{{ $message }}</span>
+ @enderror
+ @endif
 
  <div class="space-y-1">
  <x-ui.select
@@ -65,12 +100,27 @@
  @enderror
  </div>
 
+ <div class="grid gap-4 md:grid-cols-2">
  <x-ui.input
  id="location"
  name="location"
  label="Location"
  wire:model.blur="location"
  />
+
+ <div x-cloak x-show="$wire.status === 'scheduled'">
+ <x-ui.input
+ id="published_at"
+ name="published_at"
+ type="datetime-local"
+ label="Publish At"
+ wire:model.blur="published_at"
+ />
+ @error('published_at')
+ <span class="text-xs text-rose">{{ $message }}</span>
+ @enderror
+ </div>
+ </div>
 
  <x-ui.panel padding="md" class="bg-cream/50">
  <x-ui.label for="media">Media Uploads</x-ui.label>

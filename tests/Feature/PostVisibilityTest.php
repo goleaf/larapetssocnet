@@ -24,6 +24,52 @@ it('direct url access returns 403 for denied visibility and 200 for allowed', fu
     $this->actingAs($stranger)->get(route('posts.show', $privatePost))->assertForbidden();
 });
 
+it('scheduled posts are hidden before publish time', function (): void {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+    $viewer->follow($author);
+    $author->approveFollowRequest($viewer);
+
+    $scheduled = Post::factory()->for($author)->create([
+        'status' => \App\Enums\PostStatus::Scheduled->value,
+        'published_at' => now()->addHour(),
+        'visibility' => Post::VISIBILITY_FOLLOWERS,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('posts.show', $scheduled))
+        ->assertForbidden();
+});
+
+it('draft posts are only visible to the owner', function (): void {
+    $author = User::factory()->create();
+    $other = User::factory()->create();
+
+    $draft = Post::factory()->for($author)->create([
+        'status' => \App\Enums\PostStatus::Draft->value,
+        'published_at' => null,
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($author)->get(route('posts.show', $draft))->assertOk();
+    $this->actingAs($other)->get(route('posts.show', $draft))->assertForbidden();
+});
+
+it('blocked users cannot access public posts', function (): void {
+    $author = User::factory()->create();
+    $blocked = User::factory()->create();
+
+    $author->block($blocked);
+
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($blocked)
+        ->get(route('posts.show', $post))
+        ->assertForbidden();
+});
+
 it('post create accepts valid visibilities and defaults to public', function (): void {
     $user = User::factory()->create();
 
@@ -63,7 +109,7 @@ it('visibility change preserves interaction counters', function (): void {
     $post = Post::factory()->for($user)->create([
         'visibility' => Post::VISIBILITY_PUBLIC,
         'likes_count' => 3,
-        'comments_count' => 2,
+        'comments_count' => 0,
     ]);
 
     Comment::factory()->count(2)->for($post)->for($user)->create();

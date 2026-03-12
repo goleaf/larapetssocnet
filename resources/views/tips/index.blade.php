@@ -2,7 +2,7 @@
  <x-slot name="header">
  <x-ui.page-header title="Pet Care Tips" description="Discover, filter, and share practical pet advice." icon="📚">
  <x-slot name="action">
- <a href="{{ route('tips.create') }}" class="text-sm text-indigo-600 hover:text-indigo-800">Share a tip</a>
+ <x-ui.button :href="route('tips.create')" variant="ghost" size="sm">Share a tip</x-ui.button>
  </x-slot>
  </x-ui.page-header>
  </x-slot>
@@ -10,56 +10,59 @@
  <div class="py-8">
  <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
  @if (session('status'))
- <div class="rounded-md bg-green-50 p-4 text-sm text-green-700">
- {{ session('status') }}
- </div>
+ <x-ui.alert type="success">{{ session('status') }}</x-ui.alert>
  @endif
 
- <div class="bg-white shadow-sm sm:rounded-lg p-6">
+ <x-ui.card padding="lg">
  <form method="GET" action="{{ route('tips.index') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
  <div class="lg:col-span-2">
- <x-input-label for="q" value="Search"/>
- <x-text-input id="q" name="q" class="mt-1 block w-full" :value="$filters['q']" placeholder="Title or content"/>
+ <x-ui.input id="q" name="q" label="Search" :value="$filters['q']" placeholder="Title or content"/>
  </div>
 
  <div>
- <x-input-label for="species" value="Species"/>
- <x-text-input id="species" name="species" class="mt-1 block w-full" :value="$filters['species']"/>
+ <x-ui.input id="species" name="species" label="Species" :value="$filters['species']"/>
  </div>
 
  <div>
- <x-input-label for="sort" value="Sort"/>
- <select id="sort" name="sort" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
- <option value="latest" @selected($filters['sort'] ==='latest')>Latest</option>
- <option value="oldest" @selected($filters['sort'] ==='oldest')>Oldest</option>
- <option value="helpful" @selected($filters['sort'] ==='helpful')>Most helpful</option>
- </select>
+ <x-ui.select
+ id="sort"
+ name="sort"
+ label="Sort"
+ :options="[
+ 'latest' => 'Latest',
+ 'oldest' => 'Oldest',
+ 'helpful' => 'Most helpful',
+ ]"
+ :selected="$filters['sort']"
+ />
  </div>
 
  <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-end gap-2">
  <x-ui.button variant="primary">Apply filters</x-ui.button>
- <a href="{{ route('tips.index') }}" class="text-sm text-gray-600 hover:text-gray-900">Reset</a>
+ <x-ui.button :href="route('tips.index')" variant="ghost">Reset</x-ui.button>
  </div>
  </form>
- </div>
+ </x-ui.card>
 
  @if($tips->isEmpty())
- <div class="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+ <x-ui.card padding="lg" class="border-dashed">
+ <div class="text-center text-sm text-gray-500">
  No tips found.
  </div>
+ </x-ui.card>
 	 @else
 	 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
 	 @foreach($tips as $tip)
-	 <article class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+ <x-ui.card padding="md">
 	 <div class="flex items-center gap-2">
 	 @if((bool) data_get($tip, 'is_approved', true))
-	 <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Approved</span>
+ <x-ui.badge variant="success" size="sm">Approved</x-ui.badge>
 	 @else
-	 <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">Pending approval</span>
+ <x-ui.badge variant="warning" size="sm">Pending approval</x-ui.badge>
 	 @endif
 
  @if(!empty($tip->species))
- <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ $tip->species }}</span>
+ <x-ui.badge variant="default" size="sm">{{ $tip->species }}</x-ui.badge>
  @endif
  </div>
 
@@ -68,9 +71,9 @@
 
 	 <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
 	 <span>{{ data_get($tip,'helpful_count', 0) }} helpful</span>
-	 <a href="{{ route('tips.show', $tip->slug ?? $tip->getKey()) }}" class="text-indigo-600 hover:text-indigo-800">Read tip</a>
+ <x-ui.button :href="route('tips.show', $tip->slug ?? $tip->getKey())" variant="ghost" size="sm">Read tip</x-ui.button>
 	 </div>
-	 </article>
+ </x-ui.card>
 	 @endforeach
  </div>
 

@@ -2,10 +2,17 @@
 
 namespace App\Services;
 
+use App\Support\Hashtags\HashtagNormalizer;
+use App\Support\Hashtags\HashtagParser;
 use Mews\Purifier\Facades\Purifier;
 
 class ContentService
 {
+    public function __construct(
+        private readonly HashtagParser $hashtags,
+        private readonly HashtagNormalizer $normalizer
+    ) {}
+
     public function process(string $input): string
     {
         $html = $this->purify($input);
@@ -45,7 +52,18 @@ class ContentService
 
     private function linkHashtags(string $input): string
     {
-        return preg_replace('/#([a-zA-Z0-9_]{1,50})/u', '<a href="/hashtags/$1" class="hashtag">#$1</a>', $input);
+        $pattern = $this->hashtags->pattern();
+
+        return preg_replace_callback($pattern, function (array $matches): string {
+            $rawTag = $matches[1] ?? '';
+            $normalized = $this->normalizer->normalize($rawTag);
+
+            if (! $normalized) {
+                return $matches[0] ?? '';
+            }
+
+            return '<a href="/hashtags/'.$normalized.'" class="hashtag">#'.$rawTag.'</a>';
+        }, $input);
     }
 
     private function linkUrls(string $input): string

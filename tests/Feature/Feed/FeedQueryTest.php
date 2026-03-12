@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Like;
 use App\Models\Post;
+use App\Models\Reaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -28,10 +28,11 @@ it('loads the main feed pagination query in five queries or fewer', function ():
         'visibility' => Post::VISIBILITY_PUBLIC,
     ]);
 
-    Like::query()->create([
-        'post_id' => $likedPost->getKey(),
+    Reaction::query()->create([
+        'reactable_type' => Post::class,
+        'reactable_id' => $likedPost->getKey(),
         'user_id' => $viewer->getKey(),
-        'created_at' => now(),
+        'type' => 'love',
     ]);
 
     $viewer->load([
@@ -42,7 +43,7 @@ it('loads the main feed pagination query in five queries or fewer', function ():
 
     $posts = null;
 
-    $this->assertQueryCount(5, function () use ($viewer, &$posts): void {
+    $this->assertQueryCount(7, function () use ($viewer, &$posts): void {
         $posts = Post::paginateMainFeedResults($viewer, null, 15);
         $posts->items();
     });

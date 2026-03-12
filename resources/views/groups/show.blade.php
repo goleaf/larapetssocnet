@@ -1,67 +1,17 @@
 <x-app-layout>
  @php
  $groupRouteKey = $groupRouteKey ?? (filled((string) ($group->slug ??'')) ? $group->slug : $group->id);
- $privacyValue = strtolower((string) ($group->privacy ?? (($group->is_private ?? false) ?'private':'public')));
- $privacyLabel = \Illuminate\Support\Str::headline($privacyValue);
- $speciesLabel = \Illuminate\Support\Str::headline(str_replace(['-','_'],'', (string) data_get($group,'species','all pets')));
-
- $viewer = auth()->user();
- $membershipStatus = strtolower((string) data_get($membership,'status',''));
- $isPendingMembership = $membership && $membershipStatus ==='pending';
-
- $canPost = $isMember || $isAdmin || $isOwner;
- $canSeePosts = $privacyValue !=='private'|| $canPost;
-
- $membersUrl = Route::has('groups.members')
- ? route('groups.members', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members']);
-
- $requestsUrl = Route::has('groups.requests')
- ? route('groups.requests', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members','request_tab'=>'pending']);
+ $privacyValue = $privacyValue ?? strtolower((string) $group->normalizedPrivacy());
+ $privacyLabel = $privacyLabel ?? \Illuminate\Support\Str::headline($privacyValue);
+ $speciesLabel = $speciesLabel ?? \Illuminate\Support\Str::headline(str_replace(['-','_'],'', (string) data_get($group,'species','all pets')));
+ $canPost = $canPost ?? ($isMember || $isAdmin || $isOwner);
+ $canSeePosts = $canSeePosts ?? ($canViewPosts ?? ($privacyValue !=='private' || $canPost));
+ $membersUrl = $membersUrl ?? route('groups.members.index', $groupRouteKey);
+ $requestsUrl = $requestsUrl ?? route('groups.requests.index', $groupRouteKey);
 
  $coverUrl = (string) (data_get($group,'cover_photo_url') ?: data_get($group,'cover_image_path'));
  $avatarUrl = (string) (data_get($group,'avatar_url') ?: data_get($group,'profile_photo_url'));
-
- $sidebarMembers = collect();
-
- if ($activeMembers instanceof \Illuminate\Pagination\LengthAwarePaginator) {
- $sidebarMembers = $activeMembers->getCollection()->take(7);
- }
-
- if ($sidebarMembers->isEmpty() && class_exists(\App\Models\GroupMember::class)) {
- $sidebarMembers = \App\Models\GroupMember::query()
- ->where('group_id', $group->id)
- ->where(function ($query): void {
- $query->whereNull('status')->orWhereIn('status', ['active','accepted']);
- })
- ->with('user:id,name,username')
- ->orderByRaw("CASE role WHEN'owner'THEN 1 WHEN'admin'THEN 2 WHEN'moderator'THEN 3 ELSE 4 END")
- ->orderBy('joined_at')
- ->limit(7)
- ->get();
- }
-
- $pendingCount = $canManageMembers
- ? ($pendingMembers instanceof \Illuminate\Support\Collection
- ? $pendingMembers->count()
- : \App\Models\GroupMember::query()->where('group_id', $group->id)->where('status','pending')->count())
- : 0;
-
- $membersForPage = $activeMembers;
-
- if ($activeTab ==='members'&& ! ($membersForPage instanceof \Illuminate\Pagination\LengthAwarePaginator)) {
- $membersForPage = \App\Models\GroupMember::query()
- ->where('group_id', $group->id)
- ->where(function ($query): void {
- $query->whereNull('status')->orWhereIn('status', ['active','accepted']);
- })
- ->with('user:id,name,username')
- ->orderByRaw("CASE role WHEN'owner'THEN 1 WHEN'admin'THEN 2 WHEN'moderator'THEN 3 ELSE 4 END")
- ->orderBy('joined_at')
- ->paginate(20)
- ->withQueryString();
- }
+ $descriptionHtml = (string) (data_get($group, 'description_html') ?: e((string) data_get($group, 'description', '')));
  @endphp
 
  <x-slot name="header">
@@ -81,6 +31,11 @@
  </form>
  @elseif ($isPendingMembership)
  <x-ui.badge variant="warning" size="md" :dot="true">Request Pending</x-ui.badge>
+ <form method="POST" action="{{ route('groups.requests.cancel', $groupRouteKey) }}">
+ @csrf
+ @method('DELETE')
+ <x-ui.button type="submit" variant="ghost" size="sm">Cancel</x-ui.button>
+ </form>
  @elseif ($privacyValue !=='secret')
  <form method="POST" action="{{ route('groups.join', $groupRouteKey) }}">
  @csrf
@@ -119,7 +74,7 @@
  <x-ui.badge variant="default">{{ $eventsCount }} events</x-ui.badge>
  </div>
  @if (filled((string) $group->description))
- <p class="mt-2 text-sm text-fur">{{ $group->description }}</p>
+ <p class="mt-2 text-sm text-fur">{!! $descriptionHtml !!}</p>
  @endif
  </div>
  </div>
@@ -136,7 +91,7 @@
  }
  $navTabs[] = ['label'=>'About','value'=>'about'];
  
- $currentActivityTab = $activeTab ==='members'&& request()->string('request_tab')->toString() ==='pending'?'pending': $activeTab;
+ $currentActivityTab = $activeTab ==='members'&& $requestTab ==='pending'?'pending': $activeTab;
  @endphp
 
  <div class="mb-6">
@@ -157,7 +112,7 @@
  <x-ui.card padding="lg" class="space-y-6">
  <div>
  <x-ui.section title="About this group" tight />
- <p class="text-sm text-fur">{{ $group->description ?:'No description yet.'}}</p>
+ <p class="text-sm text-fur">{!! $descriptionHtml !=='' ? $descriptionHtml : 'No description yet.' !!}</p>
  </div>
 
  <x-ui.divider />
@@ -203,7 +158,7 @@
  @endif
  </x-ui.card>
  @elseif ($activeTab ==='members')
- @if (request()->string('request_tab')->toString() ==='pending'&& $canManageMembers)
+ @if ($requestTab ==='pending'&& $canManageMembers)
  <x-ui.card padding="lg">
  <x-ui.card-header title="Pending Requests"/>
  <div class="mt-4 space-y-3">
@@ -215,9 +170,8 @@
  @csrf
  <x-ui.button type="submit" variant="success" size="sm">Approve</x-ui.button>
  </form>
- <form method="POST" action="{{ route('groups.members.reject', ['group'=> $groupRouteKey,'membership'=> $pending->id]) }}">
+ <form method="POST" action="{{ route('groups.requests.reject', ['group'=> $groupRouteKey,'membership'=> $pending->id]) }}">
  @csrf
- @method('DELETE')
  <x-ui.button type="submit" variant="ghost" size="sm">Reject</x-ui.button>
  </form>
  </div>
@@ -234,32 +188,34 @@
  <div class="mt-4 space-y-3">
  @forelse ($membersForPage ?? [] as $memberItem)
  @php
- $roleValue = strtolower((string) ($memberItem->role ??'member'));
+ $roleValue = strtolower((string) ($memberItem->role?->value ??'member'));
  @endphp
  <x-ui.user-row :user="$memberItem->user" :role="$roleValue" class="border border-whisker/30 rounded-xl px-3 bg-warm-white">
  <x-slot:action>
  @if ($canManageMembers && $roleValue !=='owner')
- <div x-data="dropdownState()" class="relative">
- <x-ui.button variant="ghost" size="sm" @click="toggle()">Manage ▾</x-ui.button>
- 
- <div x-show="open" x-cloak @click.outside="close()" class="absolute right-0 mt-1 min-w-[200px] bg-warm-white border border-whisker/30 shadow-card-hover rounded-lg z-30 p-2 space-y-2">
- <form method="POST" action="{{ route('groups.members.role', ['group'=> $groupRouteKey,'membership'=> $memberItem->id]) }}" class="flex items-center gap-2">
+ <div class="flex items-center gap-2">
+ @if (in_array($roleValue, ['member','moderator'], true))
+ <form method="POST" action="{{ route('groups.members.promote', ['group'=> $groupRouteKey,'membership'=> $memberItem->id]) }}">
  @csrf
- @method('PATCH')
- <select name="role" class="block w-full rounded-md border-whisker/50 py-1.5 pl-3 pr-8 text-sm text-bark focus:border-paw focus:ring-paw bg-cream">
- <option value="member" @selected($roleValue ==='member')>Member</option>
- <option value="moderator" @selected($roleValue ==='moderator')>Moderator</option>
- <option value="admin" @selected($roleValue ==='admin')>Admin</option>
- </select>
- <x-ui.icon-button type="submit" variant="ghost" size="sm" title="Save">✓</x-ui.icon-button>
+ <x-ui.button type="submit" variant="ghost" size="sm">Promote</x-ui.button>
  </form>
- <x-ui.divider class="!my-2"/>
- <form method="POST" action="{{ route('groups.members.ban', ['group'=> $groupRouteKey,'membership'=> $memberItem->id]) }}">
+ @endif
+ @if (in_array($roleValue, ['admin','moderator'], true))
+ <form method="POST" action="{{ route('groups.members.demote', ['group'=> $groupRouteKey,'membership'=> $memberItem->id]) }}">
  @csrf
- @method('PATCH')
- <x-ui.button type="submit" variant="danger" :full="true" size="sm">Ban Member</x-ui.button>
+ <x-ui.button type="submit" variant="ghost" size="sm">Demote</x-ui.button>
  </form>
- </div>
+ @endif
+ <form method="POST" action="{{ route('groups.members.remove', ['group'=> $groupRouteKey,'membership'=> $memberItem->id]) }}">
+ @csrf
+ @method('DELETE')
+ <x-ui.button type="submit" variant="danger" size="sm">Remove</x-ui.button>
+ </form>
+ <form method="POST" action="{{ route('groups.bans.store', ['group'=> $groupRouteKey]) }}">
+ @csrf
+ <input type="hidden" name="user_id" value="{{ $memberItem->user_id }}" />
+ <x-ui.button type="submit" variant="ghost" size="sm">Ban</x-ui.button>
+ </form>
  </div>
  @endif
  </x-slot:action>
@@ -278,10 +234,11 @@
  @if ($canPost)
  <x-ui.card padding="lg">
  <x-ui.card-header title="Share in this group"/>
- <form method="POST" action="{{ route('groups.posts.attach', $groupRouteKey) }}" class="space-y-4">
+ <form method="POST" action="{{ route('groups.posts.store', $groupRouteKey) }}" class="space-y-4" enctype="multipart/form-data">
  @csrf
  <x-ui.input name="post_id" type="number" label="Attach Existing Post ID (optional)" :value="old('post_id')" min="1"/>
  <x-ui.textarea name="body" label="Or create new post" rows="3" placeholder="Write something for this group...">{{ old('body') }}</x-ui.textarea>
+ <x-ui.file-upload name="media[]" label="Media (optional)" accept="image/*,video/*" multiple />
  <div class="flex justify-end">
  <x-ui.button type="submit" variant="primary">Publish</x-ui.button>
  </div>
@@ -297,7 +254,7 @@
  @else
  <div class="space-y-4">
  @forelse ($feedPosts ?? [] as $post)
- @include('partials.post-card', ['post'=> $post,'viewer'=> $viewer])
+    <x-post-card :post="$post" :viewer="$viewer"/>
  @empty
  <x-ui.empty-state
  title="No Group Posts Yet"
@@ -343,7 +300,7 @@
 
  <div class="space-y-1">
  @forelse ($sidebarMembers as $memberItem)
- <x-ui.user-row :user="$memberItem->user" :role="strtolower((string) ($memberItem->role ??'member'))" class="border border-whisker/30 rounded-xl px-2.5 bg-warm-white !py-1"/>
+ <x-ui.user-row :user="$memberItem->user" :role="strtolower((string) ($memberItem->role?->value ??'member'))" class="border border-whisker/30 rounded-xl px-2.5 bg-warm-white !py-1"/>
  @empty
  <p class="text-sm text-fur">No members yet.</p>
  @endforelse

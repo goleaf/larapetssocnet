@@ -5,16 +5,20 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ReactToCommentRequest;
 use App\Models\Comment;
 use App\Models\Post;
+use App\Models\Reaction;
 use Illuminate\Http\JsonResponse;
 
 class CommentReactionController extends Controller
 {
     public function react(ReactToCommentRequest $request, Post $post, Comment $comment): JsonResponse
     {
-        abort_unless($comment->post_id === $post->id, 404);
+        abort_unless((int) $comment->post_id === (int) $post->getKey(), 404);
         abort_unless($post->canBeViewedBy($request->user()), 403);
+        abort_if($comment->trashed(), 404);
+        $this->authorize('react', $comment);
+        $this->authorize('react', $comment);
 
-        $type = $request->validated('type');
+        $type = Reaction::normalizeType($request->validated('type'));
         $reaction = $comment->toggleReaction($request->user(), $type);
         $comment->refresh();
 
@@ -33,8 +37,11 @@ class CommentReactionController extends Controller
         $post = $comment->post;
 
         abort_unless($post !== null && $post->canBeViewedBy($request->user()), 403);
+        abort_if($comment->trashed(), 404);
+        $this->authorize('react', $comment);
+        $this->authorize('react', $comment);
 
-        $type = $request->validated('type');
+        $type = Reaction::normalizeType($request->validated('type'));
         $reaction = $comment->toggleReaction($request->user(), $type);
         $comment->refresh();
 

@@ -4,26 +4,10 @@
 
  $canManage = (bool) ($canManageMembers ?? $isAdmin ?? $isOwner ?? false);
 
- $membersPaginator = $members
- ?? $activeMembers
- ?? \App\Models\GroupMember::query()
- ->where('group_id', $group->id)
- ->where(function ($query): void {
- $query->whereNull('status')->orWhereIn('status', ['active','accepted']);
- })
- ->with('user:id,name,username')
- ->orderByRaw("CASE role WHEN'owner'THEN 1 WHEN'admin'THEN 2 WHEN'moderator'THEN 3 ELSE 4 END")
- ->orderBy('joined_at')
- ->paginate(20)
- ->withQueryString();
+ $membersPaginator = $members ?? $activeMembers ?? collect();
 
- $membersUrl = Route::has('groups.members')
- ? route('groups.members', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members']);
-
- $requestsUrl = Route::has('groups.requests')
- ? route('groups.requests', $groupRouteKey)
- : route('groups.show', ['group'=> $groupRouteKey,'tab'=>'members','request_tab'=>'pending']);
+ $membersUrl = route('groups.members.index', $groupRouteKey);
+ $requestsUrl = route('groups.requests.index', $groupRouteKey);
  @endphp
 
  <x-slot name="header">
@@ -52,7 +36,7 @@
  <div class="space-y-3">
  @forelse ($membersPaginator as $member)
  @php
- $roleValue = strtolower((string) ($member->role ??'member'));
+ $roleValue = strtolower((string) ($member->role?->value ??'member'));
  @endphp
 
  <x-ui.user-row :user="$member->user" :role="$roleValue"
@@ -80,11 +64,15 @@
  </form>
  <x-ui.divider class="!my-2"/>
  <form method="POST"
- action="{{ route('groups.members.ban', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}">
+ action="{{ route('groups.bans.store', ['group'=> $groupRouteKey]) }}">
  @csrf
- @method('PATCH')
- <x-ui.button type="submit" variant="danger" :full="true" size="sm">Ban
- Member</x-ui.button>
+ <input type="hidden" name="user_id" value="{{ $member->user_id }}"/>
+ <x-ui.button type="submit" variant="danger" :full="true" size="sm">Ban Member</x-ui.button>
+ </form>
+ <form method="POST" action="{{ route('groups.members.remove', ['group'=> $groupRouteKey,'membership'=> $member->id]) }}">
+ @csrf
+ @method('DELETE')
+ <x-ui.button type="submit" variant="ghost" :full="true" size="sm">Remove Member</x-ui.button>
  </form>
  </div>
  </div>

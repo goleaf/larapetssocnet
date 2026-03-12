@@ -40,7 +40,8 @@ class SavedPost extends Model
         return $query->with([
             'post' => fn ($postQuery) => $postQuery
                 ->with(['author', 'hashtags'])
-                ->visibleTo($viewer),
+                ->visibleTo($viewer)
+                ->withListEngagement((int) $viewer->getKey()),
         ]);
     }
 

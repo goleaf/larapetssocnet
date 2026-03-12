@@ -2,33 +2,48 @@
 
 namespace App\Services;
 
+use App\Enums\GroupMemberRole;
+use App\Enums\GroupMemberStatus;
 use App\Models\Group;
 use App\Models\GroupBan;
 use App\Models\GroupJoinRequest;
 use App\Models\GroupMember;
 use App\Models\User;
+use App\Notifications\GroupJoinApproved;
+use App\Notifications\GroupJoinRequest as GroupJoinRequestNotification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class GroupService
 {
-    private const ACTIVE_STATUSES = ['active', 'accepted'];
+    /**
+     * @var list<string>
+     */
+    private const ACTIVE_STATUSES = [
+        GroupMemberStatus::Active->value,
+        GroupMemberStatus::Accepted->value,
+    ];
 
     private ?bool $hasGroupJoinRequestsTable = null;
 
     private ?bool $hasGroupBansTable = null;
 
-    public function join(User|Group $first, User|Group $second): GroupMember
+    public function __construct(
+        private readonly SyncGroupCountersService $counters,
+    ) {}
+
+    public function join(User|Group $first, User|Group $second, ?string $message = null): GroupMember
     {
         [$user, $group] = $this->resolveUserAndGroup($first, $second);
 
-        return DB::transaction(function () use ($group, $user): GroupMember {
+        return DB::transaction(function () use ($group, $user, $message): GroupMember {
             $membership = $this->membershipForUser($group, (int) $user->getKey(), true);
 
-            if ($membership !== null && (string) $membership->status === 'banned') {
+            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
                 throw $this->validation('You are banned from this group.');
             }
 
@@ -44,7 +59,7 @@ class GroupService
                 return $membership;
             }
 
-            if ($membership !== null && (string) $membership->status === 'pending') {
+            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value) {
                 return $membership;
             }
 
@@ -52,11 +67,21 @@ class GroupService
                 throw $this->validation('Secret groups cannot be joined directly.');
             }
 
-            $status = $this->privacy($group) === 'private' ? 'pending' : 'active';
+            if ($membership
+                && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Rejected->value
+                && $membership->updated_at
+                && $membership->updated_at->greaterThan(now()->subDays(7))) {
+                throw $this->validation('You can request to join again 7 days after a rejection.');
+            }
+
+            $status = $this->privacy($group) === 'private'
+                ? GroupMemberStatus::Pending->value
+                : GroupMemberStatus::Active->value;
+
             $payload = [
-                'role' => 'member',
+                'role' => GroupMemberRole::Member->value,
                 'status' => $status,
-                'joined_at' => $status === 'active' ? now() : null,
+                'joined_at' => $status === GroupMemberStatus::Active->value ? now() : null,
             ];
 
             if ($membership !== null) {
@@ -68,7 +93,7 @@ class GroupService
                 ]);
             }
 
-            if ($status === 'pending' && $this->hasGroupJoinRequestsTable()) {
+            if ($status === GroupMemberStatus::Pending->value && $this->hasGroupJoinRequestsTable()) {
                 GroupJoinRequest::query()->updateOrCreate(
                     [
                         'group_id' => $group->getKey(),
@@ -78,15 +103,24 @@ class GroupService
                         'status' => 'pending',
                         'reviewed_by' => null,
                         'reviewed_at' => null,
+                        'message' => $message,
                     ]
                 );
             }
 
-            if ($status === 'active' && $this->hasGroupJoinRequestsTable()) {
+            if ($status === GroupMemberStatus::Active->value && $this->hasGroupJoinRequestsTable()) {
                 GroupJoinRequest::query()
                     ->where('group_id', $group->getKey())
                     ->where('user_id', $user->getKey())
                     ->delete();
+            }
+
+            $this->counters->syncMembersCount($group);
+
+            if ($status === GroupMemberStatus::Pending->value) {
+                DB::afterCommit(function () use ($group, $user): void {
+                    $this->notifyJoinRequest($group, $user);
+                });
             }
 
             return $membership->fresh();
@@ -103,7 +137,8 @@ class GroupService
                 return false;
             }
 
-            if ((int) $this->ownerId($group) === (int) $user->getKey() || (string) $membership->role === 'owner') {
+            if ((int) $this->ownerId($group) === (int) $user->getKey()
+                || (string) ($membership->role?->value ?? '') === GroupMemberRole::Owner->value) {
                 throw $this->validation('Group owners cannot leave the group.');
             }
 
@@ -116,6 +151,39 @@ class GroupService
                     ->delete();
             }
 
+            if ($deleted) {
+                $this->counters->syncMembersCount($group);
+            }
+
+            return $deleted;
+        });
+    }
+
+    public function cancelRequest(User $user, Group $group): bool
+    {
+        return DB::transaction(function () use ($user, $group): bool {
+            $membership = $this->membershipForUser($group, (int) $user->getKey(), true);
+            if ($membership === null) {
+                return false;
+            }
+
+            if ((string) ($membership->status?->value ?? '') !== GroupMemberStatus::Pending->value) {
+                return false;
+            }
+
+            $deleted = (bool) $membership->delete();
+
+            if ($this->hasGroupJoinRequestsTable()) {
+                GroupJoinRequest::query()
+                    ->where('group_id', $group->getKey())
+                    ->where('user_id', $user->getKey())
+                    ->delete();
+            }
+
+            if ($deleted) {
+                $this->counters->syncMembersCount($group);
+            }
+
             return $deleted;
         });
     }
@@ -126,14 +194,14 @@ class GroupService
             $targetMembership = $this->resolveMembership($group, $membership, true);
             $this->assertCanManageMembership($actor, $group, $targetMembership);
 
-            if ((string) $targetMembership->status !== 'pending') {
+            if ((string) ($targetMembership->status?->value ?? '') !== GroupMemberStatus::Pending->value) {
                 return $targetMembership;
             }
 
             $targetMembership->forceFill([
-                'status' => 'active',
+                'status' => GroupMemberStatus::Active->value,
                 'joined_at' => $targetMembership->joined_at ?: now(),
-                'role' => 'member',
+                'role' => GroupMemberRole::Member->value,
             ])->save();
 
             if ($this->hasGroupJoinRequestsTable()) {
@@ -147,6 +215,12 @@ class GroupService
                     ]);
             }
 
+            $this->counters->syncMembersCount($group);
+
+            DB::afterCommit(function () use ($actor, $group, $targetMembership): void {
+                $this->notifyJoinApproved($actor, $group, $targetMembership);
+            });
+
             return $targetMembership->fresh();
         });
     }
@@ -157,14 +231,14 @@ class GroupService
             $targetMembership = $this->resolveMembership($group, $membership, true);
             $this->assertCanManageMembership($actor, $group, $targetMembership);
 
-            if ((string) $targetMembership->status !== 'pending') {
+            if ((string) ($targetMembership->status?->value ?? '') !== GroupMemberStatus::Pending->value) {
                 return $targetMembership;
             }
 
             $targetMembership->forceFill([
-                'status' => 'rejected',
+                'status' => GroupMemberStatus::Rejected->value,
                 'joined_at' => null,
-                'role' => 'member',
+                'role' => GroupMemberRole::Member->value,
             ])->save();
 
             if ($this->hasGroupJoinRequestsTable()) {
@@ -176,6 +250,73 @@ class GroupService
                         'reviewed_by' => $actor->getKey(),
                         'reviewed_at' => now(),
                     ]);
+            }
+
+            $this->counters->syncMembersCount($group);
+
+            return $targetMembership->fresh();
+        });
+    }
+
+    public function removeMember(User $actor, Group $group, GroupMember|int $membership): bool
+    {
+        return DB::transaction(function () use ($actor, $group, $membership): bool {
+            $targetMembership = $this->resolveMembership($group, $membership, true);
+            $this->assertCanManageMembership($actor, $group, $targetMembership);
+
+            if ((int) $targetMembership->user_id === (int) $actor->getKey()) {
+                throw $this->validation('Use leave group to remove yourself.');
+            }
+
+            $deleted = (bool) $targetMembership->delete();
+
+            if ($this->hasGroupJoinRequestsTable()) {
+                GroupJoinRequest::query()
+                    ->where('group_id', $group->getKey())
+                    ->where('user_id', $targetMembership->user_id)
+                    ->delete();
+            }
+
+            if ($deleted) {
+                $this->counters->syncMembersCount($group);
+            }
+
+            return $deleted;
+        });
+    }
+
+    public function updateRole(User $actor, Group $group, GroupMember|int $membership, string $role): GroupMember
+    {
+        return DB::transaction(function () use ($actor, $group, $membership, $role): GroupMember {
+            $targetMembership = $this->resolveMembership($group, $membership, true);
+            $this->assertPromotableMembership($targetMembership);
+
+            if (! in_array($role, GroupMemberRole::values(), true)) {
+                throw $this->validation('Invalid role requested.');
+            }
+
+            if ($role === GroupMemberRole::Owner->value) {
+                throw new AuthorizationException('The owner cannot be assigned via member management.');
+            }
+
+            $actorRank = $this->actorRank($actor, $group, true);
+            $targetRank = $this->roleRank((string) ($targetMembership->role?->value ?? ''));
+            $desiredRank = $this->roleRank($role);
+
+            if ($actorRank <= $targetRank) {
+                throw new AuthorizationException('You are not allowed to manage this member.');
+            }
+
+            if ($actorRank < 4 && $role === GroupMemberRole::Admin->value) {
+                throw new AuthorizationException('Only the group owner can promote members to admin.');
+            }
+
+            if ($actorRank <= $desiredRank) {
+                throw new AuthorizationException('You are not allowed to assign this role.');
+            }
+
+            if ((string) ($targetMembership->role?->value ?? '') !== $role) {
+                $targetMembership->forceFill(['role' => $role])->save();
             }
 
             return $targetMembership->fresh();
@@ -201,19 +342,19 @@ class GroupService
             }
 
             $membership = $this->membershipForUser($group, $targetUserId, true);
-            $targetRank = $this->roleRank((string) $membership?->role);
+            $targetRank = $this->roleRank((string) ($membership?->role?->value ?? ''));
 
             if ($membership !== null && $actorRank <= $targetRank) {
                 throw new AuthorizationException('You are not allowed to ban this member.');
             }
 
-            if ($membership !== null && (string) $membership->status === 'banned') {
+            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
                 return $membership;
             }
 
             $payload = [
-                'role' => 'member',
-                'status' => 'banned',
+                'role' => GroupMemberRole::Member->value,
+                'status' => GroupMemberStatus::Banned->value,
                 'joined_at' => null,
                 'invited_by' => $actor->getKey(),
             ];
@@ -255,6 +396,8 @@ class GroupService
                 );
             }
 
+            $this->counters->syncMembersCount($group);
+
             return $membership->fresh();
         });
     }
@@ -275,8 +418,8 @@ class GroupService
 
             $removed = false;
             $membership = $this->membershipForUser($group, $targetUserId, true);
-            if ($membership !== null && (string) $membership->status === 'banned') {
-                if ($actorRank <= $this->roleRank((string) $membership->role)) {
+            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
+                if ($actorRank <= $this->roleRank((string) ($membership->role?->value ?? ''))) {
                     throw new AuthorizationException('You are not allowed to unban this member.');
                 }
 
@@ -291,6 +434,10 @@ class GroupService
                     ->delete() > 0 || $removed;
             }
 
+            if ($removed) {
+                $this->counters->syncMembersCount($group);
+            }
+
             return $removed;
         });
     }
@@ -302,23 +449,23 @@ class GroupService
             $this->assertPromotableMembership($targetMembership);
 
             $actorRank = $this->actorRank($actor, $group, true);
-            $targetRank = $this->roleRank((string) $targetMembership->role);
+            $targetRank = $this->roleRank((string) ($targetMembership->role?->value ?? ''));
 
             if ($actorRank <= $targetRank) {
                 throw new AuthorizationException('You are not allowed to promote this member.');
             }
 
-            $nextRole = match ((string) $targetMembership->role) {
-                'member' => 'moderator',
-                'moderator' => 'admin',
-                default => 'admin',
+            $nextRole = match ((string) ($targetMembership->role?->value ?? '')) {
+                'member' => GroupMemberRole::Moderator->value,
+                'moderator' => GroupMemberRole::Admin->value,
+                default => GroupMemberRole::Admin->value,
             };
 
-            if ($nextRole === 'admin' && $actorRank < 4) {
+            if ($nextRole === GroupMemberRole::Admin->value && $actorRank < 4) {
                 throw new AuthorizationException('Only the group owner can promote members to admin.');
             }
 
-            if ((string) $targetMembership->role !== $nextRole) {
+            if ((string) ($targetMembership->role?->value ?? '') !== $nextRole) {
                 $targetMembership->forceFill(['role' => $nextRole])->save();
             }
 
@@ -333,19 +480,19 @@ class GroupService
             $this->assertPromotableMembership($targetMembership);
 
             $actorRank = $this->actorRank($actor, $group, true);
-            $targetRank = $this->roleRank((string) $targetMembership->role);
+            $targetRank = $this->roleRank((string) ($targetMembership->role?->value ?? ''));
 
             if ($actorRank <= $targetRank) {
                 throw new AuthorizationException('You are not allowed to demote this member.');
             }
 
-            $nextRole = match ((string) $targetMembership->role) {
-                'admin' => 'moderator',
-                'moderator' => 'member',
-                default => 'member',
+            $nextRole = match ((string) ($targetMembership->role?->value ?? '')) {
+                'admin' => GroupMemberRole::Moderator->value,
+                'moderator' => GroupMemberRole::Member->value,
+                default => GroupMemberRole::Member->value,
             };
 
-            if ((string) $targetMembership->role !== $nextRole) {
+            if ((string) ($targetMembership->role?->value ?? '') !== $nextRole) {
                 $targetMembership->forceFill(['role' => $nextRole])->save();
             }
 
@@ -365,7 +512,7 @@ class GroupService
         $isBannedMember = GroupMember::query()
             ->where('group_id', $group->getKey())
             ->where('user_id', $userId)
-            ->where('status', 'banned')
+            ->where('status', GroupMemberStatus::Banned->value)
             ->exists();
 
         if ($isBannedMember) {
@@ -460,12 +607,12 @@ class GroupService
 
     private function assertCanManageMembership(User $actor, Group $group, GroupMember $membership): void
     {
-        if ((string) $membership->role === 'owner') {
+        if ((string) ($membership->role?->value ?? '') === GroupMemberRole::Owner->value) {
             throw new AuthorizationException('The owner cannot be modified.');
         }
 
         $actorRank = $this->actorRank($actor, $group, true);
-        $targetRank = $this->roleRank((string) $membership->role);
+        $targetRank = $this->roleRank((string) ($membership->role?->value ?? ''));
 
         if ($actorRank <= $targetRank) {
             throw new AuthorizationException('You are not allowed to manage this member.');
@@ -478,7 +625,7 @@ class GroupService
             throw $this->validation('Only active members can be changed.');
         }
 
-        if ((string) $membership->role === 'owner') {
+        if ((string) ($membership->role?->value ?? '') === GroupMemberRole::Owner->value) {
             throw new AuthorizationException('The owner cannot be modified.');
         }
     }
@@ -504,15 +651,15 @@ class GroupService
 
         $membership = $query->first();
 
-        return $this->roleRank((string) $membership?->role);
+        return $this->roleRank((string) ($membership?->role?->value ?? ''));
     }
 
     private function roleRank(string $role): int
     {
         return match ($role) {
-            'owner' => 4,
-            'admin' => 3,
-            'moderator' => 2,
+            GroupMemberRole::Owner->value => 4,
+            GroupMemberRole::Admin->value => 3,
+            GroupMemberRole::Moderator->value => 2,
             default => 1,
         };
     }
@@ -533,7 +680,8 @@ class GroupService
     {
         $status = $membership->status;
 
-        return $status === null || in_array((string) $status, self::ACTIVE_STATUSES, true);
+        return $status === null
+            || in_array((string) ($status?->value ?? ''), self::ACTIVE_STATUSES, true);
     }
 
     private function privacy(Group $group): string
@@ -566,5 +714,42 @@ class GroupService
         return ValidationException::withMessages([
             'group' => $message,
         ]);
+    }
+
+    private function notifyJoinRequest(Group $group, User $requester): void
+    {
+        $recipientIds = collect([(int) $this->ownerId($group)])
+            ->filter(fn (?int $id): bool => $id !== null && $id > 0);
+
+        $adminIds = GroupMember::query()
+            ->forGroup((int) $group->getKey())
+            ->active()
+            ->where('role', GroupMemberRole::Admin->value)
+            ->pluck('user_id');
+
+        $recipientIds = $recipientIds->merge($adminIds)->unique()->values();
+
+        if ($recipientIds->isEmpty()) {
+            return;
+        }
+
+        $recipients = User::query()
+            ->whereIn('id', $recipientIds->all())
+            ->get(['id', 'name', 'username']);
+
+        Notification::send($recipients, new GroupJoinRequestNotification($requester, $group));
+    }
+
+    private function notifyJoinApproved(User $approver, Group $group, GroupMember $membership): void
+    {
+        $user = User::query()
+            ->whereKey($membership->user_id)
+            ->first(['id', 'name', 'username']);
+
+        if (! $user) {
+            return;
+        }
+
+        $user->notify(new GroupJoinApproved($approver, $group));
     }
 }

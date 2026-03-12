@@ -16,172 +16,59 @@
 
 <div class="grid gap-6 md:grid-cols-2">
  <div class="md:col-span-2">
- <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
- <input
- id="title"
- name="title"
- type="text"
- value="{{ old('title', $listing->title) }}"
- required
- maxlength="140"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('title')" class="mt-2"/>
+ <x-ui.input id="title" name="title" type="text" label="Title" :value="old('title', $listing->title)" required maxlength="140"/>
  </div>
 
  <div class="md:col-span-2">
- <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
- <textarea
- id="description"
- name="description"
- rows="6"
- required
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >{{ old('description', $listing->description) }}</textarea>
- <x-input-error :messages="$errors->get('description')" class="mt-2"/>
+ <x-ui.textarea id="description" name="description" rows="6" label="Description" :value="old('description', $listing->description)" required/>
  </div>
 
  <div>
- <label for="listing_type" class="block text-sm font-medium text-gray-700">Listing Type</label>
- <select
- id="listing_type"
- name="listing_type"
- required
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- @foreach ($typeOptions as $value => $label)
- <option value="{{ $value }}" @selected(old('listing_type', $listing->listing_type) === $value)>{{ $label }}</option>
- @endforeach
- </select>
- <x-input-error :messages="$errors->get('listing_type')" class="mt-2"/>
+ <x-ui.select id="listing_type" name="listing_type" label="Listing Type" :options="$typeOptions" :selected="old('listing_type', $listing->listing_type)" required/>
  </div>
 
  <div>
- <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
- <select
- id="status"
- name="status"
- required
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- @foreach ($statusOptions as $value => $label)
- <option value="{{ $value }}" @selected(old('status', $listing->status) === $value)>{{ $label }}</option>
- @endforeach
- </select>
- <x-input-error :messages="$errors->get('status')" class="mt-2"/>
+ <x-ui.select id="status" name="status" label="Status" :options="$statusOptions" :selected="old('status', $listing->status)" required/>
  </div>
 
  <div>
- <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
- <input
- id="price"
- name="price"
- type="number"
- step="0.01"
- min="0"
- value="{{ old('price', $listing->price) }}"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('price')" class="mt-2"/>
+ <x-ui.input id="price" name="price" type="number" step="0.01" min="0" label="Price" :value="old('price', $listing->price)"/>
  </div>
 
  <div>
- <label for="currency" class="block text-sm font-medium text-gray-700">Currency</label>
- <input
- id="currency"
- name="currency"
- type="text"
- maxlength="3"
- value="{{ old('currency', $listing->currency ?:'USD') }}"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm uppercase focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('currency')" class="mt-2"/>
+ <x-ui.input id="currency" name="currency" type="text" maxlength="3" label="Currency" :value="old('currency', $listing->currency ?: 'USD')" class="uppercase"/>
  </div>
 
  <div>
- <label for="location_text" class="block text-sm font-medium text-gray-700">Location</label>
- <input
- id="location_text"
- name="location_text"
- type="text"
- value="{{ old('location_text', $listing->location_text) }}"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('location_text')" class="mt-2"/>
+ <x-ui.input id="location_text" name="location_text" type="text" label="Location" :value="old('location_text', $listing->location_text)"/>
  </div>
 
  <div>
- <label for="pet_id" class="block text-sm font-medium text-gray-700">Pet ID (optional)</label>
- <input
- id="pet_id"
- name="pet_id"
- type="number"
- min="1"
- value="{{ old('pet_id', $listing->pet_id) }}"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('pet_id')" class="mt-2"/>
+ <x-ui.input id="pet_id" name="pet_id" type="number" min="1" label="Pet ID (optional)" :value="old('pet_id', $listing->pet_id)"/>
  </div>
 
  <div>
- <label for="contact_phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
- <input
- id="contact_phone"
- name="contact_phone"
- type="text"
- value="{{ old('contact_phone', $listing->contact_phone) }}"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('contact_phone')" class="mt-2"/>
+ <x-ui.input id="contact_phone" name="contact_phone" type="text" label="Contact Phone" :value="old('contact_phone', $listing->contact_phone)"/>
  </div>
 
  <div>
- <label for="contact_email" class="block text-sm font-medium text-gray-700">Contact Email</label>
- <input
- id="contact_email"
- name="contact_email"
- type="email"
- value="{{ old('contact_email', $listing->contact_email) }}"
- class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
- >
- <x-input-error :messages="$errors->get('contact_email')" class="mt-2"/>
+ <x-ui.input id="contact_email" name="contact_email" type="email" label="Contact Email" :value="old('contact_email', $listing->contact_email)"/>
  </div>
 
  <div class="md:col-span-2">
- <label for="cover_image" class="block text-sm font-medium text-gray-700">Cover Image</label>
- <input
- id="cover_image"
- name="cover_image"
- type="file"
- accept="image/*"
- class="mt-1 block w-full text-sm text-gray-700"
- >
- <x-input-error :messages="$errors->get('cover_image')" class="mt-2"/>
+ <x-ui.file-upload id="cover_image" name="cover_image" label="Cover Image" accept="image/*"/>
 
  @if ($listing->exists && $listing->getFirstMediaUrl('cover'))
  <div class="mt-3 overflow-hidden rounded-lg border border-gray-200">
  <img src="{{ $listing->getFirstMediaUrl('cover') }}" alt="Current cover" class="h-48 w-full object-cover">
  </div>
 
- <label class="mt-3 flex items-center gap-2 text-sm text-gray-700">
- <input type="checkbox" name="remove_cover_image" value="1" @checked(old('remove_cover_image'))>
- Remove current cover image
- </label>
+ <x-ui.checkbox name="remove_cover_image" label="Remove current cover image" :checked="old('remove_cover_image')"/>
  @endif
  </div>
 
  <div class="md:col-span-2">
- <label for="gallery_images" class="block text-sm font-medium text-gray-700">Gallery Images</label>
- <input
- id="gallery_images"
- name="gallery_images[]"
- type="file"
- multiple
- accept="image/*"
- class="mt-1 block w-full text-sm text-gray-700"
- >
- <x-input-error :messages="$errors->get('gallery_images')" class="mt-2"/>
- <x-input-error :messages="$errors->get('gallery_images.*')" class="mt-2"/>
+ <x-ui.file-upload id="gallery_images" name="gallery_images[]" label="Gallery Images" accept="image/*" multiple/>
 
  @if ($listing->exists)
  @php
@@ -195,10 +82,7 @@
  @endforeach
  </div>
 
- <label class="mt-3 flex items-center gap-2 text-sm text-gray-700">
- <input type="checkbox" name="replace_gallery" value="1" @checked(old('replace_gallery'))>
- Replace existing gallery when uploading new images
- </label>
+ <x-ui.checkbox name="replace_gallery" label="Replace existing gallery when uploading new images" :checked="old('replace_gallery')"/>
  @endif
  @endif
  </div>

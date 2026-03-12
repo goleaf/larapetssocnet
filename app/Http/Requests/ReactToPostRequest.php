@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\PostReaction;
+use App\Models\Reaction;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ReactToPostRequest extends FormRequest
@@ -15,7 +15,7 @@ class ReactToPostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', 'in:'.implode(',', PostReaction::TYPES)],
+            'type' => ['required', 'string', 'in:'.implode(',', Reaction::allowedTypes())],
         ];
     }
 }

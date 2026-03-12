@@ -3,7 +3,9 @@
  $coverUrl = $profileUser->getFirstMediaUrl('cover');
  $canInteract = auth()->check() && auth()->id() !== $profileUser->id;
  $isOwner = auth()->check() && auth()->id() === $profileUser->id;
+ $displayName = $profileUser->display_name ?: $profileUser->name;
  $location = $profileUser->location ?? $profileUser->city ?? null;
+ $socialLinks = is_array($profileUser->social_links ?? null) ? $profileUser->social_links : [];
 
  $websiteRaw = trim((string) ($profileUser->website ??''));
  $websiteUrl = $websiteRaw !==''
@@ -26,19 +28,19 @@
 
 @section('title','@'. $profileUser->username .'— PetSocial')
 @php
- $metaDescription = $profileUser->bio ?: ($profileUser->name ."'s profile on PetSocial");
+ $metaDescription = $profileUser->bio ?: ($displayName ."'s profile on PetSocial");
 @endphp
 @push('meta')
  <meta property="og:type" content="profile">
- <meta property="og:title" content="{{ $profileUser->name }} ({{'@'. $profileUser->username }})">
+ <meta property="og:title" content="{{ $displayName }} ({{'@'. $profileUser->username }})">
  <meta property="og:description" content="{{ $metaDescription }}">
  <meta property="og:url" content="{{ $profileUser->profile_url }}">
  <meta property="profile:username" content="{{ $profileUser->username }}">
  <meta name="twitter:card" content="summary">
- <meta name="twitter:title" content="{{ $profileUser->name }} on PetSocial">
+ <meta name="twitter:title" content="{{ $displayName }} on PetSocial">
  <meta name="twitter:description" content="{{ $metaDescription }}">
  <link rel="canonical" href="{{ $profileUser->profile_url }}">
- @if ($profileUser->is_private)
+ @if ($profileVisibility === 'private')
  <meta name="robots" content="noindex, nofollow">
  @endif
 @endpush
@@ -72,11 +74,9 @@
  <x-ui.button :href="route('settings.profile')" variant="default" size="xs">Update
  Cover</x-ui.button>
  @endif
- @if ($profileUser->is_private)
- <x-ui.badge variant="warning" size="sm" pill>🔒 Private Profile</x-ui.badge>
- @else
- <x-ui.badge variant="success" size="sm" pill>🌍 Public Profile</x-ui.badge>
- @endif
+ <x-ui.badge variant="{{ $profileVisibility === 'public' ? 'success' : 'warning' }}" size="sm">
+ {{ $profileVisibilityIcon }} {{ $profileVisibilityLabel }}
+ </x-ui.badge>
  </div>
  </div>
 
@@ -87,10 +87,16 @@
  class="h-28 w-28 border-4 border-warm-white shadow-xl bg-warm-white"/>
 
  <div class="pb-1">
- <h1 class="text-3xl font-bold font-display text-bark">{{ $profileUser->name }}</h1>
+ <h1 class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
  <p class="text-sm font-semibold text-fur">&#64;{{ $profileUser->username }}</p>
 
  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fur">
+ @if ($profileUser->headline)
+ <span class="font-medium text-bark">{{ $profileUser->headline }}</span>
+ @endif
+ @if ($profileUser->pronouns)
+ <span>• {{ $profileUser->pronouns }}</span>
+ @endif
  @if ($location)
  <span>📍 {{ $location }}</span>
  @endif
@@ -162,7 +168,7 @@
  <p class="text-xs text-fur">Posts</p>
  </a>
  <div class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center">
- <p class="text-xl font-bold text-bark">{{ $profileUser->is_private ?'Private':'Public'}}</p>
+ <p class="text-xl font-bold text-bark">{{ $profileVisibilityLabel }}</p>
  <p class="text-xs text-fur">Visibility</p>
  </div>
  </div>
@@ -240,6 +246,20 @@
  {{ $profileUser->website }}
  </a>
  </p>
+ @endif
+
+ @if ($socialLinks !== [])
+ <div class="space-y-1">
+ @foreach ($socialLinks as $label => $url)
+ <p>
+ 🔗
+ <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
+ class="font-medium text-paw hover:text-paw-dark hover:underline">
+ {{ \Illuminate\Support\Str::headline((string) $label) }}
+ </a>
+ </p>
+ @endforeach
+ </div>
  @endif
 
  <p>🗓️ Joined {{ optional($profileUser->created_at)->format('F Y') }}</p>
@@ -470,7 +490,7 @@
  {{ $gallery->description }}</p>
  @endif
  </div>
- <x-ui.badge variant="default" size="sm" pill>
+ <x-ui.badge variant="default" size="sm">
  {{ $gallery->media_count }}
  {{ Str::plural('photo', $gallery->media_count) }}
  </x-ui.badge>
@@ -746,11 +766,36 @@
  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
  </svg>
  Private posts
- <x-ui.badge variant="default" size="sm" pill>{{ $privateCount }}</x-ui.badge>
+ <x-ui.badge variant="default" size="sm">{{ $privateCount }}</x-ui.badge>
  </h3>
 
  <div class="space-y-4">
  @foreach (($privatePosts ?? collect()) as $post)
+ <x-post-card :post="$post" context="profile"/>
+ @endforeach
+ </div>
+ </x-ui.card>
+ @endif
+
+ @if ($isOwner && (($draftCount ?? 0) > 0 || ($scheduledCount ?? 0) > 0))
+ <x-ui.card>
+ <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-fur">
+ <span aria-hidden="true">🗂️</span>
+ Drafts & Scheduled
+ @if (($draftCount ?? 0) > 0)
+ <x-ui.badge variant="default" size="sm">{{ $draftCount }} drafts</x-ui.badge>
+ @endif
+ @if (($scheduledCount ?? 0) > 0)
+ <x-ui.badge variant="warning" size="sm">{{ $scheduledCount }} scheduled</x-ui.badge>
+ @endif
+ </h3>
+
+ <div class="space-y-4">
+ @foreach (($draftPosts ?? collect()) as $post)
+ <x-post-card :post="$post" context="profile"/>
+ @endforeach
+
+ @foreach (($scheduledPosts ?? collect()) as $post)
  <x-post-card :post="$post" context="profile"/>
  @endforeach
  </div>

@@ -5,7 +5,6 @@
 'type'=>'button',
 'disabled'=> false,
 'icon'=> null,
-'pill'=> false,
 'label'=> null,
 ])
 
@@ -35,7 +34,7 @@
  $baseClasses,
  $variants[$variant] ?? $variants['ghost'],
  $sizes[$size] ?? $sizes['md'],
- $pill ?'rounded-[var(--radius-soft)]':'rounded-none',
+ 'rounded-none',
 'opacity-60 cursor-not-allowed pointer-events-none'=> $isDisabled,
  ]);
 

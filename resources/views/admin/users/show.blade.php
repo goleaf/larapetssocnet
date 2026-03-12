@@ -35,6 +35,23 @@
  </div>
  </div>
 
+ @if ($usernameChanges->isNotEmpty())
+ <h3 class="font-bold text-gray-900 mb-3">Username History</h3>
+ @foreach ($usernameChanges as $change)
+ <div class="bg-white rounded-lg border border-gray-100 p-4 mb-2 text-sm">
+ <p class="text-gray-700">
+ {{ '@'.$change->old_username }} → {{ '@'.$change->new_username }}
+ </p>
+ <p class="text-xs text-gray-400 mt-1">
+ {{ $change->changed_at?->diffForHumans() ?? $change->created_at?->diffForHumans() }}
+ @if ($change->actor)
+ · Changed by {{ $change->actor->name }}
+ @endif
+ </p>
+ </div>
+ @endforeach
+ @endif
+
  @if ($recentReports->isNotEmpty())
  <h3 class="font-bold text-gray-900 mb-3">Recent Reports</h3>
  @foreach ($recentReports as $report)

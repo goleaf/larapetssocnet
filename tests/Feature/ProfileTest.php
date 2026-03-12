@@ -25,6 +25,7 @@ if (! function_exists('profileTestPayload')) {
             'name' => $user->name,
             'email' => $user->email,
             'username' => $user->username,
+            'username_confirm' => $user->username,
             'bio' => $user->bio,
             'location' => $user->location ?? $user->city,
             'website' => 'https://example.test',

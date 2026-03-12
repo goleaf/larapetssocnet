@@ -72,7 +72,20 @@ class SettingsService
                 }
             }
 
+            if (array_key_exists('profile_visibility', $normalizedSettings)
+                && $normalizedSettings['profile_visibility'] === 'private') {
+                $normalizedSettings['show_in_explore'] = false;
+                $normalizedSettings['open_following'] = false;
+            }
+
             $user->update($normalizedSettings);
+
+            if (array_key_exists('profile_visibility', $normalizedSettings)) {
+                app(ProfileVisibilityService::class)->syncLegacyPrivacy(
+                    $user,
+                    $user->profileVisibility()
+                );
+            }
         }
 
         return $user;

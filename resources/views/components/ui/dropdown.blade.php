@@ -34,7 +34,7 @@
  } }}"
  @click="close()"
  >
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-[color:var(--surface-dropdown)] shadow-card-hover {{ $contentClasses }}">
+ <div class="ui-surface-dropdown {{ $contentClasses }}">
  {{ $content ?? '' }}
  </div>
  </div>

@@ -2,44 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Like;
+use App\Actions\Engagement\ToggleReactionAction;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LikeController extends Controller
 {
+    public function __construct(private readonly ToggleReactionAction $toggleReaction) {}
+
     public function toggle(Request $request, Post $post): JsonResponse
     {
-        $this->authorize('view', $post);
+        $this->authorize('react', $post);
 
-        $user = $request->user();
-
-        $existingLike = Like::query()
-            ->where('user_id', $user->id)
-            ->where('post_id', $post->id)
-            ->first();
-
-        $liked = true;
-
-        if ($existingLike) {
-            $existingLike->delete();
-            $liked = false;
-        } else {
-            Like::query()->create([
-                'user_id' => $user->id,
-                'post_id' => $post->id,
-                'created_at' => now(),
-            ]);
-        }
-
-        $count = (int) $post->likes()->count();
-        $post->update(['likes_count' => $count]);
+        $result = $this->toggleReaction->handle($request->user(), $post);
 
         return response()->json([
-            'liked' => $liked,
-            'count' => $count,
-            'likes_count' => $count,
+            'liked' => $result['action'] !== 'removed',
+            'count' => $result['likes_count'],
+            'likes_count' => $result['likes_count'],
         ]);
     }
 }

@@ -64,11 +64,7 @@
  $membership = $membershipByGroup->get($group->id);
  @endphp
 
- @include('partials.group-card', [
-'group'=> $group,
-'owner'=> $owner,
-'membership'=> $membership,
- ])
+<x-group-card :group="$group" :owner="$owner" :membership="$membership"/>
  @endforeach
  </div>
 

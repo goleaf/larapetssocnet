@@ -2,32 +2,29 @@
 
 namespace App\Models;
 
+use App\Support\Hashtags\HashtagNormalizer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 
 class Hashtag extends Model
 {
-    use HasFactory, HasSlug;
+    use HasFactory;
 
     protected $fillable = [
         'name',
         'slug',
+        'normalized_name',
         'posts_count',
     ];
 
-    /**
-     * Get the options for generating the slug.
-     */
-    public function getSlugOptions(): SlugOptions
+    protected function casts(): array
     {
-        return SlugOptions::create()
-            ->generateSlugsFrom('name')
-            ->saveSlugsTo('slug');
+        return [
+            'posts_count' => 'integer',
+        ];
     }
 
     // Relationships
@@ -46,7 +43,11 @@ class Hashtag extends Model
 
     public function scopeSearch(Builder $query, string $term): void
     {
-        $query->where('name', 'like', "%{$term}%");
+        $query->where(function (Builder $searchQuery) use ($term): void {
+            $searchQuery
+                ->where('name', 'like', "%{$term}%")
+                ->orWhere('normalized_name', 'like', "%{$term}%");
+        });
     }
 
     public function scopePopular(Builder $query): Builder
@@ -63,12 +64,25 @@ class Hashtag extends Model
             ->whereHas('posts', fn (Builder $postQuery) => $postQuery->where('posts.type', $morphType));
     }
 
+    public function scopeBySlug(Builder $query, string $slug): Builder
+    {
+        $normalizer = new HashtagNormalizer;
+        $normalized = $normalizer->normalizeFromSlug($slug);
+
+        if (! $normalized) {
+            return $query->whereKey(-1);
+        }
+
+        return $query->where('normalized_name', $normalized);
+    }
+
     public function scopeSearchResultColumns(Builder $query): Builder
     {
         return $query->select([
             'hashtags.id',
             'hashtags.name',
             'hashtags.slug',
+            'hashtags.normalized_name',
             'hashtags.posts_count',
             'hashtags.created_at',
         ]);
@@ -76,9 +90,13 @@ class Hashtag extends Model
 
     public static function paginateSearchResults(string $term, int $perPage = 15): LengthAwarePaginator
     {
+        $normalizer = new HashtagNormalizer;
+        $normalized = $normalizer->normalizeFromInput($term);
+        $searchTerm = $normalized ?? $term;
+
         return self::query()
             ->searchResultColumns()
-            ->when($term !== '', fn (Builder $query) => $query->search($term))
+            ->when($searchTerm !== '', fn (Builder $query) => $query->search($searchTerm))
             ->latest('hashtags.created_at')
             ->paginate($perPage)
             ->withQueryString();

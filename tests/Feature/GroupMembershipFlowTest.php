@@ -31,7 +31,7 @@ class GroupMembershipFlowTest extends TestCase
 
         $this->actingAs($member)
             ->post(route('groups.join', $group->slug))
-            ->assertRedirect();
+            ->assertForbidden();
 
         $this->assertDatabaseHas('group_members', [
             'group_id' => $group->id,

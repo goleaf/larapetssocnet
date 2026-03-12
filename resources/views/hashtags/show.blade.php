@@ -1,38 +1,88 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_','-', app()->getLocale()) }}">
-<head>
- <meta charset="utf-8">
- <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>#{{ $hashtag->name }} - {{ config('app.name','LaraPets') }}</title>
- @vite(['resources/css/app.css','resources/js/app.js'])
-</head>
-<body class="bg-gray-100 text-gray-900">
- <header class="border-b border-gray-200 bg-white">
- <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
- <a href="{{ route('explore.index') }}" class="text-lg font-semibold text-gray-900">{{ config('app.name','LaraPets') }}</a>
- <a href="{{ route('explore.index', ['q'=>'#'.$hashtag->name]) }}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to Explore</a>
- </div>
- </header>
+@push('meta')
+    @php
+        $canonicalUrl = route('hashtags.show', $hashtag);
+        $title = '#'.$hashtag->name.' · '.config('app.name', 'LaraPets');
+        $description = 'Posts tagged with #'.$hashtag->name.'.';
+    @endphp
+    <link rel="canonical" href="{{ $canonicalUrl }}">
+    <meta name="description" content="{{ $description }}">
+    <meta property="og:title" content="{{ $title }}">
+    <meta property="og:description" content="{{ $description }}">
+    <meta property="og:url" content="{{ $canonicalUrl }}">
+@endpush
 
- <main class="py-8">
- <div class="mx-auto max-w-5xl space-y-4 px-4 sm:px-6 lg:px-8">
- <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
- <h1 class="text-xl font-semibold text-gray-900">#{{ $hashtag->name }}</h1>
- <p class="mt-1 text-sm text-gray-600">Posts tagged with this hashtag.</p>
- </section>
+<x-app-layout>
+    <x-slot name="header">
+        <x-ui.page-header
+            :title="'#'.$hashtag->name"
+            :description="number_format((int) $hashtag->posts_count).' posts'"
+            icon="🏷️"
+        />
+    </x-slot>
 
- @forelse ($posts as $post)
- @include('posts.partials.card', ['post'=> $post])
- @empty
- <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
- No posts found for this hashtag.
- </div>
- @endforelse
+    @php
+        $sortTabs = [
+            ['label' => 'Latest', 'value' => 'latest'],
+            ['label' => 'Trending', 'value' => 'trending'],
+            ['label' => 'Top', 'value' => 'top'],
+        ];
+    @endphp
 
- <div>
- {{ $posts->links() }}
- </div>
- </div>
- </main>
-</body>
-</html>
+    <x-ui.card class="mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <x-ui.tabs :tabs="$sortTabs" :active="$sort" paramName="sort" class="mb-0"/>
+            <x-ui.button
+                href="{{ route('explore.index', ['q' => '#'.$hashtag->name]) }}"
+                variant="ghost"
+                size="sm"
+            >
+                Back to Explore
+            </x-ui.button>
+        </div>
+    </x-ui.card>
+
+    <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div class="space-y-5">
+            @forelse ($posts as $post)
+                <x-post-card :post="$post"/>
+            @empty
+                <x-ui.empty-state
+                    title="No posts found"
+                    description="Be the first to post with #{{ $hashtag->name }}."
+                    icon="🪄"
+                />
+            @endforelse
+
+            @if ($posts->hasPages())
+                <div>
+                    {{ $posts->links() }}
+                </div>
+            @endif
+        </div>
+
+        <aside class="space-y-4">
+            <x-ui.card>
+                <x-slot name="header">
+                    <x-ui.card-header
+                        title="Related hashtags"
+                        subtitle="Discover more topics"
+                    />
+                </x-slot>
+
+                <div class="space-y-2">
+                    @forelse ($relatedHashtags as $related)
+                        <a
+                            href="{{ route('hashtags.show', $related) }}"
+                            class="flex items-center justify-between rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-sm font-semibold text-bark hover:bg-cream transition-colors"
+                        >
+                            <span>#{{ $related->name }}</span>
+                            <span class="text-xs text-fur">{{ number_format((int) $related->posts_count) }}</span>
+                        </a>
+                    @empty
+                        <p class="text-sm text-fur">No related hashtags yet.</p>
+                    @endforelse
+                </div>
+            </x-ui.card>
+        </aside>
+    </div>
+</x-app-layout>

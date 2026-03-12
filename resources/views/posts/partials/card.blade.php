@@ -1,4 +1,78 @@
-<article id="post-{{ $post->id }}" class="shell-card hover-lift overflow-hidden p-4 sm:p-5" x-data="{ reaction: null, likes: {{ (int) $post->likes_count }}, busy: false, shareCopied: false, async react(type) { if (this.busy) return; this.busy = true; try { const res = await fetch(@js(route('posts.react', $post)), { method:'POST', headers: {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ||''}, body: JSON.stringify({ type }) }); if (!res.ok) throw new Error('reaction failed'); const data = await res.json(); if (data?.success) { this.reaction = data.data.current_reaction; this.likes = data.data.likes_count; } } finally { this.busy = false; } }, async sharePost() { const link = @js(route('posts.show', $post)); try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(link); } else { const input = document.createElement('input'); input.value = link; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input); } this.shareCopied = true; setTimeout(() => { this.shareCopied = false; }, 1800); } catch (_) {} } }">
+<article id="post-{{ $post->id }}" class="shell-card hover-lift overflow-hidden p-4 sm:p-5" x-data="{
+reaction: null,
+likes: {{ (int) $post->likes_count }},
+busy: false,
+saved: {{ auth()->check() && ($post->saved_by_viewer ?? false) ? 'true' : 'false' }},
+saveCount: {{ (int) ($post->save_count ?? 0) }},
+saveBusy: false,
+shares: {{ (int) ($post->shares_count ?? 0) }},
+shareBusy: false,
+shareCopied: false,
+async react(type) {
+ if (this.busy) return;
+ this.busy = true;
+ try {
+ const res = await fetch(@js(route('posts.react', $post)), {
+ method:'POST',
+ headers: {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ||''},
+ body: JSON.stringify({ type })
+ });
+ if (!res.ok) throw new Error('reaction failed');
+ const data = await res.json();
+ if (data?.success) {
+ this.reaction = data.data.current_reaction;
+ this.likes = data.data.likes_count;
+ }
+ } finally { this.busy = false; }
+},
+async toggleSave() {
+ if (this.saveBusy) return;
+ this.saveBusy = true;
+ const prevSaved = this.saved;
+ const prevCount = this.saveCount;
+ this.saved = !this.saved;
+ this.saveCount = Math.max(0, this.saveCount + (this.saved ? 1 : -1));
+ try {
+ const res = await fetch(@js(route('posts.save', $post)), {
+ method:'POST',
+ headers: {'Accept':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ||''},
+ });
+ if (!res.ok) throw new Error('save failed');
+ const data = await res.json();
+ if (typeof data.saved === 'boolean') {
+ this.saved = data.saved;
+ }
+ } catch (_) {
+ this.saved = prevSaved;
+ this.saveCount = prevCount;
+ } finally { this.saveBusy = false; }
+},
+async sharePost() {
+ if (this.shareBusy) return;
+ this.shareBusy = true;
+ const prevShares = this.shares;
+ try {
+ const res = await fetch(@js(route('posts.share', $post)), {
+ method:'POST',
+ headers: {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ||''},
+ body: JSON.stringify({ method: 'copy_link' })
+ });
+ if (!res.ok) throw new Error('share failed');
+ const data = await res.json();
+ if (typeof data.shares_count === 'number') {
+ this.shares = data.shares_count;
+ }
+ const link = data.url || @js(route('posts.show', $post));
+ if (navigator.clipboard?.writeText) {
+ await navigator.clipboard.writeText(link);
+ }
+ this.shareCopied = true;
+ setTimeout(() => { this.shareCopied = false; }, 1800);
+ } catch (_) {
+ this.shares = prevShares;
+ } finally { this.shareBusy = false; }
+}
+}">
  <header class="flex items-start justify-between gap-4">
  <div class="min-w-0 flex items-start gap-3">
  <a href="{{ route('profile.show', ['user' => $post->displayAuthor()]) }}" class="shrink-0">
@@ -13,12 +87,18 @@
  <p class="truncate text-xs shell-text-muted">
  <span>{{ $post->displayAuthor()?->username ?'@'.$post->displayAuthor()?->username :'community-member'}}</span>
  <span class="dot-divider"></span>
- <span>{{ $post->created_at?->diffForHumans() }}</span>
+ @php($displayTime = $post->published_at ?? $post->created_at)
+ <span>{{ $displayTime?->diffForHumans() }}</span>
  <span class="dot-divider"></span>
  <span>{{ $post->visibilityLabel() }}</span>
  @if ($post->is_pinned)
  <span class="dot-divider"></span>
  <span class="font-semibold" style="color: var(--ui-secondary);">Pinned</span>
+ @endif
+ @php($statusValue = $post->status?->value ?? (string) $post->status)
+ @if ($statusValue !== 'published' && (int) auth()->id() === (int) $post->user_id)
+ <span class="dot-divider"></span>
+ <span class="font-semibold" style="color: var(--ui-secondary);">{{ ucfirst($statusValue) }}</span>
  @endif
  </p>
  </div>
@@ -27,9 +107,11 @@
  <a href="{{ route('posts.show', $post) }}" class="btn-base btn-ghost px-2.5 py-1.5 text-xs">Open</a>
  </header>
 
- @if (filled($post->body))
- <p class="mt-3 whitespace-pre-line text-sm leading-6" style="color: var(--ui-text);">{{ $post->body }}</p>
- @endif
+@if (filled($post->body_html ?? $post->body))
+ <div class="mt-3 whitespace-pre-line text-sm leading-6" style="color: var(--ui-text);">
+ {!! $post->body_html ?? e((string) $post->body) !!}
+ </div>
+@endif
 
  @if ($post->hashtags->isNotEmpty())
  <div class="mt-3 flex flex-wrap gap-2">
@@ -102,9 +184,23 @@
  <a href="{{ route('posts.show', $post) }}" class="btn-base btn-ghost px-3 py-2 text-xs">View Thread</a>
  <a href="{{ route('posts.show', $post) }}#comments" class="btn-base btn-ghost px-3 py-2 text-xs">Comment</a>
  <a href="{{ route('posts.show', $post) }}" class="btn-base btn-secondary px-3 py-2 text-xs">React</a>
+ @auth
+ <button type="button" @click="toggleSave()" class="btn-base btn-ghost px-3 py-2 text-xs" :class="{'btn-secondary': saved }">
+ <span x-text="saved ?'Saved':'Save'"></span>
+ <span class="opacity-70" x-text="saveCount"></span>
+ </button>
  <button type="button" @click="sharePost()" class="btn-base btn-ghost px-3 py-2 text-xs" :class="{'btn-secondary': shareCopied }">
  <span x-text="shareCopied ?'Link Copied':'Share'"></span>
+ <span class="opacity-70" x-text="shares"></span>
  </button>
+ @if(auth()->check() && auth()->id() !== $post->user_id)
+ <form method="POST" action="{{ route('posts.report', $post) }}" class="inline" onsubmit="return confirm('Report this post?');">
+ @csrf
+ <input type="hidden" name="reason" value="spam">
+ <button type="submit" class="btn-base btn-ghost px-3 py-2 text-xs">Report</button>
+ </form>
+ @endif
+ @endauth
  </div>
  </footer>
 </article>

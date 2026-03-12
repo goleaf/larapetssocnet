@@ -76,9 +76,11 @@ it('toggles post likes via json endpoint', function () {
             'count' => 1,
         ]);
 
-    $this->assertDatabaseHas('likes', [
+    $this->assertDatabaseHas('reactions', [
+        'reactable_type' => Post::class,
+        'reactable_id' => $post->id,
         'user_id' => $viewer->id,
-        'post_id' => $post->id,
+        'type' => 'love',
     ]);
 
     $this->actingAs($viewer)
@@ -89,9 +91,10 @@ it('toggles post likes via json endpoint', function () {
             'count' => 0,
         ]);
 
-    $this->assertDatabaseMissing('likes', [
+    $this->assertDatabaseMissing('reactions', [
+        'reactable_type' => Post::class,
+        'reactable_id' => $post->id,
         'user_id' => $viewer->id,
-        'post_id' => $post->id,
     ]);
 });
 
@@ -115,6 +118,7 @@ it('stores and deletes comments through main feed endpoints', function () {
 
     $comment = Comment::query()->latest('id')->firstOrFail();
     expect($comment->body)->toBe('This is a lovely pet update.');
+    expect($comment->body_html)->not->toBeNull();
 
     $this->actingAs($viewer)
         ->from(route('feed.index'))
@@ -123,6 +127,11 @@ it('stores and deletes comments through main feed endpoints', function () {
 
     $this->assertSoftDeleted('comments', [
         'id' => $comment->id,
+    ]);
+
+    $this->assertDatabaseHas('comments', [
+        'id' => $comment->id,
+        'body' => '[comment removed]',
     ]);
 });
 

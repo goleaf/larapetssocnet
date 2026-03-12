@@ -229,9 +229,12 @@ class PetController extends Controller
                 'posts.pet_id',
                 'posts.body',
                 'posts.body_html',
+                'posts.status',
+                'posts.published_at',
                 'posts.created_at',
             ])
             ->where('posts.pet_id', $pet->getKey())
+            ->published()
             ->visibleTo($viewer)
             ->latest('posts.created_at')
             ->cursorPaginate(12)

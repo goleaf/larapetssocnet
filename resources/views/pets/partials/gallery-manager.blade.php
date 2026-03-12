@@ -8,8 +8,7 @@
     $galleryLastIndex = count($galleryIds) - 1;
 @endphp
 
-<div class="bg-white shadow-sm sm:rounded-lg">
-    <div class="p-6 space-y-6">
+<x-ui.card padding="lg">
         <div>
             <h3 class="text-lg font-semibold text-gray-900">Gallery</h3>
             <p class="mt-1 text-sm text-gray-600">Upload new photos, adjust captions, and reorder the gallery.</p>
@@ -18,18 +17,14 @@
         <form method="POST" action="{{ route('pets.gallery.store', $pet) }}" enctype="multipart/form-data" class="space-y-3">
             @csrf
             <div>
-                <x-input-label for="pet_gallery_photos" value="Add gallery photos"/>
-                <input
+                <x-ui.file-upload
                     id="pet_gallery_photos"
                     name="photos[]"
-                    type="file"
+                    label="Add gallery photos"
                     multiple
                     accept="image/jpeg,image/png,image/webp,image/gif"
-                    class="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-indigo-700 hover:file:bg-indigo-100"
+                    help="Upload up to {{ $galleryUploadMax }} photos at a time. {{ $galleryRemaining }} slots remaining."
                 />
-                <p class="mt-1 text-xs text-gray-500">Upload up to {{ $galleryUploadMax }} photos at a time. {{ $galleryRemaining }} slots remaining.</p>
-                <x-input-error :messages="$errors->get('photos')" class="mt-2"/>
-                <x-input-error :messages="$errors->get('photos.*')" class="mt-2"/>
             </div>
 
             <div>
@@ -39,7 +34,7 @@
 
         <div>
             <h4 class="text-sm font-semibold text-gray-900">Current gallery</h4>
-            <x-input-error :messages="$errors->get('order')" class="mt-2"/>
+            <x-ui.hint :error="$errors->first('order')" />
             @if ($galleryItems->isEmpty())
                 <p class="mt-2 text-sm text-gray-500">No gallery photos uploaded yet.</p>
             @else
@@ -61,9 +56,9 @@
                                 [$moveRight[$index + 1], $moveRight[$index]] = [$moveRight[$index], $moveRight[$index + 1]];
                             }
                         @endphp
-                        <div class="rounded-lg border border-gray-200 p-3 space-y-3">
+                        <div class="shell-card p-3 space-y-3">
                             <div class="flex items-start gap-3">
-                                <img src="{{ $thumbUrl }}" alt="{{ $altText !== '' ? $altText : 'Pet gallery photo' }}" class="h-24 w-24 rounded-md object-cover border border-gray-200">
+                                <img src="{{ $thumbUrl }}" alt="{{ $altText !== '' ? $altText : 'Pet gallery photo' }}" class="h-24 w-24 rounded-[var(--radius-soft)] object-cover border border-whisker/30">
                                 <div class="flex-1 space-y-2">
                                     <div class="flex flex-wrap gap-2">
                                         @if ($index > 0)
@@ -92,12 +87,10 @@
                                         @csrf
                                         @method('PATCH')
                                         <div>
-                                            <x-input-label for="caption-{{ $media->id }}" value="Caption"/>
-                                            <x-text-input id="caption-{{ $media->id }}" name="caption" type="text" class="mt-1 block w-full" :value="old('caption', $caption)" />
+                                            <x-ui.input id="caption-{{ $media->id }}" name="caption" type="text" label="Caption" :value="old('caption', $caption)"/>
                                         </div>
                                         <div>
-                                            <x-input-label for="alt-{{ $media->id }}" value="Alt text"/>
-                                            <x-text-input id="alt-{{ $media->id }}" name="alt_text" type="text" class="mt-1 block w-full" :value="old('alt_text', $altText)" />
+                                            <x-ui.input id="alt-{{ $media->id }}" name="alt_text" type="text" label="Alt text" :value="old('alt_text', $altText)"/>
                                         </div>
                                         <x-ui.button variant="secondary" type="submit" class="text-xs">Save details</x-ui.button>
                                     </form>
@@ -115,4 +108,4 @@
             @endif
         </div>
     </div>
-</div>
+</x-ui.card>

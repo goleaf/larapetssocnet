@@ -14,8 +14,8 @@ use App\Models\Message;
 use App\Models\Pet;
 use App\Models\Post;
 use App\Models\User;
-use App\Models\UsernameRedirect;
 use App\Notifications\QueueBusyAlert;
+use App\Observers\CommentObserver;
 use App\Observers\MessageObserver;
 use App\Observers\PetObserver;
 use App\Observers\PostObserver;
@@ -27,6 +27,9 @@ use App\Policies\ListingPolicy;
 use App\Policies\MessagePolicy;
 use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
+use App\Policies\UserPolicy;
+use App\Services\UsernameRedirectResolver;
+use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Queue\Events\QueueBusy;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MarketplaceListing::class, ListingPolicy::class);
         Gate::policy(Message::class, MessagePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
         $this->defineFollowGate(FollowAbility::Follow, [FollowPolicy::class, 'follow']);
         $this->defineFollowGate(FollowAbility::Unfollow, [FollowPolicy::class, 'unfollow']);
         $this->defineFollowGate(FollowAbility::ViewFollowers, [FollowPolicy::class, 'viewFollowers']);
@@ -79,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
         Pet::observe(PetObserver::class);
         Message::observe(MessageObserver::class);
         Post::observe(PostObserver::class);
+        Comment::observe(CommentObserver::class);
         EventFacade::listen(UserBlocked::class, RemoveFollowOnBlock::class);
         EventFacade::listen(UserBlocked::class, CancelPendingRequestsOnBlock::class);
         EventFacade::listen(function (QueueBusy $event): void {
@@ -97,27 +102,20 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Route::bind('user', function (string $value): User {
-            $normalized = strtolower($value);
             request()->attributes->set('username_raw', $value);
+            request()->attributes->set('username_normalized', UsernameNormalizer::normalize($value));
 
-            $user = User::query()->where('username', $normalized)->first();
-            if ($user) {
-                return $user;
+            $resolution = app(UsernameRedirectResolver::class)->resolve($value);
+
+            if (! $resolution) {
+                abort(404, 'User not found.');
             }
 
-            $redirect = UsernameRedirect::query()
-                ->active()
-                ->where('old_username', $normalized)
-                ->with('user')
-                ->first();
-
-            if ($redirect?->user) {
-                request()->attributes->set('username_redirect', $redirect);
-
-                return $redirect->user;
+            if ($resolution['redirect']) {
+                request()->attributes->set('username_redirect', $resolution['redirect']);
             }
 
-            abort(404, 'User not found.');
+            return $resolution['user'];
         });
     }
 

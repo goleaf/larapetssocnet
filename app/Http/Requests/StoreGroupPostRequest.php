@@ -18,8 +18,9 @@ class StoreGroupPostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => ['nullable', 'string', 'max:5000', 'required_without:media'],
-            'media' => ['nullable', 'array', 'max:4', 'required_without:body'],
+            'post_id' => ['nullable', 'integer', 'exists:posts,id', 'required_without_all:body,media'],
+            'body' => ['nullable', 'string', 'max:5000', 'required_without_all:post_id,media'],
+            'media' => ['nullable', 'array', 'max:4', 'required_without_all:post_id,body'],
             'media.*' => [
                 'file',
                 'max:51200',

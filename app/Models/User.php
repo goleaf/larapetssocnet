@@ -333,6 +333,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Reaction::class);
     }
 
+    public function shares(): HasMany
+    {
+        return $this->hasMany(Share::class);
+    }
+
     public function ownedGroups(): HasMany
     {
         return $this->hasMany(Group::class, 'owner_id');
@@ -346,6 +351,7 @@ class User extends Authenticatable implements HasMedia
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class, 'group_members', 'user_id', 'group_id')
+            ->using(GroupMember::class)
             ->withPivot(['role', 'joined_at', 'status', 'invited_by'])
             ->withTimestamps();
     }
@@ -512,6 +518,11 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(Report::class, 'reportable_id')
             ->where('reportable_type', self::class);
+    }
+
+    public function reports(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
     }
 
     public function resolvedReports(): HasMany

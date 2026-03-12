@@ -4,25 +4,44 @@ namespace App\Http\Controllers;
 
 use App\Models\Hashtag;
 use App\Models\Post;
+use App\Services\HashtagService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class HashtagController extends Controller
 {
+    public function __construct(private readonly HashtagService $hashtags) {}
+
     public function show(Request $request, Hashtag $hashtag): View
     {
+        $sort = $request->string('sort')->toString();
+        $sort = in_array($sort, ['latest', 'trending', 'top'], true) ? $sort : 'latest';
+        $viewer = $request->user();
+
         $posts = Post::query()
             ->byTag($hashtag->slug)
             ->published()
-            ->visibleTo($request->user())
-            ->with(['user', 'hashtags'])
-            ->latest()
-            ->paginate(15)
+            ->visibleTo($viewer)
+            ->withFeedRelations($viewer)
+            ->when(
+                $sort === 'trending',
+                fn ($query) => $query->trending(),
+                fn ($query) => $query->when(
+                    $sort === 'top',
+                    fn ($topQuery) => $topQuery->topRated(),
+                    fn ($latestQuery) => $latestQuery->latest('posts.created_at')
+                )
+            )
+            ->paginate(20)
             ->withQueryString();
+
+        $relatedHashtags = $this->hashtags->relatedHashtags($hashtag, $viewer, 6);
 
         return view('hashtags.show', [
             'hashtag' => $hashtag,
             'posts' => $posts,
+            'sort' => $sort,
+            'relatedHashtags' => $relatedHashtags,
         ]);
     }
 }

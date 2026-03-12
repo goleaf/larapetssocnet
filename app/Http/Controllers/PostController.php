@@ -2,13 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Posts\ArchivePostAction;
 use App\Actions\Posts\CreatePostAction;
+use App\Actions\Posts\PinPostAction;
+use App\Actions\Posts\PublishPostAction;
+use App\Actions\Posts\SchedulePostAction;
+use App\Actions\Posts\UnpinPostAction;
+use App\Actions\Posts\UnpublishPostAction;
 use App\Actions\Posts\UpdatePostAction;
 use App\Http\Requests\CreatePostRequest;
+use App\Http\Requests\PublishPostRequest;
+use App\Http\Requests\SchedulePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Pet;
 use App\Models\Post;
-use App\Services\PostService;
+use App\Services\CommentService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\RedirectResponse;
@@ -21,13 +30,20 @@ class PostController extends Controller
     public function __construct(
         private readonly CreatePostAction $createPostAction,
         private readonly UpdatePostAction $updatePostAction,
-        private readonly PostService $posts,
+        private readonly PublishPostAction $publishPostAction,
+        private readonly SchedulePostAction $schedulePostAction,
+        private readonly UnpublishPostAction $unpublishPostAction,
+        private readonly ArchivePostAction $archivePostAction,
+        private readonly PinPostAction $pinPostAction,
+        private readonly UnpinPostAction $unpinPostAction,
+        private readonly CommentService $comments,
     ) {}
 
     public function create(Request $request): View
     {
         $availablePets = $request->user()
             ?->pets()
+            ->without(['user', 'species', 'breed', 'media', 'tags'])
             ->select(['id', 'name'])
             ->orderBy('name')
             ->get() ?? collect();
@@ -46,30 +62,23 @@ class PostController extends Controller
         $post->load([
             'user',
             'author',
+            'author.media',
             'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($request->user()),
             'media',
             'tags',
         ]);
 
         $post->loadCount([
-            'likes',
-            'comments',
+            'reactions as likes_count',
+            'comments as comments_count',
         ]);
 
         $post->loadExists([
-            'likes' => fn (Builder $likeQuery): Builder => $likeQuery->where('likes.user_id', $viewerId),
+            'reactions as liked_by_viewer' => fn (Builder $reactionQuery): Builder => $reactionQuery->where('reactions.user_id', $viewerId),
+            'savedBy as saved_by_viewer' => fn (Builder $savedQuery): Builder => $savedQuery->where('saved_posts.user_id', $viewerId),
         ]);
 
-        $comments = $post->comments()
-            ->topLevel()
-            ->with([
-                'user',
-                'replies.user',
-            ])
-            ->withCount('reactions')
-            ->latest('comments.created_at')
-            ->paginate(20)
-            ->withQueryString();
+        $comments = $this->comments->paginateThread($post, $request->user(), 20);
 
         $taggedPetIds = collect($post->tagged_pets ?? [])
             ->filter()
@@ -97,6 +106,7 @@ class PostController extends Controller
 
         $availablePets = $request->user()
             ?->pets()
+            ->without(['user', 'species', 'breed', 'media', 'tags'])
             ->select(['id', 'name'])
             ->orderBy('name')
             ->get() ?? collect();
@@ -140,19 +150,49 @@ class PostController extends Controller
         return back()->with('success', __('feed.flash_post_deleted'));
     }
 
-    public function pin(Post $post): RedirectResponse
+    public function pin(Request $request, Post $post): RedirectResponse
     {
-        Gate::authorize('pin', $post);
-        $this->posts->pin($post);
+        $this->pinPostAction->handle($request->user(), $post);
 
         return back()->with('success', 'Post pinned successfully.');
     }
 
-    public function unpin(Post $post): RedirectResponse
+    public function unpin(Request $request, Post $post): RedirectResponse
     {
-        Gate::authorize('pin', $post);
-        $this->posts->unpin($post);
+        $this->unpinPostAction->handle($request->user(), $post);
 
         return back()->with('success', 'Post unpinned successfully.');
+    }
+
+    public function publish(PublishPostRequest $request, Post $post): RedirectResponse
+    {
+        $publishedAt = $request->validated()['published_at'] ?? null;
+
+        $this->publishPostAction->handle($request->user(), $post, $publishedAt ? CarbonImmutable::parse($publishedAt) : null);
+
+        return back()->with('success', 'Post published.');
+    }
+
+    public function schedule(SchedulePostRequest $request, Post $post): RedirectResponse
+    {
+        $publishedAt = $request->validated()['published_at'];
+
+        $this->schedulePostAction->handle($request->user(), $post, CarbonImmutable::parse($publishedAt));
+
+        return back()->with('success', 'Post scheduled.');
+    }
+
+    public function unpublish(Request $request, Post $post): RedirectResponse
+    {
+        $this->unpublishPostAction->handle($request->user(), $post);
+
+        return back()->with('success', 'Post moved to drafts.');
+    }
+
+    public function archive(Request $request, Post $post): RedirectResponse
+    {
+        $this->archivePostAction->handle($request->user(), $post);
+
+        return back()->with('success', 'Post archived.');
     }
 }

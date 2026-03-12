@@ -16,16 +16,10 @@
  @csrf
  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
  <div class="sm:col-span-1">
- <x-input-label for="title" value="Title"/>
- <x-text-input id="title" name="title" type="text" class="mt-1 block w-full"
- :value="old('title')" required />
- <x-input-error class="mt-2" :messages="$errors->get('title')"/>
+ <x-ui.input id="title" name="title" type="text" label="Title" :value="old('title')" required/>
  </div>
  <div class="sm:col-span-1">
- <x-input-label for="description" value="Description (optional)"/>
- <textarea id="description" name="description" rows="2"
- class="form-textarea mt-1 block w-full">{{ old('description') }}</textarea>
- <x-input-error class="mt-2" :messages="$errors->get('description')"/>
+ <x-ui.textarea id="description" name="description" rows="2" label="Description (optional)" :value="old('description')"/>
  </div>
  </div>
  <div class="flex justify-end border-t border-whisker/30 pt-4">
@@ -65,9 +59,9 @@
  </p>
  @endif
  </div>
- <span class="inline-flex items-center rounded-[var(--radius-soft)] bg-cream px-2 py-0.5 text-xs font-medium text-fur">
+ <x-ui.badge size="sm">
  {{ $gallery->media_count }} {{ Str::plural('photo', $gallery->media_count) }}
- </span>
+ </x-ui.badge>
  </div>
 
  @if ($gallery->media->isNotEmpty())

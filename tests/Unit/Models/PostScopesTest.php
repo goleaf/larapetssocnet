@@ -24,6 +24,19 @@ it('filters published posts', function (): void {
         ->not->toContain($draftPost->getKey());
 });
 
+it('excludes scheduled posts from published scope', function (): void {
+    $scheduledPost = Post::factory()->create([
+        'status' => PostStatus::Scheduled->value,
+        'published_at' => now()->addHour(),
+    ]);
+
+    $postIds = Post::query()
+        ->published()
+        ->pluck('posts.id');
+
+    expect($postIds)->not->toContain($scheduledPost->getKey());
+});
+
 it('returns feed posts for owner and accepted following', function (): void {
     $viewer = User::factory()->create();
     $followed = User::factory()->create();
@@ -119,10 +132,12 @@ it('filters posts by hashtag slug', function (): void {
     $matchingTag = Hashtag::factory()->create([
         'name' => 'Pets',
         'slug' => 'pets',
+        'normalized_name' => 'pets',
     ]);
     $otherTag = Hashtag::factory()->create([
         'name' => 'Travel',
         'slug' => 'travel',
+        'normalized_name' => 'travel',
     ]);
 
     $matchingPost = Post::factory()->create();

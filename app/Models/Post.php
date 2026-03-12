@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\PostStatus;
+use App\Support\Hashtags\HashtagNormalizer;
+use App\Traits\HasCounterCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,7 +25,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Post extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia, SoftDeletes;
+    use HasCounterCache, HasFactory, InteractsWithMedia, SoftDeletes;
 
     public const TYPE_TEXT = 'text';
 
@@ -43,6 +45,7 @@ class Post extends Model implements HasMedia
         'pet_id',
         'body',
         'body_html',
+        'metadata',
         'type',
         'status',
         'published_at',
@@ -50,9 +53,13 @@ class Post extends Model implements HasMedia
         'location',
         'tagged_pets',
         'is_pinned',
+        'pinned_at',
+        'edited_at',
         'likes_count',
         'comments_count',
+        'reactions_count',
         'shares_count',
+        'save_count',
     ];
 
     protected function casts(): array
@@ -63,6 +70,14 @@ class Post extends Model implements HasMedia
             'group_id' => 'integer',
             'status' => PostStatus::class,
             'published_at' => 'datetime',
+            'pinned_at' => 'datetime',
+            'edited_at' => 'datetime',
+            'metadata' => 'array',
+            'likes_count' => 'integer',
+            'comments_count' => 'integer',
+            'reactions_count' => 'integer',
+            'shares_count' => 'integer',
+            'save_count' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -149,6 +164,16 @@ class Post extends Model implements HasMedia
         return $this->morphMany(Reaction::class, 'reactable');
     }
 
+    public function shares(): MorphMany
+    {
+        return $this->morphMany(Share::class, 'shareable');
+    }
+
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+
     public function hashtags(): BelongsToMany
     {
         return $this->belongsToMany(Hashtag::class, 'post_hashtag');
@@ -190,6 +215,12 @@ class Post extends Model implements HasMedia
 
         if (! $viewer) {
             $query->where('visibility', self::VISIBILITY_PUBLIC)
+                ->where('status', PostStatus::Published->value)
+                ->where(function (Builder $publishedQuery): void {
+                    $publishedQuery
+                        ->whereNull('published_at')
+                        ->orWhere('published_at', '<=', now());
+                })
                 ->whereHas('author', function (Builder $authorQuery): void {
                     $authorQuery
                         ->where('is_private', false)
@@ -222,6 +253,12 @@ class Post extends Model implements HasMedia
                         ->whereHas('author', function (Builder $authorQuery): void {
                             $authorQuery->where('is_banned', false);
                         })
+                        ->where('status', PostStatus::Published->value)
+                        ->where(function (Builder $publishedQuery): void {
+                            $publishedQuery
+                                ->whereNull('published_at')
+                                ->orWhere('published_at', '<=', now());
+                        })
                         ->where(function (Builder $rulesQuery) use ($followingIds): void {
                             $rulesQuery
                                 ->where(function (Builder $publicFromPublicAccounts): void {
@@ -249,16 +286,43 @@ class Post extends Model implements HasMedia
         });
     }
 
-    public function scopePublic(Builder $query)
+    public function scopePublic(Builder $query): Builder
     {
-        $query->where('visibility', 'public');
+        return $query->where('visibility', 'public');
     }
 
     public function scopePublished(Builder $query): Builder
     {
         return $query
             ->select(['posts.*'])
-            ->where('posts.status', PostStatus::Published->value);
+            ->where('posts.status', PostStatus::Published->value)
+            ->where(function (Builder $publishedQuery): void {
+                $publishedQuery
+                    ->whereNull('posts.published_at')
+                    ->orWhere('posts.published_at', '<=', now());
+            });
+    }
+
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->select(['posts.*'])->where('posts.status', PostStatus::Draft->value);
+    }
+
+    public function scopeScheduled(Builder $query): Builder
+    {
+        return $query->select(['posts.*'])->where('posts.status', PostStatus::Scheduled->value);
+    }
+
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->select(['posts.*'])->where('posts.status', PostStatus::Archived->value);
+    }
+
+    public function scopePublicFeedEligible(Builder $query): Builder
+    {
+        return $query
+            ->published()
+            ->where('posts.visibility', self::VISIBILITY_PUBLIC);
     }
 
     public function scopeNotBlockedFor(Builder $query, ?User $viewer): void
@@ -289,15 +353,18 @@ class Post extends Model implements HasMedia
             'posts.type',
             'posts.visibility',
             'posts.status',
+            'posts.published_at',
             'posts.location',
             'posts.tagged_pets',
             'posts.metadata',
             'posts.is_pinned',
+            'posts.pinned_at',
+            'posts.edited_at',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
             'posts.shares_count',
-            'posts.published_at',
+            'posts.save_count',
             'posts.created_at',
             'posts.updated_at',
             'posts.deleted_at',
@@ -316,15 +383,18 @@ class Post extends Model implements HasMedia
             'posts.type',
             'posts.visibility',
             'posts.status',
+            'posts.published_at',
             'posts.location',
             'posts.tagged_pets',
             'posts.metadata',
             'posts.is_pinned',
+            'posts.pinned_at',
+            'posts.edited_at',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
             'posts.shares_count',
-            'posts.published_at',
+            'posts.save_count',
             'posts.created_at',
             'posts.updated_at',
             'posts.deleted_at',
@@ -337,9 +407,10 @@ class Post extends Model implements HasMedia
 
     public function scopeByTag(Builder $query, string $slug): Builder
     {
-        $normalizedSlug = Str::of($slug)->trim()->lower()->toString();
+        $normalizer = new HashtagNormalizer;
+        $normalizedSlug = $normalizer->normalizeFromSlug($slug);
 
-        if ($normalizedSlug === '') {
+        if (! $normalizedSlug) {
             return $query->whereKey(-1);
         }
 
@@ -353,25 +424,34 @@ class Post extends Model implements HasMedia
             'posts.type',
             'posts.visibility',
             'posts.status',
+            'posts.published_at',
             'posts.location',
             'posts.tagged_pets',
             'posts.metadata',
             'posts.is_pinned',
+            'posts.pinned_at',
+            'posts.edited_at',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
             'posts.shares_count',
-            'posts.published_at',
+            'posts.save_count',
             'posts.created_at',
             'posts.updated_at',
             'posts.deleted_at',
-        ])->whereHas('hashtags', fn (Builder $hashtagQuery): Builder => $hashtagQuery->where('hashtags.slug', $normalizedSlug));
+        ])->whereHas('hashtags', fn (Builder $hashtagQuery): Builder => $hashtagQuery->where('hashtags.normalized_name', $normalizedSlug));
     }
 
     public function scopeExplorable(Builder $query, ?User $viewer)
     {
         $query
             ->where('visibility', self::VISIBILITY_PUBLIC)
+            ->where('status', PostStatus::Published->value)
+            ->where(function (Builder $publishedQuery): void {
+                $publishedQuery
+                    ->whereNull('posts.published_at')
+                    ->orWhere('posts.published_at', '<=', now());
+            })
             ->whereHas('author', function (Builder $authorQuery): void {
                 $authorQuery
                     ->where('is_private', false)
@@ -416,11 +496,20 @@ class Post extends Model implements HasMedia
     public function scopeSearch(Builder $query, string $term)
     {
         $clean = Str::limit(trim($term), 100, '');
+        $normalizer = new HashtagNormalizer;
+        $normalizedTag = $normalizer->normalizeFromInput($clean);
 
         $query->where(function (Builder $searchQuery) use ($clean): void {
             $searchQuery
                 ->where('body', 'like', "%{$clean}%")
-                ->orWhereHas('hashtags', fn (Builder $hashtagQuery) => $hashtagQuery->where('name', 'like', "%{$clean}%"))
+                ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($clean, $normalizedTag): void {
+                    $hashtagQuery->where('name', 'like', "%{$clean}%")
+                        ->orWhere('normalized_name', 'like', "%{$clean}%");
+
+                    if ($normalizedTag) {
+                        $hashtagQuery->orWhere('normalized_name', $normalizedTag);
+                    }
+                })
                 ->orWhere('location', 'like', "%{$clean}%");
         });
     }
@@ -428,12 +517,21 @@ class Post extends Model implements HasMedia
     public function scopeExploreSearch(Builder $query, string $term): void
     {
         $clean = Str::limit(trim($term), 100, '');
+        $normalizer = new HashtagNormalizer;
+        $normalizedTag = $normalizer->normalizeFromInput($clean);
 
         $query->where(function (Builder $searchQuery) use ($clean): void {
             $searchQuery
                 ->where('body', 'like', "%{$clean}%")
                 ->orWhere('location', 'like', "%{$clean}%")
-                ->orWhereHas('hashtags', fn (Builder $hashtagQuery) => $hashtagQuery->where('name', 'like', '%'.strtolower($clean).'%'))
+                ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($clean, $normalizedTag): void {
+                    $hashtagQuery->where('name', 'like', '%'.strtolower($clean).'%')
+                        ->orWhere('normalized_name', 'like', '%'.strtolower($clean).'%');
+
+                    if ($normalizedTag) {
+                        $hashtagQuery->orWhere('normalized_name', $normalizedTag);
+                    }
+                })
                 ->orWhereHas('user', function (Builder $userQuery) use ($clean): void {
                     $userQuery
                         ->where('name', 'like', "%{$clean}%")
@@ -453,6 +551,7 @@ class Post extends Model implements HasMedia
         return self::query()
             ->with([
                 'user.media',
+                'author.media',
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
@@ -483,6 +582,7 @@ class Post extends Model implements HasMedia
             'posts.location',
             'posts.status',
             'posts.visibility',
+            'posts.published_at',
             'posts.created_at',
             'posts.is_pinned',
         ]);
@@ -517,9 +617,13 @@ class Post extends Model implements HasMedia
             'posts.visibility',
             'posts.location',
             'posts.is_pinned',
+            'posts.pinned_at',
+            'posts.edited_at',
+            'posts.published_at',
             'posts.likes_count',
             'posts.comments_count',
             'posts.shares_count',
+            'posts.save_count',
             'posts.created_at',
         ]);
     }
@@ -538,14 +642,14 @@ class Post extends Model implements HasMedia
             ->forProfile($profileOwner)
             ->with([
                 'user',
+                'author.media',
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
             ->published()
             ->visibleTo($viewer)
             ->where('posts.visibility', '!=', self::VISIBILITY_PRIVATE)
-            ->orderByDesc('posts.is_pinned')
-            ->latest('posts.created_at')
+            ->when(true, fn (Builder $query) => app(\App\Services\ProfilePostOrderingService::class)->apply($query))
             ->withListEngagement($viewerId)
             ->paginate($perPage)
             ->withQueryString();
@@ -560,8 +664,10 @@ class Post extends Model implements HasMedia
             ->profileTimelineColumns()
             ->forProfile($profileOwner)
             ->where('posts.visibility', self::VISIBILITY_PRIVATE)
+            ->published()
             ->with([
                 'user',
+                'author.media',
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($profileOwner),
             ])
@@ -575,6 +681,63 @@ class Post extends Model implements HasMedia
         return (int) self::query()
             ->forProfile($profileOwner)
             ->where('posts.visibility', self::VISIBILITY_PRIVATE)
+            ->published()
+            ->count();
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function recentDraftsForProfileOwner(User $profileOwner, int $limit = 10): Collection
+    {
+        return self::query()
+            ->profileTimelineColumns()
+            ->forProfile($profileOwner)
+            ->draft()
+            ->with([
+                'user',
+                'author.media',
+                'hashtags',
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($profileOwner),
+            ])
+            ->latest('posts.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public static function draftCountForProfile(User $profileOwner): int
+    {
+        return (int) self::query()
+            ->forProfile($profileOwner)
+            ->draft()
+            ->count();
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public static function recentScheduledForProfileOwner(User $profileOwner, int $limit = 10): Collection
+    {
+        return self::query()
+            ->profileTimelineColumns()
+            ->forProfile($profileOwner)
+            ->scheduled()
+            ->with([
+                'user',
+                'author.media',
+                'hashtags',
+                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($profileOwner),
+            ])
+            ->latest('posts.published_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public static function scheduledCountForProfile(User $profileOwner): int
+    {
+        return (int) self::query()
+            ->forProfile($profileOwner)
+            ->scheduled()
             ->count();
     }
 
@@ -622,6 +785,15 @@ class Post extends Model implements HasMedia
         $query->where('is_pinned', true);
     }
 
+    public function scopePinnedFirst(Builder $query): Builder
+    {
+        return $query
+            ->orderByDesc('posts.is_pinned')
+            ->orderByDesc('posts.pinned_at')
+            ->orderByDesc('posts.created_at')
+            ->orderByDesc('posts.id');
+    }
+
     public function scopeForGroup(Builder $query, int $groupId): Builder
     {
         return $query->where('group_id', $groupId);
@@ -636,13 +808,13 @@ class Post extends Model implements HasMedia
         });
     }
 
-    public static function paginateGroupFeed(Group $group, int $perPage = 15, string $cursorName = 'posts_cursor'): CursorPaginator
+    public static function paginateGroupFeed(Group $group, ?User $viewer = null, int $perPage = 15, string $cursorName = 'posts_cursor'): CursorPaginator
     {
-        $viewerId = (int) (auth()->id() ?? 0);
-        $viewer = auth()->user();
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
 
         return self::query()
             ->inGroupFeed($group)
+            ->visibleTo($viewer)
             ->withFeedRelations($viewer)
             ->withFeedLikeExistsForViewer($viewerId)
             ->latest('posts.created_at')
@@ -754,6 +926,7 @@ class Post extends Model implements HasMedia
             ->with([
                 'user',
                 'author',
+                'author.media',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery
                     ->visibleTo($viewer)
                     ->with('media'),
@@ -766,8 +939,8 @@ class Post extends Model implements HasMedia
     public function scopeWithListEngagement(Builder $query, ?int $viewerId = null): Builder
     {
         $query->withCount([
-            'likes',
-            'comments',
+            'reactions as likes_count',
+            'comments as comments_count',
         ]);
 
         $viewerId = (int) ($viewerId ?? 0);
@@ -776,12 +949,13 @@ class Post extends Model implements HasMedia
             return $query;
         }
 
-        return $query->withExists([
-            'likes' => fn (Builder $likeQuery): Builder => $likeQuery
-                ->where('likes.user_id', $viewerId),
-            'likes as liked_by_viewer' => fn (Builder $likeQuery): Builder => $likeQuery
-                ->where('likes.user_id', $viewerId),
-        ]);
+        return $query
+            ->withExists([
+                'reactions as liked_by_viewer' => fn (Builder $reactionQuery): Builder => $reactionQuery
+                    ->where('reactions.user_id', $viewerId),
+                'savedBy as saved_by_viewer' => fn (Builder $saveQuery): Builder => $saveQuery
+                    ->where('saved_posts.user_id', $viewerId),
+            ]);
     }
 
     public function scopeWithFeedLikeExistsForViewer(Builder $query, ?int $viewerId): Builder
@@ -789,10 +963,10 @@ class Post extends Model implements HasMedia
         $viewerId = (int) ($viewerId ?? 0);
 
         return $query->withExists([
-            'likes' => fn (Builder $likeQuery): Builder => $likeQuery
-                ->where('likes.user_id', $viewerId),
-            'likes as liked_by_viewer' => fn (Builder $likeQuery) => $likeQuery
-                ->where('likes.user_id', $viewerId),
+            'reactions as liked_by_viewer' => fn (Builder $reactionQuery) => $reactionQuery
+                ->where('reactions.user_id', $viewerId),
+            'savedBy as saved_by_viewer' => fn (Builder $saveQuery): Builder => $saveQuery
+                ->where('saved_posts.user_id', $viewerId),
         ]);
     }
 
@@ -826,18 +1000,23 @@ class Post extends Model implements HasMedia
 
     public function isLikedBy(User $user): bool
     {
-        if ($this->relationLoaded('likes')) {
-            return $this->likes->contains(function (Like $like) use ($user): bool {
-                return $like->user_id === $user->getKey();
+        if ($this->relationLoaded('reactions')) {
+            return $this->reactions->contains(function (Reaction $reaction) use ($user): bool {
+                return $reaction->user_id === $user->getKey();
             });
         }
 
-        return $this->likes()->where('user_id', $user->getKey())->exists();
+        return $this->reactions()->where('user_id', $user->getKey())->exists();
     }
 
     public function refreshLikesCount(): void
     {
-        $this->update(['likes_count' => $this->postReactions()->count()]);
+        $count = (int) $this->reactions()->count();
+
+        $this->update([
+            'likes_count' => $count,
+            'reactions_count' => $count,
+        ]);
     }
 
     public function refreshCommentsCount(): void
@@ -858,11 +1037,15 @@ class Post extends Model implements HasMedia
 
         // Avoid N+1 issues by checking if relation is loaded,
         // otherwise default to a direct query (or null if we're listing).
-        if ($this->relationLoaded('postReactions')) {
-            return $this->postReactions->firstWhere('user_id', auth()->id())?->type;
+        if ($this->relationLoaded('reactions')) {
+            $type = $this->reactions->firstWhere('user_id', auth()->id())?->type;
+
+            return $type ? Reaction::normalizeType((string) $type) : null;
         }
 
-        return $this->postReactions()->where('user_id', auth()->id())->value('type');
+        $type = $this->reactions()->where('user_id', auth()->id())->value('type');
+
+        return $type ? Reaction::normalizeType((string) $type) : null;
     }
 
     public function displayAuthor(): ?User
@@ -890,14 +1073,7 @@ class Post extends Model implements HasMedia
      */
     public static function reactionEmojiMap(): array
     {
-        return [
-            'love' => '❤️',
-            'cute' => '🥹',
-            'funny' => '😂',
-            'wow' => '😮',
-            'sad' => '😢',
-            'support' => '🤝',
-        ];
+        return Reaction::emojiMap();
     }
 
     public function canBeViewedBy(?User $viewer): bool

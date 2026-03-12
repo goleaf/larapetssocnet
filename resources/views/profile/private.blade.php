@@ -22,10 +22,16 @@
  </section>
 
  <x-ui.card>
- <x-ui.empty-state icon="🔒" title="This account is private" :description="'This profile is private. Follow @'.$user->username.'to see posts, photos, and pet profiles.'">
+ <x-ui.empty-state icon="🔒"
+ title="{{ ($profileVisibility ?? 'private') === 'private' ? 'This account is private' : 'This account is followers-only' }}"
+ :description="($profileVisibility ?? 'private') === 'private'
+ ? 'Only you can view this profile.'
+ : 'Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
  @auth
  <x-slot name="action">
+ @if (($profileVisibility ?? 'private') !== 'private')
  <x-follow-button :user="$user" :follow-status="($followStatus ?? 'none')" size="lg"/>
+ @endif
  </x-slot>
  @else
  <x-slot name="action">

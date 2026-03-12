@@ -25,7 +25,7 @@
  </x-slot>
 
  <div class="p-5">
- @auth
+ @can('create', [App\Models\Comment::class, $post])
  <div class="mb-6 flex items-start gap-3">
  <x-ui.avatar :src="auth()->user()->avatar_url" :name="auth()->user()->name" size="sm" class="mt-1"/>
  <div class="flex-1">
@@ -44,16 +44,21 @@
  </form>
  </div>
  </div>
- @endauth
+ @endcan
 
- @if($comments->isEmpty())
- <x-ui.empty-state title="No comments yet" description="Be the first to share your thoughts!" icon="💬"/>
- @else
- <div class="space-y-4">
- @foreach($comments as $comment)
- <x-comment-item :comment="$comment" :post="$post"/>
- @endforeach
- </div>
+@forelse($comments as $comment)
+@if($loop->first)
+<div class="space-y-4">
+@endif
+<x-comment-item :comment="$comment" :post="$post"/>
+@if($loop->last)
+</div>
+@endif
+@empty
+<x-ui.empty-state title="No comments yet" description="Be the first to share your thoughts!" icon="💬"/>
+@endforelse
+
+ @if($comments->hasPages())
  <div class="mt-4">
  {{ $comments->links() }}
  </div>

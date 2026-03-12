@@ -32,6 +32,7 @@
  <x-ui.card padding="lg">
  <div x-data="{
  name: @js(old('name', $group->name ??'')),
+ slug: @js(old('slug', $group->slug ??'')),
  description: @js(old('description', $group->description ??'')),
  rules: @js(old('rules', $group->rules ??'')),
  avatarSrc: @js(data_get($group,'avatar_url','')),
@@ -87,6 +88,12 @@
  </div>
 
  <div>
+ <x-ui.input id="slug" name="slug" type="text" label="Custom Slug (optional)" x-model="slug"
+ :value="old('slug', $group->slug ??'')" maxlength="80" placeholder="community-name" />
+ <x-ui.hint :error="$errors->first('slug')" />
+ </div>
+
+ <div>
  <x-ui.label class="mb-2">Group Type</x-ui.label>
  <div class="grid gap-3 md:grid-cols-3">
  @foreach ($privacyOptions as $value => $description)
@@ -104,7 +111,7 @@
  </label>
  @endforeach
  </div>
- <x-input-error :messages="$errors->get('privacy')" class="mt-2"/>
+ <x-ui.hint :error="$errors->first('privacy')" />
  </div>
 
  <div>
@@ -143,7 +150,7 @@
  <p class="mt-1 text-xs text-fur">Square image recommended.</p>
  </div>
  </div>
- <x-input-error :messages="$errors->get('avatar')" class="mt-2"/>
+ <x-ui.hint :error="$errors->first('avatar')" />
  </div>
 
  <div class="space-y-3">
@@ -165,13 +172,8 @@
  </div>
  <input id="cover" name="cover" type="file" accept="image/*" class="sr-only"
  @change="setCoverPreview($event)">
- <x-input-error :messages="$errors->get('cover')" class="mt-2"/>
+ <x-ui.hint :error="$errors->first('cover')" />
  </div>
- </div>
-
- <div>
- <x-ui.input id="cover_image_path" name="cover_image_path" type="url"
- label="Cover URL (optional fallback)" :value="old('cover_image_path', $group->cover_image_path ??'')" placeholder="https://example.com/cover.jpg"/>
  </div>
 
  <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-whisker/30">

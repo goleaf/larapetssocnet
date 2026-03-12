@@ -82,7 +82,7 @@ class ProfileSettingsController extends Controller
 
         if (strtolower($username) !== strtolower($currentUsername)) {
             try {
-                app(UsernameService::class)->change($user, $username);
+                app(UsernameService::class)->change($user, $username, $user, 'profile_update');
             } catch (UsernameChangeCooldownException $exception) {
                 return back()
                     ->withInput()

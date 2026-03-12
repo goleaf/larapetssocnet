@@ -33,12 +33,19 @@ class PostFactory extends Factory
             'body' => $body,
             'body_html' => '<p>'.e($body).'</p>',
             'type' => 'text',
+            'status' => 'published',
+            'published_at' => now(),
             'visibility' => Post::VISIBILITY_PUBLIC,
             'location' => $this->faker->optional(0.3)->city(),
             'is_pinned' => false,
+            'pinned_at' => null,
+            'edited_at' => null,
             'likes_count' => 0,
             'comments_count' => 0,
+            'reactions_count' => 0,
             'shares_count' => 0,
+            'save_count' => 0,
+            'metadata' => null,
         ];
     }
 }

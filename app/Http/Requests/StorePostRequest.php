@@ -2,8 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PostStatus;
+use App\Models\Pet;
+use App\Models\Post;
+use App\Services\PostMetadataService;
+use App\Support\Hashtags\HashtagParser;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
@@ -11,13 +17,31 @@ class StorePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', Post::class) ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $metadata = $this->input('metadata');
+
+        $this->merge([
+            'status' => $this->input('status') ?? PostStatus::Published->value,
+            'published_at' => $this->normalizeNullableString($this->input('published_at')),
+            'location' => $this->normalizeNullableString($this->input('location')),
+            'metadata' => app(PostMetadataService::class)->normalize(is_array($metadata) ? $metadata : null),
+        ]);
     }
 
     public function rules(): array
     {
         return [
             'body' => ['nullable', 'string', 'max:2000'],
+            'status' => ['nullable', 'string', Rule::in([
+                PostStatus::Draft->value,
+                PostStatus::Published->value,
+                PostStatus::Scheduled->value,
+            ])],
+            'published_at' => ['nullable', 'date'],
             'pet_id' => [
                 'nullable',
                 'integer',
@@ -34,6 +58,16 @@ class StorePostRequest extends FormRequest
             ],
             'visibility' => ['nullable', 'string', 'in:public,followers,private'],
             'location' => ['nullable', 'string', 'max:100'],
+            'metadata' => ['nullable', 'array'],
+            'metadata.link' => ['nullable', 'array'],
+            'metadata.link.url' => ['nullable', 'url', 'max:500'],
+            'metadata.link.title' => ['nullable', 'string', 'max:200'],
+            'metadata.link.description' => ['nullable', 'string', 'max:500'],
+            'metadata.link.image' => ['nullable', 'string', 'max:500'],
+            'metadata.mood' => ['nullable', 'string', 'max:200'],
+            'metadata.activity' => ['nullable', 'string', 'max:200'],
+            'metadata.source' => ['nullable', 'string', 'max:200'],
+            'metadata.context' => ['nullable', 'string', 'max:200'],
             'media' => ['nullable', 'array', 'max:5'],
             'media.*' => [
                 'file',
@@ -55,10 +89,27 @@ class StorePostRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
+            $this->validateHashtagLimit($validator);
+
             $mediaFiles = collect($this->mediaFiles());
+            $status = PostStatus::tryFrom((string) ($this->input('status') ?? PostStatus::Published->value)) ?? PostStatus::Published;
+            $publishedAt = null;
+            $publishedAtInput = $this->input('published_at');
+
+            if ($publishedAtInput) {
+                try {
+                    $publishedAt = Carbon::parse((string) $publishedAtInput);
+                } catch (\Throwable) {
+                    $validator->errors()->add('published_at', 'Publish date is invalid.');
+                }
+            }
 
             if ($mediaFiles->isEmpty()) {
-                return;
+                $body = trim((string) $this->input('body'));
+
+                if ($status !== PostStatus::Draft && $body === '') {
+                    $validator->errors()->add('body', 'Add text or media before publishing.');
+                }
             }
 
             $videoFiles = $mediaFiles->filter(
@@ -78,7 +129,55 @@ class StorePostRequest extends FormRequest
             if ($videoFiles->isNotEmpty() && $imageFiles->isNotEmpty()) {
                 $validator->errors()->add($errorKey, 'Video cannot be uploaded together with photos.');
             }
+
+            if ($status === PostStatus::Draft && $publishedAt) {
+                $validator->errors()->add('published_at', 'Draft posts cannot have a publish date.');
+            }
+
+            if ($status === PostStatus::Scheduled && ! $publishedAt) {
+                $validator->errors()->add('published_at', 'Select a publish date for scheduled posts.');
+            }
+
+            if ($status === PostStatus::Scheduled && $publishedAt && $publishedAt->isPast()) {
+                $validator->errors()->add('published_at', 'Scheduled posts must be set in the future.');
+            }
+
+            if ($status === PostStatus::Published && $publishedAt && $publishedAt->isFuture()) {
+                $validator->errors()->add('published_at', 'Published posts cannot be scheduled in the future.');
+            }
+
+            $petId = $this->input('pet_id');
+            $visibility = $this->input('visibility') ?? Post::VISIBILITY_PUBLIC;
+
+            if ($petId) {
+                $pet = Pet::query()
+                    ->select(['id', 'is_public', 'user_id'])
+                    ->whereKey((int) $petId)
+                    ->first();
+
+                if ($pet && ! (bool) $pet->is_public && $visibility === Post::VISIBILITY_PUBLIC) {
+                    $validator->errors()->add('visibility', 'Public posts cannot be linked to a private pet.');
+                }
+            }
         });
+    }
+
+    private function validateHashtagLimit($validator): void
+    {
+        $body = (string) ($this->input('body') ?? '');
+        $hashtags = app(HashtagParser::class)->extractAll($body);
+        $max = (int) config('hashtags.max_per_post', 20);
+
+        if (count($hashtags) > $max) {
+            $validator->errors()->add('body', "You can use up to {$max} hashtags per post.");
+        }
+    }
+
+    private function normalizeNullableString(mixed $value): ?string
+    {
+        $normalized = trim((string) $value);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     /**

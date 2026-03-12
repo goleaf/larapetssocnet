@@ -43,8 +43,35 @@ class PostObserver
      */
     public function updated(Post $post): void
     {
+        $previousHashtagIds = null;
+
         if ($post->wasChanged('body')) {
-            $this->hashtags->syncHashtags($post);
+            $previousHashtagIds = $post->hashtags()->pluck('hashtags.id')->all();
+        }
+
+        $transitioned = false;
+
+        if ($post->wasChanged(['status', 'published_at'])) {
+            $originalStatus = $post->getOriginal('status');
+            $statusValue = $originalStatus instanceof \App\Enums\PostStatus
+                ? $originalStatus->value
+                : (string) $originalStatus;
+
+            $wasEligible = $this->hashtags->isEligibleForUsageState(
+                $statusValue,
+                $post->getOriginal('published_at'),
+                $post->getOriginal('deleted_at')
+            );
+            $isEligible = $this->hashtags->isEligibleForUsage($post);
+            $transitioned = $wasEligible !== $isEligible;
+        }
+
+        if ($post->wasChanged('body')) {
+            $this->hashtags->syncHashtags($post, ! $transitioned);
+        }
+
+        if ($transitioned) {
+            $this->hashtags->syncUsageForEligibilityChange($post, $wasEligible, $isEligible, $previousHashtagIds);
         }
 
         $this->bustFeedCache($post);
@@ -94,7 +121,18 @@ class PostObserver
      */
     public function deleted(Post $post): void
     {
-        $this->hashtags->detachAll($post);
+        $originalStatus = $post->getOriginal('status');
+        $statusValue = $originalStatus instanceof \App\Enums\PostStatus
+            ? $originalStatus->value
+            : (string) $originalStatus;
+
+        $wasEligible = $this->hashtags->isEligibleForUsageState(
+            $statusValue,
+            $post->getOriginal('published_at'),
+            null
+        );
+
+        $this->hashtags->detachAll($post, $wasEligible);
 
         $post->author->decrement('posts_count');
 

@@ -9,25 +9,19 @@
  @method('put')
 
  <div>
- <label for="update_password_current_password" class="mb-1 block text-sm font-semibold">Current Password</label>
- <input id="update_password_current_password" name="current_password" type="password" class="form-input" autocomplete="current-password" aria-label="Current password"/>
- <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2"/>
+ <x-ui.input id="update_password_current_password" name="current_password" type="password" label="Current Password" autocomplete="current-password"/>
  </div>
 
  <div>
- <label for="update_password_password" class="mb-1 block text-sm font-semibold">New Password</label>
- <input id="update_password_password" name="password" type="password" class="form-input" autocomplete="new-password" aria-label="New password"/>
- <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2"/>
+ <x-ui.input id="update_password_password" name="password" type="password" label="New Password" autocomplete="new-password"/>
  </div>
 
  <div>
- <label for="update_password_password_confirmation" class="mb-1 block text-sm font-semibold">Confirm Password</label>
- <input id="update_password_password_confirmation" name="password_confirmation" type="password" class="form-input" autocomplete="new-password" aria-label="Confirm new password"/>
- <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2"/>
+ <x-ui.input id="update_password_password_confirmation" name="password_confirmation" type="password" label="Confirm Password" autocomplete="new-password"/>
  </div>
 
  <div class="flex items-center gap-4">
- <button type="submit" class="btn-base btn-primary">Save Password</button>
+ <x-ui.button type="submit" variant="primary">Save Password</x-ui.button>
 
  @if (session('status') ==='password-updated')
  <p

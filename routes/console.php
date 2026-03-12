@@ -17,3 +17,11 @@ Schedule::command('queue:monitor', [
     'queues' => $queueMonitorTarget,
     '--max' => $queueMonitorMax,
 ])->everyMinute();
+
+Schedule::command('posts:publish-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('posts:publish-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping();

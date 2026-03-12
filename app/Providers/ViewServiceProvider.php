@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\GroupMemberStatus;
 use App\Models\Contest;
 use App\Models\Event;
 use App\Models\Group;
@@ -142,7 +143,7 @@ class ViewServiceProvider extends ServiceProvider
                     ->where('group_members.user_id', $user->getKey())
                     ->where(function ($statusQuery): void {
                         $statusQuery->whereNull('group_members.status')
-                            ->orWhereIn('group_members.status', ['active', 'accepted']);
+                            ->orWhereIn('group_members.status', GroupMemberStatus::activeValues());
                     });
             })
             ->orderByDesc('groups.members_count')

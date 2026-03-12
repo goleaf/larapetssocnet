@@ -3,7 +3,13 @@
 'availablePets' => collect(),
 ])
 
-<form action="{{ $post ? route('posts.update', $post) : route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+@php
+ $statusValue = old('status', $post?->status?->value ?? 'published');
+ $publishedAtValue = old('published_at', optional($post?->published_at)->format('Y-m-d\\TH:i'));
+@endphp
+
+<form action="{{ $post ? route('posts.update', $post) : route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5"
+ x-data="{ status: '{{ $statusValue }}' }">
  @csrf
  @if($post)
  @method('PATCH')
@@ -15,7 +21,6 @@
  rows="4"
  label="What's on your mind?"
  :value="old('body', $post->body ?? '')"
- required
  />
  @error('body')
  <span class="text-sm text-rose">{{ $message }}</span>
@@ -34,6 +39,21 @@
  </div>
  </div>
 
+ <div>
+ <x-ui.label for="status">Status</x-ui.label>
+ <x-ui.select id="status" name="status" x-model="status">
+ <option value="draft">Draft</option>
+ <option value="published">Published</option>
+ <option value="scheduled">Scheduled</option>
+ @if($post)
+ <option value="archived">Archived</option>
+ @endif
+ </x-ui.select>
+ @error('status')
+ <span class="text-sm text-rose">{{ $message }}</span>
+ @enderror
+ </div>
+
  <x-ui.select
  id="pet_id"
  name="pet_id"
@@ -47,6 +67,7 @@
  </x-ui.select>
  </div>
 
+ <div class="grid gap-4 md:grid-cols-2">
  <x-ui.input
  type="text"
  name="location"
@@ -54,6 +75,20 @@
  label="Location"
  :value="old('location', $post?->location)"
  />
+
+ <div x-show="status === 'scheduled'" x-cloak>
+ <x-ui.input
+ type="datetime-local"
+ name="published_at"
+ id="published_at"
+ label="Publish At"
+ :value="$publishedAtValue"
+ />
+ @error('published_at')
+ <span class="text-sm text-rose">{{ $message }}</span>
+ @enderror
+ </div>
+ </div>
 
  @if(!$post)
  <x-ui.panel padding="md" class="bg-cream/50">

@@ -43,7 +43,7 @@
     request()->url() === url((($item['href'] ?? $item['url'] ?? '#') === '#' && ! empty($item['route']) && Route::has($item['route']) ? route($item['route']) : ($item['href'] ?? $item['url'] ?? '#')))
     || collect(\Illuminate\Support\Arr::wrap($item['pattern'] ?? $item['patterns'] ?? []))->contains(fn ($pattern) => (Route::currentRouteName() && \Illuminate\Support\Str::is((string) $pattern, Route::currentRouteName())) || request()->is((string) $pattern))
     || (Route::currentRouteName() && collect(\Illuminate\Support\Arr::wrap($item['routePattern'] ?? $item['routePatterns'] ?? []))->contains(fn ($pattern) => \Illuminate\Support\Str::is((string) $pattern, Route::currentRouteName())))
- )) ? 'primary' : 'default')" size="sm" pill>
+ )) ? 'primary' : 'default')" size="sm">
  {{ $item['badge'] ?? $item['count'] ?? null }}
  </x-ui.badge>
  @endif

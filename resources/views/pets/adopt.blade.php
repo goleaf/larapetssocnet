@@ -127,7 +127,7 @@
  $imageUrl = $pet->avatar_url;
  @endphp
 
- <x-pet-card
+<x-ui.pet-card
  :name="$pet->name ??'Unnamed pet'"
  :species="\Illuminate\Support\Str::headline((string) ($pet->species ??'Unknown'))"
  :breed="$pet->breed ?:'Mixed'"

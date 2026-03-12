@@ -10,18 +10,21 @@ it('orders hashtags by popularity', function (): void {
     Hashtag::factory()->create([
         'name' => 'Low',
         'slug' => 'low',
+        'normalized_name' => 'low',
         'posts_count' => 2,
     ]);
 
     $mostPopular = Hashtag::factory()->create([
         'name' => 'Top',
         'slug' => 'top',
+        'normalized_name' => 'top',
         'posts_count' => 20,
     ]);
 
     Hashtag::factory()->create([
         'name' => 'Middle',
         'slug' => 'middle',
+        'normalized_name' => 'middle',
         'posts_count' => 7,
     ]);
 
@@ -36,10 +39,12 @@ it('filters hashtags by post type', function (): void {
     $photoTag = Hashtag::factory()->create([
         'name' => 'Photo',
         'slug' => 'photo',
+        'normalized_name' => 'photo',
     ]);
     $textTag = Hashtag::factory()->create([
         'name' => 'Text',
         'slug' => 'text',
+        'normalized_name' => 'text',
     ]);
 
     $photoPost = Post::factory()->create(['type' => Post::TYPE_PHOTO]);

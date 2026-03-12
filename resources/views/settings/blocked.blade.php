@@ -15,8 +15,7 @@
  label="Username"
  placeholder="Enter username to block"
  />
- <x-input-error class="mt-2" :messages="$errors->get('username')"/>
- </div>
+</div>
 
  <x-ui.button type="submit" variant="danger" class="sm:shrink-0">Block User</x-ui.button>
  </form>

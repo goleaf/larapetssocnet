@@ -3,6 +3,7 @@
 namespace App\Actions\Users;
 
 use App\Models\User;
+use App\Services\UsernameService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,7 +16,22 @@ class UpdateProfileAction
      */
     public function handle(User $user, array $data, bool $trackUsernameChange = false): User
     {
-        $payload = $this->buildPayload($user, $data, $trackUsernameChange);
+        $payload = $this->buildPayload($user, $data);
+
+        if (array_key_exists('username', $data)) {
+            $incomingUsername = (string) ($data['username'] ?? '');
+            $currentUsername = (string) $user->username;
+
+            if ($incomingUsername !== '' && $incomingUsername !== $currentUsername) {
+                app(UsernameService::class)->change(
+                    $user,
+                    $incomingUsername,
+                    $user,
+                    'profile_update',
+                    false
+                );
+            }
+        }
 
         DB::transaction(function () use ($user, $payload): void {
             $user->fill($payload);
@@ -36,20 +52,12 @@ class UpdateProfileAction
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function buildPayload(User $user, array $data, bool $trackUsernameChange): array
+    private function buildPayload(User $user, array $data): array
     {
-        $currentUsername = (string) $user->username;
-        $incomingUsername = (string) ($data['username'] ?? $currentUsername);
-
         $payload = [
             'name' => $data['name'] ?? $user->name,
-            'username' => $incomingUsername,
             'email' => isset($data['email']) ? Str::lower((string) $data['email']) : $user->email,
         ];
-
-        if ($trackUsernameChange && $incomingUsername !== '' && $incomingUsername !== $currentUsername) {
-            $payload['username_changed_at'] = now();
-        }
 
         if (array_key_exists('bio', $data)) {
             $bioHtml = $this->sanitizeBioHtml($data['bio'] ?? null);
@@ -59,8 +67,24 @@ class UpdateProfileAction
             $payload['bio_html'] = $bioHtml;
         }
 
+        if (array_key_exists('display_name', $data)) {
+            $payload['display_name'] = ($data['display_name'] ?? null) ?: null;
+        }
+
+        if (array_key_exists('headline', $data)) {
+            $payload['headline'] = ($data['headline'] ?? null) ?: null;
+        }
+
+        if (array_key_exists('pronouns', $data)) {
+            $payload['pronouns'] = ($data['pronouns'] ?? null) ?: null;
+        }
+
         if (array_key_exists('website', $data)) {
             $payload['website'] = $data['website'] ?? null;
+        }
+
+        if (array_key_exists('social_links', $data)) {
+            $payload['social_links'] = $data['social_links'] ?? null;
         }
 
         if (array_key_exists('location', $data) || array_key_exists('city', $data)) {
@@ -71,6 +95,18 @@ class UpdateProfileAction
 
         if (array_key_exists('country_code', $data)) {
             $payload['country_code'] = $data['country_code'] ?? null;
+        }
+
+        if (array_key_exists('locale', $data)) {
+            $payload['locale'] = ($data['locale'] ?? null) ?: null;
+        }
+
+        if (array_key_exists('timezone', $data)) {
+            $payload['timezone'] = ($data['timezone'] ?? null) ?: null;
+        }
+
+        if (array_key_exists('profile_theme', $data)) {
+            $payload['profile_theme'] = ($data['profile_theme'] ?? null) ?: null;
         }
 
         if (array_key_exists('birth_date', $data)) {

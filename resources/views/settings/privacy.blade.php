@@ -15,27 +15,15 @@
  <h4 class="text-sm font-medium text-bark">Profile Visibility</h4>
  <p class="text-sm text-fur mb-4">Control who can view your posts and personal details.</p>
 
- <div class="space-y-4">
- <div class="flex items-center">
- <input id="pv_public" name="profile_visibility" type="radio" value="public"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('profile_visibility', $user->profile_visibility) ==='public')>
- <label for="pv_public" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Public <span class="font-normal text-fur">(Anyone can see your profile and
- posts)</span>
- </label>
- </div>
- <div class="flex items-center">
- <input id="pv_followers" name="profile_visibility" type="radio" value="followers_only"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('profile_visibility', $user->profile_visibility) ==='followers_only')>
- <label for="pv_followers" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Followers Only <span class="font-normal text-fur">(Only approved followers can see
- your profile and posts)</span>
- </label>
- </div>
- </div>
- <x-input-error class="mt-2" :messages="$errors->get('profile_visibility')"/>
+ <x-ui.radio-group
+ name="profile_visibility"
+ :selected="old('profile_visibility', $user->profile_visibility)"
+ :options="[
+ ['value' => 'public', 'label' => 'Public', 'description' => 'Anyone can see your profile and posts'],
+ ['value' => 'followers_only', 'label' => 'Followers Only', 'description' => 'Only approved followers can see your profile and posts'],
+ ['value' => 'private', 'label' => 'Private', 'description' => 'Only you can see your profile'],
+ ]"
+ />
  </div>
 
  <hr class="border-whisker/30">
@@ -45,25 +33,14 @@
  <h4 class="text-sm font-medium text-bark">Direct Messages</h4>
  <p class="text-sm text-fur mb-4">Control who can send you direct messages.</p>
 
- <div class="space-y-4">
- <div class="flex items-center">
- <input id="mp_everyone" name="messaging_permission" type="radio" value="everyone"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('messaging_permission', $user->messaging_permission) ==='everyone')>
- <label for="mp_everyone" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Everyone
- </label>
- </div>
- <div class="flex items-center">
- <input id="mp_followers" name="messaging_permission" type="radio" value="followers_only"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('messaging_permission', $user->messaging_permission) ==='followers_only')>
- <label for="mp_followers" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Followers Only
- </label>
- </div>
- </div>
- <x-input-error class="mt-2" :messages="$errors->get('messaging_permission')"/>
+ <x-ui.radio-group
+ name="messaging_permission"
+ :selected="old('messaging_permission', $user->messaging_permission)"
+ :options="[
+ ['value' => 'everyone', 'label' => 'Everyone'],
+ ['value' => 'followers_only', 'label' => 'Followers Only'],
+ ]"
+ />
  </div>
 
  <hr class="border-whisker/30">
@@ -73,25 +50,14 @@
  <h4 class="text-sm font-medium text-bark">Pets Visibility</h4>
  <p class="text-sm text-fur mb-4">Control who can see the pets associated with your account.</p>
 
- <div class="space-y-4">
- <div class="flex items-center">
- <input id="pet_everyone" name="pets_visibility" type="radio" value="everyone"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('pets_visibility', $user->pets_visibility) ==='everyone')>
- <label for="pet_everyone" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Everyone
- </label>
- </div>
- <div class="flex items-center">
- <input id="pet_followers" name="pets_visibility" type="radio" value="followers_only"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('pets_visibility', $user->pets_visibility) ==='followers_only')>
- <label for="pet_followers" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Followers Only
- </label>
- </div>
- </div>
- <x-input-error class="mt-2" :messages="$errors->get('pets_visibility')"/>
+ <x-ui.radio-group
+ name="pets_visibility"
+ :selected="old('pets_visibility', $user->pets_visibility)"
+ :options="[
+ ['value' => 'everyone', 'label' => 'Everyone'],
+ ['value' => 'followers_only', 'label' => 'Followers Only'],
+ ]"
+ />
  </div>
 
  <hr class="border-whisker/30">
@@ -101,25 +67,14 @@
  <h4 class="text-sm font-medium text-bark">Groups Visibility</h4>
  <p class="text-sm text-fur mb-4">Control who can see the groups you have joined.</p>
 
- <div class="space-y-4">
- <div class="flex items-center">
- <input id="grp_everyone" name="groups_visibility" type="radio" value="everyone"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('groups_visibility', $user->groups_visibility) ==='everyone')>
- <label for="grp_everyone" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Everyone
- </label>
- </div>
- <div class="flex items-center">
- <input id="grp_followers" name="groups_visibility" type="radio" value="followers_only"
- class="h-4 w-4 border-whisker text-paw focus:ring-paw"
- @checked(old('groups_visibility', $user->groups_visibility) ==='followers_only')>
- <label for="grp_followers" class="ml-3 block text-sm font-medium leading-6 text-bark">
- Followers Only
- </label>
- </div>
- </div>
- <x-input-error class="mt-2" :messages="$errors->get('groups_visibility')"/>
+ <x-ui.radio-group
+ name="groups_visibility"
+ :selected="old('groups_visibility', $user->groups_visibility)"
+ :options="[
+ ['value' => 'everyone', 'label' => 'Everyone'],
+ ['value' => 'followers_only', 'label' => 'Followers Only'],
+ ]"
+ />
  </div>
 
  <hr class="border-whisker/30">

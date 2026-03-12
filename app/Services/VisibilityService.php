@@ -2,11 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Models\User;
 
 class VisibilityService
 {
+    public function canViewPost(?User $viewer, Post $post): bool
+    {
+        return $this->canView($viewer, $post);
+    }
+
     public function canView(?User $viewer, Post $post): bool
     {
         $post->loadMissing('author');
@@ -24,6 +30,10 @@ class VisibilityService
         }
 
         if ($viewer && $viewer->hasBlockingRelationshipWith($post->author)) {
+            return false;
+        }
+
+        if (! $this->isPublishedForViewer($post)) {
             return false;
         }
 
@@ -45,6 +55,29 @@ class VisibilityService
         }
 
         return $this->canView($viewer, $post);
+    }
+
+    public function canViewPostInFeed(?User $viewer, Post $post): bool
+    {
+        return $this->canView($viewer, $post);
+    }
+
+    public function canManagePost(User $actor, Post $post): bool
+    {
+        return $actor->id === $post->user_id || $actor->hasAnyRole(['admin', 'moderator']);
+    }
+
+    private function isPublishedForViewer(Post $post): bool
+    {
+        if ($post->status !== PostStatus::Published) {
+            return false;
+        }
+
+        if (! $post->published_at) {
+            return true;
+        }
+
+        return $post->published_at->isPast();
     }
 
     public function getVisibilityLabel(string $visibility): string

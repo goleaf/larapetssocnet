@@ -7,6 +7,7 @@ use App\Models\Hashtag;
 use App\Models\Pet;
 use App\Models\Post;
 use App\Models\User;
+use App\Support\Hashtags\HashtagNormalizer;
 use Illuminate\Support\Str;
 
 class SearchService
@@ -44,8 +45,10 @@ class SearchService
         }
 
         if ($tab === 'all' || $tab === 'posts') {
-            $query = Post::where('body', 'like', "%{$clean}%")
-                ->where('visibility', 'public')
+            $query = Post::query()
+                ->published()
+                ->visibleTo($viewer)
+                ->where('body', 'like', "%{$clean}%")
                 ->with(['author.media', 'media'])
                 ->withCount(['comments', 'reactions'])
                 ->latest()
@@ -65,7 +68,12 @@ class SearchService
 
         if ($tab === 'all' || $tab === 'hashtags') {
             $hashLimit = $tab === 'all' ? 6 : 30;
-            $query = Hashtag::where('name', 'like', "%{$clean}%")
+            $normalizer = new HashtagNormalizer;
+            $normalized = $normalizer->normalizeFromInput($clean);
+            $term = $normalized ?? $clean;
+
+            $query = Hashtag::query()
+                ->search($term)
                 ->orderByDesc('posts_count')
                 ->limit($hashLimit);
 

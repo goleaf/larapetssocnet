@@ -40,7 +40,7 @@
  <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif"
  class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-indigo-700 hover:file:bg-indigo-100"/>
  <x-ui.button variant="primary">Update avatar</x-ui.button>
- <x-input-error :messages="$errors->get('avatar')" class="mt-1"/>
+ <x-ui.hint :error="$errors->first('avatar')" />
  </form>
 
  <form method="POST" action="{{ route('pets.avatar.destroy', $pet) }}" onsubmit="return confirm('Remove this avatar?');">

@@ -8,6 +8,9 @@ use App\Models\Pet;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\ContentService;
+use App\Services\PostMetadataService;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +21,7 @@ class CreatePostAction
         private readonly ContentService $content,
         private readonly ProcessTagsAction $processTags,
         private readonly UploadMediaAction $uploadMedia,
+        private readonly PostMetadataService $metadata,
     ) {}
 
     /**
@@ -30,20 +34,23 @@ class CreatePostAction
         return DB::transaction(function () use ($user, $data): Post {
             $mediaFiles = $this->normalizeMediaFiles($data['media_files'] ?? []);
             $body = $this->normalizeNullableString($data['body'] ?? null);
+            $status = $this->normalizeStatus($data['status'] ?? PostStatus::Published);
+            $publishedAt = $this->resolvePublishedAt($status, $data['published_at'] ?? null);
+            $metadata = $this->metadata->normalize($data['metadata'] ?? null);
 
             $post = Post::query()->create([
                 'user_id' => $user->getKey(),
+                'group_id' => $data['group_id'] ?? null,
                 'pet_id' => $data['pet_id'] ?? ($data['tagged_pets'][0] ?? null),
                 'body' => $body,
                 'body_html' => $body ? $this->content->process($body) : null,
                 'type' => $this->resolveType($mediaFiles),
-                'status' => ($data['status'] ?? PostStatus::Published) instanceof PostStatus
-                    ? ($data['status'] ?? PostStatus::Published)->value
-                    : (string) ($data['status'] ?? PostStatus::Published->value),
-                'published_at' => $data['published_at'] ?? now(),
+                'status' => $status->value,
+                'published_at' => $publishedAt,
                 'visibility' => $data['visibility'] ?? Post::VISIBILITY_PUBLIC,
                 'location' => $this->normalizeNullableString($data['location'] ?? null),
                 'tagged_pets' => $data['tagged_pets'] ?? null,
+                'metadata' => $metadata,
             ]);
 
             $this->processTags->handle($post);
@@ -77,7 +84,7 @@ class CreatePostAction
 
         Pet::query()
             ->whereIn('id', $petIds->all())
-            ->select(['id', 'user_id'])
+            ->select(['id', 'user_id', 'species', 'breed'])
             ->get()
             ->each(function (Pet $pet) use ($user): void {
                 Gate::forUser($user)->authorize('createPostForPet', $pet);
@@ -126,5 +133,43 @@ class CreatePostAction
         $normalized = trim((string) $value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function normalizeStatus(mixed $status): PostStatus
+    {
+        if ($status instanceof PostStatus) {
+            return $status;
+        }
+
+        if (is_string($status)) {
+            $parsed = PostStatus::tryFrom($status);
+
+            if ($parsed) {
+                return $parsed;
+            }
+        }
+
+        return PostStatus::Published;
+    }
+
+    private function resolvePublishedAt(PostStatus $status, mixed $publishedAt): ?CarbonInterface
+    {
+        if ($status === PostStatus::Draft) {
+            return null;
+        }
+
+        if ($publishedAt instanceof CarbonInterface) {
+            return $publishedAt;
+        }
+
+        if (is_string($publishedAt) && $publishedAt !== '') {
+            return CarbonImmutable::parse($publishedAt);
+        }
+
+        if ($status === PostStatus::Scheduled || $status === PostStatus::Archived) {
+            return $publishedAt instanceof CarbonInterface ? $publishedAt : null;
+        }
+
+        return now();
     }
 }

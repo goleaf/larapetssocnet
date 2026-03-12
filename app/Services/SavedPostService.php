@@ -4,23 +4,28 @@ namespace App\Services;
 
 use App\Models\Post;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class SavedPostService
 {
     public function toggle(User $user, Post $post): bool
     {
-        $exists = $user->savedPosts()
-            ->where('posts.id', $post->id)
-            ->exists();
+        return DB::transaction(function () use ($user, $post): bool {
+            $exists = $user->savedPosts()
+                ->where('posts.id', $post->id)
+                ->exists();
 
-        if ($exists) {
-            $user->savedPosts()->detach($post->id);
+            if ($exists) {
+                $user->savedPosts()->detach($post->id);
+                $post->decrementCounter('save_count');
 
-            return false;
-        }
+                return false;
+            }
 
-        $user->savedPosts()->attach($post->id);
+            $user->savedPosts()->attach($post->id);
+            $post->incrementCounter('save_count');
 
-        return true;
+            return true;
+        });
     }
 }

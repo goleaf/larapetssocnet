@@ -20,7 +20,8 @@
  <p class="text-sm font-semibold text-bark">{{ __('feed.create_post') }}</p>
  </div>
 
- <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+ <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
+ x-data="{ status: '{{ old('status', 'published') }}' }">
  @csrf
  <div>
  <x-ui.textarea id="feed-post-body" name="body" rows="3"
@@ -32,6 +33,27 @@
  </div>
 
  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
+ <div>
+ <x-ui.label class="!mb-1 text-xs uppercase tracking-wide">Visibility</x-ui.label>
+ <x-visibility-selector :selected="old('visibility', 'public')" :showWarn="false" />
+ @error('visibility')
+ <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
+ @enderror
+ </div>
+
+ <div>
+ <x-ui.label for="feed-post-status"
+ class="!mb-1 text-xs uppercase tracking-wide">Status</x-ui.label>
+ <x-ui.select id="feed-post-status" name="status" x-model="status">
+ <option value="published">Publish now</option>
+ <option value="scheduled">Schedule</option>
+ <option value="draft">Draft</option>
+ </x-ui.select>
+ @error('status')
+ <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
+ @enderror
+ </div>
+
  <div>
  <x-ui.label for="feed-post-pet-id"
  class="!mb-1 text-xs uppercase tracking-wide">{{ __('feed.pet_label') }}</x-ui.label>
@@ -51,6 +73,15 @@
  <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
  @enderror
  @error('media.*')
+ <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
+ @enderror
+ </div>
+
+ <div x-show="status === 'scheduled'" x-cloak>
+ <x-ui.label for="feed-post-published-at"
+ class="!mb-1 text-xs uppercase tracking-wide">Publish at</x-ui.label>
+ <x-ui.input type="datetime-local" id="feed-post-published-at" name="published_at" :value="old('published_at')" />
+ @error('published_at')
  <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
  @enderror
  </div>

@@ -29,7 +29,10 @@ class HashtagServiceTest extends TestCase
 
         app(HashtagService::class)->syncHashtags($post);
 
-        $this->assertCount(2, $post->fresh()->hashtags);
+        $post->refresh();
+
+        $this->assertCount(2, $post->hashtags);
+        $this->assertDatabaseHas('hashtags', ['normalized_name' => 'pets']);
     }
 
     public function test_first_or_create_accepts_lazy_values_closure(): void
@@ -37,6 +40,7 @@ class HashtagServiceTest extends TestCase
         $existing = Hashtag::factory()->create([
             'name' => 'pets',
             'slug' => 'pets',
+            'normalized_name' => 'pets',
         ]);
 
         $closureExecuted = false;

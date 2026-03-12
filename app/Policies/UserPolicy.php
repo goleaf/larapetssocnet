@@ -68,4 +68,17 @@ class UserPolicy
     {
         return ! $actor->is($target);
     }
+
+    public function report(User $actor, User $target): bool
+    {
+        if ($actor->is($target)) {
+            return false;
+        }
+
+        if ($actor->hasBlockingRelationshipWith($target)) {
+            return false;
+        }
+
+        return $target->canBeViewedBy($actor);
+    }
 }

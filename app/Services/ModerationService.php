@@ -17,7 +17,7 @@ class ModerationService
 
     public function deleteComment(Comment $comment, User $moderator): void
     {
-        $comment->delete();
+        app(CommentService::class)->delete($comment);
     }
 
     public function resolveReport(Report $report, User $admin, string $status, ?string $note = null): void

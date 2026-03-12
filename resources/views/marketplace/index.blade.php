@@ -88,12 +88,9 @@
  <p class="text-sm text-fur">{{ number_format($listings->total()) }} listings found</p>
 
  <div class="mt-4 flex flex-col gap-4 max-w-5xl mx-auto">
- @foreach ($listings as $listing)
- <x-marketplace-card :title="$listing->title" :price="$listing->formatted_price ?:'Price on request'"
- :condition="ucfirst($listing->listing_type ?:'Listing')" :location="$listing->location_text ?:'Location not provided'" :seller="$listing->seller?->name ?:'Unknown seller'"
- :image="$listing->cover_photo_url ?: null" cta-label="View Listing"
- :cta-href="route('marketplace.show', $listing)"/>
- @endforeach
+@foreach ($listings as $listing)
+<x-listing-card :listing="$listing"/>
+@endforeach
  </div>
 
  <x-ui.card>

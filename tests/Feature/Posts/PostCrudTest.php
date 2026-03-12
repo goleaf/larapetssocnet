@@ -48,3 +48,17 @@ it('creates updates soft deletes and restores a post', function (): void {
         'deleted_at' => null,
     ]);
 });
+
+it('rejects public posts linked to private pets', function (): void {
+    $owner = User::factory()->create();
+    $pet = \App\Models\Pet::factory()->for($owner)->create(['is_public' => false]);
+
+    $this->actingAs($owner)
+        ->from(route('posts.create'))
+        ->post(route('posts.store'), [
+            'body' => 'Post about my private pet',
+            'visibility' => Post::VISIBILITY_PUBLIC,
+            'pet_id' => $pet->id,
+        ])
+        ->assertSessionHasErrors(['visibility']);
+});

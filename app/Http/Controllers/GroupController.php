@@ -2,17 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Groups\CreateGroupAction;
+use App\Actions\Groups\DeleteGroupAction;
+use App\Actions\Groups\JoinGroupAction;
+use App\Actions\Groups\LeaveGroupAction;
+use App\Actions\Groups\UpdateGroupAction;
+use App\Enums\GroupMemberStatus;
+use App\Http\Requests\JoinGroupRequest;
+use App\Http\Requests\LeaveGroupRequest;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Models\Group;
+use App\Models\GroupMember;
 use App\Models\Post;
+use App\Services\GroupVisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use Throwable;
 
 class GroupController extends Controller
 {
@@ -56,9 +65,14 @@ class GroupController extends Controller
         ]);
     }
 
-    public function show(Request $request, Group $group): View
+    public function show(Request $request, Group $group, GroupVisibilityService $visibility): View
     {
         $viewer = $request->user()->loadFeedContext();
+
+        $routeValue = (string) $request->route('group');
+        if ($routeValue !== '' && $routeValue !== $group->slug) {
+            return redirect()->route('groups.show', $group->slug)->withQueryString();
+        }
 
         if ($group->normalizedPrivacy() === 'secret' && Gate::forUser($viewer)->denies('view', $group)) {
             abort(404);
@@ -76,9 +90,11 @@ class GroupController extends Controller
         $membership = $group->membershipForUserId((int) $viewer->getKey());
         $isOwner = $group->isOwner($viewer);
         $isMember = $isOwner || $group->isActiveMembership($membership);
+        $isPendingMembership = $membership && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value;
+        $memberRole = $membership?->role?->value;
         $isAdmin = $isOwner
             || ($group->isActiveMembership($membership)
-                && in_array((string) $membership?->role, ['owner', 'admin'], true));
+                && in_array((string) $memberRole, ['owner', 'admin'], true));
 
         $canManageMembers = $viewer->can('manageMembers', $group);
 
@@ -90,25 +106,52 @@ class GroupController extends Controller
         $activeMembers = null;
         $pendingMembers = collect();
         $events = null;
+        $sidebarMembers = collect();
+        $membersForPage = null;
+        $pendingCount = 0;
+        $requestTab = (string) $request->string('request_tab')->toString();
 
         if ($activeTab === 'feed') {
-            if (($group->normalizedPrivacy() === 'private' || $group->normalizedPrivacy() === 'secret') && ! $isMember) {
-                $feedPosts = Post::paginateEmpty();
+            if ($visibility->canViewGroupPosts($viewer, $group)) {
+                $feedPosts = Post::paginateGroupFeed($group, $viewer);
             } else {
-                $feedPosts = Post::paginateGroupFeed($group);
+                $feedPosts = Post::paginateEmpty();
             }
         }
 
-        if ($activeTab === 'members') {
-            $activeMembers = $group->paginateActiveMembers();
+        if ($canManageMembers) {
+            $pendingCount = (int) GroupMember::query()
+                ->forGroup((int) $group->getKey())
+                ->pending()
+                ->count();
+        }
 
-            if ($canManageMembers) {
+        if ($activeTab === 'members') {
+            if ($requestTab === 'pending' && $canManageMembers) {
                 $pendingMembers = $group->pendingMembers();
+            } elseif ($visibility->canViewGroupMembers($viewer, $group)) {
+                $activeMembers = $group->paginateActiveMembers();
+                $membersForPage = $activeMembers;
             }
         }
 
         if ($activeTab === 'events') {
             $events = $group->paginateEventsForShow();
+        }
+
+        if ($activeMembers instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+            $sidebarMembers = $activeMembers->getCollection()->take(7);
+        }
+
+        if ($sidebarMembers->isEmpty()) {
+            $sidebarMembers = GroupMember::query()
+                ->forGroup((int) $group->getKey())
+                ->active()
+                ->with('user:id,name,username')
+                ->orderByDesc('role')
+                ->orderBy('joined_at')
+                ->limit(7)
+                ->get();
         }
 
         return view('groups.show', [
@@ -118,6 +161,8 @@ class GroupController extends Controller
             'isOwner' => $isOwner,
             'isAdmin' => $isAdmin,
             'isMember' => $isMember,
+            'isPendingMembership' => $isPendingMembership,
+            'memberRole' => $memberRole,
             'canManageMembers' => $canManageMembers,
             'activeTab' => $activeTab,
             'membersCount' => $membersCount,
@@ -128,7 +173,19 @@ class GroupController extends Controller
             'pendingMembers' => $pendingMembers,
             'events' => $events,
             'privacyLabel' => Str::headline($group->normalizedPrivacy()),
+            'privacyValue' => $group->normalizedPrivacy(),
+            'speciesLabel' => Str::headline(str_replace(['-', '_'], '', (string) ($group->species ?? $group->species_focus ?? 'all pets'))),
             'groupRouteKey' => $group->slug,
+            'sidebarMembers' => $sidebarMembers,
+            'membersForPage' => $membersForPage,
+            'pendingCount' => $pendingCount,
+            'canViewMembers' => $visibility->canViewGroupMembers($viewer, $group),
+            'canViewPosts' => $visibility->canViewGroupPosts($viewer, $group),
+            'requestTab' => $requestTab,
+            'membersUrl' => route('groups.members.index', ['group' => $group->slug]),
+            'requestsUrl' => route('groups.requests.index', ['group' => $group->slug, 'tab' => 'members', 'request_tab' => 'pending']),
+            'canPost' => $isMember || $isAdmin || $isOwner,
+            'canSeePosts' => $visibility->canViewGroupPosts($viewer, $group),
         ]);
     }
 
@@ -142,34 +199,30 @@ class GroupController extends Controller
         ]);
     }
 
-    public function store(StoreGroupRequest $request): RedirectResponse
+    public function store(StoreGroupRequest $request, CreateGroupAction $action): RedirectResponse
     {
         $this->authorize('create', Group::class);
 
-        $validated = $request->validated();
-
-        $group = Group::create($this->filterGroupPayload([
-            'owner_user_id' => $request->user()->getKey(),
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'rules' => $validated['rules'] ?? null,
-            'privacy' => $validated['privacy'],
-            'location' => $validated['location'] ?? null,
-            'website' => $validated['website'] ?? null,
-            'cover_image_path' => $validated['cover_image_path'] ?? null,
-        ]));
-
-        $group->addMember($request->user(), 'owner', 'active');
-        $group->syncMembersCount();
+        $group = $action->handle(
+            $request->user(),
+            $request->validated(),
+            $request->file('avatar'),
+            $request->file('cover')
+        );
 
         return redirect()
             ->route('groups.show', $group)
             ->with('status', 'Group created successfully.');
     }
 
-    public function edit(Group $group): View
+    public function edit(Request $request, Group $group): View
     {
         $this->authorize('update', $group);
+
+        $routeValue = (string) $request->route('group');
+        if ($routeValue !== '' && $routeValue !== $group->slug) {
+            return redirect()->route('groups.edit', $group->slug)->withQueryString();
+        }
 
         return view('groups.edit', [
             'group' => $group,
@@ -178,123 +231,69 @@ class GroupController extends Controller
         ]);
     }
 
-    public function update(UpdateGroupRequest $request, Group $group): RedirectResponse
+    public function update(UpdateGroupRequest $request, Group $group, UpdateGroupAction $action): RedirectResponse
     {
         $this->authorize('update', $group);
 
-        $validated = $request->validated();
-
-        $group->forceFill($this->filterGroupPayload([
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'rules' => $validated['rules'] ?? null,
-            'privacy' => $validated['privacy'],
-            'location' => $validated['location'] ?? null,
-            'website' => $validated['website'] ?? null,
-            'cover_image_path' => $validated['cover_image_path'] ?? null,
-        ]))->save();
+        $group = $action->handle(
+            $request->user(),
+            $group,
+            $request->validated(),
+            $request->file('avatar'),
+            $request->file('cover')
+        );
 
         return redirect()
             ->route('groups.show', $group)
             ->with('status', 'Group updated.');
     }
 
-    public function destroy(Group $group): RedirectResponse
+    public function destroy(Group $group, DeleteGroupAction $action): RedirectResponse
     {
         $this->authorize('delete', $group);
 
-        $group->delete();
+        $action->handle($group);
 
         return redirect()
             ->route('groups.index')
             ->with('status', 'Group deleted.');
     }
 
-    public function join(Request $request, Group $group): RedirectResponse
+    public function join(JoinGroupRequest $request, Group $group, JoinGroupAction $joinGroup, GroupVisibilityService $visibility): RedirectResponse
     {
         $viewer = $request->user();
-        $membership = $group->membershipForUserId((int) $viewer->getKey());
 
-        if ($membership && $group->isActiveMembership($membership)) {
-            return back()->with('status', 'You are already a member.');
+        if (! $visibility->canJoinGroup($viewer, $group)) {
+            return back()->withErrors(['group' => 'You cannot join this group.']);
         }
 
-        if ($membership && $membership->status === 'pending') {
-            return back()->with('status', 'Your join request is already pending.');
+        try {
+            $membership = $joinGroup->handle($viewer, $group, $request->validated('message'));
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors());
         }
 
-        if ($membership && $membership->status === 'banned') {
-            return back()->withErrors(['group' => 'You are banned from this group.']);
-        }
+        $status = (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value
+            ? 'Join request sent.'
+            : 'You joined the group.';
 
-        if ($group->normalizedPrivacy() === 'secret') {
-            return back()->withErrors(['group' => 'Secret groups cannot be joined directly.']);
-        }
-
-        if ($membership
-            && $membership->status === 'rejected'
-            && $membership->updated_at
-            && $membership->updated_at->greaterThan(now()->subDays(7))) {
-            return back()->withErrors([
-                'group' => 'You can request to join again 7 days after a rejection.',
-            ]);
-        }
-
-        $status = $group->normalizedPrivacy() === 'public' ? 'active' : 'pending';
-
-        if ($membership) {
-            $membership->forceFill([
-                'role' => 'member',
-                'status' => $status,
-                'joined_at' => $status === 'active' ? ($membership->joined_at ?: now()) : null,
-            ])->save();
-        } else {
-            $group->memberships()->create([
-                'user_id' => $viewer->getKey(),
-                'role' => 'member',
-                'status' => $status,
-                'joined_at' => $status === 'active' ? now() : null,
-            ]);
-        }
-
-        $group->syncMembersCount();
-
-        return back()->with('status', $status === 'active'
-            ? 'You joined the group.'
-            : 'Join request sent.');
+        return back()->with('status', $status);
     }
 
-    public function leave(Request $request, Group $group): RedirectResponse
+    public function leave(LeaveGroupRequest $request, Group $group, LeaveGroupAction $leaveGroup): RedirectResponse
     {
         $viewer = $request->user();
-        $membership = $group->membershipForUserId((int) $viewer->getKey());
 
-        if (! $membership) {
+        try {
+            $left = $leaveGroup->handle($viewer, $group);
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors());
+        }
+
+        if (! $left) {
             return back()->with('status', 'You are not a member of this group.');
         }
 
-        if ((int) $group->owner_user_id === (int) $viewer->getKey() || (string) $membership->role === 'owner') {
-            return back()->withErrors([
-                'group' => 'Group owners cannot leave the group.',
-            ]);
-        }
-
-        $membership->delete();
-        $group->syncMembersCount();
-
         return back()->with('status', 'You left the group.');
-    }
-
-    private function filterGroupPayload(array $payload): array
-    {
-        try {
-            $columns = Schema::getColumnListing('groups');
-        } catch (Throwable) {
-            return $payload;
-        }
-
-        return collect($payload)
-            ->only($columns)
-            ->all();
     }
 }

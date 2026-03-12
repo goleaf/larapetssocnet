@@ -30,6 +30,25 @@ class PostTest extends TestCase
         $this->assertNotNull($post->body_html);
     }
 
+    public function test_user_can_schedule_post(): void
+    {
+        $user = User::factory()->create();
+        $publishAt = now()->addHour();
+
+        $this->actingAs($user)
+            ->post(route('posts.store'), [
+                'body' => 'Scheduled post',
+                'status' => 'scheduled',
+                'published_at' => $publishAt->toDateTimeString(),
+                'visibility' => Post::VISIBILITY_PUBLIC,
+            ])->assertRedirect();
+
+        $post = Post::query()->where('body', 'Scheduled post')->firstOrFail();
+
+        $this->assertSame(\App\Enums\PostStatus::Scheduled->value, $post->status->value);
+        $this->assertNotNull($post->published_at);
+    }
+
     public function test_guest_cannot_create_post(): void
     {
         $this->post(route('posts.store'), [

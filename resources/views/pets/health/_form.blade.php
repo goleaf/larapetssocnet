@@ -41,44 +41,39 @@
 <div class="space-y-6">
  <div class="grid gap-6 sm:grid-cols-2">
  <div>
- <x-input-label for="type" value="Type"/>
- <select id="type" name="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
- <option value="weight" @selected($logType ==='weight')>Weight</option>
- <option value="medication" @selected($logType ==='medication')>Medication</option>
- <option value="vaccination" @selected($logType ==='vaccination')>Vaccination</option>
- <option value="vet_visit" @selected($logType ==='vet_visit')>Vet visit</option>
- </select>
- <x-input-error :messages="$errors->get('type')" class="mt-2"/>
+ <x-ui.select
+ id="type"
+ name="type"
+ label="Type"
+ :options="[
+ 'weight' => 'Weight',
+ 'medication' => 'Medication',
+ 'vaccination' => 'Vaccination',
+ 'vet_visit' => 'Vet visit',
+ ]"
+ :selected="$logType"
+ required
+ />
  </div>
 
  <div>
- <x-input-label for="logged_at" value="Logged date"/>
- <x-text-input id="logged_at" name="logged_at" type="date" class="mt-1 block w-full" :value="$loggedAtValue" required />
- <x-input-error :messages="$errors->get('logged_at')" class="mt-2"/>
+ <x-ui.input id="logged_at" name="logged_at" type="date" label="Logged date" :value="$loggedAtValue" required/>
  </div>
 
  <div>
- <x-input-label for="next_due_at" value="Next due date (optional)"/>
- <x-text-input id="next_due_at" name="next_due_at" type="date" class="mt-1 block w-full" :value="$nextDueAtValue"/>
- <x-input-error :messages="$errors->get('next_due_at')" class="mt-2"/>
+ <x-ui.input id="next_due_at" name="next_due_at" type="date" label="Next due date (optional)" :value="$nextDueAtValue"/>
  </div>
 
  <div>
- <x-input-label for="value" value="Weight in kg (optional)"/>
- <x-text-input id="value" name="value" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="$value"/>
- <x-input-error :messages="$errors->get('value')" class="mt-2"/>
+ <x-ui.input id="value" name="value" type="number" step="0.01" min="0" label="Weight in kg (optional)" :value="$value"/>
  </div>
 
  <div>
- <x-input-label for="title" value="Title (optional)"/>
- <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old('title', $log->title ?? null)"/>
- <x-input-error :messages="$errors->get('title')" class="mt-2"/>
+ <x-ui.input id="title" name="title" type="text" label="Title (optional)" :value="old('title', $log->title ?? null)"/>
  </div>
 
  <div class="sm:col-span-2">
- <x-input-label for="notes" value="Notes"/>
- <textarea id="notes" name="notes" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes', $log->notes ??'') }}</textarea>
- <x-input-error :messages="$errors->get('notes')" class="mt-2"/>
+ <x-ui.textarea id="notes" name="notes" rows="5" label="Notes" :value="old('notes', $log->notes ?? '')"/>
  </div>
  </div>
 </div>

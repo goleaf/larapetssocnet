@@ -34,6 +34,10 @@ class extends Component
 
  public ?string $location = null;
 
+ public string $status = 'published';
+
+ public ?string $published_at = null;
+
  /**
  * @var array<int, UploadedFile>
  */
@@ -67,6 +71,8 @@ class extends Component
  'pet_id' => $validated['pet_id'] ?? null,
  'tagged_pets' => $validated['tagged_pets'] ?? [],
  'visibility' => $validated['visibility'] ?? Post::VISIBILITY_PUBLIC,
+ 'status' => $validated['status'] ?? 'published',
+ 'published_at' => $validated['published_at'] ?? null,
  'location' => $validated['location'] ?? null,
  ],
  mediaFiles: $validated['media'] ?? [],
@@ -90,6 +96,8 @@ class extends Component
  'tagged_pets' => ['nullable', 'array'],
  'tagged_pets.*' => ['integer', $petOwnershipRule],
  'visibility' => ['required', 'string', 'in:public,followers,private'],
+ 'status' => ['required', 'string', 'in:draft,published,scheduled'],
+ 'published_at' => ['nullable', 'date'],
  'location' => ['nullable', 'string', 'max:100'],
  'media' => ['nullable', 'array', 'max:5'],
  'media.*' => [
@@ -111,6 +119,8 @@ class extends Component
  ->values()
  ->all(),
  'visibility' => $this->visibility,
+ 'status' => $this->status,
+ 'published_at' => $this->normalizeNullableString($this->published_at),
  'location' => $this->normalizeNullableString($this->location),
  'media' => $this->media,
  ];
@@ -132,6 +142,33 @@ class extends Component
 
  if ($videoFiles->isNotEmpty() && $imageFiles->isNotEmpty()) {
  $validator->errors()->add('media', 'Video cannot be uploaded together with photos.');
+ }
+
+ $status = (string) ($this->status ?? 'published');
+ $publishedAt = null;
+
+ if ($this->published_at) {
+ try {
+ $publishedAt = \Carbon\CarbonImmutable::parse($this->published_at);
+ } catch (\Throwable) {
+ $validator->errors()->add('published_at', 'Publish date is invalid.');
+ }
+ }
+
+ if ($status === 'draft' && $publishedAt) {
+ $validator->errors()->add('published_at', 'Draft posts cannot have a publish date.');
+ }
+
+ if ($status === 'scheduled' && ! $publishedAt) {
+ $validator->errors()->add('published_at', 'Select a publish date for scheduled posts.');
+ }
+
+ if ($status === 'scheduled' && $publishedAt && $publishedAt->isPast()) {
+ $validator->errors()->add('published_at', 'Scheduled posts must be set in the future.');
+ }
+
+ if ($status === 'published' && $publishedAt && $publishedAt->isFuture()) {
+ $validator->errors()->add('published_at', 'Published posts cannot be scheduled in the future.');
  }
  });
 

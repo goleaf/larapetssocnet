@@ -194,7 +194,7 @@
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between">
  <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Active Contests</h4>
- <x-ui.badge variant="success" size="sm" pill>{{ $activeContests->count() }}</x-ui.badge>
+ <x-ui.badge variant="success" size="sm">{{ $activeContests->count() }}</x-ui.badge>
  </div>
 
  <div class="space-y-2 mt-3">
@@ -219,7 +219,7 @@
  <x-ui.card>
  <div class="mb-2 flex items-center justify-between">
  <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Trending Tags</h4>
- <x-ui.badge variant="success" size="sm" pill>Live</x-ui.badge>
+ <x-ui.badge variant="success" size="sm">Live</x-ui.badge>
  </div>
 
  <div class="space-y-2 mt-3">
@@ -245,7 +245,7 @@
  <x-ui.card class="animate-fade-up">
  <div class="flex items-center justify-between gap-3">
  <div class="min-w-0">{{ $header }}</div>
- <x-ui.badge variant="primary" size="sm" pill>PetSocial</x-ui.badge>
+ <x-ui.badge variant="primary" size="sm">PetSocial</x-ui.badge>
  </div>
  </x-ui.card>
  @endisset

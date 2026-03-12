@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Like;
 use App\Models\Post;
+use App\Models\Reaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -20,10 +20,11 @@ it('shows the viewers liked posts as liked on explore after refresh', function (
         'likes_count' => 0,
     ]);
 
-    Like::query()->create([
+    Reaction::query()->create([
         'user_id' => $viewer->getKey(),
-        'post_id' => $post->getKey(),
-        'created_at' => now(),
+        'reactable_type' => Post::class,
+        'reactable_id' => $post->getKey(),
+        'type' => 'love',
     ]);
 
     $response = $this->actingAs($viewer)->get(route('explore.index'));
@@ -36,7 +37,7 @@ it('shows the viewers liked posts as liked on explore after refresh', function (
     expect((int) ($loadedPost->likes_count ?? -1))->toBe(1);
 });
 
-it('loads explore likes count from the likes table on initial page load', function (): void {
+it('loads explore likes count from reactions on initial page load', function (): void {
     $author = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,
@@ -49,10 +50,11 @@ it('loads explore likes count from the likes table on initial page load', functi
         'likes_count' => 27,
     ]);
 
-    Like::query()->create([
+    Reaction::query()->create([
         'user_id' => $liker->getKey(),
-        'post_id' => $post->getKey(),
-        'created_at' => now(),
+        'reactable_type' => Post::class,
+        'reactable_id' => $post->getKey(),
+        'type' => 'love',
     ]);
 
     $response = $this->get(route('explore.index'));
