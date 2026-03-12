@@ -452,7 +452,7 @@ class Post extends Model implements HasMedia
 
         return self::query()
             ->with([
-                'user',
+                'user.media',
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])

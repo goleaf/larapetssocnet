@@ -97,9 +97,10 @@
 
  @if ($media !== [])
  <ul class="mt-3 space-y-1 text-xs text-fur">
- @foreach ($media as $file)
+ @forelse ($media as $file)
  <li wire:key="upload-{{ $file->getFilename() }}">{{ $file->getClientOriginalName() }}</li>
- @endforeach
+ @empty
+ @endforelse
  </ul>
  @endif
  </x-ui.panel>

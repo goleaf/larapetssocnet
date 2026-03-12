@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
@@ -15,6 +16,15 @@ it('renders the post create page', function (): void {
     $this->actingAs($user)
         ->get(route('posts.create'))
         ->assertOk()
+        ->assertSee('Create Post')
+        ->assertSee('Visibility');
+});
+
+it('renders the livewire post create component', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::post.create')
         ->assertSee('Create Post')
         ->assertSee('Visibility');
 });

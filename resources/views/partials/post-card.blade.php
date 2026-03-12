@@ -5,9 +5,7 @@
  $petUrl = $post->pet ? route('pets.show', $post->pet->slug ?? $post->pet->getKey()) : null;
  $timeLabel = $post->created_at?->diffForHumans();
  $timeIso = $post->created_at?->toIso8601String();
- $authorAvatar = $author
- ? ($author->avatar_path ?: $author->profile_photo_path)
- : null;
+ $authorAvatar = $author?->avatar_url;
 
  $spatiePhotos = collect($post->getMedia('photos'))->merge($post->getMedia('images'));
  $spatieVideos = collect($post->getMedia('videos'))->merge($post->getMedia('video'));
