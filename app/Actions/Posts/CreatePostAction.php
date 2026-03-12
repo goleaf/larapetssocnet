@@ -4,11 +4,13 @@ namespace App\Actions\Posts;
 
 use App\Enums\PostStatus;
 use App\Events\PostCreated;
+use App\Models\Pet;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\ContentService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class CreatePostAction
 {
@@ -23,6 +25,8 @@ class CreatePostAction
      */
     public function handle(User $user, array $data): Post
     {
+        $this->authorizePetAttachments($user, $data);
+
         return DB::transaction(function () use ($user, $data): Post {
             $mediaFiles = $this->normalizeMediaFiles($data['media_files'] ?? []);
             $body = $this->normalizeNullableString($data['body'] ?? null);
@@ -52,6 +56,32 @@ class CreatePostAction
 
             return $post;
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function authorizePetAttachments(User $user, array $data): void
+    {
+        $petIds = collect([$data['pet_id'] ?? null])
+            ->merge($data['tagged_pets'] ?? [])
+            ->filter()
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($petIds->isEmpty()) {
+            return;
+        }
+
+        Pet::query()
+            ->whereIn('id', $petIds->all())
+            ->select(['id', 'user_id'])
+            ->get()
+            ->each(function (Pet $pet) use ($user): void {
+                Gate::forUser($user)->authorize('createPostForPet', $pet);
+            });
     }
 
     /**

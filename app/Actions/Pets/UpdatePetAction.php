@@ -13,6 +13,7 @@ class UpdatePetAction
     public function __construct(
         private ContentService $contentService,
         private PersonalityTagService $personalityTags,
+        private UploadPetGalleryPhotosAction $uploadGallery,
     ) {}
 
     /**
@@ -53,14 +54,12 @@ class UpdatePetAction
             }
 
             if ($avatar instanceof UploadedFile) {
-                $pet->clearMediaCollection('avatar');
-                $pet->addMedia($avatar)->toMediaCollection('avatar');
+                $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
+                $pet->addMedia($avatar)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
             }
 
-            foreach ($galleryPhotos as $photo) {
-                if ($photo instanceof UploadedFile) {
-                    $pet->addMedia($photo)->toMediaCollection('gallery');
-                }
+            if ($galleryPhotos !== []) {
+                $this->uploadGallery->handle($pet, $galleryPhotos, 'gallery_photos');
             }
 
             return $pet->refresh();

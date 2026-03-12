@@ -29,3 +29,15 @@ it('returns 403 for a private pet profile when viewer is not authorized', functi
     $this->get(route('pets.show', $pet))
         ->assertForbidden();
 });
+
+it('denies access when viewer is blocked by owner', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $pet = Pet::factory()->for($owner)->create(['is_public' => true]);
+
+    $owner->block($viewer);
+
+    $this->actingAs($viewer)
+        ->get(route('pets.show', $pet))
+        ->assertForbidden();
+});

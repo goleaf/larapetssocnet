@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Pet;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,13 @@ class StorePetHealthLogRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $pet = $this->route('pet');
+
+        if (! $pet instanceof Pet) {
+            return false;
+        }
+
+        return $this->user()?->can('update', $pet) ?? false;
     }
 
     public function rules(): array

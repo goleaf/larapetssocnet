@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePostRequest extends FormRequest
 {
@@ -17,9 +18,20 @@ class UpdatePostRequest extends FormRequest
             'body' => ['nullable', 'string', 'max:5000'],
             'visibility' => ['nullable', 'string', 'in:public,followers,private'],
             'location' => ['nullable', 'string', 'max:100'],
-            'pet_id' => ['nullable', 'exists:pets,id'],
+            'pet_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('pets', 'id')->where(
+                    fn ($query) => $query->where('user_id', (int) $this->user()?->id)
+                ),
+            ],
             'tagged_pets' => ['nullable', 'array'],
-            'tagged_pets.*' => ['integer', 'exists:pets,id'],
+            'tagged_pets.*' => [
+                'integer',
+                Rule::exists('pets', 'id')->where(
+                    fn ($query) => $query->where('user_id', (int) $this->user()?->id)
+                ),
+            ],
         ];
     }
 }

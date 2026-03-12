@@ -34,7 +34,7 @@
                     this.loading = true
 
                     try {
-                        const response = await fetch(this.followed ? @js(route('pets.unfollow', ['slug' => $petRouteKey])) : @js(route('pets.follow', ['slug' => $petRouteKey])), {
+                        const response = await fetch(this.followed ? @js(route('pets.unfollow', ['pet' => $petRouteKey])) : @js(route('pets.follow', ['pet' => $petRouteKey])), {
                             method: this.followed ? 'DELETE' : 'POST',
                             headers: {
                                 'Accept': 'application/json',

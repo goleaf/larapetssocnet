@@ -65,7 +65,7 @@ class PetHealthLogFeatureTest extends TestCase
 
         $this->actingAs($other)
             ->get(route('pets.health.index', $pet->id))
-            ->assertNotFound();
+            ->assertForbidden();
 
         $this->actingAs($other)
             ->post(route('pets.health.store', $pet->id), [
@@ -90,7 +90,7 @@ class PetHealthLogFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->patch(route('pets.health.update', ['slug' => $pet->id, 'healthLog' => $log->id]), [
+            ->patch(route('pets.health.update', ['pet' => $pet->id, 'healthLog' => $log->id]), [
                 'type' => 'vet_visit',
                 'title' => 'Updated title',
                 'notes' => 'Updated notes',
@@ -105,7 +105,7 @@ class PetHealthLogFeatureTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->delete(route('pets.health.destroy', ['slug' => $pet->id, 'healthLog' => $log->id]))
+            ->delete(route('pets.health.destroy', ['pet' => $pet->id, 'healthLog' => $log->id]))
             ->assertRedirect();
 
         $this->assertSoftDeleted('pet_health_logs', [
@@ -214,7 +214,7 @@ class PetHealthLogFeatureTest extends TestCase
             'next_due_at' => now()->addDays(2),
         ]);
 
-        $request = Request::create(route('pets.health.index', ['slug' => $pet->id]), 'GET');
+        $request = Request::create(route('pets.health.index', ['pet' => $pet->id]), 'GET');
         $request->setUserResolver(fn () => $owner);
 
         /** @var \Illuminate\View\View $view */

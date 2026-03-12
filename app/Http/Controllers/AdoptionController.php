@@ -22,6 +22,7 @@ class AdoptionController extends Controller
     {
         $listings = $this->adoptionService->getListings(
             filters: $request->only(['species', 'size', 'free', 'location']),
+            viewer: $request->user(),
         );
 
         return view('adoption.index', [

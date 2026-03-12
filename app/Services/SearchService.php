@@ -34,7 +34,8 @@ class SearchService
         }
 
         if ($tab === 'all' || $tab === 'pets') {
-            $query = Pet::whereHas('owner', fn ($o) => $o->where('is_private', false)->where('is_banned', false))
+            $query = Pet::query()
+                ->visibleTo($viewer)
                 ->where(fn ($q) => $q->where('name', 'like', "%{$clean}%")->orWhere('breed', 'like', "%{$clean}%"))
                 ->with('media')
                 ->limit($limit);

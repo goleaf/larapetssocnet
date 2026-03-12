@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Pet;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -40,10 +41,11 @@ class AdoptionService
         });
     }
 
-    public function getListings(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function getListings(array $filters = [], ?User $viewer = null, int $perPage = 20): LengthAwarePaginator
     {
         return Pet::availableForAdoption()
             ->public()
+            ->visibleTo($viewer)
             ->with(['owner', 'media'])
             ->when($filters['species'] ?? null, fn ($q, $s) => $q->bySpecies($s))
             ->when($filters['size'] ?? null, fn ($q, $s) => $q->where('size', $s))

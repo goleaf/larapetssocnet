@@ -3,21 +3,20 @@
 namespace App\Policies;
 
 use App\Models\Pet;
+use App\Models\Post;
 use App\Models\User;
+use App\Services\PetVisibilityService;
 
 class PetPolicy
 {
+    public function viewAny(?User $user): bool
+    {
+        return true;
+    }
+
     public function view(?User $user, Pet $pet): bool
     {
-        if ($pet->is_public) {
-            return true;
-        }
-
-        if (! $user) {
-            return false;
-        }
-
-        return (int) $pet->user_id === (int) $user->getKey() || $user->hasAnyRole(['admin', 'moderator']);
+        return app(PetVisibilityService::class)->canView($user, $pet);
     }
 
     public function create(User $user): bool
@@ -30,6 +29,16 @@ class PetPolicy
         return (int) $pet->user_id === (int) $user->getKey() || $user->hasAnyRole(['admin', 'moderator']);
     }
 
+    public function manageAvatar(User $user, Pet $pet): bool
+    {
+        return $this->update($user, $pet);
+    }
+
+    public function manageGallery(User $user, Pet $pet): bool
+    {
+        return $this->update($user, $pet);
+    }
+
     public function delete(User $user, Pet $pet): bool
     {
         return $this->update($user, $pet);
@@ -38,5 +47,52 @@ class PetPolicy
     public function restore(User $user, Pet $pet): bool
     {
         return $this->update($user, $pet);
+    }
+
+    public function forceDelete(User $user, Pet $pet): bool
+    {
+        return $this->update($user, $pet);
+    }
+
+    public function viewFollowers(?User $user, Pet $pet): bool
+    {
+        return app(PetVisibilityService::class)->canViewFollowers($user, $pet);
+    }
+
+    public function createPostForPet(User $user, Pet $pet): bool
+    {
+        return (int) $pet->user_id === (int) $user->getKey();
+    }
+
+    public function attachPost(User $user, Pet $pet, Post $post): bool
+    {
+        if (! $this->createPostForPet($user, $pet)) {
+            return false;
+        }
+
+        return (int) $post->user_id === (int) $user->getKey();
+    }
+
+    public function detachPost(User $user, Pet $pet, Post $post): bool
+    {
+        return $this->attachPost($user, $pet, $post);
+    }
+
+    public function follow(User $user, Pet $pet): bool
+    {
+        if ($user->is($pet->owner)) {
+            return false;
+        }
+
+        if ((bool) $user->is_banned) {
+            return false;
+        }
+
+        return app(PetVisibilityService::class)->canView($user, $pet);
+    }
+
+    public function unfollow(User $user, Pet $pet): bool
+    {
+        return ! $user->is($pet->owner);
     }
 }

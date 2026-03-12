@@ -13,6 +13,7 @@ class PetService
         private ContentService $content,
         private MediaService $media,
         private PersonalityTagService $personalityTags,
+        private PetGalleryService $galleryService,
     ) {}
 
     public function create(User $owner, array $data, ?UploadedFile $avatar = null): Pet
@@ -41,7 +42,7 @@ class PetService
             ]);
 
             if ($avatar) {
-                $pet->addMedia($avatar)->toMediaCollection('avatar');
+                $pet->addMedia($avatar)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
             }
 
             $this->personalityTags->syncTagRecords($pet, $tags);
@@ -78,8 +79,8 @@ class PetService
             ], fn ($v) => $v !== null));
 
             if ($avatar) {
-                $pet->clearMediaCollection('avatar');
-                $pet->addMedia($avatar)->toMediaCollection('avatar');
+                $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
+                $pet->addMedia($avatar)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
             }
 
             if (array_key_exists('personality_tags', $data)) {
@@ -100,23 +101,13 @@ class PetService
 
     public function addGalleryPhoto(Pet $pet, UploadedFile $file): void
     {
-        $count = $pet->getMedia('gallery')->count();
-
-        if ($count >= 30) {
-            throw new \RuntimeException('Gallery is full (max 30 photos).');
-        }
-
-        $pet->addMedia($file)->toMediaCollection('gallery');
+        $this->galleryService->upload($pet, [$file]);
     }
 
     public function removeGalleryPhoto(Pet $pet, int $mediaId): void
     {
-        $media = $pet->getMedia('gallery')->firstWhere('id', $mediaId);
+        $media = $pet->galleryMedia()->whereKey($mediaId)->firstOrFail();
 
-        if (! $media) {
-            throw new \RuntimeException("Media #{$mediaId} not found in gallery.");
-        }
-
-        $media->delete();
+        $this->galleryService->delete($pet, $media);
     }
 }

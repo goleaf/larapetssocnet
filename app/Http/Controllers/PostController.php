@@ -37,7 +37,7 @@ class PostController extends Controller
         $post->load([
             'user',
             'author',
-            'pet',
+            'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($request->user()),
             'media',
             'tags',
         ]);
@@ -71,6 +71,7 @@ class PostController extends Controller
         $taggedPets = $taggedPetIds->isEmpty()
             ? collect()
             : Pet::query()
+                ->visibleTo($request->user())
                 ->whereIn('id', $taggedPetIds)
                 ->get();
 
@@ -105,7 +106,7 @@ class PostController extends Controller
     {
         $this->authorize('update', $post);
 
-        $this->updatePostAction->handle($post, $request->validated());
+        $this->updatePostAction->handle($request->user(), $post, $request->validated());
 
         return redirect()
             ->route('posts.show', $post)

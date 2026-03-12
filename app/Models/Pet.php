@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PetVisibilityService;
 use App\Traits\HasCounterCache;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -12,12 +13,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
 class Pet extends Model implements HasMedia
@@ -34,6 +38,22 @@ class Pet extends Model implements HasMedia
     public const SIZES = ['small', 'medium', 'large', 'xlarge'];
 
     public const ADOPTION_STATUSES = ['not_listed', 'available', 'pending', 'adopted'];
+
+    public const MEDIA_COLLECTION_AVATAR = 'avatar';
+
+    public const MEDIA_COLLECTION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_GALLERY = 'gallery';
+
+    public const MEDIA_CONVERSION_AVATAR_THUMB = 'avatar_thumb';
+
+    public const MEDIA_CONVERSION_AVATAR_SMALL = 'avatar_small';
+
+    public const MEDIA_CONVERSION_AVATAR_MEDIUM = 'avatar_medium';
+
+    public const MEDIA_CONVERSION_GALLERY_THUMB = 'gallery_thumb';
+
+    public const MEDIA_CONVERSION_GALLERY_MEDIUM = 'gallery_medium';
 
     public const SPECIES_EMOJI = [
         'dog' => '🐕',
@@ -139,9 +159,62 @@ class Pet extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('avatar')->singleFile()->useDisk('public');
-        $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('gallery')->useDisk('public');
+        $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)
+            ->singleFile()
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
+            ->singleFile()
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        $this->addMediaCollection(self::MEDIA_COLLECTION_GALLERY)
+            ->useDisk('public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_THUMB)
+            ->fit(Fit::Crop, 80, 80)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_SMALL)
+            ->fit(Fit::Crop, 150, 150)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_MEDIUM)
+            ->fit(Fit::Crop, 400, 400)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_GALLERY_THUMB)
+            ->fit(Fit::Crop, 150, 150)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_GALLERY_MEDIUM)
+            ->width(800)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY)
+            ->nonQueued();
+    }
+
+    public function galleryMedia(): MorphMany
+    {
+        return $this->media()
+            ->where('collection_name', self::MEDIA_COLLECTION_GALLERY)
+            ->orderBy('order_column');
     }
 
     public function owner(): BelongsTo
@@ -226,10 +299,11 @@ class Pet extends Model implements HasMedia
         ]);
     }
 
-    public static function paginateSearchResults(string $term, int $perPage = 15): LengthAwarePaginator
+    public static function paginateSearchResults(?User $viewer, string $term, int $perPage = 15): LengthAwarePaginator
     {
         return self::query()
             ->searchResultColumns()
+            ->visibleTo($viewer)
             ->search($term !== '' ? $term : null)
             ->latest('pets.created_at')
             ->paginate($perPage)
@@ -247,13 +321,12 @@ class Pet extends Model implements HasMedia
      *     sort?: string
      * }  $filters
      */
-    public static function paginateExploreCatalog(array $filters, int $perPage = 12): LengthAwarePaginator
+    public static function paginateExploreCatalog(array $filters, ?User $viewer = null, int $perPage = 12): LengthAwarePaginator
     {
-        $query = self::query()->with('owner:id,name');
-
-        if (self::hasPetsColumn('is_public')) {
-            $query->where('is_public', true);
-        }
+        $query = self::query()
+            ->visibleTo($viewer)
+            ->public()
+            ->with('owner:id,name');
 
         $search = trim((string) ($filters['q'] ?? ''));
         if ($search !== '') {
@@ -302,13 +375,12 @@ class Pet extends Model implements HasMedia
      *     sort?: string
      * }  $filters
      */
-    public static function paginateAdoptionCatalog(array $filters, int $perPage = 12): LengthAwarePaginator
+    public static function paginateAdoptionCatalog(array $filters, ?User $viewer = null, int $perPage = 12): LengthAwarePaginator
     {
-        $query = self::query()->with('owner:id,name');
-
-        if (self::hasPetsColumn('is_public')) {
-            $query->where('is_public', true);
-        }
+        $query = self::query()
+            ->visibleTo($viewer)
+            ->public()
+            ->with('owner:id,name');
 
         if (self::hasPetsColumn('is_adoptable')) {
             $query->where('is_adoptable', true);
@@ -349,6 +421,11 @@ class Pet extends Model implements HasMedia
         return $query
             ->select(['pets.*'])
             ->where(fn (Builder $subQuery) => $subQuery->whereNull('is_public')->orWhere('is_public', true));
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $viewer): Builder
+    {
+        return app(PetVisibilityService::class)->applyVisibleScope($query, $viewer);
     }
 
     public function scopeLost(Builder $query): Builder
@@ -496,21 +573,21 @@ class Pet extends Model implements HasMedia
      */
     public function galleryForShow(int $limit = 24): Collection
     {
-        if (method_exists($this, 'getMedia')) {
-            return collect($this->getMedia('gallery'))
-                ->sortByDesc(fn ($media) => $media->created_at)
-                ->take($limit)
-                ->values();
+        if (! method_exists($this, 'getMedia')) {
+            return collect();
         }
 
-        if (method_exists($this, 'galleryItems')) {
-            return $this->galleryItems()
-                ->latest()
-                ->limit($limit)
-                ->get();
-        }
+        $this->loadMissing('media');
 
-        return collect();
+        return collect($this->getMedia(self::MEDIA_COLLECTION_GALLERY))
+            ->sortBy(function ($media): string {
+                $order = (int) ($media->order_column ?? 0);
+                $timestamp = (int) (optional($media->created_at)->timestamp ?? 0);
+
+                return sprintf('%05d-%010d', $order, $timestamp);
+            })
+            ->take($limit)
+            ->values();
     }
 
     /**
@@ -542,7 +619,7 @@ class Pet extends Model implements HasMedia
     protected function avatarUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            $mediaUrl = $this->getFirstMediaUrl('avatar');
+            $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_AVATAR);
 
             if ($mediaUrl !== '') {
                 return $mediaUrl;
@@ -555,7 +632,7 @@ class Pet extends Model implements HasMedia
     protected function coverPhotoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            $mediaUrl = $this->getFirstMediaUrl('cover');
+            $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_COVER);
 
             if ($mediaUrl !== '') {
                 return $mediaUrl;

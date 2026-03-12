@@ -14,6 +14,7 @@ class CreatePetAction
     public function __construct(
         private ContentService $contentService,
         private PersonalityTagService $personalityTags,
+        private UploadPetGalleryPhotosAction $uploadGallery,
     ) {}
 
     /**
@@ -47,15 +48,13 @@ class CreatePetAction
             ]);
 
             if ($avatar instanceof UploadedFile) {
-                $pet->addMedia($avatar)->toMediaCollection('avatar');
+                $pet->addMedia($avatar)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
             }
 
             $this->personalityTags->syncTagRecords($pet, $tags);
 
-            foreach ($galleryPhotos as $photo) {
-                if ($photo instanceof UploadedFile) {
-                    $pet->addMedia($photo)->toMediaCollection('gallery');
-                }
+            if ($galleryPhotos !== []) {
+                $this->uploadGallery->handle($pet, $galleryPhotos, 'gallery_photos');
             }
 
             $owner->increment('pets_count');

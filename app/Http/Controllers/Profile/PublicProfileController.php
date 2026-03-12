@@ -8,6 +8,7 @@ use App\Models\ContestEntry;
 use App\Models\Event;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\PetVisibilityService;
 use App\Services\VisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,10 @@ use Illuminate\View\View;
 
 class PublicProfileController extends Controller
 {
-    public function __construct(private readonly VisibilityService $visibilityService) {}
+    public function __construct(
+        private readonly VisibilityService $visibilityService,
+        private readonly PetVisibilityService $petVisibilityService,
+    ) {}
 
     public function show(Request $request, User $user): View|RedirectResponse
     {
@@ -56,16 +60,14 @@ class PublicProfileController extends Controller
             ]);
         }
 
-        $canViewPets = $viewer && $viewer->is($user)
-            ? true
-            : ($canViewContent && ($user->pets_visibility === 'everyone' || ($user->pets_visibility === 'followers_only' && $viewer && $viewer->isFollowing($user))));
+        $canViewPets = $this->petVisibilityService->canViewPetsForOwner($viewer, $user);
 
         $pets = $tab === 'pets' && $canViewPets
-            ? $user->pets()->latest()->get()
+            ? $user->pets()->visibleTo($viewer)->latest()->get()
             : collect();
 
         $featuredPets = $canViewPets
-            ? $user->pets()->latest()->limit(9)->get()
+            ? $user->pets()->visibleTo($viewer)->latest()->limit(9)->get()
             : collect();
 
         $galleries = $tab === 'photos' && $canViewContent

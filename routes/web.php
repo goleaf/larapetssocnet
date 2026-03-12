@@ -23,6 +23,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PetCareTipController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\PetFollowController;
+use App\Http\Controllers\PetGalleryController;
 use App\Http\Controllers\PetHealthLogController;
 use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\PostCommentController;
@@ -60,7 +61,6 @@ Route::get('/banned', function () {
 
 Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
-Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
 Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
 Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
 Route::get('/adoption', [AdoptionController::class, 'index'])->name('adoption.index');
@@ -76,9 +76,12 @@ Route::get('/posts/{post}', [PostController::class, 'show'])
     ->whereNumber('post')
     ->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
-Route::get('/pets/{pet:slug}', [PetController::class, 'show'])
-    ->where('pet', '^(?!create$)[^/]+')
-    ->name('pets.show');
+Route::prefix('pets')->name('pets.')->group(function () {
+    Route::get('/', [PetController::class, 'index'])->name('index');
+    Route::get('/{pet:slug}', [PetController::class, 'show'])
+        ->where('pet', '^(?!create$)[^/]+')
+        ->name('show');
+});
 Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
 Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
     ->where('tip', '^(?!create$)[^/]+')
@@ -134,22 +137,45 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/photo-galleries/{gallery}/photos', [PhotoGalleryController::class, 'storePhotos'])->name('photo-galleries.photos.store');
     Route::post('/photo-galleries/{gallery}/cover/{media}', [PhotoGalleryController::class, 'setCover'])->name('photo-galleries.cover.store');
 
-    Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
-    Route::post('/pets', [PetController::class, 'store'])->name('pets.store');
-    Route::get('/pets/{pet:slug}/edit', [PetController::class, 'edit'])->name('pets.edit');
-    Route::patch('/pets/{pet:slug}', [PetController::class, 'update'])->name('pets.update');
-    Route::delete('/pets/{pet:slug}', [PetController::class, 'destroy'])->name('pets.destroy');
-    Route::post('/pets/{slug}/follow', [PetFollowController::class, 'store'])->name('pets.follow');
-    Route::delete('/pets/{slug}/follow', [PetFollowController::class, 'destroy'])->name('pets.unfollow');
+    Route::prefix('pets')->name('pets.')->group(function () {
+        Route::get('/create', [PetController::class, 'create'])->name('create');
+        Route::post('/', [PetController::class, 'store'])->name('store');
+        Route::get('/{pet:slug}/edit', [PetController::class, 'edit'])->name('edit');
+        Route::patch('/{pet:slug}', [PetController::class, 'update'])->name('update');
+        Route::delete('/{pet:slug}', [PetController::class, 'destroy'])->name('destroy');
 
-    Route::patch('/pets/{pet:slug}/adoption', [AdoptionController::class, 'update'])->name('pets.adoption.update');
+        Route::post('/{pet:slug}/avatar', [\App\Http\Controllers\PetAvatarController::class, 'store'])->name('avatar.store');
+        Route::delete('/{pet:slug}/avatar', [\App\Http\Controllers\PetAvatarController::class, 'destroy'])->name('avatar.destroy');
 
-    Route::get('/pets/{slug}/health', [PetHealthLogController::class, 'index'])->name('pets.health.index');
-    Route::get('/pets/{slug}/health/create', [PetHealthLogController::class, 'create'])->name('pets.health.create');
-    Route::post('/pets/{slug}/health', [PetHealthLogController::class, 'store'])->name('pets.health.store');
-    Route::get('/pets/{slug}/health/{healthLog}/edit', [PetHealthLogController::class, 'edit'])->name('pets.health.edit');
-    Route::patch('/pets/{slug}/health/{healthLog}', [PetHealthLogController::class, 'update'])->name('pets.health.update');
-    Route::delete('/pets/{slug}/health/{healthLog}', [PetHealthLogController::class, 'destroy'])->name('pets.health.destroy');
+        Route::get('/{pet:slug}/followers', [\App\Http\Controllers\PetFollowersController::class, 'index'])->name('followers.index');
+        Route::post('/{pet:slug}/follow', [PetFollowController::class, 'store'])->name('follow');
+        Route::delete('/{pet:slug}/follow', [PetFollowController::class, 'destroy'])->name('unfollow');
+
+        Route::post('/{pet:slug}/posts/{post}', [\App\Http\Controllers\PetPostController::class, 'store'])
+            ->whereNumber('post')
+            ->name('posts.attach');
+        Route::delete('/{pet:slug}/posts/{post}', [\App\Http\Controllers\PetPostController::class, 'destroy'])
+            ->whereNumber('post')
+            ->name('posts.detach');
+
+        Route::patch('/{pet:slug}/adoption', [AdoptionController::class, 'update'])->name('adoption.update');
+
+        Route::prefix('{pet:slug}/health')->name('health.')->group(function (): void {
+            Route::get('/', [PetHealthLogController::class, 'index'])->name('index');
+            Route::get('/create', [PetHealthLogController::class, 'create'])->name('create');
+            Route::post('/', [PetHealthLogController::class, 'store'])->name('store');
+            Route::get('/{healthLog}/edit', [PetHealthLogController::class, 'edit'])->name('edit');
+            Route::patch('/{healthLog}', [PetHealthLogController::class, 'update'])->name('update');
+            Route::delete('/{healthLog}', [PetHealthLogController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('{pet:slug}/gallery')->name('gallery.')->group(function (): void {
+            Route::post('/', [PetGalleryController::class, 'store'])->name('store');
+            Route::patch('/reorder', [PetGalleryController::class, 'reorder'])->name('reorder');
+            Route::patch('/{media}', [PetGalleryController::class, 'update'])->name('update');
+            Route::delete('/{media}', [PetGalleryController::class, 'destroy'])->name('destroy');
+        });
+    });
 
     Route::get('/tips/create', [PetCareTipController::class, 'create'])->name('tips.create');
     Route::post('/tips', [PetCareTipController::class, 'store'])->name('tips.store');

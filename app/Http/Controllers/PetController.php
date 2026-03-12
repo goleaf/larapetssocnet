@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Pets\CreatePetAction;
+use App\Actions\Pets\DeletePetAction;
 use App\Actions\Pets\UpdatePetAction;
 use App\Http\Requests\CreatePetRequest;
 use App\Http\Requests\UpdatePetRequest;
 use App\Models\Pet;
 use App\Models\Post;
+use App\Models\User;
 use App\Services\ChartService;
 use App\Services\PersonalityTagService;
 use Illuminate\Contracts\Pagination\CursorPaginator;
@@ -19,10 +21,11 @@ class PetController extends Controller
 {
     public function __construct(private ChartService $chartService) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $pets = Pet::query()
             ->public()
+            ->visibleTo($request->user())
             ->latest('created_at')
             ->cursorPaginate(12)
             ->withQueryString();
@@ -52,7 +55,7 @@ class PetController extends Controller
             $activeTab = 'posts';
         }
 
-        $posts = $this->postsForShow($pet);
+        $posts = $this->postsForShow($pet, $request->user());
         $gallery = $activeTab === 'gallery' ? $pet->galleryForShow() : collect();
 
         $healthLogs = collect();
@@ -106,8 +109,23 @@ class PetController extends Controller
     {
         $this->authorize('update', $pet);
 
+        $pet->loadMissing('media');
+
+        $galleryItems = collect($pet->getMedia(Pet::MEDIA_COLLECTION_GALLERY))
+            ->sortBy(function ($media): string {
+                $order = (int) ($media->order_column ?? 0);
+                $timestamp = (int) (optional($media->created_at)->timestamp ?? 0);
+
+                return sprintf('%05d-%010d', $order, $timestamp);
+            })
+            ->values();
+
+        $galleryMax = (int) config('pets.gallery.max_photos', 30);
+
         return view('pets.edit', [
             'pet' => $pet,
+            'galleryItems' => $galleryItems,
+            'galleryMax' => $galleryMax,
             ...$this->petFormDefaults(),
         ]);
     }
@@ -128,14 +146,11 @@ class PetController extends Controller
             ->with('status', __('pets.flash.updated'));
     }
 
-    public function destroy(Pet $pet): RedirectResponse
+    public function destroy(Request $request, Pet $pet, DeletePetAction $deletePetAction): RedirectResponse
     {
         $this->authorize('delete', $pet);
 
-        if (! $pet->trashed()) {
-            $pet->delete();
-            $pet->owner()->decrement('pets_count');
-        }
+        $deletePetAction->handle($request->user(), $pet);
 
         return redirect()
             ->route('pets.index')
@@ -159,7 +174,7 @@ class PetController extends Controller
             'personality_tags' => $personalityTags,
             'is_adoptable' => $isAdoptableFilter,
             'sort' => $sort,
-        ]);
+        ], $request->user());
 
         return view('pets.explore', [
             'pets' => $pets,
@@ -187,7 +202,7 @@ class PetController extends Controller
             'sex' => (string) $request->string('sex'),
             'personality_tags' => $personalityTags,
             'sort' => $sort,
-        ]);
+        ], $request->user());
 
         return view('pets.adopt', [
             'pets' => $pets,
@@ -205,7 +220,7 @@ class PetController extends Controller
     /**
      * @return CursorPaginator<int, Post>
      */
-    private function postsForShow(Pet $pet): CursorPaginator
+    private function postsForShow(Pet $pet, ?User $viewer): CursorPaginator
     {
         return Post::query()
             ->select([
@@ -217,6 +232,7 @@ class PetController extends Controller
                 'posts.created_at',
             ])
             ->where('posts.pet_id', $pet->getKey())
+            ->visibleTo($viewer)
             ->latest('posts.created_at')
             ->cursorPaginate(12)
             ->withQueryString();

@@ -40,7 +40,7 @@ class SearchController extends Controller
 
         return match ($type) {
             'users' => User::paginateSearchResults($viewer, $query),
-            'pets' => Pet::paginateSearchResults($query),
+            'pets' => Pet::paginateSearchResults($viewer, $query),
             'posts' => Post::paginateSearchResults($viewer, $query),
             'groups' => Group::paginateSearchResults($viewer, $query),
             'events' => Event::paginateSearchResults($query),

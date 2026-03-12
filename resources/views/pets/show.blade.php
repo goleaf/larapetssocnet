@@ -93,7 +93,13 @@
                             <span class="text-sm text-gray-600">{{ $pet->user?->name }}</span>
                         </div>
 
-                        <p class="text-xs text-gray-500">{{ (int) ($pet->followers_count ?? 0) }} {{ __('pets.followers') }}</p>
+                        @can('viewFollowers', $pet)
+                            <a href="{{ route('pets.followers.index', ['pet' => $petSlug]) }}" class="text-xs text-gray-500 hover:underline">
+                                {{ (int) ($pet->followers_count ?? 0) }} {{ __('pets.followers') }}
+                            </a>
+                        @else
+                            <p class="text-xs text-gray-500">{{ (int) ($pet->followers_count ?? 0) }} {{ __('pets.followers') }}</p>
+                        @endcan
 
                         @if(!$isOwner)
                             <x-follow-button :target="$pet" size="sm" />
@@ -150,16 +156,26 @@
                             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 @foreach($gallery as $item)
                                     @php
-                                        $url = method_exists($item, 'getUrl') ? $item->getUrl() : data_get($item, 'url');
-                                        $label = data_get($item, 'name') ?: data_get($item, 'file_name', __('pets.gallery_item'));
+                                        $url = method_exists($item, 'getUrl')
+                                            ? ($item->getUrl(\App\Models\Pet::MEDIA_CONVERSION_GALLERY_MEDIUM) ?: $item->getUrl())
+                                            : data_get($item, 'url');
+                                        $label = (string) (data_get($item, 'name') ?: data_get($item, 'file_name', __('pets.gallery_item')));
+                                        $caption = method_exists($item, 'getCustomProperty') ? (string) ($item->getCustomProperty('caption') ?? '') : '';
+                                        $altText = method_exists($item, 'getCustomProperty') ? (string) ($item->getCustomProperty('alt_text') ?? '') : '';
+                                        $alt = $altText !== '' ? $altText : $label;
                                     @endphp
                                     <div class="rounded-lg border border-gray-200 overflow-hidden">
                                         @if($url)
-                                            <img src="{{ $url }}" alt="{{ $label }}" class="h-48 w-full object-cover">
+                                            <img src="{{ $url }}" alt="{{ $alt }}" class="h-48 w-full object-cover">
                                         @else
                                             <div class="h-48 w-full bg-gray-100"></div>
                                         @endif
-                                        <div class="p-3 text-sm text-gray-600">{{ $label }}</div>
+                                        <div class="p-3 text-sm text-gray-600">
+                                            <div class="font-medium">{{ $label }}</div>
+                                            @if($caption !== '')
+                                                <div class="mt-1 text-xs text-gray-500">{{ $caption }}</div>
+                                            @endif
+                                        </div>
                                     </div>
                                 @endforeach
                             </div>

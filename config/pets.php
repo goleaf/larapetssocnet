@@ -24,4 +24,12 @@ return [
             'adventurous',
         ],
     ],
+    'gallery' => [
+        'max_photos' => 30,
+        'max_upload' => 5,
+        'max_file_size_kb' => 5120,
+        'allowed_mimes' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+        'caption_max' => 200,
+        'alt_text_max' => 140,
+    ],
 ];

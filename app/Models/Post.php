@@ -451,7 +451,11 @@ class Post extends Model implements HasMedia
         $viewerId = (int) ($viewer?->getKey() ?? 0);
 
         return self::query()
-            ->with(['user', 'hashtags'])
+            ->with([
+                'user',
+                'hashtags',
+                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+            ])
             ->withListEngagement($viewerId)
             ->published()
             ->explorable($viewer)
@@ -493,6 +497,9 @@ class Post extends Model implements HasMedia
             ->withListEngagement($viewerId)
             ->published()
             ->visibleTo($viewer)
+            ->with([
+                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+            ])
             ->when($term !== '', fn (Builder $query) => $query->search($term))
             ->latest('posts.created_at')
             ->paginate($perPage)
@@ -529,7 +536,11 @@ class Post extends Model implements HasMedia
         return self::query()
             ->profileTimelineColumns()
             ->forProfile($profileOwner)
-            ->with(['user', 'hashtags'])
+            ->with([
+                'user',
+                'hashtags',
+                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
+            ])
             ->withListEngagement($viewerId)
             ->published()
             ->visibleTo($viewer)
@@ -549,7 +560,11 @@ class Post extends Model implements HasMedia
             ->profileTimelineColumns()
             ->forProfile($profileOwner)
             ->where('posts.visibility', self::VISIBILITY_PRIVATE)
-            ->with(['user', 'hashtags'])
+            ->with([
+                'user',
+                'hashtags',
+                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($profileOwner),
+            ])
             ->latest('posts.created_at')
             ->limit($limit)
             ->get();
@@ -624,10 +639,11 @@ class Post extends Model implements HasMedia
     public static function paginateGroupFeed(Group $group, int $perPage = 15, string $cursorName = 'posts_cursor'): CursorPaginator
     {
         $viewerId = (int) (auth()->id() ?? 0);
+        $viewer = auth()->user();
 
         return self::query()
             ->inGroupFeed($group)
-            ->withFeedRelations()
+            ->withFeedRelations($viewer)
             ->withFeedLikeExistsForViewer($viewerId)
             ->latest('posts.created_at')
             ->cursorPaginate($perPage, ['posts.*'], $cursorName)
@@ -656,7 +672,7 @@ class Post extends Model implements HasMedia
                 fn (Builder $query) => $query->forFeed($viewerId),
                 fn (Builder $query) => $query->visibleTo($viewer)
             )
-            ->withFeedRelations()
+            ->withFeedRelations($viewer)
             ->withFeedLikeExistsForViewer($viewerId)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->orderByDesc('created_at')
@@ -732,17 +748,17 @@ class Post extends Model implements HasMedia
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId));
     }
 
-    public function scopeWithFeedRelations(Builder $query): Builder
+    public function scopeWithFeedRelations(Builder $query, ?User $viewer = null): Builder
     {
         return $query
             ->with([
                 'user',
                 'author',
-                'pet',
+                'pet' => fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer),
                 'media',
                 'tags',
             ])
-            ->withListEngagement();
+            ->withListEngagement($viewer?->getKey());
     }
 
     public function scopeWithListEngagement(Builder $query, ?int $viewerId = null): Builder

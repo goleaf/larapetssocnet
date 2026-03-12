@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePetHealthLogRequest;
 use App\Models\Pet;
 use App\Models\PetHealthLog;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,10 +16,9 @@ use Throwable;
 
 class PetHealthLogController extends Controller
 {
-    public function index(Request $request, string $slug): View
+    public function index(Request $request, Pet $pet): View
     {
-        $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user(), 404);
+        $this->authorize('update', $pet);
 
         $logs = PetHealthLog::paginateForPet($pet);
         $upcomingLogs = PetHealthLog::upcomingForPet($pet);
@@ -34,21 +32,17 @@ class PetHealthLogController extends Controller
         ]);
     }
 
-    public function create(Request $request, string $slug): View
+    public function create(Request $request, Pet $pet): View
     {
-        $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user(), 404);
+        $this->authorize('update', $pet);
 
         return view('pets.health.create', [
             'pet' => $pet,
         ]);
     }
 
-    public function store(StorePetHealthLogRequest $request, string $slug): RedirectResponse
+    public function store(StorePetHealthLogRequest $request, Pet $pet): RedirectResponse
     {
-        $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
-
         $validated = $request->validated();
         $type = $this->normalizeType((string) $validated['type']);
         $nextDueAt = $this->resolveNextDueAt($request, $validated);
@@ -69,10 +63,9 @@ class PetHealthLogController extends Controller
             ->with('status', 'Health log saved.');
     }
 
-    public function edit(Request $request, string $slug, string $healthLog): View
+    public function edit(Request $request, Pet $pet, string $healthLog): View
     {
-        $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user(), 404);
+        $this->authorize('update', $pet);
 
         $log = $this->resolveHealthLog($pet, $healthLog);
 
@@ -82,11 +75,8 @@ class PetHealthLogController extends Controller
         ]);
     }
 
-    public function update(StorePetHealthLogRequest $request, string $slug, string $healthLog): RedirectResponse
+    public function update(StorePetHealthLogRequest $request, Pet $pet, string $healthLog): RedirectResponse
     {
-        $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
-
         $log = $this->resolveHealthLog($pet, $healthLog);
         $validated = $request->validated();
         $type = $this->normalizeType((string) $validated['type']);
@@ -108,10 +98,9 @@ class PetHealthLogController extends Controller
             ->with('status', 'Health log updated.');
     }
 
-    public function destroy(Request $request, string $slug, string $healthLog): RedirectResponse
+    public function destroy(Request $request, Pet $pet, string $healthLog): RedirectResponse
     {
-        $pet = $this->resolvePet($slug);
-        $this->ensureOwner($pet, $request->user());
+        $this->authorize('update', $pet);
 
         $log = $this->resolveHealthLog($pet, $healthLog);
         $log->delete();
@@ -179,24 +168,9 @@ class PetHealthLogController extends Controller
         ];
     }
 
-    protected function resolvePet(string $slug): Pet
-    {
-        return Pet::resolveForRoute($slug) ?? abort(404);
-    }
-
     protected function resolveHealthLog(Pet $pet, string $healthLog): PetHealthLog
     {
         return PetHealthLog::findForPet($pet, $healthLog) ?? abort(404);
-    }
-
-    protected function ensureOwner(Pet $pet, ?Authenticatable $user, int $status = 403): void
-    {
-        abort_unless($this->isOwner($pet, $user), $status);
-    }
-
-    protected function isOwner(Pet $pet, ?Authenticatable $user): bool
-    {
-        return $pet->isOwnedBy($user);
     }
 
     protected function filterToExistingColumns(string $table, array $payload): array

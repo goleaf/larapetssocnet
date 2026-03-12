@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\BlockService;
 use App\Services\FollowService;
 use App\Services\FollowSuggestionService;
+use App\Services\PetFollowService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use App\Traits\HasCounterCache;
@@ -240,7 +241,9 @@ class User extends Authenticatable implements HasMedia
             return true;
         }
 
-        return $this->username_changed_at->copy()->addDays(30)->isPast();
+        $cooldownDays = (int) config('usernames.cooldown_days', 30);
+
+        return $this->username_changed_at->copy()->addDays($cooldownDays)->isPast();
     }
 
     public function daysUntilUsernameChange(): int
@@ -249,7 +252,14 @@ class User extends Authenticatable implements HasMedia
             return 0;
         }
 
-        return (int) now()->diffInDays($this->username_changed_at->copy()->addDays(30), false);
+        $cooldownDays = (int) config('usernames.cooldown_days', 30);
+
+        return (int) now()->diffInDays($this->username_changed_at->copy()->addDays($cooldownDays), false);
+    }
+
+    public function profileVisibility(): ProfileVisibility
+    {
+        return app(ProfileVisibilityService::class)->resolve($this);
     }
 
     public function registerMediaCollections(): void
@@ -643,10 +653,12 @@ class User extends Authenticatable implements HasMedia
         return $query->select([
             'users.id',
             'users.name',
+            'users.display_name',
             'users.username',
             'users.email',
             'users.city',
             'users.created_at',
+            'users.profile_visibility',
             'users.is_private',
             'users.is_banned',
         ]);
@@ -667,14 +679,32 @@ class User extends Authenticatable implements HasMedia
     public function scopeDiscoverable(Builder $query): Builder
     {
         return $query
-            ->where('is_private', false)
+            ->where(function (Builder $visibilityQuery): void {
+                $visibilityQuery
+                    ->whereNull('users.profile_visibility')
+                    ->orWhere('users.profile_visibility', ProfileVisibility::Public->value);
+            })
+            ->where(function (Builder $legacyPrivacy): void {
+                $legacyPrivacy
+                    ->whereNull('users.is_private')
+                    ->orWhere('users.is_private', false);
+            })
             ->where('is_banned', false);
     }
 
     public function scopePublic(Builder $query): Builder
     {
         return $query
-            ->where('is_private', false)
+            ->where(function (Builder $visibilityQuery): void {
+                $visibilityQuery
+                    ->whereNull('users.profile_visibility')
+                    ->orWhere('users.profile_visibility', ProfileVisibility::Public->value);
+            })
+            ->where(function (Builder $legacyPrivacy): void {
+                $legacyPrivacy
+                    ->whereNull('users.is_private')
+                    ->orWhere('users.is_private', false);
+            })
             ->where('is_banned', false);
     }
 
@@ -693,7 +723,7 @@ class User extends Authenticatable implements HasMedia
             ->where(function (Builder $visibilityQuery): void {
                 $visibilityQuery
                     ->whereNull('users.profile_visibility')
-                    ->orWhere('users.profile_visibility', 'public');
+                    ->orWhere('users.profile_visibility', ProfileVisibility::Public->value);
             })
             ->where(function (Builder $privacyQuery): void {
                 $privacyQuery
@@ -733,20 +763,44 @@ class User extends Authenticatable implements HasMedia
 
     public function scopeVisibleTo(Builder $query, ?self $viewer): Builder
     {
+        $query->select(['users.*'])->where('users.is_banned', false);
+
         if (! $viewer) {
             return $query
                 ->discoverable()
                 ->notBlockedFor($viewer);
         }
 
+        $viewerId = (int) $viewer->getKey();
+
         return $query
-            ->where(function (Builder $visibilityQuery) use ($viewer): void {
+            ->where(function (Builder $visibilityQuery) use ($viewerId, $viewer): void {
                 $visibilityQuery
-                    ->whereKey($viewer->getKey())
-                    ->orWhere(fn (Builder $public) => $public->whereNull('is_private')->orWhere('is_private', false))
+                    ->whereKey($viewerId)
+                    ->orWhere(function (Builder $public): void {
+                        $public
+                            ->where(function (Builder $visibility): void {
+                                $visibility
+                                    ->whereNull('users.profile_visibility')
+                                    ->orWhere('users.profile_visibility', ProfileVisibility::Public->value);
+                            })
+                            ->where(function (Builder $legacyPrivacy): void {
+                                $legacyPrivacy
+                                    ->whereNull('users.is_private')
+                                    ->orWhere('users.is_private', false);
+                            });
+                    })
                     ->orWhere(function (Builder $followers) use ($viewer): void {
                         $followers
-                            ->where('is_private', true)
+                            ->where(function (Builder $visibility): void {
+                                $visibility
+                                    ->where('users.profile_visibility', ProfileVisibility::FollowersOnly->value)
+                                    ->orWhere(function (Builder $legacy): void {
+                                        $legacy
+                                            ->whereNull('users.profile_visibility')
+                                            ->where('users.is_private', true);
+                                    });
+                            })
                             ->whereIn('users.id', $viewer->acceptedFollowing()->select('users.id'));
                     });
             })
@@ -838,12 +892,16 @@ class User extends Authenticatable implements HasMedia
             return false;
         }
 
+        if ($this->profileVisibility() === ProfileVisibility::Private) {
+            return false;
+        }
+
         return ! $viewer->hasBlockingRelationshipWith($this);
     }
 
     public function followModeFor(self $viewer): string
     {
-        return (bool) $this->is_private ? 'pending' : 'accepted';
+        return $this->profileVisibility() === ProfileVisibility::Public ? 'accepted' : 'pending';
     }
 
     public function canApproveFollowRequestFrom(self $requester): bool
@@ -891,7 +949,7 @@ class User extends Authenticatable implements HasMedia
     public function makePrivate(): void
     {
         DB::transaction(function (): void {
-            $this->update(['is_private' => true]);
+            app(ProfileVisibilityService::class)->syncLegacyPrivacy($this, ProfileVisibility::FollowersOnly);
         });
     }
 
@@ -926,7 +984,7 @@ class User extends Authenticatable implements HasMedia
                 });
             }
 
-            $this->update(['is_private' => false]);
+            app(ProfileVisibilityService::class)->syncLegacyPrivacy($this, ProfileVisibility::Public);
         });
     }
 
@@ -1035,42 +1093,12 @@ class User extends Authenticatable implements HasMedia
 
     public function followPet(Pet $pet): bool
     {
-        return DB::transaction(function () use ($pet): bool {
-            $alreadyFollowing = $this->followedPets()
-                ->whereKey($pet->getKey())
-                ->lockForUpdate()
-                ->exists();
-
-            if ($alreadyFollowing) {
-                return false;
-            }
-
-            $this->followedPets()->attach($pet->getKey(), [
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $this->incrementCounter('following_pets_count');
-            $pet->incrementCounter('followers_count');
-
-            return true;
-        });
+        return app(PetFollowService::class)->follow($this, $pet);
     }
 
     public function unfollowPet(Pet $pet): bool
     {
-        return DB::transaction(function () use ($pet): bool {
-            $detached = $this->followedPets()->detach($pet->getKey()) > 0;
-
-            if (! $detached) {
-                return false;
-            }
-
-            $this->decrementCounter('following_pets_count');
-            $pet->decrementCounter('followers_count');
-
-            return true;
-        });
+        return app(PetFollowService::class)->unfollow($this, $pet);
     }
 
     public function isFollowingPet(Pet $pet): bool
@@ -1090,56 +1118,12 @@ class User extends Authenticatable implements HasMedia
 
     public function canViewFollowersList(?self $viewer): bool
     {
-        if ((bool) $this->is_banned) {
-            return false;
-        }
-
-        if (! $viewer) {
-            return ! (bool) $this->is_private;
-        }
-
-        if ($viewer->hasBlockingRelationshipWith($this)) {
-            return false;
-        }
-
-        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
-            return true;
-        }
-
-        if (! (bool) $this->is_private) {
-            return true;
-        }
-
-        return $viewer->isFollowing($this);
+        return app(ProfileVisibilityService::class)->canViewFollowers($viewer, $this);
     }
 
     public function canViewFollowingList(?self $viewer): bool
     {
-        if ((bool) $this->is_banned) {
-            return false;
-        }
-
-        if (! $viewer) {
-            return ! (bool) $this->is_private && (bool) $this->open_following;
-        }
-
-        if ($viewer->hasBlockingRelationshipWith($this)) {
-            return false;
-        }
-
-        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
-            return true;
-        }
-
-        if ((bool) $this->is_private) {
-            return $viewer->isFollowing($this);
-        }
-
-        if ((bool) $this->open_following) {
-            return true;
-        }
-
-        return $viewer->isFollowing($this);
+        return app(ProfileVisibilityService::class)->canViewFollowing($viewer, $this);
     }
 
     public function canView(Model $model): bool
@@ -1153,32 +1137,12 @@ class User extends Authenticatable implements HasMedia
 
     public function canViewProfile(?self $viewer): bool
     {
-        if ((bool) $this->is_banned) {
-            return false;
-        }
-
-        if (! $viewer) {
-            return ! (bool) $this->is_private;
-        }
-
-        if ($viewer->hasBlockingRelationshipWith($this)) {
-            return false;
-        }
-
-        if ($viewer->is($this) || $viewer->hasAnyRole(['admin', 'moderator'])) {
-            return true;
-        }
-
-        if (! (bool) $this->is_private) {
-            return true;
-        }
-
-        return $viewer->isFollowing($this);
+        return app(ProfileVisibilityService::class)->canViewFullProfile($viewer, $this);
     }
 
     public function canViewPosts(?self $viewer): bool
     {
-        return $this->canViewProfile($viewer);
+        return app(ProfileVisibilityService::class)->canViewProfilePosts($viewer, $this);
     }
 
     public function canSeeFollowersList(?self $viewer): bool

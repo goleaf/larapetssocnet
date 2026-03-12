@@ -68,8 +68,7 @@ class PetFollowFeatureTest extends TestCase
 
         $this->actingAs($owner)
             ->postJson(route('pets.follow', $pet->getKey()))
-            ->assertStatus(422)
-            ->assertJsonPath('message', 'Owners cannot follow their own pets.');
+            ->assertForbidden();
     }
 
     public function test_follow_pet_is_idempotent_for_existing_follow(): void

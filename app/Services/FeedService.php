@@ -17,7 +17,7 @@ class FeedService
             ->whereDoesntHave('author', fn ($query) => $query->where('is_banned', true))
             ->whereNotIn('user_id', $user->blocking()->select('users.id'))
             ->whereNotIn('user_id', $user->blockedBy()->select('users.id'))
-            ->withFeedRelations()
+            ->withFeedRelations($user)
             ->withFeedLikeExistsForViewer((int) (auth()->id() ?? $user->getKey()))
             ->when(in_array($type, ['text', 'photo', 'video'], true), fn ($query) => $query->byType($type))
             ->orderByDesc('created_at')

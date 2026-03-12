@@ -8,36 +8,40 @@ use Illuminate\Support\Facades\DB;
 
 class PetFollowService
 {
-    public function __construct(
-        private CounterCacheService $counters,
-    ) {}
+    public function __construct() {}
 
-    public function follow(User $user, Pet $pet): void
+    public function follow(User $user, Pet $pet): bool
     {
         if ($user->id === $pet->user_id) {
             throw new \RuntimeException('Cannot follow your own pet.');
         }
 
         if ($pet->isFollowedBy($user)) {
-            return;
+            return false;
         }
 
         DB::transaction(function () use ($user, $pet): void {
             $pet->followers()->attach($user->id);
-            $pet->increment('followers_count');
+            $pet->incrementCounter('followers_count');
+            $user->incrementCounter('following_pets_count');
         });
+
+        return true;
     }
 
-    public function unfollow(User $user, Pet $pet): void
+    public function unfollow(User $user, Pet $pet): bool
     {
         if (! $pet->isFollowedBy($user)) {
-            return;
+            return false;
         }
 
         DB::transaction(function () use ($user, $pet): void {
             $pet->followers()->detach($user->id);
-            $this->counters->safeDecrement($pet, 'followers_count');
+            $pet->decrementCounter('followers_count');
+            $user->decrementCounter('following_pets_count');
         });
+
+        return true;
     }
 
     /**
