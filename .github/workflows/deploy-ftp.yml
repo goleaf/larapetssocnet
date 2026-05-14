@@ -1,0 +1,123 @@
+name: Deploy to FTP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      include_sqlite:
+        description: Upload a freshly migrated and seeded SQLite database. Use only for first install because it overwrites remote data.
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ftp-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      APP_KEY: ${{ secrets.APP_KEY }}
+      APP_URL: ${{ vars.APP_URL || 'https://petsocial.prus.dev' }}
+      REMOTE_BASE: ${{ vars.REMOTE_BASE || '/home/anjdiiaev/domains/prus.dev/public_html/petsocial' }}
+      INCLUDE_SQLITE: ${{ github.event_name == 'workflow_dispatch' && inputs.include_sqlite && 'true' || 'false' }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, sqlite3, mbstring, fileinfo, gd, intl, zip
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate deployment secrets
+        env:
+          FTP_HOST_SECRET: ${{ secrets.FTP_HOST }}
+          FTP_USERNAME_SECRET: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD_SECRET: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          test -n "${APP_KEY}" || { echo "Missing APP_KEY secret"; exit 2; }
+          test -n "${FTP_HOST_SECRET}" || { echo "Missing FTP_HOST secret"; exit 2; }
+          test -n "${FTP_USERNAME_SECRET}" || { echo "Missing FTP_USERNAME secret"; exit 2; }
+          test -n "${FTP_PASSWORD_SECRET}" || { echo "Missing FTP_PASSWORD secret"; exit 2; }
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Create initial SQLite database
+        if: ${{ env.INCLUDE_SQLITE == 'true' }}
+        run: |
+          touch database/database.sqlite
+          DB_DATABASE="$PWD/database/database.sqlite" php artisan migrate --seed --force --no-interaction
+
+      - name: Prepare FTP folder
+        run: scripts/prepare-ftp-deploy.sh
+
+      - name: Deploy first install including SQLite
+        if: ${{ env.INCLUDE_SQLITE == 'true' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+          port: ${{ vars.FTP_PORT || 21 }}
+          local-dir: ./.deploy/petsocial/
+          server-dir: ${{ vars.FTP_SERVER_DIR || 'petsocial/' }}
+          state-name: .ftp-deploy-sync-state.json
+          log-level: minimal
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            laravel/storage/logs/**
+            laravel/storage/framework/cache/**
+            laravel/storage/framework/sessions/**
+            laravel/storage/framework/views/**
+            laravel/storage/app/public/**
+
+      - name: Deploy code and preserve runtime data
+        if: ${{ env.INCLUDE_SQLITE != 'true' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+          port: ${{ vars.FTP_PORT || 21 }}
+          local-dir: ./.deploy/petsocial/
+          server-dir: ${{ vars.FTP_SERVER_DIR || 'petsocial/' }}
+          state-name: .ftp-deploy-sync-state.json
+          log-level: minimal
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            laravel/database/*.sqlite*
+            laravel/storage/logs/**
+            laravel/storage/framework/cache/**
+            laravel/storage/framework/sessions/**
+            laravel/storage/framework/views/**
+            laravel/storage/app/public/**
+            storage/**
