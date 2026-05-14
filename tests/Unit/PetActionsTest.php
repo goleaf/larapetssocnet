@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Services\SyncPetCountersService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('syncs pet counters from relationships', function (): void {
     $owner = User::factory()->create();

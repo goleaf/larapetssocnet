@@ -13,7 +13,6 @@ class UploadMediaAction
     public function handle(Post $post, array $mediaFiles): void
     {
         collect($mediaFiles)
-            ->filter(fn (mixed $file): bool => $file instanceof UploadedFile)
             ->values()
             ->each(function (UploadedFile $mediaFile, int $index) use ($post): void {
                 $mediaType = str_starts_with((string) $mediaFile->getMimeType(), 'video/') ? 'video' : 'image';

@@ -24,7 +24,7 @@ class ArchivePostAction
 
             $this->activity->log($actor, $post, 'archived');
 
-            return $post->refresh() ?? $post;
+            return $post->refresh();
         });
     }
 }

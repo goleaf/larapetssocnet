@@ -6,7 +6,7 @@ use Database\Seeders\AdoptablePetSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('renders simplified public browse pages', function (): void {
     $this->get(route('marketplace.index'))

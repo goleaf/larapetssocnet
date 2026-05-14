@@ -151,7 +151,7 @@ class StorePostRequest extends FormRequest
 
             if ($petId) {
                 $pet = Pet::query()
-                    ->select(['id', 'is_public', 'user_id'])
+                    ->select(['id', 'is_public', 'user_id', 'species', 'breed'])
                     ->whereKey((int) $petId)
                     ->first();
 

@@ -25,7 +25,7 @@ class UnpublishPostAction
 
             $this->activity->log($actor, $post, 'unpublished');
 
-            return $post->refresh() ?? $post;
+            return $post->refresh();
         });
     }
 }

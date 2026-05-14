@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GroupMemberStatus;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
@@ -31,7 +32,7 @@ class GroupMembershipFlowTest extends TestCase
 
         $this->actingAs($member)
             ->post(route('groups.join', $group->slug))
-            ->assertForbidden();
+            ->assertRedirect();
 
         $this->assertDatabaseHas('group_members', [
             'group_id' => $group->id,
@@ -84,7 +85,7 @@ class GroupMembershipFlowTest extends TestCase
             ->where('user_id', $member->id)
             ->firstOrFail();
 
-        $this->assertSame('pending', $pending->status);
+        $this->assertSame(GroupMemberStatus::Pending, $pending->status);
 
         $this->actingAs($admin)
             ->post(route('groups.requests.approve', ['group' => $group->slug, 'membership' => $pending->id]))
@@ -115,7 +116,7 @@ class GroupMembershipFlowTest extends TestCase
 
         $this->actingAs($member)
             ->post(route('groups.join', $group->slug))
-            ->assertRedirect();
+            ->assertForbidden();
 
         $this->assertDatabaseMissing('group_members', [
             'group_id' => $group->id,

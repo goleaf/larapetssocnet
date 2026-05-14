@@ -5,7 +5,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('allows owners to attach and detach pets on posts', function (): void {
     $owner = User::factory()->create();

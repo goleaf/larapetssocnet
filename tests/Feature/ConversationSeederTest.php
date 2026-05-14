@@ -8,7 +8,7 @@ use Database\Seeders\ConversationSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('seeds message-ready inbox threads for every user', function (): void {
     $this->seed(UserSeeder::class);

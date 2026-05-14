@@ -46,6 +46,13 @@
             : ($pendingIds->contains($author->getKey()) ? 'pending' : 'none');
     }
 
+    $body = trim((string) $post->body);
+    $storedBodyHtml = (string) ($post->body_html ?? '');
+    $storedBodyText = trim(html_entity_decode(strip_tags($storedBodyHtml)));
+    $bodyHtml = $storedBodyHtml !== '' && ($body === '' || $storedBodyText === $body)
+        ? $storedBodyHtml
+        : nl2br(e($body));
+
     $isVideoMedia = static function (mixed $item): bool {
         if (is_object($item) && isset($item->mime_type)) {
             return str_starts_with((string) $item->mime_type, 'video/');
@@ -282,8 +289,7 @@
         </div>
     </header>
 
-    @if (filled($post->body_html ?? $post->body))
-        @php($bodyHtml = $post->body_html ?: e((string) $post->body))
+    @if (filled($bodyHtml))
         <div class="mt-3 whitespace-pre-line text-sm leading-6 ui-text">{!! $bodyHtml !!}</div>
     @endif
 

@@ -10,9 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 if (! function_exists('profileTestPayload')) {
     /**
@@ -569,7 +568,14 @@ test('authenticated profile requests refresh online indicator timestamp', functi
     $user->refresh();
 
     expect($user->last_seen_at?->toDateTimeString())->toBe('2026-02-21 12:34:56');
-    expect(User::query()->activeRecently()->pluck('id')->all())->toContain($user->getKey());
+
+    Carbon::setTestNow($now);
+
+    try {
+        expect(User::query()->activeRecently()->pluck('id')->all())->toContain($user->getKey());
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 test('profile activity summary uses six monthly buckets', function (): void {

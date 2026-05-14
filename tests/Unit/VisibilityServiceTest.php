@@ -6,7 +6,7 @@ use App\Services\VisibilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('canView handles guest and follower visibility rules', function (): void {
     $service = app(VisibilityService::class);

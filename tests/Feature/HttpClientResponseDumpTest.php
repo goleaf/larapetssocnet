@@ -6,8 +6,6 @@ use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\Response;
 use Symfony\Component\VarDumper\VarDumper;
 
-uses(Tests\TestCase::class);
-
 it('includes request context in http client response dump output', function (): void {
     $response = new Response(new PsrResponse(200, [], '{"ok":true}'));
     $response->transferStats = new TransferStats(

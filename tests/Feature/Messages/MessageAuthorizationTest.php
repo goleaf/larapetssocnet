@@ -4,7 +4,7 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('prevents a third user from reading others direct messages', function (): void {
     $firstUser = User::factory()->create(['is_private' => false]);

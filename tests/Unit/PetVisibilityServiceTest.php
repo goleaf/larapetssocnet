@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Services\PetVisibilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('denies private pet to strangers', function (): void {
     $owner = User::factory()->create();

@@ -7,7 +7,7 @@ use App\Services\CommentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('rejects replying to a reply', function () {
     $author = User::factory()->create();

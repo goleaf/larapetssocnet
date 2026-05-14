@@ -3,8 +3,6 @@
 use App\Notifications\QueueBusyAlert;
 use Illuminate\Notifications\AnonymousNotifiable;
 
-uses(Tests\TestCase::class);
-
 it('builds queue busy alert mail message with queue details', function (): void {
     $notification = new QueueBusyAlert('database', 'critical', 99);
     $mailMessage = $notification->toMail(new AnonymousNotifiable);

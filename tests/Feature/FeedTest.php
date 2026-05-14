@@ -5,7 +5,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\CursorPaginator;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('shows feed content with visibility and block filters applied', function (): void {
     $viewer = User::factory()->create();

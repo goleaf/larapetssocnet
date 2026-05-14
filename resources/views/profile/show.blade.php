@@ -584,9 +584,10 @@
  <div class="min-w-0">
  <div class="flex items-center gap-1">
  <p class="truncate text-base font-semibold text-bark">{{ $group->name }}</p>
- @if ($group->pivot->role ==='owner')
+ @php($groupRole = $group->pivot->role?->value ?? $group->pivot->role)
+ @if ($groupRole ==='owner')
  <span title="Owner">👑</span>
- @elseif ($group->pivot->role ==='admin')
+ @elseif ($groupRole ==='admin')
  <span title="Admin">🛡️</span>
  @endif
  </div>

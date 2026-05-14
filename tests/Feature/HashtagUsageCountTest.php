@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Services\HashtagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('updates hashtag usage count on delete and restore', function (): void {
     $author = User::factory()->create(['is_private' => false]);

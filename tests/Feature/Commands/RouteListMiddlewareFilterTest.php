@@ -2,8 +2,6 @@
 
 use Illuminate\Support\Facades\Artisan;
 
-uses(Tests\TestCase::class);
-
 it('filters route list output by middleware', function (): void {
     $exitCode = Artisan::call('route:list', [
         '--middleware' => 'web',

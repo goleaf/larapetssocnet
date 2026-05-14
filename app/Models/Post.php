@@ -514,7 +514,7 @@ class Post extends Model implements HasMedia
         $normalizer = new HashtagNormalizer;
         $normalizedTag = $normalizer->normalizeFromInput($clean);
 
-        $query->where(function (Builder $searchQuery) use ($clean): void {
+        $query->where(function (Builder $searchQuery) use ($clean, $normalizedTag): void {
             $searchQuery
                 ->where('body', 'like', "%{$clean}%")
                 ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($clean, $normalizedTag): void {
@@ -535,7 +535,7 @@ class Post extends Model implements HasMedia
         $normalizer = new HashtagNormalizer;
         $normalizedTag = $normalizer->normalizeFromInput($clean);
 
-        $query->where(function (Builder $searchQuery) use ($clean): void {
+        $query->where(function (Builder $searchQuery) use ($clean, $normalizedTag): void {
             $searchQuery
                 ->where('body', 'like', "%{$clean}%")
                 ->orWhere('location', 'like', "%{$clean}%")
@@ -847,20 +847,11 @@ class Post extends Model implements HasMedia
 
     public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15): CursorPaginator
     {
-        $hasFollowing = $viewer->relationLoaded('acceptedFollowing')
-            ? $viewer->acceptedFollowing->isNotEmpty()
-            : $viewer->acceptedFollowing()->exists();
-
         $viewerId = (int) $viewer->getKey();
 
         return self::query()
-            ->when(
-                $hasFollowing,
-                fn (Builder $query) => $query->forFeed($viewerId),
-                fn (Builder $query) => $query->visibleTo($viewer)
-            )
+            ->forFeed($viewerId)
             ->withFeedRelations($viewer)
-            ->withFeedLikeExistsForViewer($viewerId)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -940,11 +931,8 @@ class Post extends Model implements HasMedia
         return $query
             ->with([
                 'user',
-                'author',
-                'author.media',
-                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery
-                    ->visibleTo($viewer)
-                    ->with('media'),
+                'user.media',
+                'pet.media',
                 'media',
                 'tags',
             ])

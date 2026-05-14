@@ -4,7 +4,7 @@ use App\Models\Hashtag;
 use App\Models\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('orders hashtags by popularity', function (): void {
     Hashtag::factory()->create([

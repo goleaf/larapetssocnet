@@ -6,7 +6,7 @@ use App\Notifications\NewReaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('toggles post reactions and updates likes_count', function (): void {
     $user = User::factory()->create();

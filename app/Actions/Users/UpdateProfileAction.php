@@ -11,6 +11,8 @@ use Mews\Purifier\Facades\Purifier;
 
 class UpdateProfileAction
 {
+    public function __construct(private readonly UsernameService $usernames) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -20,10 +22,10 @@ class UpdateProfileAction
 
         if (array_key_exists('username', $data)) {
             $incomingUsername = (string) ($data['username'] ?? '');
-            $currentUsername = (string) $user->username;
+            $currentUsername = (string) $user->getAttribute('username');
 
             if ($incomingUsername !== '' && $incomingUsername !== $currentUsername) {
-                app(UsernameService::class)->change(
+                $this->usernames->change(
                     $user,
                     $incomingUsername,
                     $user,
@@ -37,7 +39,7 @@ class UpdateProfileAction
             $user->fill($payload);
 
             if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
+                $user->setAttribute('email_verified_at', null);
             }
 
             $user->save();
@@ -55,8 +57,8 @@ class UpdateProfileAction
     private function buildPayload(User $user, array $data): array
     {
         $payload = [
-            'name' => $data['name'] ?? $user->name,
-            'email' => isset($data['email']) ? Str::lower((string) $data['email']) : $user->email,
+            'name' => $data['name'] ?? $user->getAttribute('name'),
+            'email' => isset($data['email']) ? Str::lower((string) $data['email']) : $user->getAttribute('email'),
         ];
 
         if (array_key_exists('bio', $data)) {

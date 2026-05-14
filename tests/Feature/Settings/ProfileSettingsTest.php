@@ -3,9 +3,8 @@
 use App\Models\User;
 use App\Notifications\UsernameChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 if (! function_exists('profileSettingsPayload')) {
     /**

@@ -4,7 +4,7 @@ use App\Models\Pet;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('creates a pet profile', function (): void {
     $owner = User::factory()->create();

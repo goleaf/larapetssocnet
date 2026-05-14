@@ -5,8 +5,6 @@ use Illuminate\Queue\Events\QueueBusy;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
-uses(Tests\TestCase::class);
-
 it('logs a warning when the queue busy event is dispatched', function (): void {
     Log::spy();
 

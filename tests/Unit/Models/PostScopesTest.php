@@ -9,7 +9,7 @@ use App\Models\PostMedia;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('filters published posts', function (): void {
     $publishedPost = Post::factory()->create(['status' => PostStatus::Published->value]);

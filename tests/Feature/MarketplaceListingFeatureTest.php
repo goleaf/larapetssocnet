@@ -5,7 +5,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('defaults public marketplace catalog to active listings when status filter is invalid', function (): void {
     MarketplaceListing::factory()->create([

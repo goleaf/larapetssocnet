@@ -5,7 +5,7 @@ use App\Models\Reaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('shows the viewers liked posts as liked on explore after refresh', function (): void {
     $viewer = User::factory()->create();

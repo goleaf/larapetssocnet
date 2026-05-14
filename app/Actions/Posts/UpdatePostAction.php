@@ -30,33 +30,41 @@ class UpdatePostAction
     public function handle(User $actor, Post $post, array $data): Post
     {
         return DB::transaction(function () use ($actor, $post, $data): Post {
+            $currentBody = $this->normalizeNullableString($post->getAttribute('body'));
+            $currentMetadata = $post->getAttribute('metadata');
+            $currentPublishedAt = $post->getAttribute('published_at');
+            $currentEditedAt = $post->getAttribute('edited_at');
+            $currentVisibility = $post->getAttribute('visibility') ?? Post::VISIBILITY_PUBLIC;
+            $currentLocation = $post->getAttribute('location');
+            $currentTaggedPets = $post->getAttribute('tagged_pets');
+
             $nextBody = array_key_exists('body', $data)
                 ? $this->normalizeNullableString($data['body'])
-                : $post->body;
+                : $currentBody;
 
             $nextMetadata = array_key_exists('metadata', $data)
                 ? $this->metadata->normalize(is_array($data['metadata']) ? $data['metadata'] : null)
-                : $post->metadata;
+                : $currentMetadata;
 
-            $nextStatus = $this->normalizeStatus($data['status'] ?? $post->status ?? PostStatus::Published);
-            $nextPublishedAt = $post->published_at;
+            $nextStatus = $this->normalizeStatus($data['status'] ?? $post->getAttribute('status') ?? PostStatus::Published);
+            $nextPublishedAt = $currentPublishedAt;
 
             if (array_key_exists('status', $data) || array_key_exists('published_at', $data)) {
-                $nextPublishedAt = $this->resolvePublishedAt($nextStatus, $data['published_at'] ?? $post->published_at);
+                $nextPublishedAt = $this->resolvePublishedAt($nextStatus, $data['published_at'] ?? $currentPublishedAt);
             }
 
-            $editedAt = $post->edited_at;
+            $editedAt = $currentEditedAt;
 
-            if (array_key_exists('body', $data) && $nextBody !== $post->body) {
+            if (array_key_exists('body', $data) && $nextBody !== $currentBody) {
                 $editedAt = now();
             }
 
             $post->update([
                 'body' => $nextBody,
                 'body_html' => $nextBody ? $this->content->process($nextBody) : null,
-                'visibility' => $data['visibility'] ?? $post->visibility,
-                'location' => $this->normalizeNullableString($data['location'] ?? $post->location),
-                'tagged_pets' => $data['tagged_pets'] ?? $post->tagged_pets,
+                'visibility' => $data['visibility'] ?? $currentVisibility,
+                'location' => $this->normalizeNullableString($data['location'] ?? $currentLocation),
+                'tagged_pets' => $data['tagged_pets'] ?? $currentTaggedPets,
                 'status' => $nextStatus->value,
                 'published_at' => $nextPublishedAt,
                 'metadata' => $nextMetadata,
@@ -110,7 +118,7 @@ class UpdatePostAction
         }
 
         if ($status === PostStatus::Scheduled || $status === PostStatus::Archived) {
-            return $publishedAt instanceof CarbonInterface ? $publishedAt : null;
+            return null;
         }
 
         return now();
@@ -129,7 +137,7 @@ class UpdatePostAction
         $nextPetId = $nextPetId ? (int) $nextPetId : null;
 
         if ($nextPetId === null) {
-            $currentPetId = $post->pet_id ? (int) $post->pet_id : null;
+            $currentPetId = $post->getAttribute('pet_id') ? (int) $post->getAttribute('pet_id') : null;
 
             if (! $currentPetId) {
                 return;

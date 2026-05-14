@@ -34,7 +34,7 @@ if [[ ! -f "$ROOT/public/build/manifest.json" ]]; then
 fi
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$APP_DIR"
+mkdir -p "$BUILD_DIR"
 
 rsync -a --delete "$ROOT/public/" "$BUILD_DIR/" \
     --exclude 'storage' \
@@ -45,6 +45,8 @@ cp "$ROOT/deploy/shared-hosting/.htaccess" "$BUILD_DIR/.htaccess"
 
 mkdir -p "$BUILD_DIR/storage"
 cp "$ROOT/deploy/shared-hosting/public-storage.htaccess" "$BUILD_DIR/storage/.htaccess"
+
+mkdir -p "$APP_DIR"
 
 for path in app bootstrap config lang resources routes vendor; do
     rsync -a --delete "$ROOT/$path/" "$APP_DIR/$path/"

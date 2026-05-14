@@ -4,7 +4,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('explore only shows public posts from public and non-banned authors', function (): void {
     $publicAuthor = User::factory()->create(['is_private' => false, 'is_banned' => false]);

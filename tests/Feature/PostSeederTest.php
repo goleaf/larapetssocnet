@@ -6,7 +6,7 @@ use App\Models\User;
 use Database\Seeders\PostSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('seeds posts for existing users without creating extra users', function (): void {
     $user = User::factory()->create();

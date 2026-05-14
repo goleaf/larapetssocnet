@@ -4,7 +4,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('defines a postgres tsvector column for posts search indexing', function (): void {
     $migrationContents = File::get(database_path('migrations/2026_03_11_204621_add_search_vector_column_to_posts_table.php'));

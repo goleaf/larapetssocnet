@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Services\FollowSuggestionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('excludes followed, pending, blocked, private, and self from suggestions', function (): void {
     $viewer = User::factory()->create();

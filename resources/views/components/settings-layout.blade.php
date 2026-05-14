@@ -57,9 +57,7 @@
  <aside>
  <div class="sticky top-24 flex flex-col gap-4">
  <x-ui.card>
- <x-slot name="header">
  <x-ui.card-header title="Settings" subtitle="Account, privacy, and security"/>
- </x-slot>
 
  <x-ui.sidebar-nav :items="$settingsNavItems"/>
  </x-ui.card>

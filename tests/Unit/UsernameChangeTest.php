@@ -3,9 +3,8 @@
 use App\Models\UsernameChange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('creates username change history records with casts and relations', function (): void {
     $change = UsernameChange::factory()->create();

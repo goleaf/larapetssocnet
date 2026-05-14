@@ -25,26 +25,26 @@ class UpdateGroupAction
     public function handle(User $actor, Group $group, array $data, ?UploadedFile $avatar = null, ?UploadedFile $cover = null): Group
     {
         return DB::transaction(function () use ($actor, $group, $data, $avatar, $cover): Group {
-            $description = $this->normalizeNullableString($data['description'] ?? $group->description);
-            $rules = $this->normalizeNullableString($data['rules'] ?? $group->rules);
+            $description = $this->normalizeNullableString($data['description'] ?? $group->getAttribute('description'));
+            $rules = $this->normalizeNullableString($data['rules'] ?? $group->getAttribute('rules'));
 
             $updates = [
-                'name' => $this->normalizeRequiredString($data['name'] ?? $group->name),
+                'name' => $this->normalizeRequiredString($data['name'] ?? $group->getAttribute('name')),
                 'description' => $description,
                 'description_html' => $description ? $this->content->process($description) : null,
                 'rules' => $rules,
-                'privacy' => $data['privacy'] ?? $group->privacy,
-                'type' => $data['privacy'] ?? $group->type,
-                'location' => $this->normalizeNullableString($data['location'] ?? $group->location),
-                'website' => $this->normalizeNullableString($data['website'] ?? $group->website),
+                'privacy' => $data['privacy'] ?? $group->getAttribute('privacy'),
+                'type' => $data['privacy'] ?? $group->getAttribute('type'),
+                'location' => $this->normalizeNullableString($data['location'] ?? $group->getAttribute('location')),
+                'website' => $this->normalizeNullableString($data['website'] ?? $group->getAttribute('website')),
             ];
 
             if (Schema::hasColumn('groups', 'species_focus')) {
-                $updates['species_focus'] = $data['species_focus'] ?? $group->species_focus;
+                $updates['species_focus'] = $data['species_focus'] ?? $group->getAttribute('species_focus');
             }
 
             if (Schema::hasColumn('groups', 'species')) {
-                $updates['species'] = $data['species'] ?? $group->species;
+                $updates['species'] = $data['species'] ?? $group->getAttribute('species');
             }
 
             if (array_key_exists('slug', $data) && $data['slug']) {

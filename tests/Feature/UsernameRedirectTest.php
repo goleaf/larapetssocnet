@@ -3,9 +3,8 @@
 use App\Models\User;
 use App\Services\UsernameService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('redirects old usernames to the current username and preserves query strings', function (): void {
     $user = User::factory()->create(['username' => 'alpha']);

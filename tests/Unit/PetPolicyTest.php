@@ -6,7 +6,7 @@ use App\Policies\PetPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('allows owner to view and manage pet', function (): void {
     $owner = User::factory()->create();

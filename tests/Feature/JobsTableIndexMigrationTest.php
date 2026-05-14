@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('uses the composite jobs queue polling index from laravel 12.54+', function (): void {
     $indexesByName = collect(Schema::getIndexes('jobs'))->keyBy('name');

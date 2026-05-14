@@ -4,9 +4,8 @@ use App\Models\User;
 use App\Services\UsernameRedirectResolver;
 use App\Services\UsernameService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('resolves current and redirected usernames', function (): void {
     $user = User::factory()->create(['username' => 'currentname']);

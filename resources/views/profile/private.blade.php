@@ -23,10 +23,10 @@
 
  <x-ui.card>
  <x-ui.empty-state icon="🔒"
- title="{{ ($profileVisibility ?? 'private') === 'private' ? 'This account is private' : 'This account is followers-only' }}"
+ title="This account is private"
  :description="($profileVisibility ?? 'private') === 'private'
  ? 'Only you can view this profile.'
- : 'Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
+ : 'This profile is private and followers-only. Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
  @auth
  <x-slot name="action">
  @if (($profileVisibility ?? 'private') !== 'private')

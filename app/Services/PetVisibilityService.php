@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Block;
+use App\Models\Follow;
 use App\Models\Pet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -135,9 +136,10 @@ class PetVisibilityService
                                 ->orWhere(function (Builder $followerQuery) use ($viewerId): void {
                                     $followerQuery
                                         ->where('is_private', true)
-                                        ->whereHas('acceptedFollowers', function (Builder $followersQuery) use ($viewerId): Builder {
-                                            return $followersQuery->where('users.id', $viewerId);
-                                        });
+                                        ->whereIn('users.id', Follow::query()
+                                            ->select('following_id')
+                                            ->where('follower_id', $viewerId)
+                                            ->where('status', 'accepted'));
                                 });
                         });
                 });
@@ -150,9 +152,10 @@ class PetVisibilityService
                         ->orWhere(function (Builder $followersOnlyQuery) use ($viewerId): void {
                             $followersOnlyQuery
                                 ->where('pets_visibility', 'followers_only')
-                                ->whereHas('acceptedFollowers', function (Builder $followersQuery) use ($viewerId): Builder {
-                                    return $followersQuery->where('users.id', $viewerId);
-                                });
+                                ->whereIn('users.id', Follow::query()
+                                    ->select('following_id')
+                                    ->where('follower_id', $viewerId)
+                                    ->where('status', 'accepted'));
                         });
                 });
 

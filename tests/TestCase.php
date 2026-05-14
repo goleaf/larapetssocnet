@@ -12,6 +12,13 @@ abstract class TestCase extends BaseTestCase
 
     protected function setUp(): void
     {
+        $basePath = dirname(__DIR__);
+
+        chdir($basePath);
+
+        $_ENV['APP_BASE_PATH'] = $basePath;
+        $_SERVER['APP_BASE_PATH'] = $basePath;
+
         parent::setUp();
 
         if (! static::$viewsCleared) {

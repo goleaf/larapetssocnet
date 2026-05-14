@@ -13,7 +13,8 @@ class BuildProfileSettingsViewDataAction
     {
         $user->loadMissing('media');
 
-        $avatarUrl = $user->avatar_url;
+        $avatarUrl = $user->getAttribute('avatar_url');
+        $avatarUrl = is_string($avatarUrl) ? $avatarUrl : null;
         $hasAvatar = $avatarUrl !== null
             && $avatarUrl !== ''
             && $avatarUrl !== '/images/default-avatar.png';

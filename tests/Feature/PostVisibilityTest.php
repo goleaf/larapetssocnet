@@ -5,7 +5,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('direct url access returns 403 for denied visibility and 200 for allowed', function (): void {
     $author = User::factory()->create();

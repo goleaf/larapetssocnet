@@ -3,9 +3,8 @@
 use App\Models\User;
 use App\Services\UsernameService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('shows public profiles to guests', function (): void {
     $user = User::factory()->create([

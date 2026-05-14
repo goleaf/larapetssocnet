@@ -28,7 +28,7 @@ class PetFactory extends Factory
             'birth_date' => fake()->optional(0.85)->date(),
             'bio' => fake()->optional()->sentence(),
             'avatar_path' => fake()->optional(0.5)->imageUrl(640, 640, 'pets', true),
-            'is_public' => fake()->boolean(90),
+            'is_public' => true,
             'adoption_status' => 'not_listed',
             'followers_count' => 0,
             'posts_count' => 0,

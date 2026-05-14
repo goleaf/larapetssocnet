@@ -26,7 +26,7 @@ class SchedulePostAction
 
             $this->activity->log($actor, $post, 'scheduled');
 
-            return $post->refresh() ?? $post;
+            return $post->refresh();
         });
     }
 }

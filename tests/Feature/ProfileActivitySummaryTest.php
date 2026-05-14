@@ -4,9 +4,8 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('profile activity chart data uses a six month window with monthly buckets', function (): void {
     Carbon::setTestNow(Carbon::parse('2026-03-15 10:00:00'));

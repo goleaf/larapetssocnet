@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Services\PersonalityTagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->service = new PersonalityTagService;

@@ -5,7 +5,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('registers follow abilities for enum-based gate checks', function (): void {
     expect(Gate::has(FollowAbility::Follow))->toBeTrue()

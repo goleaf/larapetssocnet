@@ -4,7 +4,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('feed shows followed users public and followers posts, excludes private and non-followed users', function (): void {
     $viewer = User::factory()->create();

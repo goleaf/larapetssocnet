@@ -5,7 +5,7 @@ use App\Models\Share;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('tracks a share and increments shares_count', function (): void {
     $user = User::factory()->create();

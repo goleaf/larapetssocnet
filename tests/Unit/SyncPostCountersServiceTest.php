@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Services\SyncPostCountersService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('syncs post counters from relationships', function (): void {
     $author = User::factory()->create();

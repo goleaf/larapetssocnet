@@ -2,8 +2,6 @@
 
 use Illuminate\Support\Facades\Cache;
 
-uses(Tests\TestCase::class);
-
 it('pauses a queue for a limited time', function (): void {
     $cacheKey = 'illuminate:queue:paused:database:default';
     Cache::forget($cacheKey);

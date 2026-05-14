@@ -3,7 +3,7 @@
 use App\Support\Hashtags\HashtagParser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('extracts and normalizes hashtags', function (): void {
     $parser = app(HashtagParser::class);

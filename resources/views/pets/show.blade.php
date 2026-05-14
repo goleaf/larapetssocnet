@@ -239,7 +239,7 @@
                         @endif
                     @endif
                 </div>
-            </div>
+            </x-ui.card>
         </div>
     </div>
 </x-app-layout>

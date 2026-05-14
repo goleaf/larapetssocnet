@@ -7,7 +7,7 @@ use App\Services\ContentService;
 use App\Services\HashtagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('shows follower-only hashtag posts to accepted followers', function (): void {
     $author = User::factory()->create(['is_private' => false]);

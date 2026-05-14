@@ -4,9 +4,8 @@ use App\Models\User;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('normalizes usernames to canonical lowercase', function (): void {
     expect(UsernameNormalizer::normalize('..InVaLiD Name__'))->toBe('invalidname');

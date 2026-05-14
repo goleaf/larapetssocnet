@@ -17,9 +17,11 @@ class PinService
         $this->assertOwner($actor, $post);
 
         return DB::transaction(function () use ($post): Post {
-            $post->author->posts()
-                ->where('is_pinned', true)
-                ->updateQuietly(['is_pinned' => false, 'pinned_at' => null]);
+            Post::withoutEvents(function () use ($post): void {
+                $post->author->posts()
+                    ->where('is_pinned', true)
+                    ->update(['is_pinned' => false, 'pinned_at' => null]);
+            });
 
             $post->updateQuietly(['is_pinned' => true, 'pinned_at' => now()]);
 

@@ -2,8 +2,6 @@
 
 use Illuminate\Support\Facades\File;
 
-uses(Tests\TestCase::class);
-
 it('uses the shared page header component for every app layout header slot', function (): void {
     $viewsPath = resource_path('views');
     $excludedFiles = [

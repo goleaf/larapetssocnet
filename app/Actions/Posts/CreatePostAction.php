@@ -11,6 +11,7 @@ use App\Services\ContentService;
 use App\Services\PostMetadataService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -59,7 +60,9 @@ class CreatePostAction
                 $this->uploadMedia->handle($post, $mediaFiles);
             }
 
-            PostCreated::dispatch($post);
+            DB::afterCommit(static function () use ($post): void {
+                PostCreated::dispatch($post);
+            });
 
             return $post;
         });
@@ -82,13 +85,15 @@ class CreatePostAction
             return;
         }
 
-        Pet::query()
+        /** @var EloquentCollection<int, Pet> $pets */
+        $pets = Pet::query()
             ->whereIn('id', $petIds->all())
             ->select(['id', 'user_id', 'species', 'breed'])
-            ->get()
-            ->each(function (Pet $pet) use ($user): void {
-                Gate::forUser($user)->authorize('createPostForPet', $pet);
-            });
+            ->get();
+
+        foreach ($pets as $pet) {
+            Gate::forUser($user)->authorize('createPostForPet', $pet);
+        }
     }
 
     /**
@@ -167,7 +172,7 @@ class CreatePostAction
         }
 
         if ($status === PostStatus::Scheduled || $status === PostStatus::Archived) {
-            return $publishedAt instanceof CarbonInterface ? $publishedAt : null;
+            return null;
         }
 
         return now();

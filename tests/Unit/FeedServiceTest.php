@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Services\FeedService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('getFeed returns paginated posts and state collections', function (): void {
     $user = User::factory()->create();

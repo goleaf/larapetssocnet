@@ -4,7 +4,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('removes selected relations from a clone without mutating the original model', function (): void {
     $user = User::factory()->create();

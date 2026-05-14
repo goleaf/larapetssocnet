@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Services\VisibilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('allows owner to view any post status', function (): void {
     $owner = User::factory()->create();

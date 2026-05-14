@@ -4,8 +4,6 @@ use Illuminate\Mail\Markdown;
 use League\CommonMark\Extension\Strikethrough\StrikethroughExtension;
 use League\CommonMark\Extension\TaskList\TaskListExtension;
 
-uses(Tests\TestCase::class);
-
 it('defines markdown mail configuration including extension hooks', function (): void {
     expect(config('mail.markdown'))->toBeArray();
     expect(config('mail.markdown.theme'))->toBeString()->not->toBeEmpty();

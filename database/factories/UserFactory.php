@@ -37,7 +37,7 @@ class UserFactory extends Factory
 
         return [
             'name' => fake()->name(),
-            'display_name' => fake()->optional(0.4)->name(),
+            'display_name' => null,
             'username' => $username,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),

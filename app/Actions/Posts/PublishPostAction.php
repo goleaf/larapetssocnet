@@ -26,7 +26,7 @@ class PublishPostAction
 
             $this->activity->log($actor, $post, 'published');
 
-            return $post->refresh() ?? $post;
+            return $post->refresh();
         });
     }
 }

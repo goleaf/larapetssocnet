@@ -3,8 +3,6 @@
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
-uses(Tests\TestCase::class);
-
 beforeEach(function (): void {
     $this->workspace = storage_path('framework/testing/fix-tags-command-'.Str::uuid()->toString());
     File::ensureDirectoryExists($this->workspace);

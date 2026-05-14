@@ -11,7 +11,7 @@ use App\Services\SavedPostService;
 use App\Services\ShareService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('toggles reactions via ReactionService', function (): void {
     $user = User::factory()->create();

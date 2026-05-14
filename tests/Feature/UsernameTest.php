@@ -7,9 +7,8 @@ use App\Models\UsernameRedirect;
 use App\Services\ContentService;
 use App\Services\UsernameService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('profile is accessible at username url', function (): void {
     $user = User::factory()->create(['username' => 'johndoe']);

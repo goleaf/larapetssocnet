@@ -14,10 +14,10 @@ use Illuminate\Support\Facades\Schema;
 class CreatePetAction
 {
     public function __construct(
-        private ContentService $contentService,
-        private PersonalityTagService $personalityTags,
-        private UploadPetGalleryPhotosAction $uploadGallery,
-        private PetSlugService $slugService,
+        private readonly ContentService $contentService,
+        private readonly PersonalityTagService $personalityTags,
+        private readonly UploadPetGalleryPhotosAction $uploadGallery,
+        private readonly PetSlugService $slugService,
     ) {}
 
     /**
@@ -35,7 +35,7 @@ class CreatePetAction
             if (Schema::hasColumn('pets', 'slug')) {
                 $slug = $this->slugService->generateUnique(
                     (string) $attributes['name'],
-                    (string) ($owner->username ?? 'pet')
+                    (string) ($owner->getAttribute('username') ?? 'pet')
                 );
             }
 
@@ -69,7 +69,7 @@ class CreatePetAction
                 $this->uploadGallery->handle($pet, $galleryPhotos, 'gallery_photos');
             }
 
-            $owner->increment('pets_count');
+            $owner->incrementCounter('pets_count');
 
             return $pet->refresh();
         });

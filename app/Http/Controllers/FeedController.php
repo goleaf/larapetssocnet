@@ -16,7 +16,6 @@ class FeedController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $viewerId = (int) $user->getKey();
         $feedThemes = [
             'accessible-soft' => __('feed.themes.accessible_soft'),
             'high-contrast' => __('feed.themes.high_contrast'),
@@ -38,31 +37,7 @@ class FeedController extends Controller
             ? $request->string('type')->toString()
             : null;
 
-        $posts = Post::query()
-            ->forFeed($viewerId)
-            ->with([
-                'user',
-                'author',
-                'author.media',
-                'pet',
-                'media',
-                'tags',
-            ])
-            ->withCount([
-                'likes',
-                'comments',
-            ])
-            ->withExists([
-                'likes' => fn (Builder $likeQuery): Builder => $likeQuery
-                    ->where('likes.user_id', $viewerId),
-                'likes as liked_by_viewer' => fn (Builder $likeQuery): Builder => $likeQuery
-                    ->where('likes.user_id', $viewerId),
-            ])
-            ->when($type !== null, fn (Builder $query): Builder => $query->byType($type))
-            ->orderByDesc('posts.created_at')
-            ->orderByDesc('posts.id')
-            ->cursorPaginate(15)
-            ->withQueryString();
+        $posts = Post::paginateMainFeedResults($user, $type, 15);
 
         $sidebarData = $this->feed->getSidebarData($user);
 

@@ -7,16 +7,15 @@ use App\Models\Event;
 use App\Models\Group;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('groups tab shows user groups with role indicators', function (): void {
     $user = User::factory()->create(['username' => 'group_user']);
     $group = Group::factory()->create(['name' => 'Pet Lovers Club']);
     $user->groups()->attach($group->id, [
         'role' => 'owner',
-        'status' => 'approved',
+        'status' => 'active',
         'joined_at' => now(),
     ]);
 

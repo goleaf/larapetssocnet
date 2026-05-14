@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Services\PersonalityTagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('applies the public scope', function (): void {
     $publicPet = Pet::factory()->create(['is_public' => true]);

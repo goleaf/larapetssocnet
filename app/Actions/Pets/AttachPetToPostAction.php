@@ -15,7 +15,7 @@ class AttachPetToPostAction
         Gate::forUser($actor)->authorize('attachPost', [$pet, $post]);
 
         return DB::transaction(function () use ($post, $pet): Post {
-            $currentPetId = $post->pet_id ? (int) $post->pet_id : null;
+            $currentPetId = $post->getAttribute('pet_id') ? (int) $post->getAttribute('pet_id') : null;
             $nextPetId = (int) $pet->getKey();
 
             if ($currentPetId && $currentPetId !== $nextPetId) {
@@ -27,10 +27,11 @@ class AttachPetToPostAction
             }
 
             if ($currentPetId !== $nextPetId) {
-                $post->pet_id = $nextPetId;
+                $post->setAttribute('pet_id', $nextPetId);
             }
 
-            $taggedPets = collect($post->tagged_pets ?? [])
+            $taggedPetIds = $post->getAttribute('tagged_pets');
+            $taggedPets = collect(is_array($taggedPetIds) ? $taggedPetIds : [])
                 ->map(static fn (mixed $id): int => (int) $id)
                 ->filter(static fn (int $id): bool => $id > 0)
                 ->unique()
@@ -40,7 +41,7 @@ class AttachPetToPostAction
                 $taggedPets->push($nextPetId);
             }
 
-            $post->tagged_pets = $taggedPets->values()->all();
+            $post->setAttribute('tagged_pets', $taggedPets->values()->all());
             $post->save();
 
             if ($currentPetId !== $nextPetId) {

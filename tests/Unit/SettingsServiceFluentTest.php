@@ -4,7 +4,7 @@ use App\Models\User;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('skips privacy updates when the settings payload is empty', function (): void {
     $user = User::factory()->create([

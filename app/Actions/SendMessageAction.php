@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 class SendMessageAction
 {
     /**
-     * @param  array{body: string}  $data
+     * @param  array{body?: string}  $data
      */
     public function handle(User $sender, User $receiver, array $data): Message
     {
@@ -36,7 +36,6 @@ class SendMessageAction
             $conversation = $this->resolveConversation($sender, $receiver);
 
             Message::query()
-                ->inThread($sender, $receiver)
                 ->where('sender_id', $receiver->getKey())
                 ->where('receiver_id', $sender->getKey())
                 ->whereNull('read_at')

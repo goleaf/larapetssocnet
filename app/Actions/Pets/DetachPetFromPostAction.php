@@ -17,18 +17,19 @@ class DetachPetFromPostAction
         return DB::transaction(function () use ($post, $pet): Post {
             $petId = (int) $pet->getKey();
 
-            if ((int) ($post->pet_id ?? 0) === $petId) {
-                $post->pet_id = null;
+            if ((int) ($post->getAttribute('pet_id') ?? 0) === $petId) {
+                $post->setAttribute('pet_id', null);
                 $pet->decrementCounter('posts_count');
             }
 
-            $taggedPets = collect($post->tagged_pets ?? [])
+            $taggedPetIds = $post->getAttribute('tagged_pets');
+            $taggedPets = collect(is_array($taggedPetIds) ? $taggedPetIds : [])
                 ->map(static fn (mixed $id): int => (int) $id)
                 ->filter(static fn (int $id): bool => $id > 0 && $id !== $petId)
                 ->unique()
                 ->values();
 
-            $post->tagged_pets = $taggedPets->isEmpty() ? null : $taggedPets->all();
+            $post->setAttribute('tagged_pets', $taggedPets->isEmpty() ? null : $taggedPets->all());
 
             if ($post->isDirty()) {
                 $post->save();

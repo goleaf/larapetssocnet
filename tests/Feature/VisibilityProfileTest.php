@@ -4,7 +4,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('owner profile shows private posts section with badges', function (): void {
     $owner = User::factory()->create(['username' => 'owner_profile']);

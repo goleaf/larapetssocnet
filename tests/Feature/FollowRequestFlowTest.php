@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Services\FollowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('allows a requester to cancel a pending follow request', function (): void {
     $requester = User::factory()->create();

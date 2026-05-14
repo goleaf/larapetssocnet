@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('renders the post create page', function (): void {
     $user = User::factory()->create();

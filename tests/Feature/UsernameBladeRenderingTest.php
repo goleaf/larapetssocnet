@@ -1,9 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\File;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 it('does not escape username blade expressions in views', function (): void {
     $viewsPath = resource_path('views').DIRECTORY_SEPARATOR;

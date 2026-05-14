@@ -3,8 +3,6 @@
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
-uses(Tests\TestCase::class);
-
 it('can assert streamed content for binary file downloads', function (): void {
     $suffix = bin2hex(random_bytes(6));
     $uri = '/_test/binary-download-'.$suffix;
