@@ -330,6 +330,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', App\Http\M
     Route::get('/reports', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{report}', [App\Http\Controllers\Admin\ReportController::class, 'show'])->name('reports.show');
     Route::patch('/reports/{report}/resolve', [App\Http\Controllers\Admin\ReportController::class, 'resolve'])->name('reports.resolve');
+    Route::get('/maintenance', [App\Http\Controllers\Admin\MaintenanceController::class, 'index'])->name('maintenance.index');
+    Route::post('/maintenance/{task}', [App\Http\Controllers\Admin\MaintenanceController::class, 'run'])->name('maintenance.run');
 });
 
 Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');

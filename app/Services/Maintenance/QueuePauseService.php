@@ -2,8 +2,8 @@
 
 namespace App\Services\Maintenance;
 
-use Illuminate\Contracts\Queue\Factory as QueueManager;
 use Illuminate\Queue\Console\Concerns\ParsesQueue;
+use Illuminate\Queue\QueueManager;
 
 class QueuePauseService
 {

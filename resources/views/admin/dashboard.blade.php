@@ -56,6 +56,8 @@
  Posts</a>
  <a href="{{ route('admin.reports.index') }}"
  class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">🚩 Reports</a>
+ <a href="{{ route('admin.maintenance.index') }}"
+ class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">Maintenance</a>
  </div>
  </div>
 @endsection
