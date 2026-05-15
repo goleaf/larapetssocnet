@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

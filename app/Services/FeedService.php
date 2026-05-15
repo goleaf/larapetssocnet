@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Contest;
-use App\Models\Event;
-use App\Models\Hashtag;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Activities\Contest;
+use App\Models\Activities\Event;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 
 class FeedService
 {
@@ -30,7 +30,7 @@ class FeedService
 
         $myReactions = $user->reactions()
             ->whereIn('reactable_id', $postIds)
-            ->where('reactable_type', Post::class)
+            ->where('reactable_type', (new Post)->getMorphClass())
             ->get()
             ->keyBy('reactable_id');
 
@@ -39,7 +39,7 @@ class FeedService
             ->pluck('posts.id')
             ->flip();
 
-        return compact('posts', 'myReactions', 'mySaved');
+        return ['posts' => $posts, 'myReactions' => $myReactions, 'mySaved' => $mySaved];
     }
 
     public function getSidebarData(User $user): array
@@ -49,6 +49,6 @@ class FeedService
         $events = Event::query()->upcoming()->published()->limit(2)->get();
         $contest = Contest::query()->active()->first();
 
-        return compact('suggestions', 'trending', 'events', 'contest');
+        return ['suggestions' => $suggestions, 'trending' => $trending, 'events' => $events, 'contest' => $contest];
     }
 }

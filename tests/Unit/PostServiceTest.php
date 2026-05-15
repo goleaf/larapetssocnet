@@ -2,8 +2,9 @@
 
 namespace Tests\Unit;
 
-use App\Models\Post;
-use App\Models\User;
+use App\Enums\PostStatus;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\PostService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -48,7 +49,7 @@ class PostServiceTest extends TestCase
 
         $post = app(PostService::class)->schedule($post, $scheduledAt);
 
-        $this->assertSame(\App\Enums\PostStatus::Scheduled->value, $post->status->value ?? $post->status);
+        $this->assertSame(PostStatus::Scheduled->value, $post->status->value ?? $post->status);
         $this->assertEquals($scheduledAt->toDateTimeString(), $post->published_at?->toDateTimeString());
     }
 
@@ -56,13 +57,13 @@ class PostServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $post = Post::factory()->for($user)->create([
-            'status' => \App\Enums\PostStatus::Published->value,
+            'status' => PostStatus::Published->value,
             'published_at' => now(),
         ]);
 
         $post = app(PostService::class)->unpublish($post);
 
-        $this->assertSame(\App\Enums\PostStatus::Draft->value, $post->status->value ?? $post->status);
+        $this->assertSame(PostStatus::Draft->value, $post->status->value ?? $post->status);
         $this->assertNull($post->published_at);
     }
 }

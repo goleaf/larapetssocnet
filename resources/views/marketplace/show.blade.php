@@ -41,7 +41,7 @@
  {{ $listing->listing_type ?:'Listing'}}
  </span>
  <span
- class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1 ring-inset {{ $listing->status === \App\Models\MarketplaceListing::STATUS_ACTIVE ?'bg-emerald-100/80 text-emerald-800 ring-emerald-600/20':'bg-gray-100/80 text-gray-800 ring-gray-600/20'}}">
+ class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1 ring-inset {{ $listing->status === \App\Models\Marketplace\MarketplaceListing::STATUS_ACTIVE ?'bg-emerald-100/80 text-emerald-800 ring-emerald-600/20':'bg-gray-100/80 text-gray-800 ring-gray-600/20'}}">
  {{ $listing->status }}
  </span>
  </div>

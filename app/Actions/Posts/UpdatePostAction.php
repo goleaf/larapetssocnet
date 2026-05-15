@@ -5,9 +5,9 @@ namespace App\Actions\Posts;
 use App\Actions\Pets\AttachPetToPostAction;
 use App\Actions\Pets\DetachPetFromPostAction;
 use App\Enums\PostStatus;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use App\Services\ContentService;
 use App\Services\PostMetadataService;
 use Carbon\CarbonImmutable;
@@ -105,7 +105,7 @@ class UpdatePostAction
 
     private function resolvePublishedAt(PostStatus $status, mixed $publishedAt): ?CarbonInterface
     {
-        if ($status === PostStatus::Draft) {
+        if ($status->clearsPublishedAt()) {
             return null;
         }
 
@@ -117,7 +117,7 @@ class UpdatePostAction
             return CarbonImmutable::parse($publishedAt);
         }
 
-        if ($status === PostStatus::Scheduled || $status === PostStatus::Archived) {
+        if (! $status->isPubliclyReachable()) {
             return null;
         }
 

@@ -16,7 +16,7 @@
  <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap" rel="stylesheet"/>
 
  <livewire:styles />
- @vite(['resources/css/app.css','resources/js/app.js'])
+ @vite(['resources/scss/app.scss', 'resources/js/app.js'])
  </head>
  <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
  <div class="relative min-h-screen">

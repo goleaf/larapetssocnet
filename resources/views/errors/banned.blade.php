@@ -4,7 +4,7 @@
  <meta charset="utf-8">
  <meta name="viewport" content="width=device-width, initial-scale=1">
  <title>Account Restricted</title>
- @vite(['resources/css/app.css'])
+ @vite(['resources/scss/app.scss'])
 </head>
 <body class="min-h-screen bg-gray-100 text-gray-900">
  <main class="mx-auto flex min-h-screen max-w-2xl items-center justify-center px-6">

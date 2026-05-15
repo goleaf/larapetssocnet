@@ -2,12 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\CounterCacheService;
 use App\Services\FollowService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class SocialSeeder extends Seeder
 {
@@ -35,7 +36,7 @@ class SocialSeeder extends Seeder
             foreach ($targets as $target) {
                 try {
                     $followService->follow($user, $target);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // Skip invalid pairs (self, blocked, duplicates, banned).
                 }
             }

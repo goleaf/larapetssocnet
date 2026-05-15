@@ -1,15 +1,15 @@
 <?php
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\CommentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('rejects replying to a reply', function () {
+it('rejects replying to a reply', function (): void {
     $author = User::factory()->create();
     $post = Post::factory()->for($author)->create();
 
@@ -34,7 +34,7 @@ it('rejects replying to a reply', function () {
     $service->create($post, $author, 'Too deep', $reply);
 });
 
-it('rejects parents from another post', function () {
+it('rejects parents from another post', function (): void {
     $author = User::factory()->create();
     $postA = Post::factory()->for($author)->create();
     $postB = Post::factory()->for($author)->create();

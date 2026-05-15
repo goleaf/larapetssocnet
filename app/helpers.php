@@ -1,6 +1,8 @@
 <?php
 
-use App\Models\User;
+declare(strict_types=1);
+
+use App\Models\Identity\User;
 
 if (! function_exists('username_url')) {
     function username_url(string|User $username): string

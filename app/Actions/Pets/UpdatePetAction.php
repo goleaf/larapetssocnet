@@ -2,7 +2,7 @@
 
 namespace App\Actions\Pets;
 
-use App\Models\Pet;
+use App\Models\Pets\Pet;
 use App\Services\ContentService;
 use App\Services\PersonalityTagService;
 use Illuminate\Http\UploadedFile;

@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('post_media', function (Blueprint $table) {
+        Schema::create('post_media', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->string('file_path');

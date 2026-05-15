@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\Report;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -30,7 +30,7 @@ class ReportFeatureTest extends TestCase
 
         $this->assertDatabaseHas('reports', [
             'reporter_user_id' => $reporter->id,
-            'reportable_type' => Post::class,
+            'reportable_type' => (new Post)->getMorphClass(),
             'reportable_id' => $post->id,
             'reason' => 'spam',
         ]);
@@ -59,7 +59,7 @@ class ReportFeatureTest extends TestCase
 
         $this->assertDatabaseHas('reports', [
             'reporter_user_id' => $reporter->id,
-            'reportable_type' => Comment::class,
+            'reportable_type' => (new Comment)->getMorphClass(),
             'reportable_id' => $comment->id,
             'reason' => 'abuse',
         ]);
@@ -79,7 +79,7 @@ class ReportFeatureTest extends TestCase
 
         $this->assertDatabaseHas('reports', [
             'reporter_user_id' => $reporter->id,
-            'reportable_type' => User::class,
+            'reportable_type' => (new User)->getMorphClass(),
             'reportable_id' => $target->id,
             'reason' => 'other',
         ]);

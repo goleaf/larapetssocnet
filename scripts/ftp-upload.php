@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use FTP\Connection;
 
 if ($argc !== 3) {
     fwrite(STDERR, "Usage: php scripts/ftp-upload.php <local-dir> <remote-dir>\n");
@@ -40,7 +41,7 @@ ftp_pasv($ftp, true);
 
 $knownRemoteDirectories = ['' => true];
 
-function ensureRemoteDirectory(FTP\Connection $ftp, string $directory): void
+function ensureRemoteDirectory(Connection $ftp, string $directory): void
 {
     global $knownRemoteDirectories;
 

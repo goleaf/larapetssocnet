@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Group>
+ * @extends Factory<Group>
  */
 class GroupFactory extends Factory
 {

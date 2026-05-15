@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

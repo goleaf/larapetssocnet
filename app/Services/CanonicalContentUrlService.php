@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Post;
+use App\Models\Content\Post;
 use Illuminate\Support\Facades\Route;
 
 class CanonicalContentUrlService

@@ -12,6 +12,6 @@ class DashboardController extends Controller
     {
         $stats = app(AdminService::class)->getStats();
 
-        return view('admin.dashboard', compact('stats'));
+        return view('admin.dashboard', ['stats' => $stats]);
     }
 }

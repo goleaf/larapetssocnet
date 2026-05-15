@@ -2,8 +2,8 @@
 
 namespace App\Support\Usernames;
 
-use App\Models\ReservedUsername;
-use App\Models\User;
+use App\Models\Identity\ReservedUsername;
+use App\Models\Identity\User;
 use App\Rules\ReservedUsernameRule;
 use App\Rules\ValidUsernameRule;
 use Illuminate\Support\Facades\Route;
@@ -68,7 +68,7 @@ final class UsernameRules
         }
 
         $segments = [];
-        foreach (Route::getRoutes() as $route) {
+        foreach (Route::getRoutes()->getRoutes() as $route) {
             $uri = (string) $route->uri();
             $first = trim(Str::before($uri, '/'));
 

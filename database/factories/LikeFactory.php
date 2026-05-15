@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Like;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Like;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

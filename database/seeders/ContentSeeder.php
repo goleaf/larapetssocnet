@@ -185,27 +185,25 @@ class ContentSeeder extends Seeder
 
         $savedPosts = [];
 
-        if ($postIds !== []) {
-            foreach ($userIds as $userId) {
-                $maxSaved = min(12, count($postIds));
+        foreach ($userIds as $userId) {
+            $maxSaved = min(12, count($postIds));
 
-                if ($maxSaved < 1) {
-                    continue;
-                }
+            if ($maxSaved < 1) {
+                continue;
+            }
 
-                $minSaved = min(4, $maxSaved);
-                $saveCount = random_int($minSaved, $maxSaved);
+            $minSaved = min(4, $maxSaved);
+            $saveCount = random_int($minSaved, $maxSaved);
 
-                foreach ($this->pickRandomUnique($postIds, $saveCount) as $postId) {
-                    $createdAt = Carbon::instance($faker->dateTimeBetween('-30 days', 'now'));
+            foreach ($this->pickRandomUnique($postIds, $saveCount) as $postId) {
+                $createdAt = Carbon::instance($faker->dateTimeBetween('-30 days', 'now'));
 
-                    $savedPosts[] = [
-                        'user_id' => $userId,
-                        'post_id' => $postId,
-                        'created_at' => $createdAt,
-                        'updated_at' => $createdAt,
-                    ];
-                }
+                $savedPosts[] = [
+                    'user_id' => $userId,
+                    'post_id' => $postId,
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
+                ];
             }
         }
 
@@ -260,7 +258,7 @@ class ContentSeeder extends Seeder
             'PetSocial',
         ];
 
-        $rows = array_map(static fn (string $name) => [
+        $rows = array_map(static fn (string $name): array => [
             'name' => $name,
             'slug' => Str::slug($name),
             'posts_count' => 0,

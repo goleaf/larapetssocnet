@@ -1,7 +1,8 @@
 <?php
 
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -51,7 +52,7 @@ it('creates updates soft deletes and restores a post', function (): void {
 
 it('rejects public posts linked to private pets', function (): void {
     $owner = User::factory()->create();
-    $pet = \App\Models\Pet::factory()->for($owner)->create(['is_public' => false]);
+    $pet = Pet::factory()->for($owner)->create(['is_public' => false]);
 
     $this->actingAs($owner)
         ->from(route('posts.create'))

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Follow;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Social\Follow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

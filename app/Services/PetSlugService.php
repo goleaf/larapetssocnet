@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Pet;
+use App\Models\Pets\Pet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 

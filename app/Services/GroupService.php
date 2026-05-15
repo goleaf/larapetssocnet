@@ -4,11 +4,11 @@ namespace App\Services;
 
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
-use App\Models\Group;
-use App\Models\GroupBan;
-use App\Models\GroupJoinRequest;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupBan;
+use App\Models\Groups\GroupJoinRequest;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 use App\Notifications\GroupJoinApproved;
 use App\Notifications\GroupJoinRequest as GroupJoinRequestNotification;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -17,17 +17,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class GroupService
 {
-    /**
-     * @var list<string>
-     */
-    private const ACTIVE_STATUSES = [
-        GroupMemberStatus::Active->value,
-        GroupMemberStatus::Accepted->value,
-    ];
-
     private ?bool $hasGroupJoinRequestsTable = null;
 
     private ?bool $hasGroupBansTable = null;
@@ -43,7 +36,7 @@ class GroupService
         return DB::transaction(function () use ($group, $user, $message): GroupMember {
             $membership = $this->membershipForUser($group, (int) $user->getKey(), true);
 
-            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
+            if ($membership instanceof GroupMember && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
                 throw $this->validation('You are banned from this group.');
             }
 
@@ -55,11 +48,11 @@ class GroupService
                 throw $this->validation('You are banned from this group.');
             }
 
-            if ($membership !== null && $this->isActiveMembership($membership)) {
+            if ($membership instanceof GroupMember && $this->isActiveMembership($membership)) {
                 return $membership;
             }
 
-            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value) {
+            if ($membership instanceof GroupMember && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value) {
                 return $membership;
             }
 
@@ -84,7 +77,7 @@ class GroupService
                 'joined_at' => $status === GroupMemberStatus::Active->value ? now() : null,
             ];
 
-            if ($membership !== null) {
+            if ($membership instanceof GroupMember) {
                 $membership->forceFill($payload)->save();
             } else {
                 $membership = GroupMember::query()->create($payload + [
@@ -133,7 +126,7 @@ class GroupService
 
         return DB::transaction(function () use ($group, $user): bool {
             $membership = $this->membershipForUser($group, (int) $user->getKey(), true);
-            if ($membership === null) {
+            if (! $membership instanceof GroupMember) {
                 return false;
             }
 
@@ -163,7 +156,7 @@ class GroupService
     {
         return DB::transaction(function () use ($user, $group): bool {
             $membership = $this->membershipForUser($group, (int) $user->getKey(), true);
-            if ($membership === null) {
+            if (! $membership instanceof GroupMember) {
                 return false;
             }
 
@@ -291,23 +284,25 @@ class GroupService
             $targetMembership = $this->resolveMembership($group, $membership, true);
             $this->assertPromotableMembership($targetMembership);
 
-            if (! in_array($role, GroupMemberRole::values(), true)) {
+            $desiredRole = GroupMemberRole::tryFrom($role);
+
+            if (! $desiredRole) {
                 throw $this->validation('Invalid role requested.');
             }
 
-            if ($role === GroupMemberRole::Owner->value) {
+            if ($desiredRole === GroupMemberRole::Owner) {
                 throw new AuthorizationException('The owner cannot be assigned via member management.');
             }
 
             $actorRank = $this->actorRank($actor, $group, true);
             $targetRank = $this->roleRank((string) ($targetMembership->role?->value ?? ''));
-            $desiredRank = $this->roleRank($role);
+            $desiredRank = $desiredRole->rank();
 
             if ($actorRank <= $targetRank) {
                 throw new AuthorizationException('You are not allowed to manage this member.');
             }
 
-            if ($actorRank < 4 && $role === GroupMemberRole::Admin->value) {
+            if ($actorRank < GroupMemberRole::Owner->rank() && $desiredRole === GroupMemberRole::Admin) {
                 throw new AuthorizationException('Only the group owner can promote members to admin.');
             }
 
@@ -315,8 +310,8 @@ class GroupService
                 throw new AuthorizationException('You are not allowed to assign this role.');
             }
 
-            if ((string) ($targetMembership->role?->value ?? '') !== $role) {
-                $targetMembership->forceFill(['role' => $role])->save();
+            if ((string) ($targetMembership->role?->value ?? '') !== $desiredRole->value) {
+                $targetMembership->forceFill(['role' => $desiredRole->value])->save();
             }
 
             return $targetMembership->fresh();
@@ -344,11 +339,11 @@ class GroupService
             $membership = $this->membershipForUser($group, $targetUserId, true);
             $targetRank = $this->roleRank((string) ($membership?->role?->value ?? ''));
 
-            if ($membership !== null && $actorRank <= $targetRank) {
+            if ($membership instanceof GroupMember && $actorRank <= $targetRank) {
                 throw new AuthorizationException('You are not allowed to ban this member.');
             }
 
-            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
+            if ($membership instanceof GroupMember && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
                 return $membership;
             }
 
@@ -363,7 +358,7 @@ class GroupService
                 $payload['ban_reason'] = $reason;
             }
 
-            if ($membership !== null) {
+            if ($membership instanceof GroupMember) {
                 $membership->forceFill($payload)->save();
             } else {
                 $membership = GroupMember::query()->create($payload + [
@@ -405,7 +400,7 @@ class GroupService
     public function unbanUser(User $actor, Group $group, User|int $target): bool
     {
         return DB::transaction(function () use ($actor, $group, $target): bool {
-            $targetUserId = $target instanceof User ? (int) $target->getKey() : (int) $target;
+            $targetUserId = $target instanceof User ? (int) $target->getKey() : $target;
 
             if ((int) $this->ownerId($group) === $targetUserId) {
                 throw $this->validation('The group owner cannot be banned.');
@@ -418,7 +413,7 @@ class GroupService
 
             $removed = false;
             $membership = $this->membershipForUser($group, $targetUserId, true);
-            if ($membership !== null && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
+            if ($membership instanceof GroupMember && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {
                 if ($actorRank <= $this->roleRank((string) ($membership->role?->value ?? ''))) {
                     throw new AuthorizationException('You are not allowed to unban this member.');
                 }
@@ -455,13 +450,10 @@ class GroupService
                 throw new AuthorizationException('You are not allowed to promote this member.');
             }
 
-            $nextRole = match ((string) ($targetMembership->role?->value ?? '')) {
-                'member' => GroupMemberRole::Moderator->value,
-                'moderator' => GroupMemberRole::Admin->value,
-                default => GroupMemberRole::Admin->value,
-            };
+            $currentRole = GroupMemberRole::tryFrom((string) ($targetMembership->role?->value ?? '')) ?? GroupMemberRole::Member;
+            $nextRole = ($currentRole->nextPromotion() ?? GroupMemberRole::Admin)->value;
 
-            if ($nextRole === GroupMemberRole::Admin->value && $actorRank < 4) {
+            if ($nextRole === GroupMemberRole::Admin->value && $actorRank < GroupMemberRole::Owner->rank()) {
                 throw new AuthorizationException('Only the group owner can promote members to admin.');
             }
 
@@ -486,11 +478,8 @@ class GroupService
                 throw new AuthorizationException('You are not allowed to demote this member.');
             }
 
-            $nextRole = match ((string) ($targetMembership->role?->value ?? '')) {
-                'admin' => GroupMemberRole::Moderator->value,
-                'moderator' => GroupMemberRole::Member->value,
-                default => GroupMemberRole::Member->value,
-            };
+            $currentRole = GroupMemberRole::tryFrom((string) ($targetMembership->role?->value ?? '')) ?? GroupMemberRole::Member;
+            $nextRole = ($currentRole->nextDemotion() ?? GroupMemberRole::Member)->value;
 
             if ((string) ($targetMembership->role?->value ?? '') !== $nextRole) {
                 $targetMembership->forceFill(['role' => $nextRole])->save();
@@ -507,7 +496,7 @@ class GroupService
 
     public function isUserBanned(Group $group, User|int $user): bool
     {
-        $userId = $user instanceof User ? (int) $user->getKey() : (int) $user;
+        $userId = $user instanceof User ? (int) $user->getKey() : $user;
 
         $isBannedMember = GroupMember::query()
             ->where('group_id', $group->getKey())
@@ -543,7 +532,7 @@ class GroupService
             return [$second, $first];
         }
 
-        throw new \InvalidArgumentException('Expected one User and one Group.');
+        throw new InvalidArgumentException('Expected one User and one Group.');
     }
 
     private function resolveTargetUserId(Group $group, User|GroupMember|int $target): int
@@ -560,7 +549,7 @@ class GroupService
             return (int) $target->user_id;
         }
 
-        return (int) $target;
+        return $target;
     }
 
     private function resolveMembership(Group $group, GroupMember|int $membership, bool $lockForUpdate = false): GroupMember
@@ -642,7 +631,7 @@ class GroupService
             ->where(function (Builder $statusQuery): void {
                 $statusQuery
                     ->whereNull('status')
-                    ->orWhereIn('status', self::ACTIVE_STATUSES);
+                    ->orWhereIn('status', GroupMemberStatus::activeValues());
             });
 
         if ($lockForUpdate) {
@@ -656,12 +645,7 @@ class GroupService
 
     private function roleRank(string $role): int
     {
-        return match ($role) {
-            GroupMemberRole::Owner->value => 4,
-            GroupMemberRole::Admin->value => 3,
-            GroupMemberRole::Moderator->value => 2,
-            default => 1,
-        };
+        return GroupMemberRole::tryFrom($role)?->rank() ?? GroupMemberRole::Member->rank();
     }
 
     private function ownerId(Group $group): ?int
@@ -678,10 +662,10 @@ class GroupService
 
     private function isActiveMembership(GroupMember $membership): bool
     {
-        $status = $membership->status;
+        $status = $membership->getAttribute('status');
 
         return $status === null
-            || in_array((string) ($status?->value ?? ''), self::ACTIVE_STATUSES, true);
+            || ($status instanceof GroupMemberStatus && $status->isActive());
     }
 
     private function privacy(Group $group): string

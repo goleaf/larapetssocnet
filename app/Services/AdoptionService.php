@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Pet;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class AdoptionService
 {
@@ -22,7 +23,7 @@ class AdoptionService
         $allowed = self::TRANSITIONS[$pet->adoption_status] ?? [];
 
         if (! in_array($status, $allowed, true)) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 "Invalid adoption transition: {$pet->adoption_status} → {$status}"
             );
         }

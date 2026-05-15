@@ -1,15 +1,16 @@
 <?php
 
 use App\Http\Controllers\Profile\PublicProfileController;
-use App\Models\Badge;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Gamification\Badge;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 uses(RefreshDatabase::class);
 
@@ -197,7 +198,7 @@ test('followers can view private profile pets tab', function (): void {
     ]);
     $request->setUserResolver(fn () => $follower);
 
-    /** @var \Illuminate\View\View $view */
+    /** @var View $view */
     $view = app(PublicProfileController::class)->show($request, $privateUser);
     $data = $view->getData();
 

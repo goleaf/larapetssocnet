@@ -1,6 +1,6 @@
 <x-app-layout>
  @php
- $speciesOptions = collect(\App\Models\Pet::SPECIES)
+ $speciesOptions = collect(\App\Models\Pets\Pet::SPECIES)
  ->map(static fn(string $species): array => [
 'value'=> $species,
 'label'=> \Illuminate\Support\Str::headline($species),

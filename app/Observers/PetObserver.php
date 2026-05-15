@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\Pet;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Support\Str;
 
 class PetObserver
@@ -24,7 +24,7 @@ class PetObserver
                 ->value('username');
         }
 
-        $seed = trim((string) $pet->name.' '.(string) $ownerUsername);
+        $seed = trim($pet->name.' '.$ownerUsername);
         $baseSlug = Str::slug($seed);
         $baseSlug = $baseSlug !== '' ? $baseSlug : 'pet';
         $slug = $baseSlug;

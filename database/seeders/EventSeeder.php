@@ -107,10 +107,8 @@ class EventSeeder extends Seeder
             }
         }
 
-        if ($attendees !== []) {
-            foreach (array_chunk($attendees, 500) as $chunk) {
-                DB::table('event_attendees')->insertOrIgnore($chunk);
-            }
+        foreach (array_chunk($attendees, 500) as $chunk) {
+            DB::table('event_attendees')->insertOrIgnore($chunk);
         }
 
         DB::statement("UPDATE events SET attendees_count = (SELECT COUNT(*) FROM event_attendees WHERE event_attendees.event_id = events.id AND event_attendees.status = 'going')");

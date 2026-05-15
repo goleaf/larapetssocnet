@@ -4,9 +4,9 @@ namespace App\Actions;
 
 use App\Enums\MessageStatus;
 use App\Events\MessageSent;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

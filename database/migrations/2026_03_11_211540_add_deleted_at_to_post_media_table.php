@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('post_media', function (Blueprint $table) {
+        Schema::table('post_media', function (Blueprint $table): void {
             $table->softDeletes()->after('updated_at');
         });
     }
@@ -29,7 +29,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('post_media', function (Blueprint $table) {
+        Schema::table('post_media', function (Blueprint $table): void {
             $table->dropSoftDeletes();
         });
     }

@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Post;
-use App\Models\Share;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Share;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -21,7 +21,7 @@ it('tracks a share and increments shares_count', function (): void {
 
     $this->assertDatabaseHas('shares', [
         'user_id' => $user->id,
-        'shareable_type' => Post::class,
+        'shareable_type' => (new Post)->getMorphClass(),
         'shareable_id' => $post->id,
     ]);
 

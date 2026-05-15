@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

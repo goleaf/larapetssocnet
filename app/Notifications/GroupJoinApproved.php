@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;

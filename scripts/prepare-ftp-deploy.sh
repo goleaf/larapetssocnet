@@ -12,16 +12,81 @@ PUBLIC_DISK_URL="${PUBLIC_DISK_URL:-$APP_URL/storage}"
 INCLUDE_SQLITE="${INCLUDE_SQLITE:-false}"
 APP_KEY="${APP_KEY:-}"
 
+read_local_env_var() {
+    local key="$1"
+
+    if [[ -f "$ROOT/.env" ]]; then
+        local line
+        line="$(sed -n "s/^${key}=//p" "$ROOT/.env" | tail -n 1)"
+
+        if [[ -n "$line" ]]; then
+            line="${line%$'\r'}"
+            line="${line%\"}"
+            line="${line#\"}"
+            line="${line%\'}"
+            line="${line#\'}"
+
+            if [[ -n "$line" ]]; then
+                printf '%s' "$line"
+                return
+            fi
+        fi
+    fi
+
+    printf ''
+}
+
+env_var_or_default() {
+    local key="$1"
+    local default="${2:-}"
+    local current="${!key:-}"
+
+    if [[ -n "$current" ]]; then
+        printf '%s' "$current"
+        return
+    fi
+
+    printf '%s' "$default"
+}
+
+dotenv_quote() {
+    local value="$1"
+
+    value="${value//$'\r'/}"
+    value="${value//$'\n'/}"
+    value="${value//\\/\\\\}"
+    value="${value//\"/\\\"}"
+
+    printf '"%s"' "$value"
+}
+
 if [[ -z "$APP_KEY" && -f "$ROOT/.env" ]]; then
-    APP_KEY="$(sed -n 's/^APP_KEY=//p' "$ROOT/.env" | tail -n 1)"
-    APP_KEY="${APP_KEY%\"}"
-    APP_KEY="${APP_KEY#\"}"
+    APP_KEY="$(read_local_env_var APP_KEY)"
 fi
 
 if [[ -z "$APP_KEY" ]]; then
     echo "APP_KEY is required. Set APP_KEY or create a local .env before preparing a deployment." >&2
     exit 2
 fi
+
+MAIL_MAILER="$(env_var_or_default MAIL_MAILER smtp)"
+MAIL_SCHEME="$(env_var_or_default MAIL_SCHEME null)"
+MAIL_HOST="$(env_var_or_default MAIL_HOST obojus.serveriai.lt)"
+MAIL_PORT="$(env_var_or_default MAIL_PORT 465)"
+MAIL_USERNAME="$(env_var_or_default MAIL_USERNAME robot@prus.dev)"
+MAIL_PASSWORD="$(env_var_or_default MAIL_PASSWORD "$(read_local_env_var MAIL_PASSWORD)")"
+MAIL_FROM_ADDRESS="$(env_var_or_default MAIL_FROM_ADDRESS robot@prus.dev)"
+MAIL_FROM_NAME="$(env_var_or_default MAIL_FROM_NAME PetSocial)"
+
+if [[ "$MAIL_MAILER" == "smtp" && -z "$MAIL_PASSWORD" ]]; then
+    echo "MAIL_PASSWORD is required when MAIL_MAILER=smtp. Set it locally or as a GitHub Actions secret." >&2
+    exit 2
+fi
+
+MAIL_USERNAME_ENV="$(dotenv_quote "$MAIL_USERNAME")"
+MAIL_PASSWORD_ENV="$(dotenv_quote "$MAIL_PASSWORD")"
+MAIL_FROM_ADDRESS_ENV="$(dotenv_quote "$MAIL_FROM_ADDRESS")"
+MAIL_FROM_NAME_ENV="$(dotenv_quote "$MAIL_FROM_NAME")"
 
 if [[ ! -d "$ROOT/vendor" ]]; then
     echo "vendor/ is missing. Run composer install --no-dev --optimize-autoloader first." >&2
@@ -119,9 +184,14 @@ QUEUE_CONNECTION=sync
 
 CACHE_STORE=file
 
-MAIL_MAILER=log
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="\${APP_NAME}"
+MAIL_MAILER=$MAIL_MAILER
+MAIL_SCHEME=$MAIL_SCHEME
+MAIL_HOST=$MAIL_HOST
+MAIL_PORT=$MAIL_PORT
+MAIL_USERNAME=$MAIL_USERNAME_ENV
+MAIL_PASSWORD=$MAIL_PASSWORD_ENV
+MAIL_FROM_ADDRESS=$MAIL_FROM_ADDRESS_ENV
+MAIL_FROM_NAME=$MAIL_FROM_NAME_ENV
 MAIL_MARKDOWN_THEME=default
 MAIL_MARKDOWN_EXTENSIONS=
 

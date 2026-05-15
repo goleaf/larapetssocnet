@@ -25,7 +25,7 @@
  </x-slot>
 
  <div class="p-5">
- @can('create', [App\Models\Comment::class, $post])
+ @can('create', [App\Models\Content\Comment::class, $post])
  <div class="mb-6 flex items-start gap-3">
  <x-ui.avatar :src="auth()->user()->avatar_url" :name="auth()->user()->name" size="sm" class="mt-1"/>
  <div class="flex-1">

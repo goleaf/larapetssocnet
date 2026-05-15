@@ -5,8 +5,8 @@ namespace App\Http\Middleware;
 use App\Services\Maintenance\MaintenanceTaskService;
 use Closure;
 use Illuminate\Http\Request;
-use Throwable;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class RunRealtimeMaintenance
 {

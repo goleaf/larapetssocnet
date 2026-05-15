@@ -2,8 +2,9 @@
 
 namespace App\Observers;
 
+use App\Enums\PostStatus;
 use App\Events\PostCreated;
-use App\Models\Post;
+use App\Models\Content\Post;
 use App\Services\BadgeService;
 use App\Services\HashtagService;
 use Illuminate\Support\Facades\Cache;
@@ -53,7 +54,7 @@ class PostObserver
 
         if ($post->wasChanged(['status', 'published_at'])) {
             $originalStatus = $post->getOriginal('status');
-            $statusValue = $originalStatus instanceof \App\Enums\PostStatus
+            $statusValue = $originalStatus instanceof PostStatus
                 ? $originalStatus->value
                 : (string) $originalStatus;
 
@@ -122,7 +123,7 @@ class PostObserver
     public function deleted(Post $post): void
     {
         $originalStatus = $post->getOriginal('status');
-        $statusValue = $originalStatus instanceof \App\Enums\PostStatus
+        $statusValue = $originalStatus instanceof PostStatus
             ? $originalStatus->value
             : (string) $originalStatus;
 

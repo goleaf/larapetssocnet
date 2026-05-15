@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Hashtag;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\ContentService;
 use App\Services\HashtagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

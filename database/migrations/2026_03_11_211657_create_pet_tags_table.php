@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pet_tags', function (Blueprint $table) {
+        Schema::create('pet_tags', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('pet_id')->constrained()->cascadeOnDelete();
             $table->string('name');

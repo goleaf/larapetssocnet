@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\FeedPosts;
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\SavedPost;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Content\SavedPost;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -82,7 +82,7 @@ class FeedPostsFeatureTest extends TestCase
             ->assertJsonPath('data.current_reaction', 'love');
 
         $this->assertDatabaseHas('reactions', [
-            'reactable_type' => Post::class,
+            'reactable_type' => (new Post)->getMorphClass(),
             'reactable_id' => $post->id,
             'user_id' => $user->id,
             'type' => 'love',
@@ -103,7 +103,7 @@ class FeedPostsFeatureTest extends TestCase
             ->assertJsonPath('data.current_reaction', null);
 
         $this->assertDatabaseMissing('reactions', [
-            'reactable_type' => Post::class,
+            'reactable_type' => (new Post)->getMorphClass(),
             'reactable_id' => $post->id,
             'user_id' => $user->id,
         ]);
@@ -250,7 +250,7 @@ class FeedPostsFeatureTest extends TestCase
             ->assertJsonPath('data.reactions_count', 1);
 
         $this->assertDatabaseHas('reactions', [
-            'reactable_type' => Comment::class,
+            'reactable_type' => (new Comment)->getMorphClass(),
             'reactable_id' => $comment->id,
             'user_id' => $reactor->id,
             'type' => 'support',
@@ -334,7 +334,7 @@ class FeedPostsFeatureTest extends TestCase
             'visibility' => Post::VISIBILITY_PUBLIC,
         ]);
 
-        $notSavedPost = Post::query()->create([
+        Post::query()->create([
             'user_id' => $otherUser->id,
             'body' => 'not-saved-post-hidden',
             'visibility' => Post::VISIBILITY_PUBLIC,

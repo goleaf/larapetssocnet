@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\Event as EventModel;
-use App\Models\User;
+use App\Models\Activities\Event as EventModel;
+use App\Models\Identity\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;

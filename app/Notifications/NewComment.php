@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
@@ -40,7 +40,7 @@ class NewComment extends Notification
             'post_id' => $this->post->id,
             'post_excerpt' => Str::limit((string) $this->post->body, 120),
             'comment_id' => $this->comment?->id,
-            'comment_excerpt' => $this->comment
+            'comment_excerpt' => $this->comment instanceof Comment
                 ? Str::limit((string) $this->comment->body, 120)
                 : null,
         ];

@@ -1,6 +1,8 @@
 <?php
 
-use App\Models\Contest;
+declare(strict_types=1);
+
+use App\Models\Activities\Contest;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;

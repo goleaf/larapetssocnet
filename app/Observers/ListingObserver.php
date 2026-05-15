@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Models\Listing;
+use App\Models\Marketplace\Listing;
 
 class ListingObserver
 {

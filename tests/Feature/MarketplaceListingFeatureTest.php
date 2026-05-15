@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\MarketplaceListing;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -76,7 +76,7 @@ it('can resolve soft deleted listings via model helper when with trashed is enab
     $listing = MarketplaceListing::factory()->create();
     $listing->delete();
 
-    expect(fn () => MarketplaceListing::findByIdOrFail($listing->getKey()))
+    expect(fn (): MarketplaceListing => MarketplaceListing::findByIdOrFail($listing->getKey()))
         ->toThrow(ModelNotFoundException::class);
 
     $resolved = MarketplaceListing::findByIdOrFail($listing->getKey(), true);

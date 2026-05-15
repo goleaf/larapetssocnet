@@ -4,6 +4,7 @@ namespace Tests;
 
 use Closure;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
@@ -24,7 +25,7 @@ abstract class TestCase extends BaseTestCase
         if (! static::$viewsCleared) {
             static::$viewsCleared = true;
 
-            \Illuminate\Support\Facades\Artisan::call('view:clear');
+            Artisan::call('view:clear');
         }
     }
 

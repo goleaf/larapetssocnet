@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models\Pets;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable([
+    'name',
+    'slug',
+])]
+class Species extends Model
+{
+    use HasFactory;
+
+    public function pets(): HasMany
+    {
+        return $this->hasMany(Pet::class, 'species', 'slug');
+    }
+
+    public function breeds(): HasMany
+    {
+        return $this->hasMany(Breed::class, 'species_slug', 'slug');
+    }
+}

@@ -1,0 +1,15 @@
+@layer utilities {
+    .surface-glass {
+        background: color-mix(in srgb, var(--surface-panel) 92%, white 8%);
+        backdrop-filter: blur(6px);
+    }
+
+    .shadow-soft {
+        box-shadow: var(--shadow-card-hover);
+    }
+
+    .text-2xs {
+        font-size: var(--text-2xs);
+        line-height: var(--text-2xs-line-height);
+    }
+}

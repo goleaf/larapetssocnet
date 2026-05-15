@@ -2,7 +2,7 @@
 
 namespace App\Rules;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 

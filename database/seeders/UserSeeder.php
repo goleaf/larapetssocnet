@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class UserSeeder extends Seeder
 {
@@ -75,7 +76,7 @@ class UserSeeder extends Seeder
         }
 
         if (User::query()->count() !== self::TARGET_USER_COUNT) {
-            throw new \RuntimeException('UserSeeder expected exactly 20 users.');
+            throw new RuntimeException('UserSeeder expected exactly 20 users.');
         }
     }
 }

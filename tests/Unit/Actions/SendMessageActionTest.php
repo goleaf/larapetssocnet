@@ -2,7 +2,7 @@
 
 use App\Actions\SendMessageAction;
 use App\Events\MessageSent;
-use App\Models\User;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 

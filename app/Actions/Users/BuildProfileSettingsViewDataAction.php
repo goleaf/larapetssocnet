@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Users;
 
-use App\Models\User;
+use App\Models\Identity\User;
 
 class BuildProfileSettingsViewDataAction
 {
@@ -15,9 +17,7 @@ class BuildProfileSettingsViewDataAction
 
         $avatarUrl = $user->getAttribute('avatar_url');
         $avatarUrl = is_string($avatarUrl) ? $avatarUrl : null;
-        $hasAvatar = $avatarUrl !== null
-            && $avatarUrl !== ''
-            && $avatarUrl !== '/images/default-avatar.png';
+        $hasAvatar = ! in_array($avatarUrl, [null, '', '/images/default-avatar.png'], true);
         $coverUrl = $user->coverImageUrl();
 
         return [

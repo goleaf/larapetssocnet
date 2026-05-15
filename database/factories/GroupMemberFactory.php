@@ -4,13 +4,13 @@ namespace Database\Factories;
 
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
-use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GroupMember>
+ * @extends Factory<GroupMember>
  */
 class GroupMemberFactory extends Factory
 {

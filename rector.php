@@ -18,6 +18,7 @@ return RectorConfig::configure()
         __DIR__.'/bootstrap/cache',
         __DIR__.'/storage',
     ])
+    ->withCache(cacheDirectory: __DIR__.'/storage/framework/cache/rector')
     ->withSetProviders(LaravelSetProvider::class)
     ->withComposerBased(laravel: true)
     ->withPreparedSets(
@@ -25,4 +26,6 @@ return RectorConfig::configure()
         codeQuality: true,
         typeDeclarations: true
     )
+    ->withParallel(timeoutSeconds: 120, maxNumberOfProcess: 8)
+    ->withMemoryLimit('1G')
     ->withImportNames(removeUnusedImports: true);

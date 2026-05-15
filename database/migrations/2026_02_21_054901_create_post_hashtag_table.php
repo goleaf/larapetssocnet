@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('post_hashtag', function (Blueprint $table) {
+        Schema::create('post_hashtag', function (Blueprint $table): void {
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('hashtag_id')->constrained()->cascadeOnDelete();
 

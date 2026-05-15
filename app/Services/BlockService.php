@@ -6,9 +6,9 @@ use App\Events\UserBlocked;
 use App\Events\UserUnblocked;
 use App\Exceptions\CannotBlockAdminException;
 use App\Exceptions\CannotBlockSelfException;
-use App\Models\Block;
-use App\Models\Follow;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Social\Block;
+use App\Models\Social\Follow;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 

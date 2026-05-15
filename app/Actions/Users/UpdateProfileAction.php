@@ -2,7 +2,7 @@
 
 namespace App\Actions\Users;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\UsernameService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;

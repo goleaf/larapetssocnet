@@ -1,29 +1,24 @@
 <?php
 
+use App\Services\Maintenance\QueuePauseService;
 use Illuminate\Support\Facades\Cache;
 
-it('pauses queue processing using the queue pause command', function (): void {
+it('pauses queue processing using the maintenance service', function (): void {
     $cacheKey = 'illuminate:queue:paused:database:default';
     Cache::forget($cacheKey);
 
-    $this->artisan('queue:pause', [
-        'queue' => 'database:default',
-    ])
-        ->expectsOutputToContain('has been paused')
-        ->assertExitCode(0);
+    $result = app(QueuePauseService::class)->pause('database:default');
 
-    expect(Cache::get($cacheKey))->toBeTrue();
+    expect($result->task)->toBe('pause-queue')
+        ->and(Cache::get($cacheKey))->toBeTrue();
 });
 
-it('resumes queue processing using the queue continue command', function (): void {
+it('resumes queue processing using the maintenance service', function (): void {
     $cacheKey = 'illuminate:queue:paused:database:default';
     Cache::put($cacheKey, true, now()->addMinute());
 
-    $this->artisan('queue:continue', [
-        'queue' => 'database:default',
-    ])
-        ->expectsOutputToContain('has been resumed')
-        ->assertExitCode(0);
+    $result = app(QueuePauseService::class)->resume('database:default');
 
-    expect(Cache::get($cacheKey))->toBeNull();
+    expect($result->task)->toBe('resume-queue')
+        ->and(Cache::get($cacheKey))->toBeNull();
 });

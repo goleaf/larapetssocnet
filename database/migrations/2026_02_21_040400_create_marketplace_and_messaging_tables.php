@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('marketplace_listings', function (Blueprint $table) {
+        Schema::create('marketplace_listings', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('pet_id')->nullable()->constrained()->nullOnDelete();
@@ -34,7 +34,7 @@ return new class extends Migration
             $table->index('price');
         });
 
-        Schema::create('messages', function (Blueprint $table) {
+        Schema::create('messages', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('sender_user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('recipient_user_id')->constrained('users')->cascadeOnDelete();
@@ -49,7 +49,7 @@ return new class extends Migration
             $table->index(['sender_user_id', 'recipient_user_id', 'created_at']);
         });
 
-        Schema::create('reports', function (Blueprint $table) {
+        Schema::create('reports', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('reporter_user_id')->constrained('users')->cascadeOnDelete();
             $table->string('reportable_type');

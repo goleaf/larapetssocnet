@@ -3,10 +3,9 @@
 namespace App\Policies;
 
 use App\Enums\GroupMemberRole;
-use App\Enums\GroupMemberStatus;
-use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 use App\Services\GroupVisibilityService;
 
 class GroupPolicy
@@ -37,10 +36,7 @@ class GroupPolicy
         $membership = $this->membership($user, $group);
 
         return $this->isActiveMembership($membership)
-            && in_array((string) ($membership?->role?->value ?? ''), [
-                GroupMemberRole::Owner->value,
-                GroupMemberRole::Admin->value,
-            ], true);
+            && in_array((string) ($membership?->role?->value ?? ''), GroupMemberRole::managerValues(), true);
     }
 
     public function delete(User $user, Group $group): bool
@@ -71,10 +67,7 @@ class GroupPolicy
         $membership = $this->membership($user, $group);
 
         return $this->isActiveMembership($membership)
-            && in_array((string) ($membership?->role?->value ?? ''), [
-                GroupMemberRole::Owner->value,
-                GroupMemberRole::Admin->value,
-            ], true);
+            && in_array((string) ($membership?->role?->value ?? ''), GroupMemberRole::managerValues(), true);
     }
 
     public function moderate(User $user, Group $group): bool
@@ -86,11 +79,7 @@ class GroupPolicy
         $membership = $this->membership($user, $group);
 
         return $this->isActiveMembership($membership)
-            && in_array((string) ($membership?->role?->value ?? ''), [
-                GroupMemberRole::Owner->value,
-                GroupMemberRole::Admin->value,
-                GroupMemberRole::Moderator->value,
-            ], true);
+            && in_array((string) ($membership?->role?->value ?? ''), GroupMemberRole::moderatorValues(), true);
     }
 
     public function manageCover(User $user, Group $group): bool
@@ -154,20 +143,20 @@ class GroupPolicy
 
     private function isActiveMembership(?GroupMember $membership): bool
     {
-        if (! $membership) {
+        if (! $membership instanceof GroupMember) {
             return false;
         }
 
         return $membership->status === null
-            || in_array((string) ($membership->status?->value ?? ''), GroupMemberStatus::activeValues(), true);
+            || $membership->status->isActive();
     }
 
     private function hasPendingMembership(?GroupMember $membership): bool
     {
-        if (! $membership) {
+        if (! $membership instanceof GroupMember) {
             return false;
         }
 
-        return (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value;
+        return $membership->status?->isPending() ?? false;
     }
 }

@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Activities\Event;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Event>
+ * @extends Factory<Event>
  */
 class EventFactory extends Factory
 {
-    protected $model = \App\Models\Event::class;
+    protected $model = Event::class;
 
     /**
      * Define the model's default state.
@@ -22,7 +26,7 @@ class EventFactory extends Factory
 
         return [
             'group_id' => null,
-            'creator_user_id' => \App\Models\User::factory(),
+            'creator_user_id' => User::factory(),
             'title' => fake()->sentence(fake()->numberBetween(2, 6)),
             'description' => fake()->optional()->paragraph(),
             'location_text' => fake()->optional(0.85)->city(),

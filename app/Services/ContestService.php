@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Contest;
-use App\Models\ContestEntry;
-use App\Models\ContestVote;
-use App\Models\User;
+use App\Models\Activities\Contest;
+use App\Models\Activities\ContestEntry;
+use App\Models\Activities\ContestVote;
+use App\Models\Identity\User;
 use App\Notifications\ContestWinner;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +29,7 @@ class ContestService
                 'max_entries' => $data['max_entries'] ?? 1,
             ]);
 
-            if ($cover) {
+            if ($cover instanceof UploadedFile) {
                 $contest->addMedia($cover)
                     ->usingFileName(Str::uuid().'.webp')
                     ->toMediaCollection('cover');
@@ -61,7 +61,7 @@ class ContestService
                 'caption' => $data['caption'] ?? null,
             ]);
 
-            if ($photo) {
+            if ($photo instanceof UploadedFile) {
                 $entry->addMedia($photo)
                     ->usingFileName(Str::uuid().'.webp')
                     ->toMediaCollection('entry-photo');

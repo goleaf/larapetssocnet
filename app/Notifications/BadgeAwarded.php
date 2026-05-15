@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
-use App\Models\Badge;
+use App\Models\Gamification\Badge;
 use Illuminate\Notifications\Notification;
 
 class BadgeAwarded extends Notification

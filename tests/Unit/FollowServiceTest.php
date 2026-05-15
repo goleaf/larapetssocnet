@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Notifications\NewFollower;
 use App\Services\FollowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

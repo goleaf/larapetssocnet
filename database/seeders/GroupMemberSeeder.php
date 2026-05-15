@@ -27,7 +27,7 @@ class GroupMemberSeeder extends Seeder
 
         $existing = DB::table('group_members')
             ->get(['group_id', 'user_id'])
-            ->map(fn ($row) => "{$row->group_id}:{$row->user_id}")
+            ->map(fn ($row): string => "{$row->group_id}:{$row->user_id}")
             ->flip()
             ->all();
 

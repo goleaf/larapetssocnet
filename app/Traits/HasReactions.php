@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
-use App\Models\Reaction;
-use App\Models\User;
+use App\Models\Content\Reaction;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;

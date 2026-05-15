@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -169,7 +169,7 @@ class MarketplaceSeeder extends Seeder
     {
         $nonEmptyTargets = array_values(array_filter(
             $targets,
-            static fn (array $target) => $target['ids'] !== []
+            static fn (array $target): bool => $target['ids'] !== []
         ));
 
         if ($nonEmptyTargets === []) {
@@ -199,10 +199,10 @@ class MarketplaceSeeder extends Seeder
 
         return DB::table($modelHasRolesTable)
             ->join($rolesTable, $modelHasRolesTable.'.'.$rolePivotKey, '=', $rolesTable.'.id')
-            ->where($modelHasRolesTable.'.model_type', User::class)
+            ->where($modelHasRolesTable.'.model_type', (new User)->getMorphClass())
             ->whereIn($rolesTable.'.name', ['admin', 'moderator'])
             ->pluck($modelHasRolesTable.'.'.$modelMorphKey)
-            ->map(static fn ($id) => (int) $id)
+            ->map(static fn ($id): int => (int) $id)
             ->unique()
             ->values()
             ->all();

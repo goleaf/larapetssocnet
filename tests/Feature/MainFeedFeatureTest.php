@@ -1,14 +1,14 @@
 <?php
 
-use App\Models\Comment;
-use App\Models\Follow;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('shows followed posts and then an empty feed when user follows nobody', function () {
+it('shows followed posts and then an empty feed when user follows nobody', function (): void {
     $viewer = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,
@@ -57,7 +57,7 @@ it('shows followed posts and then an empty feed when user follows nobody', funct
         ->assertSee('Follow some pets to see posts');
 });
 
-it('toggles post likes via json endpoint', function () {
+it('toggles post likes via json endpoint', function (): void {
     $viewer = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,
@@ -77,7 +77,7 @@ it('toggles post likes via json endpoint', function () {
         ]);
 
     $this->assertDatabaseHas('reactions', [
-        'reactable_type' => Post::class,
+        'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->id,
         'user_id' => $viewer->id,
         'type' => 'love',
@@ -92,13 +92,13 @@ it('toggles post likes via json endpoint', function () {
         ]);
 
     $this->assertDatabaseMissing('reactions', [
-        'reactable_type' => Post::class,
+        'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->id,
         'user_id' => $viewer->id,
     ]);
 });
 
-it('stores and deletes comments through main feed endpoints', function () {
+it('stores and deletes comments through main feed endpoints', function (): void {
     $viewer = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,
@@ -135,7 +135,7 @@ it('stores and deletes comments through main feed endpoints', function () {
     ]);
 });
 
-it('toggles follow and unfollow through the main follow endpoint', function () {
+it('toggles follow and unfollow through the main follow endpoint', function (): void {
     $viewer = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,

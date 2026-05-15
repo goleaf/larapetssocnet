@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('groups', function (Blueprint $table) {
+        Schema::create('groups', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('owner_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->index(['owner_user_id', 'created_at']);
         });
 
-        Schema::create('group_members', function (Blueprint $table) {
+        Schema::create('group_members', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('group_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->index(['user_id', 'status']);
         });
 
-        Schema::create('group_posts', function (Blueprint $table) {
+        Schema::create('group_posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('group_id')->constrained()->cascadeOnDelete();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
@@ -54,7 +54,7 @@ return new class extends Migration
             $table->index('post_id');
         });
 
-        Schema::create('events', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('group_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('creator_user_id')->constrained('users')->cascadeOnDelete();
@@ -74,7 +74,7 @@ return new class extends Migration
             $table->index(['status', 'start_at']);
         });
 
-        Schema::create('event_attendees', function (Blueprint $table) {
+        Schema::create('event_attendees', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('event_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();

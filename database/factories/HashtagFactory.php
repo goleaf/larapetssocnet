@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Models\Hashtag;
+use App\Models\Content\Hashtag;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Hashtag>
+ * @extends Factory<Hashtag>
  */
 class HashtagFactory extends Factory
 {

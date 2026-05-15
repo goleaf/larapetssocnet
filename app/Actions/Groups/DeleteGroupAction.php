@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Groups;
 
-use App\Models\Group;
+use App\Models\Groups\Group;
 use Illuminate\Support\Facades\DB;
 
 class DeleteGroupAction

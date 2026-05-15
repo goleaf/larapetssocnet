@@ -1,5 +1,7 @@
 <?php
 
+use League\CommonMark\Extension\ExtensionInterface;
+
 $markdownExtensions = getenv('MAIL_MARKDOWN_EXTENSIONS');
 $markdownExtensions = $markdownExtensions === false
     ? (string) env('MAIL_MARKDOWN_EXTENSIONS', '')
@@ -143,7 +145,7 @@ return [
             explode(',', $markdownExtensions)
         ), static fn (string $extension): bool => $extension !== ''
             && class_exists($extension)
-            && is_subclass_of($extension, \League\CommonMark\Extension\ExtensionInterface::class))),
+            && is_subclass_of($extension, ExtensionInterface::class))),
     ],
 
 ];

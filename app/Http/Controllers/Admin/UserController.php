@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Report;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use App\Services\AdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class UserController extends Controller
         $filter = $request->filter;
 
         $users = User::withTrashed()
-            ->when($q, fn ($query, $s) => $query->where(function ($query) use ($s) {
+            ->when($q, fn ($query, $s) => $query->where(function ($query) use ($s): void {
                 $query->where('name', 'like', "%{$s}%")
                     ->orWhere('username', 'like', "%{$s}%")
                     ->orWhere('email', 'like', "%{$s}%");
@@ -29,14 +29,14 @@ class UserController extends Controller
             ->latest()
             ->paginate(30);
 
-        return view('admin.users.index', compact('users', 'q', 'filter'));
+        return view('admin.users.index', ['users' => $users, 'q' => $q, 'filter' => $filter]);
     }
 
     public function show(User $user): View
     {
         $user->loadCount(['posts', 'pets', 'followers']);
 
-        $recentReports = Report::where('reportable_type', User::class)
+        $recentReports = Report::where('reportable_type', $user->getMorphClass())
             ->where('reportable_id', $user->id)
             ->latest()
             ->limit(5)
@@ -47,7 +47,7 @@ class UserController extends Controller
             ->limit(10)
             ->get();
 
-        return view('admin.users.show', compact('user', 'recentReports', 'usernameChanges'));
+        return view('admin.users.show', ['user' => $user, 'recentReports' => $recentReports, 'usernameChanges' => $usernameChanges]);
     }
 
     public function ban(User $user): JsonResponse

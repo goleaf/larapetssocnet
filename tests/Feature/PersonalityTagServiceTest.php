@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Pet;
-use App\Models\PetTag;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use App\Models\Pets\PetTag;
 use App\Services\PersonalityTagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

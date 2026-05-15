@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Posts;
 
-use App\Models\Post;
+use App\Models\Content\Post;
 use Illuminate\Http\UploadedFile;
 
 class UploadMediaAction

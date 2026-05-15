@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\Hashtag;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\HashtagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

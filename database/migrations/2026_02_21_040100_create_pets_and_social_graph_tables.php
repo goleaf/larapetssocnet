@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pets', function (Blueprint $table) {
+        Schema::create('pets', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->index(['is_public', 'created_at']);
         });
 
-        Schema::create('user_follows', function (Blueprint $table) {
+        Schema::create('user_follows', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('follower_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('following_id')->constrained('users')->cascadeOnDelete();
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->index(['follower_id', 'created_at']);
         });
 
-        Schema::create('pet_followers', function (Blueprint $table) {
+        Schema::create('pet_followers', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('pet_id')->constrained()->cascadeOnDelete();
@@ -54,7 +54,7 @@ return new class extends Migration
             $table->index(['user_id', 'created_at']);
         });
 
-        Schema::create('user_blocks', function (Blueprint $table) {
+        Schema::create('user_blocks', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('blocker_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('blocked_id')->constrained('users')->cascadeOnDelete();

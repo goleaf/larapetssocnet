@@ -2,16 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\PetCareTip;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\PetCareTip;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PetCareTipService
 {
-    public function __construct(
-        private ContentService $content,
-    ) {}
-
     public function submit(User $user, array $data): PetCareTip
     {
         return PetCareTip::create([

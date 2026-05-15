@@ -6,14 +6,14 @@ use App\Enums\FollowAbility;
 use App\Events\UserBlocked;
 use App\Listeners\CancelPendingRequestsOnBlock;
 use App\Listeners\RemoveFollowOnBlock;
-use App\Models\Comment;
-use App\Models\Event;
-use App\Models\Group;
-use App\Models\MarketplaceListing;
-use App\Models\Message;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Activities\Event;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
+use App\Models\Messaging\Message;
+use App\Models\Pets\Pet;
 use App\Notifications\QueueBusyAlert;
 use App\Observers\CommentObserver;
 use App\Observers\MessageObserver;
@@ -29,6 +29,7 @@ use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\UserPolicy;
 use App\Services\UsernameRedirectResolver;
+use App\Support\Models\LegacyModelMorphMap;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Queue\Events\QueueBusy;
@@ -55,7 +56,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if ($this->app->isLocal()) {
+        LegacyModelMorphMap::register();
+
+        if ($this->app->environment('local')) {
             DB::listen(function (QueryExecuted $query): void {
                 if ($query->time > 100) {
                     Log::warning('Slow query detected', [
@@ -74,12 +77,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Message::class, MessagePolicy::class);
         Gate::policy(Comment::class, CommentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
-        $this->defineFollowGate(FollowAbility::Follow, [FollowPolicy::class, 'follow']);
-        $this->defineFollowGate(FollowAbility::Unfollow, [FollowPolicy::class, 'unfollow']);
-        $this->defineFollowGate(FollowAbility::ViewFollowers, [FollowPolicy::class, 'viewFollowers']);
-        $this->defineFollowGate(FollowAbility::ViewFollowing, [FollowPolicy::class, 'viewFollowing']);
-        $this->defineFollowGate(FollowAbility::ManageRequests, [FollowPolicy::class, 'manageRequests']);
-        $this->defineFollowGate(FollowAbility::RemoveFollower, [FollowPolicy::class, 'removeFollower']);
+        foreach (FollowAbility::cases() as $ability) {
+            $this->defineFollowGate($ability, [FollowPolicy::class, $ability->policyMethod()]);
+        }
+
         Pet::observe(PetObserver::class);
         Message::observe(MessageObserver::class);
         Post::observe(PostObserver::class);
@@ -88,7 +89,7 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(UserBlocked::class, CancelPendingRequestsOnBlock::class);
         EventFacade::listen(function (QueueBusy $event): void {
             Log::warning('Queue busy threshold exceeded.', [
-                'connection' => $event->connection,
+                'connection' => $event->connectionName,
                 'queue' => $event->queue,
                 'size' => $event->size,
             ]);
@@ -97,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
 
             if ($alertEmail !== '') {
                 Notification::route('mail', $alertEmail)
-                    ->notify(new QueueBusyAlert($event->connection, $event->queue, $event->size));
+                    ->notify(new QueueBusyAlert($event->connectionName, $event->queue, $event->size));
             }
         });
 

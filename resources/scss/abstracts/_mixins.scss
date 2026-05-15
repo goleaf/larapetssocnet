@@ -1,0 +1,48 @@
+@mixin custom-properties($tokens) {
+    @each $name, $value in $tokens {
+        --#{$name}: #{$value};
+    }
+}
+
+@mixin framed-surface($background, $radius, $shadow: var(--shadow-card)) {
+    background: $background;
+    border: 1px solid var(--border-default);
+    border-radius: $radius;
+    box-shadow: $shadow;
+}
+
+@mixin control-radius {
+    border-radius: var(--radius-control);
+}
+
+@mixin control-radius-important {
+    border-radius: var(--radius-control) !important;
+}
+
+@mixin focus-ring($color: var(--color-paw)) {
+    outline: 2px solid $color;
+    outline-offset: 2px;
+}
+
+@mixin page-background {
+    background:
+        radial-gradient(circle at 0% -10%, rgb(232 131 74 / 11%), transparent 34%),
+        radial-gradient(circle at 100% 0%, rgb(74 133 201 / 8%), transparent 30%),
+        var(--surface-page);
+}
+
+@mixin compact-scrollbar($size: 6px) {
+    ::-webkit-scrollbar {
+        width: $size;
+        height: $size;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--surface-page);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-whisker);
+        border-radius: 0;
+    }
+}

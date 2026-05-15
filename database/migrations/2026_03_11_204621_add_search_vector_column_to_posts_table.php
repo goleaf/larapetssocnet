@@ -23,7 +23,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('posts', function (Blueprint $table) {
+        Schema::table('posts', function (Blueprint $table): void {
             $table->tsvector('search_vector')->nullable();
             $table->index('search_vector', 'posts_search_vector_index', 'gin');
         });
@@ -46,7 +46,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('posts', function (Blueprint $table) {
+        Schema::table('posts', function (Blueprint $table): void {
             $table->dropIndex('posts_search_vector_index');
             $table->dropColumn('search_vector');
         });

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\Pet;
-use App\Models\PetHealthLog;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use App\Models\Pets\PetHealthLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
@@ -33,7 +33,7 @@ class PetFeatureTest extends TestCase
 
         $pet = Pet::query()->where('name', 'Mochi')->firstOrFail();
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('pets', 'slug')) {
+        if (Schema::hasColumn('pets', 'slug')) {
             $this->assertStringStartsWith('mochi', (string) $pet->slug);
         }
 
@@ -97,7 +97,7 @@ class PetFeatureTest extends TestCase
             'is_public' => 1,
         ]);
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('pets', 'slug')) {
+        if (Schema::hasColumn('pets', 'slug')) {
             $this->assertSame($originalSlug, $pet->fresh()->slug);
         }
     }

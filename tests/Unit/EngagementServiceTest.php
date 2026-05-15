@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\Post;
-use App\Models\Report;
-use App\Models\Share;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Share;
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use App\Services\ProfilePostOrderingService;
 use App\Services\ReactionService;
 use App\Services\ReportService;

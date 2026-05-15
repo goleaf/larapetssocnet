@@ -2,9 +2,9 @@
 
 namespace App\Policies;
 
-use App\Models\Event;
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Activities\Event;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 
 class EventPolicy
 {

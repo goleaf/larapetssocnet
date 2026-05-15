@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Pet;
+use App\Models\Pets\Pet;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -120,7 +120,7 @@ class PetGalleryService
         return $pet->galleryMedia()
             ->orderBy('order_column')
             ->pluck('id')
-            ->map(fn (int $id): int => (int) $id)
+            ->map(fn (int $id): int => $id)
             ->all();
     }
 

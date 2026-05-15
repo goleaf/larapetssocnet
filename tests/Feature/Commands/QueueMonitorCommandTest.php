@@ -1,19 +1,22 @@
 <?php
 
+use App\Enums\PostStatus;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Services\Maintenance\MaintenanceTaskService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
-it('registers queue monitor in the scheduler', function (): void {
-    expect(config('queue.monitor'))->toBeArray();
-    expect(config('queue.monitor.max'))->toBeInt();
+it('marks realtime maintenance tasks without a console scheduler', function (): void {
+    $tasks = app(MaintenanceTaskService::class)->tasks();
 
-    $this->artisan('schedule:list')
-        ->expectsOutputToContain('queue:monitor')
-        ->assertExitCode(0);
+    expect($tasks['publish-scheduled-posts']['realtime'])->toBeTrue()
+        ->and($tasks['prune-deleted-accounts']['realtime'])->toBeTrue()
+        ->and($tasks['prune-old-notifications']['realtime'])->toBeTrue();
 });
 
 it('reports oldest pending job in queue monitor json output', function (): void {
@@ -69,15 +72,18 @@ it('prints oldest pending job in queue monitor text output', function (): void {
         ->assertExitCode(0);
 });
 
-it('respects queue monitor env overrides in schedule list output', function (): void {
-    $process = new Process([PHP_BINARY, 'artisan', 'schedule:list'], base_path(), [
-        'QUEUE_MONITOR_QUEUES' => 'database:critical',
-        'QUEUE_MONITOR_MAX' => '250',
+it('runs due realtime maintenance without the scheduler', function (): void {
+    foreach (MaintenanceTaskService::REALTIME_TASKS as $task) {
+        Cache::forget("maintenance:realtime:{$task}");
+    }
+
+    $author = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'status' => PostStatus::Scheduled->value,
+        'published_at' => now()->subMinute(),
     ]);
 
-    $process->run();
+    app(MaintenanceTaskService::class)->runRealtimeDueTasks();
 
-    expect($process->getExitCode())->toBe(0);
-    expect($process->getOutput())->toContain("queues='database:critical'");
-    expect($process->getOutput())->toContain('--max=250');
+    expect($post->refresh()->status)->toBe(PostStatus::Published);
 });

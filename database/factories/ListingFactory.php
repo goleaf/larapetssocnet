@@ -2,11 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Identity\User;
+use App\Models\Marketplace\Listing;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Listing>
+ * @extends Factory<Listing>
  */
 class ListingFactory extends Factory
 {
@@ -45,7 +47,7 @@ class ListingFactory extends Factory
             : fake()->randomFloat(2, $type === 'service' ? 15 : 35, $type === 'service' ? 400 : 4500);
 
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'title' => $title,
             'slug' => Str::slug($title).'-'.fake()->unique()->numerify('####'),
             'type' => $type,

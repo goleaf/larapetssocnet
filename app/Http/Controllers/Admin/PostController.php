@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Post;
+use App\Models\Content\Post;
 use App\Services\ModerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ class PostController extends Controller
             ->latest()
             ->paginate(30);
 
-        return view('admin.posts.index', compact('posts'));
+        return view('admin.posts.index', ['posts' => $posts]);
     }
 
     public function destroy(Post $post): JsonResponse

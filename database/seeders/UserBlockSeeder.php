@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\UserBlock;
+use App\Models\Identity\User;
+use App\Models\Social\UserBlock;
 use Illuminate\Database\Seeder;
 
 class UserBlockSeeder extends Seeder

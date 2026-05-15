@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Enums\PostStatus;
-use App\Models\Hashtag;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Support\Hashtags\HashtagNormalizer;
 use App\Support\Hashtags\HashtagParser;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 
 class HashtagService
@@ -23,7 +24,7 @@ class HashtagService
         $tags = $this->extract($post->body ?? '');
 
         $ids = collect($tags)
-            ->map(fn (string $tag) => $this->resolveHashtagId($tag))
+            ->map(fn (string $tag): ?int => $this->resolveHashtagId($tag))
             ->filter()
             ->values();
 
@@ -102,8 +103,8 @@ class HashtagService
 
     public function isEligibleForUsageState(
         ?string $status,
-        string|\DateTimeInterface|null $publishedAt,
-        string|\DateTimeInterface|null $deletedAt
+        string|DateTimeInterface|null $publishedAt,
+        string|DateTimeInterface|null $deletedAt
     ): bool {
         if ($deletedAt !== null) {
             return false;
@@ -117,7 +118,7 @@ class HashtagService
             return true;
         }
 
-        if ($publishedAt instanceof \DateTimeInterface) {
+        if ($publishedAt instanceof DateTimeInterface) {
             return CarbonImmutable::instance($publishedAt)->lessThanOrEqualTo(now());
         }
 

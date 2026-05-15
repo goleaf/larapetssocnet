@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Maintenance\BladeTagMaintenanceService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -17,9 +18,7 @@ it('fixes malformed adjacent blade attributes', function (): void {
 
     File::put($file, '<input type="text"name="pet_name"required>');
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-    ])->assertExitCode(0);
+    app(BladeTagMaintenanceService::class)->fix([$this->workspace]);
 
     expect(File::get($file))->toBe('<input type="text" name="pet_name" required>');
 });
@@ -30,12 +29,10 @@ it('reports changes in dry run mode without writing files', function (): void {
 
     File::put($file, $original);
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-        '--dry-run' => true,
-    ])->assertExitCode(0);
+    $result = app(BladeTagMaintenanceService::class)->fix([$this->workspace], dryRun: true);
 
-    expect(File::get($file))->toBe($original);
+    expect($result->metrics['files_changed'])->toBe(1)
+        ->and(File::get($file))->toBe($original);
 });
 
 it('removes dark utilities when the remove-dark option is set', function (): void {
@@ -43,10 +40,7 @@ it('removes dark utilities when the remove-dark option is set', function (): voi
 
     File::put($file, '<div class="text-sm dark:text-white md:dark:bg-black">Hi</div>');
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-        '--remove-dark' => true,
-    ])->assertExitCode(0);
+    app(BladeTagMaintenanceService::class)->fix([$this->workspace], removeDark: true);
 
     expect(File::get($file))->toBe('<div class="text-sm">Hi</div>');
 });
@@ -59,10 +53,7 @@ it('preserves blade attribute spacing when removing dark utilities', function ()
         '<x-ui.button class="px-2 dark:bg-black" :href="route(\'login\')" variant="primary" size="sm">Log In</x-ui.button>'
     );
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-        '--remove-dark' => true,
-    ])->assertExitCode(0);
+    app(BladeTagMaintenanceService::class)->fix([$this->workspace], removeDark: true);
 
     expect(File::get($file))
         ->toBe('<x-ui.button class="px-2" :href="route(\'login\')" variant="primary" size="sm">Log In</x-ui.button>');
@@ -73,9 +64,7 @@ it('inserts space before a blade attribute bag after a quoted attribute value', 
 
     File::put($file, '<x-ui.input class="w-full"{{ $attributes }} />');
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-    ])->assertExitCode(0);
+    app(BladeTagMaintenanceService::class)->fix([$this->workspace]);
 
     expect(File::get($file))->toBe('<x-ui.input class="w-full" {{ $attributes }} />');
 });
@@ -85,9 +74,7 @@ it('inserts space after single-quoted values before boolean attributes', functio
 
     File::put($file, "<x-ui.button type='button'disabled>Save</x-ui.button>");
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-    ])->assertExitCode(0);
+    app(BladeTagMaintenanceService::class)->fix([$this->workspace]);
 
     expect(File::get($file))->toBe("<x-ui.button type='button' disabled>Save</x-ui.button>");
 });
@@ -97,9 +84,7 @@ it('inserts space when an attribute name follows a bracket-terminated expression
 
     File::put($file, '<x-ui.tabs :tabs="$tabs[$active]"icon="paw" />');
 
-    $this->artisan('views:fix-tags', [
-        '--path' => [$this->workspace],
-    ])->assertExitCode(0);
+    app(BladeTagMaintenanceService::class)->fix([$this->workspace]);
 
     expect(File::get($file))->toBe('<x-ui.tabs :tabs="$tabs[$active]" icon="paw" />');
 });

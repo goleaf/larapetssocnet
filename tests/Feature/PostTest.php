@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Hashtag;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\User;
+use App\Enums\PostStatus;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use App\Services\HashtagService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,7 +47,7 @@ class PostTest extends TestCase
 
         $post = Post::query()->where('body', 'Scheduled post')->firstOrFail();
 
-        $this->assertSame(\App\Enums\PostStatus::Scheduled->value, $post->status->value);
+        $this->assertSame(PostStatus::Scheduled->value, $post->status->value);
         $this->assertNotNull($post->published_at);
     }
 
@@ -99,7 +101,7 @@ class PostTest extends TestCase
             'visibility' => Post::VISIBILITY_PUBLIC,
         ]);
 
-        app(\App\Services\HashtagService::class)->syncHashtags($post);
+        app(HashtagService::class)->syncHashtags($post);
         $this->assertSame(['cats'], $post->fresh()->hashtags()->pluck('name')->all());
 
         $this->actingAs($user)

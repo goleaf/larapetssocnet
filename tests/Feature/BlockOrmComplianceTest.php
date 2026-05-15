@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Tests\TestCase;
@@ -19,8 +21,8 @@ class BlockOrmComplianceTest extends TestCase
 
     public function test_message_and_marketplace_restrictions_use_model_relationship_checks(): void
     {
-        $messageCode = file_get_contents(base_path('app/Http/Controllers/MessageController.php'));
-        $marketplaceCode = file_get_contents(base_path('app/Http/Controllers/MarketplaceListingController.php'));
+        $messageCode = file_get_contents(base_path('app/Http/Controllers/Messaging/MessageController.php'));
+        $marketplaceCode = file_get_contents(base_path('app/Http/Controllers/Marketplace/MarketplaceListingController.php'));
 
         $this->assertIsString($messageCode);
         $this->assertIsString($marketplaceCode);

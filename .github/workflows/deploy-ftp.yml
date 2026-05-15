@@ -27,6 +27,14 @@ jobs:
       APP_URL: ${{ vars.APP_URL || 'https://petsocial.prus.dev' }}
       REMOTE_BASE: ${{ vars.REMOTE_BASE || '/home/anjdiiaev/domains/prus.dev/public_html/petsocial' }}
       INCLUDE_SQLITE: ${{ github.event_name == 'workflow_dispatch' && inputs.include_sqlite && 'true' || 'false' }}
+      MAIL_MAILER: ${{ vars.MAIL_MAILER || 'smtp' }}
+      MAIL_SCHEME: ${{ vars.MAIL_SCHEME || 'null' }}
+      MAIL_HOST: ${{ vars.MAIL_HOST || 'obojus.serveriai.lt' }}
+      MAIL_PORT: ${{ vars.MAIL_PORT || '465' }}
+      MAIL_USERNAME: ${{ vars.MAIL_USERNAME || 'robot@prus.dev' }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_FROM_ADDRESS: ${{ vars.MAIL_FROM_ADDRESS || 'robot@prus.dev' }}
+      MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME || 'PetSocial' }}
 
     steps:
       - name: Check out code
@@ -50,11 +58,13 @@ jobs:
           FTP_HOST_SECRET: ${{ secrets.FTP_HOST }}
           FTP_USERNAME_SECRET: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD_SECRET: ${{ secrets.FTP_PASSWORD }}
+          MAIL_PASSWORD_SECRET: ${{ secrets.MAIL_PASSWORD }}
         run: |
           test -n "${APP_KEY}" || { echo "Missing APP_KEY secret"; exit 2; }
           test -n "${FTP_HOST_SECRET}" || { echo "Missing FTP_HOST secret"; exit 2; }
           test -n "${FTP_USERNAME_SECRET}" || { echo "Missing FTP_USERNAME secret"; exit 2; }
           test -n "${FTP_PASSWORD_SECRET}" || { echo "Missing FTP_PASSWORD secret"; exit 2; }
+          test -n "${MAIL_PASSWORD_SECRET}" || { echo "Missing MAIL_PASSWORD secret"; exit 2; }
 
       - name: Install PHP dependencies
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist

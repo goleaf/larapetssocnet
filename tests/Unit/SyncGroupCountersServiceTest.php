@@ -1,9 +1,9 @@
 <?php
 
 use App\Enums\PostStatus;
-use App\Models\Group;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use App\Services\SyncGroupCountersService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Post;
-use App\Models\Share;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Share;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,7 +23,7 @@ class ShareFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'shareable_type' => Post::class,
+            'shareable_type' => (new Post)->getMorphClass(),
             'shareable_id' => Post::factory(),
             'method' => 'copy_link',
         ];

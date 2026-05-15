@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
-use App\Models\ReservedUsername;
-use App\Models\User;
-use App\Models\UsernameRedirect;
+use App\Models\Identity\ReservedUsername;
+use App\Models\Identity\User;
+use App\Models\Identity\UsernameRedirect;
 use App\Notifications\UsernameChanged;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
@@ -30,7 +30,7 @@ class UsernameService
         $base = (string) Str::of($base)->limit($maxLength, '');
 
         for ($i = 0; $i < 10; $i++) {
-            $candidate = $i === 0 ? $base : (string) Str::of($base)->limit($maxLength - 3, '').random_int(100, 999);
+            $candidate = $i === 0 ? $base : Str::of($base)->limit($maxLength - 3, '').random_int(100, 999);
 
             if ($this->isAvailable($candidate)) {
                 return UsernameNormalizer::normalize($candidate);

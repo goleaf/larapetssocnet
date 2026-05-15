@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Pet;
+use App\Models\Pets\Pet;
 
 class SyncPetCountersService
 {

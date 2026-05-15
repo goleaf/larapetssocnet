@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;

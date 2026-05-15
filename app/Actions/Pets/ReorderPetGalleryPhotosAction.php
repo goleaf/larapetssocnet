@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Pets;
 
-use App\Models\Pet;
+use App\Models\Pets\Pet;
 use App\Services\PetGalleryService;
 
 class ReorderPetGalleryPhotosAction

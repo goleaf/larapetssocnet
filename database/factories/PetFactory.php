@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Pet>
+ * @extends Factory<Pet>
  */
 class PetFactory extends Factory
 {
-    protected $model = \App\Models\Pet::class;
+    protected $model = Pet::class;
 
     /**
      * Define the model's default state.
@@ -19,7 +23,7 @@ class PetFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'name' => fake()->firstName(),
             'slug' => null,
             'species' => fake()->randomElement(['dog', 'cat', 'bird', 'rabbit', 'hamster']),

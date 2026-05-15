@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Post;
-use App\Models\Reaction;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Reaction;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -22,7 +22,7 @@ it('shows the viewers liked posts as liked on explore after refresh', function (
 
     Reaction::query()->create([
         'user_id' => $viewer->getKey(),
-        'reactable_type' => Post::class,
+        'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->getKey(),
         'type' => 'love',
     ]);
@@ -52,7 +52,7 @@ it('loads explore likes count from reactions on initial page load', function ():
 
     Reaction::query()->create([
         'user_id' => $liker->getKey(),
-        'reactable_type' => Post::class,
+        'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->getKey(),
         'type' => 'love',
     ]);

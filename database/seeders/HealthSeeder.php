@@ -22,7 +22,7 @@ class HealthSeeder extends Seeder
             return;
         }
 
-        $petRows = $pets->map(static fn ($pet) => ['id' => (int) $pet->id, 'user_id' => (int) $pet->user_id])->all();
+        $petRows = $pets->map(static fn ($pet): array => ['id' => (int) $pet->id, 'user_id' => (int) $pet->user_id])->all();
         $faker = fake();
         $rows = [];
 

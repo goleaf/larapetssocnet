@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('pet_id')->nullable()->constrained()->nullOnDelete();

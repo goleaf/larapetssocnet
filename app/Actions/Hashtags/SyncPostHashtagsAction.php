@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Hashtags;
 
-use App\Models\Post;
+use App\Models\Content\Post;
 use App\Services\HashtagService;
 
 class SyncPostHashtagsAction

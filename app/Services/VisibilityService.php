@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use App\Enums\PostStatus;
-use App\Models\Post;
-use App\Models\User;
-use App\Services\PetVisibilityService;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 
 class VisibilityService
 {
@@ -43,7 +41,7 @@ class VisibilityService
         }
 
         $accountPrivate = (bool) $post->author->is_private;
-        $isFollower = $viewer ? $viewer->isFollowing($post->author) : false;
+        $isFollower = $viewer && $viewer->isFollowing($post->author);
 
         return match ($post->visibility) {
             Post::VISIBILITY_PUBLIC => ! $accountPrivate || $isFollower,
@@ -74,7 +72,7 @@ class VisibilityService
 
     private function isPublishedForViewer(Post $post): bool
     {
-        if ($post->status !== PostStatus::Published) {
+        if (! $post->status->isPubliclyReachable()) {
             return false;
         }
 

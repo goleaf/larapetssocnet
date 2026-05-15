@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Follow;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Social\Follow;
 use App\Notifications\FollowRequestApproved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;

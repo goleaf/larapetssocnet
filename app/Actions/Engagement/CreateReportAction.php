@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Engagement;
 
-use App\Models\Report;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use App\Services\ReportService;
 use Illuminate\Database\Eloquent\Model;
 

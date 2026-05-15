@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Enums\MessageStatus;
-use App\Models\Conversation;
-use App\Models\MarketplaceListing;
-use App\Models\Message;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -67,7 +67,7 @@ class ConversationService
     {
         $conversation = $this->findConversation($viewer, $peer);
 
-        if (! $conversation) {
+        if (! $conversation instanceof Conversation) {
             return 0;
         }
 
@@ -133,7 +133,7 @@ class ConversationService
                 'latest_message' => $conversation->latestMessage,
                 'unread_count' => $conversation->unreadCountFor($viewer),
                 'listing' => null,
-                'conversation_key' => $peer
+                'conversation_key' => $peer instanceof User
                     ? $this->conversationKey($viewer, $peer)
                     : (string) $conversation->getKey(),
             ];
@@ -157,7 +157,7 @@ class ConversationService
     ): EloquentCollection {
         $conversation = $this->findConversation($viewer, $peer);
 
-        if (! $conversation) {
+        if (! $conversation instanceof Conversation) {
             return EloquentCollection::make();
         }
 
@@ -181,7 +181,7 @@ class ConversationService
     {
         $existing = $this->findConversation($viewer, $peer);
 
-        if ($existing) {
+        if ($existing instanceof Conversation) {
             return $existing;
         }
 
@@ -212,7 +212,7 @@ class ConversationService
             ]);
         }
 
-        $hasExisting = $this->findConversation($viewer, $peer) !== null;
+        $hasExisting = $this->findConversation($viewer, $peer) instanceof Conversation;
 
         if (! $hasExisting && (bool) $peer->is_private && ! $viewer->isFollowing($peer)) {
             throw ValidationException::withMessages([

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Models\Post;
-use App\Models\Share;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Share;
+use App\Models\Identity\User;
 use Illuminate\Support\Facades\DB;
 
 class ShareService
@@ -21,7 +23,7 @@ class ShareService
         $created = DB::transaction(function () use ($user, $post, $method): bool {
             $share = Share::query()->firstOrCreate([
                 'user_id' => $user->id,
-                'shareable_type' => Post::class,
+                'shareable_type' => $post->getMorphClass(),
                 'shareable_id' => $post->id,
             ], [
                 'method' => $method,

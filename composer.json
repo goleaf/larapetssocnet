@@ -6,36 +6,38 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "intervention/image": "^3.11",
-        "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1",
+        "php": "^8.4",
+        "intervention/image": "^4.0",
+        "laravel/framework": "^13.0",
+        "laravel/tinker": "^3.0",
         "livewire/blaze": "^1.0",
         "livewire/livewire": "^4.2",
         "mews/purifier": "^3.4",
-        "mischasigtermans/laravel-toon": "^1.0",
-        "robsontenorio/mary": "^2.7",
-        "spatie/laravel-activitylog": "^4.11",
-        "spatie/laravel-medialibrary": "^11.20",
-        "spatie/laravel-permission": "^7.2",
-        "spatie/laravel-sluggable": "^3.7"
+        "mischasigtermans/laravel-toon": "^1.1",
+        "robsontenorio/mary": "^2.8",
+        "spatie/laravel-activitylog": "^5.0",
+        "spatie/laravel-medialibrary": "^11.22",
+        "spatie/laravel-permission": "^7.4",
+        "spatie/laravel-sluggable": "^4.0"
     },
     "require-dev": {
-        "barryvdh/laravel-debugbar": "^4",
-        "driftingly/rector-laravel": "^2.1",
+        "barryvdh/laravel-debugbar": "^4.2",
+        "driftingly/rector-laravel": "^2.3",
         "fakerphp/faker": "^1.23",
-        "laravel/boost": "^2.0",
-        "laravel/breeze": "^2.3",
-        "laravel/mcp": "^0.5.9",
+        "larastan/larastan": "^3.9",
+        "laravel/boost": "^2.4",
+        "laravel/breeze": "^2.4",
+        "laravel/mcp": "^0.7",
         "laravel/pail": "^1.2.2",
-        "laravel/pint": "^1.27",
+        "laravel/pint": "^1.29",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
-        "pestphp/pest": "^3.8.5",
-        "pestphp/pest-plugin-laravel": "^3.2",
+        "nunomaduro/collision": "^8.9",
+        "pestphp/pest": "^4.7",
+        "pestphp/pest-plugin-laravel": "^4.1",
+        "pestphp/pest-plugin-type-coverage": "^4.0",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "11.5.50",
-        "rector/rector": "^2.3"
+        "phpunit/phpunit": "^12.5.24",
+        "rector/rector": "^2.4"
     },
     "autoload": {
         "psr-4": {
@@ -65,15 +67,52 @@
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,logs,vite --kill-others"
         ],
+        "analyse": [
+            "vendor/bin/phpstan analyse --memory-limit=1G --no-progress"
+        ],
+        "build": [
+            "npm run build"
+        ],
+        "lint": [
+            "vendor/bin/pint --test --format=agent"
+        ],
+        "lint:fix": [
+            "vendor/bin/pint --format=agent"
+        ],
+        "quality": [
+            "composer validate --strict",
+            "@lint",
+            "@analyse",
+            "@rector:dry",
+            "@test:type-coverage",
+            "@test",
+            "@style:scss",
+            "@build"
+        ],
+        "style:scss": [
+            "npm run lint:scss"
+        ],
+        "style:scss:fix": [
+            "npm run lint:scss:fix"
+        ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "@php artisan test --compact"
+        ],
+        "test:feature": [
+            "@php artisan test --compact --testsuite=Feature"
+        ],
+        "test:type-coverage": [
+            "vendor/bin/pest --type-coverage"
+        ],
+        "test:unit": [
+            "@php artisan test --compact --testsuite=Unit"
         ],
         "rector": [
             "vendor/bin/rector process"
         ],
         "rector:dry": [
-            "vendor/bin/rector process --dry-run"
+            "vendor/bin/rector process --dry-run --clear-cache"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

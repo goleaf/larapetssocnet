@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             if (! Schema::hasColumn('users', 'username')) {
                 $table->string('username', 30)->nullable();
             }
@@ -130,19 +130,19 @@ return new class extends Migration
         });
 
         if (Schema::hasColumn('users', 'username') && ! Schema::hasIndex('users', ['username'], 'unique')) {
-            Schema::table('users', function (Blueprint $table) {
+            Schema::table('users', function (Blueprint $table): void {
                 $table->unique('username');
             });
         }
 
         if (Schema::hasColumn('users', 'username') && ! Schema::hasIndex('users', ['username'])) {
-            Schema::table('users', function (Blueprint $table) {
+            Schema::table('users', function (Blueprint $table): void {
                 $table->index('username');
             });
         }
 
         if (Schema::hasColumn('users', 'last_seen_at') && ! Schema::hasIndex('users', ['last_seen_at'])) {
-            Schema::table('users', function (Blueprint $table) {
+            Schema::table('users', function (Blueprint $table): void {
                 $table->index('last_seen_at');
             });
         }
@@ -191,7 +191,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($table, function (Blueprint $blueprint) use ($column) {
+        Schema::table($table, function (Blueprint $blueprint) use ($column): void {
             $blueprint->dropColumn($column);
         });
     }

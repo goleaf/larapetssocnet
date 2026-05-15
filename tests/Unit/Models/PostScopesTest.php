@@ -1,12 +1,12 @@
 <?php
 
 use App\Enums\PostStatus;
-use App\Models\Follow;
-use App\Models\Hashtag;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\PostMedia;
-use App\Models\User;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Content\PostMedia;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

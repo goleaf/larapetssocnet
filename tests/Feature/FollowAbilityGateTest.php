@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\FollowAbility;
-use App\Models\User;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 

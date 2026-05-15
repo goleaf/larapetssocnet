@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Group;
+use App\Models\Groups\Group;
 use App\Services\GroupSlugService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

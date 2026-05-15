@@ -15,8 +15,8 @@
  ->all();
 
  $statusOptions = [
- ['value'=> \App\Models\MarketplaceListing::STATUS_ACTIVE,'label'=>'Active'],
- ['value'=> \App\Models\MarketplaceListing::STATUS_SOLD,'label'=>'Sold'],
+ ['value'=> \App\Models\Marketplace\MarketplaceListing::STATUS_ACTIVE,'label'=>'Active'],
+ ['value'=> \App\Models\Marketplace\MarketplaceListing::STATUS_SOLD,'label'=>'Sold'],
  ];
 
  $sortOptions = [

@@ -2,8 +2,8 @@
 
 namespace App\Actions\Groups;
 
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use App\Services\ContentService;
 use App\Services\GroupCoverImageService;
 use App\Services\GroupSlugService;

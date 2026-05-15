@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Carbon\Carbon;
 use Faker\Generator;
 use Illuminate\Database\Seeder;

@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\MarketplaceListing;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;

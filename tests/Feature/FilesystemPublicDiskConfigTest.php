@@ -1,6 +1,8 @@
 <?php
 
-afterEach(function () {
+declare(strict_types=1);
+
+afterEach(function (): void {
     putenv('PUBLIC_DISK_ROOT');
     putenv('PUBLIC_DISK_URL');
 
@@ -8,7 +10,7 @@ afterEach(function () {
     unset($_ENV['PUBLIC_DISK_URL'], $_SERVER['PUBLIC_DISK_URL']);
 });
 
-it('allows the public disk path and url to be configured for shared hosting', function () {
+it('allows the public disk path and url to be configured for shared hosting', function (): void {
     $root = base_path('public/storage');
     $url = 'https://petsocial.prus.dev/storage';
 

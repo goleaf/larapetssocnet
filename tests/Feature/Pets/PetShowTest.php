@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Pet;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

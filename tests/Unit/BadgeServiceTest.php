@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Models\Badge;
-use App\Models\User;
+use App\Models\Gamification\Badge;
+use App\Models\Identity\User;
 use App\Notifications\BadgeAwarded;
 use App\Services\BadgeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

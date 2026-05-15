@@ -2,9 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Pet;
-use App\Models\User;
-use App\Services\PetSlugService;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,7 +12,6 @@ class PetService
 {
     public function __construct(
         private ContentService $content,
-        private MediaService $media,
         private PersonalityTagService $personalityTags,
         private PetGalleryService $galleryService,
         private PetSlugService $slugService,
@@ -53,7 +51,7 @@ class PetService
                 'personality_tags' => $tags,
             ]);
 
-            if ($avatar) {
+            if ($avatar instanceof UploadedFile) {
                 $pet->addMedia($avatar)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
             }
 
@@ -88,9 +86,9 @@ class PetService
                 'is_public' => $data['is_public'] ?? $pet->is_public,
                 'is_adoptable' => $data['is_adoptable'] ?? $pet->is_adoptable,
                 'personality_tags' => $tags,
-            ], fn ($v) => $v !== null));
+            ], fn ($v): bool => $v !== null));
 
-            if ($avatar) {
+            if ($avatar instanceof UploadedFile) {
                 $pet->clearMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
                 $pet->addMedia($avatar)->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
             }

@@ -1,13 +1,13 @@
 <?php
 
-use App\Models\User;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
-it('stores a cover image from settings profile', function () {
+it('stores a cover image from settings profile', function (): void {
     $disk = (string) config('media-library.disk_name');
     Storage::fake($disk);
 
@@ -29,7 +29,7 @@ it('stores a cover image from settings profile', function () {
     expect($user->getFirstMedia(User::MEDIA_COLLECTION_COVER))->not->toBeNull();
 });
 
-it('removes a cover image from settings profile', function () {
+it('removes a cover image from settings profile', function (): void {
     $disk = (string) config('media-library.disk_name');
     Storage::fake($disk);
 

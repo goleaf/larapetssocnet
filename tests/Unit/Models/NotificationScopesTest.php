@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Notification;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

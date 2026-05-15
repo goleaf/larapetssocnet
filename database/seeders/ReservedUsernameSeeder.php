@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\ReservedUsername;
+use App\Models\Identity\ReservedUsername;
 use Illuminate\Database\Seeder;
 
 class ReservedUsernameSeeder extends Seeder

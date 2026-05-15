@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\MarketplaceListing;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 
 class ListingPolicy
 {
@@ -18,7 +20,7 @@ class ListingPolicy
             return true;
         }
 
-        if (! $user) {
+        if (! $user instanceof User) {
             return false;
         }
 

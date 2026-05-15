@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Report;
+use App\Models\Moderation\Report;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -35,7 +35,7 @@ return new class extends Migration
                 });
             });
 
-        Schema::table('reports', function (Blueprint $table) {
+        Schema::table('reports', function (Blueprint $table): void {
             $table->unique(
                 ['reporter_user_id', 'reportable_type', 'reportable_id', 'reason'],
                 'reports_reporter_reportable_reason_unique'
@@ -48,7 +48,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('reports', function (Blueprint $table) {
+        Schema::table('reports', function (Blueprint $table): void {
             $table->dropUnique('reports_reporter_reportable_reason_unique');
         });
     }

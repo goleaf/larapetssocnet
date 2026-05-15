@@ -1,0 +1,55 @@
+@use "../abstracts" as ui;
+
+@layer components {
+    .btn-base {
+        @apply inline-flex items-center justify-center gap-2 px-4 text-sm font-medium transition-all duration-150;
+
+        min-height: var(--control-height-md);
+        border: 1px solid transparent;
+
+        @include ui.control-radius;
+    }
+
+    .btn-primary {
+        @apply bg-paw text-white hover:bg-paw-dark;
+
+        box-shadow: var(--shadow-button);
+    }
+
+    .btn-secondary {
+        @apply bg-paw-light text-paw-dark hover:bg-orange-200;
+    }
+
+    .btn-ghost {
+        @apply border border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark;
+    }
+
+    .btn-danger {
+        @apply bg-rose text-white hover:bg-red-700;
+    }
+
+    .icon-button {
+        @apply inline-flex items-center justify-center border border-whisker/40 bg-warm-white text-bark transition-all duration-150 hover:bg-cream;
+
+        height: var(--control-height-md);
+        width: var(--control-height-md);
+
+        @include ui.control-radius;
+    }
+
+    .chip {
+        @apply inline-flex items-center gap-1 border border-whisker/50 bg-cream px-2.5 py-1 text-xs font-medium text-fur;
+
+        border-radius: var(--radius-soft);
+    }
+
+    .hover-lift {
+        @apply transition-all duration-150 hover:-translate-y-0.5;
+
+        box-shadow: var(--shadow-card);
+    }
+
+    .hover-lift:hover {
+        box-shadow: var(--shadow-card-hover);
+    }
+}

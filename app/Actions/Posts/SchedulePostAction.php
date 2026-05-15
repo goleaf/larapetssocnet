@@ -3,8 +3,8 @@
 namespace App\Actions\Posts;
 
 use App\Enums\PostStatus;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\PostActivityService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;

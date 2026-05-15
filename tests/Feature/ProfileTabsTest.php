@@ -1,11 +1,11 @@
 <?php
 
-use App\Models\Badge;
-use App\Models\Contest;
-use App\Models\ContestEntry;
-use App\Models\Event;
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Activities\Contest;
+use App\Models\Activities\ContestEntry;
+use App\Models\Activities\Event;
+use App\Models\Gamification\Badge;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

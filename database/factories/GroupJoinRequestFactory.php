@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Group;
-use App\Models\GroupJoinRequest;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupJoinRequest;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GroupJoinRequest>
+ * @extends Factory<GroupJoinRequest>
  */
 class GroupJoinRequestFactory extends Factory
 {

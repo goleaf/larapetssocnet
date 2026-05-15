@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pet_care_tips', function (Blueprint $table) {
+        Schema::create('pet_care_tips', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('title');
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->index(['species', 'created_at']);
         });
 
-        Schema::create('contests', function (Blueprint $table) {
+        Schema::create('contests', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('organizer_user_id')->constrained('users')->cascadeOnDelete();
             $table->string('title');
@@ -49,7 +49,7 @@ return new class extends Migration
             $table->index(['organizer_user_id', 'created_at']);
         });
 
-        Schema::create('contest_entries', function (Blueprint $table) {
+        Schema::create('contest_entries', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('contest_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -63,7 +63,7 @@ return new class extends Migration
             $table->index(['contest_id', 'votes_count']);
         });
 
-        Schema::create('contest_votes', function (Blueprint $table) {
+        Schema::create('contest_votes', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('entry_id')->constrained('contest_entries')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -72,7 +72,7 @@ return new class extends Migration
             $table->unique(['entry_id', 'user_id']);
         });
 
-        Schema::create('badges', function (Blueprint $table) {
+        Schema::create('badges', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
@@ -83,7 +83,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('badge_user', function (Blueprint $table) {
+        Schema::create('badge_user', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('badge_id')->constrained()->cascadeOnDelete();

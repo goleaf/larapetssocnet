@@ -94,7 +94,7 @@
  <x-ui.panel padding="md" class="bg-cream/50">
  <div class="space-y-4">
  <x-ui.file-upload name="photos[]" label="Photos (Max 5)" accept="image/*" multiple />
- @error('photos.*')
+ @error('media.photos.*')
  <span class="text-sm text-rose block">{{ $message }}</span>
  @enderror
  @error('photos')

@@ -23,7 +23,7 @@ return new class extends Migration
             ->pluck('name')
             ->all();
 
-        Schema::table('jobs', function (Blueprint $table) use ($indexNames) {
+        Schema::table('jobs', function (Blueprint $table) use ($indexNames): void {
             if (in_array(self::LEGACY_QUEUE_INDEX, $indexNames, true)) {
                 $table->dropIndex(self::LEGACY_QUEUE_INDEX);
             }
@@ -47,7 +47,7 @@ return new class extends Migration
             ->pluck('name')
             ->all();
 
-        Schema::table('jobs', function (Blueprint $table) use ($indexNames) {
+        Schema::table('jobs', function (Blueprint $table) use ($indexNames): void {
             if (in_array(self::COMPOSITE_QUEUE_INDEX, $indexNames, true)) {
                 $table->dropIndex(self::COMPOSITE_QUEUE_INDEX);
             }

@@ -88,10 +88,8 @@ class GroupSeeder extends Seeder
             }
         }
 
-        if ($groupMembers !== []) {
-            foreach (array_chunk($groupMembers, 500) as $chunk) {
-                DB::table('group_members')->insertOrIgnore($chunk);
-            }
+        foreach (array_chunk($groupMembers, 500) as $chunk) {
+            DB::table('group_members')->insertOrIgnore($chunk);
         }
 
         $groupPosts = [];

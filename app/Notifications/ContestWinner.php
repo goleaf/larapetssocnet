@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
-use App\Models\Contest;
-use App\Models\ContestEntry;
+use App\Models\Activities\Contest;
+use App\Models\Activities\ContestEntry;
 use Illuminate\Notifications\Notification;
 
 class ContestWinner extends Notification

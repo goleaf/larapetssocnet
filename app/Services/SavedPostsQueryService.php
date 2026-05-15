@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Models\SavedPost;
-use App\Models\User;
+use App\Models\Content\SavedPost;
+use App\Models\Identity\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class SavedPostsQueryService

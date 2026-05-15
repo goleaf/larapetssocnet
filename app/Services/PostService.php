@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Enums\PostStatus;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Http\UploadedFile;
@@ -107,7 +107,7 @@ class PostService
 
     public function delete(Post $post): void
     {
-        DB::transaction(function () use ($post) {
+        DB::transaction(function () use ($post): void {
             $post->delete();
         });
     }
@@ -161,7 +161,7 @@ class PostService
 
     public function pin(Post $post): void
     {
-        DB::transaction(function () use ($post) {
+        DB::transaction(function () use ($post): void {
             $post->author->posts()
                 ->where('is_pinned', true)
                 ->updateQuietly(['is_pinned' => false, 'pinned_at' => null]);
@@ -231,7 +231,7 @@ class PostService
 
     private function resolvePublishedAt(PostStatus $status, mixed $publishedAt): ?CarbonInterface
     {
-        if ($status === PostStatus::Draft) {
+        if ($status->clearsPublishedAt()) {
             return null;
         }
 
@@ -243,8 +243,8 @@ class PostService
             return CarbonImmutable::parse($publishedAt);
         }
 
-        if ($status === PostStatus::Scheduled || $status === PostStatus::Archived) {
-            return $publishedAt instanceof CarbonInterface ? $publishedAt : null;
+        if (! $status->isPubliclyReachable()) {
+            return null;
         }
 
         return now();

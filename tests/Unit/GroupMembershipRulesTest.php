@@ -1,15 +1,15 @@
 <?php
 
-use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 use App\Services\GroupService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('prevents admins from promoting members to admin role directly', function () {
+it('prevents admins from promoting members to admin role directly', function (): void {
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $member = User::factory()->create();
@@ -51,7 +51,7 @@ it('prevents admins from promoting members to admin role directly', function () 
         ->toThrow(AuthorizationException::class);
 });
 
-it('allows owners to promote members to admin role', function () {
+it('allows owners to promote members to admin role', function (): void {
     $owner = User::factory()->create();
     $member = User::factory()->create();
 

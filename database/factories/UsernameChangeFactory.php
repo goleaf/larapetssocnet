@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
-use App\Models\UsernameChange;
+use App\Models\Identity\User;
+use App\Models\Identity\UsernameChange;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

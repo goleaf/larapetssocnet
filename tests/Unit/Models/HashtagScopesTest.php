@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Hashtag;
-use App\Models\Post;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

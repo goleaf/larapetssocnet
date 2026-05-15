@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Pet;
-use App\Models\PetTag;
+use App\Models\Pets\Pet;
+use App\Models\Pets\PetTag;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 

@@ -22,7 +22,7 @@ class ValidUsernameRule implements ValidationRule
             return;
         }
 
-        if (UsernameRules::disallowNumericOnly() && preg_match('/^[0-9]+$/', $username)) {
+        if (UsernameRules::disallowNumericOnly() && preg_match('/^\d+$/', $username)) {
             $fail('Username cannot be numbers only.');
         }
     }

@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Enums\PostStatus;
-use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\Post;
+use App\Models\Content\Post;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\Schema;

@@ -1,0 +1,16 @@
+@use "../abstracts" as ui;
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+    @include ui.custom-properties(ui.$font-families);
+    @include ui.custom-properties(ui.$brand-colors);
+    @include ui.custom-properties(ui.$surfaces);
+    @include ui.custom-properties(ui.$text-colors);
+    @include ui.custom-properties(ui.$borders);
+    @include ui.custom-properties(ui.$radii);
+    @include ui.custom-properties(ui.$shadows);
+    @include ui.custom-properties(ui.$control-heights);
+    @include ui.custom-properties(ui.$spaces);
+    @include ui.custom-properties(ui.$font-sizes);
+    @include ui.custom-properties(ui.$ui-aliases);
+}

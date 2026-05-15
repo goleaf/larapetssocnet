@@ -1,14 +1,14 @@
 <?php
 
-use App\Models\Group;
-use App\Models\GroupBan;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupBan;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('allows direct join for public groups and updates members count', function () {
+it('allows direct join for public groups and updates members count', function (): void {
     $owner = User::factory()->create();
     $member = User::factory()->create();
 
@@ -49,7 +49,7 @@ it('allows direct join for public groups and updates members count', function ()
     expect($group->members_count)->toBe(1);
 });
 
-it('creates pending request for private groups and allows approval', function () {
+it('creates pending request for private groups and allows approval', function (): void {
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $member = User::factory()->create();
@@ -113,7 +113,7 @@ it('creates pending request for private groups and allows approval', function ()
     expect($group->members_count)->toBe(3);
 });
 
-it('allows a requester to cancel a pending join request', function () {
+it('allows a requester to cancel a pending join request', function (): void {
     $owner = User::factory()->create();
     $member = User::factory()->create();
 
@@ -151,7 +151,7 @@ it('allows a requester to cancel a pending join request', function () {
     ]);
 });
 
-it('prevents banned users from joining', function () {
+it('prevents banned users from joining', function (): void {
     $owner = User::factory()->create();
     $member = User::factory()->create();
 
@@ -181,7 +181,7 @@ it('prevents banned users from joining', function () {
         ->assertForbidden();
 });
 
-it('blocks non-managers from removing members', function () {
+it('blocks non-managers from removing members', function (): void {
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $other = User::factory()->create();

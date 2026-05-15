@@ -7,10 +7,10 @@
  ];
 
  $statusOptions = [
- \App\Models\MarketplaceListing::STATUS_DRAFT =>'Draft',
- \App\Models\MarketplaceListing::STATUS_ACTIVE =>'Active',
- \App\Models\MarketplaceListing::STATUS_SOLD =>'Sold',
- \App\Models\MarketplaceListing::STATUS_ARCHIVED =>'Archived',
+ \App\Models\Marketplace\MarketplaceListing::STATUS_DRAFT =>'Draft',
+ \App\Models\Marketplace\MarketplaceListing::STATUS_ACTIVE =>'Active',
+ \App\Models\Marketplace\MarketplaceListing::STATUS_SOLD =>'Sold',
+ \App\Models\Marketplace\MarketplaceListing::STATUS_ARCHIVED =>'Archived',
  ];
 @endphp
 

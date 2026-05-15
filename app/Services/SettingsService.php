@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Fluent;
@@ -103,7 +103,7 @@ class SettingsService
 
         $user->update([
             'notification_preferences' => collect($preferencesPayload->all())
-                ->mapWithKeys(fn ($value, $key) => [(string) $key => (bool) $value])
+                ->mapWithKeys(fn ($value, $key): array => [(string) $key => (bool) $value])
                 ->all(),
         ]);
 

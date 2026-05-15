@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\BlockService;
 use App\Services\CounterCacheService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -3,8 +3,8 @@
 namespace App\Observers;
 
 use App\Enums\MessageStatus;
-use App\Models\Conversation;
-use App\Models\Message;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 

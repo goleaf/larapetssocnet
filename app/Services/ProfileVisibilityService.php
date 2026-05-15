@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ProfileVisibility;
-use App\Models\User;
+use App\Models\Identity\User;
 
 class ProfileVisibilityService
 {
@@ -11,7 +11,7 @@ class ProfileVisibilityService
     {
         $resolved = ProfileVisibility::fromValue($owner->profile_visibility);
 
-        if ($resolved) {
+        if ($resolved instanceof ProfileVisibility) {
             if ($resolved === ProfileVisibility::Public && (bool) $owner->is_private) {
                 return ProfileVisibility::FollowersOnly;
             }
@@ -78,7 +78,7 @@ class ProfileVisibilityService
 
         return match ($this->resolve($owner)) {
             ProfileVisibility::Public => true,
-            ProfileVisibility::FollowersOnly => $viewer ? $viewer->isFollowing($owner) : false,
+            ProfileVisibility::FollowersOnly => $viewer && $viewer->isFollowing($owner),
             ProfileVisibility::Private => false,
         };
     }
@@ -104,7 +104,7 @@ class ProfileVisibilityService
 
         return match ($this->resolve($owner)) {
             ProfileVisibility::Public => true,
-            ProfileVisibility::FollowersOnly => $viewer ? $viewer->isFollowing($owner) : false,
+            ProfileVisibility::FollowersOnly => $viewer && $viewer->isFollowing($owner),
             ProfileVisibility::Private => false,
         };
     }
@@ -133,14 +133,14 @@ class ProfileVisibilityService
             return $visibility !== ProfileVisibility::Private;
         }
 
-        return $viewer ? $viewer->isFollowing($owner) : false;
+        return $viewer && $viewer->isFollowing($owner);
     }
 
     public function syncLegacyPrivacy(User $user, ProfileVisibility $visibility): void
     {
         $user->forceFill([
             'profile_visibility' => $visibility->value,
-            'is_private' => $visibility !== ProfileVisibility::Public,
+            'is_private' => $visibility->marksAccountPrivate(),
         ])->save();
     }
 }

@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\Report;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use App\Notifications\ReportThresholdReached;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -31,14 +31,14 @@ class ReportService
         return DB::transaction(function () use ($reporter, $reportable, $normalizedReason, $details): Report {
             $existing = Report::query()
                 ->where('reporter_user_id', $reporter->id)
-                ->where('reportable_type', $reportable::class)
+                ->where('reportable_type', $reportable->getMorphClass())
                 ->where('reportable_id', $reportable->getKey())
                 ->where('reason', $normalizedReason)
                 ->first();
 
             if ($existing) {
                 if ($existing->status === Report::STATUS_PENDING) {
-                    if ($details !== null && $details !== '' && $details !== $existing->details) {
+                    if (! in_array($details, [null, '', $existing->details], true)) {
                         $existing->update(['details' => $details]);
                     }
 
@@ -50,7 +50,7 @@ class ReportService
 
             $report = Report::query()->create([
                 'reporter_user_id' => $reporter->id,
-                'reportable_type' => $reportable::class,
+                'reportable_type' => $reportable->getMorphClass(),
                 'reportable_id' => $reportable->getKey(),
                 'reason' => $normalizedReason,
                 'details' => $details,
@@ -82,7 +82,7 @@ class ReportService
     {
         $pendingCount = Report::query()
             ->pending()
-            ->where('reportable_type', $reportable::class)
+            ->where('reportable_type', $reportable->getMorphClass())
             ->where('reportable_id', $reportable->getKey())
             ->count();
 

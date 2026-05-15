@@ -1,8 +1,9 @@
 <?php
 
-use App\Models\Hashtag;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Services\Maintenance\MaintenanceTaskService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -19,8 +20,9 @@ it('backfills hashtags and recounts usage', function (): void {
 
     expect($post->hashtags()->count())->toBe(0);
 
-    $this->artisan('hashtags:backfill-posts --recount')
-        ->assertExitCode(0);
+    $result = app(MaintenanceTaskService::class)->backfillPostHashtags(recount: true);
+
+    expect($result->metrics['processed'])->toBe(1);
 
     $hashtag = Hashtag::query()->where('normalized_name', 'cats')->firstOrFail();
 

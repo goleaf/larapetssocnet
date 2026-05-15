@@ -1,7 +1,7 @@
 @props(['post','comment','currentReaction'=> null])
 
 @php
-    $reactionOptions = \App\Models\Reaction::emojiMap();
+    $reactionOptions = \App\Models\Content\Reaction::emojiMap();
 @endphp
 
 <div class="relative inline-flex items-center gap-2 group/react" x-data="{

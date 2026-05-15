@@ -1,9 +1,9 @@
 <?php
 
 use App\Exceptions\UsernameChangeCooldownException;
-use App\Models\ReservedUsername;
-use App\Models\User;
-use App\Models\UsernameRedirect;
+use App\Models\Identity\ReservedUsername;
+use App\Models\Identity\User;
+use App\Models\Identity\UsernameRedirect;
 use App\Services\ContentService;
 use App\Services\UsernameService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

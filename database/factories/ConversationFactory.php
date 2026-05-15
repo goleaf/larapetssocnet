@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Conversation;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Conversation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

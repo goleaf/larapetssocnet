@@ -7,22 +7,26 @@ use App\Actions\Hashtags\SyncPostHashtagsAction;
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
 use App\Enums\PostStatus;
-use App\Models\Comment;
-use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\Hashtag;
-use App\Models\Like;
-use App\Models\Notification;
-use App\Models\Post;
-use App\Models\PostReaction;
-use App\Models\Reaction;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Like;
+use App\Models\Content\Post;
+use App\Models\Content\PostReaction;
+use App\Models\Content\Reaction;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
+use App\Models\Messaging\Notification;
 use App\Services\ContentService;
 use App\Services\PostService;
 use App\Services\SyncGroupCountersService;
 use App\Services\SyncPostCountersService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
+use BackedEnum;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -194,18 +198,22 @@ class MaintenanceTaskService
     {
         $published = 0;
         $now = now();
+        $query = $this->postQuery();
+        $query->where('posts.status', PostStatus::Scheduled->value);
+        $query->whereNotNull('published_at');
+        $query->where('published_at', '<=', $now);
 
-        Post::query()
-            ->scheduled()
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', $now)
-            ->orderBy('id')
-            ->chunkById(100, function ($chunk) use (&$published): void {
-                foreach ($chunk as $post) {
-                    $this->posts->publish($post, $post->getAttribute('published_at'));
-                    $published++;
-                }
-            });
+        $this->eachModelById(
+            $query,
+            100,
+            function (Post $post) use (&$published): void {
+                $publishedAt = $post->getAttribute('published_at');
+
+                $this->posts->publish($post, $publishedAt instanceof CarbonInterface ? $publishedAt : null);
+                $published++;
+            },
+            'posts.id',
+        );
 
         return MaintenanceTaskResult::make('publish-scheduled-posts', "Published {$published} scheduled post(s).", [
             'published' => $published,
@@ -215,20 +223,22 @@ class MaintenanceTaskService
     public function pruneDeletedAccounts(): MaintenanceTaskResult
     {
         $pruned = 0;
+        $query = $this->userQuery();
+        $query->whereNotNull('scheduled_deletion_at');
+        $query->where('scheduled_deletion_at', '<=', now());
 
-        User::query()
-            ->whereNotNull('scheduled_deletion_at')
-            ->where('scheduled_deletion_at', '<=', now())
-            ->orderBy('id')
-            ->chunkById(100, function ($users) use (&$pruned): void {
-                foreach ($users as $user) {
-                    $user->clearMediaCollection('avatar');
-                    $user->clearMediaCollection('cover');
-                    $user->clearMediaCollection('photos');
-                    $user->forceDelete();
-                    $pruned++;
-                }
-            });
+        $this->eachModelById(
+            $query,
+            100,
+            function (User $user) use (&$pruned): void {
+                $user->clearMediaCollection('avatar');
+                $user->clearMediaCollection('cover');
+                $user->clearMediaCollection('photos');
+                $user->forceDelete();
+                $pruned++;
+            },
+            'users.id',
+        );
 
         return MaintenanceTaskResult::make('prune-deleted-accounts', "Pruned {$pruned} deleted account(s).", [
             'pruned' => $pruned,
@@ -252,15 +262,18 @@ class MaintenanceTaskService
     {
         $chunkSize = max(50, $chunkSize);
         $processed = 0;
+        $query = $this->postQuery();
+        $query->select(['posts.id', 'posts.body', 'posts.status', 'posts.published_at']);
 
-        Post::query()
-            ->select(['posts.id', 'posts.body', 'posts.status', 'posts.published_at'])
-            ->chunkById($chunkSize, function ($posts) use (&$processed): void {
-                foreach ($posts as $post) {
-                    $this->syncHashtags->handle($post, false);
-                    $processed++;
-                }
-            });
+        $this->eachModelById(
+            $query,
+            $chunkSize,
+            function (Post $post) use (&$processed): void {
+                $this->syncHashtags->handle($post, false);
+                $processed++;
+            },
+            'posts.id',
+        );
 
         if ($recount) {
             $this->recalculateHashtags->handle();
@@ -286,39 +299,41 @@ class MaintenanceTaskService
     {
         $processed = 0;
         $updated = 0;
+        $query = $this->userQuery();
+        $query->select(['id', 'name', 'display_name', 'email', 'username']);
 
-        User::query()
-            ->select(['id', 'name', 'display_name', 'email', 'username'])
-            ->orderBy('id')
-            ->chunkById(200, function ($users) use (&$processed, &$updated): void {
-                foreach ($users as $user) {
-                    $processed++;
-                    $current = (string) $user->getAttribute('username');
-                    $normalized = UsernameNormalizer::normalize($current);
+        $this->eachModelById(
+            $query,
+            200,
+            function (User $user) use (&$processed, &$updated): void {
+                $processed++;
+                $current = (string) $user->getAttribute('username');
+                $normalized = UsernameNormalizer::normalize($current);
 
-                    if ($normalized === '') {
-                        $seed = (string) ($user->getAttribute('display_name')
-                            ?: $user->getAttribute('name')
-                            ?: Str::before((string) $user->getAttribute('email'), '@'));
-                        $normalized = UsernameNormalizer::generateBase($seed);
-                    }
-
-                    if ($normalized === '') {
-                        $normalized = 'petlover';
-                    }
-
-                    $candidate = $normalized;
-
-                    if (! UsernameRules::isAvailable($candidate, (int) $user->getKey())) {
-                        $candidate = User::generateUniqueUsername($candidate);
-                    }
-
-                    if ($candidate !== $current) {
-                        $user->updateQuietly(['username' => $candidate]);
-                        $updated++;
-                    }
+                if ($normalized === '') {
+                    $seed = (string) ($user->getAttribute('display_name')
+                        ?: $user->getAttribute('name')
+                        ?: Str::before((string) $user->getAttribute('email'), '@'));
+                    $normalized = UsernameNormalizer::generateBase($seed);
                 }
-            });
+
+                if ($normalized === '') {
+                    $normalized = 'petlover';
+                }
+
+                $candidate = $normalized;
+
+                if (! UsernameRules::isAvailable($candidate, (int) $user->getKey())) {
+                    $candidate = User::generateUniqueUsername($candidate);
+                }
+
+                if ($candidate !== $current) {
+                    $user->updateQuietly(['username' => $candidate]);
+                    $updated++;
+                }
+            },
+            'users.id',
+        );
 
         return MaintenanceTaskResult::make('backfill-usernames', "Processed {$processed} user(s), updated {$updated}.", [
             'processed' => $processed,
@@ -331,42 +346,51 @@ class MaintenanceTaskService
         $postsUpdated = 0;
         $commentsUpdated = 0;
         $htmlUpdated = 0;
+        $postCounterQuery = $this->postQuery();
+        $postCounterQuery->select(['posts.id']);
+        $postCounterQuery->withCount(['comments as computed_comments']);
 
-        Post::query()
-            ->select(['id'])
-            ->withCount(['comments as computed_comments'])
-            ->chunkById(200, function ($posts) use (&$postsUpdated): void {
-                foreach ($posts as $post) {
-                    $post->updateQuietly([
-                        'comments_count' => (int) $post->getAttribute('computed_comments'),
-                    ]);
-                    $postsUpdated++;
-                }
-            });
+        $this->eachModelById(
+            $postCounterQuery,
+            200,
+            function (Post $post) use (&$postsUpdated): void {
+                $post->updateQuietly([
+                    'comments_count' => (int) $post->getAttribute('computed_comments'),
+                ]);
+                $postsUpdated++;
+            },
+            'posts.id',
+        );
+        $replyCounterQuery = $this->commentQuery();
+        $replyCounterQuery->select(['comments.id']);
+        $replyCounterQuery->withCount(['replies as computed_replies']);
 
-        Comment::query()
-            ->select(['id'])
-            ->withCount(['replies as computed_replies'])
-            ->chunkById(200, function ($comments) use (&$commentsUpdated): void {
-                foreach ($comments as $comment) {
-                    $comment->updateQuietly([
-                        'replies_count' => (int) $comment->getAttribute('computed_replies'),
-                    ]);
-                    $commentsUpdated++;
-                }
-            });
+        $this->eachModelById(
+            $replyCounterQuery,
+            200,
+            function (Comment $comment) use (&$commentsUpdated): void {
+                $comment->updateQuietly([
+                    'replies_count' => (int) $comment->getAttribute('computed_replies'),
+                ]);
+                $commentsUpdated++;
+            },
+            'comments.id',
+        );
+        $htmlQuery = $this->commentQuery();
+        $htmlQuery->select(['id', 'body']);
+        $htmlQuery->whereNull('body_html');
 
-        Comment::query()
-            ->select(['id', 'body'])
-            ->whereNull('body_html')
-            ->chunkById(200, function ($comments) use (&$htmlUpdated): void {
-                foreach ($comments as $comment) {
-                    $comment->updateQuietly([
-                        'body_html' => $this->content->process((string) $comment->getAttribute('body')),
-                    ]);
-                    $htmlUpdated++;
-                }
-            });
+        $this->eachModelById(
+            $htmlQuery,
+            200,
+            function (Comment $comment) use (&$htmlUpdated): void {
+                $comment->updateQuietly([
+                    'body_html' => $this->content->process((string) $comment->getAttribute('body')),
+                ]);
+                $htmlUpdated++;
+            },
+            'comments.id',
+        );
 
         return MaintenanceTaskResult::make('rebuild-comment-counters', 'Comment counters rebuilt.', [
             'posts_updated' => $postsUpdated,
@@ -382,15 +406,18 @@ class MaintenanceTaskService
         }
 
         $processed = 0;
+        $query = $this->postQuery();
+        $query->select(['posts.id']);
 
-        Post::query()
-            ->select(['posts.id'])
-            ->chunkById(300, function ($posts) use (&$processed): void {
-                foreach ($posts as $post) {
-                    $this->postCounters->sync($post);
-                    $processed++;
-                }
-            });
+        $this->eachModelById(
+            $query,
+            300,
+            function (Post $post) use (&$processed): void {
+                $this->postCounters->sync($post);
+                $processed++;
+            },
+            'posts.id',
+        );
 
         return MaintenanceTaskResult::make('rebuild-engagement-counters', "Rebuilt engagement counters for {$processed} post(s).", [
             'processed' => $processed,
@@ -413,21 +440,24 @@ class MaintenanceTaskService
         $chunkSize = max(1, $chunkSize);
         $processed = 0;
         $ownersAligned = 0;
+        $query = $this->groupQuery();
+        $query->select(['id', 'owner_id', 'owner_user_id']);
 
-        Group::query()
-            ->select(['id', 'owner_id', 'owner_user_id'])
-            ->chunkById($chunkSize, function ($groups) use (&$processed, &$ownersAligned): void {
-                foreach ($groups as $group) {
-                    $processed++;
-                    $ownerId = (int) ($group->getAttribute('owner_user_id') ?? $group->getAttribute('owner_id') ?? 0);
+        $this->eachModelById(
+            $query,
+            $chunkSize,
+            function (Group $group) use (&$processed, &$ownersAligned): void {
+                $processed++;
+                $ownerId = (int) ($group->getAttribute('owner_user_id') ?? $group->getAttribute('owner_id') ?? 0);
 
-                    if ($ownerId > 0 && $this->alignOwnerMembership($group, $ownerId)) {
-                        $ownersAligned++;
-                    }
-
-                    $this->groupCounters->syncMembersCount($group);
+                if ($ownerId > 0 && $this->alignOwnerMembership($group, $ownerId)) {
+                    $ownersAligned++;
                 }
-            });
+
+                $this->groupCounters->syncMembersCount($group);
+            },
+            'groups.id',
+        );
 
         return MaintenanceTaskResult::make('rebuild-group-memberships', "Rebuilt memberships for {$processed} group(s).", [
             'processed' => $processed,
@@ -444,42 +474,45 @@ class MaintenanceTaskService
         if (! $hasLikes && ! $hasPostReactions) {
             return;
         }
+        $query = $this->postQuery();
+        $query->select(['posts.id']);
 
-        Post::query()
-            ->select(['posts.id'])
-            ->chunkById(300, function ($posts) use ($hasLikes, $hasPostReactions): void {
-                foreach ($posts as $post) {
-                    if ($hasPostReactions) {
-                        PostReaction::query()
-                            ->where('post_id', $post->getKey())
-                            ->get(['user_id', 'post_id', 'type'])
-                            ->each(function (PostReaction $legacy): void {
-                                Reaction::query()->firstOrCreate([
-                                    'user_id' => $legacy->getAttribute('user_id'),
-                                    'reactable_type' => Post::class,
-                                    'reactable_id' => $legacy->getAttribute('post_id'),
-                                ], [
-                                    'type' => Reaction::normalizeType((string) $legacy->getAttribute('type')),
-                                ]);
-                            });
-                    }
-
-                    if ($hasLikes) {
-                        Like::query()
-                            ->where('post_id', $post->getKey())
-                            ->get(['user_id', 'post_id'])
-                            ->each(function (Like $legacy): void {
-                                Reaction::query()->firstOrCreate([
-                                    'user_id' => $legacy->getAttribute('user_id'),
-                                    'reactable_type' => Post::class,
-                                    'reactable_id' => $legacy->getAttribute('post_id'),
-                                ], [
-                                    'type' => Reaction::TYPE_LOVE,
-                                ]);
-                            });
-                    }
+        $this->eachModelById(
+            $query,
+            300,
+            function (Post $post) use ($hasLikes, $hasPostReactions): void {
+                if ($hasPostReactions) {
+                    PostReaction::query()
+                        ->where('post_id', $post->getKey())
+                        ->get(['user_id', 'post_id', 'type'])
+                        ->each(function (PostReaction $legacy) use ($post): void {
+                            Reaction::query()->firstOrCreate([
+                                'user_id' => $legacy->getAttribute('user_id'),
+                                'reactable_type' => $post->getMorphClass(),
+                                'reactable_id' => $legacy->getAttribute('post_id'),
+                            ], [
+                                'type' => Reaction::normalizeType((string) $legacy->getAttribute('type')),
+                            ]);
+                        });
                 }
-            });
+
+                if ($hasLikes) {
+                    Like::query()
+                        ->where('post_id', $post->getKey())
+                        ->get(['user_id', 'post_id'])
+                        ->each(function (Like $legacy) use ($post): void {
+                            Reaction::query()->firstOrCreate([
+                                'user_id' => $legacy->getAttribute('user_id'),
+                                'reactable_type' => $post->getMorphClass(),
+                                'reactable_id' => $legacy->getAttribute('post_id'),
+                            ], [
+                                'type' => Reaction::TYPE_LOVE,
+                            ]);
+                        });
+                }
+            },
+            'posts.id',
+        );
     }
 
     private function alignOwnerMembership(Group $group, int $ownerId): bool
@@ -502,16 +535,18 @@ class MaintenanceTaskService
         }
 
         $updates = [];
+        $currentRole = $this->backedEnumValue($membership->getAttribute('role'));
+        $currentStatus = $this->backedEnumValue($membership->getAttribute('status'));
 
-        if ((string) ($membership->role?->value ?? '') !== GroupMemberRole::Owner->value) {
+        if ($currentRole !== GroupMemberRole::Owner->value) {
             $updates['role'] = GroupMemberRole::Owner->value;
         }
 
-        if ((string) ($membership->status?->value ?? '') !== GroupMemberStatus::Active->value) {
+        if ($currentStatus !== GroupMemberStatus::Active->value) {
             $updates['status'] = GroupMemberStatus::Active->value;
         }
 
-        if (! $membership->joined_at) {
+        if (! $membership->getAttribute('joined_at')) {
             $updates['joined_at'] = now();
         }
 
@@ -522,6 +557,76 @@ class MaintenanceTaskService
         $membership->forceFill($updates)->save();
 
         return true;
+    }
+
+    private function backedEnumValue(mixed $value): string
+    {
+        if ($value instanceof BackedEnum) {
+            return (string) $value->value;
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @param  callable(TModel): void  $callback
+     */
+    private function eachModelById(Builder $query, int $chunkSize, callable $callback, string $qualifiedKey): void
+    {
+        $lastId = 0;
+        $chunkSize = max(1, $chunkSize);
+
+        while (true) {
+            $chunkQuery = clone $query;
+            $chunkQuery->where($qualifiedKey, '>', $lastId);
+            $chunkQuery->orderBy($qualifiedKey);
+            $chunkQuery->limit($chunkSize);
+            $models = $chunkQuery->get();
+
+            if ($models->isEmpty()) {
+                break;
+            }
+
+            foreach ($models as $model) {
+                $callback($model);
+                $lastId = (int) $model->getKey();
+            }
+        }
+    }
+
+    /**
+     * @return Builder<Post>
+     */
+    private function postQuery(): Builder
+    {
+        return Post::query();
+    }
+
+    /**
+     * @return Builder<User>
+     */
+    private function userQuery(): Builder
+    {
+        return User::query();
+    }
+
+    /**
+     * @return Builder<Comment>
+     */
+    private function commentQuery(): Builder
+    {
+        return Comment::query();
+    }
+
+    /**
+     * @return Builder<Group>
+     */
+    private function groupQuery(): Builder
+    {
+        return Group::query();
     }
 
     /**

@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Notifications\NewReaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -22,7 +22,7 @@ it('toggles post reactions and updates likes_count', function (): void {
         ->assertJsonPath('data.current_reaction', 'love');
 
     $this->assertDatabaseHas('reactions', [
-        'reactable_type' => Post::class,
+        'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->id,
         'user_id' => $user->id,
         'type' => 'love',

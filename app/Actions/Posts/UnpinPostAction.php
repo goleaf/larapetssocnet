@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Posts;
 
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\PinService;
 use App\Services\PostActivityService;
 use Illuminate\Support\Facades\Gate;

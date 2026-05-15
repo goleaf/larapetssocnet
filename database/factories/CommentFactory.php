@@ -1,15 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Comment>
+ * @extends Factory<Comment>
  */
 class CommentFactory extends Factory
 {
-    protected $model = \App\Models\Comment::class;
+    protected $model = Comment::class;
 
     /**
      * Define the model's default state.
@@ -21,8 +26,8 @@ class CommentFactory extends Factory
         $body = fake()->sentence();
 
         return [
-            'post_id' => \App\Models\Post::factory(),
-            'user_id' => \App\Models\User::factory(),
+            'post_id' => Post::factory(),
+            'user_id' => User::factory(),
             'parent_id' => null,
             'body' => $body,
             'body_html' => $body,

@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Notifications\NewFollower;
 use App\Notifications\NewFollowRequest;
+use DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -73,7 +74,7 @@ class FollowTest extends TestCase
         $this->actingAs($actor)->postJson(route('users.follow', ['user' => $target->username]))->assertOk();
         $this->actingAs($actor)->postJson(route('users.follow', ['user' => $target->username]))->assertOk();
 
-        $this->assertSame(1, (int) \DB::table('follows')
+        $this->assertSame(1, (int) DB::table('follows')
             ->where('follower_id', $actor->id)
             ->where('following_id', $target->id)
             ->count());

@@ -1,41 +1,57 @@
 <?php
 
-use App\Http\Controllers\AdoptionController;
-use App\Http\Controllers\BlockController;
-use App\Http\Controllers\CommentController;
-use App\Http\Controllers\CommentReactionController;
-use App\Http\Controllers\EventController;
-use App\Http\Controllers\ExploreController;
-use App\Http\Controllers\FeedController;
-use App\Http\Controllers\FollowController;
-use App\Http\Controllers\FollowRequestController;
-use App\Http\Controllers\GroupBanController;
-use App\Http\Controllers\GroupController;
-use App\Http\Controllers\GroupCoverController;
-use App\Http\Controllers\GroupJoinRequestController;
-use App\Http\Controllers\GroupMemberController;
-use App\Http\Controllers\GroupPostController;
-use App\Http\Controllers\HashtagController;
-use App\Http\Controllers\LikeController;
-use App\Http\Controllers\MarketplaceListingController;
-use App\Http\Controllers\MessageController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\PetCareTipController;
-use App\Http\Controllers\PetController;
-use App\Http\Controllers\PetFollowController;
-use App\Http\Controllers\PetGalleryController;
-use App\Http\Controllers\PetHealthLogController;
-use App\Http\Controllers\PhotoGalleryController;
-use App\Http\Controllers\PostCommentController;
-use App\Http\Controllers\PostController;
+use App\Http\Controllers\Account\AccountDeletionController;
+use App\Http\Controllers\Activities\ContestController;
+use App\Http\Controllers\Activities\ContestEntryController;
+use App\Http\Controllers\Activities\ContestVoteController;
+use App\Http\Controllers\Activities\EventController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MaintenanceController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Discovery\ExploreController;
+use App\Http\Controllers\Discovery\HashtagController;
+use App\Http\Controllers\Discovery\SearchController;
+use App\Http\Controllers\Feed\FeedController;
+use App\Http\Controllers\Gamification\BadgeController;
+use App\Http\Controllers\Groups\GroupBanController;
+use App\Http\Controllers\Groups\GroupController;
+use App\Http\Controllers\Groups\GroupCoverController;
+use App\Http\Controllers\Groups\GroupJoinRequestController;
+use App\Http\Controllers\Groups\GroupMemberController;
+use App\Http\Controllers\Groups\GroupPostController;
+use App\Http\Controllers\Marketplace\MarketplaceListingController;
+use App\Http\Controllers\Media\PhotoGalleryController;
+use App\Http\Controllers\Messaging\MessageController;
+use App\Http\Controllers\Messaging\NotificationController;
+use App\Http\Controllers\Moderation\ReportController;
+use App\Http\Controllers\Onboarding\OnboardingController;
+use App\Http\Controllers\Pets\AdoptionController;
+use App\Http\Controllers\Pets\PetAvatarController;
+use App\Http\Controllers\Pets\PetCareTipController;
+use App\Http\Controllers\Pets\PetController;
+use App\Http\Controllers\Pets\PetFollowController;
+use App\Http\Controllers\Pets\PetFollowersController;
+use App\Http\Controllers\Pets\PetGalleryController;
+use App\Http\Controllers\Pets\PetHealthLogController;
+use App\Http\Controllers\Pets\PetPostController;
+use App\Http\Controllers\Posts\CommentController;
+use App\Http\Controllers\Posts\CommentReactionController;
+use App\Http\Controllers\Posts\LikeController;
+use App\Http\Controllers\Posts\PostCommentController;
+use App\Http\Controllers\Posts\PostController;
+use App\Http\Controllers\Posts\ReactionController;
+use App\Http\Controllers\Posts\SavedPostController;
+use App\Http\Controllers\Posts\ShareController;
+use App\Http\Controllers\Privacy\PrivacyController;
+use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Profile\PublicProfileController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ReactionController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\SavedPostController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ShareController;
+use App\Http\Controllers\Settings\SettingsController;
+use App\Http\Controllers\Social\BlockController;
+use App\Http\Controllers\Social\FollowController;
+use App\Http\Controllers\Social\FollowRequestController;
+use App\Http\Middleware\AdminMiddleware;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -47,11 +63,11 @@ Route::get('/', function () {
     return redirect()->route('explore.index');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
+Route::get('/dashboard', function (): Factory|View {
+    return view('dashboard.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/dev/components', function () {
+Route::get('/dev/components', function (): Factory|View {
     abort_unless(app()->isLocal(), 404);
 
     return view('dev.components');
@@ -78,7 +94,7 @@ Route::get('/posts/{post}', [PostController::class, 'show'])
     ->whereNumber('post')
     ->name('posts.show');
 Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
-Route::prefix('pets')->name('pets.')->group(function () {
+Route::prefix('pets')->name('pets.')->group(function (): void {
     Route::get('/', [PetController::class, 'index'])->name('index');
     Route::get('/{pet:slug}', [PetController::class, 'show'])
         ->where('pet', '^(?!create$)[^/]+')
@@ -93,7 +109,7 @@ Route::get('/api/username-available', [ProfileController::class, 'usernameAvaila
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
-Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
+Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): void {
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
     Route::get('/saved', [SavedPostController::class, 'index'])->name('saved.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -146,24 +162,24 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/photo-galleries/{gallery}/photos', [PhotoGalleryController::class, 'storePhotos'])->name('photo-galleries.photos.store');
     Route::post('/photo-galleries/{gallery}/cover/{media}', [PhotoGalleryController::class, 'setCover'])->name('photo-galleries.cover.store');
 
-    Route::prefix('pets')->name('pets.')->group(function () {
+    Route::prefix('pets')->name('pets.')->group(function (): void {
         Route::get('/create', [PetController::class, 'create'])->name('create');
         Route::post('/', [PetController::class, 'store'])->name('store');
         Route::get('/{pet:slug}/edit', [PetController::class, 'edit'])->name('edit');
         Route::patch('/{pet:slug}', [PetController::class, 'update'])->name('update');
         Route::delete('/{pet:slug}', [PetController::class, 'destroy'])->name('destroy');
 
-        Route::post('/{pet:slug}/avatar', [\App\Http\Controllers\PetAvatarController::class, 'store'])->name('avatar.store');
-        Route::delete('/{pet:slug}/avatar', [\App\Http\Controllers\PetAvatarController::class, 'destroy'])->name('avatar.destroy');
+        Route::post('/{pet:slug}/avatar', [PetAvatarController::class, 'store'])->name('avatar.store');
+        Route::delete('/{pet:slug}/avatar', [PetAvatarController::class, 'destroy'])->name('avatar.destroy');
 
-        Route::get('/{pet:slug}/followers', [\App\Http\Controllers\PetFollowersController::class, 'index'])->name('followers.index');
+        Route::get('/{pet:slug}/followers', [PetFollowersController::class, 'index'])->name('followers.index');
         Route::post('/{pet:slug}/follow', [PetFollowController::class, 'store'])->name('follow');
         Route::delete('/{pet:slug}/follow', [PetFollowController::class, 'destroy'])->name('unfollow');
 
-        Route::post('/{pet:slug}/posts/{post}', [\App\Http\Controllers\PetPostController::class, 'store'])
+        Route::post('/{pet:slug}/posts/{post}', [PetPostController::class, 'store'])
             ->whereNumber('post')
             ->name('posts.attach');
-        Route::delete('/{pet:slug}/posts/{post}', [\App\Http\Controllers\PetPostController::class, 'destroy'])
+        Route::delete('/{pet:slug}/posts/{post}', [PetPostController::class, 'destroy'])
             ->whereNumber('post')
             ->name('posts.detach');
 
@@ -244,32 +260,32 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
     Route::post('/events/{event}/attend', [EventController::class, 'rsvp'])->name('events.attend');
 
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\SettingsController::class, 'index'])->name('index');
+    Route::prefix('settings')->name('settings.')->group(function (): void {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
 
-        Route::get('/profile', [\App\Http\Controllers\SettingsController::class, 'editProfile'])->name('profile');
-        Route::put('/profile', [\App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/profile', [SettingsController::class, 'editProfile'])->name('profile');
+        Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('profile.update');
 
-        Route::get('/password', [\App\Http\Controllers\SettingsController::class, 'editPassword'])->name('password');
-        Route::put('/password', [\App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('password.update');
+        Route::get('/password', [SettingsController::class, 'editPassword'])->name('password');
+        Route::put('/password', [SettingsController::class, 'updatePassword'])->name('password.update');
 
-        Route::get('/privacy', [\App\Http\Controllers\SettingsController::class, 'editPrivacy'])->name('privacy');
-        Route::put('/privacy', [\App\Http\Controllers\SettingsController::class, 'updatePrivacy'])->name('privacy.update');
-        Route::get('/notifications', [\App\Http\Controllers\SettingsController::class, 'editNotifications'])->name('notifications');
-        Route::put('/notifications', [\App\Http\Controllers\SettingsController::class, 'updateNotifications'])->name('notifications.update');
+        Route::get('/privacy', [SettingsController::class, 'editPrivacy'])->name('privacy');
+        Route::put('/privacy', [SettingsController::class, 'updatePrivacy'])->name('privacy.update');
+        Route::get('/notifications', [SettingsController::class, 'editNotifications'])->name('notifications');
+        Route::put('/notifications', [SettingsController::class, 'updateNotifications'])->name('notifications.update');
 
-        Route::get('/blocked', [\App\Http\Controllers\SettingsController::class, 'blockedUsers'])->name('blocked');
-        Route::post('/blocked', [\App\Http\Controllers\SettingsController::class, 'blockUser'])->name('blocked.store');
-        Route::delete('/blocked/{user:username}', [\App\Http\Controllers\SettingsController::class, 'unblockUser'])->name('blocked.destroy');
+        Route::get('/blocked', [SettingsController::class, 'blockedUsers'])->name('blocked');
+        Route::post('/blocked', [SettingsController::class, 'blockUser'])->name('blocked.store');
+        Route::delete('/blocked/{user:username}', [SettingsController::class, 'unblockUser'])->name('blocked.destroy');
 
-        Route::get('/data', [\App\Http\Controllers\SettingsController::class, 'editData'])->name('data');
-        Route::post('/export-data', [\App\Http\Controllers\SettingsController::class, 'exportData'])->name('export-data');
+        Route::get('/data', [SettingsController::class, 'editData'])->name('data');
+        Route::post('/export-data', [SettingsController::class, 'exportData'])->name('export-data');
 
-        Route::delete('/delete-account', [\App\Http\Controllers\AccountDeletionController::class, 'destroy'])->name('delete-account');
-        Route::post('/cancel-deletion', [\App\Http\Controllers\AccountDeletionController::class, 'cancel'])->name('cancel-deletion');
+        Route::delete('/delete-account', [AccountDeletionController::class, 'destroy'])->name('delete-account');
+        Route::post('/cancel-deletion', [AccountDeletionController::class, 'cancel'])->name('cancel-deletion');
     });
 
-    Route::post('/settings/privacy/toggle', [\App\Http\Controllers\PrivacyController::class, 'toggle'])->name('privacy.toggle');
+    Route::post('/settings/privacy/toggle', [PrivacyController::class, 'toggle'])->name('privacy.toggle');
 
     Route::middleware('throttle:30,1')->group(function (): void {
         Route::post('/users/{user:username}/follow', [FollowController::class, 'toggle'])->name('users.follow');
@@ -298,40 +314,40 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function () {
     Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
 
     // Contests
-    Route::get('/contests', [App\Http\Controllers\ContestController::class, 'index'])->name('contests.index');
-    Route::get('/contests/create', [App\Http\Controllers\ContestController::class, 'create'])->name('contests.create');
-    Route::post('/contests', [App\Http\Controllers\ContestController::class, 'store'])->name('contests.store');
-    Route::get('/contests/{contest:slug}', [App\Http\Controllers\ContestController::class, 'show'])->name('contests.show');
-    Route::get('/contests/{contest:slug}/edit', [App\Http\Controllers\ContestController::class, 'edit'])->name('contests.edit');
-    Route::patch('/contests/{contest:slug}', [App\Http\Controllers\ContestController::class, 'update'])->name('contests.update');
-    Route::delete('/contests/{contest:slug}', [App\Http\Controllers\ContestController::class, 'destroy'])->name('contests.destroy');
-    Route::post('/contests/{contest:slug}/entries', [App\Http\Controllers\ContestEntryController::class, 'store'])->name('contests.entries.store');
-    Route::post('/contests/{contest:slug}/entries/{entry}/vote', [App\Http\Controllers\ContestVoteController::class, 'store'])->name('contests.entries.vote');
-    Route::post('/contests/{contest:slug}/entries/{entry}/winner', [App\Http\Controllers\ContestVoteController::class, 'pickWinner'])->name('contests.entries.winner');
+    Route::get('/contests', [ContestController::class, 'index'])->name('contests.index');
+    Route::get('/contests/create', [ContestController::class, 'create'])->name('contests.create');
+    Route::post('/contests', [ContestController::class, 'store'])->name('contests.store');
+    Route::get('/contests/{contest:slug}', [ContestController::class, 'show'])->name('contests.show');
+    Route::get('/contests/{contest:slug}/edit', [ContestController::class, 'edit'])->name('contests.edit');
+    Route::patch('/contests/{contest:slug}', [ContestController::class, 'update'])->name('contests.update');
+    Route::delete('/contests/{contest:slug}', [ContestController::class, 'destroy'])->name('contests.destroy');
+    Route::post('/contests/{contest:slug}/entries', [ContestEntryController::class, 'store'])->name('contests.entries.store');
+    Route::post('/contests/{contest:slug}/entries/{entry}/vote', [ContestVoteController::class, 'store'])->name('contests.entries.vote');
+    Route::post('/contests/{contest:slug}/entries/{entry}/winner', [ContestVoteController::class, 'pickWinner'])->name('contests.entries.winner');
 
     // Badges
-    Route::get('/@{user:username}/badges', [App\Http\Controllers\BadgeController::class, 'index'])->name('badges.index');
+    Route::get('/@{user:username}/badges', [BadgeController::class, 'index'])->name('badges.index');
 
     // Legacy settings routes removed
 });
 
 // Admin area
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', App\Http\Middleware\AdminMiddleware::class])->group(function () {
-    Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
-    Route::get('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
-    Route::post('/users/{user}/ban', [App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
-    Route::post('/users/{user}/unban', [App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
-    Route::patch('/users/{user}/role', [App\Http\Controllers\Admin\UserController::class, 'role'])->name('users.role');
-    Route::delete('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', AdminMiddleware::class])->group(function (): void {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+    Route::post('/users/{user}/ban', [UserController::class, 'ban'])->name('users.ban');
+    Route::post('/users/{user}/unban', [UserController::class, 'unban'])->name('users.unban');
+    Route::patch('/users/{user}/role', [UserController::class, 'role'])->name('users.role');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/posts', [App\Http\Controllers\Admin\PostController::class, 'index'])->name('posts.index');
     Route::delete('/posts/{post}', [App\Http\Controllers\Admin\PostController::class, 'destroy'])->name('posts.destroy');
     Route::post('/posts/{post}/restore', [App\Http\Controllers\Admin\PostController::class, 'restore'])->name('posts.restore');
     Route::get('/reports', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{report}', [App\Http\Controllers\Admin\ReportController::class, 'show'])->name('reports.show');
     Route::patch('/reports/{report}/resolve', [App\Http\Controllers\Admin\ReportController::class, 'resolve'])->name('reports.resolve');
-    Route::get('/maintenance', [App\Http\Controllers\Admin\MaintenanceController::class, 'index'])->name('maintenance.index');
-    Route::post('/maintenance/{task}', [App\Http\Controllers\Admin\MaintenanceController::class, 'run'])->name('maintenance.run');
+    Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
+    Route::post('/maintenance/{task}', [MaintenanceController::class, 'run'])->name('maintenance.run');
 });
 
 Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');

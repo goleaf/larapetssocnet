@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
-use App\Models\Contest;
-use App\Models\ContestEntry;
-use App\Models\Event;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Activities\Contest;
+use App\Models\Activities\ContestEntry;
+use App\Models\Activities\Event;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
 use App\Services\VisibilityService;

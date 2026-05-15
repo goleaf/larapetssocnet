@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\BlockService;
 use App\Services\CounterCacheService;
 use Illuminate\Database\Seeder;
+use Throwable;
 
 class BlockSeeder extends Seeder
 {
@@ -26,7 +27,7 @@ class BlockSeeder extends Seeder
             foreach ($targets as $target) {
                 try {
                     $blockService->block($user, $target);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // Skip invalid block attempts.
                 }
             }

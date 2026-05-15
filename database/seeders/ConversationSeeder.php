@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Enums\MessageStatus;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 use Carbon\CarbonImmutable;
 use Faker\Generator;
 use Illuminate\Database\Seeder;
@@ -156,7 +156,7 @@ class ConversationSeeder extends Seeder
             $receiverId = $senderId === $userOneId ? $userTwoId : $userOneId;
             $messageAt = $messageAt->addMinutes($faker->numberBetween(4, 100));
 
-            $isRead = $index < ($messageCount - 1) ? $faker->boolean(70) : false;
+            $isRead = $index < $messageCount - 1 && $faker->boolean(70);
             $status = $isRead ? MessageStatus::Read->value : MessageStatus::Delivered->value;
             $body = $faker->sentence($faker->numberBetween(5, 12));
 

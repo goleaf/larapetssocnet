@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('hashtags', function (Blueprint $table) {
+        Schema::create('hashtags', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 50)->unique();
             $table->string('slug', 50)->unique();

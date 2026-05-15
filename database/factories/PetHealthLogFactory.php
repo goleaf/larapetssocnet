@@ -1,15 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use App\Models\Pets\PetHealthLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PetHealthLog>
+ * @extends Factory<PetHealthLog>
  */
 class PetHealthLogFactory extends Factory
 {
-    protected $model = \App\Models\PetHealthLog::class;
+    protected $model = PetHealthLog::class;
 
     /**
      * Define the model's default state.
@@ -19,8 +24,8 @@ class PetHealthLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'pet_id' => \App\Models\Pet::factory(),
-            'logged_by_user_id' => \App\Models\User::factory(),
+            'pet_id' => Pet::factory(),
+            'logged_by_user_id' => User::factory(),
             'log_type' => fake()->randomElement(['checkup', 'vaccine', 'medication', 'weight']),
             'title' => fake()->optional(0.8)->sentence(fake()->numberBetween(2, 5)),
             'notes' => fake()->optional(0.8)->paragraph(),

@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Post;
-use App\Models\Reaction;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Reaction;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -29,7 +29,7 @@ it('loads the main feed pagination query in five queries or fewer', function ():
     ]);
 
     Reaction::query()->create([
-        'reactable_type' => Post::class,
+        'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $likedPost->getKey(),
         'user_id' => $viewer->getKey(),
         'type' => 'love',

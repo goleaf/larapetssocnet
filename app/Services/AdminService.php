@@ -2,14 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\Contest;
-use App\Models\Group;
-use App\Models\Hashtag;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\Report;
-use App\Models\User;
+use App\Models\Activities\Contest;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
+use App\Models\Pets\Pet;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class AdminService
 {
@@ -34,7 +35,7 @@ class AdminService
     public function banUser(User $user, User $admin): void
     {
         if ($user->hasAppRole('admin')) {
-            throw new \RuntimeException('Cannot ban an admin user.');
+            throw new RuntimeException('Cannot ban an admin user.');
         }
 
         $user->update(['is_banned' => true]);
@@ -48,7 +49,7 @@ class AdminService
     public function changeRole(User $user, string $role, User $admin): void
     {
         if (! in_array($role, ['member', 'moderator', 'admin'], true)) {
-            throw new \RuntimeException("Invalid role: {$role}");
+            throw new RuntimeException("Invalid role: {$role}");
         }
 
         $user->update(['role' => $role]);

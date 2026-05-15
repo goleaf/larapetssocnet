@@ -3,13 +3,13 @@
 namespace App\Providers;
 
 use App\Enums\GroupMemberStatus;
-use App\Models\Contest;
-use App\Models\Event;
-use App\Models\Group;
-use App\Models\Hashtag;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Activities\Contest;
+use App\Models\Activities\Event;
+use App\Models\Content\Hashtag;
+use App\Models\Content\Post;
+use App\Models\Groups\Group;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -156,7 +156,7 @@ class ViewServiceProvider extends ServiceProvider
      */
     private function resolveDesktopNavItems(?User $user, ?string $currentRoute): array
     {
-        $isAuthenticated = $user !== null;
+        $isAuthenticated = $user instanceof User;
         $items = [
             [
                 'label' => $isAuthenticated ? 'Feed' : 'Explore Feed',
@@ -230,7 +230,7 @@ class ViewServiceProvider extends ServiceProvider
      */
     private function resolveMobileNavItems(?User $user, ?string $currentRoute): array
     {
-        $isAuthenticated = $user !== null;
+        $isAuthenticated = $user instanceof User;
         $items = [
             [
                 'label' => 'Home',

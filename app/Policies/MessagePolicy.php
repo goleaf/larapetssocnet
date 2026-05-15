@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 
 class MessagePolicy
 {

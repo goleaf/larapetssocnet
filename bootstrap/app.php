@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Exceptions\CannotFollowSelfException;
 use App\Exceptions\UserBannedException;
 use App\Exceptions\UserBlockedException;
+use App\Http\Middleware\BannedUserMiddleware;
 use App\Http\Middleware\RunRealtimeMaintenance;
+use App\Http\Middleware\TrackLastSeen;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,8 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
-            'banned' => \App\Http\Middleware\BannedUserMiddleware::class,
-            'track_last_seen' => \App\Http\Middleware\TrackLastSeen::class,
+            'banned' => BannedUserMiddleware::class,
+            'track_last_seen' => TrackLastSeen::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

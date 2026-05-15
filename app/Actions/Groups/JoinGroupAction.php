@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Groups;
 
-use App\Models\Group;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 use App\Services\GroupService;
 use Illuminate\Support\Facades\Gate;
 

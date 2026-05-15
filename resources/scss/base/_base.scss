@@ -1,0 +1,72 @@
+@use "../abstracts" as ui;
+
+@layer base {
+    @include ui.compact-scrollbar;
+
+    * {
+        border-color: var(--border-default);
+    }
+
+    html,
+    body {
+        min-height: 100%;
+    }
+
+    html {
+        font-family: var(--font-body);
+        background-color: var(--surface-page);
+        color: var(--text-default);
+        scroll-behavior: smooth;
+        scrollbar-color: var(--color-whisker) var(--surface-page);
+    }
+
+    body {
+        margin: 0;
+        font-family: var(--font-body);
+        color: var(--text-default);
+        line-height: 1.5;
+
+        @include ui.page-background;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .font-display,
+    .font-heading {
+        font-family: var(--font-display);
+        color: var(--text-default);
+    }
+
+    code,
+    pre,
+    .font-mono {
+        font-family: var(--font-mono);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    *:focus-visible {
+        @include ui.focus-ring;
+    }
+
+    button,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    .btn-base,
+    .icon-button,
+    [data-ui-control="button"] {
+        @include ui.control-radius-important;
+    }
+
+    ::selection {
+        background: var(--color-paw-light);
+        color: var(--text-default);
+    }
+}

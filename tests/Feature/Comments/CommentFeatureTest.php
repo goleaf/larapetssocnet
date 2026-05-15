@@ -1,13 +1,13 @@
 <?php
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('allows an authorized user to add a top-level comment', function () {
+it('allows an authorized user to add a top-level comment', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
     $post = Post::factory()->for($author)->create([
@@ -31,7 +31,7 @@ it('allows an authorized user to add a top-level comment', function () {
     ]);
 });
 
-it('allows replies and keeps reply counters in sync', function () {
+it('allows replies and keeps reply counters in sync', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
     $post = Post::factory()->for($author)->create([
@@ -60,7 +60,7 @@ it('allows replies and keeps reply counters in sync', function () {
     ]);
 });
 
-it('prevents replying beyond one level', function () {
+it('prevents replying beyond one level', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
     $post = Post::factory()->for($author)->create();
@@ -90,7 +90,7 @@ it('prevents replying beyond one level', function () {
         ->assertSessionHasErrors('parent_id');
 });
 
-it('prevents commenting on an inaccessible post', function () {
+it('prevents commenting on an inaccessible post', function (): void {
     $author = User::factory()->create(['is_private' => true]);
     $viewer = User::factory()->create();
     $post = Post::factory()->for($author)->create([
@@ -104,7 +104,7 @@ it('prevents commenting on an inaccessible post', function () {
         ->assertForbidden();
 });
 
-it('prevents blocked users from commenting', function () {
+it('prevents blocked users from commenting', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
     $post = Post::factory()->for($author)->create([
@@ -120,7 +120,7 @@ it('prevents blocked users from commenting', function () {
         ->assertForbidden();
 });
 
-it('updates edited_at only when content changes', function () {
+it('updates edited_at only when content changes', function (): void {
     $author = User::factory()->create();
     $post = Post::factory()->for($author)->create();
 
@@ -150,7 +150,7 @@ it('updates edited_at only when content changes', function () {
     expect($comment->edited_at)->not->toBeNull();
 });
 
-it('enforces ownership on edit and delete', function () {
+it('enforces ownership on edit and delete', function (): void {
     $author = User::factory()->create();
     $stranger = User::factory()->create();
     $post = Post::factory()->for($author)->create();
@@ -173,7 +173,7 @@ it('enforces ownership on edit and delete', function () {
         ->assertForbidden();
 });
 
-it('keeps replies when deleting a parent comment', function () {
+it('keeps replies when deleting a parent comment', function (): void {
     $author = User::factory()->create();
     $post = Post::factory()->for($author)->create();
 
@@ -211,7 +211,7 @@ it('keeps replies when deleting a parent comment', function () {
     ]);
 });
 
-it('rejects replies to comments from another post', function () {
+it('rejects replies to comments from another post', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
 
@@ -235,7 +235,7 @@ it('rejects replies to comments from another post', function () {
         ->assertSessionHasErrors('parent_id');
 });
 
-it('restores counters when a reply is restored', function () {
+it('restores counters when a reply is restored', function (): void {
     $author = User::factory()->create();
     $post = Post::factory()->for($author)->create();
 

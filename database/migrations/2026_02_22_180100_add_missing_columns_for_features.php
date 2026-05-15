@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         // Users: role + soft deletes
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             if (! Schema::hasColumn('users', 'role')) {
                 $table->string('role', 20)->default('member')->after('is_banned');
             }
@@ -19,7 +19,7 @@ return new class extends Migration
         });
 
         // Badges: add color + type columns
-        Schema::table('badges', function (Blueprint $table) {
+        Schema::table('badges', function (Blueprint $table): void {
             if (! Schema::hasColumn('badges', 'color')) {
                 $table->string('color', 20)->default('emerald')->after('icon');
             }
@@ -29,7 +29,7 @@ return new class extends Migration
         });
 
         // Contest entries: is_winner + soft deletes
-        Schema::table('contest_entries', function (Blueprint $table) {
+        Schema::table('contest_entries', function (Blueprint $table): void {
             if (! Schema::hasColumn('contest_entries', 'is_winner')) {
                 $table->boolean('is_winner')->default(false)->after('votes_count');
             }
@@ -39,7 +39,7 @@ return new class extends Migration
         });
 
         // Contest votes: contest_id
-        Schema::table('contest_votes', function (Blueprint $table) {
+        Schema::table('contest_votes', function (Blueprint $table): void {
             if (! Schema::hasColumn('contest_votes', 'contest_id')) {
                 $table->unsignedBigInteger('contest_id')->nullable()->after('id');
                 $table->foreign('contest_id')->references('id')->on('contests')->cascadeOnDelete();
@@ -49,21 +49,21 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             $table->dropColumn(['role']);
             $table->dropSoftDeletes();
         });
 
-        Schema::table('badges', function (Blueprint $table) {
+        Schema::table('badges', function (Blueprint $table): void {
             $table->dropColumn(['color', 'type']);
         });
 
-        Schema::table('contest_entries', function (Blueprint $table) {
+        Schema::table('contest_entries', function (Blueprint $table): void {
             $table->dropColumn(['is_winner']);
             $table->dropSoftDeletes();
         });
 
-        Schema::table('contest_votes', function (Blueprint $table) {
+        Schema::table('contest_votes', function (Blueprint $table): void {
             $table->dropForeign(['contest_id']);
             $table->dropColumn(['contest_id']);
         });

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'personality_tags' => [
         'max' => 10,

@@ -15,7 +15,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('media', function (Blueprint $table) {
+        Schema::table('media', function (Blueprint $table): void {
             $table->index(
                 ['model_type', 'model_id', 'collection_name', 'order_column'],
                 'media_model_collection_order_index'
@@ -32,7 +32,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('media', function (Blueprint $table) {
+        Schema::table('media', function (Blueprint $table): void {
             $table->dropIndex('media_model_collection_order_index');
         });
     }

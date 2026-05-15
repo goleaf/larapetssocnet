@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\MarketplaceListing>
+ * @extends Factory<MarketplaceListing>
  */
 class MarketplaceListingFactory extends Factory
 {
-    protected $model = \App\Models\MarketplaceListing::class;
+    protected $model = MarketplaceListing::class;
 
     /**
      * Define the model's default state.
@@ -19,7 +23,7 @@ class MarketplaceListingFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'pet_id' => null,
             'title' => fake()->sentence(fake()->numberBetween(3, 8)),
             'description' => fake()->paragraph(fake()->numberBetween(2, 5)),

@@ -1,8 +1,9 @@
 <?php
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\User;
+use App\Enums\PostStatus;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -31,7 +32,7 @@ it('scheduled posts are hidden before publish time', function (): void {
     $author->approveFollowRequest($viewer);
 
     $scheduled = Post::factory()->for($author)->create([
-        'status' => \App\Enums\PostStatus::Scheduled->value,
+        'status' => PostStatus::Scheduled->value,
         'published_at' => now()->addHour(),
         'visibility' => Post::VISIBILITY_FOLLOWERS,
     ]);
@@ -46,7 +47,7 @@ it('draft posts are only visible to the owner', function (): void {
     $other = User::factory()->create();
 
     $draft = Post::factory()->for($author)->create([
-        'status' => \App\Enums\PostStatus::Draft->value,
+        'status' => PostStatus::Draft->value,
         'published_at' => null,
         'visibility' => Post::VISIBILITY_PUBLIC,
     ]);

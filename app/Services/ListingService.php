@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\MarketplaceListing;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -135,7 +135,7 @@ class ListingService
             $targetCover = $uploadedMedia[$coverImageIndex];
         }
 
-        if (! $targetCover && $listing->getFirstMedia('cover') === null) {
+        if (! $targetCover && ! $listing->getFirstMedia('cover') instanceof Media) {
             $targetCover = $uploadedMedia[0] ?? null;
         }
 
@@ -247,7 +247,7 @@ class ListingService
 
     private function ensureCoverImage(MarketplaceListing $listing): void
     {
-        if ($listing->getFirstMedia('cover') !== null) {
+        if ($listing->getFirstMedia('cover') instanceof Media) {
             return;
         }
 

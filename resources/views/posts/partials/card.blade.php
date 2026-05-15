@@ -165,7 +165,7 @@ async sharePost() {
 
  @auth
  <div class="mb-3 flex flex-wrap gap-1.5">
- @foreach (\App\Models\Post::reactionEmojiMap() as $type => $emoji)
+ @foreach (\App\Models\Content\Post::reactionEmojiMap() as $type => $emoji)
  <button
  type="button"
  @click="react('{{ $type }}')"

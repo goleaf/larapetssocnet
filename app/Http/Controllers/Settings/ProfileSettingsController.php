@@ -6,7 +6,7 @@ use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Identity\User;
 use App\Services\UsernameService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
@@ -19,6 +19,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
+use Throwable;
 
 class ProfileSettingsController extends Controller
 {
@@ -137,7 +138,7 @@ class ProfileSettingsController extends Controller
                     return;
                 }
 
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Falls back to direct media handling below.
             }
         }
@@ -179,7 +180,7 @@ class ProfileSettingsController extends Controller
             $image->toJpeg(85)->save($path);
 
             return $path;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

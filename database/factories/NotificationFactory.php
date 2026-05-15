@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Notification;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Notification;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -24,7 +26,7 @@ class NotificationFactory extends Factory
         return [
             'id' => (string) Str::uuid(),
             'type' => 'App\\Notifications\\TestNotification',
-            'notifiable_type' => User::class,
+            'notifiable_type' => (new User)->getMorphClass(),
             'notifiable_id' => User::factory(),
             'data' => [
                 'message' => $this->faker->sentence(),

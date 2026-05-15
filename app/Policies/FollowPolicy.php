@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\User;
+use App\Models\Identity\User;
 
 class FollowPolicy
 {
@@ -28,7 +28,7 @@ class FollowPolicy
 
     public function manageRequests(?User $auth, User $owner): bool
     {
-        if (! $auth) {
+        if (! $auth instanceof User) {
             return false;
         }
 
@@ -41,7 +41,7 @@ class FollowPolicy
 
     public function removeFollower(?User $auth, User $follower): bool
     {
-        if (! $auth) {
+        if (! $auth instanceof User) {
             return false;
         }
 

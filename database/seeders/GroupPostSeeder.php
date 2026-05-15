@@ -24,7 +24,7 @@ class GroupPostSeeder extends Seeder
 
         $existing = DB::table('group_posts')
             ->get(['group_id', 'post_id'])
-            ->map(fn ($row) => "{$row->group_id}:{$row->post_id}")
+            ->map(fn ($row): string => "{$row->group_id}:{$row->post_id}")
             ->flip()
             ->all();
 

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\Identity\User;
 
 class AccountExportService
 {
@@ -50,7 +50,7 @@ class AccountExportService
                     'notification_preferences' => $user->notification_preferences,
                 ],
             ],
-            'pets' => $user->pets->map(function ($pet) {
+            'pets' => $user->pets->map(function ($pet): array {
                 return [
                     'id' => $pet->id,
                     'name' => $pet->name,
@@ -61,7 +61,7 @@ class AccountExportService
                     'created_at' => $pet->created_at->toIso8601String(),
                 ];
             })->toArray(),
-            'posts' => $user->posts->map(function ($post) {
+            'posts' => $user->posts->map(function ($post): array {
                 return [
                     'id' => $post->id,
                     'content' => $post->content,
@@ -69,7 +69,7 @@ class AccountExportService
                     'created_at' => $post->created_at->toIso8601String(),
                 ];
             })->toArray(),
-            'owned_groups' => $user->ownedGroups->map(function ($group) {
+            'owned_groups' => $user->ownedGroups->map(function ($group): array {
                 return [
                     'id' => $group->id,
                     'name' => $group->name,
@@ -77,7 +77,7 @@ class AccountExportService
                     'created_at' => $group->created_at->toIso8601String(),
                 ];
             })->toArray(),
-            'joined_groups' => $user->groups->map(function ($group) {
+            'joined_groups' => $user->groups->map(function ($group): array {
                 return [
                     'id' => $group->id,
                     'name' => $group->name,
@@ -85,7 +85,7 @@ class AccountExportService
                     'role' => $group->pivot->role ?? 'member',
                 ];
             })->toArray(),
-            'notifications' => $user->notifications->map(function ($notification) {
+            'notifications' => $user->notifications->map(function ($notification): array {
                 return [
                     'id' => $notification->id,
                     'type' => $notification->type,

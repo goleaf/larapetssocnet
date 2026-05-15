@@ -19,9 +19,8 @@ class ContentService
         $html = $this->parseMarkdown($html);
         $html = $this->linkMentions($html);
         $html = $this->linkHashtags($html);
-        $html = $this->linkUrls($html);
 
-        return $html;
+        return $this->linkUrls($html);
     }
 
     private function purify(string $input): string
@@ -34,14 +33,13 @@ class ContentService
         // Simple markdown: **bold** → <strong>, _italic_ → <em>, `code` → <code>
         $input = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $input);
         $input = preg_replace('/_(.*?)_/', '<em>$1</em>', $input);
-        $input = preg_replace('/`(.*?)`/', '<code>$1</code>', $input);
 
-        return $input;
+        return preg_replace('/`(.*?)`/', '<code>$1</code>', $input);
     }
 
     private function linkMentions(string $input): string
     {
-        return preg_replace_callback('/@([a-zA-Z0-9_]{3,30})/', function ($matches) {
+        return preg_replace_callback('/@(\w{3,30})/', function (array $matches): string {
             $username = $matches[1];
 
             // In a real scenario we might cache valid usernames inside a request, but we just link here.

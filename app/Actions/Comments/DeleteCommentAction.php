@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Comments;
 
-use App\Models\Comment;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Identity\User;
 use App\Services\CommentService;
 use Illuminate\Support\Facades\Gate;
 

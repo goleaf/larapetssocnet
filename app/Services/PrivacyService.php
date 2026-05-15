@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Follow;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Social\Follow;
 use Illuminate\Database\Eloquent\Builder;
 
 class PrivacyService
 {
-    public function __construct(private readonly FollowService $followService) {}
-
     public function togglePrivacy(User $user): array
     {
         if (! $user->is_private) {
@@ -47,7 +45,7 @@ class PrivacyService
 
     public function filterPostsForViewer(Builder $query, ?User $viewer): Builder
     {
-        if (! $viewer) {
+        if (! $viewer instanceof User) {
             return $query
                 ->whereHas('author', fn (Builder $author) => $author
                     ->where('is_private', false)

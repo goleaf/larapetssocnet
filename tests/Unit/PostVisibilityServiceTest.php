@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\PostStatus;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\VisibilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

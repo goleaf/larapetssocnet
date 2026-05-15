@@ -1,19 +1,16 @@
 <?php
 
+use App\Services\Maintenance\QueuePauseService;
 use Illuminate\Support\Facades\Cache;
 
 it('pauses a queue for a limited time', function (): void {
     $cacheKey = 'illuminate:queue:paused:database:default';
     Cache::forget($cacheKey);
 
-    $this->artisan('queue:pause-for', [
-        'queue' => 'database:default',
-        '--seconds' => 2,
-    ])
-        ->expectsOutputToContain('has been paused for 2 seconds')
-        ->assertExitCode(0);
+    $result = app(QueuePauseService::class)->pauseFor('database:default', 2);
 
-    expect(Cache::get($cacheKey))->toBeTrue();
+    expect($result->metrics['seconds'])->toBe(2)
+        ->and(Cache::get($cacheKey))->toBeTrue();
 
     $this->travel(3)->seconds();
 
@@ -24,12 +21,8 @@ it('rejects non-positive pause durations', function (): void {
     $cacheKey = 'illuminate:queue:paused:database:default';
     Cache::forget($cacheKey);
 
-    $this->artisan('queue:pause-for', [
-        'queue' => 'database:default',
-        '--seconds' => 0,
-    ])
-        ->expectsOutputToContain('must be at least 1')
-        ->assertExitCode(1);
+    expect(fn () => app(QueuePauseService::class)->pauseFor('database:default', 0))
+        ->toThrow(InvalidArgumentException::class, 'Pause duration must be at least 1 second.');
 
     expect(Cache::get($cacheKey))->toBeNull();
 });

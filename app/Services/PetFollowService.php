@@ -1,17 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Models\Pet;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class PetFollowService
 {
     public function follow(User $user, Pet $pet): bool
     {
         if ($user->id === $pet->user_id) {
-            throw new \RuntimeException('Cannot follow your own pet.');
+            throw new RuntimeException('Cannot follow your own pet.');
         }
 
         if ($pet->isFollowedBy($user)) {

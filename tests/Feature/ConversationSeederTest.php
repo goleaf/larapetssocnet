@@ -1,9 +1,9 @@
 <?php
 
 use App\Enums\MessageStatus;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Messaging\Conversation;
+use App\Models\Messaging\Message;
 use Database\Seeders\ConversationSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

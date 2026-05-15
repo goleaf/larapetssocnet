@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Block;
-use App\Models\Follow;
-use App\Models\Pet;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use App\Models\Social\Block;
+use App\Models\Social\Follow;
 use Illuminate\Database\Eloquent\Builder;
 
 class PetVisibilityService
@@ -70,7 +70,7 @@ class PetVisibilityService
             return false;
         }
 
-        if (! $viewer) {
+        if (! $viewer instanceof User) {
             return false;
         }
 
@@ -194,7 +194,7 @@ class PetVisibilityService
         $setting = $owner->pets_visibility ?: 'everyone';
 
         if ($setting === 'followers_only') {
-            return $viewer ? $viewer->isFollowing($owner) : false;
+            return $viewer && $viewer->isFollowing($owner);
         }
 
         return true;

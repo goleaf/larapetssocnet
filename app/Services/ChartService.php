@@ -32,7 +32,7 @@ class ChartService
             $value = (float) ($log->weight_kg ?? $log->value ?? 0);
 
             return (object) ['date' => $date, 'value' => $value];
-        })->filter(fn ($d) => $d->value > 0)->values();
+        })->filter(fn ($d): bool => $d->value > 0)->values();
 
         if (! $data->containsManyItems()) {
             return null;
@@ -60,7 +60,7 @@ class ChartService
             return (object) ['x' => round($x, 1), 'y' => round($y, 1), 'data' => $d];
         });
 
-        $polyline = $points->map(fn ($p) => "{$p->x},{$p->y}")->implode(' ');
+        $polyline = $points->map(fn ($p): string => "{$p->x},{$p->y}")->implode(' ');
 
         // Build SVG
         $svg = '<svg viewBox="0 0 '.$w.' '.$h.'" width="100%" height="auto" '
@@ -107,8 +107,6 @@ class ChartService
                 .'</circle>';
         }
 
-        $svg .= '</svg>';
-
-        return $svg;
+        return $svg.'</svg>';
     }
 }

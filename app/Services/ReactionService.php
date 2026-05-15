@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Post;
-use App\Models\Reaction;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Content\Reaction;
+use App\Models\Identity\User;
 use App\Notifications\NewReaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +36,7 @@ class ReactionService
 
         $result = DB::transaction(function () use ($user, $post, $normalizedType): array {
             $existing = Reaction::query()
-                ->where('reactable_type', Post::class)
+                ->where('reactable_type', $post->getMorphClass())
                 ->where('reactable_id', $post->id)
                 ->where('user_id', $user->id)
                 ->lockForUpdate()
@@ -59,7 +59,7 @@ class ReactionService
             Reaction::query()->create([
                 'user_id' => $user->id,
                 'reactable_id' => $post->id,
-                'reactable_type' => Post::class,
+                'reactable_type' => $post->getMorphClass(),
                 'type' => $normalizedType,
             ]);
 

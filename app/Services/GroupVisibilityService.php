@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
-use App\Models\Group;
-use App\Models\GroupBan;
-use App\Models\GroupMember;
-use App\Models\User;
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupBan;
+use App\Models\Groups\GroupMember;
+use App\Models\Identity\User;
 
 class GroupVisibilityService
 {
@@ -23,7 +23,7 @@ class GroupVisibilityService
             return ! $this->isBlockedBetween($viewer, $group);
         }
 
-        if (! $viewer) {
+        if (! $viewer instanceof User) {
             return false;
         }
 
@@ -58,7 +58,7 @@ class GroupVisibilityService
             return true;
         }
 
-        if (! $viewer) {
+        if (! $viewer instanceof User) {
             return false;
         }
 
@@ -77,7 +77,7 @@ class GroupVisibilityService
             return true;
         }
 
-        if (! $viewer) {
+        if (! $viewer instanceof User) {
             return false;
         }
 
@@ -99,11 +99,8 @@ class GroupVisibilityService
         }
 
         $membership = $group->membershipForUserId((int) $viewer->getKey());
-        if ($membership && $group->isActiveMembership($membership)) {
-            return false;
-        }
 
-        return true;
+        return ! ($membership && $group->isActiveMembership($membership));
     }
 
     public function canManageGroup(User $viewer, Group $group): bool
@@ -115,10 +112,7 @@ class GroupVisibilityService
         $membership = $group->membershipForUserId((int) $viewer->getKey());
 
         return $group->isActiveMembership($membership)
-            && in_array((string) ($membership?->role?->value ?? ''), [
-                GroupMemberRole::Owner->value,
-                GroupMemberRole::Admin->value,
-            ], true);
+            && in_array((string) ($membership?->role?->value ?? ''), GroupMemberRole::managerValues(), true);
     }
 
     public function isOwner(User $viewer, Group $group): bool
@@ -153,7 +147,7 @@ class GroupVisibilityService
 
     private function isBlockedBetween(?User $viewer, Group $group): bool
     {
-        if (! $viewer) {
+        if (! $viewer instanceof User) {
             return false;
         }
 

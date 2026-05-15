@@ -1,6 +1,8 @@
 <?php
 
-use App\Models\UsernameChange;
+declare(strict_types=1);
+
+use App\Models\Identity\UsernameChange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 

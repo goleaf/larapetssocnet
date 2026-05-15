@@ -1,0 +1,84 @@
+@use "../abstracts" as ui;
+
+@layer components {
+    .ui-border {
+        border-color: var(--border-default);
+    }
+
+    .ui-border-strong {
+        border-color: var(--border-strong);
+    }
+
+    .ui-text {
+        color: var(--text-default);
+    }
+
+    .ui-text-muted {
+        color: var(--text-muted);
+    }
+
+    .shell-card,
+    .ui-surface {
+        @include ui.framed-surface(var(--surface-panel), var(--radius-card));
+    }
+
+    .shell-card-muted,
+    .ui-surface-muted {
+        @include ui.framed-surface(var(--surface-muted), var(--radius-card));
+    }
+
+    .shell-panel,
+    .ui-panel {
+        @include ui.framed-surface(var(--surface-panel), var(--radius-panel));
+    }
+
+    .ui-surface-form {
+        @include ui.framed-surface(var(--surface-form), var(--radius-control), none);
+    }
+
+    .ui-surface-modal {
+        @include ui.framed-surface(var(--surface-modal), var(--radius-panel), var(--shadow-card-hover));
+    }
+
+    .ui-surface-dropdown {
+        @include ui.framed-surface(var(--surface-dropdown), var(--radius-soft), var(--shadow-card-hover));
+    }
+
+    .shell-title {
+        color: var(--text-default);
+        font-family: var(--font-display);
+        font-weight: 700;
+    }
+
+    .shell-kicker {
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .shell-text-muted {
+        color: var(--text-muted);
+    }
+
+    .shell-value {
+        color: var(--text-default);
+        font-family: var(--font-display);
+        font-weight: 700;
+    }
+
+    .ui-icon-well {
+        background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);
+        border-radius: var(--radius-soft);
+        color: var(--ui-text);
+    }
+
+    .ui-gradient-soft {
+        background: linear-gradient(
+            120deg,
+            color-mix(in srgb, var(--ui-primary) 22%, var(--ui-surface) 78%),
+            color-mix(in srgb, var(--ui-accent) 20%, var(--ui-surface) 80%)
+        );
+    }
+}

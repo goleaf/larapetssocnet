@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('hashtags', function (Blueprint $table) {
+        Schema::create('hashtags', function (Blueprint $table): void {
             $table->id();
             $table->string('name')->unique();
             $table->string('slug')->unique();
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('pet_id')->nullable()->constrained()->nullOnDelete();
@@ -46,7 +46,7 @@ return new class extends Migration
             $table->index('created_at');
         });
 
-        Schema::create('post_hashtag', function (Blueprint $table) {
+        Schema::create('post_hashtag', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('hashtag_id')->constrained()->cascadeOnDelete();
@@ -56,7 +56,7 @@ return new class extends Migration
             $table->index('hashtag_id');
         });
 
-        Schema::create('comments', function (Blueprint $table) {
+        Schema::create('comments', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -73,7 +73,7 @@ return new class extends Migration
             $table->index(['parent_id', 'created_at']);
         });
 
-        Schema::create('reactions', function (Blueprint $table) {
+        Schema::create('reactions', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('reactable_type');
@@ -86,7 +86,7 @@ return new class extends Migration
             $table->index(['type', 'created_at']);
         });
 
-        Schema::create('post_reactions', function (Blueprint $table) {
+        Schema::create('post_reactions', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -97,7 +97,7 @@ return new class extends Migration
             $table->index(['post_id', 'type']);
         });
 
-        Schema::create('saved_posts', function (Blueprint $table) {
+        Schema::create('saved_posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
@@ -107,7 +107,7 @@ return new class extends Migration
             $table->index(['user_id', 'created_at']);
         });
 
-        Schema::create('post_reports', function (Blueprint $table) {
+        Schema::create('post_reports', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('post_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();

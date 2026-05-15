@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Follow;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Social\Follow;
 use App\Services\FollowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

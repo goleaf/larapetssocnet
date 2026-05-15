@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Block;
-use App\Models\Follow;
-use App\Models\User;
+use App\Models\Identity\User;
+use App\Models\Social\Block;
+use App\Models\Social\Follow;
 use App\Services\FollowSuggestionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

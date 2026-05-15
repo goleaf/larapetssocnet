@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use App\Models\UsernameRedirect;
+use App\Models\Identity\User;
+use App\Models\Identity\UsernameRedirect;
 use App\Support\Usernames\UsernameNormalizer;
 
 class UsernameRedirectResolver

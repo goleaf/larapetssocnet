@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Tests\TestCase;
@@ -20,8 +22,8 @@ class OrmComplianceTest extends TestCase
     {
         $files = [
             base_path('app/Services/BlockService.php'),
-            base_path('app/Http/Controllers/MessageController.php'),
-            base_path('app/Http/Controllers/MarketplaceListingController.php'),
+            base_path('app/Http/Controllers/Messaging/MessageController.php'),
+            base_path('app/Http/Controllers/Marketplace/MarketplaceListingController.php'),
         ];
 
         foreach ($files as $file) {

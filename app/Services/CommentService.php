@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
-use App\Models\Comment;
-use App\Models\Post;
-use App\Models\Reaction;
-use App\Models\User;
+use App\Models\Content\Comment;
+use App\Models\Content\Post;
+use App\Models\Content\Reaction;
+use App\Models\Identity\User;
 use App\Notifications\MentionedInComment;
 use App\Notifications\NewComment;
 use App\Notifications\NewCommentReply;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -81,7 +82,7 @@ class CommentService
             ]);
         }
 
-        if ($parent !== null) {
+        if ($parent instanceof Comment) {
             $this->assertValidParent($post, $parent);
         }
 
@@ -148,8 +149,8 @@ class CommentService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Comment>  $comments
-     * @return \Illuminate\Support\Collection<int, Comment>
+     * @param  Collection<int, Comment>  $comments
+     * @return Collection<int, Comment>
      */
     private function hydrateThreadMetadata($comments, int $viewerId)
     {
@@ -230,7 +231,7 @@ class CommentService
     {
         $notifiedUserIds = [];
 
-        if ($parent === null) {
+        if (! $parent instanceof Comment) {
             $post->loadMissing('author');
 
             if ((int) $post->user_id !== (int) $author->getKey()) {

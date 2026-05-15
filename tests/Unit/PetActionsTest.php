@@ -3,9 +3,9 @@
 use App\Actions\Pets\AttachPetToPostAction;
 use App\Actions\Pets\DeletePetAction;
 use App\Actions\Pets\DetachPetFromPostAction;
-use App\Models\Pet;
-use App\Models\Post;
-use App\Models\User;
+use App\Models\Content\Post;
+use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use App\Services\SyncPetCountersService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

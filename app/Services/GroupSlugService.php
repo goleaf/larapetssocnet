@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Group;
+use App\Models\Groups\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
@@ -42,7 +42,7 @@ class GroupSlugService
         $base = $this->normalize($seed);
 
         if ($this->isReserved($base)) {
-            $base = $base.'-group';
+            $base .= '-group';
         }
 
         $slug = $base;

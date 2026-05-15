@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
@@ -28,7 +30,7 @@ class ReportThresholdReached extends Notification
         return [
             'type' => 'report_threshold_reached',
             'message' => 'Pending reports reached '.$this->pendingCount.'.',
-            'reportable_type' => $this->reportable::class,
+            'reportable_type' => $this->reportable->getMorphClass(),
             'reportable_id' => $this->reportable->getKey(),
         ];
     }

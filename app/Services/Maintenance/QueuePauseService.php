@@ -4,6 +4,7 @@ namespace App\Services\Maintenance;
 
 use Illuminate\Queue\Console\Concerns\ParsesQueue;
 use Illuminate\Queue\QueueManager;
+use InvalidArgumentException;
 
 class QueuePauseService
 {
@@ -26,7 +27,7 @@ class QueuePauseService
     public function pauseFor(string $queue, int $seconds): MaintenanceTaskResult
     {
         if ($seconds < 1) {
-            throw new \InvalidArgumentException('Pause duration must be at least 1 second.');
+            throw new InvalidArgumentException('Pause duration must be at least 1 second.');
         }
 
         [$connection, $queueName] = $this->parseQueue($queue);

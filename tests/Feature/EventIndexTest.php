@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Event;
-use App\Models\User;
+use App\Models\Activities\Event;
+use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
