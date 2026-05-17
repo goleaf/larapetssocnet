@@ -51,8 +51,7 @@ it('accepts all supported reaction types and rejects invalid type', function ():
 
     $this->actingAs($user)
         ->postJson(route('posts.react', $post), ['type' => 'angry'])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors(['type']);
+        ->assertInvalid(['type']);
 });
 
 it('sends reaction notification with relation-light models', function (): void {

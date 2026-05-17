@@ -1,14 +1,14 @@
 <x-settings-layout>
- <div class="space-y-10">
- <!-- Download Data Section -->
- <div>
- <h3 class="text-lg font-semibold text-bark">Download Your Data</h3>
- <p class="mt-1 text-sm text-fur">Get a copy of your content. We will prepare an archive containing your
+ <div class="space-y-10" data-ui="settings-data-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Data & account</p>
+ <h2 class="shell-title text-2xl">Download Your Data</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">Get a copy of your content. We will prepare an archive containing your
  profile, posts, groups, and pets.</p>
 
  <form action="{{ route('settings.export-data') }}" method="POST" class="mt-4">
  @csrf
- <x-ui.button variant="secondary" type="submit">
+ <x-ui.button variant="secondary" type="submit" class="min-h-11">
  Download Archive (JSON)
  </x-ui.button>
  </form>
@@ -16,7 +16,6 @@
 
  <hr class="border-whisker/30">
 
- <!-- Account Deletion Section -->
  <div>
  <h3 class="text-lg font-semibold text-rose">Delete Account</h3>
  <p class="mt-1 text-sm text-fur">
@@ -29,7 +28,7 @@
  </p>
 
  <div class="mt-6" x-data="{ confirmingDeletion: false }">
- <x-ui.button type="button" variant="danger" @click="confirmingDeletion = true" x-show="!confirmingDeletion">
+ <x-ui.button type="button" variant="danger" class="min-h-11" @click="confirmingDeletion = true" x-show="!confirmingDeletion">
  Delete my account
  </x-ui.button>
 
@@ -56,10 +55,10 @@
  </div>
 
  <div class="flex gap-3 pt-2">
- <x-ui.button type="button" variant="outline" @click="confirmingDeletion = false">
+ <x-ui.button type="button" variant="outline" class="min-h-11" @click="confirmingDeletion = false">
  Cancel
  </x-ui.button>
- <x-ui.button type="submit" variant="danger">
+ <x-ui.button type="submit" variant="danger" class="min-h-11">
  Yes, set my account for deletion
  </x-ui.button>
  </div>

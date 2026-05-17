@@ -1,15 +1,187 @@
+@php
+ $user = auth()->user();
+ $firstName = filled($user?->name) ? \Illuminate\Support\Str::of((string) $user->name)->before(' ') : __('friend');
+ $profileHref = $user && Route::has('profile.show') ? route('profile.show', $user) : '#';
+
+ $quickActions = collect([
+ [
+ 'label' => __('Share an update'),
+ 'description' => __('Post a photo, care note, or adoption story.'),
+ 'href' => Route::has('posts.create') ? route('posts.create') : null,
+ 'icon' => '✚',
+ 'tone' => 'bg-paw-light text-paw-dark',
+ ],
+ [
+ 'label' => __('Add a pet'),
+ 'description' => __('Create a pet profile with photos and details.'),
+ 'href' => Route::has('pets.create') ? route('pets.create') : null,
+ 'icon' => '🐾',
+ 'tone' => 'bg-leaf-light text-leaf',
+ ],
+ [
+ 'label' => __('Find groups'),
+ 'description' => __('Join communities by interest, location, or species.'),
+ 'href' => Route::has('groups.index') ? route('groups.index') : null,
+ 'icon' => '👥',
+ 'tone' => 'bg-sky-light text-sky',
+ ],
+ [
+ 'label' => __('Browse adoption'),
+ 'description' => __('See pets currently looking for a home.'),
+ 'href' => Route::has('pets.adopt') ? route('pets.adopt') : null,
+ 'icon' => '🏡',
+ 'tone' => 'bg-amber-light text-amber',
+ ],
+ [
+ 'label' => __('Open messages'),
+ 'description' => __('Continue conversations with pet people.'),
+ 'href' => Route::has('messages.index') ? route('messages.index') : null,
+ 'icon' => '✉',
+ 'tone' => 'bg-rose-light text-rose',
+ ],
+ [
+ 'label' => __('Marketplace'),
+ 'description' => __('List supplies or discover local pet items.'),
+ 'href' => Route::has('marketplace.index') ? route('marketplace.index') : null,
+ 'icon' => '🛍',
+ 'tone' => 'bg-cream text-fur',
+ ],
+ ])->filter(fn (array $action): bool => filled($action['href']))->values();
+@endphp
+
 <x-app-layout>
  <x-slot name="header">
- <x-ui.page-header :title="__('Dashboard')" description="Overview of your account activity and shortcuts." icon="📊" />
+ <x-ui.page-header :title="__('Dashboard')" description="Your daily starting point for posts, pets, groups, and messages." icon="📊">
+ <x-slot:action>
+ <div class="flex flex-wrap items-center gap-2">
+ <x-ui.button href="{{ route('feed.index') }}" variant="ghost" size="sm">{{ __('Open feed') }}</x-ui.button>
+ <x-ui.button href="{{ $profileHref }}" variant="primary" size="sm">{{ __('View profile') }}</x-ui.button>
+ </div>
+ </x-slot:action>
+ </x-ui.page-header>
  </x-slot>
 
- <div class="py-12">
- <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
- <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
- <div class="p-6 text-gray-900">
- {{ __("You're logged in!") }}
+ <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+ <div class="space-y-5">
+ <x-ui.card padding="lg" class="overflow-hidden">
+ <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-stretch">
+ <div class="space-y-5">
+ <div>
+ <p class="shell-kicker">{{ __('Welcome back') }}</p>
+ <h2 class="mt-2 text-3xl font-bold font-display text-bark sm:text-4xl">
+ {{ __('Hi :name, keep your pet world moving.', ['name' => $firstName]) }}
+ </h2>
+ <p class="mt-3 max-w-2xl text-base leading-7 text-fur">
+ {{ __('Use the dashboard for the next action: publish something, update a pet profile, join a group, or check conversations.') }}
+ </p>
+ </div>
+
+ <div class="flex flex-wrap gap-3">
+ <x-ui.button href="{{ Route::has('posts.create') ? route('posts.create') : route('feed.index') }}" variant="primary">
+ {{ __('Create post') }}
+ </x-ui.button>
+ <x-ui.button href="{{ Route::has('pets.explore') ? route('pets.explore') : route('feed.index') }}" variant="outline">
+ {{ __('Explore pets') }}
+ </x-ui.button>
  </div>
  </div>
+
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-sky-light/45 p-4">
+ <div class="flex items-center gap-3">
+ <x-ui.avatar :name="$user?->name ?? __('User')" :src="$user?->avatar_url" size="lg"/>
+ <div class="min-w-0">
+ <p class="truncate text-sm font-semibold text-bark">{{ $user?->name ?? __('User') }}</p>
+ <p class="truncate text-xs text-fur">{{ $user?->username ? '@'.$user->username : $user?->email }}</p>
  </div>
+ </div>
+
+ <dl class="mt-5 grid grid-cols-2 gap-2 text-sm">
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-3">
+ <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">{{ __('Status') }}</dt>
+ <dd class="mt-1 font-semibold text-bark">{{ __('Active') }}</dd>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-3">
+ <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">{{ __('Privacy') }}</dt>
+ <dd class="mt-1 font-semibold text-bark">{{ $user?->is_private ? __('Private') : __('Public') }}</dd>
+ </div>
+ </dl>
+ </div>
+ </div>
+ </x-ui.card>
+
+ <section aria-labelledby="dashboard-quick-actions">
+ <div class="mb-3 flex items-center justify-between gap-3">
+ <div>
+ <p class="shell-kicker">{{ __('Shortcuts') }}</p>
+ <h2 id="dashboard-quick-actions" class="mt-1 text-xl font-bold font-display text-bark">{{ __('Quick actions') }}</h2>
+ </div>
+ </div>
+
+ <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+ @foreach ($quickActions as $action)
+ <a
+ href="{{ $action['href'] }}"
+ class="group flex min-h-32 flex-col justify-between rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4 shadow-card transition-all hover:-translate-y-0.5 hover:border-paw-light hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ >
+ <span class="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-soft)] text-lg {{ $action['tone'] }}" aria-hidden="true">{{ $action['icon'] }}</span>
+ <span>
+ <span class="block text-base font-semibold text-bark transition-colors group-hover:text-paw-dark">{{ $action['label'] }}</span>
+ <span class="mt-1 block text-sm leading-5 text-fur">{{ $action['description'] }}</span>
+ </span>
+ </a>
+ @endforeach
+ </div>
+ </section>
+ </div>
+
+ <aside class="space-y-5 xl:sticky xl:top-24 xl:self-start">
+ <x-ui.card padding="lg">
+ <x-slot name="header">
+ <x-ui.card-header title="{{ __('Today') }}" subtitle="{{ __('Small checks that keep the account useful.') }}" />
+ </x-slot>
+
+ <ul class="space-y-3">
+ <li class="flex gap-3">
+ <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-leaf-light text-xs font-bold text-leaf">1</span>
+ <div>
+ <p class="text-sm font-semibold text-bark">{{ __('Review your profile') }}</p>
+ <p class="text-xs leading-5 text-fur">{{ __('Keep your username, bio, and privacy settings current.') }}</p>
+ </div>
+ </li>
+ <li class="flex gap-3">
+ <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-paw-light text-xs font-bold text-paw-dark">2</span>
+ <div>
+ <p class="text-sm font-semibold text-bark">{{ __('Check pet details') }}</p>
+ <p class="text-xs leading-5 text-fur">{{ __('Refresh care notes, adoption status, or gallery photos.') }}</p>
+ </div>
+ </li>
+ <li class="flex gap-3">
+ <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-sky-light text-xs font-bold text-sky">3</span>
+ <div>
+ <p class="text-sm font-semibold text-bark">{{ __('Respond to activity') }}</p>
+ <p class="text-xs leading-5 text-fur">{{ __('Open messages, notifications, and group updates.') }}</p>
+ </div>
+ </li>
+ </ul>
+ </x-ui.card>
+
+ <x-ui.card padding="lg">
+ <x-slot name="header">
+ <x-ui.card-header title="{{ __('Community paths') }}" subtitle="{{ __('Jump into discovery without hunting through menus.') }}" />
+ </x-slot>
+
+ <div class="space-y-2">
+ <x-ui.user-row name="{{ __('Groups') }}" subtitle="{{ __('Communities and discussions') }}" href="{{ route('groups.index') }}">
+ <x-slot name="avatar"><span class="text-lg" aria-hidden="true">👥</span></x-slot>
+ </x-ui.user-row>
+ <x-ui.user-row name="{{ __('Events') }}" subtitle="{{ __('Walks, meetups, and activities') }}" href="{{ route('events.index') }}">
+ <x-slot name="avatar"><span class="text-lg" aria-hidden="true">📅</span></x-slot>
+ </x-ui.user-row>
+ <x-ui.user-row name="{{ __('Adoption') }}" subtitle="{{ __('Pets looking for homes') }}" href="{{ route('pets.adopt') }}">
+ <x-slot name="avatar"><span class="text-lg" aria-hidden="true">🏡</span></x-slot>
+ </x-ui.user-row>
+ </div>
+ </x-ui.card>
+ </aside>
  </div>
 </x-app-layout>

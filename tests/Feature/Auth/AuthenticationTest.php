@@ -14,7 +14,7 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $response->assertStatus(200);
+        $response->assertOk();
     }
 
     public function test_login_screen_displays_quick_login_usernames_and_password_hint(): void

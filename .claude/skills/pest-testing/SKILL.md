@@ -1,12 +1,12 @@
 ---
 name: pest-testing
-description: "Tests applications using the Pest 3 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works."
+description: "Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works."
 license: MIT
 metadata:
   author: laravel
 ---
 
-# Pest Testing 3
+# Pest Testing 4
 
 ## When to Apply
 
@@ -19,7 +19,7 @@ Activate this skill when:
 
 ## Documentation
 
-Use `search-docs` for detailed Pest 3 patterns and documentation.
+Use `search-docs` for detailed Pest 4 patterns and documentation.
 
 ## Basic Usage
 
@@ -37,8 +37,13 @@ All tests must be written using Pest. Use `php artisan make:test --pest {name}`.
 
 <!-- Basic Pest Test Example -->
 ```php
-it('is true', function () {
-    expect(true)->toBeTrue();
+it('requires an email address during registration', function () {
+    $this->post('/register', [
+        'name' => 'Taylor',
+        'email' => '',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertInvalid('email');
 });
 ```
 
@@ -83,11 +88,11 @@ it('has emails', function (string $email) {
 ]);
 ```
 
-## Pest 3 Features
+## Pest 4 Features
 
 ### Architecture Testing
 
-Pest 3 includes architecture testing to enforce code conventions:
+Pest 4 includes architecture testing to enforce code conventions:
 
 <!-- Architecture Test Example -->
 ```php
@@ -107,7 +112,7 @@ arch('no debugging')
 
 ### Type Coverage
 
-Pest 3 provides improved type coverage analysis. Run with `--type-coverage` flag.
+Pest 4 provides type coverage analysis. Run with the `--type-coverage` flag.
 
 ## Common Pitfalls
 

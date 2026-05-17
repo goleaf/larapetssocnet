@@ -1,9 +1,9 @@
 ---
 name: laravel:tdd-with-pest
-description: Apply RED-GREEN-REFACTOR with Pest or PHPUnit; use factories, feature tests for HTTP, and parallel test runners; verify failures before implementation
+description: Apply RED-GREEN-REFACTOR with Pest; use factories, feature tests for HTTP, and parallel test runners; verify failures before implementation
 ---
 
-# Laravel TDD (Pest/PHPUnit)
+# Laravel TDD with Pest
 
 Write the test first. Watch it fail. Write minimal code to pass. Keep tests fast and realistic.
 
@@ -17,7 +17,7 @@ sail artisan test --parallel
 php artisan test --parallel
 ```
 
-Prefer Pest (default in new Laravel apps). PHPUnit is fine if your project uses it.
+Write new and changed tests with Pest for this project.
 
 ## RED – Write a failing test
 
@@ -62,4 +62,3 @@ Remove duplication, clarify names, extract small services. Keep tests green.
 
 - If a test is hard to write, design is too coupled; extract a service or port
 - Prefer dependency injection; avoid static/global state
-

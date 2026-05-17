@@ -38,24 +38,33 @@
  <x-ui.button type="submit" variant="primary">Apply</x-ui.button>
  </form>
 
- <div class="mt-4 flex flex-wrap gap-2">
+ <div class="mt-4 flex flex-wrap gap-2" aria-label="Explore filters">
  @foreach (['all'=>'All','photos'=>'Photos','videos'=>'Videos','trending'=>'Trending'] as $option => $label)
-<x-ui.badge :variant="$type === $option ?'primary':'default'">
  <a
- href="{{ route('explore.index', array_merge(request()->except('page','type'), ['type'=> $option])) }}">
+ href="{{ route('explore.index', array_merge(request()->except('page','type'), ['type'=> $option])) }}"
+ class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $type === $option ? 'border-paw-light bg-paw-light text-paw-dark' : 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' }}"
+ @if ($type === $option)
+ aria-current="page"
+ @endif
+ >
  {{ $label }}
  </a>
- </x-ui.badge>
  @endforeach
  </div>
  </div>
 
+ <ul role="feed" aria-label="Explore public posts" class="space-y-4">
  @forelse ($posts as $post)
-<x-post-card :post="$post"/>
+ <li aria-label="{{ __('Post by :name', ['name' => $post->author?->name ?? __('a community member')]) }}">
+ <x-post-card :post="$post"/>
+ </li>
  @empty
+ <li>
  <x-ui.empty-state icon="🔎" title="No public posts found"
  description="Try a different search term, media type, or check back soon for new activity."/>
+ </li>
  @endforelse
+ </ul>
 
  @if($posts->hasPages())
  <x-ui.card>

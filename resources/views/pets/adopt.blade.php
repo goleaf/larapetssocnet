@@ -137,6 +137,7 @@
  :owner="$pet->owner?->name"
  cta-label="View Profile"
  :cta-href="route('pets.show', $petSlug)"
+ variant="browse"
  />
  @endforeach
  </div>

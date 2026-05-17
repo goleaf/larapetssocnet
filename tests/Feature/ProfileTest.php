@@ -280,11 +280,11 @@ test('blocking removes follows and prevents future follows until unblocked', fun
 
     $this->actingAs($actor)
         ->postJson(route('users.follow', ['user' => $other]))
-        ->assertStatus(403);
+        ->assertForbidden();
 
     $this->actingAs($other)
         ->postJson(route('users.follow', ['user' => $actor]))
-        ->assertStatus(403);
+        ->assertForbidden();
 
     $this->actingAs($actor)
         ->deleteJson(route('users.unblock', ['user' => $other]))
@@ -349,7 +349,7 @@ test('blocked users cannot request to follow private accounts', function (): voi
 
     $this->actingAs($blocked)
         ->postJson(route('users.follow', ['user' => $actor]))
-        ->assertStatus(403);
+        ->assertForbidden();
 
     $this->assertDatabaseMissing('follows', [
         'follower_id' => $blocked->id,

@@ -31,7 +31,7 @@ FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE)
 ```
 
 **Context:**
-- Laravel 11.x, MySQL 8.0
+- Laravel 13.x, MySQL 8.0
 - Happens when order_id doesn't exist in orders table
 - Payment data: `['order_id' => 999, 'amount' => 5000, 'status' => 'pending']`
 - Order 999 doesn't exist in database"
@@ -120,7 +120,7 @@ public function handle()
 - Order 123 has `stripe_customer_id = "cus_invalid"`
 - Customer doesn't exist in Stripe
 - Job has retried 3 times, now in failed_jobs table
-- Using Laravel 11.x with Horizon"
+- Using Laravel 13.x with Horizon"
 
 **Why it works:** Includes logs, state information, relevant code, and context about retries.
 
@@ -186,7 +186,7 @@ public function category()
 ```
 **Result:** Relationship looks correct. Foreign key `category_id` exists in products table.
 
-**Current state:** Eager loading syntax seems correct but not working. Using Laravel 11.x. What am I missing?"
+**Current state:** Eager loading syntax seems correct but not working. Using Laravel 13.x. What am I missing?"
 
 **Why it works:** Shows what was tried, exact code used, results observed, helps avoid suggesting already-tried solutions.
 

@@ -20,7 +20,7 @@ Give the AI assistant the right context to generate accurate, relevant code. Mis
 - Include relevant configuration: `.env` settings, `config/` values
 
 ### Laravel Context
-- **Version**: "Laravel 11.x" or "Laravel 12.x"
+- **Version**: "Laravel 13.x"
 - **Dependencies**: Mention packages like Sanctum, Horizon, Telescope
 - **Patterns in use**: "using Form Requests", "jobs with Horizon", "API resources"
 - **Runner**: Specify if using Sail or host commands
@@ -42,7 +42,7 @@ GOOD: "Getting error when creating user:
   In UserController@store, line 45:
   $user = User::create($request->validated());
   
-  Using Laravel 11.x with MySQL 8.0"
+  Using Laravel 13.x with MySQL 8.0"
 ```
 
 ### Stack Traces
@@ -79,7 +79,7 @@ Include the full stack trace, especially:
 - Store payment records in payments table (user_id, amount, stripe_id, status)
 - Dispatch ProcessPaymentJob to queue
 - Handle webhook for payment.succeeded
-- Using Laravel 11.x with Cashier"
+- Using Laravel 13.x with Cashier"
 
 ## Quick Checklist
 

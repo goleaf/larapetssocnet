@@ -35,6 +35,12 @@ it('renders facebook-style profile sections and actions for public profiles', fu
     $this->actingAs($viewer)
         ->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
+        ->assertSee('data-ui="profile-shell"', false)
+        ->assertSee('data-ui="profile-hero"', false)
+        ->assertSee('data-ui="profile-stats"', false)
+        ->assertSee('data-ui="profile-stat-card"', false)
+        ->assertSee('data-ui="profile-tabs"', false)
+        ->assertSee('data-ui="tabs"', false)
         ->assertSee('Intro')
         ->assertSee('Friends')
         ->assertSee('Posts')
@@ -46,7 +52,25 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertSee('Likes')
         ->assertSee('Follow')
         ->assertSee('Message')
+        ->assertSee('min-h-11', false)
+        ->assertSee('focus-visible:outline-paw', false)
         ->assertSee('Friend User')
         ->assertSee('profile-post-visible')
         ->assertDontSee('Who To Follow');
+});
+
+it('renders a clearer private profile lockup for guests', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Private Profile',
+        'username' => 'private_profile_design',
+        'is_private' => true,
+    ]);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="private-profile-shell"', false)
+        ->assertSee('data-ui="private-profile-hero"', false)
+        ->assertSee('This account is private')
+        ->assertSee('Log In to Follow')
+        ->assertSee('min-h-11', false);
 });

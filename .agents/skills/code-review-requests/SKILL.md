@@ -57,7 +57,7 @@ class OrderService
 - Public API used by mobile app and web frontend
 - Handles 10k requests/day, needs to scale to 100k
 - Products have categories (belongsTo) and reviews (hasMany)
-- Using Laravel 11.x with Sanctum authentication
+- Using Laravel 13.x with Sanctum authentication
 - Following repository pattern (ProductRepository exists)
 
 **Concerns:**
@@ -149,7 +149,7 @@ class UserController extends Controller
 - Is password hashing handled correctly?
 - Should user creation be in a service/action?
 - Any missing authorization checks?
-- Following Laravel 11.x conventions?"
+- Following Laravel 13.x conventions?"
 
 **Why it works:** Asks about specific Laravel patterns and conventions.
 

@@ -1,17 +1,17 @@
 <x-settings-layout>
- <div class="space-y-6">
- <div>
- <h3 class="text-lg font-medium leading-6 text-bark">Notifications</h3>
- <p class="mt-1 text-sm text-fur">Choose what updates you want to receive.</p>
+ <div class="space-y-6" data-ui="settings-notifications-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Notification routing</p>
+ <h2 class="shell-title text-2xl">Notifications</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">Choose what updates you want to receive.</p>
  </div>
 
- <form action="{{ route('settings.notifications.update') }}" method="POST" class="space-y-8">
+ <form action="{{ route('settings.notifications.update') }}" method="POST" class="space-y-8" data-ui="settings-notifications-form">
  @csrf
  @method('PUT')
 
  <div class="space-y-6">
- <!-- Posts & Engagement -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-base font-medium text-bark">Posts & Engagement</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[post_likes]" label="Likes on your posts"
@@ -26,10 +26,7 @@
  </div>
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Connections -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-base font-medium text-bark">Connections</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[follow_requests]" label="Follow requests"
@@ -41,10 +38,7 @@
  </div>
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Groups & Events -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-base font-medium text-bark">Groups & Events</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[group_invites]" label="Group invitations"
@@ -58,10 +52,7 @@
  </div>
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Marketplace & More -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-base font-medium text-bark">Marketplace & More</h4>
  <div class="mt-4 space-y-4">
  <x-ui.toggle name="notifications[marketplace_messages]" label="Marketplace inquiries"
@@ -75,7 +66,7 @@
  </div>
 
  <div class="flex justify-end border-t border-whisker/30 pt-5">
- <x-ui.button variant="primary">Save Preferences</x-ui.button>
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-40">Save Preferences</x-ui.button>
  </div>
  </form>
  </div>

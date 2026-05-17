@@ -86,6 +86,6 @@ class FollowTest extends TestCase
 
         $this->actingAs($actor)
             ->postJson(route('users.follow', ['user' => $actor->username]))
-            ->assertStatus(403);
+            ->assertForbidden();
     }
 }

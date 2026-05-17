@@ -4,18 +4,18 @@ $font-families: (
     font-mono: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 ) !default;
 $brand-colors: (
-    color-cream: #fdf6ec,
-    color-warm-white: #fffbf5,
-    color-paw: #e8834a,
-    color-paw-dark: #c9602a,
-    color-paw-light: #fde8d8,
-    color-bark: #3d2b1f,
-    color-fur: #7a5c4a,
-    color-whisker: #c4a882,
-    color-leaf: #5a9a6f,
-    color-leaf-light: #e6f4eb,
-    color-sky: #4a85c9,
-    color-sky-light: #e6f0fa,
+    color-cream: #f4f7f1,
+    color-warm-white: #fffefa,
+    color-paw: #d96b48,
+    color-paw-dark: #b94e31,
+    color-paw-light: #f8e1d6,
+    color-bark: #25322d,
+    color-fur: #65756f,
+    color-whisker: #bdcbbb,
+    color-leaf: #3d8f70,
+    color-leaf-light: #e4f4eb,
+    color-sky: #367db7,
+    color-sky-light: #e0eef8,
     color-rose: #c94a5a,
     color-rose-light: #fae6e8,
     color-amber: #d4850a,
@@ -24,8 +24,8 @@ $brand-colors: (
 $surfaces: (
     surface-page: var(--color-cream),
     surface-panel: var(--color-warm-white),
-    surface-muted: #f9f0e6,
-    surface-form: #fffdf9,
+    surface-muted: #edf4ed,
+    surface-form: #fbfdf8,
     surface-modal: var(--color-warm-white),
     surface-dropdown: #fffdf9,
 ) !default;
@@ -41,20 +41,20 @@ $borders: (
 $radii: (
     radius-control: 0,
     radius-soft: 6px,
-    radius-card: 12px,
-    radius-panel: 12px,
+    radius-card: 8px,
+    radius-panel: 8px,
     radius-pill: 9999px,
 ) !default;
 $shadows: (
-    shadow-card: 0 2px 12px rgb(61 43 31 / 8%),
-    shadow-card-hover: 0 6px 24px rgb(61 43 31 / 14%),
-    shadow-button: 0 2px 8px rgb(232 131 74 / 25%),
-    shadow-input: 0 0 0 3px rgb(232 131 74 / 15%),
+    shadow-card: 0 2px 14px rgb(37 50 45 / 8%),
+    shadow-card-hover: 0 10px 28px rgb(37 50 45 / 14%),
+    shadow-button: 0 3px 10px rgb(217 107 72 / 24%),
+    shadow-input: 0 0 0 3px rgb(54 125 183 / 18%),
 ) !default;
 $control-heights: (
-    control-height-sm: 2rem,
-    control-height-md: 2.5rem,
-    control-height-lg: 3rem,
+    control-height-sm: 2.25rem,
+    control-height-md: 2.75rem,
+    control-height-lg: 3.25rem,
 ) !default;
 $spaces: (
     space-1: 0.25rem,

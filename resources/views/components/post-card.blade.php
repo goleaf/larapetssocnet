@@ -12,7 +12,13 @@
     $displayedAt = $post->published_at ?? $post->created_at;
     $timeLabel = $displayedAt?->diffForHumans();
     $timeIso = $displayedAt?->toIso8601String();
+    $timeTitle = $displayedAt?->format('M j, Y g:i A');
     $authorAvatar = $author?->avatar_url;
+    $authorName = $author?->name ?? __('a community member');
+    $postDomId = 'post-card-'.$post->getKey();
+    $postAuthorId = $postDomId.'-author';
+    $postBodyId = $postDomId.'-body';
+    $mediaAlt = __('Post media shared by :name', ['name' => $authorName]);
 
     $spatiePhotos = collect($post->getMedia('photos'))->merge($post->getMedia('images'));
     $spatieVideos = collect($post->getMedia('videos'))->merge($post->getMedia('video'));
@@ -74,7 +80,14 @@
     };
 @endphp
 
-<x-ui.card class="overflow-hidden" x-data="{
+<x-ui.card
+    as="article"
+    id="{{ $postDomId }}"
+    data-ui="post-card"
+    aria-labelledby="{{ $postAuthorId }}"
+    class="group overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-within:shadow-card-hover"
+    x-data="{
+    authorName: @js($authorName),
     liked: {{ $isLiked ? 'true' : 'false' }},
     likes: {{ $likeCount }},
     likeBusy: false,
@@ -211,18 +224,19 @@
             this.shareBusy = false;
         }
     },
-}">
+}"
+>
     @if ($context === 'profile' && $post->is_pinned)
         <div class="flex items-center gap-2 border-b bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800" style="border-color: var(--ui-border);">
             📌 Pinned post
         </div>
     @endif
 
-    <header class="flex items-start justify-between gap-3">
+    <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 flex-1">
             <div class="flex items-start gap-3">
                 @if ($author)
-                    <a href="{{ $profileUrl }}" class="shrink-0">
+                    <a href="{{ $profileUrl }}" class="shrink-0 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
                         <x-ui.avatar :src="$authorAvatar" :name="$author->name" size="md"/>
                     </a>
                 @else
@@ -231,17 +245,17 @@
 
                 <div class="min-w-0">
                     @if ($author)
-                        <a href="{{ $profileUrl }}" class="truncate text-sm font-semibold ui-text hover:underline">
+                        <a id="{{ $postAuthorId }}" href="{{ $profileUrl }}" class="block min-h-6 truncate text-sm font-semibold ui-text hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
                             {{ $author->name }}
                         </a>
                         <p class="truncate text-xs shell-text-muted">&#64;{{ $author->username }}</p>
                     @else
-                        <p class="text-sm font-semibold ui-text">Deleted User</p>
+                        <p id="{{ $postAuthorId }}" class="text-sm font-semibold ui-text">Deleted User</p>
                     @endif
 
                     <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs shell-text-muted">
                         @if ($timeIso && $timeLabel)
-                            <time datetime="{{ $timeIso }}">{{ $timeLabel }}</time>
+                            <time datetime="{{ $timeIso }}" title="{{ $timeTitle }}" class="inline-flex min-h-5 items-center">{{ $timeLabel }}</time>
                         @endif
 
                         @if ($post->is_pinned)
@@ -253,7 +267,7 @@
 
                         @if ($post->pet && $petUrl)
                             <span aria-hidden="true">•</span>
-                            <a href="{{ $petUrl }}">
+                            <a href="{{ $petUrl }}" class="rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
                                 <x-ui.badge variant="primary" size="sm">🐾 {{ $post->pet->name }}</x-ui.badge>
                             </a>
                         @endif
@@ -274,7 +288,7 @@
             </div>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
             @if ($author && ! $isOwner)
                 <x-follow-button :user="$author" :follow-status="$followStatus ?? 'none'" size="sm"/>
             @endif
@@ -290,7 +304,7 @@
     </header>
 
     @if (filled($bodyHtml))
-        <div class="mt-3 whitespace-pre-line text-sm leading-6 ui-text">{!! $bodyHtml !!}</div>
+        <div id="{{ $postBodyId }}" class="mt-3 whitespace-pre-line text-[0.95rem] leading-7 ui-text">{!! $bodyHtml !!}</div>
     @endif
 
     @if ($post->relationLoaded('hashtags') && $post->hashtags->isNotEmpty())
@@ -298,7 +312,7 @@
             @foreach ($post->hashtags as $hashtag)
                 <a
                     href="{{ route('hashtags.show', $hashtag) }}"
-                    class="chip hover-lift"
+                    class="chip hover-lift min-h-8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
                     style="color: var(--ui-primary); border-color: color-mix(in srgb, var(--ui-primary) 36%, var(--ui-border) 64%);"
                 >
                     #{{ $hashtag->name }}
@@ -324,25 +338,25 @@
         <div class="mt-4">
             @if ($shownMedia->count() === 1)
                 @php($item = $shownMedia->first())
-                <div class="relative overflow-hidden rounded-[var(--radius-card)] border ui-border">
+                <div class="relative overflow-hidden rounded-[var(--radius-card)] border bg-cream ui-border">
                     @if ($isVideoMedia($item))
-                        <video controls preload="metadata" class="h-72 w-full object-cover sm:h-96">
+                        <video controls preload="metadata" aria-label="{{ $mediaAlt }}" class="h-72 w-full object-cover sm:h-96">
                             <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                         </video>
                     @else
-                        <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-72 w-full object-cover sm:h-96" loading="lazy">
+                        <img src="{{ $mediaUrl($item) }}" alt="{{ $mediaAlt }}" class="h-72 w-full object-cover sm:h-96" loading="lazy">
                     @endif
                 </div>
             @elseif ($shownMedia->count() === 2)
                 <div class="grid grid-cols-1 gap-2">
                     @foreach ($shownMedia as $item)
-                        <div class="overflow-hidden rounded-[var(--radius-card)] border ui-border">
+                        <div class="overflow-hidden rounded-[var(--radius-card)] border bg-cream ui-border">
                             @if ($isVideoMedia($item))
-                                <video controls preload="metadata" class="h-44 w-full object-cover sm:h-56">
+                                <video controls preload="metadata" aria-label="{{ $mediaAlt }}" class="h-44 w-full object-cover sm:h-56">
                                     <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                                 </video>
                             @else
-                                <img src="{{ $mediaUrl($item) }}" alt="Post media" class="h-44 w-full object-cover sm:h-56" loading="lazy">
+                                <img src="{{ $mediaUrl($item) }}" alt="{{ $mediaAlt }}" class="h-44 w-full object-cover sm:h-56" loading="lazy">
                             @endif
                         </div>
                     @endforeach
@@ -351,11 +365,11 @@
                 <div class="grid grid-cols-1 gap-2">
                     @foreach ($shownMedia as $item)
                         <div @class([
-                            'relative overflow-hidden rounded-[var(--radius-card)] border ui-border',
+                            'relative overflow-hidden rounded-[var(--radius-card)] border bg-cream ui-border',
                             'col-span-2' => $loop->first,
                         ])>
                             @if ($isVideoMedia($item))
-                                <video controls preload="metadata" @class([
+                                <video controls preload="metadata" aria-label="{{ $mediaAlt }}" @class([
                                     'w-full object-cover',
                                     'h-52 sm:h-64' => $loop->first,
                                     'h-36 sm:h-44' => ! $loop->first,
@@ -363,7 +377,7 @@
                                     <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                                 </video>
                             @else
-                                <img src="{{ $mediaUrl($item) }}" alt="Post media" @class([
+                                <img src="{{ $mediaUrl($item) }}" alt="{{ $mediaAlt }}" @class([
                                     'w-full object-cover',
                                     'h-52 sm:h-64' => $loop->first,
                                     'h-36 sm:h-44' => ! $loop->first,
@@ -383,30 +397,37 @@
     @endif
 
     <div class="mt-4 border-t ui-border pt-3">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             @auth
                 <x-ui.button
                     type="button"
-                    size="xs"
+                    size="sm"
                     variant="outline"
+                    class="min-h-11 flex-1 sm:flex-none"
                     data-testid="like-toggle"
+                    aria-label="{{ __('Like post by :name', ['name' => $authorName]) }}"
                     @click="toggleLike()"
                     x-bind:disabled="likeBusy"
+                    x-bind:aria-label="(liked ? 'Unlike post by ' : 'Like post by ') + authorName"
+                    x-bind:aria-pressed="liked"
+                    x-bind:aria-busy="likeBusy"
                     x-bind:class="liked ? 'border-rose/40 bg-rose-light/60 text-rose' : ''"
                 >
-                    <span x-text="liked ? '♥' : '♡'"></span>
+                    <span aria-hidden="true" x-text="liked ? '♥' : '♡'"></span>
                     <span x-text="liked ? 'Liked' : 'Like'"></span>
-                    <span class="opacity-80" x-text="likes"></span>
+                    <span class="opacity-80" aria-live="polite" x-text="likes"></span>
                 </x-ui.button>
             @endauth
 
             <x-ui.button
                 :href="route('posts.show', $post) . '#comments'"
                 data-testid="comments-toggle"
-                size="xs"
+                size="sm"
                 variant="ghost"
+                class="min-h-11 flex-1 sm:flex-none"
+                aria-label="{{ __('Read comments on post by :name', ['name' => $authorName]) }}"
             >
-                <span>💬</span>
+                <span aria-hidden="true">💬</span>
                 <span>Comments</span>
                 <span class="opacity-80">({{ $commentCount }})</span>
             </x-ui.button>
@@ -414,32 +435,40 @@
             @auth
                 <x-ui.button
                     type="button"
-                    size="xs"
+                    size="sm"
                     variant="ghost"
+                    class="min-h-11 flex-1 sm:flex-none"
+                    aria-label="{{ __('Save post by :name', ['name' => $authorName]) }}"
                     @click="toggleSave()"
                     x-bind:disabled="saveBusy"
+                    x-bind:aria-label="(saved ? 'Remove saved post by ' : 'Save post by ') + authorName"
+                    x-bind:aria-pressed="saved"
+                    x-bind:aria-busy="saveBusy"
                     x-bind:class="saved ? 'text-emerald-700' : ''"
                 >
                     <span x-text="saved ? 'Saved' : 'Save'"></span>
-                    <span class="opacity-80" x-text="saveCount"></span>
+                    <span class="opacity-80" aria-live="polite" x-text="saveCount"></span>
                 </x-ui.button>
 
                 <x-ui.button
                     type="button"
-                    size="xs"
+                    size="sm"
                     variant="ghost"
+                    class="min-h-11 flex-1 sm:flex-none"
+                    aria-label="{{ __('Copy link to post by :name', ['name' => $authorName]) }}"
                     @click="sharePost()"
                     x-bind:disabled="shareBusy"
+                    x-bind:aria-busy="shareBusy"
                 >
                     <span x-text="shareCopied ? 'Copied' : 'Share'"></span>
-                    <span class="opacity-80" x-text="shares"></span>
+                    <span class="opacity-80" aria-live="polite" x-text="shares"></span>
                 </x-ui.button>
 
                 @if (! $isOwner)
-                    <form method="POST" action="{{ route('posts.report', $post) }}" onsubmit="return confirm('Report this post?');">
+                    <form method="POST" action="{{ route('posts.report', $post) }}" class="flex flex-1 sm:flex-none" onsubmit="return confirm('Report this post?');">
                         @csrf
                         <input type="hidden" name="reason" value="spam">
-                        <x-ui.button type="submit" size="xs" variant="ghost">Report</x-ui.button>
+                        <x-ui.button type="submit" size="sm" variant="ghost" class="min-h-11 w-full sm:w-auto" aria-label="{{ __('Report post by :name', ['name' => $authorName]) }}">Report</x-ui.button>
                     </form>
                 @endif
             @endauth

@@ -30,7 +30,12 @@ class FollowServiceTest extends TestCase
 
         app(FollowService::class)->unfollow($actor, $target);
 
-        $this->assertTrue(true);
+        $this->assertDatabaseMissing('follows', [
+            'follower_id' => $actor->getKey(),
+            'following_id' => $target->getKey(),
+        ]);
+        $this->assertSame(0, $actor->refresh()->following_count);
+        $this->assertSame(0, $target->refresh()->followers_count);
     }
 
     public function test_follow_notification_uses_relation_light_actor_model(): void

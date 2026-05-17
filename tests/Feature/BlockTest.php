@@ -47,7 +47,7 @@ class BlockTest extends TestCase
 
         $this->actingAs($actor)
             ->postJson(route('users.block', ['user' => $actor]))
-            ->assertStatus(403);
+            ->assertForbidden();
     }
 
     public function test_cannot_block_admin_users(): void
@@ -60,7 +60,7 @@ class BlockTest extends TestCase
 
         $this->actingAs($actor)
             ->postJson(route('users.block', ['user' => $target]))
-            ->assertStatus(403);
+            ->assertForbidden();
     }
 
     public function test_blocking_removes_follow_rows_in_both_directions(): void

@@ -93,17 +93,19 @@ if [[ ! -d "$ROOT/vendor" ]]; then
     exit 2
 fi
 
-if [[ ! -f "$ROOT/public/build/manifest.json" ]]; then
-    echo "public/build/manifest.json is missing. Run npm run build first." >&2
+if [[ ! -f "$ROOT/build/manifest.json" ]]; then
+    echo "build/manifest.json is missing. Run npm run build first." >&2
     exit 2
 fi
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-rsync -a --delete "$ROOT/public/" "$BUILD_DIR/" \
-    --exclude 'storage' \
-    --exclude 'hot'
+rsync -a --delete "$ROOT/build/" "$BUILD_DIR/build/"
+rsync -a --delete "$ROOT/images/" "$BUILD_DIR/images/"
+
+cp "$ROOT/favicon.ico" "$BUILD_DIR/favicon.ico"
+cp "$ROOT/robots.txt" "$BUILD_DIR/robots.txt"
 
 cp "$ROOT/deploy/shared-hosting/index.php" "$BUILD_DIR/index.php"
 cp "$ROOT/deploy/shared-hosting/.htaccess" "$BUILD_DIR/.htaccess"

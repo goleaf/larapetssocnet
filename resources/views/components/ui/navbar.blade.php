@@ -1,17 +1,17 @@
-<nav class="sticky top-0 z-40 w-full border-b border-whisker/30 bg-warm-white/95 shadow-sm backdrop-blur-sm"
+<nav class="sticky top-0 z-40 w-full border-b border-whisker/40 bg-warm-white/95 shadow-sm backdrop-blur-sm"
  x-data="{ mobileMenuOpen: false }" @keydown.escape.window="mobileMenuOpen = false">
  <div class="mx-auto h-16 max-w-7xl px-4 sm:px-6 lg:px-8">
  <div class="flex h-full items-center justify-between">
  <div class="flex items-center">
- <a href="{{ $homeHref }}" class="flex items-center gap-2 text-xl font-bold font-display text-bark">
- <span aria-hidden="true">🐾</span>
+ <a href="{{ $homeHref }}" class="flex min-h-11 items-center gap-3 text-xl font-bold font-display text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <span class="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-soft)] bg-paw-light text-lg text-paw-dark" aria-hidden="true">🐾</span>
  <span>{{ config('app.name', 'PetSocNet') }}</span>
  </a>
 
- <div class="ml-10 hidden h-full md:flex md:space-x-8">
+ <div class="ml-8 hidden h-full items-center md:flex md:gap-2">
  @foreach ($links as $link)
  <a href="{{ $link['href'] }}"
- class="inline-flex h-full items-center border-b-2 px-1 pt-1 text-sm font-medium transition-colors {{ $link['active'] ? 'border-paw font-semibold text-paw' : 'border-transparent text-fur hover:text-bark' }}"
+ class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $link['active'] ? 'border-paw-light bg-paw-light font-semibold text-paw-dark' : 'border-transparent text-fur hover:border-whisker/40 hover:bg-cream hover:text-bark' }}"
  @if($link['active']) aria-current="page" @endif>
  {{ $link['label'] }}
  </a>
@@ -19,10 +19,10 @@
  </div>
  </div>
 
- <div class="hidden items-center space-x-6 md:flex">
+ <div class="hidden items-center gap-3 md:flex">
  @auth
  @if (Route::has('messages.index'))
- <a href="{{ route('messages.index') }}" class="relative p-1 text-fur transition-colors hover:text-bark"
+ <a href="{{ route('messages.index') }}" class="relative inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-soft)] text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  aria-label="Messages">
  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
  stroke="currentColor" aria-hidden="true">
@@ -39,7 +39,7 @@
  @endif
 
  @if (Route::has('notifications.index'))
- <a href="{{ route('notifications.index') }}" class="relative p-1 text-fur transition-colors hover:text-bark"
+ <a href="{{ route('notifications.index') }}" class="relative inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-soft)] text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  aria-label="Notifications">
  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
  stroke="currentColor" aria-hidden="true">
@@ -75,7 +75,7 @@
  <x-ui.dropdown align="right" width="48">
  <x-slot name="trigger">
  <button type="button"
- class="flex items-center gap-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ class="flex min-h-11 items-center gap-2 rounded-[var(--radius-soft)] px-2 text-sm transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  id="user-menu-button">
  <span class="sr-only">Open user menu</span>
  <x-ui.avatar size="sm" :name="$user?->name ?? 'User'" :src="$user?->avatar_url"/>
@@ -119,7 +119,9 @@
 
  <div class="flex items-center md:hidden">
  <button type="button" @click="mobileMenuOpen = !mobileMenuOpen"
- class="inline-flex items-center justify-center p-2 text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ class="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-soft)] text-fur transition-colors hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ :aria-expanded="mobileMenuOpen.toString()"
+ aria-controls="mobile-primary-navigation">
  <span class="sr-only">Open main menu</span>
  <svg x-show="!mobileMenuOpen" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none"
  viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -135,12 +137,12 @@
  </div>
  </div>
 
- <div x-show="mobileMenuOpen" x-cloak style="display: none;" x-collapse
+ <div id="mobile-primary-navigation" x-show="mobileMenuOpen" x-cloak style="display: none;" x-collapse
  class="border-t border-whisker/30 bg-warm-white md:hidden">
  <div class="space-y-1 pb-3 pt-2">
  @foreach($links as $link)
  <a href="{{ $link['href'] }}"
- class="block border-l-4 py-2 pl-3 pr-4 text-base font-medium {{ $link['active'] ? 'border-paw bg-paw-light text-paw-dark' : 'border-transparent text-fur hover:bg-cream hover:text-bark' }}"
+ class="block min-h-11 border-l-4 py-2.5 pl-3 pr-4 text-base font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $link['active'] ? 'border-paw bg-paw-light text-paw-dark' : 'border-transparent text-fur hover:bg-cream hover:text-bark' }}"
  @if($link['active']) aria-current="page" @endif>
  {{ $link['label'] }}
  </a>
@@ -161,16 +163,16 @@
  <div class="mt-3 space-y-1">
  @if ($user && Route::has('profile.show'))
  <a href="{{ route('profile.show', $user) }}"
- class="block px-4 py-2 text-base font-medium text-fur hover:bg-cream hover:text-bark">My Profile</a>
+ class="block min-h-11 px-4 py-2.5 text-base font-medium text-fur hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">My Profile</a>
  @endif
  @if (Route::has('settings.profile'))
  <a href="{{ route('settings.profile') }}"
- class="block px-4 py-2 text-base font-medium text-fur hover:bg-cream hover:text-bark">Settings</a>
+ class="block min-h-11 px-4 py-2.5 text-base font-medium text-fur hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Settings</a>
  @endif
  <form method="POST" action="{{ route('logout') }}">
  @csrf
  <button type="submit"
- class="block w-full px-4 py-2 text-left text-base font-medium text-rose hover:bg-rose-light">
+ class="block min-h-11 w-full px-4 py-2.5 text-left text-base font-medium text-rose hover:bg-rose-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  Log Out
  </button>
  </form>

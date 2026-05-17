@@ -1,59 +1,72 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PetSocial
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+PetSocial is a Laravel social network for pet profiles, feeds, groups, adoption browsing, marketplace listings, messaging, notifications, health logs, moderation, and shared media.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.4
+- Laravel 13
+- SQLite by default for local and shared-hosting deployments
+- Pest 4 and PHPUnit 12
+- Larastan/PHPStan, Rector, and Pint for PHP quality checks
+- Tailwind CSS 4, Sass, Vite 8, Alpine 3, and daisyUI 5
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Local Setup
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate --seed
+npm install
+npm run build
+```
 
-## Learning Laravel
+This project is structured for shared hosting where the repository root is the web-served directory. The Laravel front controller, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` live at the root; private Laravel folders are blocked by `.htaccess`. For active frontend work, run `npm run dev`; for production-like asset checks, run `npm run build`, which writes Vite assets to `build/`.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Daily Commands
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+composer test
+composer analyse
+composer lint
+composer rector:dry
+composer test:type-coverage
+npm run lint:scss
+npm run build
+composer quality
+```
 
-## Laravel Sponsors
+Use `composer quality` for the broad local quality gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full Pest suite, lints SCSS, and builds assets.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Testing
 
-### Premium Partners
+Tests are written with Pest. Feature tests cover HTTP workflows, authorization, database behavior, and user-visible flows. Unit tests cover services, architecture rules, tooling configuration, and pure business logic.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Architecture quality tests guard against placeholder assertions, starter-template comments, focused or skipped tests, raw common HTTP status assertions, stale markdown version references, debugging helpers in application code, and direct `env()` access outside configuration.
 
-## Contributing
+Run focused tests while iterating:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan test --compact tests/Feature/PetFeatureTest.php
+php artisan test --compact --filter="profile"
+```
 
-## Code of Conduct
+Run the full suite before delivery:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan test --compact
+```
 
-## Security Vulnerabilities
+## Deployment
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The repository includes an FTP deployment workflow for shared hosting:
 
-## License
+- `.github/workflows/deploy-ftp.yml`
+- `scripts/prepare-ftp-deploy.sh`
+- `scripts/ftp-upload.php`
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Required GitHub secrets are `APP_KEY`, `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD`, and `MAIL_PASSWORD`. Runtime deployment values such as `APP_URL`, `REMOTE_BASE`, `FTP_SERVER_DIR`, and mail settings can be configured as GitHub Actions variables.
+
+The deployment package keeps Laravel application code under `laravel/`, publishes the shared-hosting entry point and root assets at the FTP target, and preserves remote SQLite/runtime data unless the manual `include_sqlite` workflow input is enabled for first installation.

@@ -14,10 +14,34 @@
 
  <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]" data-feed-theme="{{ $activeFeedTheme }}">
  <div class="space-y-4">
+ <x-ui.card padding="base" class="bg-warm-white/80">
+ <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <p class="shell-kicker">{{ __('Display') }}</p>
+ <h2 class="mt-1 text-lg font-bold font-display text-bark">{{ __('Feed style') }}</h2>
+ </div>
+
+ <div class="flex flex-wrap gap-2" aria-label="{{ __('Feed style') }}">
+ @foreach ($feedThemes as $themeKey => $themeLabel)
+ <a
+ href="{{ route('feed.index', ['theme' => $themeKey]) }}"
+ class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $activeFeedTheme === $themeKey ? 'border-paw-light bg-paw-light text-paw-dark' : 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' }}"
+ @if($activeFeedTheme === $themeKey) aria-current="true" @endif
+ >
+ {{ $themeLabel }}
+ </a>
+ @endforeach
+ </div>
+ </div>
+ </x-ui.card>
+
  <x-ui.card padding="lg">
- <div class="mb-4 flex items-center gap-3 border-b border-whisker/30 pb-4">
+ <div class="mb-4 flex items-start gap-3 border-b border-whisker/30 pb-4">
  <x-avatar :src="$user->avatar_url" :name="$user->name" size="md"/>
+ <div>
  <p class="text-sm font-semibold text-bark">{{ __('feed.create_post') }}</p>
+ <p class="mt-1 text-xs leading-5 text-fur">{{ __('Share a pet moment, care question, or adoption update.') }}</p>
+ </div>
  </div>
 
  <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
@@ -68,7 +92,7 @@
  class="!mb-1 text-xs uppercase tracking-wide">{{ __('feed.media_label') }}</x-ui.label>
  <input id="feed-post-photos" type="file" name="media[]" multiple
  accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
- class="block w-full text-sm text-fur file:mr-4 file:rounded-full file:border-0 file:bg-paw/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paw hover:file:bg-paw/20 cursor-pointer">
+ class="block w-full cursor-pointer text-sm text-fur file:mr-4 file:min-h-10 file:rounded-[var(--radius-soft)] file:border-0 file:bg-paw/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paw hover:file:bg-paw/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  @error('media')
  <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
  @enderror
@@ -87,34 +111,38 @@
  </div>
  </div>
 
- <div class="flex items-center justify-end pt-4 mt-4 border-t border-whisker/30">
+ <div class="mt-4 flex items-center justify-end border-t border-whisker/30 pt-4">
  <x-ui.button type="submit" variant="primary">{{ __('feed.post_button') }}</x-ui.button>
  </div>
  </form>
  </x-ui.card>
 
- <x-ui.card padding="base" class="bg-warm-white bg-opacity-50">
+ <x-ui.card padding="base" class="bg-warm-white/70" role="status">
  <p class="text-xs text-fur flex items-center gap-2">
  <span class="text-base">ℹ️</span> {{ __('feed.feed_note') }}
  </p>
  </x-ui.card>
 
- <div role="feed" aria-label="{{ __('feed.aria_feed') }}" class="space-y-4">
+ <ul role="feed" aria-label="{{ __('feed.aria_feed') }}" class="space-y-4">
  @forelse ($posts as $post)
+ <li aria-label="{{ __('Post by :name', ['name' => $post->author?->name ?? __('a community member')]) }}">
  <x-post-card :post="$post" />
+ </li>
  @empty
+ <li>
  <x-ui.empty-state :title="__('feed.empty_title')"
  :description="__('feed.empty_description')">
  <x-slot:action>
  <x-ui.button href="{{ route('explore.index', ['tab'=>'users']) }}" variant="secondary">{{ __('feed.empty_action') }}</x-ui.button>
  </x-slot:action>
  </x-ui.empty-state>
+ </li>
  @endforelse
- </div>
+ </ul>
 
  @if ($posts->nextPageUrl())
  <x-ui.card padding="base">
- <a href="{{ $posts->nextPageUrl() }}" rel="next" class="inline-flex text-sm font-medium text-paw hover:underline">
+ <a href="{{ $posts->nextPageUrl() }}" rel="next" class="inline-flex min-h-11 items-center text-sm font-medium text-paw hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  {{ __('feed.next_cursor') }}
  </a>
  </x-ui.card>
@@ -134,11 +162,11 @@
  @foreach (collect($suggestions ?? []) as $suggested)
  <div class="flex items-center justify-between gap-3">
  <div class="min-w-0 flex items-center gap-3">
- <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="shrink-0">
+ <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="shrink-0 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <x-ui.avatar :src="$suggested->avatar_url" :name="$suggested->name" size="md"/>
  </a>
  <div class="min-w-0">
- <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="block truncate text-sm font-semibold text-bark hover:text-paw">
+ <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="block min-h-6 truncate text-sm font-semibold text-bark hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  {{ $suggested->name }}
  </a>
  <p class="truncate text-xs text-fur">&#64;{{ $suggested->username }}</p>

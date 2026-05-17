@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -532,7 +533,7 @@ class Group extends Model implements HasMedia
         }
 
         if (filled((string) $this->avatar)) {
-            return asset('storage/'.ltrim((string) $this->avatar, '/'));
+            return Storage::disk('public')->url(ltrim((string) $this->avatar, '/'));
         }
 
         if (filled((string) $this->avatar_path)) {
@@ -551,7 +552,7 @@ class Group extends Model implements HasMedia
         }
 
         if (filled((string) $this->cover_image)) {
-            return asset('storage/'.ltrim((string) $this->cover_image, '/'));
+            return Storage::disk('public')->url(ltrim((string) $this->cover_image, '/'));
         }
 
         if (filled((string) $this->cover_image_path)) {

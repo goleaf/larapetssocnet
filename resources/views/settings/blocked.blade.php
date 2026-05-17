@@ -1,8 +1,9 @@
 <x-settings-layout>
- <div class="space-y-6">
- <div>
- <h3 class="text-lg font-semibold text-bark">Blocked Users</h3>
- <p class="mt-1 text-sm text-fur">When you block someone, they cannot view your profile, contact you, or see your posts.</p>
+ <div class="space-y-6" data-ui="settings-blocked-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Safety controls</p>
+ <h2 class="shell-title text-2xl">Blocked Users</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">When you block someone, they cannot view your profile, contact you, or see your posts.</p>
  </div>
 
  <x-ui.card padding="md" class="bg-cream/40">
@@ -17,7 +18,7 @@
  />
 </div>
 
- <x-ui.button type="submit" variant="danger" class="sm:shrink-0">Block User</x-ui.button>
+ <x-ui.button type="submit" variant="danger" class="min-h-11 sm:shrink-0">Block User</x-ui.button>
  </form>
  </x-ui.card>
 
@@ -49,7 +50,7 @@
  <form action="{{ route('settings.blocked.destroy', $blockedUser->username) }}" method="POST" class="inline">
  @csrf
  @method('DELETE')
- <x-ui.button type="submit" variant="ghost" size="sm">Unblock<span class="sr-only"> {{ $blockedUser->name }}</span></x-ui.button>
+ <x-ui.button type="submit" variant="ghost" size="sm" class="min-h-11">Unblock<span class="sr-only"> {{ $blockedUser->name }}</span></x-ui.button>
  </form>
  </x-ui.table-cell>
  </x-ui.table-row>

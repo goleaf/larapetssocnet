@@ -8,8 +8,9 @@
     $groupRouteKey = filled((string) ($group->slug ?? '')) ? $group->slug : $group->id;
     $privacyValue = strtolower((string) ($group->privacy ?? (($group->is_private ?? false) ? 'private' : 'public')));
     $privacyLabel = \Illuminate\Support\Str::headline($privacyValue);
-    $speciesValue = (string) data_get($group, 'species', 'all_pets');
-    $speciesLabel = \Illuminate\Support\Str::headline(str_replace(['-', '_'], '', $speciesValue));
+    $speciesValue = (string) (data_get($group, 'species') ?: data_get($group, 'species_focus', 'all_pets'));
+    $speciesLabel = \Illuminate\Support\Str::headline(str_replace(['-', '_'], ' ', $speciesValue));
+    $groupHref = route('groups.show', $groupRouteKey);
 
     $membershipStatus = strtolower((string) data_get($membership, 'status', ''));
     $isMember = $membership && in_array($membershipStatus, ['', 'active', 'accepted'], true);
@@ -26,41 +27,53 @@
     };
 @endphp
 
-<article class="shell-card overflow-hidden p-0">
-    <a href="{{ route('groups.show', $groupRouteKey) }}" class="block">
-        <div class="h-24 w-full bg-[color:var(--ui-surface-muted)]">
+<article
+    class="shell-card group overflow-hidden p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-within:shadow-card-hover"
+    data-ui="group-card"
+    aria-label="{{ __('Group: :name', ['name' => $group->name]) }}"
+>
+    <a href="{{ $groupHref }}" class="block focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-paw" aria-label="{{ __('Open group: :name', ['name' => $group->name]) }}">
+        <div class="relative h-28 w-full bg-[color:var(--ui-surface-muted)]">
             @if ($coverUrl !== '')
                 <img src="{{ $coverUrl }}" alt="{{ $group->name }} cover" class="h-full w-full object-cover" loading="lazy">
             @else
                 <div class="h-full w-full ui-gradient-soft"></div>
             @endif
+
+            <div class="absolute bottom-3 left-3">
+                <x-ui.badge :tone="$privacyTone" size="sm">{{ $privacyLabel }}</x-ui.badge>
+            </div>
         </div>
     </a>
 
-    <div class="space-y-3 p-4">
+    <div class="space-y-4 p-4 sm:p-5">
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
                 <h3 class="truncate text-base font-semibold ui-text">
-                    <a href="{{ route('groups.show', $groupRouteKey) }}" class="hover:underline">{{ $group->name }}</a>
+                    <a href="{{ $groupHref }}" class="hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">{{ $group->name }}</a>
                 </h3>
                 <p class="mt-0.5 text-xs shell-text-muted">{{ $speciesLabel }}</p>
             </div>
-
-            <x-ui.badge :tone="$privacyTone" size="sm">{{ $privacyLabel }}</x-ui.badge>
         </div>
 
         @if (filled((string) $descriptionText))
-            <p class="line-clamp-3 text-sm shell-text-muted">{{ \Illuminate\Support\Str::limit($descriptionText, 150) }}</p>
+            <p class="line-clamp-3 text-sm leading-6 shell-text-muted">{{ \Illuminate\Support\Str::limit($descriptionText, 150) }}</p>
         @endif
 
-        <div class="flex items-center justify-between text-xs shell-text-muted">
-            <span>{{ number_format((int) ($group->members_count ?? 0)) }} members</span>
-            <span>{{ number_format((int) ($group->posts_count ?? 0)) }} posts</span>
+        <div class="grid grid-cols-2 gap-2 text-xs shell-text-muted">
+            <span class="rounded-[var(--radius-soft)] border border-whisker/40 px-3 py-2">
+                <span class="block font-semibold ui-text">{{ number_format((int) ($group->members_count ?? 0)) }}</span>
+                members
+            </span>
+            <span class="rounded-[var(--radius-soft)] border border-whisker/40 px-3 py-2">
+                <span class="block font-semibold ui-text">{{ number_format((int) ($group->posts_count ?? 0)) }}</span>
+                posts
+            </span>
         </div>
 
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             @if ($owner)
-                <a href="{{ route('profile.show', ['user' => $owner]) }}" class="flex min-w-0 items-center gap-2">
+                <a href="{{ route('profile.show', ['user' => $owner]) }}" class="flex min-w-0 items-center gap-2 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
                     <x-avatar :src="$owner->avatar_url" :name="$owner->name" size="xs"/>
                     <span class="truncate text-xs shell-text-muted">{{ $owner->name }}</span>
                 </a>
@@ -68,8 +81,8 @@
                 <span class="text-xs shell-text-muted">Community group</span>
             @endif
 
-            <div class="flex items-center gap-2">
-                <x-ui.button :href="route('groups.show', $groupRouteKey)" variant="ghost" size="xs">View</x-ui.button>
+            <div class="flex flex-wrap items-center gap-2">
+                <x-ui.button :href="$groupHref" variant="ghost" size="sm" class="min-h-11">View</x-ui.button>
 
                 @auth
                     @if ($isMember)
@@ -79,7 +92,7 @@
                     @elseif ($privacyValue !== 'secret')
                         <form method="POST" action="{{ route('groups.join', $groupRouteKey) }}" class="inline-block">
                             @csrf
-                            <x-ui.button type="submit" variant="primary" size="xs">
+                            <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11">
                                 {{ $privacyValue === 'public' ? 'Join' : 'Request' }}
                             </x-ui.button>
                         </form>

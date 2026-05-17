@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Added shared-hosting root structure coverage for the root front controller, root Vite build output, and Apache deny rules.
+- Added project-specific `README.md` with the current Laravel 13, Pest 4, Tailwind 4, SQLite, quality, and FTP deployment workflow.
+- Added markdown version-alignment coverage to prevent AI guidance and skill docs from drifting behind the installed toolchain.
+- Added architecture quality coverage for placeholder assertions, starter-template comments, and focused/skipped/todo tests.
+- Added a current concise `AUDIT.md` summary that replaces the stale generated inventory.
 - Added `blocks` pivot table migration with composite primary key (`blocker_id`, `blocked_id`) and `created_at` timestamp.
 - Added `database/seeders/BlockSeeder.php` for ORM-based block graph seeding and counter rebuild.
 - Added follow feature architecture: `FollowService`, `FollowController`, `FollowRequestController`, `FollowPolicy`, and `CanFollow` rule.
@@ -24,6 +29,11 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Moved the web entrypoint and public assets from `public/` to the project root for shared-hosting document roots.
+- Updated Laravel public-path bootstrapping, Vite build output, FTP packaging, and public media URL helpers for the root web surface.
+- Updated root AI guidance and local skill docs to the current Laravel 13, Pest 4, PHPUnit 12, and Tailwind 4 stack.
+- Updated root AI guidance to describe the active PetSocial app structure and `composer quality` workflow instead of bootstrap defaults.
+- Updated testing guidance to require meaningful assertions and semantic response assertions.
 - Updated block relationships in `User` model to use the `blocks` table.
 - Updated `Block` pivot model to match `blocks` schema and `created_at`-only lifecycle.
 - Updated `BlockService` block creation to ORM `firstOrCreate` on `Block` to preserve idempotency with the new schema.

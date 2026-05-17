@@ -51,12 +51,12 @@
  }
 @endphp
 
-<div {{ $attributes->merge(['class'=>'mb-6 w-full border-b border-whisker/40']) }}>
- <nav class="-mb-px flex space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
+<div {{ $attributes->merge(['class'=>'mb-6 w-full border-b border-whisker/40','data-ui'=>'tabs']) }}>
+ <nav class="-mb-px flex gap-6 overflow-x-auto no-scrollbar" aria-label="Tabs">
  @foreach($normalizedTabs as $tab)
  <a
  href="{{ $tab['href'] }}"
- class="flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-4 text-sm transition-colors {{ $tab['active'] ?'border-paw font-semibold text-paw':'border-transparent text-fur hover:border-whisker hover:text-bark'}}"
+ class="flex min-h-11 items-center gap-2 whitespace-nowrap rounded-t-[var(--radius-soft)] border-b-2 px-1 py-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $tab['active'] ?'border-paw font-semibold text-paw':'border-transparent text-fur hover:border-whisker hover:text-bark'}}"
  @if($tab['active'])
  aria-current="page"
  @endif

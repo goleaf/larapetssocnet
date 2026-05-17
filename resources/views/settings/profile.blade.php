@@ -1,17 +1,17 @@
 <x-settings-layout>
- <div class="space-y-6">
- <div>
- <h3 class="text-lg font-semibold text-bark">Profile Information</h3>
- <p class="mt-1 text-sm text-fur">Update your account's profile information and email address.</p>
+ <div class="space-y-6" data-ui="settings-profile-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Profile settings</p>
+ <h2 class="shell-title text-2xl">Profile Information</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">Update the identity, media, and public details people see across your posts and profile.</p>
  </div>
 
- <form action="{{ route('settings.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+ <form action="{{ route('settings.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6" data-ui="settings-profile-form">
  @csrf
  @method('PUT')
 
  <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-6 sm:gap-x-6">
- <!-- Avatar -->
- <div class="sm:col-span-6 space-y-4">
+ <div class="space-y-4 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-3" data-ui="profile-avatar-section">
  <x-ui.file-upload
  name="avatar"
  label="Avatar"
@@ -33,8 +33,7 @@
  </div>
  </div>
 
- <!-- Cover -->
- <div class="sm:col-span-6 space-y-4">
+ <div class="space-y-4 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-3" data-ui="profile-cover-section">
  <x-ui.file-upload
  name="cover"
  label="Cover Photo"
@@ -53,18 +52,15 @@
  @endif
  </div>
 
- <!-- Name -->
  <div class="sm:col-span-3">
  <x-ui.input id="name" name="name" label="Name" :value="old('name', $user->name)" required autofocus autocomplete="name"/>
  </div>
 
- <!-- Display Name -->
  <div class="sm:col-span-3">
  <x-ui.input id="display_name" name="display_name" type="text" label="Display name" :value="old('display_name', $user->display_name)" autocomplete="nickname"
  hint="Shown publicly instead of your account name when set."/>
  </div>
 
- <!-- Username -->
  <div class="sm:col-span-3"
  x-data="{ currentUsername:'{{ $user->username }}', newUsername:'{{ old('username', $user->username) }}'}">
  <x-ui.input id="username" name="username" label="Username"
@@ -90,42 +86,35 @@
  </div>
  </div>
 
- <!-- Email -->
  <div class="sm:col-span-6">
  <x-ui.input id="email" name="email" type="email" label="Email Address" :value="old('email', $user->email)" required autocomplete="email"/>
  </div>
 
- <!-- Bio -->
  <div class="sm:col-span-6">
  <x-ui.textarea id="bio" name="bio" rows="4" label="Bio" :value="old('bio', $user->bio)"
  hint="Brief description for your profile. URLs are hyperlinked."/>
  </div>
 
- <!-- Headline -->
  <div class="sm:col-span-6">
  <x-ui.input id="headline" name="headline" type="text" label="Headline" :value="old('headline', $user->headline)"
  hint="Short status or tagline shown near your name."/>
  </div>
 
- <!-- Pronouns -->
  <div class="sm:col-span-3">
  <x-ui.input id="pronouns" name="pronouns" type="text" label="Pronouns" :value="old('pronouns', $user->pronouns)" placeholder="she/her, he/him, they/them"/>
  </div>
 
- <!-- Location -->
  <div class="sm:col-span-3">
  <x-ui.input id="location" name="location" type="text" label="Location"
  :value="old('location', $user->location)"/>
  </div>
 
- <!-- Website -->
  <div class="sm:col-span-3">
  <x-ui.input id="website" name="website" type="url" label="Website"
  :value="old('website', $user->website)"/>
  </div>
 
- <!-- Social Links -->
- <div class="sm:col-span-6">
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-6" data-ui="profile-social-section">
  <p class="text-sm font-medium text-bark">Social links</p>
  <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
  <div>
@@ -147,7 +136,6 @@
  </div>
  </div>
 
- <!-- Gender -->
  <div class="sm:col-span-3">
  <x-ui.select
  id="gender"
@@ -164,30 +152,26 @@
  />
  </div>
 
- <!-- Birth Date -->
  <div class="sm:col-span-3">
  <x-ui.input id="birth_date" name="birth_date" type="date" label="Birth Date"
  :value="old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : '')"/>
  </div>
 
- <!-- Locale -->
  <div class="sm:col-span-3">
  <x-ui.input id="locale" name="locale" type="text" label="Language" :value="old('locale', $user->locale)" placeholder="en, en_US"/>
  </div>
 
- <!-- Timezone -->
  <div class="sm:col-span-3">
  <x-ui.input id="timezone" name="timezone" type="text" label="Timezone" :value="old('timezone', $user->timezone)" placeholder="Europe/Vilnius"/>
  </div>
 
- <!-- Profile Theme -->
  <div class="sm:col-span-3">
  <x-ui.input id="profile_theme" name="profile_theme" type="text" label="Profile theme" :value="old('profile_theme', $user->profile_theme)" placeholder="sunset, meadow, ocean"/>
  </div>
  </div>
 
  <div class="flex justify-end border-t border-whisker/30 pt-5">
- <x-ui.button variant="primary">Save Profile</x-ui.button>
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-36">Save Profile</x-ui.button>
  </div>
  </form>
  </div>

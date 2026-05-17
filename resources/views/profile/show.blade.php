@@ -46,7 +46,7 @@
 @endpush
 
 <x-app-layout>
- <div class="space-y-5" x-data="profileActions({
+ <div class="space-y-5" data-ui="profile-shell" x-data="profileActions({
  followStatus: @js($followStatus),
  isFollowing: @js($isFollowing),
  isBlocked: @js($isBlocked),
@@ -58,7 +58,7 @@
  unblockUrl: @js(route('users.unblock', ['user'=> $profileUser]))
  })">
 
- <section class="overflow-hidden rounded-2xl border border-whisker/40 bg-warm-white shadow-card">
+ <section class="overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="profile-hero">
  <div class="relative h-56 w-full sm:h-72 lg:h-80">
  @if ($coverUrl)
  <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
@@ -69,12 +69,11 @@
 
  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
 
- <div class="absolute right-4 top-4 flex items-center gap-2">
+ <div class="absolute left-4 right-4 top-4 flex items-center justify-between gap-2 sm:left-auto sm:justify-end">
  @if ($isOwner)
- <x-ui.button :href="route('settings.profile')" variant="default" size="xs">Update
- Cover</x-ui.button>
+ <x-ui.button :href="route('settings.profile')" variant="default" size="sm" class="min-h-11">Update Cover</x-ui.button>
  @endif
- <x-ui.badge variant="{{ $profileVisibility === 'public' ? 'success' : 'warning' }}" size="sm">
+ <x-ui.badge variant="{{ $profileVisibility === 'public' ? 'success' : 'warning' }}" size="sm" aria-label="Profile visibility">
  {{ $profileVisibilityIcon }} {{ $profileVisibilityLabel }}
  </x-ui.badge>
  </div>
@@ -82,7 +81,7 @@
 
  <div class="px-4 pb-5 sm:px-6">
  <div class="-mt-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
- <div class="flex items-end gap-4">
+ <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
  <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl"
  class="h-28 w-28 border-4 border-warm-white shadow-xl bg-warm-white"/>
 
@@ -105,17 +104,14 @@
  </div>
  </div>
 
- <div class="flex flex-wrap items-center gap-2">
+ <div class="flex flex-wrap items-center gap-2" data-ui="profile-actions">
  @if ($isOwner)
- <x-ui.button :href="route('posts.create')" variant="secondary" size="sm">Create
- Post</x-ui.button>
- <x-ui.button :href="route('settings.profile')" variant="primary" size="sm">Edit
- Profile</x-ui.button>
- <x-ui.button :href="route('settings.data')" variant="outline" size="sm">Account
- Settings</x-ui.button>
+ <x-ui.button :href="route('posts.create')" variant="secondary" size="sm" class="min-h-11">Create Post</x-ui.button>
+ <x-ui.button :href="route('settings.profile')" variant="primary" size="sm" class="min-h-11">Edit Profile</x-ui.button>
+ <x-ui.button :href="route('settings.data')" variant="outline" size="sm" class="min-h-11">Account Settings</x-ui.button>
  @elseif ($canInteract)
  <button
- class="inline-flex items-center justify-center rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-150"
+ class="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
  :class="followButtonClass"
  x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
  x-bind:aria-label="followStatus === 'following' ?'Unfollow {{ addslashes($profileUser->name) }}': (followStatus === 'pending' ?'Requested to follow {{ addslashes($profileUser->name) }}' :'Follow {{ addslashes($profileUser->name) }}')"
@@ -127,47 +123,56 @@
  x-show="followStatus === 'pending'"
  @click="cancelRequest"
  type="button"
- class="text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus:outline-none"
+ class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  >
  Cancel request
  </button>
 
  <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"
- size="sm">Message</x-ui.button>
+ size="sm" class="min-h-11 sm:min-w-28">Message</x-ui.button>
 
  @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
  @elseif (!auth()->check() && Route::has('login'))
- <x-ui.button :href="route('login')" variant="primary" size="sm">Sign In to Follow</x-ui.button>
+ <x-ui.button :href="route('login')" variant="primary" size="sm" class="min-h-11">Sign In to Follow</x-ui.button>
  @endif
  </div>
  </div>
 
  <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" role="list"
+ data-ui="profile-stats"
  aria-label="Profile statistics">
  <a href="{{ route('profile.followers', ['user'=> $profileUser]) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+ role="listitem"
+ data-ui="profile-stat-card"
+ class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <p class="text-xl font-bold text-bark" x-text="formatCount(followersCount)">
  {{ number_format((int) $profileUser->followers_count) }}</p>
- <p class="text-xs text-fur">Followers</p>
+ <p class="text-xs text-fur group-hover:text-bark">Followers</p>
  </a>
  <a href="{{ route('profile.following', ['user'=> $profileUser]) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+ role="listitem"
+ data-ui="profile-stat-card"
+ class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->following_count) }}
  </p>
- <p class="text-xs text-fur">Following</p>
+ <p class="text-xs text-fur group-hover:text-bark">Following</p>
  </a>
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+ role="listitem"
+ data-ui="profile-stat-card"
+ class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->pets_count) }}</p>
- <p class="text-xs text-fur">Pets</p>
+ <p class="text-xs text-fur group-hover:text-bark">Pets</p>
  </a>
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'posts']) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-colors hover:bg-cream">
+ role="listitem"
+ data-ui="profile-stat-card"
+ class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <p class="text-xl font-bold text-bark">
  {{ number_format((int) ($profileUser->posts_count ?? 0)) }}</p>
- <p class="text-xs text-fur">Posts</p>
+ <p class="text-xs text-fur group-hover:text-bark">Posts</p>
  </a>
- <div class="rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 text-center">
+ <div class="flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center" role="listitem" data-ui="profile-stat-card">
  <p class="text-xl font-bold text-bark">{{ $profileVisibilityLabel }}</p>
  <p class="text-xs text-fur">Visibility</p>
  </div>
@@ -191,7 +196,7 @@
  <div class="mb-3 flex items-center justify-between">
  <h3 class="text-sm font-semibold text-bark">🐾 Pets</h3>
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
- class="text-xs font-semibold text-paw hover:underline">See all</a>
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
  <div class="-mx-1 flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
  @foreach ($featuredPets as $pet)
@@ -199,7 +204,7 @@
  @endforeach
  @if ($isOwner)
  <a href="{{ route('pets.create') }}"
- class="flex-shrink-0 w-[160px] rounded-xl border-2 border-dashed border-whisker/40 bg-cream/50 p-3 text-center transition-colors hover:border-paw hover:bg-paw-light/30 snap-start flex flex-col items-center justify-center">
+ class="flex min-h-44 w-[160px] flex-shrink-0 snap-start flex-col items-center justify-center rounded-xl border-2 border-dashed border-whisker/40 bg-cream/50 p-3 text-center transition-colors hover:border-paw hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="text-2xl">🐾</span>
  <span class="mt-1 text-xs font-semibold text-paw">Add Pet</span>
  </a>
@@ -210,7 +215,7 @@
  <x-ui.card>
  <div class="flex items-center justify-center gap-3 py-4">
  <a href="{{ route('pets.create') }}"
- class="rounded-xl border-2 border-dashed border-whisker/40 bg-cream/50 px-6 py-4 text-center transition-colors hover:border-paw hover:bg-paw-light/30">
+ class="inline-flex min-h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-whisker/40 bg-cream/50 px-6 py-4 text-center transition-colors hover:border-paw hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="text-2xl">🐾</span>
  <p class="mt-1 text-sm font-semibold text-paw">Add your first pet</p>
  </a>
@@ -218,13 +223,13 @@
  </x-ui.card>
  @endif
 
- <x-ui.card padding="sm">
+ <x-ui.card padding="sm" data-ui="profile-tabs">
  <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 
  <div class="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
  <aside class="space-y-5">
- <x-ui.card id="profile-intro">
+ <x-ui.card id="profile-intro" data-ui="profile-intro-card">
  <h2 class="text-base font-bold font-display text-bark">Intro</h2>
 
  <div class="mt-3 space-y-2 text-sm text-fur">
@@ -242,7 +247,7 @@
  <p>
  🔗
  <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer"
- class="font-medium text-paw hover:text-paw-dark hover:underline">
+ class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] font-medium text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  {{ $profileUser->website }}
  </a>
  </p>
@@ -254,7 +259,7 @@
  <p>
  🔗
  <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
- class="font-medium text-paw hover:text-paw-dark hover:underline">
+ class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] font-medium text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  {{ \Illuminate\Support\Str::headline((string) $label) }}
  </a>
  </p>
@@ -273,7 +278,7 @@
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Pets</h3>
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
- class="text-xs font-semibold text-paw hover:underline">See all</a>
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
 
  @if ($featuredPets->isEmpty())
@@ -284,8 +289,8 @@
  @php
  $petRouteParam = $pet->slug ?? $pet->getKey();
  @endphp
-                                <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
- class="rounded-lg border border-whisker/30 bg-cream p-2 text-center transition-colors hover:bg-paw-light/40">
+ <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
+ class="block min-h-24 rounded-lg border border-whisker/30 bg-cream p-2 text-center transition-colors hover:bg-paw-light/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="sm"
  class="mx-auto"/>
  <p class="mt-1 truncate text-[11px] font-medium text-bark">{{ $pet->name }}</p>
@@ -299,7 +304,7 @@
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Photos</h3>
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'photos']) }}"
- class="text-xs font-semibold text-paw hover:underline">See all</a>
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
 
  @if ($sidebarPhotos->isEmpty())
@@ -308,7 +313,7 @@
  <div class="grid grid-cols-3 gap-2">
  @foreach ($sidebarPhotos as $photo)
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'photos']) }}"
- class="overflow-hidden rounded-lg border border-whisker/30">
+ class="overflow-hidden rounded-lg border border-whisker/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo"
  class="h-16 w-full object-cover" loading="lazy"/>
  </a>
@@ -321,7 +326,7 @@
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Friends</h3>
  <a href="{{ route('profile.following', ['user'=> $profileUser]) }}"
- class="text-xs font-semibold text-paw hover:underline">See all</a>
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
 
  @if ($friendsPreview->isEmpty())
@@ -330,7 +335,7 @@
  <div class="space-y-2">
  @foreach ($friendsPreview as $friend)
  <a href="{{ route('profile.show', ['user'=> $friend]) }}"
- class="flex items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40">
+ class="flex min-h-14 items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <x-ui.avatar :src="$friend->avatar_url" :name="$friend->name" size="sm"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-medium text-bark">{{ $friend->name }}</p>
@@ -359,7 +364,7 @@
  <div class="space-y-2">
  @foreach ($commonGroups as $group)
  <a href="{{ route('groups.show', ['group'=> $group]) }}"
- class="flex items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40">
+ class="flex min-h-14 items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <x-ui.avatar :src="$group->getFirstMediaUrl('avatar')" :name="$group->name" size="sm"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-medium text-bark">{{ $group->name }}</p>
@@ -382,7 +387,7 @@
  @if ($canInteract)
  <x-slot name="action">
  <button
- class="inline-flex items-center justify-center rounded-md bg-paw px-4 py-2 text-sm font-medium text-white shadow-button transition-all duration-150 hover:bg-paw-dark"
+ class="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] bg-paw px-4 py-2 text-sm font-medium text-white shadow-button transition-all duration-150 hover:bg-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
  x-bind:disabled="busy || isBlocked" x-bind:aria-pressed="isFollowing.toString()"
  x-bind:aria-label="isFollowing ?'Unfollow {{ addslashes($profileUser->name) }}':'Follow {{ addslashes($profileUser->name) }}'"
  @click="toggleFollow">
@@ -400,8 +405,8 @@
  @php
  $petRouteParam = $pet->slug ?? $pet->getKey();
  @endphp
-                                <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
+ <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
+ class="block min-h-28 rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <div class="flex items-center gap-3">
  <x-ui.avatar :src="$pet->getFirstMediaUrl('avatar')" :name="$pet->name" size="md"/>
  <div class="min-w-0">
@@ -445,7 +450,7 @@
  placeholder="Short description for this gallery"></textarea>
  </div>
  <div class="flex justify-end">
- <x-ui.button type="submit" size="sm" variant="primary">
+ <x-ui.button type="submit" size="sm" variant="primary" class="min-h-11">
  Create Gallery
  </x-ui.button>
  </div>
@@ -459,13 +464,13 @@
  <h3 class="text-sm font-semibold text-bark">Galleries</h3>
  @if ($isOwner)
  <a href="{{ route('settings.photos') }}"
- class="text-xs font-semibold text-paw hover:underline">Manage</a>
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Manage</a>
  @endif
  </div>
  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
  @foreach ($galleries as $gallery)
  <a href="{{ route('photo-galleries.show', ['user'=> $profileUser,'gallery'=> $gallery]) }}"
- class="overflow-hidden rounded-xl border border-whisker/40 bg-warm-white shadow-sm block hover:shadow-card-hover hover:-translate-y-0.5 transition">
+ class="block overflow-hidden rounded-xl border border-whisker/40 bg-warm-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  @php
  $coverUrl = $gallery->coverUrl();
  @endphp
@@ -508,7 +513,7 @@
  accept="image/jpeg,image/png,image/webp">
  </label>
  <div class="flex justify-end">
- <x-ui.button type="submit" size="xs" variant="secondary">
+ <x-ui.button type="submit" size="xs" variant="secondary" class="min-h-9">
  Upload
  </x-ui.button>
  </div>
@@ -530,7 +535,7 @@
  class="absolute inset-0 flex items-end justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
  @csrf
  <button type="submit"
- class="mb-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-bark shadow">
+ class="mb-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-bark shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  Set cover
  </button>
  </form>
@@ -578,7 +583,7 @@
  <div class="grid gap-4 sm:grid-cols-2">
  @foreach ($groups as $group)
  <a href="{{ route('groups.show', ['group'=> $group]) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
+ class="block min-h-24 rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <div class="flex items-center gap-3">
  <x-ui.avatar :src="$group->getFirstMediaUrl('avatar')" :name="$group->name" size="md"/>
  <div class="min-w-0">
@@ -611,7 +616,7 @@
  <div class="space-y-3">
  @foreach ($upcomingEvents as $event)
  <a href="{{ route('events.show', ['event'=> $event]) }}"
- class="flex items-center gap-3 rounded-xl border border-whisker/30 bg-warm-white px-4 py-3 transition-all hover:shadow-card-hover">
+ class="flex min-h-20 items-center gap-3 rounded-xl border border-whisker/30 bg-warm-white px-4 py-3 transition-all hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <div class="flex-shrink-0 rounded-lg bg-paw-light px-3 py-2 text-center">
  <p class="text-xs font-bold text-paw-dark">{{ optional($event->start_at)->format('M') }}
  </p>
@@ -635,7 +640,7 @@
  @if ($pastEvents->isNotEmpty())
  <div class="mt-4" x-data="{ showPast: false }">
  <button @click="showPast = !showPast"
- class="flex items-center gap-1 text-xs font-semibold text-fur hover:text-bark transition-colors">
+ class="flex min-h-10 items-center gap-1 rounded-[var(--radius-soft)] text-xs font-semibold text-fur transition-colors hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <svg :class="showPast &&'rotate-90'" class="h-3 w-3 transition-transform" fill="none"
  viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
@@ -645,7 +650,7 @@
  <div x-show="showPast" x-collapse class="mt-2 space-y-3">
  @foreach ($pastEvents as $event)
  <a href="{{ route('events.show', ['event'=> $event]) }}"
- class="flex items-center gap-3 rounded-xl border border-whisker/20 bg-cream/50 px-4 py-3 opacity-75 transition-all hover:opacity-100">
+ class="flex min-h-20 items-center gap-3 rounded-xl border border-whisker/20 bg-cream/50 px-4 py-3 opacity-75 transition-all hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <div class="flex-shrink-0 rounded-lg bg-whisker/20 px-3 py-2 text-center">
  <p class="text-xs font-bold text-fur">{{ optional($event->start_at)->format('M') }}
  </p>
@@ -676,7 +681,7 @@
  <div class="mb-4 grid gap-4 sm:grid-cols-2">
  @foreach ($organizedContests as $contest)
  <a href="{{ route('contests.show', ['contest'=> $contest]) }}"
- class="rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
+ class="block min-h-24 rounded-xl border border-whisker/30 bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <div class="flex items-center justify-between">
  <p class="truncate text-sm font-semibold text-bark">{{ $contest->title }}</p>
  <x-ui.badge variant="info" size="sm">Organizer</x-ui.badge>
@@ -694,7 +699,7 @@
  @foreach ($contestEntries as $entry)
  @if ($entry->contest)
  <a href="{{ route('contests.show', ['contest'=> $entry->contest]) }}"
- class="rounded-xl border {{ $entry->is_winner ?'border-amber ring-2 ring-amber':'border-whisker/30'}} bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
+ class="block min-h-24 rounded-xl border {{ $entry->is_winner ?'border-amber ring-2 ring-amber':'border-whisker/30'}} bg-warm-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <div class="flex items-center justify-between">
  <p class="truncate text-sm font-semibold text-bark">{{ $entry->contest->title }}</p>
  @if ($entry->is_winner)
@@ -717,19 +722,19 @@
  <div class="flex items-center gap-3">
  <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="md"/>
  <a href="{{ route('posts.create') }}"
- class="w-full rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30">
+ class="flex min-h-11 w-full items-center rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  What's on your mind, {{ $profileUser->name }}?
  </a>
  </div>
  <div class="mt-3 grid grid-cols-3 gap-2">
  <a href="{{ route('posts.create') }}"
- class="rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream">📷
+ class="flex min-h-11 items-center justify-center rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">📷
  Photo</a>
  <a href="{{ route('posts.create') }}"
- class="rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream">🐾
+ class="flex min-h-11 items-center justify-center rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">🐾
  Pet update</a>
  <a href="{{ route('posts.create') }}"
- class="rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream">🎉
+ class="flex min-h-11 items-center justify-center rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">🎉
  Life event</a>
  </div>
  </x-ui.card>
@@ -744,12 +749,12 @@
  <form method="POST" action="{{ route('posts.unpin', $post) }}">
  @csrf
  @method('DELETE')
- <x-ui.button type="submit" variant="ghost" size="xs">Unpin</x-ui.button>
+ <x-ui.button type="submit" variant="ghost" size="xs" class="min-h-9">Unpin</x-ui.button>
  </form>
  @else
  <form method="POST" action="{{ route('posts.pin', $post) }}">
  @csrf
- <x-ui.button type="submit" variant="secondary" size="xs">Pin to Profile</x-ui.button>
+ <x-ui.button type="submit" variant="secondary" size="xs" class="min-h-9">Pin to Profile</x-ui.button>
  </form>
  @endif
  </div>

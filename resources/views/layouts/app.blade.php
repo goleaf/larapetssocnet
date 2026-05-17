@@ -20,11 +20,7 @@
  </head>
  <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
  <div class="relative min-h-screen">
- <!-- Background blobs -->
- <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-[28rem] overflow-hidden">
- <div class="absolute -left-16 top-12 h-72 w-72 rounded-full opacity-40 blur-3xl animate-float bg-paw-light"></div>
- <div class="absolute -right-16 top-0 h-80 w-80 rounded-full opacity-35 blur-3xl animate-float bg-amber-light" style="animation-delay: 800ms;"></div>
- </div>
+ <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-32 border-b border-whisker/20 bg-sky-light/30"></div>
 
  <!-- New Navbar Component -->
  <x-ui.navbar />
@@ -262,12 +258,13 @@
  </div>
  
  <!-- Mobile Bottom Nav -->
- <nav class="fixed inset-x-3 bottom-3 z-40 lg:hidden">
- <div class="bg-warm-white rounded-2xl shadow-card-hover border border-whisker/30 flex items-center justify-between px-2 py-1.5">
+ <nav class="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Mobile navigation">
+ <div class="flex items-center justify-between rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white px-2 py-2 shadow-card-hover">
  @foreach ($mobileNav as $item)
  <a
  href="{{ $item['href'] }}"
- class="flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1 text-[0.65rem] font-semibold transition-colors {{ $item['isPrimaryAction'] ? 'bg-paw text-white shadow-button hover:bg-paw-dark' : ($item['active'] ? 'text-paw' : 'text-fur hover:bg-cream hover:text-bark') }}"
+ class="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-soft)] px-1 py-1 text-[0.68rem] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $item['isPrimaryAction'] ? 'bg-paw text-white shadow-button hover:bg-paw-dark' : ($item['active'] ? 'bg-paw-light text-paw-dark' : 'text-fur hover:bg-cream hover:text-bark') }}"
+ @if($item['active']) aria-current="page" @endif
  >
  <span class="text-base" aria-hidden="true">{{ $item['icon'] }}</span>
  <span class="truncate">{{ $item['label'] }}</span>

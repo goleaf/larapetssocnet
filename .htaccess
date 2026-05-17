@@ -5,20 +5,28 @@
 
     RewriteEngine On
 
-    RewriteRule ^laravel(?:/|$) - [F,L]
-    RewriteRule (^|/)\. - [F,L]
+    # Block Laravel internals when shared hosting serves the repository root.
     RewriteRule ^(?:app|bootstrap|config|database|lang|node_modules|resources|routes|scripts|skills|tests|vendor)(?:/|$) - [F,L]
+    RewriteRule (^|/)\. - [F,L]
 
+    # Keep Laravel runtime storage private while exposing the public disk at /storage.
+    RewriteRule ^storage/(?:app/(?!public(?:/|$))|framework|logs|debugbar|media-library)(?:/|$) - [F,L]
+    RewriteRule ^storage/(.+)$ storage/app/public/$1 [L]
+
+    # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+    # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]

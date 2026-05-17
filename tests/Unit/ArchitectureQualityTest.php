@@ -30,11 +30,49 @@ it('keeps environment access in configuration files', function (): void {
     expect($violations)->toBeEmpty();
 });
 
+it('uses semantic response assertions in tests for common http statuses', function (): void {
+    $violations = qualityPhpFiles([base_path('tests')])
+        ->filter(fn (string $path): bool => preg_match('/->assertStatus\((?:200|403|404|422)\)/', qualitySource($path)) === 1)
+        ->values()
+        ->all();
+
+    expect($violations)->toBeEmpty();
+});
+
+it('keeps tests free of placeholder truth assertions', function (): void {
+    $violations = qualityPhpFiles([base_path('tests')])
+        ->filter(fn (string $path): bool => preg_match('/assertTrue\(true\)|expect\(true\)->toBeTrue\(\)/', qualitySource($path)) === 1)
+        ->values()
+        ->all();
+
+    expect($violations)->toBeEmpty();
+});
+
+it('keeps tests free of starter-template comments', function (): void {
+    $starterComment = implode('', ['A basic test', ' example.']);
+
+    $violations = qualityPhpFiles([base_path('tests')])
+        ->filter(fn (string $path): bool => str_contains(qualitySource($path), $starterComment))
+        ->values()
+        ->all();
+
+    expect($violations)->toBeEmpty();
+});
+
+it('keeps the test suite free of focused or skipped tests', function (): void {
+    $violations = qualityPhpFiles([base_path('tests')])
+        ->filter(fn (string $path): bool => preg_match('/(?:->only\(|\bonly\(|->skip\(|\bskip\(|\btodo\()/', qualitySource($path)) === 1)
+        ->values()
+        ->all();
+
+    expect($violations)->toBeEmpty();
+});
+
 it('does not add application console command classes', function (): void {
     $consolePath = app_path('Console');
 
     if (! is_dir($consolePath)) {
-        expect(true)->toBeTrue();
+        expect($consolePath)->not->toBeDirectory();
 
         return;
     }

@@ -22,6 +22,7 @@ it('logs a warning when the queue busy event is dispatched', function (): void {
 
 it('sends an on-demand queue busy alert email when configured', function (): void {
     config()->set('queue.monitor.alert_email', 'ops@example.com');
+    Log::spy();
     Notification::fake();
 
     event(new QueueBusy('database', 'default', 42));
@@ -40,6 +41,7 @@ it('sends an on-demand queue busy alert email when configured', function (): voi
 
 it('does not send an on-demand queue busy alert email when not configured', function (): void {
     config()->set('queue.monitor.alert_email');
+    Log::spy();
     Notification::fake();
 
     event(new QueueBusy('database', 'default', 42));
@@ -49,6 +51,7 @@ it('does not send an on-demand queue busy alert email when not configured', func
 
 it('does not send an on-demand queue busy alert email when configured value is blank', function (): void {
     config()->set('queue.monitor.alert_email', '   ');
+    Log::spy();
     Notification::fake();
 
     event(new QueueBusy('database', 'default', 42));

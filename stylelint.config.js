@@ -2,7 +2,7 @@ export default {
     customSyntax: 'postcss-scss',
     extends: ['stylelint-config-standard-scss'],
     plugins: ['stylelint-order'],
-    ignoreFiles: ['node_modules/**', 'public/build/**', 'storage/**', 'vendor/**'],
+    ignoreFiles: ['build/**', 'node_modules/**', 'storage/**', 'vendor/**'],
     rules: {
         'at-rule-no-unknown': null,
         'scss/at-rule-no-unknown': [

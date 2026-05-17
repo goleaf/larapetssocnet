@@ -105,7 +105,7 @@ Constraints guide the AI toward solutions that fit your project. Without them, y
 
 ### Version Requirements
 "Add image processing feature:
-- Use `intervention/image` ^3.0 (Laravel 11.x compatible)
+- Use `intervention/image` ^4.0 (Laravel 13.x compatible)
 - Requires PHP 8.2+
 - Requires GD or Imagick extension
 - Compatible with our existing `spatie/laravel-medialibrary` ^11.0
@@ -113,7 +113,7 @@ Constraints guide the AI toward solutions that fit your project. Without them, y
 
 ### Package Selection
 "Choose a package for PDF generation:
-- Must support Laravel 11.x
+- Must support Laravel 13.x
 - Must handle UTF-8 and special characters
 - Should support headers/footers
 - Prefer actively maintained (updated in last 6 months)

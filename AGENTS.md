@@ -1,26 +1,29 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is currently a clean bootstrap. As code is added, keep a standard Laravel layout:
-- `app/` for domain logic (actions, services, models)
-- `routes/` for HTTP entry points (`web.php`, `api.php`)
-- `database/migrations` and `database/seeders` for schema and seed data
-- `resources/` for Blade views and frontend assets
-- `tests/Feature` for integration flows and `tests/Unit` for isolated logic
-- `config/` for environment-driven settings
+This is an active Laravel 13 PetSocial application. Keep changes aligned with the current feature-based layout:
+- `app/Actions/`, `app/Services/`, `app/Models/`, `app/Policies/`, and `app/Support/` for domain logic
+- `app/Http/Controllers/` and `app/Http/Requests/` for HTTP workflows and validation
+- `routes/` for web and included route files
+- `database/migrations`, `database/factories`, and `database/seeders` for schema and data setup
+- `resources/views`, `resources/js`, and `resources/scss` for Blade, Alpine, and Tailwind/Sass assets
+- root `index.php`, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` for the shared-hosting web surface
+- `tests/Feature` for HTTP/database/user flows and `tests/Unit` for services, support classes, and architecture guards
+- `skills/` plus `.agents/skills/` for project-specific AI workflow guidance
 
-Use feature-based subfolders in `app/` when possible (example: `app/Actions/Pets/`).
+Use existing domain subfolders before creating new base folders.
 
 ## Build, Test, and Development Commands
 Use Composer and Artisan as the primary workflow:
 - `composer install` installs PHP dependencies.
 - `cp .env.example .env && php artisan key:generate` initializes local environment config.
 - `php artisan migrate --seed` applies schema changes and seed data.
-- `php artisan serve` starts the app locally (`http://127.0.0.1:8000`).
-- `npm install && npm run dev` builds frontend assets with Vite in watch mode.
-- `php artisan test` runs the test suite.
+- `npm install && npm run build` installs and builds frontend assets.
+- `npm run dev` runs Vite for active frontend work.
+- `composer test` clears config and runs the Pest suite.
+- `composer quality` runs the full local gate: Composer validation, Pint, PHPStan, Rector dry-run, Pest type coverage, tests, SCSS lint, and Vite build.
 
-If `composer.json` scripts exist (for example, `composer test`), prefer those in CI.
+The project root is the shared-hosting document surface. Root `.htaccess` must keep Laravel internals private when Apache points at the repository root; do not reintroduce a `public/` web root unless the deployment strategy changes.
 
 ## Coding Style & Naming Conventions
 Follow PSR-12 and Laravel conventions:
@@ -30,18 +33,18 @@ Follow PSR-12 and Laravel conventions:
 - Tables/columns: `snake_case`; pivot tables alphabetical (`pet_user`).
 - Migrations: timestamp + intent (`2026_02_21_000000_create_pets_table.php`).
 
-Run `./vendor/bin/pint` before opening a pull request.
+Run `vendor/bin/pint --dirty --format=agent` after PHP edits and before opening a pull request.
 
 ## Testing Guidelines
-Use Pest/PHPUnit in `tests/`:
+Use Pest in `tests/`:
 - `tests/Feature` for HTTP, middleware, and database behavior.
 - `tests/Unit` for pure business logic.
 - Test names should describe behavior (example: `it_creates_a_pet_profile`).
 
-Add tests for every bug fix and user-facing feature. Cover at least one success path and one failure path for new logic.
+Add tests for every bug fix and user-facing feature. Cover at least one success path and one failure path for new logic. Avoid placeholder truth assertions, focused/skipped/todo tests, and raw common HTTP status assertions when semantic assertions are available.
 
 ## Commit & Pull Request Guidelines
-No established Git history is available yet, so use Conventional Commits:
+Use Conventional Commits:
 - `feat: add pet profile CRUD`
 - `fix: prevent duplicate adoption requests`
 
@@ -50,7 +53,7 @@ Each PR should include:
 - linked issue (`Closes #12`)
 - migration or config notes
 - screenshots for UI changes
-- test evidence (summary from `php artisan test`)
+- test evidence, preferably from `composer quality` or the most focused passing command
 
 ===
 
@@ -66,17 +69,17 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.4.16
-- laravel/framework (LARAVEL) - v12
+- laravel/framework (LARAVEL) - v13
 - laravel/prompts (PROMPTS) - v0
 - laravel/boost (BOOST) - v2
 - laravel/breeze (BREEZE) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pail (PAIL) - v1
 - laravel/pint (PINT) - v1
-- pestphp/pest (PEST) - v3
-- phpunit/phpunit (PHPUNIT) - v11
+- pestphp/pest (PEST) - v4
+- phpunit/phpunit (PHPUNIT) - v12
 - alpinejs (ALPINEJS) - v3
-- tailwindcss (TAILWINDCSS) - v3
+- tailwindcss (TAILWINDCSS) - v4
 
 ## Skills Activation
 
@@ -89,8 +92,8 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `larapetssocnet-performance-guides` — Project-specific router for feed/query performance, eager loading, counters, pagination, and SQLite-aware data patterns documented under `skills/`.
 - `larapetssocnet-workflow-guides` — Project-specific router for testing, localization/light-UI workflow, changelog/commit flow, and common service/request patterns documented under `skills/`.
 - Every markdown guide in `skills/*.md` is also exposed as a same-name local skill under `.agents/skills/`; prefer the most specific matching skill before falling back to the broad routers above.
-- `pest-testing` — Tests applications using the Pest 3 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
-- `tailwindcss-development` — Styles applications using Tailwind CSS v3 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
+- `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
+- `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 
 ## Conventions
 
@@ -265,16 +268,16 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
 
-=== laravel/v12 rules ===
+=== laravel/v13 rules ===
 
-# Laravel 12
+# Laravel 13
 
 - CRITICAL: ALWAYS use `search-docs` tool for version-specific Laravel documentation and updated code examples.
-- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
+- Laravel uses the modern streamlined file structure in this project.
 
-## Laravel 12 Structure
+## Laravel 13 Structure
 
-- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
+- In Laravel 13, middleware are no longer registered in `app/Http/Kernel.php`.
 - Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
 - `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
 - `bootstrap/providers.php` contains application specific service providers.
@@ -284,7 +287,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 ## Database
 
 - When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
-- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
+- Laravel 13 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
 
 ### Models
 

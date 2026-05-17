@@ -149,8 +149,7 @@ class FeedPostsFeatureTest extends TestCase
 
         $this->actingAs($user)
             ->postJson(route('posts.react', $post), ['type' => 'angry'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['type']);
+            ->assertInvalid(['type']);
     }
 
     public function test_comments_support_one_level_replies_and_refresh_comments_count(): void
@@ -287,8 +286,7 @@ class FeedPostsFeatureTest extends TestCase
 
         $this->actingAs($reactor)
             ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'angry'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['type']);
+            ->assertInvalid(['type']);
     }
 
     public function test_save_toggle_saves_and_unsaves_post(): void

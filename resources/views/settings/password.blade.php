@@ -1,28 +1,26 @@
 <x-settings-layout>
- <div class="space-y-6">
- <div>
- <h3 class="text-lg font-semibold text-bark">Password</h3>
- <p class="mt-1 text-sm text-fur">Ensure your account is using a long, random password to stay secure.
+ <div class="space-y-6" data-ui="settings-password-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Security</p>
+ <h2 class="shell-title text-2xl">Password</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">Ensure your account is using a long, random password to stay secure.
  </p>
  </div>
 
- <form action="{{ route('settings.password.update') }}" method="POST" class="space-y-6">
+ <form action="{{ route('settings.password.update') }}" method="POST" class="space-y-6" data-ui="settings-password-form">
  @csrf
  @method('PUT')
 
  <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-6 sm:gap-x-6">
- <!-- Current Password -->
  <div class="sm:col-span-4">
  <x-ui.input id="current_password" name="current_password" type="password" label="Current Password"
  autocomplete="current-password" required/>
  </div>
 
- <!-- New Password -->
  <div class="sm:col-span-4">
  <x-ui.input id="password" name="password" type="password" label="New Password" autocomplete="new-password" required/>
  </div>
 
- <!-- Confirm Password -->
  <div class="sm:col-span-4">
  <x-ui.input id="password_confirmation" name="password_confirmation" type="password" label="Confirm New Password"
  autocomplete="new-password" required/>
@@ -30,7 +28,7 @@
  </div>
 
  <div class="flex justify-start border-t border-whisker/30 pt-5">
- <x-ui.button variant="primary">Save Password</x-ui.button>
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-36">Save Password</x-ui.button>
  </div>
  </form>
 

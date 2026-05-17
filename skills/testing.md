@@ -4,6 +4,7 @@
 - Use `Storage::fake('public')`
 - Use `UploadedFile::fake()->image(...)` and `->create(...)`
 - Assert media collection counts and public disk files
+- Keep shared-hosting path tests current when public assets, Vite output, or `.htaccess` protections change.
 
 ## Observers
 - Use `withoutEvents()`/`Event::fake()` for isolated unit tests where needed.
@@ -15,6 +16,12 @@
 - Verify counter cache accuracy after follow/unfollow/approve/reject.
 - Add blocked-user denial tests for follow and related social actions.
 - Add idempotency tests (repeat follow should not create duplicates).
+
+## Assertion quality
+- Do not use no-op truth assertions that only prove the test runner executes.
+- Remove starter-template comments such as `A basic test example.` when replacing scaffold tests.
+- Prefer semantic response assertions such as `assertOk()`, `assertForbidden()`, `assertNotFound()`, and `assertInvalid()` over raw common status codes.
+- Keep `only()`, `skip()`, and `todo()` out of committed tests unless the team explicitly accepts a temporary disabled test.
 
 ## Testing Visibility Rules
 - Test each visibility level from four viewer perspectives:

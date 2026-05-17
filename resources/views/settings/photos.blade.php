@@ -1,8 +1,9 @@
 <x-settings-layout>
- <div class="space-y-6">
- <div>
- <h3 class="text-lg font-medium leading-6 text-bark">Photo Galleries</h3>
- <p class="mt-1 text-sm text-fur">
+ <div class="space-y-6" data-ui="settings-photos-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Media library</p>
+ <h2 class="shell-title text-2xl">Photo Galleries</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">
  Create galleries, upload photos, and choose a cover image for each gallery.
  </p>
  </div>
@@ -23,7 +24,7 @@
  </div>
  </div>
  <div class="flex justify-end border-t border-whisker/30 pt-4">
- <x-ui.button variant="primary">Create Gallery</x-ui.button>
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-36">Create Gallery</x-ui.button>
  </div>
  </form>
  </section>

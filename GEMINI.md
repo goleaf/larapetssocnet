@@ -1,3 +1,11 @@
+<project-guidelines>
+# PetSocial Repository Context
+
+This is an active Laravel 13 PetSocial application with established domain structure. Use the feature-based folders already in place: `app/Actions`, `app/Services`, domain-specific `app/Models` subfolders, Form Requests, policies, Blade views, Alpine/Tailwind assets, and Pest tests. The repository root is also the shared-hosting web surface: keep `index.php`, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` at the root, and keep Laravel internals protected by root `.htaccess`.
+
+Prefer `composer quality` as the broad local gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full test suite, lints SCSS, and builds assets. Keep tests meaningful: no placeholder truth assertions, focused/skipped/todo tests, or raw common HTTP status assertions when semantic assertions exist.
+</project-guidelines>
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
@@ -10,17 +18,17 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.4.16
-- laravel/framework (LARAVEL) - v12
+- laravel/framework (LARAVEL) - v13
 - laravel/prompts (PROMPTS) - v0
 - laravel/boost (BOOST) - v2
 - laravel/breeze (BREEZE) - v2
 - laravel/mcp (MCP) - v0
 - laravel/pail (PAIL) - v1
 - laravel/pint (PINT) - v1
-- pestphp/pest (PEST) - v3
-- phpunit/phpunit (PHPUNIT) - v11
+- pestphp/pest (PEST) - v4
+- phpunit/phpunit (PHPUNIT) - v12
 - alpinejs (ALPINEJS) - v3
-- tailwindcss (TAILWINDCSS) - v3
+- tailwindcss (TAILWINDCSS) - v4
 
 ## Skills Activation
 
@@ -33,8 +41,8 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `larapetssocnet-performance-guides` — Project-specific router for feed/query performance, eager loading, counters, pagination, and SQLite-aware data patterns documented under `skills/`.
 - `larapetssocnet-workflow-guides` — Project-specific router for testing, localization/light-UI workflow, changelog/commit flow, and common service/request patterns documented under `skills/`.
 - Every markdown guide in `skills/*.md` is also exposed as a same-name local skill under `.agents/skills/`; prefer the most specific matching skill before falling back to the broad routers above.
-- `pest-testing` — Tests applications using the Pest 3 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
-- `tailwindcss-development` — Styles applications using Tailwind CSS v3 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
+- `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
+- `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 
 ## Conventions
 
@@ -209,16 +217,16 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
 
-=== laravel/v12 rules ===
+=== laravel/v13 rules ===
 
-# Laravel 12
+# Laravel 13
 
 - CRITICAL: ALWAYS use `search-docs` tool for version-specific Laravel documentation and updated code examples.
-- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
+- Laravel uses the modern streamlined file structure in this project.
 
-## Laravel 12 Structure
+## Laravel 13 Structure
 
-- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
+- In Laravel 13, middleware are no longer registered in `app/Http/Kernel.php`.
 - Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
 - `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
 - `bootstrap/providers.php` contains application specific service providers.
@@ -228,7 +236,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 ## Database
 
 - When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
-- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
+- Laravel 13 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
 
 ### Models
 

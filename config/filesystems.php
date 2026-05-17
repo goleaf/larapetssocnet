@@ -73,8 +73,8 @@ return [
     |
     */
 
-    'links' => [
+    'links' => env('PUBLIC_DISK_LINKS_ENABLED', false) ? [
         public_path('storage') => storage_path('app/public'),
-    ],
+    ] : [],
 
 ];

@@ -14,7 +14,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -54,3 +54,17 @@ return Application::configure(basePath: dirname(__DIR__))
             ], $e->statusCode);
         });
     })->create();
+
+$basePath = $app->basePath();
+$parentPath = dirname($basePath);
+$configuredPublicPath = $_SERVER['LARAVEL_PUBLIC_PATH'] ?? $_ENV['LARAVEL_PUBLIC_PATH'] ?? null;
+
+$publicPath = match (true) {
+    is_string($configuredPublicPath) && $configuredPublicPath !== '' => $configuredPublicPath,
+    basename($basePath) === 'laravel' && is_file($parentPath.'/index.php') => $parentPath,
+    default => $basePath,
+};
+
+$app->usePublicPath($publicPath);
+
+return $app;

@@ -26,8 +26,7 @@
 
 @mixin page-background {
     background:
-        radial-gradient(circle at 0% -10%, rgb(232 131 74 / 11%), transparent 34%),
-        radial-gradient(circle at 100% 0%, rgb(74 133 201 / 8%), transparent 30%),
+        linear-gradient(180deg, color-mix(in srgb, var(--color-sky-light) 34%, transparent) 0%, transparent 24rem),
         var(--surface-page);
 }
 

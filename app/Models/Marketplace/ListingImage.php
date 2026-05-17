@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -45,7 +46,7 @@ class ListingImage extends Model
                 return $path;
             }
 
-            return asset('storage/'.ltrim($path, '/'));
+            return Storage::disk('public')->url(ltrim($path, '/'));
         });
     }
 }

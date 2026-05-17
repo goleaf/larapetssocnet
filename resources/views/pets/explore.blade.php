@@ -107,7 +107,7 @@
  description="Try different filters to find matching pet profiles."/>
  </x-ui.card>
  @else
- <div class="mt-4 flex flex-col gap-4">
+ <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
  @foreach ($pets as $pet)
  @php
  $petSlug = $pet->slug ?? $pet->getKey();
@@ -126,6 +126,7 @@
     :owner="$pet->owner?->name"
     cta-label="View Profile"
     :cta-href="route('pets.show', $petSlug)"
+    variant="browse"
 />
  @endforeach
  </div>

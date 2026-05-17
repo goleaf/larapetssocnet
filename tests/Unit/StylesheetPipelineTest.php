@@ -31,7 +31,10 @@ it('points vite blade and tailwind to the scss entrypoint', function (): void {
 
     expect($vite)->toContain($entrypoint)
         ->and($vite)->toContain("loadPaths: ['node_modules']")
+        ->and($vite)->toContain("outDir: 'build'")
+        ->and($vite)->toContain("hotFile: 'hot'")
         ->and($vite)->not->toContain('resources/css/app.css')
+        ->and($vite)->not->toContain("outDir: 'public/build'")
         ->and($tailwind)->toContain('./resources/**/*.scss');
 
     foreach (stylesheetBladeFiles() as $contents) {

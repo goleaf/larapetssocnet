@@ -51,12 +51,39 @@
  ];
  @endphp
 
- <div class="py-6">
+ <div class="py-6" data-ui="settings-shell">
  <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+ <section class="mb-5 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="settings-header">
+ <div class="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+ <div class="space-y-2">
+ <p class="chip min-h-8">Account controls</p>
+ <h1 class="shell-title text-2xl">Settings</h1>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">
+ Keep your profile, privacy, notifications, and account data in one predictable workspace.
+ </p>
+ </div>
+
+ <div class="grid grid-cols-3 gap-2 text-center text-xs">
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 px-3 py-2">
+ <p class="font-semibold text-bark">Profile</p>
+ <p class="text-fur">Identity</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 px-3 py-2">
+ <p class="font-semibold text-bark">Privacy</p>
+ <p class="text-fur">Visibility</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 px-3 py-2">
+ <p class="font-semibold text-bark">Data</p>
+ <p class="text-fur">Export</p>
+ </div>
+ </div>
+ </div>
+ </section>
+
  <div class="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
- <aside>
+ <aside data-ui="settings-sidebar">
  <div class="sticky top-24 flex flex-col gap-4">
- <x-ui.card>
+ <x-ui.card class="shadow-card">
  <x-ui.card-header title="Settings" subtitle="Account, privacy, and security"/>
 
  <x-ui.sidebar-nav :items="$settingsNavItems"/>
@@ -64,8 +91,8 @@
  </div>
  </aside>
 
- <main>
- <x-ui.panel padding="lg">
+ <main data-ui="settings-main">
+ <x-ui.panel padding="lg" data-ui="settings-panel">
  {{ $slot }}
  </x-ui.panel>
  </main>

@@ -1,19 +1,19 @@
 <x-settings-layout>
- <div class="space-y-6">
- <div>
- <h3 class="text-lg font-medium leading-6 text-bark">Privacy & Visibility</h3>
- <p class="mt-1 text-sm text-fur">Manage who can see your content and who can interact with you.</p>
+ <div class="space-y-6" data-ui="settings-privacy-page">
+ <div class="space-y-2" data-ui="settings-page-header">
+ <p class="chip min-h-8">Visibility controls</p>
+ <h2 class="shell-title text-2xl">Privacy & Visibility</h2>
+ <p class="max-w-2xl text-sm leading-6 shell-text-muted">Manage who can see your content and who can interact with you.</p>
  </div>
 
- <form action="{{ route('settings.privacy.update') }}" method="POST" class="space-y-8">
+ <form action="{{ route('settings.privacy.update') }}" method="POST" class="space-y-8" data-ui="settings-privacy-form">
  @csrf
  @method('PUT')
 
  <div class="space-y-6">
- <!-- Profile Visibility -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-sm font-medium text-bark">Profile Visibility</h4>
- <p class="text-sm text-fur mb-4">Control who can view your posts and personal details.</p>
+ <p class="mb-4 text-sm text-fur">Control who can view your posts and personal details.</p>
 
  <x-ui.radio-group
  name="profile_visibility"
@@ -26,12 +26,9 @@
  />
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Messaging Permission -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-sm font-medium text-bark">Direct Messages</h4>
- <p class="text-sm text-fur mb-4">Control who can send you direct messages.</p>
+ <p class="mb-4 text-sm text-fur">Control who can send you direct messages.</p>
 
  <x-ui.radio-group
  name="messaging_permission"
@@ -43,12 +40,9 @@
  />
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Pets Visibility -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-sm font-medium text-bark">Pets Visibility</h4>
- <p class="text-sm text-fur mb-4">Control who can see the pets associated with your account.</p>
+ <p class="mb-4 text-sm text-fur">Control who can see the pets associated with your account.</p>
 
  <x-ui.radio-group
  name="pets_visibility"
@@ -60,12 +54,9 @@
  />
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Groups Visibility -->
- <div>
+ <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-sm font-medium text-bark">Groups Visibility</h4>
- <p class="text-sm text-fur mb-4">Control who can see the groups you have joined.</p>
+ <p class="mb-4 text-sm text-fur">Control who can see the groups you have joined.</p>
 
  <x-ui.radio-group
  name="groups_visibility"
@@ -77,10 +68,7 @@
  />
  </div>
 
- <hr class="border-whisker/30">
-
- <!-- Toggles -->
- <div class="space-y-6">
+ <div class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <x-ui.toggle name="show_in_explore" label="Show in Explore"
  description="Allow your profile to be recommended to other users."
  :checked="old('show_in_explore', $user->show_in_explore)"/>
@@ -92,7 +80,7 @@
  </div>
 
  <div class="flex justify-end border-t border-whisker/30 pt-5">
- <x-ui.button variant="primary">Save Privacy Settings</x-ui.button>
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-44">Save Privacy Settings</x-ui.button>
  </div>
  </form>
  </div>
