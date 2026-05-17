@@ -24,15 +24,15 @@
 - Keep `only()`, `skip()`, and `todo()` out of committed tests unless the team explicitly accepts a temporary disabled test.
 
 ## Testing Visibility Rules
-- Test each visibility level from four viewer perspectives:
-  - guest
+- Test each visibility level from the relevant viewer perspectives:
+  - guest redirect to login for application page routes
   - owner (self)
   - accepted follower
   - non-follower
 - Recommended matrix loop:
   - visibility in `[public, followers, private]`
-  - viewer in `[guest, self, follower, non-follower]`
-- Use `assertOk()` for allowed access and `assertForbidden()` for denied access.
+  - viewer in `[guest redirect, self, follower, non-follower]`
+- Use `assertRedirect(route('login'))` for guests, `assertOk()` for allowed authenticated access, and `assertForbidden()`/`assertNotFound()` for denied authenticated access.
 - For feed/profile visibility, add `assertSee()` / `assertDontSee()` checks per viewer role.
 
 ## TESTING POLYMORPHIC RELATIONSHIPS

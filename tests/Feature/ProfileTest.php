@@ -154,7 +154,7 @@ test('avatar and cover images can be removed', function (): void {
     expect($user->getMedia('cover'))->toHaveCount(0);
 });
 
-test('public profiles are visible to guests', function (): void {
+test('public profiles require authentication and are visible to authenticated viewers', function (): void {
     $user = User::factory()->create([
         'name' => 'Public Profile User',
         'username' => 'public_user',
@@ -162,18 +162,23 @@ test('public profiles are visible to guests', function (): void {
     ]);
 
     $this->get(route('profile.show', ['user' => $user]))
+        ->assertRedirect(route('login'));
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]))
         ->assertOk()
         ->assertSee('Public Profile User')
         ->assertSee('@public_user');
 });
 
-test('private profiles hide content from guests', function (): void {
+test('private profiles hide content from authenticated strangers', function (): void {
     $user = User::factory()->create([
         'username' => 'private_user',
         'is_private' => true,
     ]);
 
-    $this->get(route('profile.show', ['user' => $user]))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]))
         ->assertOk()
         ->assertSee('This profile is private');
 });
@@ -540,7 +545,8 @@ test('verified badge data is available on public profile', function (): void {
 
     $user->badges()->attach($badge->getKey(), ['awarded_at' => now()]);
 
-    $response = $this->get(route('profile.show', ['user' => $user]));
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]));
 
     $response->assertOk();
 
@@ -601,7 +607,8 @@ test('profile activity summary uses six monthly buckets', function (): void {
             'created_at' => now()->subMonths(8)->startOfMonth()->addDay(),
         ]);
 
-        $response = $this->get(route('profile.show', ['user' => $profileUser]));
+        $response = $this->actingAs(User::factory()->create())
+            ->get(route('profile.show', ['user' => $profileUser]));
 
         $response->assertOk();
 

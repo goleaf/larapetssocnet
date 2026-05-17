@@ -17,7 +17,8 @@ it('explore only shows public posts from public and non-banned authors', functio
     Post::factory()->for($privateAuthor)->create(['body' => 'explore-private-account-hidden', 'visibility' => Post::VISIBILITY_PUBLIC]);
     Post::factory()->for($bannedAuthor)->create(['body' => 'explore-banned-hidden', 'visibility' => Post::VISIBILITY_PUBLIC]);
 
-    $this->get(route('explore.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('explore.index'))
         ->assertOk()
         ->assertSee('explore-public-visible')
         ->assertDontSee('explore-followers-hidden')
@@ -26,7 +27,7 @@ it('explore only shows public posts from public and non-banned authors', functio
         ->assertDontSee('explore-banned-hidden');
 });
 
-it('search posts only shows publicly visible posts for guests', function (): void {
+it('search posts only shows publicly visible posts for authenticated users', function (): void {
     $author = User::factory()->create([
         'is_private' => false,
         'is_banned' => false,
@@ -44,7 +45,8 @@ it('search posts only shows publicly visible posts for guests', function (): voi
         'status' => 'published',
     ]);
 
-    $this->get(route('search.index', ['type' => 'posts', 'q' => 'search-']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('search.index', ['type' => 'posts', 'q' => 'search-']))
         ->assertOk()
         ->assertSee('search-visible-post')
         ->assertDontSee('search-private-post');
@@ -72,7 +74,8 @@ it('search users only shows discoverable users', function (): void {
         'is_banned' => true,
     ]);
 
-    $this->get(route('search.index', ['type' => 'users', 'q' => 'Search']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('search.index', ['type' => 'users', 'q' => 'Search']))
         ->assertOk()
         ->assertSee('Search Public User')
         ->assertDontSee('Search Private User')

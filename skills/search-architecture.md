@@ -25,6 +25,7 @@ Use the existing user scope pattern for name, username, bio, and location.
 ## Global vs Explore Search
 - `/search`: global entity search.
 - `/explore?q=`: posts-only search within Explore.
+- Both routes require authentication; guest requests should redirect to login before search logic runs.
 
 ## Sanitization
 - Trim input.

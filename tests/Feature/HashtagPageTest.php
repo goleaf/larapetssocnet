@@ -44,14 +44,15 @@ class HashtagPageTest extends TestCase
 
         $hashtag = Hashtag::query()->where('name', 'cats')->firstOrFail();
 
-        $this->get(route('hashtags.show', $hashtag))
+        $this->actingAs(User::factory()->create())
+            ->get(route('hashtags.show', $hashtag))
             ->assertOk()
             ->assertSee('First #cats post')
             ->assertSee('Second #cats post')
             ->assertDontSee('Only #dogs here');
     }
 
-    public function test_hashtag_page_hides_private_posts_from_guests(): void
+    public function test_hashtag_page_hides_private_posts_from_authenticated_viewers(): void
     {
         $privateAuthor = User::factory()->create(['is_private' => true]);
         $publicAuthor = User::factory()->create(['is_private' => false]);
@@ -75,7 +76,8 @@ class HashtagPageTest extends TestCase
 
         $hashtag = Hashtag::query()->where('name', 'cats')->firstOrFail();
 
-        $this->get(route('hashtags.show', $hashtag))
+        $this->actingAs(User::factory()->create())
+            ->get(route('hashtags.show', $hashtag))
             ->assertOk()
             ->assertSee('Public #cats post')
             ->assertDontSee('Secret #cats post');

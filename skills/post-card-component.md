@@ -41,7 +41,7 @@
 - Compact header (smaller spacing and avatar).
 - Body truncated to 200 chars.
 - Full media shown.
-- Reaction area visible but guest-gated.
+- Reaction area uses authenticated viewer state.
 - No quick-comment section.
 
 `x-explore-photo-card`:

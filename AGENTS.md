@@ -25,6 +25,8 @@ Use Composer and Artisan as the primary workflow:
 
 The project root is the shared-hosting document surface. Root `.htaccess` must keep Laravel internals private when Apache points at the repository root; do not reintroduce a `public/` web root unless the deployment strategy changes.
 
+Application pages are closed to guests by default. Keep Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, and settings behind the authenticated application route group unless a new product-policy change explicitly opens them.
+
 ## Coding Style & Naming Conventions
 Follow PSR-12 and Laravel conventions:
 - Indentation: 4 spaces in PHP, 2 spaces in JS/CSS.

@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('guest post search returns only public visible posts', function (): void {
+test('post search returns only public visible posts to authenticated viewers', function (): void {
     $author = User::factory()->create([
         'username' => 'search_author',
         'is_private' => false,
@@ -25,7 +25,8 @@ test('guest post search returns only public visible posts', function (): void {
         'status' => 'published',
     ]);
 
-    $this->get(route('search.index', ['type' => 'posts', 'q' => 'needle']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('search.index', ['type' => 'posts', 'q' => 'needle']))
         ->assertOk()
         ->assertSee('needle public post')
         ->assertDontSee('needle private post');
@@ -53,7 +54,8 @@ test('user search only returns discoverable users', function (): void {
         'is_banned' => true,
     ]);
 
-    $this->get(route('search.index', ['type' => 'users', 'q' => 'Findable']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('search.index', ['type' => 'users', 'q' => 'Findable']))
         ->assertOk()
         ->assertSee('Findable Public User')
         ->assertDontSee('Findable Private User')

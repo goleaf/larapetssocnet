@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('defaults public marketplace catalog to active listings when status filter is invalid', function (): void {
+it('defaults marketplace catalog to active listings when status filter is invalid', function (): void {
     MarketplaceListing::factory()->create([
         'status' => MarketplaceListing::STATUS_ACTIVE,
         'title' => 'Active Listing',
@@ -18,7 +18,7 @@ it('defaults public marketplace catalog to active listings when status filter is
         'title' => 'Sold Listing',
     ]);
 
-    $response = $this->get(route('marketplace.index', [
+    $response = $this->actingAs(User::factory()->create())->get(route('marketplace.index', [
         'status' => 'invalid-status',
     ]));
 

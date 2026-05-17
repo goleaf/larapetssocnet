@@ -57,7 +57,7 @@ it('loads explore likes count from reactions on initial page load', function ():
         'type' => 'love',
     ]);
 
-    $response = $this->get(route('explore.index'));
+    $response = $this->actingAs(User::factory()->create())->get(route('explore.index'));
     $posts = $response->viewData('posts');
     $loadedPost = collect($posts->items())->firstWhere('id', $post->getKey());
 

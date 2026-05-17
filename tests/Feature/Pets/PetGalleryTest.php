@@ -214,7 +214,7 @@ it('blocks viewers with a blocking relationship from seeing pet galleries', func
         ->assertForbidden();
 });
 
-it('shows public gallery photos to guests', function (): void {
+it('shows public gallery photos to authenticated viewers', function (): void {
     Storage::fake('public');
 
     $owner = User::factory()->create([
@@ -227,7 +227,8 @@ it('shows public gallery photos to guests', function (): void {
     $pet->addMedia(UploadedFile::fake()->image('gallery.jpg'))
         ->toMediaCollection(Pet::MEDIA_COLLECTION_GALLERY);
 
-    $this->get(route('pets.show', ['pet' => $pet, 'tab' => 'gallery']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.show', ['pet' => $pet, 'tab' => 'gallery']))
         ->assertOk()
         ->assertSee('<img', false);
 });

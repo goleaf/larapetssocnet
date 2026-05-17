@@ -37,8 +37,8 @@ Comment body processing mirrors posts:
 - Mentions in comments notify mentioned users (except self).
 
 ## Access Rules
-- Guests can read comments.
-- Guests cannot create comments.
+- Guests cannot access post comment pages or create comments.
+- Authenticated viewers can read comments when they can view the parent post.
 - Max body length: `CommentService::MAX_BODY_LENGTH` (1000).
 
 `CommentService` owns business logic.

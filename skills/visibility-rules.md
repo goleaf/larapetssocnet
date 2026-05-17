@@ -11,9 +11,9 @@ If any layer is missing, treat it as a security bug.
 ## Levels
 
 ### `public`
-- Visible to everyone including guests.
-- Appears in explore, hashtag pages, and search.
-- Accessible by direct URL.
+- Visible to authenticated viewers unless another rule blocks access.
+- Appears in explore, hashtag pages, and search for authenticated viewers.
+- Direct URL requires login first, then applies policy visibility checks.
 
 ### `followers`
 - Visible only to accepted followers of the author.
@@ -33,4 +33,3 @@ If any layer is missing, treat it as a security bug.
 - Post visibility cannot be broader than account visibility.
 - Post visibility can be more restrictive than account visibility.
 - Example: `public` post on private account is still follower-only.
-

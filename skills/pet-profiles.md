@@ -3,7 +3,7 @@
 Pet profiles are user-owned sub-entities.
 
 - One user can own multiple pets.
-- Pet public page: `/pets/{slug}` (route model binding prefers slug).
+- Pet profile page: `/pets/{slug}` (route model binding prefers slug) and requires authentication.
 - Slug is generated on create from pet name + owner username and is not updated on edit.
 
 ## Core Fields
@@ -21,7 +21,7 @@ Pet profiles are user-owned sub-entities.
 - `is_adoptable`: boolean (drives adoption listing eligibility)
 
 ## Privacy
-- Pet visibility is controlled by `is_public` and enforced via `PetVisibilityService` and `Pet::visibleTo()`.
+- Pet visibility is controlled by `is_public` and enforced via `PetVisibilityService` and `Pet::visibleTo()` after the viewer is authenticated.
 
 ## Media
 Pet uses Spatie MediaLibrary (public disk).

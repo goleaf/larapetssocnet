@@ -19,7 +19,8 @@ test('groups tab shows user groups with role indicators', function (): void {
         'joined_at' => now(),
     ]);
 
-    $this->get(route('profile.show', ['user' => $user, 'tab' => 'groups']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user, 'tab' => 'groups']))
         ->assertOk()
         ->assertSee('Pet Lovers Club')
         ->assertSee('👑');
@@ -33,7 +34,8 @@ test('events tab shows upcoming events', function (): void {
     ]);
     $event->respond($user, Event::ATTENDEE_GOING);
 
-    $this->get(route('profile.show', ['user' => $user, 'tab' => 'events']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user, 'tab' => 'events']))
         ->assertOk()
         ->assertSee('Dog Walk Meetup')
         ->assertSee('Upcoming Events');
@@ -54,7 +56,8 @@ test('contests tab shows entered contests', function (): void {
         'contest_id' => $contest->id,
     ]);
 
-    $this->get(route('profile.show', ['user' => $user, 'tab' => 'contests']))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user, 'tab' => 'contests']))
         ->assertOk()
         ->assertSee('Cutest Pet 2024');
 });
@@ -68,7 +71,8 @@ test('badge strip renders earned badges on profile', function (): void {
     ]);
     $user->badges()->attach($badge->id, ['awarded_at' => now()]);
 
-    $this->get(route('profile.show', ['user' => $user]))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]))
         ->assertOk()
         ->assertSee('First Post');
 });

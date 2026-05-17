@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('shows public profiles to guests', function (): void {
+it('redirects guests from public profiles and shows them to authenticated viewers', function (): void {
     $user = User::factory()->create([
         'username' => 'public_user',
         'profile_visibility' => 'public',
@@ -14,6 +14,10 @@ it('shows public profiles to guests', function (): void {
     ]);
 
     $this->get(route('profile.show', ['user' => $user]))
+        ->assertRedirect(route('login'));
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]))
         ->assertOk()
         ->assertSee('@public_user');
 });
@@ -64,14 +68,15 @@ it('pending followers cannot view followers-only profiles', function (): void {
         ->assertSee('followers-only');
 });
 
-it('strangers cannot view private profiles', function (): void {
+it('authenticated strangers cannot view private profiles', function (): void {
     $owner = User::factory()->create([
         'username' => 'strict_private',
         'profile_visibility' => 'private',
         'is_private' => true,
     ]);
 
-    $this->get(route('profile.show', ['user' => $owner]))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
         ->assertSee('Only you can view this profile');
 });

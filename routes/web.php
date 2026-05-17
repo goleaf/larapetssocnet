@@ -60,7 +60,7 @@ Route::get('/', function () {
         return app(FeedController::class)->index(request());
     }
 
-    return redirect()->route('explore.index');
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function (): Factory|View {
@@ -77,39 +77,40 @@ Route::get('/banned', function () {
     return response()->view('errors.banned', [], 403);
 })->name('banned');
 
-Route::get('/search', SearchController::class)->name('search.index');
-Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
-Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
-Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
-Route::get('/adoption', [AdoptionController::class, 'index'])->name('adoption.index');
-Route::get('/events', [EventController::class, 'index'])->name('events.index');
-Route::get('/events/{event}', [EventController::class, 'show'])
-    ->whereNumber('event')
-    ->name('events.show');
-Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])
-    ->whereNumber('event')
-    ->name('events.ics');
-Route::get('/hashtags/{hashtag:slug}', [HashtagController::class, 'show'])->name('hashtags.show');
-Route::get('/posts/{post}', [PostController::class, 'show'])
-    ->whereNumber('post')
-    ->name('posts.show');
-Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
-Route::prefix('pets')->name('pets.')->group(function (): void {
-    Route::get('/', [PetController::class, 'index'])->name('index');
-    Route::get('/{pet:slug}', [PetController::class, 'show'])
-        ->where('pet', '^(?!create$)[^/]+')
-        ->name('show');
-});
-Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
-Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
-    ->where('tip', '^(?!create$)[^/]+')
-    ->name('tips.show');
-Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
 Route::get('/api/username-available', [ProfileController::class, 'usernameAvailable'])
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
 Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): void {
+    Route::get('/search', SearchController::class)->name('search.index');
+    Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
+    Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
+    Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
+    Route::get('/adoption', [AdoptionController::class, 'index'])->name('adoption.index');
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/{event}', [EventController::class, 'show'])
+        ->whereNumber('event')
+        ->name('events.show');
+    Route::get('/events/{event}/ics', [EventController::class, 'downloadIcs'])
+        ->whereNumber('event')
+        ->name('events.ics');
+    Route::get('/hashtags/{hashtag:slug}', [HashtagController::class, 'show'])->name('hashtags.show');
+    Route::get('/posts/{post}', [PostController::class, 'show'])
+        ->whereNumber('post')
+        ->name('posts.show');
+    Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
+    Route::prefix('pets')->name('pets.')->group(function (): void {
+        Route::get('/', [PetController::class, 'index'])->name('index');
+        Route::get('/{pet:slug}', [PetController::class, 'show'])
+            ->where('pet', '^(?!create$)[^/]+')
+            ->name('show');
+    });
+    Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
+    Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
+        ->where('tip', '^(?!create$)[^/]+')
+        ->name('tips.show');
+    Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
+
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
     Route::get('/saved', [SavedPostController::class, 'index'])->name('saved.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -328,6 +329,17 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): voi
     // Badges
     Route::get('/@{user:username}/badges', [BadgeController::class, 'index'])->name('badges.index');
 
+    Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');
+    Route::get('/@{user:username}', [PublicProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/@{user:username}/photos/galleries/{gallery}', [PhotoGalleryController::class, 'show'])
+        ->name('photo-galleries.show');
+    Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_]+');
+    Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
+    Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
+
     // Legacy settings routes removed
 });
 
@@ -349,16 +361,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', AdminMiddl
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::post('/maintenance/{task}', [MaintenanceController::class, 'run'])->name('maintenance.run');
 });
-
-Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');
-Route::get('/@{user:username}', [PublicProfileController::class, 'show'])->name('profile.show');
-Route::get('/profile/edit', [ProfileController::class, 'edit'])->middleware(['auth', 'banned'])->name('profile.edit');
-Route::patch('/profile', [ProfileController::class, 'update'])->middleware(['auth', 'banned'])->name('profile.update');
-Route::delete('/profile', [ProfileController::class, 'destroy'])->middleware(['auth', 'banned'])->name('profile.destroy');
-Route::get('/@{user:username}/photos/galleries/{gallery}', [PhotoGalleryController::class, 'show'])
-    ->name('photo-galleries.show');
-Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_]+');
-Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
-Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
 
 require __DIR__.'/auth.php';

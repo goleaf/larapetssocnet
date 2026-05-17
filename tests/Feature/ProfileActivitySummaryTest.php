@@ -29,7 +29,8 @@ test('profile activity chart data uses a six month window with monthly buckets',
             'created_at' => now()->subMonths(8)->startOfMonth()->addDay(),
         ]);
 
-        $response = $this->get(route('profile.show', ['user' => $profileUser]));
+        $response = $this->actingAs(User::factory()->create())
+            ->get(route('profile.show', ['user' => $profileUser]));
 
         $response->assertOk();
 

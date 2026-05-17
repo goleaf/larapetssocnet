@@ -14,7 +14,8 @@ it('returns 200 for a public pet profile', function (): void {
             'is_public' => true,
         ]);
 
-    $this->get(route('pets.show', $pet))
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.show', $pet))
         ->assertSuccessful()
         ->assertSee('Mochi');
 });
@@ -26,7 +27,8 @@ it('returns 403 for a private pet profile when viewer is not authorized', functi
             'is_public' => false,
         ]);
 
-    $this->get(route('pets.show', $pet))
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.show', $pet))
         ->assertForbidden();
 });
 

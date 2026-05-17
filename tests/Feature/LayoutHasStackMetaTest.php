@@ -6,7 +6,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('renders default layout meta when meta stack is empty', function (): void {
-    $this->get(route('explore.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('explore.index'))
         ->assertSuccessful()
         ->assertSee(
             '<meta name="description" content="PetSocial is a community for sharing pet moments, care tips, and adoption stories.">',
@@ -21,7 +22,8 @@ it('renders stacked meta tags when view pushes meta content', function (): void 
         'is_private' => false,
     ]);
 
-    $this->get(route('profile.show', ['user' => $user]))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]))
         ->assertSuccessful()
         ->assertSee('<meta property="og:type" content="profile">', false)
         ->assertDontSee(

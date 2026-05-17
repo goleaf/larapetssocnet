@@ -69,20 +69,7 @@ Blade usage:
 ```
 
 ## Explore Eager Load Set
-Explore uses the feed core eager loads, but guest pages do not need per-user reaction/save state.
-
-For guests:
-
-```php
-Post::with([
-    'author',
-    'author.media',
-    'pet',
-    'pet.media',
-    'media',
-    'hashtags',
-])->withCount(['comments', 'reactions']);
-```
+Explore uses the feed core eager loads and always has an authenticated viewer.
 
 For authenticated users:
 - Use the same post eager load set.

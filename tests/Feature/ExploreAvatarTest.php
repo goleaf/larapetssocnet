@@ -31,7 +31,8 @@ test('explore shows author avatar from media library', function (): void {
 
     expect($avatarUrl)->not()->toBeEmpty();
 
-    $this->get(route('explore.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('explore.index'))
         ->assertOk()
         ->assertSee($avatarUrl, false);
 });

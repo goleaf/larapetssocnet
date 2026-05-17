@@ -6,8 +6,8 @@ Route pattern:
 
 ## Visibility
 
-- Show only publicly explorable posts.
-- Guest accessible.
+- Show only publicly explorable posts for authenticated viewers.
+- Guest requests redirect to login before hashtag visibility logic runs.
 
 ## Page Content
 

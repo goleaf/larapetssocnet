@@ -21,7 +21,7 @@ it('public post from public account visibility matrix works', function (): void 
 
     acceptedFollow($follower, $author);
 
-    $this->get(route('posts.show', $post))->assertOk();
+    $this->get(route('posts.show', $post))->assertRedirect(route('login'));
     $this->actingAs($nonFollower)->get(route('posts.show', $post))->assertOk();
     $this->actingAs($follower)->get(route('posts.show', $post))->assertOk();
     $this->actingAs($author)->get(route('posts.show', $post))->assertOk();
@@ -35,7 +35,7 @@ it('public post from private account is visible only to follower and author', fu
 
     acceptedFollow($follower, $author);
 
-    $this->get(route('posts.show', $post))->assertForbidden();
+    $this->get(route('posts.show', $post))->assertRedirect(route('login'));
     $this->actingAs($nonFollower)->get(route('posts.show', $post))->assertForbidden();
     $this->actingAs($follower)->get(route('posts.show', $post))->assertOk();
     $this->actingAs($author)->get(route('posts.show', $post))->assertOk();
@@ -49,7 +49,7 @@ it('followers visibility is only visible to accepted follower and author', funct
 
     acceptedFollow($follower, $author);
 
-    $this->get(route('posts.show', $post))->assertForbidden();
+    $this->get(route('posts.show', $post))->assertRedirect(route('login'));
     $this->actingAs($nonFollower)->get(route('posts.show', $post))->assertForbidden();
     $this->actingAs($follower)->get(route('posts.show', $post))->assertOk();
     $this->actingAs($author)->get(route('posts.show', $post))->assertOk();
@@ -63,7 +63,7 @@ it('private visibility is only visible to author', function (): void {
 
     acceptedFollow($follower, $author);
 
-    $this->get(route('posts.show', $post))->assertForbidden();
+    $this->get(route('posts.show', $post))->assertRedirect(route('login'));
     $this->actingAs($nonFollower)->get(route('posts.show', $post))->assertForbidden();
     $this->actingAs($follower)->get(route('posts.show', $post))->assertForbidden();
     $this->actingAs($author)->get(route('posts.show', $post))->assertOk();

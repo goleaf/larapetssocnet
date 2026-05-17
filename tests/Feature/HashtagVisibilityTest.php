@@ -41,7 +41,7 @@ it('shows follower-only hashtag posts to accepted followers', function (): void 
         ->assertSeeText('Followers #cats post');
 });
 
-it('hides follower-only hashtag posts from guests', function (): void {
+it('hides follower-only hashtag posts from authenticated non-followers', function (): void {
     $author = User::factory()->create(['is_private' => false]);
 
     $publicBody = 'Public #cats post';
@@ -63,7 +63,8 @@ it('hides follower-only hashtag posts from guests', function (): void {
 
     $hashtag = Hashtag::query()->where('normalized_name', 'cats')->firstOrFail();
 
-    $this->get(route('hashtags.show', $hashtag))
+    $this->actingAs(User::factory()->create(['is_private' => false]))
+        ->get(route('hashtags.show', $hashtag))
         ->assertSuccessful()
         ->assertSeeText('Public #cats post')
         ->assertDontSeeText('Followers #cats post');

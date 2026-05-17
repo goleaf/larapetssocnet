@@ -37,7 +37,8 @@ class PetFeatureTest extends TestCase
             $this->assertStringStartsWith('mochi', (string) $pet->slug);
         }
 
-        $this->get(route('pets.show', $pet))
+        $this->actingAs($user)
+            ->get(route('pets.show', $pet))
             ->assertOk()
             ->assertSee('Mochi')
             ->assertSee('cat')
@@ -57,7 +58,8 @@ class PetFeatureTest extends TestCase
             'is_public' => true,
         ]);
 
-        $this->get(route('pets.show', $pet))
+        $this->actingAs(User::factory()->create())
+            ->get(route('pets.show', $pet))
             ->assertOk()
             ->assertSee('Age:')
             ->assertSee('years');
@@ -140,7 +142,8 @@ class PetFeatureTest extends TestCase
 
         expect($pet->getMedia('gallery'))->toHaveCount(2);
 
-        $this->get(route('pets.show', ['pet' => $pet, 'tab' => 'gallery']))
+        $this->actingAs($owner)
+            ->get(route('pets.show', ['pet' => $pet, 'tab' => 'gallery']))
             ->assertOk()
             ->assertSee('<img', false)
             ->assertDontSee('No gallery items yet.');
@@ -168,7 +171,8 @@ class PetFeatureTest extends TestCase
             $pet->personality_tags
         );
 
-        $this->get(route('pets.show', ['pet' => $pet, 'tab' => 'about']))
+        $this->actingAs($owner)
+            ->get(route('pets.show', ['pet' => $pet, 'tab' => 'about']))
             ->assertOk()
             ->assertSee('Personality')
             ->assertSee('Playful')
@@ -205,7 +209,8 @@ class PetFeatureTest extends TestCase
             $notAdoptable->update(['is_for_adoption' => false]);
         }
 
-        $this->get(route('pets.adopt'))
+        $this->actingAs(User::factory()->create())
+            ->get(route('pets.adopt'))
             ->assertOk()
             ->assertSee($adoptable->name)
             ->assertDontSee($privateAdoptable->name)
@@ -246,11 +251,13 @@ class PetFeatureTest extends TestCase
             'is_adoptable' => false,
         ]);
 
-        $this->get(route('pets.show', $adoptable))
+        $this->actingAs(User::factory()->create())
+            ->get(route('pets.show', $adoptable))
             ->assertOk()
             ->assertSee(__('pets.status.adoptable'));
 
-        $this->get(route('pets.show', $notAdoptable))
+        $this->actingAs(User::factory()->create())
+            ->get(route('pets.show', $notAdoptable))
             ->assertOk()
             ->assertDontSee(__('pets.status.adoptable'));
     }

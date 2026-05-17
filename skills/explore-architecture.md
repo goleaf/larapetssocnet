@@ -1,18 +1,18 @@
 # Explore Architecture
 
-Explore is the public discovery surface.
-It is accessible to guests and authenticated users.
-No login is required to browse Explore.
+Explore is the authenticated discovery surface.
+Guests are redirected to login before browsing Explore.
+All Explore routes belong inside the authenticated application route group.
 
 ## What Explore Shows
 - Public, published posts only.
 - Posts from non-private, non-banned authors.
-- For authenticated users, exclude posts from blocked users (both directions).
+- Exclude posts from blocked users (both directions) for the signed-in viewer.
 
 ## Query Source of Truth
 - Controller: `ExploreController@index` in `app/Http/Controllers/ExploreController.php`.
 - Query builder: `Post::paginateExploreResults($viewer, $type, $search, $perPage = 15)`.
-- Visibility filter: `Post::scopeExplorable(?User $viewer)`.
+- Visibility filter: `Post::scopeExplorable(User $viewer)`.
 
 ## Tabs / Types
 - `all` (default)

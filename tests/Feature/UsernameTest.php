@@ -13,7 +13,8 @@ uses(RefreshDatabase::class);
 it('profile is accessible at username url', function (): void {
     $user = User::factory()->create(['username' => 'johndoe']);
 
-    $this->get('/@johndoe')
+    $this->actingAs(User::factory()->create())
+        ->get('/@johndoe')
         ->assertOk()
         ->assertSee('@johndoe');
 });
@@ -21,7 +22,8 @@ it('profile is accessible at username url', function (): void {
 it('accessing uppercase username redirects to lowercase permanently', function (): void {
     User::factory()->create(['username' => 'johndoe']);
 
-    $this->get('/@JohnDoe')
+    $this->actingAs(User::factory()->create())
+        ->get('/@JohnDoe')
         ->assertRedirect('/@johndoe')
         ->assertStatus(301);
 });
@@ -31,7 +33,8 @@ it('old username redirects to new username for 90 days', function (): void {
 
     app(UsernameService::class)->change($user, 'newname');
 
-    $this->get('/@oldname')
+    $this->actingAs(User::factory()->create())
+        ->get('/@oldname')
         ->assertRedirect('/@newname')
         ->assertStatus(301);
 });
@@ -45,7 +48,9 @@ it('expired old username redirect returns 404', function (): void {
         'created_at' => now()->subDays(91),
     ]);
 
-    $this->get('/@oldname')->assertNotFound();
+    $this->actingAs(User::factory()->create())
+        ->get('/@oldname')
+        ->assertNotFound();
 });
 
 it('username availability endpoint handles free taken and reserved values', function (): void {

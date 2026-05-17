@@ -1,7 +1,7 @@
 <project-guidelines>
 # PetSocial Repository Context
 
-This is an active Laravel 13 PetSocial application with established domain structure. Use the feature-based folders already in place: `app/Actions`, `app/Services`, domain-specific `app/Models` subfolders, Form Requests, policies, Blade views, Alpine/Tailwind assets, and Pest tests. The repository root is also the shared-hosting web surface: keep `index.php`, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` at the root, and keep Laravel internals protected by root `.htaccess`.
+This is an active Laravel 13 PetSocial application with established domain structure. Use the feature-based folders already in place: `app/Actions`, `app/Services`, domain-specific `app/Models` subfolders, Form Requests, policies, Blade views, Alpine/Tailwind assets, and Pest tests. The repository root is also the shared-hosting web surface: keep `index.php`, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` at the root, and keep Laravel internals protected by root `.htaccess`. Application pages are closed to guests by default; keep Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, and settings behind authentication unless policy changes.
 
 Prefer `composer quality` as the broad local gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full test suite, lints SCSS, and builds assets. Keep tests meaningful: no placeholder truth assertions, focused/skipped/todo tests, or raw common HTTP status assertions when semantic assertions exist.
 </project-guidelines>

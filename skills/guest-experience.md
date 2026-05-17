@@ -1,23 +1,20 @@
 # Guest Experience
 
 ## Guests Can
-- Browse Explore.
-- View public posts, profiles, pet pages, hashtags.
-- Search Explore.
-- Browse public groups, marketplace, and events.
+- View authentication pages (`/login`, `/register`, password reset, email verification).
+- View system pages that intentionally avoid authentication, such as `/banned`.
+- Reach the root URL, which redirects to login when unauthenticated.
 
 ## Guests Cannot
+- Browse Explore, search, feeds, profiles, posts, pets, hashtags, adoption, marketplace, groups, events, tips, messages, notifications, or settings.
 - React, save, follow, comment, message.
-- Access private profiles or followers-only posts.
-- Access `/feed`.
+- Access direct URLs for application content before login.
 
-## CTA Pattern
-- Never block content with login walls.
-- Gate only interaction.
-- On gated action click: show tooltip `Log in to [action]`.
-- Show dismissible Explore CTA banner for guests.
-- Store dismissal in `localStorage` key `explore_cta_dismissed`.
+## Auth Gate Pattern
+- Prefer route middleware (`auth`, `banned`, `track_last_seen`) for application pages.
+- Guests should redirect to the `login` route instead of rendering partial content.
+- Keep auth pages and intentional system pages outside the authenticated application route group.
 
 ## Never
-- Do not redirect guest from public post views to login.
-- Do not blank Explore for guests.
+- Do not reintroduce guest browsing for Explore or public content pages without an explicit product-policy change.
+- Do not replace middleware-based access control with ad hoc controller checks.

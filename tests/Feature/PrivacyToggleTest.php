@@ -13,11 +13,12 @@ class PrivacyToggleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_private_profile_page_shows_locked_state_to_guests(): void
+    public function test_private_profile_page_shows_locked_state_to_authenticated_strangers(): void
     {
         $user = User::factory()->create(['is_private' => true]);
 
-        $this->get(route('profile.show', ['user' => $user]))
+        $this->actingAs(User::factory()->create())
+            ->get(route('profile.show', ['user' => $user]))
             ->assertOk()
             ->assertSee('This account is private')
             ->assertSee('noindex, nofollow', false);

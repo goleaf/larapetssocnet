@@ -28,7 +28,8 @@ class EventIndexTest extends TestCase
             'status' => 'scheduled',
         ]);
 
-        $this->get(route('events.index'))
+        $this->actingAs($creator)
+            ->get(route('events.index'))
             ->assertSuccessful();
     }
 

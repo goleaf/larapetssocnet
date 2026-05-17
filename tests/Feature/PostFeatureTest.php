@@ -24,7 +24,8 @@ class PostFeatureTest extends TestCase
 
         $post = Post::query()->where('body', 'Hello from PetSocial')->firstOrFail();
 
-        $this->get(route('posts.show', $post))
+        $this->actingAs($user)
+            ->get(route('posts.show', $post))
             ->assertOk()
             ->assertSee('Hello from PetSocial');
 

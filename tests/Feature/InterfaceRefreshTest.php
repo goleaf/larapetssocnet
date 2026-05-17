@@ -100,7 +100,8 @@ it('renders marketplace and group cards as accessible entry points', function ()
         'posts_count' => 5,
     ]);
 
-    $this->get(route('marketplace.index'))
+    $this->actingAs($viewer)
+        ->get(route('marketplace.index'))
         ->assertSuccessful()
         ->assertSee('data-ui="listing-card"', false)
         ->assertSee('aria-label="Marketplace listing: Portable pet carrier"', false)
@@ -125,10 +126,11 @@ it('renders global search results as actionable cards', function (): void {
         'show_in_explore' => true,
     ]);
 
-    $this->get(route('search.index', [
-        'q' => 'Taylor',
-        'type' => 'users',
-    ]))
+    $this->actingAs(User::factory()->create())
+        ->get(route('search.index', [
+            'q' => 'Taylor',
+            'type' => 'users',
+        ]))
         ->assertSuccessful()
         ->assertSee('aria-label="Search results"', false)
         ->assertSee('data-ui="search-result-card"', false)
@@ -160,20 +162,23 @@ it('renders pet browse and event cards as richer accessible entry points', funct
         'attendees_count' => 9,
     ]);
 
-    $this->get(route('pets.explore'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.explore'))
         ->assertSuccessful()
         ->assertSee('data-ui="pet-card"', false)
         ->assertSee('aria-label="View profile for Maple"', false)
         ->assertSee('View Profile')
         ->assertSee('Jordan Keeper');
 
-    $this->get(route('pets.adopt'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.adopt'))
         ->assertSuccessful()
         ->assertSee('data-ui="pet-card"', false)
         ->assertSee('Maple')
         ->assertSee('No adoption fee');
 
-    $this->get(route('events.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('events.index'))
         ->assertSuccessful()
         ->assertSee('data-ui="event-card"', false)
         ->assertSee('aria-label="Event: Weekend Pet Walk"', false)

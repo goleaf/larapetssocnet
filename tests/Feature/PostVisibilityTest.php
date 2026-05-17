@@ -18,7 +18,7 @@ it('direct url access returns 403 for denied visibility and 200 for allowed', fu
     $followersPost = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_FOLLOWERS]);
     $privatePost = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_PRIVATE]);
 
-    $this->get(route('posts.show', $followersPost))->assertForbidden();
+    $this->get(route('posts.show', $followersPost))->assertRedirect(route('login'));
     $this->actingAs($stranger)->get(route('posts.show', $followersPost))->assertForbidden();
     $this->actingAs($follower)->get(route('posts.show', $followersPost))->assertOk();
     $this->actingAs($author)->get(route('posts.show', $privatePost))->assertOk();

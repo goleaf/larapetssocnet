@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added route-level coverage proving `/explore` and other application pages redirect guests to login while authenticated users keep access.
 - Added shared-hosting root structure coverage for the root front controller, root Vite build output, and Apache deny rules.
 - Added project-specific `README.md` with the current Laravel 13, Pest 4, Tailwind 4, SQLite, quality, and FTP deployment workflow.
 - Added markdown version-alignment coverage to prevent AI guidance and skill docs from drifting behind the installed toolchain.
@@ -29,6 +30,8 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Locked application browsing pages behind authentication by default, including Explore, search, posts, profiles, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, settings, and photo galleries.
+- Updated guest-access documentation and feature tests to match the login-required application surface.
 - Moved the web entrypoint and public assets from `public/` to the project root for shared-hosting document roots.
 - Updated Laravel public-path bootstrapping, Vite build output, FTP packaging, and public media URL helpers for the root web surface.
 - Updated root AI guidance and local skill docs to the current Laravel 13, Pest 4, PHPUnit 12, and Tailwind 4 stack.

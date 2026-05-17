@@ -8,20 +8,26 @@ use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
-it('renders simplified public browse pages', function (): void {
-    $this->get(route('marketplace.index'))
+it('renders simplified browse pages for authenticated users', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('marketplace.index'))
         ->assertSuccessful()
         ->assertSee('Browse listings and contact sellers directly.');
 
-    $this->get(route('events.index'))
+    $this->actingAs($user)
+        ->get(route('events.index'))
         ->assertSuccessful()
         ->assertSee('Find and join upcoming pet community events.');
 
-    $this->get(route('pets.explore'))
+    $this->actingAs($user)
+        ->get(route('pets.explore'))
         ->assertSuccessful()
         ->assertSee('Discover pet profiles across the community.');
 
-    $this->get(route('pets.adopt'))
+    $this->actingAs($user)
+        ->get(route('pets.adopt'))
         ->assertSuccessful()
         ->assertSee('Browse pets currently marked as adoptable.');
 });
@@ -52,7 +58,8 @@ it('seeds adoptable pets for adopt page browsing', function (): void {
 
     expect($adoptableQuery->count())->toBeGreaterThan(0);
 
-    $this->get(route('pets.adopt'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.adopt'))
         ->assertSuccessful()
         ->assertSee('Luna')
         ->assertSee('Milo');

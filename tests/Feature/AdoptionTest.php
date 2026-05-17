@@ -10,8 +10,8 @@ beforeEach(function (): void {
     $this->user = User::factory()->create();
 });
 
-it('adoption page accessible to guests', function (): void {
-    $this->get('/adoption')->assertOk();
+it('adoption page requires authentication', function (): void {
+    $this->get('/adoption')->assertRedirect(route('login'));
 });
 
 it('available pet appears on adoption page', function (): void {
@@ -23,7 +23,8 @@ it('available pet appears on adoption page', function (): void {
         'adoption_listed_at' => now(),
     ]);
 
-    $this->get('/adoption')
+    $this->actingAs($this->user)
+        ->get('/adoption')
         ->assertOk()
         ->assertSee('AdoptBuddy');
 });
@@ -36,7 +37,8 @@ it('non-listed pet not on adoption page', function (): void {
         'adoption_status' => 'not_listed',
     ]);
 
-    $this->get('/adoption')
+    $this->actingAs($this->user)
+        ->get('/adoption')
         ->assertOk()
         ->assertDontSee('HiddenPet');
 });
@@ -60,7 +62,8 @@ it('adoption page filterable by species', function (): void {
         'adoption_listed_at' => now(),
     ]);
 
-    $this->get('/adoption?species=dog')
+    $this->actingAs($this->user)
+        ->get('/adoption?species=dog')
         ->assertOk()
         ->assertSee('DogAdopt')
         ->assertDontSee('CatAdopt');

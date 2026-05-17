@@ -59,18 +59,18 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertDontSee('Who To Follow');
 });
 
-it('renders a clearer private profile lockup for guests', function (): void {
+it('renders a clearer private profile lockup for authenticated visitors', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Private Profile',
         'username' => 'private_profile_design',
         'is_private' => true,
     ]);
 
-    $this->get(route('profile.show', ['user' => $profileOwner]))
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
         ->assertSee('data-ui="private-profile-shell"', false)
         ->assertSee('data-ui="private-profile-hero"', false)
         ->assertSee('This account is private')
-        ->assertSee('Log In to Follow')
         ->assertSee('min-h-11', false);
 });
