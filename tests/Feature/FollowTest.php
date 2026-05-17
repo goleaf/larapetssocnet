@@ -8,6 +8,7 @@ use App\Notifications\NewFollowRequest;
 use DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class FollowTest extends TestCase
@@ -87,5 +88,26 @@ class FollowTest extends TestCase
         $this->actingAs($actor)
             ->postJson(route('users.follow', ['user' => $actor->username]))
             ->assertForbidden();
+    }
+
+    public function test_follow_actions_are_rate_limited_per_user(): void
+    {
+        RateLimiter::clear('hour:1');
+        RateLimiter::clear('day:1');
+
+        $actor = User::factory()->create(['id' => 1]);
+        $target = User::factory()->create(['is_private' => false]);
+
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $this->actingAs($actor)
+                ->postJson(route('users.follow', ['user' => $target->username]))
+                ->assertOk();
+        }
+
+        $this->actingAs($actor)
+            ->postJson(route('users.follow', ['user' => $target->username]))
+            ->assertTooManyRequests()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', "You're following a lot of new accounts. Take a break and come back in an hour.");
     }
 }

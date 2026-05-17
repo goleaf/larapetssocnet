@@ -88,7 +88,13 @@
             status: '{{ $followStatus }}',
             count: {{ (int) ($user->followers_count ?? 0) }},
             loading: false,
+            hovered: false,
+            confirmingWithdraw: false,
             get label() {
+                if (this.status === 'following' && this.hovered) {
+                    return 'Unfollow'
+                }
+
                 const map = { following: 'Following', pending: 'Requested', none: 'Follow' }
                 return map[this.status] ?? 'Follow'
             },
@@ -121,6 +127,7 @@
                     if (data.success) {
                         this.status = data.follow_status ?? this.status
                         this.count = data.follower_count ?? this.count
+                        this.confirmingWithdraw = false
 
                         window.dispatchEvent(new CustomEvent('follow-toggled', {
                             detail: {
@@ -141,6 +148,12 @@
                 this.loading = false
             },
             toggle() {
+                if (this.status === 'pending') {
+                    this.confirmingWithdraw = !this.confirmingWithdraw
+
+                    return
+                }
+
                 const url = this.isActive
                     ? '/users/{{ $user->username }}/unfollow'
                     : '/users/{{ $user->username }}/follow'
@@ -154,8 +167,10 @@
             :size="$size"
             :disabled="false"
             @click="toggle()"
+            @mouseenter="hovered = true"
+            @mouseleave="hovered = false"
             x-bind:aria-busy="loading"
-            x-bind:disabled="loading || status === 'pending'"
+            x-bind:disabled="loading"
             x-bind:class="status === 'following'
                 ? 'border-rose/40 text-rose hover:bg-rose-light/40'
                 : (status === 'pending'
@@ -168,14 +183,29 @@
             <span x-show="!loading" x-text="label"></span>
         </x-ui.button>
 
-        <button
-            x-show="status === 'pending'"
-            @click="perform('/users/{{ $user->username }}/unfollow')"
-            type="button"
-            class="text-xs text-fur underline transition-colors hover:text-red-500 focus:outline-none"
+        <div
+            x-show="status === 'pending' && confirmingWithdraw"
+            x-cloak
+            class="rounded-[var(--radius-soft)] border ui-border bg-[color:var(--ui-surface)] p-2 text-center shadow-sm"
         >
-            Cancel request
-        </button>
+            <p class="text-xs font-medium text-bark">Withdraw follow request?</p>
+            <div class="mt-2 flex items-center justify-center gap-2">
+                <button
+                    @click="perform('/users/{{ $user->username }}/unfollow')"
+                    type="button"
+                    class="text-xs font-semibold text-red-600 underline transition-colors hover:text-red-700 focus:outline-none"
+                >
+                    Withdraw
+                </button>
+                <button
+                    @click="confirmingWithdraw = false"
+                    type="button"
+                    class="text-xs font-semibold text-fur underline transition-colors hover:text-bark focus:outline-none"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
 
         @if ($showRemove)
             <button

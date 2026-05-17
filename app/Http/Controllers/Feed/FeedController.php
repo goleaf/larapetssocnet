@@ -38,7 +38,11 @@ class FeedController extends Controller
             ? $request->string('type')->toString()
             : null;
 
-        $posts = Post::paginateMainFeedResults($user, $type, 15);
+        $source = in_array($request->string('source')->toString(), ['people', 'pets'], true)
+            ? $request->string('source')->toString()
+            : null;
+
+        $posts = Post::paginateMainFeedResults($user, $type, 15, $source);
 
         $sidebarData = $this->feed->getSidebarData($user);
 
@@ -55,7 +59,7 @@ class FeedController extends Controller
         return view('feed.index', array_merge(
             ['posts' => $posts, 'yourGroups' => $yourGroups, 'ownedPets' => $ownedPets],
             $sidebarData,
-            ['user' => $user, 'type' => $type, 'feedThemes' => $feedThemes, 'activeFeedTheme' => $activeFeedTheme, 'activeFeedThemeLabel' => $activeFeedThemeLabel],
+            ['user' => $user, 'type' => $type, 'source' => $source, 'feedThemes' => $feedThemes, 'activeFeedTheme' => $activeFeedTheme, 'activeFeedThemeLabel' => $activeFeedThemeLabel],
         ));
     }
 }

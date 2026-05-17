@@ -23,8 +23,8 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Feature 1: Authentication and registration guidance must match the existing Breeze/controller/Form Request flow unless explicitly refactored.
 - Feature 2: User profile guidance must match the existing public profile controller, Blade tabs, follow/request, privacy, and media flows.
 - Feature 3: Pet profile guidance must match the existing pet controller, pet followers, media, gallery, health, adoption, and visibility flows.
-- Feature 4: News feed guidance must match the existing feed controller, cursor pagination, follow graph, pet follow graph, and Blade post cards.
+- Feature 4: News feed guidance must match the existing feed controller, cursor pagination, follow graph, pet follow graph, Blade post cards, and implemented `source=people|pets` plus `type=text|photo|video` filters.
 - Feature 5: Posts guidance must match the existing post controllers, actions, validation, media limits, visibility, tagging, soft deletes, and scheduled statuses.
 - Feature 6: Reactions guidance must match the existing polymorphic reactions table, services, controllers, and counter cache behavior.
 - Feature 7: Comments guidance must match the existing comments table, services, controllers, Blade rendering, two-level threading, and comment reaction behavior.
-- Feature 8: Follow and friendship guidance must extend the existing `follows`, `pet_followers`, blocks, services, policies, notifications, and Alpine follow button instead of rebuilding the social graph.
+- Feature 8: Follow and friendship guidance must extend the existing `follows`, `pet_followers`, blocks, services, policies, notifications, social follow rate limiter, and Alpine follow button instead of rebuilding the social graph.

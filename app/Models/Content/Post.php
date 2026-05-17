@@ -856,12 +856,13 @@ class Post extends Model implements HasMedia
             ->withQueryString();
     }
 
-    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15): CursorPaginator
+    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15, ?string $source = null): CursorPaginator
     {
         $viewerId = (int) $viewer->getKey();
 
         return self::query()
             ->forFeed($viewerId)
+            ->forFeedSource($viewerId, $source)
             ->withFeedRelations($viewer)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->orderByDesc('created_at')
@@ -935,6 +936,30 @@ class Post extends Model implements HasMedia
             ->whereNull('posts.group_id')
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocked_id')->where('blocks.blocker_id', $userId))
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId));
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeForFeedSource(Builder $query, int $userId, ?string $source): Builder
+    {
+        return match ($source) {
+            'people' => $query->where(function (Builder $peopleQuery) use ($userId): void {
+                $peopleQuery
+                    ->where('posts.user_id', $userId)
+                    ->orWhereIn('posts.user_id', Follow::query()
+                        ->select('follows.following_id')
+                        ->where('follows.follower_id', $userId)
+                        ->where('follows.status', 'accepted'));
+            }),
+            'pets' => $query->where(function (Builder $petsQuery) use ($userId): void {
+                $petsQuery
+                    ->where('posts.user_id', '!=', $userId)
+                    ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
+            }),
+            default => $query,
+        };
     }
 
     public function scopeWithFeedRelations(Builder $query, ?User $viewer = null): Builder

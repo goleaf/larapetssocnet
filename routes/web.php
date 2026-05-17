@@ -174,8 +174,10 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): voi
         Route::delete('/{pet:slug}/avatar', [PetAvatarController::class, 'destroy'])->name('avatar.destroy');
 
         Route::get('/{pet:slug}/followers', [PetFollowersController::class, 'index'])->name('followers.index');
-        Route::post('/{pet:slug}/follow', [PetFollowController::class, 'store'])->name('follow');
-        Route::delete('/{pet:slug}/follow', [PetFollowController::class, 'destroy'])->name('unfollow');
+        Route::middleware('throttle:social-follows')->group(function (): void {
+            Route::post('/{pet:slug}/follow', [PetFollowController::class, 'store'])->name('follow');
+            Route::delete('/{pet:slug}/follow', [PetFollowController::class, 'destroy'])->name('unfollow');
+        });
 
         Route::post('/{pet:slug}/posts/{post}', [PetPostController::class, 'store'])
             ->whereNumber('post')
@@ -288,7 +290,7 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): voi
 
     Route::post('/settings/privacy/toggle', [PrivacyController::class, 'toggle'])->name('privacy.toggle');
 
-    Route::middleware('throttle:30,1')->group(function (): void {
+    Route::middleware('throttle:social-follows')->group(function (): void {
         Route::post('/users/{user:username}/follow', [FollowController::class, 'toggle'])->name('users.follow');
         Route::match(['POST', 'DELETE'], '/users/{user:username}/unfollow', [FollowController::class, 'unfollow'])->name('users.unfollow');
         Route::delete('/users/{user:username}/follower', [FollowController::class, 'removeFollower'])->name('users.remove-follower');

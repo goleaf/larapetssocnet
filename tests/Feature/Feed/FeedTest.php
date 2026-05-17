@@ -44,3 +44,93 @@ it('shows posts from followed users and followed pets', function (): void {
         ->assertSee('post-from-followed-pet')
         ->assertDontSee('post-from-stranger');
 });
+
+it('filters the feed to people sources', function (): void {
+    $viewer = User::factory()->create();
+    $followedUser = User::factory()->create();
+    $petOwner = User::factory()->create();
+
+    $viewer->following()->attach($followedUser->getKey(), ['status' => 'accepted']);
+
+    $followedPet = Pet::factory()->for($petOwner)->create();
+    $viewer->followedPets()->attach($followedPet->getKey());
+
+    Post::factory()->for($followedUser)->create([
+        'body' => 'people-source-post',
+        'body_html' => '<p>people-source-post</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Post::factory()->for($petOwner)->create([
+        'pet_id' => $followedPet->getKey(),
+        'body' => 'pet-source-post',
+        'body_html' => '<p>pet-source-post</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('feed.index', ['source' => 'people']))
+        ->assertOk()
+        ->assertSee('people-source-post')
+        ->assertDontSee('pet-source-post');
+});
+
+it('filters the feed to pet sources', function (): void {
+    $viewer = User::factory()->create();
+    $followedUser = User::factory()->create();
+    $petOwner = User::factory()->create();
+
+    $viewer->following()->attach($followedUser->getKey(), ['status' => 'accepted']);
+
+    $followedPet = Pet::factory()->for($petOwner)->create();
+    $viewer->followedPets()->attach($followedPet->getKey());
+
+    Post::factory()->for($followedUser)->create([
+        'body' => 'people-source-post',
+        'body_html' => '<p>people-source-post</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Post::factory()->for($petOwner)->create([
+        'pet_id' => $followedPet->getKey(),
+        'body' => 'pet-source-post',
+        'body_html' => '<p>pet-source-post</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('feed.index', ['source' => 'pets']))
+        ->assertOk()
+        ->assertSee('pet-source-post')
+        ->assertDontSee('people-source-post');
+});
+
+it('ignores unknown feed source filters', function (): void {
+    $viewer = User::factory()->create();
+    $followedUser = User::factory()->create();
+    $petOwner = User::factory()->create();
+
+    $viewer->following()->attach($followedUser->getKey(), ['status' => 'accepted']);
+
+    $followedPet = Pet::factory()->for($petOwner)->create();
+    $viewer->followedPets()->attach($followedPet->getKey());
+
+    Post::factory()->for($followedUser)->create([
+        'body' => 'unknown-filter-people-post',
+        'body_html' => '<p>unknown-filter-people-post</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Post::factory()->for($petOwner)->create([
+        'pet_id' => $followedPet->getKey(),
+        'body' => 'unknown-filter-pet-post',
+        'body_html' => '<p>unknown-filter-pet-post</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('feed.index', ['source' => 'groups']))
+        ->assertOk()
+        ->assertSee('unknown-filter-people-post')
+        ->assertSee('unknown-filter-pet-post');
+});

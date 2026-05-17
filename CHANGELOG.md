@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Added
+- Added main feed source filtering for `source=people|pets` while preserving existing `type=text|photo|video` filtering and cursor query strings.
+- Added a named `social-follows` rate limiter with friendly JSON/redirect responses for user and pet follow actions.
+- Added follow button component coverage for pending request withdrawal UI and hover-to-unfollow behavior.
 - Added `FEATURES.md` as the feature-level documentation index and maintenance checklist for agent-driven work.
 - Added route-level coverage proving `/explore` and other application pages redirect guests to login while authenticated users keep access.
 - Added shared-hosting root structure coverage for the root front controller, root Vite build output, and Apache deny rules.
@@ -31,6 +34,9 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated the feed filter UI to expose source and post-type filters without losing the selected feed theme.
+- Updated user and pet follow routes to use the shared social follow rate limiter.
+- Updated pending follow-request handling to show an inline withdraw confirmation instead of cancelling immediately.
 - Added the end-of-prompt maintenance rule to agent guidance, README, workflow docs, and git/changelog workflow guidance.
 - Locked application browsing pages behind authentication by default, including Explore, search, posts, profiles, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, settings, and photo galleries.
 - Updated guest-access documentation and feature tests to match the login-required application surface.
@@ -97,6 +103,14 @@
 
 ### Tests
 - Verified passing suites:
+  - `tests/Feature/Feed/FeedTest.php`
+  - `tests/Feature/Feed/FeedQueryTest.php`
+  - `tests/Feature/FeedQueryCountTest.php`
+  - `tests/Feature/FollowTest.php`
+  - `tests/Feature/PetFollowFeatureTest.php`
+  - `tests/Feature/FollowButtonComponentTest.php`
+  - `tests/Unit/FeedServiceTest.php`
+  - `composer quality`
   - `tests/Feature/BlockTest.php`
   - `tests/Unit/BlockServiceTest.php`
   - `tests/Feature/OrmComplianceTest.php`

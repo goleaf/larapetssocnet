@@ -31,15 +31,19 @@ use App\Policies\UserPolicy;
 use App\Services\UsernameRedirectResolver;
 use App\Support\Models\LegacyModelMorphMap;
 use App\Support\Usernames\UsernameNormalizer;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\Request;
 use Illuminate\Queue\Events\QueueBusy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -80,6 +84,19 @@ class AppServiceProvider extends ServiceProvider
         foreach (FollowAbility::cases() as $ability) {
             $this->defineFollowGate($ability, [FollowPolicy::class, $ability->policyMethod()]);
         }
+
+        RateLimiter::for('social-follows', function (Request $request): array {
+            $key = (string) ($request->user()?->getKey() ?? $request->ip());
+
+            return [
+                Limit::perHour(50)
+                    ->by('hour:'.$key)
+                    ->response(fn (Request $request, array $headers): Response => $this->socialFollowLimitResponse($request, $headers)),
+                Limit::perDay(200)
+                    ->by('day:'.$key)
+                    ->response(fn (Request $request, array $headers): Response => $this->socialFollowLimitResponse($request, $headers)),
+            ];
+        });
 
         Pet::observe(PetObserver::class);
         Message::observe(MessageObserver::class);
@@ -128,5 +145,24 @@ class AppServiceProvider extends ServiceProvider
         if (! Gate::has($ability)) {
             Gate::define($ability, $callback);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $headers
+     */
+    private function socialFollowLimitResponse(Request $request, array $headers): Response
+    {
+        $message = "You're following a lot of new accounts. Take a break and come back in an hour.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 429, $headers);
+        }
+
+        return back()
+            ->with('error', $message)
+            ->withHeaders($headers);
     }
 }

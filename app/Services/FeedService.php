@@ -10,10 +10,11 @@ use App\Models\Identity\User;
 
 class FeedService
 {
-    public function getFeed(User $user, ?string $type, int $perPage): array
+    public function getFeed(User $user, ?string $type, int $perPage, ?string $source = null): array
     {
         $posts = Post::query()
             ->forFeed((int) $user->getKey())
+            ->forFeedSource((int) $user->getKey(), $source)
             ->whereDoesntHave('author', fn ($query) => $query->where('is_banned', true))
             ->whereNotIn('user_id', $user->blocking()->select('users.id'))
             ->whereNotIn('user_id', $user->blockedBy()->select('users.id'))

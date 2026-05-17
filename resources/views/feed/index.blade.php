@@ -14,6 +14,27 @@
 
  <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]" data-feed-theme="{{ $activeFeedTheme }}">
  <div class="space-y-4">
+ @php
+ $feedQuery = static fn (array $overrides = []): array => array_filter(array_merge([
+ 'theme' => $activeFeedTheme,
+ 'source' => $source,
+ 'type' => $type,
+ ], $overrides), static fn ($value): bool => filled($value));
+
+ $sourceFilters = [
+ ['value' => null, 'label' => __('feed.filters.all')],
+ ['value' => 'people', 'label' => __('feed.filters.people')],
+ ['value' => 'pets', 'label' => __('feed.filters.pets')],
+ ];
+
+ $typeFilters = [
+ ['value' => null, 'label' => __('feed.filters.all_types')],
+ ['value' => 'photo', 'label' => __('feed.filters.photos')],
+ ['value' => 'video', 'label' => __('feed.filters.videos')],
+ ['value' => 'text', 'label' => __('feed.filters.text')],
+ ];
+ @endphp
+
  <x-ui.card padding="base" class="bg-warm-white/80">
  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div>
@@ -24,13 +45,48 @@
  <div class="flex flex-wrap gap-2" aria-label="{{ __('Feed style') }}">
  @foreach ($feedThemes as $themeKey => $themeLabel)
  <a
- href="{{ route('feed.index', ['theme' => $themeKey]) }}"
+ href="{{ route('feed.index', $feedQuery(['theme' => $themeKey])) }}"
  class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $activeFeedTheme === $themeKey ? 'border-paw-light bg-paw-light text-paw-dark' : 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' }}"
  @if($activeFeedTheme === $themeKey) aria-current="true" @endif
  >
  {{ $themeLabel }}
  </a>
  @endforeach
+ </div>
+ </div>
+ </x-ui.card>
+
+ <x-ui.card padding="base" class="bg-warm-white/80">
+ <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+ <div>
+ <p class="shell-kicker">{{ __('feed.filters_title') }}</p>
+ <h2 class="mt-1 text-lg font-bold font-display text-bark">{{ __('feed.filters_heading') }}</h2>
+ </div>
+
+ <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+ <div class="flex flex-wrap gap-2" aria-label="{{ __('feed.filters_source_label') }}">
+ @foreach ($sourceFilters as $filter)
+ <a
+ href="{{ route('feed.index', $feedQuery(['source' => $filter['value']])) }}"
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $source === $filter['value'] ? 'border-paw-light bg-paw-light text-paw-dark' : 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' }}"
+ @if($source === $filter['value']) aria-current="true" @endif
+ >
+ {{ $filter['label'] }}
+ </a>
+ @endforeach
+ </div>
+
+ <div class="flex flex-wrap gap-2" aria-label="{{ __('feed.filters_type_label') }}">
+ @foreach ($typeFilters as $filter)
+ <a
+ href="{{ route('feed.index', $feedQuery(['type' => $filter['value']])) }}"
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $type === $filter['value'] ? 'border-paw-light bg-paw-light text-paw-dark' : 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' }}"
+ @if($type === $filter['value']) aria-current="true" @endif
+ >
+ {{ $filter['label'] }}
+ </a>
+ @endforeach
+ </div>
  </div>
  </div>
  </x-ui.card>

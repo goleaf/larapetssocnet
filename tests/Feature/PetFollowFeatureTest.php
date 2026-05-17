@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class PetFollowFeatureTest extends TestCase
@@ -86,5 +87,28 @@ class PetFollowFeatureTest extends TestCase
             1,
             $pet->followers()->whereKey($follower->id)->count()
         );
+    }
+
+    public function test_pet_follow_actions_use_social_follow_rate_limit(): void
+    {
+        RateLimiter::clear('hour:1');
+        RateLimiter::clear('day:1');
+
+        $follower = User::factory()->create(['id' => 1]);
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create([
+            'followers_count' => 0,
+        ]);
+
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $this->actingAs($follower)
+                ->postJson(route('pets.follow', $pet))
+                ->assertOk();
+        }
+
+        $this->actingAs($follower)
+            ->postJson(route('pets.follow', $pet))
+            ->assertTooManyRequests()
+            ->assertJsonPath('success', false);
     }
 }
