@@ -3,17 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\StoreRegisteredUserRequest;
 use App\Models\Identity\User;
+use App\Services\Auth\AuthAuditLogger;
 use App\Services\UsernameService;
-use App\Support\Usernames\UsernameNormalizer;
-use App\Support\Usernames\UsernameRules;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
@@ -28,39 +25,39 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
-     *
-     * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreRegisteredUserRequest $request, AuthAuditLogger $auditLogger): RedirectResponse
     {
-        $request->merge([
-            'username' => UsernameNormalizer::normalize((string) $request->input('username')),
-        ]);
+        $validated = $request->validated();
 
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'username' => UsernameRules::optionalRules(),
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
+        if ($request->trippedHoneypot()) {
+            $auditLogger->record(null, 'registration_honeypot', $request);
 
-        $username = (string) $request->input('username');
+            return redirect()
+                ->route('login')
+                ->with('status', 'If that account can be created, a verification email will be sent shortly.');
+        }
+
+        $username = (string) ($validated['username'] ?? '');
         if ($username === '') {
-            $username = app(UsernameService::class)->generate((string) $request->input('name'));
+            $username = app(UsernameService::class)->generate((string) $validated['name']);
         }
 
         $user = User::create([
-            'name' => $request->name,
+            'name' => $validated['name'],
             'username' => $username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'email' => $validated['email'],
+            'password' => Hash::make((string) $validated['password']),
+            'birth_date' => $validated['birth_date'],
             'onboarding_step' => 1,
         ]);
 
         event(new Registered($user));
 
+        $auditLogger->record($user, 'registration', $request);
+
         Auth::login($user);
 
-        return redirect()->route('onboarding.show', ['step' => 1]);
+        return redirect()->route('verification.notice');
     }
 }

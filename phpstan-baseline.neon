@@ -49,12 +49,6 @@ parameters:
 			path: app/Http/Controllers/Activities/EventController.php
 
 		-
-			message: '#^Parameter \#1 \$user of class Illuminate\\Auth\\Events\\Verified constructor expects Illuminate\\Contracts\\Auth\\MustVerifyEmail, App\\Models\\Identity\\User\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Auth/VerifyEmailController.php
-
-		-
 			message: '#^Method App\\Http\\Controllers\\Discovery\\SearchController\:\:searchByType\(\) return type with generic interface Illuminate\\Contracts\\Pagination\\LengthAwarePaginator does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
 			count: 1

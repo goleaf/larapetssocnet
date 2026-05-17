@@ -20,14 +20,25 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        $birthDate = now()->subYears(20);
+
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'PetSocial2026!',
+            'password_confirmation' => 'PetSocial2026!',
+            'birth_day' => $birthDate->day,
+            'birth_month' => $birthDate->month,
+            'birth_year' => $birthDate->year,
+            'terms' => '1',
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('onboarding.show', ['step' => 1], absolute: false));
+        $response->assertRedirect(route('verification.notice', absolute: false));
+        $this->assertDatabaseHas('users', [
+            'email' => 'test@example.com',
+            'email_verified_at' => null,
+        ]);
+        $this->assertSame($birthDate->toDateString(), auth()->user()->fresh()->birth_date->toDateString());
     }
 }

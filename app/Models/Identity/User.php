@@ -35,6 +35,8 @@ use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use App\Traits\HasCounterCache;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -124,12 +126,13 @@ use Spatie\Permission\Traits\HasRoles;
     'password',
     'remember_token',
 ])]
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements HasMedia, MustVerifyEmail
 {
     use HasCounterCache;
     use HasFactory;
     use HasRoles;
     use InteractsWithMedia;
+    use MustVerifyEmailTrait;
     use Notifiable;
     use SoftDeletes;
 

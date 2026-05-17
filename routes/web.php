@@ -81,7 +81,7 @@ Route::get('/api/username-available', [ProfileController::class, 'usernameAvaila
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
-Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): void {
+Route::middleware(['auth', 'verified', 'banned', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)->name('search.index');
     Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
     Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');

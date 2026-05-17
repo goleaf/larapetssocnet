@@ -44,6 +44,7 @@ use App\Models\Pets\PetHealthLog;
 use App\Models\Pets\PetTag;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Pets\Species;
+use App\Models\Security\AuthAuditLog;
 use App\Models\Social\Block;
 use App\Models\Social\Follow;
 use App\Models\Social\UserBlock;
@@ -58,6 +59,7 @@ final class LegacyModelMorphMap
     public static function aliases(): array
     {
         return [
+            'App\Models\AuthAuditLog' => AuthAuditLog::class,
             'App\Models\Badge' => Badge::class,
             'App\Models\Block' => Block::class,
             'App\Models\Breed' => Breed::class,

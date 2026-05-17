@@ -1,9 +1,17 @@
+@php
+ $email = (string) auth()->user()?->email;
+ [$emailLocal, $emailDomain] = array_pad(explode('@', $email, 2), 2, '');
+ $maskedEmail = $emailLocal !== '' && $emailDomain !== ''
+  ? \Illuminate\Support\Str::limit($emailLocal, 2, '').'***@'.$emailDomain
+  : $email;
+@endphp
+
 <x-guest-layout>
  <div class="mb-6 space-y-2" data-ui="auth-form-header">
  <p class="chip min-h-8">Verify email</p>
  <h1 class="shell-title text-2xl">Check your inbox</h1>
  <p class="text-sm leading-6 shell-text-muted">
- {{ __('We sent a verification link to your email address. Verify it before continuing into your account.') }}
+ {{ __('We sent a verification link to :email. Verify it before continuing into your account.', ['email' => $maskedEmail]) }}
  </p>
  </div>
 
@@ -15,7 +23,7 @@
 
  <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/50 p-4" data-ui="email-verification-panel">
  <p class="text-sm leading-6 shell-text-muted">
- {{ __('If the message is not visible, check spam or send a new verification email.') }}
+ {{ __('If the message is not visible, check spam or send a new verification email. Resends are limited to 3 per hour.') }}
  </p>
 
  <div class="mt-4 flex flex-col-reverse gap-3 border-t border-whisker/30 pt-5 sm:flex-row sm:items-center sm:justify-between">

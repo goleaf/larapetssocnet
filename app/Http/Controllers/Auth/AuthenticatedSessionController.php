@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Auth\AttemptLoginAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\Identity\User;
+use App\Services\Auth\AuthAuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,23 +18,15 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        $loginUsers = User::query()
-            ->select(['id', 'name', 'username', 'email'])
-            ->orderBy('id')
-            ->limit(20)
-            ->get();
-
-        return view('auth.login', [
-            'loginUsers' => $loginUsers,
-        ]);
+        return view('auth.login');
     }
 
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, AttemptLoginAction $attemptLogin): RedirectResponse
     {
-        $request->authenticate();
+        $attemptLogin->handle($request);
 
         $request->session()->regenerate();
 
@@ -43,8 +36,10 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, AuthAuditLogger $auditLogger): RedirectResponse
     {
+        $auditLogger->record($request->user(), 'logout', $request);
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

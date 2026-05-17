@@ -2,11 +2,9 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Models\Identity\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -32,28 +30,6 @@ class LoginRequest extends FormRequest
             'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ];
-    }
-
-    /**
-     * Attempt to authenticate the request's credentials.
-     *
-     * @throws ValidationException
-     */
-    public function authenticate(): void
-    {
-        $this->ensureIsNotRateLimited();
-
-        $identifier = trim((string) $this->input('email'));
-
-        if (! Auth::attempt($this->credentialsFor($identifier), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
-        }
-
-        RateLimiter::clear($this->throttleKey());
     }
 
     /**
@@ -87,25 +63,5 @@ class LoginRequest extends FormRequest
         $identifier = trim((string) $this->input('email'));
 
         return Str::transliterate(Str::lower($identifier).'|'.$this->ip());
-    }
-
-    /**
-     * @return array{password: string, email?: string, username?: string}
-     */
-    private function credentialsFor(string $identifier): array
-    {
-        $password = (string) $this->input('password');
-
-        if (filter_var($identifier, FILTER_VALIDATE_EMAIL) !== false) {
-            return [
-                'email' => $identifier,
-                'password' => $password,
-            ];
-        }
-
-        return [
-            'username' => User::normalizeUsername($identifier),
-            'password' => $password,
-        ];
     }
 }

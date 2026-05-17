@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added authentication audit logging for registration, login success/failure, logout, password changes, password resets, email verification, and verification resend events.
+- Added registration DOB, terms acceptance, honeypot, and password-strength validation with focused auth hardening coverage.
 - Added group archive/restore actions, routes, owner controls, and `groups.status` / `groups.archived_at` schema support.
 - Added group archive feature coverage for owner archive/restore, read-only archived groups, and secret-group discovery drift.
 - Added main feed source filtering for `source=people|pets` while preserving existing `type=text|photo|video` filtering and cursor query strings.
@@ -36,6 +38,9 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated registration to route newly-created users to email verification before onboarding and require verified email for application pages.
+- Updated login to remove exposed quick-login seed users and use a dedicated login action for email-or-username credential resolution.
+- Updated login and registration auth pages with inline password reset, username availability feedback, password strength feedback, and masked email verification copy.
 - Updated group posting, commenting, reacting, and joining authorization to reject archived groups while keeping historical content readable.
 - Updated group discovery visibility to exclude secret groups when either `privacy` or legacy `type` is secret.
 - Updated the feed filter UI to expose source and post-type filters without losing the selected feed theme.
@@ -107,6 +112,8 @@
 
 ### Tests
 - Verified passing suites:
+  - `tests/Feature/Auth`
+  - `tests/Feature/AuthenticatedPageAccessTest.php`
   - `tests/Feature/GroupArchiveFeatureTest.php`
   - `tests/Feature/GroupVisibilityTest.php`
   - `tests/Feature/GroupMembershipRolesTest.php`

@@ -25,7 +25,8 @@ it('keeps application page routes behind authentication middleware', function (s
     $route = Route::getRoutes()->getByName($routeName);
 
     expect($route)->not->toBeNull()
-        ->and($route->gatherMiddleware())->toContain('auth');
+        ->and($route->gatherMiddleware())->toContain('auth')
+        ->and($route->gatherMiddleware())->toContain('verified');
 })->with([
     'search.index',
     'explore.index',

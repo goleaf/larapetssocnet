@@ -17,7 +17,7 @@ class AuthenticationTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_login_screen_displays_quick_login_usernames_and_password_hint(): void
+    public function test_login_screen_does_not_expose_seeded_user_credentials(): void
     {
         $user = User::factory()->create([
             'username' => 'pet_parent',
@@ -28,8 +28,9 @@ class AuthenticationTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('@'.$user->username)
-            ->assertSee('password');
+            ->assertDontSee('@'.$user->username)
+            ->assertDontSee($user->email)
+            ->assertDontSee('Quick Login Users');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void

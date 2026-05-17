@@ -7,65 +7,62 @@
 
  <x-auth-session-status class="mb-4" :status="session('status')"/>
 
- <form method="POST" action="{{ route('login') }}" data-ui="login-form">
+ <div x-data="{ resetOpen: false, submitting: false }">
+ <form method="POST" action="{{ route('login') }}" data-ui="login-form" @submit="submitting = true">
  @csrf
 
  <div class="space-y-4">
  <div>
- <x-ui.input id="email" type="text" name="email" label="Email or Username" :value="old('email')" required autofocus
- autocomplete="username"/>
+ <x-ui.input id="email" type="text" name="email" label="Email or username" :value="old('email')" required autofocus autocomplete="username"/>
  </div>
 
  <div>
- <x-ui.input id="password" type="password" name="password" label="Password" required
- autocomplete="current-password"/>
+ <x-ui.input id="password" type="password" name="password" label="Password" required autocomplete="current-password"/>
  </div>
 
  <div class="block pt-1">
- <label for="remember_me" class="inline-flex min-h-11 items-center group cursor-pointer rounded-[var(--radius-soft)] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-paw">
- <input id="remember_me" type="checkbox"
- class="rounded border-whisker/50 text-paw shadow-sm focus:ring-paw" name="remember">
- <span
- class="ms-2 text-sm text-fur group-hover:text-bark transition-colors">{{ __('Remember me') }}</span>
+ <label for="remember_me" class="inline-flex min-h-11 cursor-pointer items-center rounded-[var(--radius-soft)] group focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-paw">
+ <input id="remember_me" type="checkbox" class="rounded border-whisker/50 text-paw shadow-sm focus:ring-paw" name="remember">
+ <span class="ms-2 text-sm text-fur transition-colors group-hover:text-bark">{{ __('Remember me') }}</span>
  </label>
  </div>
 
  <div class="flex flex-col-reverse gap-3 border-t border-whisker/30 pt-5 sm:flex-row sm:items-center sm:justify-between">
  @if (Route::has('password.request'))
- <a class="inline-flex min-h-11 items-center text-sm font-semibold text-paw hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" href="{{ route('password.request') }}">
+ <button type="button" class="inline-flex min-h-11 items-center text-sm font-semibold text-paw hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" @click="resetOpen = ! resetOpen">
  {{ __('Forgot your password?') }}
- </a>
+ </button>
  @endif
 
- <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-32">
- {{ __('Log in') }}
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-32" x-bind:disabled="submitting">
+ <span x-show="! submitting">{{ __('Log in') }}</span>
+ <span x-show="submitting" x-cloak>{{ __('Logging in...') }}</span>
  </x-ui.button>
  </div>
  </div>
  </form>
 
- @if (($loginUsers ?? collect())->isNotEmpty())
- <section class="mt-5 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/50 p-4" data-ui="quick-login-panel">
- <div class="flex items-center justify-between gap-3">
- <p class="text-sm font-semibold text-bark">Quick Login Users</p>
- <code class="rounded-[var(--radius-soft)] bg-warm-white px-2 py-1 text-xs font-semibold text-paw">password</code>
- </div>
- <p class="mt-1 text-xs text-fur">Use username (or email) and the shared password above.</p>
-
- <ul class="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
- @forelse ($loginUsers as $loginUser)
- <li class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white/85 px-3 py-2">
- <p class="truncate text-sm font-semibold text-bark">
- {{ $loginUser->username ? '@'.$loginUser->username : $loginUser->email }}
+ @if (Route::has('password.email'))
+ <form
+ method="POST"
+ action="{{ route('password.email') }}"
+ class="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-cream/50 p-4"
+ x-show="resetOpen"
+ x-collapse
+ x-cloak
+ data-ui="inline-password-reset-form"
+ >
+ @csrf
+ <div class="space-y-3">
+ <p class="text-sm leading-6 shell-text-muted">
+ {{ __('Enter your email and we will send a password reset link if an account exists.') }}
  </p>
- <p class="truncate text-xs text-fur">{{ $loginUser->email }}</p>
- </li>
- @empty
- <li class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white/85 px-3 py-2 text-xs text-fur">
- No users found.
- </li>
- @endforelse
- </ul>
- </section>
+ <x-ui.input id="reset_email" type="email" name="email" label="Email" :value="old('email')" required autocomplete="email"/>
+ <x-ui.button type="submit" variant="secondary" class="min-h-11 sm:min-w-40">
+ {{ __('Send reset link') }}
+ </x-ui.button>
+ </div>
+ </form>
  @endif
+ </div>
 </x-guest-layout>

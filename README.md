@@ -2,7 +2,7 @@
 
 PetSocial is a Laravel social network for pet profiles, feeds, groups, adoption browsing, marketplace listings, messaging, notifications, health logs, moderation, and shared media.
 
-Application browsing pages are private by default. Guests can access authentication and system pages such as login, registration, password reset, email verification, and the banned notice; signed-in users can access Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, and settings.
+Application browsing pages are private by default. Guests can access authentication and system pages such as login, registration, password reset, email verification, and the banned notice; signed-in users must verify their email before accessing Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, and settings.
 
 ## Stack
 
