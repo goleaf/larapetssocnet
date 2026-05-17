@@ -9,8 +9,8 @@ Use this skill for repo-specific UI conventions. Open only the guides that match
 
 Also activate other matching skills when relevant:
 - `tailwindcss-development` for Tailwind utility work
-- `blade-components-and-layouts` for Blade structure and composition
-- `e2e-playwright` or `playwright` when verifying browser flows
+- Read [blade.md](../../../skills/blade.md) for Blade structure and composition
+- Use browser or feature-test verification when changing interactive flows
 
 ## UI Lookup
 

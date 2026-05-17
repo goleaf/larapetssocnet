@@ -1,7 +1,0 @@
-interface:
-  display_name: "Http Client Resilience"
-  short_description: "Help with Http Client Resilience tasks"
-  default_prompt: "Use $http-client-resilience to apply framework and platform integration patterns for robust Laravel delivery."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#4B5563"

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added `FEATURES.md` as the feature-level documentation index and maintenance checklist for agent-driven work.
 - Added route-level coverage proving `/explore` and other application pages redirect guests to login while authenticated users keep access.
 - Added shared-hosting root structure coverage for the root front controller, root Vite build output, and Apache deny rules.
 - Added project-specific `README.md` with the current Laravel 13, Pest 4, Tailwind 4, SQLite, quality, and FTP deployment workflow.
@@ -30,6 +31,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Added the end-of-prompt maintenance rule to agent guidance, README, workflow docs, and git/changelog workflow guidance.
 - Locked application browsing pages behind authentication by default, including Explore, search, posts, profiles, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, settings, and photo galleries.
 - Updated guest-access documentation and feature tests to match the login-required application surface.
 - Moved the web entrypoint and public assets from `public/` to the project root for shared-hosting document roots.
@@ -115,3 +117,4 @@
   - `tests/Feature/PostTest.php`
   - `tests/Feature/PetHealthLogFeatureTest.php`
   - `php artisan test --compact`
+  - `php artisan test --compact tests/Unit/DocumentationVersionAlignmentTest.php`

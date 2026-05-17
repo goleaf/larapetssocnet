@@ -9,7 +9,7 @@ This is an active Laravel 13 PetSocial application. Keep changes aligned with th
 - `resources/views`, `resources/js`, and `resources/scss` for Blade, Alpine, and Tailwind/Sass assets
 - root `index.php`, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` for the shared-hosting web surface
 - `tests/Feature` for HTTP/database/user flows and `tests/Unit` for services, support classes, and architecture guards
-- `skills/` plus `.agents/skills/` for project-specific AI workflow guidance
+- `skills/` for detailed project-specific AI workflow guides, with only compact router skills exposed under `.agents/skills/`
 
 Use existing domain subfolders before creating new base folders.
 
@@ -49,6 +49,14 @@ Add tests for every bug fix and user-facing feature. Cover at least one success 
 Use Conventional Commits:
 - `feat: add pet profile CRUD`
 - `fix: prevent duplicate adoption requests`
+
+## End-of-Prompt Maintenance Rule
+After every implementation prompt, treat documentation and git hygiene as part of the work before the final response:
+- Update all affected Markdown files, including root guidance files, `README.md`, workflow docs, and relevant `skills/*.md` guides when behavior, commands, architecture, or feature scope changes.
+- Update `FEATURES.md` whenever feature status, feature scope, or feature implementation notes change.
+- Update `CHANGELOG.md` under `Unreleased` with user-facing `Added`, `Changed`, `Fixed`, `Removed`, or `Tests` entries for completed work.
+- Check `git status --short` and summarize the intended changes. Stage only files that belong to the completed task, preserving unrelated dirty-tree changes.
+- Commit with a Conventional Commits message when the prompt asks for git delivery or the completed task is ready for the repository history. Push only when explicitly requested.
 
 Each PR should include:
 - clear summary of scope
@@ -93,7 +101,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `larapetssocnet-security-guides` — Project-specific router for authorization, visibility, moderation, guest access, and sanitization rules documented under `skills/`.
 - `larapetssocnet-performance-guides` — Project-specific router for feed/query performance, eager loading, counters, pagination, and SQLite-aware data patterns documented under `skills/`.
 - `larapetssocnet-workflow-guides` — Project-specific router for testing, localization/light-UI workflow, changelog/commit flow, and common service/request patterns documented under `skills/`.
-- Every markdown guide in `skills/*.md` is also exposed as a same-name local skill under `.agents/skills/`; prefer the most specific matching skill before falling back to the broad routers above.
+- Detailed markdown guides in `skills/*.md` are intentionally not exposed one-by-one as local skills, to avoid overflowing the skills context budget. Use the compact router skills above to find and read only the matching guide files.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 

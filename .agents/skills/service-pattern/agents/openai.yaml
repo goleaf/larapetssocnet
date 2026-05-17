@@ -1,7 +1,0 @@
-interface:
-  display_name: "Service Pattern"
-  short_description: "Help with Service Pattern tasks"
-  default_prompt: "Use $service-pattern to follow a clear implementation and verification workflow from start to finish."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#C2410C"

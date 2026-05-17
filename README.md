@@ -42,6 +42,10 @@ composer quality
 
 Use `composer quality` for the broad local quality gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full Pest suite, lints SCSS, and builds assets.
 
+## Maintenance Rule
+
+After implementation work, update all affected Markdown files, `FEATURES.md`, and `CHANGELOG.md`, then check `git status --short`. Stage only the files that belong to the task, commit when git delivery is requested or the work is ready for history, and push only when explicitly requested.
+
 ## Testing
 
 Tests are written with Pest. Feature tests cover HTTP workflows, authorization, database behavior, and user-visible flows. Unit tests cover services, architecture rules, tooling configuration, and pure business logic.

@@ -1,7 +1,0 @@
-interface:
-  display_name: "Iterating On Code"
-  short_description: "Help with Iterating On Code tasks"
-  default_prompt: "Use $iterating-on-code to follow a clear implementation and verification workflow from start to finish."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#C2410C"

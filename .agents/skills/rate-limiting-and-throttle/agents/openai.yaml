@@ -1,7 +1,0 @@
-interface:
-  display_name: "Rate Limiting and Throttle"
-  short_description: "Help with Rate Limiting and Throttle tasks"
-  default_prompt: "Use $rate-limiting-and-throttle to enforce authorization, visibility, sanitization, and secure-by-default behavior."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#B91C1C"

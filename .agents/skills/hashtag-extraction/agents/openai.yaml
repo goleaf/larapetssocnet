@@ -1,7 +1,0 @@
-interface:
-  display_name: "Hashtag Extraction"
-  short_description: "Help with Hashtag Extraction tasks"
-  default_prompt: "Use $hashtag-extraction to implement domain behavior and feature rules with consistent user-facing outcomes."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#10B981"

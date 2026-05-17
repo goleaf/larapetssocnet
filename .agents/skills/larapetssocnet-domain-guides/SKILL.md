@@ -9,9 +9,9 @@ Use this skill as the project-specific router for domain behavior. Keep context 
 
 Also activate other matching skills when relevant:
 - `using-laravel-superpowers` for Laravel workflow guardrails
-- `pest-testing` or `tdd-with-pest` for tests
-- `form-requests-and-validation` for request validation
-- `policies-and-authorization` for protected actions
+- `pest-testing` for tests
+- Read [form-requests.md](../../../skills/form-requests.md) for request validation
+- Read [policies.md](../../../skills/policies.md) and [security.md](../../../skills/security.md) for protected actions
 
 ## Domain Lookup
 

@@ -1,7 +1,0 @@
-interface:
-  display_name: "Git Changelog Workflow"
-  short_description: "Help with Git Changelog Workflow tasks"
-  default_prompt: "Use $git-changelog-workflow to follow a clear implementation and verification workflow from start to finish."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#C2410C"

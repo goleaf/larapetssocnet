@@ -1,7 +1,0 @@
-interface:
-  display_name: "Adoption"
-  short_description: "Help with Adoption tasks and workflows"
-  default_prompt: "Use $adoption to implement domain behavior and feature rules with consistent user-facing outcomes."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#10B981"

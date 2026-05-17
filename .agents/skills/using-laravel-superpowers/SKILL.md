@@ -22,16 +22,16 @@ sail composer require x/y   # with Sail
 composer require x/y        # without Sail
 ```
 
-See the `laravel:runner-selection` skill for detection tips, command pairs, and safety notes.
+Use the project guide files under `skills/` for deeper workflow notes when a task needs them.
 
 ## Core Workflows
 
-- Test-Driven Development first: use `laravel:tdd-with-pest`
-- Database changes: use `laravel:migrations-and-factories`
-- Quality gates: use `laravel:quality-checks` (Pint, Insights/PHPStan)
-- Queues and Horizon: use `laravel:queues-and-horizon`
-- Architecture patterns: `laravel:ports-and-adapters`, `laravel:template-method-and-plugins`
-- Keep complexity low: `laravel:complexity-guardrails`
+- Test-Driven Development first: use `pest-testing`, then read `skills/testing.md` when project-specific coverage rules matter.
+- Database changes: read `skills/sqlite.md`, `skills/eloquent-patterns.md`, and related model guides before changing schema or queries.
+- Quality gates: run the smallest relevant tests first, then Pint/build checks when touched files require them.
+- Queues and architecture patterns: prefer existing services, actions, and project guide files over adding new public skill entrypoints.
+- Keep complexity low: choose the narrowest implementation that fits existing Laravel conventions.
+- End implementation tasks with the repo close-out rule: update affected Markdown, `FEATURES.md`, `CHANGELOG.md`, and git status before the final response.
 
 ## Philosophy
 
@@ -48,4 +48,4 @@ Use slash commands as needed:
 /superpowers-laravel:execute-plan
 ```
 
-When a Laravel skill exists for your task, use it exactly as written.
+When a compact local router skill matches the task, use it first and load detailed guide files from `skills/` only as needed.

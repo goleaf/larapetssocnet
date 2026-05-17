@@ -10,5 +10,9 @@ it('does not render livewire asset directives as plain text', function (): void 
         ->get(route('explore.index'))
         ->assertSuccessful()
         ->assertDontSee('@livewireStyles')
-        ->assertDontSee('@livewireScripts');
+        ->assertDontSee('@livewireScripts')
+        ->assertDontSee('livewireStyles')
+        ->assertDontSee('livewireScripts')
+        ->assertDontSee('<livewire:styles', false)
+        ->assertDontSee('<livewire:scripts', false);
 });

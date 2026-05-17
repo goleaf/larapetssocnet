@@ -4,6 +4,8 @@
 This is an active Laravel 13 PetSocial application with established domain structure. Use the feature-based folders already in place: `app/Actions`, `app/Services`, domain-specific `app/Models` subfolders, Form Requests, policies, Blade views, Alpine/Tailwind assets, and Pest tests. The repository root is also the shared-hosting web surface: keep `index.php`, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` at the root, and keep Laravel internals protected by root `.htaccess`. Application pages are closed to guests by default; keep Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, and settings behind authentication unless policy changes.
 
 Prefer `composer quality` as the broad local gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full test suite, lints SCSS, and builds assets. Keep tests meaningful: no placeholder truth assertions, focused/skipped/todo tests, or raw common HTTP status assertions when semantic assertions exist.
+
+After every implementation prompt, complete the maintenance pass before the final response: update all affected Markdown files, update `FEATURES.md` for feature scope/status changes, update `CHANGELOG.md` under `Unreleased`, check `git status --short`, stage only intended task files, commit when git delivery is requested or the task is ready for repository history, and push only when explicitly requested.
 </project-guidelines>
 
 <laravel-boost-guidelines>
@@ -40,7 +42,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 - `larapetssocnet-security-guides` — Project-specific router for authorization, visibility, moderation, guest access, and sanitization rules documented under `skills/`.
 - `larapetssocnet-performance-guides` — Project-specific router for feed/query performance, eager loading, counters, pagination, and SQLite-aware data patterns documented under `skills/`.
 - `larapetssocnet-workflow-guides` — Project-specific router for testing, localization/light-UI workflow, changelog/commit flow, and common service/request patterns documented under `skills/`.
-- Every markdown guide in `skills/*.md` is also exposed as a same-name local skill under `.agents/skills/`; prefer the most specific matching skill before falling back to the broad routers above.
+- Detailed markdown guides in `skills/*.md` are intentionally not exposed one-by-one as local skills, to avoid overflowing the skills context budget. Use the compact router skills above to find and read only the matching guide files.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 

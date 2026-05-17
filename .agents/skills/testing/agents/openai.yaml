@@ -1,7 +1,0 @@
-interface:
-  display_name: "Testing"
-  short_description: "Help with Testing tasks and workflows"
-  default_prompt: "Use $testing to follow a clear implementation and verification workflow from start to finish."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#C2410C"

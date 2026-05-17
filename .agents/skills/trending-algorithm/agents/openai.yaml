@@ -1,7 +1,0 @@
-interface:
-  display_name: "Trending Algorithm"
-  short_description: "Help with Trending Algorithm tasks"
-  default_prompt: "Use $trending-algorithm to implement domain behavior and feature rules with consistent user-facing outcomes."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#10B981"

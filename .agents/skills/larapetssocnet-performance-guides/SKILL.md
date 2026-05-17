@@ -7,12 +7,11 @@ description: Use when optimizing feed, profile, search, explore, or widget queri
 
 Use this skill for read-heavy pages and data-access optimizations. Open only the guide files that match the performance work.
 
-Also activate other matching skills when relevant:
-- `performance-eager-loading`
-- `performance-select-columns`
-- `performance-caching`
-- `eloquent-relationships-and-loading`
-- `tdd-with-pest`
+Also read the matching project guides when relevant:
+- [eager-loading-patterns.md](../../../skills/eager-loading-patterns.md)
+- [query-optimization.md](../../../skills/query-optimization.md)
+- [relations.md](../../../skills/relations.md)
+- [testing.md](../../../skills/testing.md)
 
 ## Performance Lookup
 

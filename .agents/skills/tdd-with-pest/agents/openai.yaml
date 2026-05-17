@@ -1,7 +1,0 @@
-interface:
-  display_name: "TDD with Pest"
-  short_description: "Help with TDD with Pest tasks"
-  default_prompt: "Use $tdd-with-pest to follow a clear implementation and verification workflow from start to finish."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#C2410C"

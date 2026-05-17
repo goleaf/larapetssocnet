@@ -7,11 +7,11 @@ description: Use when working on authorization, visibility, moderation, reportin
 
 Use this skill for project-specific security and access-control behavior. Open only the guide files that match the change.
 
-Also activate other matching skills when relevant:
-- `policies-and-authorization`
-- `form-requests-and-validation`
-- `exception-handling-and-logging`
-- `security-best-practices`
+Also read the matching project guides when relevant:
+- [policies.md](../../../skills/policies.md)
+- [form-requests.md](../../../skills/form-requests.md)
+- [exception-handling.md](../../../skills/exception-handling.md)
+- [security.md](../../../skills/security.md)
 
 ## Security Lookup
 

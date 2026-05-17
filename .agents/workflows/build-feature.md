@@ -120,6 +120,7 @@ Read the implementation plan at [path]. Break it down into the smallest possible
 - After completing each task, verify it against the implementation plan
 - Run the test suite before moving to the next task
 - If a task reveals a problem with the plan, stop and flag it
+- At the end, update affected Markdown files, `FEATURES.md`, `CHANGELOG.md`, and git status before the final response
 
 Do not move to the next task until the current one passes verification.
 ```
@@ -137,3 +138,4 @@ Do not move to the next task until the current one passes verification.
 | **Parallelism for research, not implementation** | Sub-agents research simultaneously; implementation is sequential and verified |
 | **Humans at decision points** | AI handles volume; humans handle judgement |
 | **Small tasks + tests** | Tighter feedback loops mean less damage from wrong turns |
+| **Docs and git close-out** | Every completed implementation updates affected Markdown, feature docs, changelog, and git status |

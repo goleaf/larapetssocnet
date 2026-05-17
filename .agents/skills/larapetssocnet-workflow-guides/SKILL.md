@@ -9,8 +9,6 @@ Use this skill for repo-specific engineering workflow. Open only the guide files
 
 Also activate other matching skills when relevant:
 - `using-laravel-superpowers`
-- `daily-workflow`
-- `quality-checks`
 - `pest-testing`
 - `tailwindcss-development`
 
@@ -21,4 +19,8 @@ Also activate other matching skills when relevant:
 - Git close-out workflow: [git-changelog-workflow.md](../../../skills/git-changelog-workflow.md)
 - Core Laravel project rules: [laravel.md](../../../skills/laravel.md), [forms.md](../../../skills/forms.md)
 
-Use the most specific local skill available before falling back to this general workflow skill.
+## End-of-Prompt Close-Out
+
+For implementation prompts, use the git close-out workflow before the final response: update affected Markdown, `FEATURES.md`, `CHANGELOG.md`, and git status, then stage only intended files. Commit when git delivery is requested or the task is ready for repository history; push only when explicitly requested.
+
+Use this router to choose the smallest relevant guide file instead of exposing every guide as a separate local skill.

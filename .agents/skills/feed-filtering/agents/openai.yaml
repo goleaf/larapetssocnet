@@ -1,7 +1,0 @@
-interface:
-  display_name: "Feed Filtering"
-  short_description: "Help with Feed Filtering tasks"
-  default_prompt: "Use $feed-filtering to implement domain behavior and feature rules with consistent user-facing outcomes."
-  icon_small: "./assets/icon.svg"
-  icon_large: "./assets/icon.svg"
-  brand_color: "#10B981"
