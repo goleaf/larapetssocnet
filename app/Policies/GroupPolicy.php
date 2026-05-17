@@ -44,8 +44,22 @@ class GroupPolicy
         return $this->visibility->isOwner($user, $group);
     }
 
+    public function archive(User $user, Group $group): bool
+    {
+        return $this->visibility->isOwner($user, $group) && ! $group->isArchived();
+    }
+
+    public function unarchive(User $user, Group $group): bool
+    {
+        return $this->visibility->isOwner($user, $group) && $group->isArchived();
+    }
+
     public function post(User $user, Group $group): bool
     {
+        if ($group->isArchived()) {
+            return false;
+        }
+
         if ($this->visibility->isOwner($user, $group)) {
             return true;
         }
@@ -89,6 +103,10 @@ class GroupPolicy
 
     public function join(User $user, Group $group): bool
     {
+        if ($group->isArchived()) {
+            return false;
+        }
+
         return $this->visibility->canJoinGroup($user, $group);
     }
 

@@ -4,6 +4,7 @@
  $privacyValue = $privacyValue ?? strtolower((string) $group->normalizedPrivacy());
  $privacyLabel = $privacyLabel ?? \Illuminate\Support\Str::headline($privacyValue);
  $speciesLabel = $speciesLabel ?? \Illuminate\Support\Str::headline(str_replace(['-','_'],'', (string) data_get($group,'species','all pets')));
+ $isArchived = $isArchived ?? (method_exists($group, 'isArchived') && $group->isArchived());
  $canPost = $canPost ?? ($isMember || $isAdmin || $isOwner);
  $canSeePosts = $canSeePosts ?? ($canViewPosts ?? ($privacyValue !=='private' || $canPost));
  $membersUrl = $membersUrl ?? route('groups.members.index', $groupRouteKey);
@@ -23,6 +24,19 @@
  @auth
  @if ($isOwner)
  <x-ui.role-badge role="owner"/>
+ @if ($isArchived)
+ <form method="POST" action="{{ route('groups.unarchive', $groupRouteKey) }}">
+ @csrf
+ @method('PATCH')
+ <x-ui.button type="submit" variant="primary" size="sm">Restore</x-ui.button>
+ </form>
+ @else
+ <form method="POST" action="{{ route('groups.archive', $groupRouteKey) }}">
+ @csrf
+ @method('PATCH')
+ <x-ui.button type="submit" variant="ghost" size="sm">Archive</x-ui.button>
+ </form>
+ @endif
  @elseif ($isMember)
  <form method="POST" action="{{ route('groups.leave', $groupRouteKey) }}">
  @csrf
@@ -36,7 +50,7 @@
  @method('DELETE')
  <x-ui.button type="submit" variant="ghost" size="sm">Cancel</x-ui.button>
  </form>
- @elseif ($privacyValue !=='secret')
+ @elseif (! $isArchived && $privacyValue !=='secret')
  <form method="POST" action="{{ route('groups.join', $groupRouteKey) }}">
  @csrf
  <x-ui.button type="submit" variant="primary" size="sm">
@@ -72,6 +86,9 @@
  <x-ui.badge variant="default">{{ $membersCount }} members</x-ui.badge>
  <x-ui.badge variant="default">{{ $postsCount }} posts</x-ui.badge>
  <x-ui.badge variant="default">{{ $eventsCount }} events</x-ui.badge>
+ @if ($isArchived)
+ <x-ui.badge variant="warning">Archived</x-ui.badge>
+ @endif
  </div>
  @if (filled((string) $group->description))
  <p class="mt-2 text-sm text-fur">{!! $descriptionHtml !!}</p>
@@ -101,6 +118,13 @@
  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
  <section class="space-y-4">
  <x-ui.flash-messages />
+
+ @if ($isArchived)
+ <x-ui.card padding="base" class="border-amber-200 bg-amber-50">
+ <p class="text-sm font-semibold text-bark">This group is archived.</p>
+ <p class="mt-1 text-sm text-fur">Historical posts remain available to members, but new posts and join requests are disabled until the owner restores the group.</p>
+ </x-ui.card>
+ @endif
 
  @if ($activeTab ==='about')
  <x-ui.card padding="lg" class="space-y-6">

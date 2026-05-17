@@ -229,6 +229,8 @@ Route::middleware(['auth', 'banned', 'track_last_seen'])->group(function (): voi
         Route::get('/{group:slug}/edit', [GroupController::class, 'edit'])->name('edit');
         Route::patch('/{group:slug}', [GroupController::class, 'update'])->name('update');
         Route::delete('/{group:slug}', [GroupController::class, 'destroy'])->name('destroy');
+        Route::patch('/{group:slug}/archive', [GroupController::class, 'archive'])->name('archive');
+        Route::patch('/{group:slug}/unarchive', [GroupController::class, 'unarchive'])->name('unarchive');
 
         Route::post('/{group:slug}/cover', [GroupCoverController::class, 'store'])->name('cover.store');
         Route::delete('/{group:slug}/cover', [GroupCoverController::class, 'destroy'])->name('cover.destroy');

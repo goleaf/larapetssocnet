@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Groups;
 
+use App\Actions\Groups\ArchiveGroupAction;
 use App\Actions\Groups\CreateGroupAction;
 use App\Actions\Groups\DeleteGroupAction;
 use App\Actions\Groups\JoinGroupAction;
 use App\Actions\Groups\LeaveGroupAction;
+use App\Actions\Groups\UnarchiveGroupAction;
 use App\Actions\Groups\UpdateGroupAction;
 use App\Enums\GroupMemberStatus;
 use App\Http\Controllers\Controller;
@@ -98,6 +100,7 @@ class GroupController extends Controller
         }
 
         $membership = $group->membershipForUserId((int) $viewer->getKey());
+        $isArchived = $group->isArchived();
         $isOwner = $group->isOwner($viewer);
         $isMember = $isOwner || $group->isActiveMembership($membership);
         $isPendingMembership = $membership && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Pending->value;
@@ -169,6 +172,7 @@ class GroupController extends Controller
             'group' => $group,
             'owner' => $group->owner,
             'membership' => $membership,
+            'isArchived' => $isArchived,
             'isOwner' => $isOwner,
             'isAdmin' => $isAdmin,
             'isMember' => $isMember,
@@ -195,7 +199,7 @@ class GroupController extends Controller
             'requestTab' => $requestTab,
             'membersUrl' => route('groups.members.index', ['group' => $group->slug]),
             'requestsUrl' => route('groups.requests.index', ['group' => $group->slug, 'tab' => 'members', 'request_tab' => 'pending']),
-            'canPost' => $isMember || $isAdmin || $isOwner,
+            'canPost' => ! $isArchived && ($isMember || $isAdmin || $isOwner),
             'canSeePosts' => $visibility->canViewGroupPosts($viewer, $group),
         ]);
     }
@@ -276,6 +280,24 @@ class GroupController extends Controller
         return redirect()
             ->route('groups.index')
             ->with('status', 'Group deleted.');
+    }
+
+    public function archive(Group $group, ArchiveGroupAction $action): RedirectResponse
+    {
+        $this->authorize('archive', $group);
+
+        $action->handle($group);
+
+        return back()->with('status', 'Group archived. Members can still read content, but new activity is disabled.');
+    }
+
+    public function unarchive(Group $group, UnarchiveGroupAction $action): RedirectResponse
+    {
+        $this->authorize('unarchive', $group);
+
+        $action->handle($group);
+
+        return back()->with('status', 'Group restored.');
     }
 
     public function join(JoinGroupRequest $request, Group $group, JoinGroupAction $joinGroup, GroupVisibilityService $visibility): RedirectResponse

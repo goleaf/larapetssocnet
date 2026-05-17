@@ -86,6 +86,10 @@ class GroupVisibilityService
 
     public function canJoinGroup(User $viewer, Group $group): bool
     {
+        if ($group->isArchived()) {
+            return false;
+        }
+
         if ($this->isBlockedBetween($viewer, $group)) {
             return false;
         }

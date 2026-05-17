@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added group archive/restore actions, routes, owner controls, and `groups.status` / `groups.archived_at` schema support.
+- Added group archive feature coverage for owner archive/restore, read-only archived groups, and secret-group discovery drift.
 - Added main feed source filtering for `source=people|pets` while preserving existing `type=text|photo|video` filtering and cursor query strings.
 - Added a named `social-follows` rate limiter with friendly JSON/redirect responses for user and pet follow actions.
 - Added follow button component coverage for pending request withdrawal UI and hover-to-unfollow behavior.
@@ -34,6 +36,8 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated group posting, commenting, reacting, and joining authorization to reject archived groups while keeping historical content readable.
+- Updated group discovery visibility to exclude secret groups when either `privacy` or legacy `type` is secret.
 - Updated the feed filter UI to expose source and post-type filters without losing the selected feed theme.
 - Updated user and pet follow routes to use the shared social follow rate limiter.
 - Updated pending follow-request handling to show an inline withdraw confirmation instead of cancelling immediately.
@@ -103,6 +107,10 @@
 
 ### Tests
 - Verified passing suites:
+  - `tests/Feature/GroupArchiveFeatureTest.php`
+  - `tests/Feature/GroupVisibilityTest.php`
+  - `tests/Feature/GroupMembershipRolesTest.php`
+  - `tests/Feature/GroupFeatureTest.php`
   - `tests/Feature/Feed/FeedTest.php`
   - `tests/Feature/Feed/FeedQueryTest.php`
   - `tests/Feature/FeedQueryCountTest.php`

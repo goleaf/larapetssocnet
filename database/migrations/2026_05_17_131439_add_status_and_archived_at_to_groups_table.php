@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('groups', function (Blueprint $table): void {
+            if (! Schema::hasColumn('groups', 'status')) {
+                $table->string('status', 20)->default('active')->index();
+            }
+
+            if (! Schema::hasColumn('groups', 'archived_at')) {
+                $table->timestamp('archived_at')->nullable()->index();
+            }
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('groups', function (Blueprint $table): void {
+            if (Schema::hasColumn('groups', 'archived_at')) {
+                $table->dropColumn('archived_at');
+            }
+
+            if (Schema::hasColumn('groups', 'status')) {
+                $table->dropColumn('status');
+            }
+        });
+    }
+};

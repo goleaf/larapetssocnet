@@ -70,6 +70,10 @@ class PostPolicy
 
     public function react(User $user, Post $post): bool
     {
+        if ($post->belongsToArchivedGroup()) {
+            return false;
+        }
+
         if ($user->hasBlockingRelationshipWith($post->author)) {
             return false;
         }

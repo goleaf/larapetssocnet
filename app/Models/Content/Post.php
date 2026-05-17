@@ -155,6 +155,19 @@ class Post extends Model implements HasMedia
         return $this->belongsTo(Group::class);
     }
 
+    public function belongsToArchivedGroup(): bool
+    {
+        if (! $this->group_id) {
+            return false;
+        }
+
+        $this->loadMissing('group:id,status,archived_at');
+
+        $group = $this->group;
+
+        return $group instanceof Group && $group->isArchived();
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);

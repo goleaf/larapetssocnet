@@ -34,6 +34,8 @@ class GroupFactory extends Factory
             'rules' => fake()->optional(0.3)->sentence(fake()->numberBetween(6, 12)),
             'type' => $type,
             'privacy' => $type,
+            'status' => 'active',
+            'archived_at' => null,
             'species_focus' => fake()->randomElement(['dog', 'cat', 'bird', 'rabbit', 'fish', 'reptile', 'all']),
             'location' => fake()->optional(0.65)->city().', '.fake()->stateAbbr(),
             'website' => fake()->optional(0.4)->url(),
@@ -66,6 +68,14 @@ class GroupFactory extends Factory
         return $this->state(fn (): array => [
             'type' => 'secret',
             'privacy' => 'secret',
+        ]);
+    }
+
+    public function archived(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => 'archived',
+            'archived_at' => now()->subDay(),
         ]);
     }
 }

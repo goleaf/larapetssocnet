@@ -15,12 +15,20 @@ class CommentPolicy
 
     public function create(User $user, Post $post): bool
     {
+        if ($post->belongsToArchivedGroup()) {
+            return false;
+        }
+
         return app(PostPolicy::class)->view($user, $post);
     }
 
     public function reply(User $user, Comment $comment): bool
     {
         if ($comment->trashed()) {
+            return false;
+        }
+
+        if ($this->belongsToArchivedGroup($comment)) {
             return false;
         }
 
@@ -51,6 +59,10 @@ class CommentPolicy
             return false;
         }
 
+        if ($this->belongsToArchivedGroup($comment)) {
+            return false;
+        }
+
         if (! app(PostPolicy::class)->view($user, $comment->post)) {
             return false;
         }
@@ -65,5 +77,12 @@ class CommentPolicy
         }
 
         return app(PostPolicy::class)->view($user, $comment->post);
+    }
+
+    private function belongsToArchivedGroup(Comment $comment): bool
+    {
+        $post = $comment->post;
+
+        return $post instanceof Post && $post->belongsToArchivedGroup();
     }
 }

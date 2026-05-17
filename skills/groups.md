@@ -16,10 +16,16 @@ Groups are community spaces.
 ## Core Fields
 - `name`, `slug`, `description`
 - `privacy` (type mirrors privacy)
+- `status` (`active` or `archived`) and `archived_at`
 - `rules`, `location`, `website`
 - `species_focus` (default `all`)
 - media: avatar + cover
 - counters: `members_count`, `posts_count`
+
+## Lifecycle
+- Archived groups remain readable to authorized viewers.
+- Archived groups reject new posts, comments, reactions, and join requests.
+- Only the owner can archive or restore a group through `GroupPolicy`.
 
 ## Posts
 - Group-context posts use `posts.group_id`.
@@ -27,4 +33,4 @@ Groups are community spaces.
 
 ## Services and Policy
 - `GroupService`: create/update/delete + membership flows (join/leave/approve/ban/remove).
-- `GroupPolicy`: view/post/manage/delete rules.
+- `GroupPolicy`: view/post/join/manage/archive/delete rules.

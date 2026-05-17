@@ -28,3 +28,4 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Feature 6: Reactions guidance must match the existing polymorphic reactions table, services, controllers, and counter cache behavior.
 - Feature 7: Comments guidance must match the existing comments table, services, controllers, Blade rendering, two-level threading, and comment reaction behavior.
 - Feature 8: Follow and friendship guidance must extend the existing `follows`, `pet_followers`, blocks, services, policies, notifications, social follow rate limiter, and Alpine follow button instead of rebuilding the social graph.
+- Feature 9: Groups guidance must extend the existing controller/service/policy groups module, `group_members`, `group_posts`, `posts.group_id`, three-level privacy model, role hierarchy, and the implemented archive/read-only lifecycle instead of replacing it with a separate subsystem.

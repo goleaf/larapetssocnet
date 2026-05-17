@@ -34,6 +34,10 @@ class GroupService
         [$user, $group] = $this->resolveUserAndGroup($first, $second);
 
         return DB::transaction(function () use ($group, $user, $message): GroupMember {
+            if ($group->isArchived()) {
+                throw $this->validation('Archived groups are read-only.');
+            }
+
             $membership = $this->membershipForUser($group, (int) $user->getKey(), true);
 
             if ($membership instanceof GroupMember && (string) ($membership->status?->value ?? '') === GroupMemberStatus::Banned->value) {

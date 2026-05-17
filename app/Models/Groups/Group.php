@@ -48,6 +48,8 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
     'cover_image_path',
     'type',
     'privacy',
+    'status',
+    'archived_at',
     'species_focus',
     'species',
     'rules',
@@ -78,6 +80,7 @@ class Group extends Model implements HasMedia
         return [
             'members_count' => 'integer',
             'posts_count' => 'integer',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -110,6 +113,10 @@ class Group extends Model implements HasMedia
 
             if (blank($group->species_focus)) {
                 $group->species_focus = 'all';
+            }
+
+            if (blank($group->status)) {
+                $group->status = 'active';
             }
         });
     }
@@ -266,8 +273,19 @@ class Group extends Model implements HasMedia
     {
         return $query->where(function (Builder $visibilityQuery) use ($user): void {
             $visibilityQuery
-                ->where('type', '!=', 'secret')
-                ->orWhereNull('type');
+                ->where(function (Builder $discoverableQuery): void {
+                    $discoverableQuery
+                        ->where(function (Builder $privacyQuery): void {
+                            $privacyQuery
+                                ->whereNull('privacy')
+                                ->orWhere('privacy', '!=', 'secret');
+                        })
+                        ->where(function (Builder $typeQuery): void {
+                            $typeQuery
+                                ->whereNull('type')
+                                ->orWhere('type', '!=', 'secret');
+                        });
+                });
 
             if ($user instanceof User) {
                 $visibilityQuery
@@ -640,6 +658,36 @@ class Group extends Model implements HasMedia
         return in_array($privacy, ['public', 'private', 'secret'], true)
             ? $privacy
             : 'public';
+    }
+
+    public function normalizedStatus(): string
+    {
+        $status = strtolower((string) ($this->status ?: 'active'));
+
+        return in_array($status, ['active', 'archived'], true)
+            ? $status
+            : 'active';
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->normalizedStatus() === 'archived' || $this->archived_at !== null;
+    }
+
+    public function archive(): bool
+    {
+        return $this->forceFill([
+            'status' => 'archived',
+            'archived_at' => $this->archived_at ?: now(),
+        ])->save();
+    }
+
+    public function unarchive(): bool
+    {
+        return $this->forceFill([
+            'status' => 'active',
+            'archived_at' => null,
+        ])->save();
     }
 
     public function isOwner(User $user): bool
