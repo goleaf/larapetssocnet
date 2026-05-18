@@ -48,6 +48,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Tightened login/logout security so banned users with valid credentials are rejected, dashboard access uses the same banned/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Updated all project-installed Laravel Superpowers skills with the Laravel 13.9 / PHP 8.4 baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
 - Updated the pet profile page to remove the page-local width cap and align the profile summary, tabs, and tab content with the app header block.
 - Migrated shared UI primitives, Tailwind theme aliases, app shell, guest shell, forms, buttons, cards, alerts, badges, and component-library examples to the Warm Editorial visual system.
@@ -140,6 +141,7 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/Auth tests/Feature/AuthenticatedPageAccessTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/ProjectDocumentationAndHooksTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php`
   - `npm run lint:scss`

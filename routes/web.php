@@ -65,7 +65,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function (): Factory|View {
     return view('dashboard.index');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'banned', 'track_last_seen'])->name('dashboard');
 
 Route::get('/dev/components', function (): Factory|View {
     abort_unless(app()->isLocal(), 404);

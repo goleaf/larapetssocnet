@@ -10,6 +10,7 @@ it('redirects guests away from application pages by default', function (string $
     $this->get($uri)->assertRedirect(route('login'));
 })->with([
     '/',
+    '/dashboard',
     '/explore',
     '/search',
     '/explore/pets',
@@ -26,8 +27,11 @@ it('keeps application page routes behind authentication middleware', function (s
 
     expect($route)->not->toBeNull()
         ->and($route->gatherMiddleware())->toContain('auth')
-        ->and($route->gatherMiddleware())->toContain('verified');
+        ->and($route->gatherMiddleware())->toContain('verified')
+        ->and($route->gatherMiddleware())->toContain('banned')
+        ->and($route->gatherMiddleware())->toContain('track_last_seen');
 })->with([
+    'dashboard',
     'search.index',
     'explore.index',
     'pets.explore',

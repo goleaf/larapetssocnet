@@ -18,6 +18,9 @@
 
 ## Authentication security
 - Keep app browsing routes behind `auth`, `verified`, `banned`, and `track_last_seen` unless a route is intentionally public.
+- Reject banned accounts during login even when the supplied password is correct, keep the public error generic, and record the blocked attempt in `auth_audit_logs`.
+- Rate-limit repeated failed login attempts by normalized email/username plus IP.
+- Logout must invalidate the session, regenerate the CSRF token, and record a `logout` audit event.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.
 - Record security-significant auth events in `auth_audit_logs` through `AuthAuditLogger`.
 - Registration must validate DOB, terms acceptance, password strength, and the off-screen honeypot before account creation.

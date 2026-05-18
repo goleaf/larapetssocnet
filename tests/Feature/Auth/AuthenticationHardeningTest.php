@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\Identity\User;
+use App\Models\Security\AuthAuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -72,6 +75,96 @@ it('records successful and failed login attempts without revealing which credent
     $this->assertDatabaseHas('auth_audit_logs', [
         'user_id' => $user->id,
         'event_type' => 'login_success',
+    ]);
+});
+
+it('rejects banned users with valid credentials and records the blocked login attempt', function (): void {
+    $user = User::factory()->create([
+        'email' => 'banned-login@example.com',
+        'is_banned' => true,
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])
+        ->assertSessionHasErrors(['email' => trans('auth.failed')]);
+
+    $this->assertGuest();
+
+    $auditLog = AuthAuditLog::query()
+        ->where('user_id', $user->id)
+        ->where('event_type', 'login_failure')
+        ->firstOrFail();
+
+    expect($auditLog->metadata)->toMatchArray([
+        'identifier_type' => 'email',
+        'failure_reason' => 'banned',
+    ]);
+});
+
+it('keeps unverified users out of application pages after login', function (): void {
+    $user = User::factory()->unverified()->create();
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($user);
+
+    $this->get(route('dashboard'))
+        ->assertRedirect(route('verification.notice'));
+
+    $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->id,
+        'event_type' => 'login_success',
+    ]);
+});
+
+it('rate limits repeated failed login attempts', function (): void {
+    $user = User::factory()->create([
+        'email' => 'limited-login@example.com',
+    ]);
+    $throttleKey = Str::transliterate(Str::lower($user->email).'|127.0.0.1');
+
+    RateLimiter::clear($throttleKey);
+
+    for ($attempt = 0; $attempt < 5; $attempt++) {
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertSessionHasErrors(['email' => trans('auth.failed')]);
+    }
+
+    expect(RateLimiter::tooManyAttempts($throttleKey, 5))->toBeTrue();
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertSessionHasErrors(['email']);
+
+    $this->assertGuest();
+});
+
+it('logout invalidates sensitive session state and records an audit event', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->withSession([
+            'auth.password_confirmed_at' => now()->timestamp,
+            'login.intended' => route('settings.index', absolute: false),
+        ])
+        ->post('/logout')
+        ->assertRedirect('/')
+        ->assertSessionMissing('auth.password_confirmed_at')
+        ->assertSessionMissing('login.intended');
+
+    $this->assertGuest();
+    $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->id,
+        'event_type' => 'logout',
     ]);
 });
 

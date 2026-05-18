@@ -20,7 +20,7 @@ The end-of-prompt close-out is:
 
 Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Tailwind 4, Blade, Alpine, controller/service, SQLite, and shared-hosting structure before implementation.
 
-- Feature 1: Authentication and registration guidance must match the existing Breeze/controller/Form Request flow unless explicitly refactored. Current implementation includes email/username login, verified-email gating for app pages, DOB/terms/honeypot registration checks, password-strength validation, and auth audit logging.
+- Feature 1: Authentication and registration guidance must match the existing Breeze/controller/Form Request flow unless explicitly refactored. Current implementation includes email/username login, banned-user login rejection, verified-email gating for app pages, rate-limited failed login attempts, safe logout session invalidation, DOB/terms/honeypot registration checks, password-strength validation, and auth audit logging.
 - Feature 2: User profile guidance must match the existing public profile controller, Blade tabs, follow/request, privacy, and media flows.
 - Feature 3: Pet profile guidance must match the existing pet controller, pet followers, media, gallery, health, adoption, and visibility flows.
 - Feature 4: News feed guidance must match the existing feed controller, cursor pagination, follow graph, pet follow graph, Blade post cards, one Warm Editorial feed surface, and implemented `source=people|pets` plus `type=text|photo|video` filters.

@@ -22,17 +22,14 @@ class AttemptLoginAction
 
         $identifier = trim((string) $request->input('email'));
         $candidateUser = $this->candidateUser($identifier);
+        $credentials = $this->credentialsFor($identifier, (string) $request->input('password'));
 
-        if (! Auth::attempt($this->credentialsFor($identifier, (string) $request->input('password')), $request->boolean('remember'))) {
-            RateLimiter::hit($request->throttleKey());
+        if ($candidateUser !== null && (bool) $candidateUser->is_banned && Auth::validate($credentials)) {
+            $this->failLogin($request, $candidateUser, $identifier, 'banned');
+        }
 
-            $this->auditLogger->record($candidateUser, 'login_failure', $request, [
-                'identifier_type' => $this->identifierType($identifier),
-            ]);
-
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
+        if (! Auth::attempt([...$credentials, 'is_banned' => false], $request->boolean('remember'))) {
+            $this->failLogin($request, $candidateUser, $identifier, 'invalid_credentials');
         }
 
         RateLimiter::clear($request->throttleKey());
@@ -66,6 +63,23 @@ class AttemptLoginAction
         }
 
         return User::query()->where('username', User::normalizeUsername($identifier))->first();
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function failLogin(LoginRequest $request, ?User $candidateUser, string $identifier, string $reason): never
+    {
+        RateLimiter::hit($request->throttleKey());
+
+        $this->auditLogger->record($candidateUser, 'login_failure', $request, [
+            'identifier_type' => $this->identifierType($identifier),
+            'failure_reason' => $reason,
+        ]);
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.failed'),
+        ]);
     }
 
     private function identifierType(string $identifier): string
