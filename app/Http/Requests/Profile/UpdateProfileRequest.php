@@ -50,7 +50,6 @@ class UpdateProfileRequest extends FormRequest
             'social_links.*' => ['nullable', 'url', 'max:255'],
             'locale' => ['nullable', 'string', 'max:20'],
             'timezone' => ['nullable', 'timezone'],
-            'profile_theme' => ['nullable', 'string', 'max:40'],
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
             'is_private' => ['nullable', 'boolean'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],

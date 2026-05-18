@@ -72,10 +72,6 @@ document.addEventListener('alpine:init', () => {
  return response.json();
  });
 
- Alpine.store('ui', {
- theme:'warm-editorial',
- });
-
  Alpine.store('toast', {
  items: [],
 
@@ -131,10 +127,6 @@ document.addEventListener('alpine:init', () => {
  mobileMenuOpen: false,
  mobileBottomNavOpen: false,
  quickSearchOpen: false,
-
- get theme() {
- return Alpine.store('ui').theme;
- },
 
  init() {
  this.escapeHandler = (event) => {

@@ -112,6 +112,9 @@
 - Added health log reminders with `next_due_at` support (migration + form field + validation + persistence).
 - Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
+### Removed
+- Removed remaining interface theme-switching paths: app `data-theme` attributes, Alpine UI theme state, the profile theme settings field, profile theme persistence/export handling, the `users.profile_theme` column, and Debugbar auto light/dark mode.
+
 ### Fixed
 - Fixed shared select inputs showing double dropdown arrows by clearing the Tailwind Forms background-image arrow when the app renders its custom select chevron.
 - Fixed post-login 500 errors on intended group pages by rendering cast `GroupMemberStatus` enum values safely in group cards.
@@ -153,6 +156,11 @@
   - `npm run lint:scss`
   - `npm run build`
   - Playwright screenshot checks for `https://larapetssocnet.test/register` and `/dev/components` select controls
+  - `php artisan migrate --no-interaction`
+  - `php artisan test --compact tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/SettingsInterfaceTest.php tests/Feature/FeedThemeTest.php tests/Unit/StylesheetPipelineTest.php`
+  - `vendor/bin/pint --dirty --format=agent`
+  - `composer validate --strict --no-check-publish`
+  - Playwright authenticated screenshot check for `https://larapetssocnet.test/settings/profile` confirming no profile theme field and no app `data-theme` attribute
   - `tests/Unit/FeedServiceTest.php`
   - `composer quality`
   - `tests/Feature/BlockTest.php`

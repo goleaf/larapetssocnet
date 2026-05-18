@@ -3,6 +3,7 @@
 use App\Models\Identity\User;
 use App\Notifications\UsernameChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
@@ -29,7 +30,6 @@ if (! function_exists('profileSettingsPayload')) {
             ],
             'locale' => 'en',
             'timezone' => 'Europe/Vilnius',
-            'profile_theme' => 'meadow',
         ], $overrides);
     }
 }
@@ -55,7 +55,17 @@ it('updates profile settings fields', function (): void {
     ]);
     expect($user->locale)->toBe('en');
     expect($user->timezone)->toBe('Europe/Vilnius');
-    expect($user->profile_theme)->toBe('meadow');
+    expect(Schema::hasColumn('users', 'profile_theme'))->toBeFalse();
+});
+
+it('does not render profile theme controls in settings', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('settings.profile'))
+        ->assertOk()
+        ->assertDontSee('Profile theme')
+        ->assertDontSee('name="profile_theme"', false);
 });
 
 it('rejects reserved usernames during profile updates', function (): void {

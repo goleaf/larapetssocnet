@@ -26,6 +26,7 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Feature 4: News feed guidance must match the existing feed controller, cursor pagination, follow graph, pet follow graph, Blade post cards, one Warm Editorial feed surface, and implemented `source=people|pets` plus `type=text|photo|video` filters.
 - Shared UI guidance uses the Open Design Warm Editorial system for repeated blocks: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and the shared button variants.
 - Shared form guidance keeps select controls on the shared `form-select` + custom chevron pattern without allowing Tailwind Forms to add a second background arrow.
+- Shared design guidance forbids dark/light theme switching, runtime visual style switchers, `data-theme` controls, user-facing profile theme fields, and theme preference storage.
 - Application shell guidance keeps the desktop left rail scroll-contained to the viewport without giving individual sidebar widgets capped internal scroll areas.
 - Application shell guidance keeps mobile quick navigation in the normal page flow so it never covers forms, feed cards, or action rows.
 - Application shell guidance relies on Livewire automatic asset injection instead of manual `@livewireStyles` / `@livewireScripts` directives in the shared layout.

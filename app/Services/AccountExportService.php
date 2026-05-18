@@ -36,7 +36,6 @@ class AccountExportService
                 'social_links' => $user->social_links,
                 'locale' => $user->locale,
                 'timezone' => $user->timezone,
-                'profile_theme' => $user->profile_theme,
                 'birth_date' => $user->birth_date ? $user->birth_date->format('Y-m-d') : null,
                 'gender' => $user->gender,
                 'created_at' => $user->created_at->toIso8601String(),

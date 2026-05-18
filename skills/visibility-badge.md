@@ -16,7 +16,6 @@ Reusable Blade component: `x-visibility-badge`
 - Base:
   - `inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full`
 - Followers:
-  - `bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300`
+  - `bg-leaf-light text-leaf`
 - Private:
-  - `bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400`
-
+  - `bg-cream text-fur`

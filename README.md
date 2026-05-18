@@ -35,7 +35,7 @@ Laravel Debugbar is installed as a dev dependency and configured through `config
 
 The app uses the Open Design Warm Editorial system as its single visual standard. Source tokens live in `resources/scss/abstracts/_tokens.scss` and are exposed as shared CSS custom properties for the warm paper canvas, serif-led headings, terracotta actions, forest/meta accents, underline inputs, flat surfaces, and hover-only elevation.
 
-Use the shared primitives from `resources/scss`: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and the shared `btn-*` variants. Keep repeated cards, metric tiles, list rows, media wrappers, links, controls, and chips on these primitives instead of adding page-specific `bg-white`, `rounded-xl`, `shadow-sm`, gradients, glass effects, dark-mode toggles, or one-off border palettes.
+Use the shared primitives from `resources/scss`: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and the shared `btn-*` variants. Keep repeated cards, metric tiles, list rows, media wrappers, links, controls, and chips on these primitives instead of adding page-specific `bg-white`, `rounded-xl`, `shadow-sm`, gradients, glass effects, dark/light theme toggles, runtime visual style switchers, `data-theme` controls, user-facing profile theme fields, or one-off border palettes.
 
 The application shell uses a scroll-contained desktop left rail and in-flow mobile quick navigation. Do not add fixed mobile navigation that can cover forms, feed cards, or primary action rows.
 

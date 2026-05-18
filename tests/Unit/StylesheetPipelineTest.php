@@ -121,12 +121,16 @@ it('uses the warm editorial system without competing app theme toggles', functio
     $guestLayout = stylesheetFile('resources/views/layouts/guest.blade.php');
     $navbar = stylesheetFile('resources/views/components/ui/navbar.blade.php');
     $javascript = stylesheetFile('resources/js/app.js');
+    $settingsProfile = stylesheetFile('resources/views/settings/profile.blade.php');
+    $debugbar = stylesheetFile('config/debugbar.php');
 
     expect($appLayout)
         ->not->toContain('fonts.bunny.net')
         ->not->toContain('outfit:')
         ->not->toContain('nunito-sans:')
+        ->not->toContain('data-theme')
         ->and($guestLayout)
+        ->not->toContain('data-theme')
         ->not->toContain('larapets-theme')
         ->not->toContain('prefers-color-scheme')
         ->not->toContain('themeController')
@@ -134,10 +138,17 @@ it('uses the warm editorial system without competing app theme toggles', functio
         ->not->toContain('toggleTheme')
         ->not->toContain('isDark')
         ->and($javascript)
-        ->toContain("theme:'warm-editorial'")
+        ->not->toContain("Alpine.store('ui'")
+        ->not->toContain('get theme')
         ->not->toContain('THEME_STORAGE_KEY')
         ->not->toContain('matchMedia')
-        ->not->toContain('themeController');
+        ->not->toContain('themeController')
+        ->and($settingsProfile)
+        ->not->toContain('profile_theme')
+        ->not->toContain('Profile theme')
+        ->and($debugbar)
+        ->toContain("'theme' => env('DEBUGBAR_THEME', 'light')")
+        ->not->toContain("'theme' => env('DEBUGBAR_THEME', 'auto')");
 });
 
 /**

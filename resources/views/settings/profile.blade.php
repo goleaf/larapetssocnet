@@ -165,9 +165,6 @@
  <x-ui.input id="timezone" name="timezone" type="text" label="Timezone" :value="old('timezone', $user->timezone)" placeholder="Europe/Vilnius"/>
  </div>
 
- <div class="sm:col-span-3">
- <x-ui.input id="profile_theme" name="profile_theme" type="text" label="Profile theme" :value="old('profile_theme', $user->profile_theme)" placeholder="sunset, meadow, ocean"/>
- </div>
  </div>
 
  <div class="flex justify-end border-t border-whisker/30 pt-5">

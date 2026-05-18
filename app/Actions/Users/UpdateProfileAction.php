@@ -107,10 +107,6 @@ class UpdateProfileAction
             $payload['timezone'] = ($data['timezone'] ?? null) ?: null;
         }
 
-        if (array_key_exists('profile_theme', $data)) {
-            $payload['profile_theme'] = ($data['profile_theme'] ?? null) ?: null;
-        }
-
         if (array_key_exists('birth_date', $data)) {
             $payload['birth_date'] = $data['birth_date'] ?? null;
         }

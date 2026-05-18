@@ -44,7 +44,6 @@ class UpdateSettingsProfileRequest extends FormRequest
             'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
             'locale' => ['nullable', 'string', 'max:20'],
             'timezone' => ['nullable', 'timezone'],
-            'profile_theme' => ['nullable', 'string', 'max:40'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'remove_avatar' => ['nullable', 'boolean'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],

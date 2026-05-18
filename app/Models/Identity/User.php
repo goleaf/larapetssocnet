@@ -97,7 +97,6 @@ use Spatie\Permission\Traits\HasRoles;
     'country_code',
     'locale',
     'timezone',
-    'profile_theme',
     'social_links',
     'interests_text',
     'profile_visibility',

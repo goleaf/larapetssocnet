@@ -63,7 +63,6 @@ class UserFactory extends Factory
                 ['instagram' => 'https://instagram.com/'.fake()->userName()],
                 ['website' => 'https://'.fake()->domainName()],
             ]),
-            'profile_theme' => fake()->optional(0.2)->randomElement(['sunset', 'meadow', 'ocean', 'midnight']),
             'locale' => fake()->optional(0.5)->randomElement(['en', 'en_US', 'en_GB', 'lt_LT']),
             'timezone' => fake()->optional(0.5)->timezone(),
             'gender' => fake()->optional(0.7)->randomElement(['male', 'female', 'non_binary', 'prefer_not_to_say']),
