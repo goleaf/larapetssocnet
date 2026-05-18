@@ -9,6 +9,7 @@ use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Profile\UpdateCoverPositionRequest;
 use App\Http\Requests\Settings\UpdateSettingsProfileRequest;
 use App\Models\Identity\User;
 use App\Services\ProfileVisibilityService;
@@ -145,6 +146,25 @@ class ProfileController extends Controller
         }
 
         return back()->with('status', 'profile-cover-updated');
+    }
+
+    public function updateCoverPosition(UpdateCoverPositionRequest $request): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+        $position = round((float) $request->validated('position'), 2);
+
+        $user->forceFill([
+            'cover_photo_position' => $position,
+        ])->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'position' => $position,
+            ]);
+        }
+
+        return back()->with('status', 'profile-cover-position-updated');
     }
 
     public function followers(Request $request, User $user): View

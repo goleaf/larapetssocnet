@@ -6,6 +6,7 @@ use App\Enums\ProfileVisibility;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
 use App\Models\Activities\EventAttendee;
+use App\Models\Analytics\ProfileView;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
@@ -69,6 +70,11 @@ use Spatie\Permission\Traits\HasRoles;
     'avatar_url',
     'cover_photo_url',
     'profile_photo_url',
+    'profile_initial',
+    'profile_default_gradient',
+    'profile_verified',
+    'profile_completeness_percentage',
+    'profile_completeness_missing_items',
     'age_formatted',
 ])]
 #[Fillable([
@@ -107,7 +113,10 @@ use Spatie\Permission\Traits\HasRoles;
     'last_seen_at',
     'avatar_path',
     'cover_photo_path',
+    'cover_photo_position',
     'profile_photo_path',
+    'is_verified',
+    'profile_completed_at',
     'followers_count',
     'following_count',
     'follow_requests_count',
@@ -176,6 +185,9 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'is_private' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'cover_photo_position' => 'float',
+            'is_verified' => 'boolean',
+            'profile_completed_at' => 'datetime',
             'followers_count' => 'integer',
             'following_count' => 'integer',
             'follow_requests_count' => 'integer',
@@ -554,6 +566,14 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function petHealthLogs(): HasMany
     {
         return $this->hasMany(PetHealthLog::class, 'logged_by_user_id');
+    }
+
+    /**
+     * @return HasMany<ProfileView, $this>
+     */
+    public function profileViews(): HasMany
+    {
+        return $this->hasMany(ProfileView::class, 'profile_user_id');
     }
 
     public function petsHealthLogs(): HasManyThrough
@@ -1343,9 +1363,85 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return Attribute::get(fn (): ?string => $this->firstMediaUrl(self::MEDIA_COLLECTION_PROFILE) ?: $this->avatar_url);
     }
 
+    /**
+     * @return Attribute<string, never>
+     */
     protected function profileUrl(): Attribute
     {
         return Attribute::get(fn (): string => route('profile.show', ['user' => $this->username]));
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function profileInitial(): Attribute
+    {
+        return Attribute::get(function (): string {
+            $name = trim((string) ($this->display_name ?: $this->name));
+
+            return Str::upper(Str::substr($name !== '' ? $name : (string) $this->username, 0, 1));
+        });
+    }
+
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function profileDefaultGradient(): Attribute
+    {
+        return Attribute::get(function (): string {
+            $gradients = [
+                'bg-gradient-to-r from-paw-light via-cream to-sky-light',
+                'bg-gradient-to-r from-amber-100 via-cream to-paw-light',
+                'bg-gradient-to-r from-emerald-100 via-cream to-sky-light',
+                'bg-gradient-to-r from-rose-light via-cream to-amber-100',
+                'bg-gradient-to-r from-sky-light via-cream to-emerald-100',
+            ];
+
+            $seed = (string) ($this->username ?: $this->email ?: $this->getKey());
+            $index = abs(crc32($seed)) % count($gradients);
+
+            return $gradients[$index];
+        });
+    }
+
+    /**
+     * @return Attribute<bool, never>
+     */
+    protected function profileVerified(): Attribute
+    {
+        return Attribute::get(function (): bool {
+            if ((bool) ($this->is_verified ?? false)) {
+                return true;
+            }
+
+            $flags = (string) ($this->flags ?? '');
+
+            if (collect(preg_split('/[\s,|]+/', $flags) ?: [])->contains('verified')) {
+                return true;
+            }
+
+            if ($this->relationLoaded('badges')) {
+                return $this->badges->contains('slug', 'verified');
+            }
+
+            return false;
+        });
+    }
+
+    /**
+     * @return Attribute<int, never>
+     */
+    protected function profileCompletenessPercentage(): Attribute
+    {
+        return Attribute::get(fn (): int => $this->profileCompletenessPercentageValue());
+    }
+
+    /**
+     * @return Attribute<list<array{key: string, label: string}>, never>
+     */
+    protected function profileCompletenessMissingItems(): Attribute
+    {
+        return Attribute::get(fn (): array => $this->profileCompletenessMissingItemsValue());
     }
 
     protected function atUsername(): Attribute
@@ -1390,5 +1486,108 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
             return $this->age_years.' years';
         });
+    }
+
+    public function profileCompletenessPercentageValue(): int
+    {
+        return (int) collect($this->profileCompletenessItems())->sum('points');
+    }
+
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    public function profileCompletenessMissingItemsValue(): array
+    {
+        return collect($this->profileCompletenessItems())
+            ->reject(fn (array $item): bool => (bool) $item['complete'])
+            ->map(fn (array $item): array => [
+                'key' => $item['key'],
+                'label' => $item['label'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{key: string, label: string, complete: bool, points: int}>
+     */
+    protected function profileCompletenessItems(): array
+    {
+        return [
+            [
+                'key' => 'avatar',
+                'label' => 'Add a profile photo',
+                'complete' => $this->hasProfileAvatar(),
+                'points' => $this->hasProfileAvatar() ? 15 : 0,
+            ],
+            [
+                'key' => 'cover',
+                'label' => 'Add a cover photo',
+                'complete' => $this->hasProfileCover(),
+                'points' => $this->hasProfileCover() ? 15 : 0,
+            ],
+            [
+                'key' => 'bio',
+                'label' => 'Write a bio of at least 20 characters',
+                'complete' => Str::length(trim(strip_tags((string) $this->bio))) >= 20,
+                'points' => Str::length(trim(strip_tags((string) $this->bio))) >= 20 ? 15 : 0,
+            ],
+            [
+                'key' => 'location',
+                'label' => 'Add your location',
+                'complete' => filled($this->location ?? $this->city),
+                'points' => filled($this->location ?? $this->city) ? 10 : 0,
+            ],
+            [
+                'key' => 'website',
+                'label' => 'Add your website',
+                'complete' => filled($this->website),
+                'points' => filled($this->website) ? 10 : 0,
+            ],
+            [
+                'key' => 'birth_date',
+                'label' => 'Add your date of birth',
+                'complete' => $this->birth_date !== null,
+                'points' => $this->birth_date !== null ? 10 : 0,
+            ],
+            [
+                'key' => 'pets',
+                'label' => 'Create at least one pet profile',
+                'complete' => $this->hasCompletedPetRequirement(),
+                'points' => $this->hasCompletedPetRequirement() ? 15 : 0,
+            ],
+            [
+                'key' => 'following',
+                'label' => 'Follow at least 5 accounts',
+                'complete' => (int) ($this->following_count ?? 0) >= 5,
+                'points' => (int) ($this->following_count ?? 0) >= 5 ? 10 : 0,
+            ],
+        ];
+    }
+
+    protected function hasProfileAvatar(): bool
+    {
+        return $this->firstMediaUrl(self::MEDIA_COLLECTION_AVATAR) !== ''
+            || filled($this->avatar_path)
+            || filled($this->profile_photo_path);
+    }
+
+    protected function hasProfileCover(): bool
+    {
+        return $this->firstMediaUrl(self::MEDIA_COLLECTION_COVER) !== ''
+            || filled($this->cover_photo_path);
+    }
+
+    protected function hasCompletedPetRequirement(): bool
+    {
+        if ((int) ($this->pets_count ?? 0) > 0) {
+            return true;
+        }
+
+        if ($this->relationLoaded('pets')) {
+            return $this->pets->isNotEmpty();
+        }
+
+        return $this->exists && $this->pets()->exists();
     }
 }

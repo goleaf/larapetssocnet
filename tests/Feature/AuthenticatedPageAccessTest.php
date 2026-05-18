@@ -45,12 +45,19 @@ it('keeps application page routes behind authentication middleware', function (s
     'tips.index',
     'tips.show',
     'tips.helpful',
-    'profile.show',
     'photo-galleries.show',
     'profile.followers',
     'profile.following',
     'profile.redirect',
 ]);
+
+it('keeps public username profile route outside the auth middleware', function (): void {
+    $route = Route::getRoutes()->getByName('profile.show');
+
+    expect($route)->not->toBeNull()
+        ->and($route->gatherMiddleware())->not->toContain('auth')
+        ->and($route->gatherMiddleware())->not->toContain('verified');
+});
 
 it('allows authenticated users to browse explore', function (): void {
     $user = User::factory()->create();

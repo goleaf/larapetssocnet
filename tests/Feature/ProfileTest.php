@@ -154,7 +154,7 @@ test('avatar and cover images can be removed', function (): void {
     expect($user->getMedia('cover'))->toHaveCount(0);
 });
 
-test('public profiles require authentication and are visible to authenticated viewers', function (): void {
+test('public profiles are visible to guests and authenticated viewers', function (): void {
     $user = User::factory()->create([
         'name' => 'Public Profile User',
         'username' => 'public_user',
@@ -162,7 +162,9 @@ test('public profiles require authentication and are visible to authenticated vi
     ]);
 
     $this->get(route('profile.show', ['user' => $user]))
-        ->assertRedirect(route('login'));
+        ->assertOk()
+        ->assertSee('Public Profile User')
+        ->assertSee('@public_user');
 
     $this->actingAs(User::factory()->create())
         ->get(route('profile.show', ['user' => $user]))

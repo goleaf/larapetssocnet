@@ -9,6 +9,7 @@ use App\Models\Activities\ContestEntry;
 use App\Models\Activities\ContestVote;
 use App\Models\Activities\Event;
 use App\Models\Activities\EventAttendee;
+use App\Models\Analytics\ProfileView;
 use App\Models\Content\Comment;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Like;
@@ -92,6 +93,7 @@ final class LegacyModelMorphMap
             'App\Models\PostMedia' => PostMedia::class,
             'App\Models\PostReaction' => PostReaction::class,
             'App\Models\PostReport' => PostReport::class,
+            'App\Models\ProfileView' => ProfileView::class,
             'App\Models\Reaction' => Reaction::class,
             'App\Models\Report' => Report::class,
             'App\Models\ReservedUsername' => ReservedUsername::class,

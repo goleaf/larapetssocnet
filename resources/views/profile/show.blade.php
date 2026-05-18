@@ -1,6 +1,7 @@
 @php
- $avatarUrl = $profileUser->getFirstMediaUrl('avatar');
- $coverUrl = $profileUser->getFirstMediaUrl('cover');
+ $avatarUrl = $profileUser->avatar_url;
+ $coverUrl = $profileUser->coverImageUrl();
+ $coverPosition = (float) ($profileUser->cover_photo_position ?? 50);
  $canInteract = auth()->check() && auth()->id() !== $profileUser->id;
  $isOwner = auth()->check() && auth()->id() === $profileUser->id;
  $displayName = $profileUser->display_name ?: $profileUser->name;
@@ -24,6 +25,10 @@
  ['label'=>'Following','value'=>'following-nav','href'=> route('profile.following', ['user'=> $profileUser]),'count'=> (int) ($profileUser->following_count ?? 0)],
  ['label'=>'Likes','value'=>'likes'],
  ];
+
+ if ($isOwner) {
+ $tabItems[] = ['label'=>'Scheduled','value'=>'scheduled','count'=> (int) ($scheduledCount ?? 0)];
+ }
 @endphp
 
 @section('title','@'. $profileUser->username .'— PetSocial')
@@ -58,35 +63,135 @@
  unblockUrl: @js(route('users.unblock', ['user'=> $profileUser]))
  })">
 
- <section class="overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="profile-hero">
- <div class="relative h-56 w-full sm:h-72 lg:h-80">
+ <section class="overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card"
+ data-ui="profile-hero"
+ x-data="{
+ position: @js($coverPosition),
+ savedPosition: @js($coverPosition),
+ repositioning: false,
+ dragging: false,
+ startY: 0,
+ startPosition: @js($coverPosition),
+ savingCoverPosition: false,
+ coverNotice: '',
+ startCoverDrag(event) {
+ if (!this.repositioning) return;
+ this.dragging = true;
+ this.startY = event.clientY;
+ this.startPosition = this.position;
+ },
+ moveCover(event) {
+ if (!this.dragging) return;
+ const next = this.startPosition + ((event.clientY - this.startY) / 2);
+ this.position = Math.min(100, Math.max(0, next));
+ },
+ stopCoverDrag() {
+ this.dragging = false;
+ },
+ cancelCoverPosition() {
+ this.position = this.savedPosition;
+ this.repositioning = false;
+ this.coverNotice = '';
+ },
+ async saveCoverPosition() {
+ this.savingCoverPosition = true;
+ try {
+ const response = await fetch(@js(route('profile.cover-position.update')), {
+ method: 'PATCH',
+ headers: {
+ 'Accept': 'application/json',
+ 'Content-Type': 'application/json',
+ 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+ },
+ body: JSON.stringify({ position: this.position }),
+ });
+ if (!response.ok) throw new Error('save_failed');
+ const data = await response.json();
+ this.position = data.position ?? this.position;
+ this.savedPosition = this.position;
+ this.repositioning = false;
+ this.coverNotice = 'Cover position saved.';
+ } catch (error) {
+ this.position = this.savedPosition;
+ this.coverNotice = 'Cover position could not be saved.';
+ } finally {
+ this.savingCoverPosition = false;
+ }
+ },
+ }"
+ @pointermove.window="moveCover($event)"
+ @pointerup.window="stopCoverDrag()"
+ @pointercancel.window="stopCoverDrag()">
+ <div class="relative h-36 w-full sm:h-44 lg:h-[280px]">
  @if ($coverUrl)
  <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
- class="h-full w-full object-cover"/>
+ class="h-full w-full select-none object-cover"
+ x-bind:style="`object-position: center ${position}%`"
+ x-bind:class="repositioning ? 'cursor-grab active:cursor-grabbing' : ''"
+ @pointerdown.prevent="startCoverDrag($event)"/>
  @else
- <div class="h-full w-full bg-gradient-to-r from-paw-light via-cream to-sky-light"></div>
+ <div class="h-full w-full {{ $profileUser->profile_default_gradient }}"></div>
  @endif
 
  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
 
  <div class="absolute left-4 right-4 top-4 flex items-center justify-between gap-2 sm:left-auto sm:justify-end">
- @if ($isOwner)
+ @if ($isOwner && $coverUrl)
+ <div class="flex items-center gap-2">
+ <button x-show="!repositioning" type="button" @click="repositioning = true; coverNotice = ''"
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-control)] bg-warm-white/90 px-3 py-2 text-xs font-semibold text-bark shadow-sm transition-colors hover:bg-warm-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ Reposition cover
+ </button>
+ <div x-show="repositioning" x-cloak class="flex items-center gap-2">
+ <button type="button" @click="saveCoverPosition()" x-bind:disabled="savingCoverPosition"
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-control)] bg-paw px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:opacity-60">
+ <span x-text="savingCoverPosition ? 'Saving...' : 'Save position'"></span>
+ </button>
+ <button type="button" @click="cancelCoverPosition()"
+ class="inline-flex min-h-10 items-center rounded-[var(--radius-control)] bg-warm-white/90 px-3 py-2 text-xs font-semibold text-bark shadow-sm transition-colors hover:bg-warm-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ Cancel
+ </button>
+ </div>
+ </div>
+ @elseif ($isOwner)
  <x-ui.button :href="route('settings.profile')" variant="default" size="sm" class="min-h-11">Update Cover</x-ui.button>
  @endif
  <x-ui.badge variant="{{ $profileVisibility === 'public' ? 'success' : 'warning' }}" size="sm" aria-label="Profile visibility">
  {{ $profileVisibilityIcon }} {{ $profileVisibilityLabel }}
  </x-ui.badge>
  </div>
+ @if ($isOwner && $coverUrl)
+ <p x-show="repositioning" x-cloak class="absolute bottom-4 left-4 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white">
+ Drag the cover up or down to choose the best crop.
+ </p>
+ @endif
  </div>
 
  <div class="px-4 pb-5 sm:px-6">
+ <p x-show="coverNotice" x-cloak class="pt-3 text-sm font-semibold text-fur" x-text="coverNotice"></p>
  <div class="-mt-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
  <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
  <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl"
  class="h-28 w-28 border-4 border-warm-white shadow-xl bg-warm-white"/>
 
  <div class="pb-1">
+ <div class="flex flex-wrap items-center gap-2">
  <h1 class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
+ @if ($profileUser->profile_verified)
+ <span class="relative inline-flex" x-data="{ open: false }">
+ <button type="button"
+ class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-light text-paw shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ @mouseenter="open = true" @mouseleave="open = false" @click="open = !open"
+ aria-label="Verified PetSocial account">
+ <span aria-hidden="true">🐾</span>
+ </button>
+ <span x-show="open" x-cloak x-transition
+ class="absolute left-1/2 top-10 z-20 w-64 -translate-x-1/2 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card">
+ This account has been verified by PetSocial as a notable pet-related account or organization.
+ </span>
+ </span>
+ @endif
+ </div>
  <p class="text-sm font-semibold text-fur">&#64;{{ $profileUser->username }}</p>
 
  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fur">
@@ -178,9 +283,75 @@
  </div>
  </div>
 
+ @if ($isOwner && is_array($profileViewStats ?? null))
+ <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-fur" data-ui="profile-view-analytics">
+ <span class="relative inline-flex items-center gap-1" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" @click="open = !open">
+ <span aria-hidden="true">👁</span>
+ <span>{{ number_format((int) $profileViewStats['current']) }} profile visits in the last 30 days</span>
+ <span x-show="open" x-cloak x-transition
+ class="absolute left-0 top-7 z-20 w-40 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card">
+ Only you can see this.
+ </span>
+ </span>
+ @if (($profileViewStats['trend_percent'] ?? null) !== null)
+ <span @class([
+ 'font-semibold',
+ 'text-emerald-700'=> ($profileViewStats['trend_direction'] ?? 'up') === 'up',
+ 'text-amber-700'=> ($profileViewStats['trend_direction'] ?? 'up') === 'down',
+ ])>
+ {{ ($profileViewStats['trend_direction'] ?? 'up') === 'up' ? '↑' : '↓' }}
+ {{ abs((int) $profileViewStats['trend_percent']) }}% from last month
+ </span>
+ @endif
+ </div>
+ @endif
+
  <p class="mt-3 text-sm text-fur" role="status" aria-live="polite" x-show="notice" x-text="notice"></p>
  </div>
  </section>
+
+ @if ($isOwner)
+ @php
+ $profileCompleteness = (int) $profileUser->profile_completeness_percentage;
+ $completionMissingItems = $profileUser->profile_completeness_missing_items;
+ $completionColor = $profileCompleteness >= 80 ? 'bg-emerald-500' : ($profileCompleteness >= 50 ? 'bg-amber-500' : 'bg-sky-500');
+ $showCompletedCard = $profileCompleteness === 100
+ && $profileUser->profile_completed_at
+ && $profileUser->profile_completed_at->greaterThanOrEqualTo(now()->subDays(7));
+ @endphp
+ <x-ui.card data-ui="profile-completeness">
+ @if ($showCompletedCard)
+ <div class="flex items-center gap-3">
+ <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-paw-light text-lg" aria-hidden="true">🎉</span>
+ <div>
+ <h2 class="text-base font-bold font-display text-bark">Your profile is complete!</h2>
+ <p class="text-sm text-fur">Your public profile has all core identity details filled in.</p>
+ </div>
+ </div>
+ @else
+ <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+ <div class="min-w-0">
+ <h2 class="text-base font-bold font-display text-bark">Complete your profile</h2>
+ <p class="mt-1 text-sm text-fur">Add the details that help other pet owners recognize and trust you.</p>
+ </div>
+ <span class="text-sm font-bold text-bark">{{ $profileCompleteness }}%</span>
+ </div>
+ <div class="mt-4 h-3 overflow-hidden rounded-full bg-cream" x-data="{ width: 0 }" x-init="$nextTick(() => { width = @js($profileCompleteness) })">
+ <div class="h-full rounded-full {{ $completionColor }} transition-[width] duration-[600ms] ease-out" x-bind:style="`width: ${width}%`"></div>
+ </div>
+ @if ($completionMissingItems !== [])
+ <div class="mt-4 flex flex-wrap gap-2">
+ @foreach ($completionMissingItems as $item)
+ <a href="{{ route('settings.profile') }}#{{ $item['key'] }}"
+ class="inline-flex min-h-9 items-center rounded-full border border-whisker/40 bg-warm-white px-3 text-xs font-semibold text-fur transition-colors hover:border-paw hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ {{ $item['label'] }}
+ </a>
+ @endforeach
+ </div>
+ @endif
+ @endif
+ </x-ui.card>
+ @endif
 
  {{-- Badge strip --}}
  @if ($badges->isNotEmpty())
@@ -223,7 +394,7 @@
  </x-ui.card>
  @endif
 
- <x-ui.card padding="sm" data-ui="profile-tabs">
+ <x-ui.card padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 bg-warm-white/85 backdrop-blur">
  <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 
@@ -567,6 +738,17 @@
  @endforelse
  </div>
  </div>
+ </div>
+ </x-ui.card>
+ @elseif ($tab ==='scheduled' && $isOwner)
+ <x-ui.card>
+ <h2 class="mb-4 text-base font-bold font-display text-bark">Scheduled posts</h2>
+ <div class="space-y-4">
+ @forelse (($scheduledPosts ?? collect()) as $post)
+ <x-post-card :post="$post" context="profile"/>
+ @empty
+ <x-ui.empty-state icon="🗓️" title="No scheduled posts" description="Scheduled posts you create will appear here before they publish."/>
+ @endforelse
  </div>
  </x-ui.card>
  @elseif ($tab ==='likes')

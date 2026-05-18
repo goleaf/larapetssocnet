@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RecordProfileView;
 use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
+use App\Models\Analytics\ProfileView;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\PetVisibilityService;
@@ -55,7 +57,7 @@ class PublicProfileController extends Controller
             return redirect()->to($target, 301);
         }
 
-        $allowedTabs = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests'];
+        $allowedTabs = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests', 'scheduled'];
         $tab = in_array($request->string('tab')->toString(), $allowedTabs, true)
             ? $request->string('tab')->toString()
             : 'posts';
@@ -63,6 +65,7 @@ class PublicProfileController extends Controller
         $profileVisibility = $this->profileVisibilityService->resolve($user);
         $canViewContent = $this->profileVisibilityService->canViewFullProfile($viewer, $user);
         $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
+        $isOwner = $viewer && $viewer->is($user);
 
         $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets', 'posts']);
 
@@ -72,6 +75,10 @@ class PublicProfileController extends Controller
                 'followStatus' => $followStatus,
                 'profileVisibility' => $profileVisibility->value,
             ]);
+        }
+
+        if ($viewer && ! $isOwner) {
+            RecordProfileView::dispatch((int) $user->getKey(), (int) $viewer->getKey());
         }
 
         $canViewPets = $this->petVisibilityService->canViewPetsForOwner($viewer, $user);
@@ -124,18 +131,21 @@ class PublicProfileController extends Controller
         $scheduledPosts = collect();
         $scheduledCount = 0;
 
-        if ($tab === 'posts' && $viewer && $viewer->is($user)) {
-            $privatePosts = Post::recentPrivateForProfileOwner($user)
-                ->filter(fn (Post $post): bool => $this->visibilityService->canViewOnProfile($viewer, $post))
-                ->values();
-
-            $privateCount = Post::privateCountForProfile($user);
-
-            $draftPosts = Post::recentDraftsForProfileOwner($user);
-            $draftCount = Post::draftCountForProfile($user);
-
-            $scheduledPosts = Post::recentScheduledForProfileOwner($user);
+        if ($viewer && $viewer->is($user)) {
             $scheduledCount = Post::scheduledCountForProfile($user);
+
+            if (in_array($tab, ['posts', 'scheduled'], true)) {
+                $privatePosts = Post::recentPrivateForProfileOwner($user)
+                    ->filter(fn (Post $post): bool => $this->visibilityService->canViewOnProfile($viewer, $post))
+                    ->values();
+
+                $privateCount = Post::privateCountForProfile($user);
+
+                $draftPosts = Post::recentDraftsForProfileOwner($user);
+                $draftCount = Post::draftCountForProfile($user);
+
+                $scheduledPosts = Post::recentScheduledForProfileOwner($user);
+            }
         }
 
         // Badges — always load (up to 8 most recent)
@@ -181,7 +191,6 @@ class PublicProfileController extends Controller
 
         // Mutual connections (visitor only)
         $mutualConnections = collect();
-        $isOwner = $viewer && $viewer->is($user);
         if ($viewer && ! $isOwner && $canViewContent) {
             $mutualConnections = $viewer->getMutualFollowers($user);
         }
@@ -201,6 +210,13 @@ class PublicProfileController extends Controller
         $activityData = $canViewContent
             ? Post::monthlyActivitySummaryForUser($user)
             : [];
+        $profileViewStats = $isOwner
+            ? $this->profileViewStats($user)
+            : null;
+
+        if ($isOwner && $user->profileCompletenessPercentageValue() === 100 && ! $user->profile_completed_at) {
+            $user->forceFill(['profile_completed_at' => now()])->saveQuietly();
+        }
 
         return view('profile.show', [
             'profileUser' => $user,
@@ -232,11 +248,46 @@ class PublicProfileController extends Controller
             'mutualConnections' => $mutualConnections,
             'commonGroups' => $commonGroups,
             'activityData' => $activityData,
+            'profileViewStats' => $profileViewStats,
             'followStatus' => $followStatus,
             'isFollowing' => $followStatus === 'following',
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
             'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
         ]);
+    }
+
+    /**
+     * @return array{current: int, previous: int, trend_percent: int|null, trend_direction: string}
+     */
+    private function profileViewStats(User $user): array
+    {
+        $today = now()->toDateString();
+        $currentStart = now()->subDays(29)->toDateString();
+        $previousStart = now()->subDays(59)->toDateString();
+        $previousEnd = now()->subDays(30)->toDateString();
+
+        $current = (int) ProfileView::query()
+            ->where('profile_user_id', $user->getKey())
+            ->whereBetween('viewed_on', [$currentStart, $today])
+            ->distinct('viewer_user_id')
+            ->count('viewer_user_id');
+
+        $previous = (int) ProfileView::query()
+            ->where('profile_user_id', $user->getKey())
+            ->whereBetween('viewed_on', [$previousStart, $previousEnd])
+            ->distinct('viewer_user_id')
+            ->count('viewer_user_id');
+
+        $trendPercent = $previous > 0
+            ? (int) round((($current - $previous) / $previous) * 100)
+            : ($current > 0 ? 100 : null);
+
+        return [
+            'current' => $current,
+            'previous' => $previous,
+            'trend_percent' => $trendPercent,
+            'trend_direction' => ($trendPercent ?? 0) >= 0 ? 'up' : 'down',
+        ];
     }
 
     public function followers(User $user): View

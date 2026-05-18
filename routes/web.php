@@ -334,9 +334,9 @@ Route::middleware(['auth', 'verified', 'banned', 'track_last_seen'])->group(func
     Route::get('/@{user:username}/badges', [BadgeController::class, 'index'])->name('badges.index');
 
     Route::get('/marketplace/{marketplaceListing}', [MarketplaceListingController::class, 'show'])->name('marketplace.show');
-    Route::get('/@{user:username}', [PublicProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/cover-position', [ProfileController::class, 'updateCoverPosition'])->name('profile.cover-position.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/@{user:username}/photos/galleries/{gallery}', [PhotoGalleryController::class, 'show'])
         ->name('photo-galleries.show');
@@ -346,6 +346,10 @@ Route::middleware(['auth', 'verified', 'banned', 'track_last_seen'])->group(func
 
     // Legacy settings routes removed
 });
+
+Route::get('/@{user:username}', [PublicProfileController::class, 'show'])
+    ->name('profile.show')
+    ->where('user', '[a-zA-Z0-9_]+');
 
 // Admin area
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', AdminMiddleware::class])->group(function (): void {

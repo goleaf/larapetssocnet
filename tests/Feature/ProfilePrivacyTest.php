@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('redirects guests from public profiles and shows them to authenticated viewers', function (): void {
+it('shows public profiles to guests and authenticated viewers', function (): void {
     $user = User::factory()->create([
         'username' => 'public_user',
         'profile_visibility' => 'public',
@@ -14,7 +14,9 @@ it('redirects guests from public profiles and shows them to authenticated viewer
     ]);
 
     $this->get(route('profile.show', ['user' => $user]))
-        ->assertRedirect(route('login'));
+        ->assertOk()
+        ->assertSee('@public_user')
+        ->assertSee('Log In', false);
 
     $this->actingAs(User::factory()->create())
         ->get(route('profile.show', ['user' => $user]))
