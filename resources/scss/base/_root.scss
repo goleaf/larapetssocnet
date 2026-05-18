@@ -2,6 +2,7 @@
 
 :root {
     @include ui.custom-properties(ui.$font-families);
+    @include ui.custom-properties(ui.$open-design-warm-editorial);
     @include ui.custom-properties(ui.$brand-colors);
     @include ui.custom-properties(ui.$surfaces);
     @include ui.custom-properties(ui.$text-colors);

@@ -259,7 +259,7 @@
 
  <template x-if="termsOpen">
  <div class="fixed inset-0 z-50 flex items-center justify-center bg-bark/45 p-4" role="dialog" aria-modal="true" aria-labelledby="terms-title">
- <div class="max-h-[80vh] w-full max-w-xl overflow-y-auto rounded-[var(--radius-card)] bg-warm-white p-6 shadow-xl">
+ <div class="max-h-[80vh] w-full max-w-xl overflow-y-auto rounded-[var(--radius-card)] bg-warm-white p-6">
  <h2 id="terms-title" class="text-lg font-semibold text-bark">Terms of Service</h2>
  <p class="mt-3 text-sm leading-6 text-fur">Use PetSocial respectfully. Do not impersonate others, upload harmful content, abuse automation, harass members, or violate privacy and safety rules. Content you post remains your responsibility and may be moderated when it violates platform rules or applicable law.</p>
  <x-ui.button type="button" variant="primary" class="mt-5 min-h-11" @click="termsOpen = false">Close</x-ui.button>
@@ -269,7 +269,7 @@
 
  <template x-if="privacyOpen">
  <div class="fixed inset-0 z-50 flex items-center justify-center bg-bark/45 p-4" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
- <div class="max-h-[80vh] w-full max-w-xl overflow-y-auto rounded-[var(--radius-card)] bg-warm-white p-6 shadow-xl">
+ <div class="max-h-[80vh] w-full max-w-xl overflow-y-auto rounded-[var(--radius-card)] bg-warm-white p-6">
  <h2 id="privacy-title" class="text-lg font-semibold text-bark">Privacy Policy</h2>
  <p class="mt-3 text-sm leading-6 text-fur">PetSocial stores account data, profile details, date of birth for age gating, and activity needed to operate the platform. We do not show your date of birth publicly unless you choose to expose it later. Security events are logged to protect accounts and investigate abuse.</p>
  <x-ui.button type="button" variant="primary" class="mt-5 min-h-11" @click="privacyOpen = false">Close</x-ui.button>

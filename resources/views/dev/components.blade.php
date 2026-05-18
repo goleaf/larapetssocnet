@@ -5,20 +5,20 @@
 <div class="max-w-5xl mx-auto space-y-10 py-6">
 
  {{-- Page Header --}}
- <x-ui.page-header title="🐾 Warm Paw — Component Library" subtitle="Living style guide for PetsSocNet design system"/>
+ <x-ui.page-header title="Warm Editorial Component Library" subtitle="Living style guide for the app-wide design system"/>
 
  {{-- ═══════════════════════════════════════ 1. TYPOGRAPHY ═══════════════════════════════════════ --}}
  <x-ui.card padding="lg">
  <x-ui.card-header title="Typography" icon="🔤"/>
  <div class="space-y-4">
- <h1 class="text-4xl font-display font-bold text-bark">Heading 1 — Outfit</h1>
- <h2 class="text-3xl font-display font-bold text-bark">Heading 2 — Outfit</h2>
- <h3 class="text-2xl font-display font-semibold text-bark">Heading 3 — Outfit</h3>
- <h4 class="text-xl font-display font-semibold text-bark">Heading 4 — Outfit</h4>
- <h5 class="text-lg font-display font-semibold text-bark">Heading 5 — Outfit</h5>
- <h6 class="text-base font-display font-semibold text-bark">Heading 6 — Outfit</h6>
+ <h1 class="text-4xl font-display font-bold text-bark">Heading 1 — GT Sectra Fallback</h1>
+ <h2 class="text-3xl font-display font-bold text-bark">Heading 2 — GT Sectra Fallback</h2>
+ <h3 class="text-2xl font-display font-semibold text-bark">Heading 3 — GT Sectra Fallback</h3>
+ <h4 class="text-xl font-display font-semibold text-bark">Heading 4 — GT Sectra Fallback</h4>
+ <h5 class="text-lg font-display font-semibold text-bark">Heading 5 — GT Sectra Fallback</h5>
+ <h6 class="text-base font-display font-semibold text-bark">Heading 6 — GT Sectra Fallback</h6>
  <x-ui.divider />
- <p class="text-base text-bark font-body">Body text (Nunito Sans) — The quick brown fox jumps over the lazy dog. PetsSocNet is joyful, warm, and trustworthy.</p>
+ <p class="text-base text-bark font-body">Body text (Söhne fallback) — The quick brown fox jumps over the lazy dog. PetsSocNet is warm, calm, and readable.</p>
  <p class="text-sm text-fur font-body">Small muted text — Secondary information displayed in fur color.</p>
  <p class="text-xs text-whisker font-body">Extra small text — Timestamps, metadata, fine print.</p>
  <p class="font-mono text-sm text-bark">Monospace (JetBrains Mono) — ID: usr_28fk39x</p>
@@ -30,25 +30,25 @@
  <x-ui.card-header title="Color Palette" icon="🎨"/>
  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
  @foreach ([
- ['Cream','bg-cream','#FDF6EC'],
- ['Warm White','bg-warm-white border border-whisker/30','#FFFBF5'],
- ['Paw','bg-paw','#E8834A'],
- ['Paw Dark','bg-paw-dark','#C9602A'],
- ['Paw Light','bg-paw-light','#FDE8D8'],
- ['Bark','bg-bark','#3D2B1F'],
- ['Fur','bg-fur','#7A5C4A'],
- ['Whisker','bg-whisker','#C4A882'],
- ['Leaf','bg-leaf','#5A9A6F'],
- ['Leaf Light','bg-leaf-light','#E6F4EB'],
- ['Sky','bg-sky','#4A85C9'],
- ['Sky Light','bg-sky-light','#E6F0FA'],
- ['Rose','bg-rose','#C94A5A'],
- ['Rose Light','bg-rose-light','#FAE6E8'],
- ['Amber','bg-amber','#D4850A'],
- ['Amber Light','bg-amber-light','#FEF3DC'],
+ ['Paper','bg-cream','#FBF6EE'],
+ ['Surface','bg-warm-white border border-whisker/30','#FFFDF8'],
+ ['Warm Surface','bg-[color:var(--surface-muted)]','#F1E3CF'],
+ ['Terracotta','bg-paw','#C0512F'],
+ ['Terracotta Tint','bg-paw-light','#C0512F / 10%'],
+ ['Ink','bg-bark','#1C1A17'],
+ ['Body Ink','bg-fur','#4C4037'],
+ ['Muted','bg-whisker','#7A6D63'],
+ ['Forest','bg-leaf','#2F5B4F'],
+ ['Forest Tint','bg-leaf-light','#2F5B4F / 10%'],
+ ['Meta','bg-[color:var(--meta)]','#9B5B32'],
+ ['Border','bg-[color:var(--border)]','#DED2C3'],
+ ['Danger','bg-rose','#B33A3A'],
+ ['Danger Tint','bg-rose-light','#B33A3A / 10%'],
+ ['Warning','bg-amber','#C9822F'],
+ ['Warning Tint','bg-amber-light','#C9822F / 12%'],
  ] as [$name, $class, $hex])
  <div class="text-center">
- <div class="h-12 rounded-md {{ $class }} shadow-sm mb-1.5"></div>
+ <div class="h-12 rounded-[var(--radius-sm)] {{ $class }} mb-1.5"></div>
  <p class="text-xs font-semibold text-bark">{{ $name }}</p>
  <p class="text-2xs text-fur font-mono">{{ $hex }}</p>
  </div>
@@ -274,8 +274,8 @@
  <x-ui.button size="sm" variant="primary" @click="show()">Open Modal</x-ui.button>
  <template x-teleport="body">
  <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="hide()">
- <div x-show="open" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-bark/40 backdrop-blur-sm" @click="hide()"></div>
- <div x-show="open" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative bg-warm-white rounded-xl shadow-2xl max-w-md w-full p-6">
+ <div x-show="open" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-bark/40" @click="hide()"></div>
+ <div x-show="open" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="relative bg-warm-white rounded-xl max-w-md w-full p-6">
  <h3 class="text-lg font-display font-semibold text-bark mb-2">Demo Modal</h3>
  <p class="text-sm text-fur mb-4">This is a modal dialog with smooth transitions.</p>
  <div class="flex justify-end gap-2">

@@ -133,7 +133,7 @@
  <div class="h-full w-full {{ $profileUser->profile_default_gradient }}"></div>
  @endif
 
- <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+ <div class="absolute inset-0 bg-bark/35"></div>
 
  <div class="absolute left-4 right-4 top-4 flex items-center justify-between gap-2 sm:left-auto sm:justify-end">
  @if ($isOwner && $coverUrl)
@@ -172,7 +172,7 @@
  <div class="-mt-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
  <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
  <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl"
- class="h-28 w-28 border-4 border-warm-white shadow-xl bg-warm-white"/>
+class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
 
  <div class="pb-1">
  <div class="flex flex-wrap items-center gap-2">
@@ -394,7 +394,7 @@
  </x-ui.card>
  @endif
 
- <x-ui.card padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 bg-warm-white/85 backdrop-blur">
+ <x-ui.card padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 bg-warm-white">
  <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 

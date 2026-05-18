@@ -24,9 +24,27 @@
         margin: 0;
         font-family: var(--font-body);
         color: var(--text-default);
-        line-height: 1.5;
+        font-size: var(--text-base);
+        line-height: var(--leading-body);
 
         @include ui.page-background;
+    }
+
+    body a:not([class]) {
+        color: var(--color-paw);
+        text-decoration-color: color-mix(in oklab, var(--color-paw) 40%, transparent);
+        text-decoration-line: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.18em;
+        transition:
+            background-color var(--motion-fast) var(--ease-standard),
+            color var(--motion-fast) var(--ease-standard),
+            text-decoration-color var(--motion-fast) var(--ease-standard);
+    }
+
+    body a:not([class]):hover {
+        background-color: color-mix(in oklab, var(--color-paw) 8%, transparent);
+        text-decoration-color: transparent;
     }
 
     h1,
@@ -39,6 +57,8 @@
     .font-heading {
         font-family: var(--font-display);
         color: var(--text-default);
+        letter-spacing: var(--tracking-display);
+        line-height: var(--leading-display);
     }
 
     code,

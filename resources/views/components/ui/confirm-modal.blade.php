@@ -124,7 +124,7 @@
  x-transition:leave="ease-in duration-200"
  x-transition:leave-start="opacity-100"
  x-transition:leave-end="opacity-0"
- class="fixed inset-0 bg-bark/40 backdrop-blur-sm"
+ class="fixed inset-0 bg-bark/40"
  @click="cancel()"
  aria-hidden="true"
  ></div>
@@ -139,7 +139,7 @@
  x-transition:leave="ease-in duration-200 transform"
  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
- class="inline-block w-full transform overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--surface-modal)] text-left align-bottom shadow-2xl transition-all sm:my-8 sm:max-w-md sm:align-middle"
+ class="inline-block w-full transform overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--surface-modal)] text-left align-bottom transition-all sm:my-8 sm:max-w-md sm:align-middle"
  @click.stop
  >
  <div class="px-6 pb-6 pt-8 text-center sm:text-left">

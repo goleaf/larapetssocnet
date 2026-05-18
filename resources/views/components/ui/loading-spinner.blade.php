@@ -18,7 +18,7 @@
  'leaf' => 'text-leaf',
  'rose' => 'text-rose',
  'fur' => 'text-fur',
- 'white' => 'text-white',
+ 'white' => 'text-[color:var(--accent-on)]',
  default => 'text-paw',
  }]) }}
 >

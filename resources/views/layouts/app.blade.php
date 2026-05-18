@@ -12,27 +12,24 @@
 
  <title>{{ trim((string) ($title ?? $__env->yieldContent('title'))) !== '' ? trim((string) ($title ?? $__env->yieldContent('title'))).' · '.($appName ?? config('app.name', 'LaraPets')) : ($appName ?? config('app.name', 'LaraPets')) }}</title>
 
- <link rel="preconnect" href="https://fonts.bunny.net">
- <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap" rel="stylesheet"/>
-
  @vite(['resources/scss/app.scss', 'resources/js/app.js'])
  </head>
  <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
  <div class="relative min-h-screen">
- <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-32 border-b border-whisker/20 bg-sky-light/30"></div>
+ <div class="pointer-events-none absolute inset-x-0 top-0 z-0 h-32 border-b border-[var(--border-soft)] bg-[color:var(--surface-page)]"></div>
 
  <!-- New Navbar Component -->
  <x-ui.navbar />
 
  <!-- New Flash Messages & Toast Container -->
- <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+ <div class="ui-container mt-4">
  <x-ui.flash-messages />
  </div>
  <x-ui.toast-container />
  <x-ui.confirm-modal />
 
  <div @class([
-'relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-8 lg:pb-8',
+'relative z-10 mx-auto grid w-full max-w-[var(--container-max)] grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-6 lg:pb-8',
 'lg:grid-cols-[16.5rem_minmax(0,1fr)]'=> ! $hideLeftRail,
 'lg:grid-cols-[minmax(0,1fr)]'=> $hideLeftRail,
  ])>
@@ -59,7 +56,7 @@
  </x-ui.card>
 
  <x-ui.card>
- <h4 class="px-1 text-xs font-bold font-display uppercase tracking-wider text-fur mb-2">Navigate</h4>
+ <h4 class="px-1 text-xs font-bold font-mono uppercase tracking-wider text-fur mb-2">Navigate</h4>
  <x-ui.sidebar-nav :items="$desktopNav" class="!mb-0"/>
  </x-ui.card>
 
@@ -128,10 +125,10 @@
 
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between">
- <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Who To Follow</h4>
+ <h4 class="text-xs font-bold font-mono uppercase tracking-wider text-fur">Who To Follow</h4>
  <a
  href="{{ Route::has('search.index') ? route('search.index', ['type'=>'users']) :'#'}}"
- class="text-xs font-semibold hover:underline text-paw"
+ class="ui-link text-xs font-semibold"
  >
  See all
  </a>
@@ -158,10 +155,10 @@
 
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between">
- <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Upcoming Events</h4>
+ <h4 class="text-xs font-bold font-mono uppercase tracking-wider text-fur">Upcoming Events</h4>
  <a
  href="{{ Route::has('events.index') ? route('events.index') :'#'}}"
- class="text-xs font-semibold hover:underline text-paw"
+ class="ui-link text-xs font-semibold"
  >
  Browse
  </a>
@@ -188,7 +185,7 @@
 
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between">
- <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Active Contests</h4>
+ <h4 class="text-xs font-bold font-mono uppercase tracking-wider text-fur">Active Contests</h4>
  <x-ui.badge variant="success" size="sm">{{ $activeContests->count() }}</x-ui.badge>
  </div>
 
@@ -213,7 +210,7 @@
 
  <x-ui.card>
  <div class="mb-2 flex items-center justify-between">
- <h4 class="text-xs font-bold font-display uppercase tracking-wider text-fur">Trending Tags</h4>
+ <h4 class="text-xs font-bold font-mono uppercase tracking-wider text-fur">Trending Tags</h4>
  <x-ui.badge variant="success" size="sm">Live</x-ui.badge>
  </div>
 
@@ -262,7 +259,7 @@
  @foreach ($mobileNav as $item)
  <a
  href="{{ $item['href'] }}"
- class="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-soft)] px-1 py-1 text-[0.68rem] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $item['isPrimaryAction'] ? 'bg-paw text-white shadow-button hover:bg-paw-dark' : ($item['active'] ? 'bg-paw-light text-paw-dark' : 'text-fur hover:bg-cream hover:text-bark') }}"
+ class="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-soft)] px-1 py-1 text-[0.68rem] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $item['isPrimaryAction'] ? 'bg-paw text-[color:var(--accent-on)] hover:bg-paw-dark' : ($item['active'] ? 'bg-paw-light text-paw-dark' : 'text-fur hover:bg-cream hover:text-bark') }}"
  @if($item['active']) aria-current="page" @endif
  >
  <span class="text-base" aria-hidden="true">{{ $item['icon'] }}</span>

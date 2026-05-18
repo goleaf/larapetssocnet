@@ -8,16 +8,16 @@
 <span {{ $attributes->merge(['class'=> \Illuminate\Support\Arr::toCssClasses([
  'ui-token justify-center',
  [
- 'default'=>'bg-cream text-fur border border-whisker',
- 'neutral'=>'bg-cream text-fur border border-whisker',
+ 'default'=>'bg-cream text-fur border border-[var(--border-soft)]',
+ 'neutral'=>'bg-cream text-fur border border-[var(--border-soft)]',
  'primary'=>'bg-paw-light text-paw-dark border border-paw-light',
- 'secondary'=>'bg-sky-light text-sky border border-sky-light',
- 'success'=>'bg-leaf-light text-leaf border border-leaf-light',
+ 'secondary'=>'bg-leaf-light text-leaf border border-leaf-light',
+ 'success'=>'bg-leaf-light text-[color:var(--success)] border border-leaf-light',
  'danger'=>'bg-rose-light text-rose border border-rose-light',
  'warning'=>'bg-amber-light text-amber border border-amber-light',
- 'info'=>'bg-sky-light text-sky border border-sky-light',
+ 'info'=>'bg-leaf-light text-leaf border border-leaf-light',
  'dark'=>'bg-bark text-cream border border-bark',
- ][$tone ?: $variant] ?? 'bg-cream text-fur border border-whisker',
+ ][$tone ?: $variant] ?? 'bg-cream text-fur border border-[var(--border-soft)]',
  [
  'sm'=>'px-2 py-0.5 text-[11px]',
  'md'=>'px-2.5 py-1 text-xs',

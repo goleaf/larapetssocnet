@@ -2,28 +2,7 @@ import'./bootstrap';
 
 import Alpine from'alpinejs';
 
-const THEME_STORAGE_KEY ='larapets-theme';
 const DEFAULT_FLASH_TIMEOUT = 5000;
-
-const getStoredTheme = () => {
- const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-
- if (storedTheme ==='light'|| storedTheme ==='dark') {
- return storedTheme;
- }
-
- return window.matchMedia('(prefers-color-scheme: dark)').matches ?'dark':'light';
-};
-
-const applyTheme = (theme) => {
- const resolvedTheme = theme ==='dark'?'dark':'light';
-
- document.documentElement.setAttribute('data-theme', resolvedTheme);
- document.documentElement.classList.toggle('dark', resolvedTheme ==='dark');
- window.localStorage.setItem(THEME_STORAGE_KEY, resolvedTheme);
-
- return resolvedTheme;
-};
 
 const toNumber = (value, fallback = 0) => {
  const number = Number(value);
@@ -94,19 +73,7 @@ document.addEventListener('alpine:init', () => {
  });
 
  Alpine.store('ui', {
- theme: applyTheme(getStoredTheme()),
-
- setTheme(theme) {
- this.theme = applyTheme(theme);
- },
-
- toggleTheme() {
- this.setTheme(this.theme ==='dark'?'light':'dark');
- },
-
- isDark() {
- return this.theme ==='dark';
- },
+ theme:'warm-editorial',
  });
 
  Alpine.store('toast', {
@@ -160,20 +127,6 @@ document.addEventListener('alpine:init', () => {
  },
  });
 
- Alpine.data('themeController', () => ({
- get theme() {
- return Alpine.store('ui').theme;
- },
-
- get isDark() {
- return Alpine.store('ui').isDark();
- },
-
- toggleTheme() {
- Alpine.store('ui').toggleTheme();
- },
- }));
-
  Alpine.data('appShell', () => ({
  mobileMenuOpen: false,
  mobileBottomNavOpen: false,
@@ -181,10 +134,6 @@ document.addEventListener('alpine:init', () => {
 
  get theme() {
  return Alpine.store('ui').theme;
- },
-
- get isDark() {
- return Alpine.store('ui').isDark();
  },
 
  init() {
@@ -195,10 +144,6 @@ document.addEventListener('alpine:init', () => {
  };
 
  window.addEventListener('keydown', this.escapeHandler);
- },
-
- toggleTheme() {
- Alpine.store('ui').toggleTheme();
  },
 
  toggleMobileMenu() {

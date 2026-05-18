@@ -8,7 +8,7 @@
  $hover ?'ui-card-interactive cursor-pointer':'',
  $attributes->get('class'),
 ])]) }}>
- <div class="{{ ['none' => '', '0' => '', 'sm' => 'p-3', 'md' => 'p-5', 'lg' => 'p-7'][(string) $padding] ?? 'p-5' }}">
+ <div class="{{ ['none' => '', '0' => '', 'sm' => 'p-4', 'md' => 'p-6', 'base' => 'p-6', 'lg' => 'p-8'][(string) $padding] ?? 'p-6' }}">
  @isset($header)
  {{ $header }}
  @endisset

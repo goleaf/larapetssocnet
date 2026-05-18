@@ -5,7 +5,7 @@
 'icon'=> null,
 ])
 
-<div {{ $attributes->merge(['class'=>'mb-4 flex items-start justify-between gap-4 border-b border-whisker/40 pb-4']) }}>
+<div {{ $attributes->merge(['class'=>'mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-soft)] pb-5']) }}>
  <div class="min-w-0">
  <div class="flex items-start gap-3">
  @if($icon)

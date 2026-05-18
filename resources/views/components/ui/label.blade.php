@@ -8,7 +8,7 @@
  @if ($for)
  for="{{ $for }}"
  @endif
- {{ $attributes->merge(['class'=>'block text-sm font-medium text-bark']) }}
+ {{ $attributes->merge(['class'=>'block text-sm font-bold text-fur']) }}
 >
  {{ $value ?? $slot }}
 

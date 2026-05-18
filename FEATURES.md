@@ -24,7 +24,7 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Feature 2: User profile guidance must match the existing public profile controller, Blade tabs, follow/request, privacy, and media flows.
 - Feature 3: Pet profile guidance must match the existing pet controller, pet followers, media, gallery, health, adoption, and visibility flows.
 - Feature 4: News feed guidance must match the existing feed controller, cursor pagination, follow graph, pet follow graph, Blade post cards, and implemented `source=people|pets` plus `type=text|photo|video` filters.
-- Shared UI guidance uses one design system for repeated blocks: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, and the shared button variants.
+- Shared UI guidance uses the Open Design Warm Editorial system for repeated blocks: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and the shared button variants.
 - Application shell guidance keeps the desktop left rail scroll-contained to the viewport without giving individual sidebar widgets capped internal scroll areas.
 - Application shell guidance relies on Livewire automatic asset injection instead of manual `@livewireStyles` / `@livewireScripts` directives in the shared layout.
 - Feature 5: Posts guidance must match the existing post controllers, actions, validation, media limits, visibility, tagging, soft deletes, and scheduled statuses.

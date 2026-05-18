@@ -35,14 +35,14 @@
  $hasError = filled($resolvedError);
  $hintId = $fieldId.'-hint';
 
- $baseClasses = 'w-full border bg-[color:var(--surface-form)] px-3.5 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:outline-none h-[var(--control-height-md)] rounded-[var(--radius-control)]';
+ $baseClasses = 'form-input h-[var(--control-height-md)] w-full text-sm';
 
  if ($hasError) {
- $stateClasses = 'border-rose bg-rose-light/20 focus:border-rose focus:shadow-[0_0_0_3px_rgba(201,74,90,0.15)]';
+ $stateClasses = 'border-rose text-rose focus:border-rose';
  } elseif ($disabled) {
- $stateClasses = 'cursor-not-allowed border-whisker bg-cream opacity-60';
+ $stateClasses = 'cursor-not-allowed opacity-60';
  } else {
- $stateClasses = 'border-whisker focus:border-paw focus:shadow-input';
+ $stateClasses = 'focus:border-paw';
  }
 
  $classes = \Illuminate\Support\Arr::toCssClasses([

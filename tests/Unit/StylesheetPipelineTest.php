@@ -78,23 +78,53 @@ it('keeps shared design primitives as the source for repeated app blocks', funct
     $tailwind = stylesheetFile('tailwind.config.js');
 
     expect($tokens)
-        ->toContain("font-display: \"'Outfit'")
-        ->toContain("font-body: \"'Nunito Sans'")
+        ->toContain("font-display: \"'GT Sectra'")
+        ->toContain("font-body: \"'Söhne'")
+        ->toContain('$open-design-warm-editorial')
+        ->toContain('od-bg: #fbf6ee')
+        ->toContain('od-primary: #c0512f')
+        ->toContain('od-secondary: #2f5b4f')
         ->not->toContain('Playfair Display')
         ->not->toContain('DM Sans')
         ->and($tailwind)
-        ->toContain('"Outfit"')
-        ->toContain('"Nunito Sans"')
+        ->toContain('"GT Sectra"')
+        ->toContain('"Söhne"')
         ->and($surfaces)
         ->toContain('.ui-card-interactive')
         ->toContain('.ui-list-item')
         ->toContain('.ui-token')
         ->toContain('.ui-media-frame')
+        ->toContain('.ui-container')
+        ->toContain('.ui-section')
         ->and($actions)
         ->toContain('.btn-default')
         ->toContain('.btn-outline')
         ->toContain('var(--surface-muted)')
         ->toContain('var(--text-muted)');
+});
+
+it('uses the warm editorial system without competing app theme toggles', function (): void {
+    $appLayout = stylesheetFile('resources/views/layouts/app.blade.php');
+    $guestLayout = stylesheetFile('resources/views/layouts/guest.blade.php');
+    $navbar = stylesheetFile('resources/views/components/ui/navbar.blade.php');
+    $javascript = stylesheetFile('resources/js/app.js');
+
+    expect($appLayout)
+        ->not->toContain('fonts.bunny.net')
+        ->not->toContain('outfit:')
+        ->not->toContain('nunito-sans:')
+        ->and($guestLayout)
+        ->not->toContain('larapets-theme')
+        ->not->toContain('prefers-color-scheme')
+        ->not->toContain('themeController')
+        ->and($navbar)
+        ->not->toContain('toggleTheme')
+        ->not->toContain('isDark')
+        ->and($javascript)
+        ->toContain("theme:'warm-editorial'")
+        ->not->toContain('THEME_STORAGE_KEY')
+        ->not->toContain('matchMedia')
+        ->not->toContain('themeController');
 });
 
 /**

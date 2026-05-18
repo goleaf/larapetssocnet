@@ -15,7 +15,7 @@
  {{ $header }}
  @elseif(filled($title) || filled($description ?? $subtitle) || $collapsible)
  <div
- class="flex items-center justify-between border-b border-whisker/40 px-4 py-3 transition-colors {{ $collapsible ?'cursor-pointer hover:bg-cream':''}}"
+ class="flex items-center justify-between border-b border-[var(--border-soft)] px-6 py-4 transition-colors {{ $collapsible ?'cursor-pointer hover:bg-cream':''}}"
  @if($collapsible)
  @click="open = !open"
  :aria-expanded="open.toString()"
@@ -46,7 +46,7 @@
  @endif
 
  <div
- class="{{ ['none' => '', '0' => '', 'sm' => 'p-3', 'md' => 'p-4', 'lg' => 'p-6'][(string) $padding] ?? 'p-4' }}"
+ class="{{ ['none' => '', '0' => '', 'sm' => 'p-4', 'md' => 'p-6', 'lg' => 'p-8'][(string) $padding] ?? 'p-6' }}"
  @if($collapsible)
  x-show="open"
  x-collapse
@@ -58,7 +58,7 @@
  </div>
 
  @isset($footer)
- <div class="border-t border-whisker/40 bg-cream/40 px-4 py-3">
+ <div class="border-t border-[var(--border-soft)] bg-[color:var(--surface-page)] px-6 py-4">
  {{ $footer }}
  </div>
  @endisset

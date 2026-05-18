@@ -34,7 +34,7 @@
                 </div>
             </header>
 
-            <section class="bg-gradient-to-b from-cream/60 via-warm-white to-cream/70">
+            <section class="bg-[color:var(--surface-page)]">
 	                <div class="h-[58vh] min-h-[22rem] overflow-y-auto px-4 py-4 sm:px-5">
 	                    <div class="space-y-3">
 	                        @forelse ($messages as $message)

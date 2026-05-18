@@ -2,11 +2,13 @@
 
 @layer components {
     .btn-base {
-        @apply inline-flex items-center justify-center gap-2 px-4 text-sm font-medium transition-all duration-150;
+        @apply inline-flex items-center justify-center gap-2 text-sm font-bold transition-all duration-150;
 
         min-height: var(--control-height-md);
         border: 1px solid transparent;
         letter-spacing: 0;
+        padding-block: 14px;
+        padding-inline: 20px;
 
         @include ui.control-radius;
     }
@@ -15,7 +17,7 @@
         background: var(--surface-panel);
         border-color: var(--border-default);
         color: var(--text-default);
-        box-shadow: var(--shadow-card);
+        box-shadow: none;
     }
 
     .btn-default:hover {
@@ -24,19 +26,25 @@
     }
 
     .btn-primary {
-        @apply bg-paw text-white hover:bg-paw-dark;
+        background: var(--color-paw);
+        color: var(--accent-on);
+        box-shadow: none;
+    }
 
-        box-shadow: var(--shadow-button);
+    .btn-primary:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
     }
 
     .btn-secondary {
-        background: color-mix(in srgb, var(--color-paw-light) 82%, var(--surface-panel) 18%);
-        border-color: color-mix(in srgb, var(--color-paw) 22%, var(--border-default) 78%);
-        color: var(--color-paw-dark);
+        background: transparent;
+        border-color: var(--text-default);
+        color: var(--text-default);
     }
 
     .btn-secondary:hover {
-        background: var(--color-paw-light);
+        border-color: var(--color-paw);
+        color: var(--color-paw);
     }
 
     .btn-ghost {
@@ -62,13 +70,22 @@
     }
 
     .btn-danger {
-        @apply bg-rose text-white hover:bg-red-700;
+        background: var(--color-rose);
+        color: var(--accent-on);
+    }
+
+    .btn-danger:hover {
+        background: color-mix(in oklab, var(--color-rose), var(--od-foreground) 8%);
     }
 
     .btn-success {
-        @apply bg-leaf text-white hover:bg-green-700;
+        background: var(--color-success);
+        color: var(--accent-on);
+        box-shadow: none;
+    }
 
-        box-shadow: var(--shadow-button);
+    .btn-success:hover {
+        background: color-mix(in oklab, var(--color-success), var(--od-foreground) 8%);
     }
 
     .icon-button {
@@ -91,35 +108,35 @@
     .icon-button.btn-primary {
         background: var(--color-paw);
         border-color: transparent;
-        color: #fff;
-        box-shadow: var(--shadow-button);
+        color: var(--accent-on);
+        box-shadow: none;
     }
 
     .icon-button.btn-secondary {
-        background: color-mix(in srgb, var(--color-paw-light) 82%, var(--surface-panel) 18%);
-        border-color: color-mix(in srgb, var(--color-paw) 22%, var(--border-default) 78%);
-        color: var(--color-paw-dark);
+        background: transparent;
+        border-color: var(--text-default);
+        color: var(--text-default);
     }
 
     .icon-button.btn-danger {
         background: var(--color-rose);
         border-color: transparent;
-        color: #fff;
+        color: var(--accent-on);
     }
 
     .icon-button.btn-success {
-        background: var(--color-leaf);
+        background: var(--color-success);
         border-color: transparent;
-        color: #fff;
+        color: var(--accent-on);
     }
 
     .chip {
         @apply inline-flex items-center gap-1 text-xs;
 
-        background: color-mix(in srgb, var(--surface-muted) 74%, var(--surface-panel) 26%);
-        border: 1px solid var(--border-default);
+        background: color-mix(in oklab, var(--color-leaf) 8%, var(--surface-page));
+        border: 1px solid color-mix(in oklab, var(--color-leaf) 16%, var(--border-soft));
         border-radius: var(--radius-soft);
-        color: var(--text-muted);
+        color: var(--color-leaf);
         font-weight: 700;
         letter-spacing: 0;
         min-height: 2rem;
@@ -130,7 +147,7 @@
     .hover-lift {
         @apply transition-all duration-150 hover:-translate-y-0.5;
 
-        box-shadow: var(--shadow-card);
+        box-shadow: none;
     }
 
     .hover-lift:hover {

@@ -29,7 +29,9 @@ This project is structured for shared hosting where the repository root is the w
 
 ## Design System
 
-The app uses one shared visual system from `resources/scss`: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, and `ui-card-interactive`. Keep repeated cards, metric tiles, list rows, media wrappers, and chips on these primitives instead of adding page-specific `bg-white`, `rounded-xl`, `shadow-sm`, or one-off border palettes.
+The app uses the Open Design Warm Editorial system as its single visual standard. Source tokens live in `resources/scss/abstracts/_tokens.scss` and are exposed as shared CSS custom properties for the warm paper canvas, serif-led headings, terracotta actions, forest/meta accents, underline inputs, flat surfaces, and hover-only elevation.
+
+Use the shared primitives from `resources/scss`: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and the shared `btn-*` variants. Keep repeated cards, metric tiles, list rows, media wrappers, links, controls, and chips on these primitives instead of adding page-specific `bg-white`, `rounded-xl`, `shadow-sm`, gradients, glass effects, dark-mode toggles, or one-off border palettes.
 
 ## Daily Commands
 

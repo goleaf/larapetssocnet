@@ -7,16 +7,16 @@
 ])
 
 <div
- {{ $attributes->merge(['class'=>'relative rounded-[var(--radius-soft)] p-4'.([
-    'success' => 'border-l-4 border-leaf bg-leaf-light text-leaf',
-    'error' => 'border-l-4 border-rose bg-rose-light text-rose',
-    'warning' => 'border-l-4 border-amber bg-amber-light text-amber',
-    'info' => 'border-l-4 border-sky bg-sky-light text-sky',
+ {{ $attributes->merge(['class'=>'relative rounded-[var(--radius-card)] border p-4'.([
+    'success' => 'border-leaf bg-leaf-light text-[color:var(--success)]',
+    'error' => 'border-rose bg-rose-light text-rose',
+    'warning' => 'border-amber bg-amber-light text-amber',
+    'info' => 'border-leaf bg-leaf-light text-leaf',
  ][match ((string) $type) {
     'danger' => 'error',
     'status' => 'info',
     default => (string) $type,
- }] ?? 'border-l-4 border-sky bg-sky-light text-sky')]) }}
+ }] ?? 'border-leaf bg-leaf-light text-leaf')]) }}
  role="alert"
  @if($dismissible || (is_numeric($timeout) && max(0, (int) $timeout) !== null))
  x-data="{ open: true }"

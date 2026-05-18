@@ -11,10 +11,11 @@
     box-shadow: $shadow;
     color: var(--text-default);
     transition:
-        background-color 150ms ease,
-        border-color 150ms ease,
-        box-shadow 150ms ease,
-        transform 150ms ease;
+        background-color var(--motion-fast) var(--ease-standard),
+        border-color var(--motion-fast) var(--ease-standard),
+        box-shadow var(--motion-fast) var(--ease-standard),
+        color var(--motion-fast) var(--ease-standard),
+        transform var(--motion-fast) var(--ease-standard);
 }
 
 @mixin control-radius {
@@ -26,14 +27,13 @@
 }
 
 @mixin focus-ring($color: var(--color-paw)) {
-    outline: 2px solid $color;
+    box-shadow: var(--focus-ring);
+    outline: 2px solid transparent;
     outline-offset: 2px;
 }
 
 @mixin page-background {
-    background:
-        linear-gradient(180deg, color-mix(in srgb, var(--color-sky-light) 34%, transparent) 0%, transparent 24rem),
-        var(--surface-page);
+    background: var(--surface-page);
 }
 
 @mixin compact-scrollbar($size: 6px) {
@@ -48,6 +48,6 @@
 
     ::-webkit-scrollbar-thumb {
         background: var(--color-whisker);
-        border-radius: 0;
+        border-radius: var(--radius-sm);
     }
 }

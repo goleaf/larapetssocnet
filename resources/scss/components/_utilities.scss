@@ -1,7 +1,7 @@
 @layer utilities {
     .surface-glass {
-        background: color-mix(in srgb, var(--surface-panel) 92%, white 8%);
-        backdrop-filter: blur(6px);
+        background: var(--surface-panel);
+        backdrop-filter: none;
     }
 
     .shadow-soft {
@@ -11,5 +11,65 @@
     .text-2xs {
         font-size: var(--text-2xs);
         line-height: var(--text-2xs-line-height);
+    }
+
+    :where(.bg-white) {
+        background-color: var(--surface-panel) !important;
+    }
+
+    :where(.text-white) {
+        color: var(--accent-on) !important;
+    }
+
+    :where(.bg-black) {
+        background-color: var(--text-default) !important;
+    }
+
+    :where([class*="bg-gradient-to"]) {
+        background: var(--surface-muted) !important;
+    }
+
+    :where(.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+        box-shadow: none !important;
+    }
+
+    :where([class*="backdrop-blur"]) {
+        backdrop-filter: none !important;
+    }
+
+    :where([class*="bg-gray-"], [class*="bg-slate-"], [class*="bg-zinc-"]) {
+        background-color: var(--surface-muted) !important;
+    }
+
+    :where([class*="text-gray-"], [class*="text-slate-"], [class*="text-zinc-"]) {
+        color: var(--text-muted) !important;
+    }
+
+    :where([class*="border-gray-"], [class*="border-slate-"], [class*="border-zinc-"]) {
+        border-color: var(--border-default) !important;
+    }
+
+    :where([class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-blue-"]) {
+        background-color: var(--color-leaf) !important;
+    }
+
+    :where([class*="text-emerald-"], [class*="text-green-"], [class*="text-blue-"]) {
+        color: var(--color-leaf) !important;
+    }
+
+    :where([class*="border-emerald-"], [class*="border-green-"], [class*="border-blue-"]) {
+        border-color: color-mix(in oklab, var(--color-leaf) 18%, var(--border-default)) !important;
+    }
+
+    :where([class*="bg-red-"]) {
+        background-color: var(--color-rose) !important;
+    }
+
+    :where([class*="text-red-"]) {
+        color: var(--color-rose) !important;
+    }
+
+    :where([class*="border-red-"]) {
+        border-color: color-mix(in oklab, var(--color-rose) 18%, var(--border-default)) !important;
     }
 }

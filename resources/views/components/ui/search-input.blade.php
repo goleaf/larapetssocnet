@@ -26,6 +26,6 @@
  name="{{ $name }}"
  value="{{ $value ?? request()->query($name,'') }}"
  placeholder="{{ $placeholder }}"
- class="h-[var(--control-height-md)] w-full rounded-[var(--radius-control)] border border-whisker bg-[color:var(--surface-form)] py-2 pl-10 pr-3 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:border-paw focus:bg-warm-white focus:outline-none focus:shadow-input"
+ class="form-input h-[var(--control-height-md)] w-full pl-10 pr-3 text-sm focus:border-paw"
  />
 </form>

@@ -1,6 +1,6 @@
-<nav class="sticky top-0 z-40 w-full border-b border-whisker/40 bg-warm-white/95 shadow-sm backdrop-blur-sm"
+<nav class="sticky top-0 z-40 w-full border-b border-[var(--border-soft)] bg-warm-white"
  x-data="{ mobileMenuOpen: false }" @keydown.escape.window="mobileMenuOpen = false">
- <div class="mx-auto h-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+ <div class="mx-auto h-16 max-w-[var(--container-max)] px-4 sm:px-6">
  <div class="flex h-full items-center justify-between">
  <div class="flex items-center">
  <a href="{{ $homeHref }}" class="flex min-h-11 items-center gap-3 text-xl font-bold font-display text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
@@ -31,7 +31,7 @@
  </svg>
  @if ($unreadMessageCount > 0)
  <span
- class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[0.65rem] font-semibold leading-5 text-white">
+ class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--success)] px-1.5 text-[0.65rem] font-semibold leading-5 text-[color:var(--accent-on)]">
  {{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}
  </span>
  @endif
@@ -48,30 +48,13 @@
  </svg>
  @if ($unreadNotificationsCount > 0)
  <span
- class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[0.65rem] font-semibold leading-5 text-white">
+ class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose px-1.5 text-[0.65rem] font-semibold leading-5 text-[color:var(--accent-on)]">
  {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
  </span>
  @endif
  </a>
  @endif
  @endauth
-
- <button type="button" class="icon-button" @click="toggleTheme"
- :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
- :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
- <svg x-show="!isDark" x-cloak class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor"
- stroke-width="1.6">
- <circle cx="10" cy="10" r="3.3"/>
- <path
- d="M10 1.7v2.2M10 16.1v2.2M3.9 3.9l1.6 1.6M14.5 14.5l1.6 1.6M1.7 10h2.2M16.1 10h2.2M3.9 16.1l1.6-1.6M14.5 5.5l1.6-1.6"
- stroke-linecap="round"/>
- </svg>
- <svg x-show="isDark" x-cloak class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor"
- stroke-width="1.6">
- <path d="M13.9 2.3a7.3 7.3 0 1 0 3.8 13.6 7.5 7.5 0 0 1-3.8-13.6Z" stroke-linejoin="round"/>
- </svg>
- </button>
-
  <x-ui.dropdown align="right" width="48">
  <x-slot name="trigger">
  <button type="button"

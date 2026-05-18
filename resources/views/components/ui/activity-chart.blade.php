@@ -13,7 +13,7 @@
  width="12"
  height="{{ max(((max(array_column($data, 'count')) > 0) ? (int) round((($item['count'] ?? 0) / max(array_column($data, 'count'))) * 60) : 0), 2) }}"
  rx="3"
- fill="#E8834A"
+ fill="var(--color-paw)"
  opacity="{{ ((max(array_column($data, 'count')) > 0) ? (int) round((($item['count'] ?? 0) / max(array_column($data, 'count'))) * 60) : 0) > 0 ? '1' : '0.3' }}"
  />
  <text
@@ -21,7 +21,7 @@
  y="72"
  text-anchor="middle"
  class="fill-fur"
- style="font-size: 7px; font-family:'Nunito Sans', sans-serif;"
+ style="font-size: 7px; font-family: var(--font-body);"
  >{{ $item['month'] }}</text>
  @endforeach
  </svg>

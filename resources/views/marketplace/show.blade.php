@@ -76,13 +76,11 @@
  <!-- Image Gallery -->
  <div class="space-y-4">
  <div
- class="overflow-hidden rounded-3xl bg-gray-200 aspect-[16/10] relative group ring-1 ring-gray-900/5 shadow-sm">
+ class="ui-media-frame relative aspect-[16/10] overflow-hidden group">
  @if ($listing->cover_photo_url)
  <img src="{{ $listing->cover_photo_url }}" alt="{{ $listing->title }}"
  class="w-full h-full object-cover object-center transition duration-700 group-hover:scale-105">
- <div
- class="absolute inset-0 bg-gradient-to-t from-gray-900/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
- </div>
+ <div class="absolute inset-0 bg-bark/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
  @else
  <div class="flex h-full items-center justify-center text-7xl opacity-50 bg-gray-100">🛍️
  </div>
@@ -93,7 +91,7 @@
  <div class="grid grid-cols-4 gap-4">
  @foreach ($gallery as $media)
  <a href="{{ $media->getUrl() }}" target="_blank" rel="noreferrer"
- class="overflow-hidden rounded-2xl bg-gray-100 aspect-square group block ring-2 ring-transparent hover:ring-blue-500 transition-all shadow-sm">
+ class="ui-media-frame aspect-square group block transition-all hover:border-paw">
  <img src="{{ $media->getUrl() }}" alt="Listing image"
  class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
  </a>
@@ -103,7 +101,7 @@
  </div>
 
  <!-- Description -->
- <div class="bg-white rounded-3xl p-8 sm:p-10 shadow-sm ring-1 ring-gray-900/5">
+ <div class="ui-card p-8 sm:p-10">
  <h2 class="text-2xl font-extrabold text-gray-900 mb-6 flex items-center">
  <svg class="mr-3 h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
  viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -123,32 +121,24 @@
  <div class="sticky top-24 space-y-6">
 
  <!-- Pricing Card -->
- <div
- class="bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 rounded-3xl p-8 shadow-xl text-white relative overflow-hidden">
- <!-- Background decoration -->
- <div class="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-white/10 blur-3xl">
- </div>
- <div
- class="absolute bottom-0 left-0 -ml-8 -mb-8 w-40 h-40 rounded-full bg-blue-500/20 blur-3xl">
- </div>
-
- <div class="relative">
- <p class="text-blue-200/80 text-xs font-bold uppercase tracking-widest mb-3">Asking
+ <div class="ui-card bg-bark p-8 text-[color:var(--accent-on)]">
+ <div>
+ <p class="mb-3 text-xs font-bold uppercase tracking-widest text-[color:var(--accent-on)]/80">Asking
  Price</p>
- <div class="text-4xl sm:text-5xl font-black tracking-tight drop-shadow-sm">
+ <div class="font-display text-4xl font-black tracking-normal sm:text-5xl">
  {{ $listing->formatted_price ?:'On request'}}
  </div>
 
  @if ($listing->contact_phone || $listing->contact_email)
- <div class="mt-8 space-y-5 pt-6 border-t border-white/10">
- <h3 class="text-xs font-bold text-blue-200/70 uppercase tracking-widest">Contact
+ <div class="mt-8 space-y-5 border-t border-[color:var(--accent-on)]/15 pt-6">
+ <h3 class="text-xs font-bold uppercase tracking-widest text-[color:var(--accent-on)]/70">Contact
  Info</h3>
  @if ($listing->contact_phone)
  <div
- class="flex items-center text-blue-50 hover:text-white transition-colors group">
+ class="group flex items-center text-[color:var(--accent-on)] transition-colors">
  <div
- class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 mr-4 group-hover:bg-white/20 transition-colors">
- <svg class="h-5 w-5 text-blue-200" xmlns="http://www.w3.org/2000/svg"
+ class="mr-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-[color:var(--accent-on)]/10 transition-colors group-hover:bg-[color:var(--accent-on)]/20">
+ <svg class="h-5 w-5 text-[color:var(--accent-on)]" xmlns="http://www.w3.org/2000/svg"
  fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
  <path stroke-linecap="round" stroke-linejoin="round"
  d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.48-4.08-7.074-6.97l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"/>
@@ -159,10 +149,10 @@
  @endif
  @if ($listing->contact_email)
  <div
- class="flex items-center text-blue-50 hover:text-white transition-colors group">
+ class="group flex items-center text-[color:var(--accent-on)] transition-colors">
  <div
- class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 mr-4 group-hover:bg-white/20 transition-colors">
- <svg class="h-5 w-5 text-blue-200" xmlns="http://www.w3.org/2000/svg"
+ class="mr-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-[color:var(--accent-on)]/10 transition-colors group-hover:bg-[color:var(--accent-on)]/20">
+ <svg class="h-5 w-5 text-[color:var(--accent-on)]" xmlns="http://www.w3.org/2000/svg"
  fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
  <path stroke-linecap="round" stroke-linejoin="round"
  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/>
@@ -179,20 +169,20 @@
 
  <!-- Seller Card -->
  <div
- class="bg-white rounded-3xl p-1 shadow-sm ring-1 ring-gray-900/5 pb-8 relative overflow-hidden">
+ class="ui-card relative overflow-hidden p-1 pb-8">
  <div
- class="h-32 rounded-t-[28px] bg-gray-100 flex items-center justify-center relative overflow-hidden">
+ class="relative flex h-32 items-center justify-center overflow-hidden rounded-t-[var(--radius-card)] bg-[color:var(--surface-muted)]">
  @if($listing->seller?->cover_url)
  <img src="{{ $listing->seller->cover_url }}"
  class="absolute inset-0 w-full h-full object-cover">
  @else
- <div class="absolute inset-0 bg-gradient-to-r from-blue-100 to-indigo-100"></div>
+ <div class="absolute inset-0 bg-[color:var(--surface-muted)]"></div>
  @endif
- <div class="absolute inset-0 bg-black/5"></div>
+ <div class="absolute inset-0 bg-bark/5"></div>
  </div>
 
  <div class="px-8 relative -mt-12">
- <div class="inline-block rounded-full bg-white p-1.5 ring-1 ring-gray-900/5 shadow-md">
+ <div class="inline-block rounded-full bg-warm-white p-1.5 ring-1 ring-[var(--border-soft)]">
  <x-avatar :src="$listing->seller?->avatar_url" :name="$listing->seller?->name"
  class="h-20 w-20"/>
  </div>

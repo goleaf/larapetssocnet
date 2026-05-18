@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added Open Design Warm Editorial token coverage to the shared SCSS/Tailwind design system.
 - Added authentication audit logging for registration, login success/failure, logout, password changes, password resets, email verification, and verification resend events.
 - Added registration DOB, terms acceptance, honeypot, and password-strength validation with focused auth hardening coverage.
 - Added group archive/restore actions, routes, owner controls, and `groups.status` / `groups.archived_at` schema support.
@@ -38,6 +39,8 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Migrated shared UI primitives, Tailwind theme aliases, app shell, guest shell, forms, buttons, cards, alerts, badges, and component-library examples to the Warm Editorial visual system.
+- Removed competing runtime light/dark theme toggles so the app resolves through one fixed warm editorial standard.
 - Standardized the shared app design system across repeated cards, panels, chips, list rows, media frames, action buttons, and high-traffic browse blocks.
 - Aligned SCSS tokens and Tailwind theme fonts/colors so the app uses one visual vocabulary instead of competing page-local palettes.
 - Updated the desktop app shell left rail to scroll within the viewport while containing overscroll from the main page content.
@@ -117,6 +120,7 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php`
   - `npm run lint:scss`
   - `npm run build`
   - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php tests/Feature/InterfaceRefreshTest.php`

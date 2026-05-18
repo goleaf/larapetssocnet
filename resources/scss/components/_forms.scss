@@ -4,17 +4,19 @@
     .form-input,
     .form-select,
     .form-textarea {
-        @apply w-full border border-whisker/50 bg-[color:var(--surface-form)] px-3.5 py-2.5 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:border-paw focus:outline-none;
+        @apply w-full bg-transparent px-0 py-4 text-sm text-bark placeholder:text-whisker transition-all duration-150 focus:outline-none;
 
+        border: 0;
+        border-bottom: 1px solid var(--text-soft);
+        border-radius: 0;
         box-shadow: none;
-
-        @include ui.control-radius;
     }
 
     .form-input:focus,
     .form-select:focus,
     .form-textarea:focus {
-        box-shadow: var(--shadow-input);
+        border-bottom-color: var(--color-paw);
+        box-shadow: none;
     }
 
     .dot-divider::before {

@@ -47,32 +47,33 @@
     }
 
     .ui-list-item {
-        background: color-mix(in srgb, var(--surface-panel) 72%, var(--surface-muted) 28%);
-        border: 1px solid var(--border-default);
+        background: var(--surface-panel);
+        border: 1px solid var(--border-soft);
         border-radius: var(--radius-soft);
         color: var(--text-default);
         transition:
-            background-color 150ms ease,
-            border-color 150ms ease,
-            box-shadow 150ms ease,
-            transform 150ms ease;
+            background-color var(--motion-fast) var(--ease-standard),
+            border-color var(--motion-fast) var(--ease-standard),
+            box-shadow var(--motion-fast) var(--ease-standard),
+            transform var(--motion-fast) var(--ease-standard);
     }
 
     .ui-list-item:hover,
     .ui-list-item:focus-within {
         background: var(--surface-panel);
         border-color: var(--border-strong);
-        box-shadow: var(--shadow-card);
+        box-shadow: var(--shadow-card-hover);
     }
 
     .ui-token {
         align-items: center;
-        background: color-mix(in srgb, var(--surface-muted) 74%, var(--surface-panel) 26%);
-        border: 1px solid var(--border-default);
+        background: color-mix(in oklab, var(--color-leaf) 8%, var(--surface-page));
+        border: 1px solid color-mix(in oklab, var(--color-leaf) 16%, var(--border-soft));
         border-radius: var(--radius-soft);
-        color: var(--text-muted);
+        color: var(--color-leaf);
         display: inline-flex;
-        font-size: 0.75rem;
+        font-family: var(--font-body);
+        font-size: var(--text-xs);
         font-weight: 700;
         gap: 0.35rem;
         letter-spacing: 0;
@@ -83,16 +84,16 @@
 
     .ui-media-frame {
         background: var(--surface-muted);
-        border: 1px solid var(--border-default);
+        border: 1px solid var(--border-soft);
         border-radius: var(--radius-card);
         overflow: hidden;
     }
 
     .ui-card-interactive {
         transition:
-            border-color 150ms ease,
-            box-shadow 150ms ease,
-            transform 150ms ease;
+            border-color var(--motion-fast) var(--ease-standard),
+            box-shadow var(--motion-fast) var(--ease-standard),
+            transform var(--motion-fast) var(--ease-standard);
     }
 
     .ui-card-interactive:hover,
@@ -100,6 +101,49 @@
         border-color: var(--border-strong);
         box-shadow: var(--shadow-card-hover);
         transform: translateY(-2px);
+    }
+
+    .ui-link {
+        color: var(--color-paw);
+        text-decoration-color: color-mix(in oklab, var(--color-paw) 40%, transparent);
+        text-decoration-line: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.18em;
+        transition:
+            background-color var(--motion-fast) var(--ease-standard),
+            text-decoration-color var(--motion-fast) var(--ease-standard);
+    }
+
+    .ui-link:hover {
+        background-color: color-mix(in oklab, var(--color-paw) 8%, transparent);
+        text-decoration-color: transparent;
+    }
+
+    .ui-container {
+        margin-inline: auto;
+        max-width: var(--container-max);
+        padding-inline: var(--container-gutter);
+        width: 100%;
+    }
+
+    .ui-section {
+        padding-block: var(--section-y-desktop);
+    }
+
+    @media (width <= 1023px) {
+        .ui-section {
+            padding-block: var(--section-y-tablet);
+        }
+    }
+
+    @media (width <= 639px) {
+        .ui-container {
+            padding-inline: var(--space-4);
+        }
+
+        .ui-section {
+            padding-block: var(--section-y-phone);
+        }
     }
 
     :is(.rounded-lg, .rounded-xl, .rounded-2xl).border {
@@ -129,7 +173,8 @@
 
     .shell-kicker {
         color: var(--text-muted);
-        font-size: 0.7rem;
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -146,16 +191,13 @@
     }
 
     .ui-icon-well {
-        background: color-mix(in srgb, var(--ui-primary) 16%, var(--ui-surface) 84%);
-        border: 1px solid color-mix(in srgb, var(--ui-primary) 24%, var(--ui-border) 76%);
+        background: color-mix(in oklab, var(--ui-primary) 10%, var(--surface-page));
+        border: 1px solid color-mix(in oklab, var(--ui-primary) 18%, var(--ui-border));
         border-radius: var(--radius-soft);
         color: var(--ui-text);
     }
 
     .ui-gradient-soft {
-        background:
-            linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 14%, transparent), transparent 58%),
-            linear-gradient(145deg, color-mix(in srgb, var(--ui-accent) 12%, transparent), transparent 62%),
-            var(--surface-muted);
+        background: var(--surface-muted);
     }
 }

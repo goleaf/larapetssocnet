@@ -17,26 +17,26 @@ export default {
     theme: {
         extend: {
             colors: {
-                cream: '#FDF6EC',
-                'warm-white': '#FFFBF5',
-                paw: '#E8834A',
-                'paw-dark': '#C9602A',
-                'paw-light': '#FDE8D8',
-                bark: '#3D2B1F',
-                fur: '#7A5C4A',
-                whisker: '#C4A882',
-                leaf: '#5A9A6F',
-                'leaf-light': '#E6F4EB',
-                sky: '#4A85C9',
-                'sky-light': '#E6F0FA',
-                rose: '#C94A5A',
-                'rose-light': '#FAE6E8',
-                amber: '#D4850A',
-                'amber-light': '#FEF3DC',
+                cream: 'var(--color-cream)',
+                'warm-white': 'var(--color-warm-white)',
+                paw: 'var(--color-paw)',
+                'paw-dark': 'var(--color-paw-dark)',
+                'paw-light': 'var(--color-paw-light)',
+                bark: 'var(--color-bark)',
+                fur: 'var(--color-fur)',
+                whisker: 'var(--color-whisker)',
+                leaf: 'var(--color-leaf)',
+                'leaf-light': 'var(--color-leaf-light)',
+                sky: 'var(--color-sky)',
+                'sky-light': 'var(--color-sky-light)',
+                rose: 'var(--color-rose)',
+                'rose-light': 'var(--color-rose-light)',
+                amber: 'var(--color-amber)',
+                'amber-light': 'var(--color-amber-light)',
             },
             fontFamily: {
-                display: ['"Outfit"', ...defaultTheme.fontFamily.sans],
-                body: ['"Nunito Sans"', ...defaultTheme.fontFamily.sans],
+                display: ['"GT Sectra"', 'Georgia', '"Times New Roman"', ...defaultTheme.fontFamily.serif],
+                body: ['"Söhne"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', ...defaultTheme.fontFamily.sans],
                 mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
             },
             borderRadius: {
@@ -52,10 +52,10 @@ export default {
                 pill: 'var(--radius-pill)',
             },
             boxShadow: {
-                card: '0 2px 12px rgba(61,43,31,0.08)',
-                'card-hover': '0 6px 24px rgba(61,43,31,0.14)',
-                button: '0 2px 8px rgba(232,131,74,0.25)',
-                input: '0 0 0 3px rgba(232,131,74,0.15)',
+                card: 'none',
+                'card-hover': '0 2px 16px rgba(28,26,23,0.06)',
+                button: 'none',
+                input: 'none',
             },
             fontSize: {
                 '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
@@ -70,22 +70,22 @@ export default {
             {
                 // Custom theme that maps daisyUI tokens to the project's warm palette.
                 petssocnet: {
-                    'primary': '#E8834A', // paw
-                    'primary-content': '#ffffff',
-                    'secondary': '#D4850A', // amber
-                    'secondary-content': '#ffffff',
-                    'accent': '#4A85C9', // sky
-                    'accent-content': '#ffffff',
-                    'neutral': '#3D2B1F', // bark
-                    'neutral-content': '#FDF6EC',
-                    'base-100': '#FDF6EC', // cream
-                    'base-200': '#F9F0E6',
-                    'base-300': '#F0E4D0',
-                    'base-content': '#3D2B1F', // bark
-                    'info': '#4A85C9',
-                    'success': '#5A9A6F', // leaf
-                    'warning': '#D4850A',
-                    'error': '#C94A5A', // rose
+                    'primary': '#C0512F',
+                    'primary-content': '#FBF6EE',
+                    'secondary': '#2F5B4F',
+                    'secondary-content': '#FBF6EE',
+                    'accent': '#9B5B32',
+                    'accent-content': '#FBF6EE',
+                    'neutral': '#1C1A17',
+                    'neutral-content': '#FAF7F2',
+                    'base-100': '#FAF7F2',
+                    'base-200': '#F1E3CF',
+                    'base-300': '#DED2C3',
+                    'base-content': '#1C1A17',
+                    'info': '#2F5B4F',
+                    'success': '#4F8A4F',
+                    'warning': '#C9822F',
+                    'error': '#B33A3A',
                 },
             },
         ],
