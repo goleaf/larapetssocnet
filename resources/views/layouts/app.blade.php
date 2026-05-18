@@ -29,7 +29,7 @@
  <x-ui.confirm-modal />
 
  <div @class([
-'relative z-10 mx-auto grid w-full max-w-[var(--container-max)] grid-cols-1 gap-5 px-4 pb-24 pt-2 sm:px-6 lg:gap-6 lg:px-6 lg:pb-8',
+'relative z-10 mx-auto grid w-full max-w-[var(--container-max)] grid-cols-1 gap-5 px-4 pb-8 pt-2 sm:px-6 lg:gap-6 lg:px-6',
 'lg:grid-cols-[16.5rem_minmax(0,1fr)]'=> ! $hideLeftRail,
 'lg:grid-cols-[minmax(0,1fr)]'=> $hideLeftRail,
  ])>
@@ -49,7 +49,7 @@
  @foreach ($communityStats as $stat)
  <div class="ui-list-item px-2 py-2 text-center">
  <p class="text-sm font-bold text-bark">{{ $stat['value'] }}</p>
- <p class="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-fur">{{ $stat['label'] }}</p>
+ <p class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">{{ $stat['label'] }}</p>
  </div>
  @endforeach
  </div>
@@ -233,13 +233,25 @@
  @endunless
 
  <main class="min-w-0 space-y-5">
- @isset($header)
- <x-ui.card class="animate-fade-up">
- <div class="flex items-center justify-between gap-3">
- <div class="min-w-0">{{ $header }}</div>
- <x-ui.badge variant="primary" size="sm">PetSocial</x-ui.badge>
+ <nav class="lg:hidden" aria-label="Mobile navigation">
+ <div class="shell-card grid grid-cols-5 gap-1 px-2 py-2">
+ @foreach ($mobileNav as $item)
+ <a
+ href="{{ $item['href'] }}"
+ class="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-[var(--radius-soft)] px-1 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $item['isPrimaryAction'] ? 'bg-paw text-[color:var(--accent-on)] hover:bg-paw-dark' : ($item['active'] ? 'bg-paw-light text-paw-dark' : 'text-fur hover:bg-cream hover:text-bark') }}"
+ @if($item['active']) aria-current="page" @endif
+ >
+ <span class="text-base leading-none" aria-hidden="true">{{ $item['icon'] }}</span>
+ <span class="truncate">{{ $item['label'] }}</span>
+ </a>
+ @endforeach
  </div>
- </x-ui.card>
+ </nav>
+
+ @isset($header)
+ <div class="animate-fade-up">
+ {{ $header }}
+ </div>
  @endisset
 
  <section class="space-y-5 animate-fade-up">
@@ -252,22 +264,6 @@
  </section>
  </main>
  </div>
- 
- <!-- Mobile Bottom Nav -->
- <nav class="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Mobile navigation">
- <div class="shell-card flex items-center justify-between px-2 py-2">
- @foreach ($mobileNav as $item)
- <a
- href="{{ $item['href'] }}"
- class="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-soft)] px-1 py-1 text-[0.68rem] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $item['isPrimaryAction'] ? 'bg-paw text-[color:var(--accent-on)] hover:bg-paw-dark' : ($item['active'] ? 'bg-paw-light text-paw-dark' : 'text-fur hover:bg-cream hover:text-bark') }}"
- @if($item['active']) aria-current="page" @endif
- >
- <span class="text-base" aria-hidden="true">{{ $item['icon'] }}</span>
- <span class="truncate">{{ $item['label'] }}</span>
- </a>
- @endforeach
- </div>
- </nav>
  </div>
  </body>
 </html>

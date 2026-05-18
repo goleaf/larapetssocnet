@@ -36,6 +36,18 @@
     $isSaved = (bool) ($post->saved_by_viewer ?? false);
     $saveCount = (int) ($post->save_count ?? 0);
     $shareCount = (int) ($post->shares_count ?? 0);
+    $postCardState = [
+        'authorName' => $authorName,
+        'liked' => $isLiked,
+        'likes' => $likeCount,
+        'saved' => $isSaved,
+        'saveCount' => $saveCount,
+        'shares' => $shareCount,
+        'likeUrl' => route('posts.like', $post),
+        'saveUrl' => route('posts.save', $post),
+        'shareUrl' => route('posts.share', $post),
+        'showUrl' => route('posts.show', $post),
+    ];
 
     $followStatus = null;
 
@@ -86,145 +98,7 @@
     data-ui="post-card"
     aria-labelledby="{{ $postAuthorId }}"
     class="group overflow-hidden ui-card-interactive"
-    x-data="{
-    authorName: @js($authorName),
-    liked: {{ $isLiked ? 'true' : 'false' }},
-    likes: {{ $likeCount }},
-    likeBusy: false,
-    saved: {{ $isSaved ? 'true' : 'false' }},
-    saveCount: {{ $saveCount }},
-    saveBusy: false,
-    shares: {{ $shareCount }},
-    shareBusy: false,
-    shareCopied: false,
-    async toggleLike() {
-        if (this.likeBusy) {
-            return;
-        }
-
-        this.likeBusy = true;
-        const previousLiked = this.liked;
-        const previousLikes = this.likes;
-        this.liked = !this.liked;
-        this.likes = Math.max(0, this.likes + (this.liked ? 1 : -1));
-
-        try {
-            const response = await fetch('{{ route('posts.like', $post) }}', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('like_request_failed');
-            }
-
-            const data = await response.json();
-
-            if (typeof data.count === 'number') {
-                this.likes = data.count;
-            } else if (typeof data.likes_count === 'number') {
-                this.likes = data.likes_count;
-            } else if (typeof data.data?.likes_count === 'number') {
-                this.likes = data.data.likes_count;
-            }
-
-            if (typeof data.liked === 'boolean') {
-                this.liked = data.liked;
-            } else if (typeof data.action === 'string') {
-                this.liked = data.action !== 'removed';
-            } else if (typeof data.data?.current_reaction === 'string') {
-                this.liked = data.data.current_reaction !== '';
-            }
-        } catch {
-            this.liked = previousLiked;
-            this.likes = previousLikes;
-        } finally {
-            this.likeBusy = false;
-        }
-    },
-    async toggleSave() {
-        if (this.saveBusy) {
-            return;
-        }
-
-        this.saveBusy = true;
-        const previousSaved = this.saved;
-        const previousCount = this.saveCount;
-        this.saved = !this.saved;
-        this.saveCount = Math.max(0, this.saveCount + (this.saved ? 1 : -1));
-
-        try {
-            const response = await fetch('{{ route('posts.save', $post) }}', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('save_request_failed');
-            }
-
-            const data = await response.json();
-
-            if (typeof data.saved === 'boolean') {
-                this.saved = data.saved;
-            }
-        } catch {
-            this.saved = previousSaved;
-            this.saveCount = previousCount;
-        } finally {
-            this.saveBusy = false;
-        }
-    },
-    async sharePost() {
-        if (this.shareBusy) {
-            return;
-        }
-
-        this.shareBusy = true;
-        const previousShares = this.shares;
-
-        try {
-            const response = await fetch('{{ route('posts.share', $post) }}', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
-                },
-                body: JSON.stringify({ method: 'copy_link' }),
-            });
-
-            if (!response.ok) {
-                throw new Error('share_request_failed');
-            }
-
-            const data = await response.json();
-
-            if (typeof data.shares_count === 'number') {
-                this.shares = data.shares_count;
-            }
-
-            const shareLink = data.url || '{{ route('posts.show', $post) }}';
-
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(shareLink);
-            }
-
-            this.shareCopied = true;
-            setTimeout(() => this.shareCopied = false, 1500);
-        } catch {
-            this.shares = previousShares;
-        } finally {
-            this.shareBusy = false;
-        }
-    },
-}"
+    x-data="postCard({{ \Illuminate\Support\Js::from($postCardState) }})"
 >
     @if ($context === 'profile' && $post->is_pinned)
         <div class="flex items-center gap-2 border-b bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800" style="border-color: var(--ui-border);">
@@ -397,13 +271,13 @@
     @endif
 
     <div class="mt-4 border-t ui-border pt-3">
-        <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             @auth
                 <x-ui.button
                     type="button"
                     size="sm"
                     variant="outline"
-                    class="min-h-11 flex-1 sm:flex-none"
+                    class="min-h-11 w-full sm:w-auto"
                     data-testid="like-toggle"
                     aria-label="{{ __('Like post by :name', ['name' => $authorName]) }}"
                     @click="toggleLike()"
@@ -424,7 +298,7 @@
                 data-testid="comments-toggle"
                 size="sm"
                 variant="ghost"
-                class="min-h-11 flex-1 sm:flex-none"
+                class="min-h-11 w-full sm:w-auto"
                 aria-label="{{ __('Read comments on post by :name', ['name' => $authorName]) }}"
             >
                 <span aria-hidden="true">💬</span>
@@ -437,7 +311,7 @@
                     type="button"
                     size="sm"
                     variant="ghost"
-                    class="min-h-11 flex-1 sm:flex-none"
+                    class="min-h-11 w-full sm:w-auto"
                     aria-label="{{ __('Save post by :name', ['name' => $authorName]) }}"
                     @click="toggleSave()"
                     x-bind:disabled="saveBusy"
@@ -454,7 +328,7 @@
                     type="button"
                     size="sm"
                     variant="ghost"
-                    class="min-h-11 flex-1 sm:flex-none"
+                    class="min-h-11 w-full sm:w-auto"
                     aria-label="{{ __('Copy link to post by :name', ['name' => $authorName]) }}"
                     @click="sharePost()"
                     x-bind:disabled="shareBusy"
@@ -465,7 +339,7 @@
                 </x-ui.button>
 
                 @if (! $isOwner)
-                    <form method="POST" action="{{ route('posts.report', $post) }}" class="flex flex-1 sm:flex-none" onsubmit="return confirm('Report this post?');">
+                    <form method="POST" action="{{ route('posts.report', $post) }}" class="flex sm:inline-flex" onsubmit="return confirm('Report this post?');">
                         @csrf
                         <input type="hidden" name="reason" value="spam">
                         <x-ui.button type="submit" size="sm" variant="ghost" class="min-h-11 w-full sm:w-auto" aria-label="{{ __('Report post by :name', ['name' => $authorName]) }}">Report</x-ui.button>

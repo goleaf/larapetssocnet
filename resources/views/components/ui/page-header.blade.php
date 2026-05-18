@@ -19,13 +19,15 @@
  @endif
 
  <div class="mt-1 flex items-start gap-3">
+ @if (filled($icon))
  <span class="ui-icon-well inline-flex h-11 w-11 shrink-0 items-center justify-center text-xl">
  {{ $icon }}
  </span>
+ @endif
 
  <div class="min-w-0">
  @if (filled($title))
- <h1 class="shell-title text-2xl sm:text-[1.7rem]">{{ $title }}</h1>
+ <h1 class="shell-title text-xl leading-tight sm:text-2xl">{{ $title }}</h1>
  @endif
 
  @if ($description ?? $subtitle)

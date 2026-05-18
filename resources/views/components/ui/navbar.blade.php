@@ -31,7 +31,7 @@
  </svg>
  @if ($unreadMessageCount > 0)
  <span
- class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--success)] px-1.5 text-[0.65rem] font-semibold leading-5 text-[color:var(--accent-on)]">
+ class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--success)] px-1.5 text-xs font-semibold leading-5 text-[color:var(--accent-on)]">
  {{ $unreadMessageCount > 99 ? '99+' : $unreadMessageCount }}
  </span>
  @endif
@@ -48,7 +48,7 @@
  </svg>
  @if ($unreadNotificationsCount > 0)
  <span
- class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose px-1.5 text-[0.65rem] font-semibold leading-5 text-[color:var(--accent-on)]">
+ class="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose px-1.5 text-xs font-semibold leading-5 text-[color:var(--accent-on)]">
  {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
  </span>
  @endif
@@ -120,7 +120,7 @@
  </div>
  </div>
 
- <div id="mobile-primary-navigation" x-show="mobileMenuOpen" x-cloak style="display: none;" x-collapse
+ <div id="mobile-primary-navigation" x-show="mobileMenuOpen" x-cloak style="display: none;"
  class="border-t border-whisker/30 bg-warm-white md:hidden">
  <div class="space-y-1 pb-3 pt-2">
  @foreach($links as $link)

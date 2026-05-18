@@ -33,6 +33,8 @@ The app uses the Open Design Warm Editorial system as its single visual standard
 
 Use the shared primitives from `resources/scss`: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and the shared `btn-*` variants. Keep repeated cards, metric tiles, list rows, media wrappers, links, controls, and chips on these primitives instead of adding page-specific `bg-white`, `rounded-xl`, `shadow-sm`, gradients, glass effects, dark-mode toggles, or one-off border palettes.
 
+The application shell uses a scroll-contained desktop left rail and in-flow mobile quick navigation. Do not add fixed mobile navigation that can cover forms, feed cards, or primary action rows.
+
 ## Daily Commands
 
 ```bash

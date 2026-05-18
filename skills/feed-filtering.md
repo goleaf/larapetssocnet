@@ -17,10 +17,12 @@ Feed supports optional filters via query string parameters.
 - Tabs are plain links with `?type=` values.
 - Active tab uses the standard feed tab styling.
 - Switching filter tabs resets to page 1 (cursor pagination).
+- Feed does not expose runtime theme/style switchers. Keep it on the single Warm Editorial surface.
 
 ## Implementation
 - `FeedController@index` validates `source` with `in_array` against `people|pets`.
 - `FeedController@index` validates `type` with `in_array` against `text|photo|video`.
+- Ignore legacy `theme` query values; the feed view renders `data-feed-surface="warm-editorial"` for the single design standard.
 - Source values apply `->forFeedSource($viewerId, $source)` on the base `Post::forFeed($viewerId)` query:
   - `people` keeps the viewer's own posts and posts from accepted followed users.
   - `pets` keeps posts associated with pets followed by the viewer.

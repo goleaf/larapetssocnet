@@ -17,16 +17,6 @@ class FeedController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $feedThemes = [
-            'accessible-soft' => __('feed.themes.accessible_soft'),
-            'high-contrast' => __('feed.themes.high_contrast'),
-            'minimalist-soothe' => __('feed.themes.minimalist_soothe'),
-        ];
-        $requestedTheme = $request->query('theme');
-        $activeFeedTheme = is_string($requestedTheme) && array_key_exists($requestedTheme, $feedThemes)
-            ? $requestedTheme
-            : 'accessible-soft';
-        $activeFeedThemeLabel = $feedThemes[$activeFeedTheme];
 
         $ownedPets = $user->pets()
             ->without(['user', 'species', 'breed', 'media', 'tags'])
@@ -59,7 +49,7 @@ class FeedController extends Controller
         return view('feed.index', array_merge(
             ['posts' => $posts, 'yourGroups' => $yourGroups, 'ownedPets' => $ownedPets],
             $sidebarData,
-            ['user' => $user, 'type' => $type, 'source' => $source, 'feedThemes' => $feedThemes, 'activeFeedTheme' => $activeFeedTheme, 'activeFeedThemeLabel' => $activeFeedThemeLabel],
+            ['user' => $user, 'type' => $type, 'source' => $source],
         ));
     }
 }

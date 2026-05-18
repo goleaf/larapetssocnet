@@ -4,10 +4,7 @@
 
 ## Props
 - `$post`: eager-loaded `Post` model.
-- `$myReactions`: keyed collection by post id.
-- `$mySaved`: collection of saved post ids.
-- `$showComments`: bool, default false.
-- `$compact`: bool, default false.
+- `$viewer`: optional viewer, defaults to `auth()->user()`.
 - `$context`: `feed|profile|explore`.
 
 ## Sections Order
@@ -17,19 +14,16 @@
 4. Media (photo grid or video player).
 5. Location badge.
 6. Hashtag chips.
-7. Reaction bar.
-8. Action row (comment, save, share).
-9. Comment preview when enabled.
+7. Action row (like, comments, save, share, report when available).
 
-## Reaction State
-- Read from `$myReactions->get($post->id)?->type`.
-- Pass to Alpine as `currentReaction`.
-- No DB queries in component.
+## Alpine State
+- Pass card state through `x-data="postCard(...)"` using `Illuminate\Support\Js::from()`.
+- Do not place raw `@js(...)` directives inside component attribute strings; they can render literally and break Alpine.
+- Keep action labels server-rendered or Alpine-backed so buttons never appear as blank squares before hydration.
 
-## Save State
-- Read from `$mySaved->has($post->id)`.
-- Pass to Alpine as `saved` boolean.
-- No DB queries in component.
+## Engagement State
+- Use `liked_by_viewer`, `saved_by_viewer`, and counter attributes when eager-loaded by feed queries.
+- Avoid new per-card database queries for reaction or save state.
 
 ## Time Display
 - Use `diffForHumans()` for recent posts (< 7 days).

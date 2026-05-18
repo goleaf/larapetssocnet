@@ -260,6 +260,159 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('postCard', (config = {}) => ({
+ authorName: toStringValue(config.authorName,'a community member'),
+ liked: Boolean(config.liked),
+ likes: toNumber(config.likes),
+ likeBusy: false,
+ saved: Boolean(config.saved),
+ saveCount: toNumber(config.saveCount),
+ saveBusy: false,
+ shares: toNumber(config.shares),
+ shareBusy: false,
+ shareCopied: false,
+ likeUrl: toStringValue(config.likeUrl),
+ saveUrl: toStringValue(config.saveUrl),
+ shareUrl: toStringValue(config.shareUrl),
+ showUrl: toStringValue(config.showUrl),
+
+ get csrfToken() {
+ return document.querySelector('meta[name=csrf-token]')?.content ||'';
+ },
+
+ async toggleLike() {
+ if (this.likeBusy || !this.likeUrl) {
+ return;
+ }
+
+ this.likeBusy = true;
+ const previousLiked = this.liked;
+ const previousLikes = this.likes;
+ this.liked = !this.liked;
+ this.likes = Math.max(0, this.likes + (this.liked ? 1 : -1));
+
+ try {
+ const response = await fetch(this.likeUrl, {
+ method:'POST',
+ headers: {
+ Accept:'application/json',
+'X-CSRF-TOKEN': this.csrfToken,
+ },
+ });
+
+ if (!response.ok) {
+ throw new Error('like_request_failed');
+ }
+
+ const data = await response.json();
+
+ if (typeof data.count ==='number') {
+ this.likes = data.count;
+ } else if (typeof data.likes_count ==='number') {
+ this.likes = data.likes_count;
+ } else if (typeof data.data?.likes_count ==='number') {
+ this.likes = data.data.likes_count;
+ }
+
+ if (typeof data.liked ==='boolean') {
+ this.liked = data.liked;
+ } else if (typeof data.action ==='string') {
+ this.liked = data.action !=='removed';
+ } else if (typeof data.data?.current_reaction ==='string') {
+ this.liked = data.data.current_reaction !=='';
+ }
+ } catch {
+ this.liked = previousLiked;
+ this.likes = previousLikes;
+ } finally {
+ this.likeBusy = false;
+ }
+ },
+
+ async toggleSave() {
+ if (this.saveBusy || !this.saveUrl) {
+ return;
+ }
+
+ this.saveBusy = true;
+ const previousSaved = this.saved;
+ const previousCount = this.saveCount;
+ this.saved = !this.saved;
+ this.saveCount = Math.max(0, this.saveCount + (this.saved ? 1 : -1));
+
+ try {
+ const response = await fetch(this.saveUrl, {
+ method:'POST',
+ headers: {
+ Accept:'application/json',
+'X-CSRF-TOKEN': this.csrfToken,
+ },
+ });
+
+ if (!response.ok) {
+ throw new Error('save_request_failed');
+ }
+
+ const data = await response.json();
+
+ if (typeof data.saved ==='boolean') {
+ this.saved = data.saved;
+ }
+ } catch {
+ this.saved = previousSaved;
+ this.saveCount = previousCount;
+ } finally {
+ this.saveBusy = false;
+ }
+ },
+
+ async sharePost() {
+ if (this.shareBusy || !this.shareUrl) {
+ return;
+ }
+
+ this.shareBusy = true;
+ const previousShares = this.shares;
+
+ try {
+ const response = await fetch(this.shareUrl, {
+ method:'POST',
+ headers: {
+ Accept:'application/json',
+'Content-Type':'application/json',
+'X-CSRF-TOKEN': this.csrfToken,
+ },
+ body: JSON.stringify({ method:'copy_link' }),
+ });
+
+ if (!response.ok) {
+ throw new Error('share_request_failed');
+ }
+
+ const data = await response.json();
+
+ if (typeof data.shares_count ==='number') {
+ this.shares = data.shares_count;
+ }
+
+ const shareLink = data.url || this.showUrl;
+
+ if (shareLink && navigator.clipboard?.writeText) {
+ await navigator.clipboard.writeText(shareLink);
+ }
+
+ this.shareCopied = true;
+ window.setTimeout(() => {
+ this.shareCopied = false;
+ }, 1500);
+ } catch {
+ this.shares = previousShares;
+ } finally {
+ this.shareBusy = false;
+ }
+ },
+ }));
+
  Alpine.data('tabsState', (defaultTab = null) => ({
  activeTab: defaultTab,
 

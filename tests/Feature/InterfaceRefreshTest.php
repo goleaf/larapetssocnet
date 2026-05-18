@@ -49,15 +49,17 @@ it('renders the desktop app left rail as an independent viewport scroll region',
         ->assertSee('overscroll-contain', false);
 });
 
-it('renders feed display controls and semantic feed markup', function (): void {
+it('renders unified feed filters and semantic feed markup', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('feed.index'))
         ->assertSuccessful()
-        ->assertSee('Feed style')
-        ->assertSee('Accessible Soft')
-        ->assertSee('High Contrast')
+        ->assertSee('data-feed-surface="warm-editorial"', false)
+        ->assertSee('Feed sources')
+        ->assertSee('All types')
+        ->assertDontSee('Feed style')
+        ->assertDontSee('High Contrast')
         ->assertSee('<ul role="feed"', false)
         ->assertSee('role="status"', false);
 });

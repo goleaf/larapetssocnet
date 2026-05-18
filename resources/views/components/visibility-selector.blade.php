@@ -42,19 +42,16 @@
  'icon'=>'🌍',
  'label'=>'Public',
  'sub'=>'Anyone can see this post',
- 'ring'=>'ring-emerald-500 bg-emerald-50',
  ],
  'followers'=> [
  'icon'=>'👥',
  'label'=>'Followers',
  'sub'=>'Only your followers can see this',
- 'ring'=>'ring-blue-500 bg-blue-50',
  ],
  'private'=> [
  'icon'=>'🔒',
  'label'=>'Only me',
  'sub'=>'Only you can see this',
- 'ring'=>'ring-gray-400 bg-gray-100',
  ],
  ] as $value => $option)
  <button
@@ -70,16 +67,16 @@
  @keydown.arrow-up.prevent="onArrow('{{ $value }}', -1)"
  :tabindex="selected ==='{{ $value }}'? 0 : -1"
  :aria-checked="selected ==='{{ $value }}'"
- :class="selected ==='{{ $value }}' ?'{{ $option['ring'] }} ring-2' :'bg-white ring-1 ring-gray-200 hover:ring-gray-300'"
- class="flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+ :class="selected ==='{{ $value }}' ?'border-paw bg-paw-light text-bark' :'border-whisker/40 bg-[color:var(--surface-form)] text-fur hover:border-paw-light hover:bg-cream hover:text-bark'"
+ class="flex w-full items-center gap-3 rounded-[var(--radius-soft)] border p-3 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  >
  <span class="text-xl" aria-hidden="true">{{ $option['icon'] }}</span>
  <span class="min-w-0 flex-1">
- <span class="block text-sm font-medium text-gray-900">{{ $option['label'] }}</span>
- <span class="block text-xs text-gray-500">{{ $option['sub'] }}</span>
+ <span class="block text-sm font-semibold text-current">{{ $option['label'] }}</span>
+ <span class="block text-xs text-fur">{{ $option['sub'] }}</span>
  </span>
  <span
- :class="selected ==='{{ $value }}' ?'border-emerald-500 bg-emerald-500' :'border-gray-300 bg-white'"
+ :class="selected ==='{{ $value }}' ?'border-paw bg-paw' :'border-whisker bg-[color:var(--surface-form)]'"
  class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
  >
  <span x-show="selected ==='{{ $value }}'" class="h-1.5 w-1.5 rounded-full bg-white"></span>
@@ -92,7 +89,7 @@
  x-transition:enter="transition ease-out duration-200"
  x-transition:enter-start="opacity-0 -translate-y-1"
  x-transition:enter-end="opacity-100 translate-y-0"
- class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+ class="flex items-start gap-2 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream p-3 text-sm text-fur"
  style="display: none;"
  >
  <span class="mt-0.5 text-base" aria-hidden="true">⚠️</span>

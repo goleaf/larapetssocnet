@@ -49,7 +49,6 @@
  class="{{ ['none' => '', '0' => '', 'sm' => 'p-4', 'md' => 'p-6', 'lg' => 'p-8'][(string) $padding] ?? 'p-6' }}"
  @if($collapsible)
  x-show="open"
- x-collapse
  x-cloak
  style="display: none;"
  @endif

@@ -3,6 +3,7 @@
 return [
     'page_title' => 'Feed — PetSocial',
     'header_title' => 'Community Feed',
+    'header_description' => 'Share updates, follow pet stories, and keep up with your community.',
     'saved' => 'Saved',
     'explore' => 'Explore',
     'create_post' => 'Create a post',
@@ -36,10 +37,5 @@ return [
         'photos' => 'Photos',
         'videos' => 'Videos',
         'text' => 'Text',
-    ],
-    'themes' => [
-        'accessible_soft' => 'Accessible Soft',
-        'high_contrast' => 'High Contrast',
-        'minimalist_soothe' => 'Minimalist Soothe',
     ],
 ];

@@ -829,7 +829,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </svg>
  Past Events ({{ $pastEvents->count() }})
  </button>
- <div x-show="showPast" x-collapse class="mt-2 space-y-3">
+ <div x-show="showPast" class="mt-2 space-y-3">
  @foreach ($pastEvents as $event)
  <a href="{{ route('events.show', ['event'=> $event]) }}"
  class="flex min-h-20 items-center gap-3 rounded-xl border border-whisker/20 bg-cream/50 px-4 py-3 opacity-75 transition-all hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">

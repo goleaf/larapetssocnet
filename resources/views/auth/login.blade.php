@@ -48,7 +48,6 @@
  action="{{ route('password.email') }}"
  class="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-cream/50 p-4"
  x-show="resetOpen"
- x-collapse
  x-cloak
  data-ui="inline-password-reset-form"
  >

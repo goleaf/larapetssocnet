@@ -2,7 +2,7 @@
 
 <x-app-layout>
  <x-slot name="header">
- <x-ui.page-header :title="__('feed.header_title')" :subtitle="$activeFeedThemeLabel" icon="📰">
+ <x-ui.page-header :title="__('feed.header_title')" :description="__('feed.header_description')" :icon="null">
  <x-slot:action>
  <div class="flex flex-wrap items-center gap-2">
  <x-ui.button href="{{ route('saved.index') }}" variant="ghost" size="sm">{{ __('feed.saved') }}</x-ui.button>
@@ -12,11 +12,10 @@
  </x-ui.page-header>
  </x-slot>
 
- <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]" data-feed-theme="{{ $activeFeedTheme }}">
+ <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]" data-feed-surface="warm-editorial">
  <div class="space-y-4">
  @php
  $feedQuery = static fn (array $overrides = []): array => array_filter(array_merge([
- 'theme' => $activeFeedTheme,
  'source' => $source,
  'type' => $type,
  ], $overrides), static fn ($value): bool => filled($value));
@@ -35,35 +34,14 @@
  ];
  @endphp
 
- <x-ui.card padding="base" class="bg-warm-white/80">
- <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
- <div>
- <p class="shell-kicker">{{ __('Display') }}</p>
- <h2 class="mt-1 text-lg font-bold font-display text-bark">{{ __('Feed style') }}</h2>
- </div>
-
- <div class="flex flex-wrap gap-2" aria-label="{{ __('Feed style') }}">
- @foreach ($feedThemes as $themeKey => $themeLabel)
- <a
- href="{{ route('feed.index', $feedQuery(['theme' => $themeKey])) }}"
- class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $activeFeedTheme === $themeKey ? 'border-paw-light bg-paw-light text-paw-dark' : 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' }}"
- @if($activeFeedTheme === $themeKey) aria-current="true" @endif
- >
- {{ $themeLabel }}
- </a>
- @endforeach
- </div>
- </div>
- </x-ui.card>
-
- <x-ui.card padding="base" class="bg-warm-white/80">
- <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+ <x-ui.card padding="base">
+ <div class="grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-center">
  <div>
  <p class="shell-kicker">{{ __('feed.filters_title') }}</p>
  <h2 class="mt-1 text-lg font-bold font-display text-bark">{{ __('feed.filters_heading') }}</h2>
  </div>
 
- <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+ <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
  <div class="flex flex-wrap gap-2" aria-label="{{ __('feed.filters_source_label') }}">
  @foreach ($sourceFilters as $filter)
  <a
@@ -173,9 +151,10 @@
  </form>
  </x-ui.card>
 
- <x-ui.card padding="base" class="bg-warm-white/70" role="status">
- <p class="text-xs text-fur flex items-center gap-2">
- <span class="text-base">ℹ️</span> {{ __('feed.feed_note') }}
+ <x-ui.card padding="base" role="status">
+ <p class="flex items-start gap-2 text-sm leading-6 text-fur">
+ <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-paw" aria-hidden="true"></span>
+ <span>{{ __('feed.feed_note') }}</span>
  </p>
  </x-ui.card>
 
@@ -248,7 +227,7 @@
  <div class="space-y-2.5">
  @forelse (collect($yourGroups ?? []) as $group)
  <a href="{{ route('groups.show', filled((string) ($group->slug ?? '')) ? $group->slug : $group->id) }}"
- class="flex items-center justify-between rounded-xl border border-whisker/30 px-3 py-2 hover:bg-warm-white transition-colors group">
+ class="ui-list-item flex items-center justify-between px-3 py-2 group">
  <div class="min-w-0">
  <p class="truncate text-sm font-semibold text-bark group-hover:text-paw transition-colors">
  {{ $group->name }}</p>

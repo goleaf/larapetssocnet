@@ -44,12 +44,13 @@
 - Standardized the shared app design system across repeated cards, panels, chips, list rows, media frames, action buttons, and high-traffic browse blocks.
 - Aligned SCSS tokens and Tailwind theme fonts/colors so the app uses one visual vocabulary instead of competing page-local palettes.
 - Updated the desktop app shell left rail to scroll within the viewport while containing overscroll from the main page content.
+- Updated the mobile app navigation to render in the page flow instead of covering feed forms and cards.
 - Updated registration to route newly-created users to email verification before onboarding and require verified email for application pages.
 - Updated login to remove exposed quick-login seed users and use a dedicated login action for email-or-username credential resolution.
 - Updated login and registration auth pages with inline password reset, username availability feedback, password strength feedback, and masked email verification copy.
 - Updated group posting, commenting, reacting, and joining authorization to reject archived groups while keeping historical content readable.
 - Updated group discovery visibility to exclude secret groups when either `privacy` or legacy `type` is secret.
-- Updated the feed filter UI to expose source and post-type filters without losing the selected feed theme.
+- Updated the feed filter UI to expose only source and post-type filters on the single Warm Editorial feed surface.
 - Updated user and pet follow routes to use the shared social follow rate limiter.
 - Updated pending follow-request handling to show an inline withdraw confirmation instead of cancelling immediately.
 - Added the end-of-prompt maintenance rule to agent guidance, README, workflow docs, and git/changelog workflow guidance.
@@ -113,7 +114,9 @@
 ### Fixed
 - Fixed the app layout so raw Livewire asset directives cannot appear as visible header text when compiled Blade output is stale or Livewire directive registration drifts.
 - Fixed Explore desktop sidebar scrolling so the left rail can move independently without adding capped inner widget scroll areas.
-- Fixed feed rendering and visibility rules so followed feeds exclude discovery posts, feed theme labels render correctly, and translation-backed copy is shown instead of raw `en.*` keys.
+- Fixed feed design regressions by removing competing feed theme controls, simplifying nested header surfaces, aligning the composer visibility selector with Warm Editorial tokens, and restoring visible post action labels.
+- Fixed Alpine console warnings caused by unsupported `x-collapse` usage and literal `@js(...)` output in post-card state.
+- Fixed feed rendering and visibility rules so followed feeds exclude discovery posts and translation-backed copy is shown instead of raw `en.*` keys.
 - Fixed message inbox and conversation Blade components so thread lists, conversation pages, and send-message flows render without component or template errors.
 - Fixed profile privacy regressions by restoring the `privacy.toggle` route, matching the locked-profile copy/state expectations, and preserving `noindex, nofollow` metadata.
 - Fixed pet health log ownership handling so non-owners receive `404` on read-only views while mutating actions remain forbidden.
@@ -126,6 +129,8 @@
   - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php tests/Feature/InterfaceRefreshTest.php`
   - `php artisan test --compact tests/Feature/LayoutLivewireDirectivesTest.php tests/Feature/PostCreateLivewireTest.php`
   - `php artisan test --compact tests/Feature/InterfaceRefreshTest.php --filter="left rail"`
+  - `php artisan test --compact tests/Feature/FeedThemeTest.php tests/Feature/InterfaceRefreshTest.php tests/Feature/AuthenticatedPageAccessTest.php`
+  - Playwright visual pass for `https://larapetssocnet.test/feed` at desktop, tablet, and mobile viewports
   - `tests/Feature/Auth`
   - `tests/Feature/AuthenticatedPageAccessTest.php`
   - `tests/Feature/GroupArchiveFeatureTest.php`
