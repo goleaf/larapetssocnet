@@ -9,3 +9,5 @@
 - Do not add dark/light theme toggles, runtime visual style switchers, `data-theme` controls, user-facing profile theme fields, or theme preference storage.
 - Avoid introducing new page-local recipes like `bg-white rounded-xl shadow-sm`, gradients, glass effects, or one-off color palettes; extend the shared SCSS primitives instead.
 - Keep navigation in the page flow on mobile unless a design explicitly reserves non-overlapped viewport space for fixed controls.
+- Keep main portal pages fluid within the shared app column. Do not center repeated operational blocks on narrower `max-w-*` wrappers unless the view is intentionally a reading surface.
+- Make action rows collapse to a single column on phone widths before horizontal overflow can happen.

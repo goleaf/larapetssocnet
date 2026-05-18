@@ -5,10 +5,13 @@
         @apply inline-flex items-center justify-center gap-2 text-sm font-bold transition-all duration-150;
 
         min-height: var(--control-height-md);
+        min-width: 0;
+        max-width: 100%;
         border: 1px solid transparent;
         letter-spacing: 0;
         padding-block: 14px;
         padding-inline: 20px;
+        text-align: center;
 
         @include ui.control-radius;
     }
@@ -92,6 +95,7 @@
         @apply inline-flex items-center justify-center transition-all duration-150;
 
         height: var(--control-height-md);
+        min-width: 0;
         width: var(--control-height-md);
         background: var(--surface-panel);
         border: 1px solid var(--border-default);

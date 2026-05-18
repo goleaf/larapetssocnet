@@ -93,8 +93,8 @@ $spaces: (
     section-y-desktop: 80px,
     section-y-tablet: 48px,
     section-y-phone: 32px,
-    container-max: 1200px,
-    container-gutter: 24px,
+    container-max: 1440px,
+    container-gutter: clamp(16px, 2vw, 32px),
 ) !default;
 $font-sizes: (
     text-xs: 12px,

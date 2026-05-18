@@ -38,10 +38,14 @@ it('shows one thread per partner with latest preview and unread badge', function
     $this->actingAs($viewer)
         ->get(route('messages.index'))
         ->assertOk()
+        ->assertSee('data-ui="messages-page"', false)
+        ->assertSee('Simple inbox, newest conversations first.')
+        ->assertSee('Search by name or username')
         ->assertSee('First Peer')
         ->assertSee('Second Peer')
         ->assertSee('newest first-peer message')
-        ->assertSee('second-peer message');
+        ->assertSee('second-peer message')
+        ->assertDontSee('messaging.messages');
 });
 
 it('loads a thread between two users with pagination', function (): void {
@@ -57,6 +61,11 @@ it('loads a thread between two users with pagination', function (): void {
         ->get(route('messages.conversation', ['peer' => $peer]));
 
     $response->assertOk();
+    $response->assertSee('data-ui="messages-page"', false);
+    $response->assertSee('Chat');
+    $response->assertSee('Conversation with '.$peer->name);
+    $response->assertSee('Inbox');
+    $response->assertDontSee('messaging.messages');
     $response->assertSee($peer->name);
     expect($response->viewData('messages')->perPage())->toBe(30);
 });

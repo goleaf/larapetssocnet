@@ -117,6 +117,7 @@
 - Removed remaining interface theme-switching paths: app `data-theme` attributes, Alpine UI theme state, the profile theme settings field, profile theme persistence/export handling, the `users.profile_theme` column, and Debugbar auto light/dark mode.
 
 ### Fixed
+- Fixed the messages inbox and conversation layouts to use one full-width responsive main-column surface, real message translations, wrapping page headers, mobile-safe action rows, and a wider fluid portal container.
 - Fixed shared select inputs showing double dropdown arrows by clearing the Tailwind Forms background-image arrow when the app renders its custom select chevron.
 - Fixed post-login 500 errors on intended group pages by rendering cast `GroupMemberStatus` enum values safely in group cards.
 - Fixed the app layout so raw Livewire asset directives cannot appear as visible header text when compiled Blade output is stale or Livewire directive registration drifts.

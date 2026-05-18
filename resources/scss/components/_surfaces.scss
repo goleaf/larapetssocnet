@@ -20,17 +20,26 @@
     .shell-card,
     .ui-card,
     .ui-surface {
+        min-width: 0;
+        max-width: 100%;
+
         @include ui.framed-surface(var(--surface-panel), var(--radius-card));
     }
 
     .shell-card-muted,
     .ui-subtle-card,
     .ui-surface-muted {
+        min-width: 0;
+        max-width: 100%;
+
         @include ui.framed-surface(var(--surface-muted), var(--radius-card));
     }
 
     .shell-panel,
     .ui-panel {
+        min-width: 0;
+        max-width: 100%;
+
         @include ui.framed-surface(var(--surface-panel), var(--radius-panel));
     }
 

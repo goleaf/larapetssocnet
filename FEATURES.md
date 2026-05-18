@@ -28,8 +28,9 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Shared form guidance keeps select controls on the shared `form-select` + custom chevron pattern without allowing Tailwind Forms to add a second background arrow.
 - Shared design guidance forbids dark/light theme switching, runtime visual style switchers, `data-theme` controls, user-facing profile theme fields, and theme preference storage.
 - Application shell guidance keeps the desktop left rail scroll-contained to the viewport without giving individual sidebar widgets capped internal scroll areas.
-- Application shell guidance keeps mobile quick navigation in the normal page flow so it never covers forms, feed cards, or action rows.
+- Application shell guidance keeps mobile quick navigation in the normal page flow so it never covers forms, feed cards, or action rows, and keeps the portal container fluid up to the shared 1440px maximum.
 - Application shell guidance relies on Livewire automatic asset injection instead of manual `@livewireStyles` / `@livewireScripts` directives in the shared layout.
+- Messages guidance keeps inbox and conversation content on one full-width responsive main-column surface with wrapping headers and mobile-safe form actions.
 - Local debugging guidance uses Laravel Debugbar as a dev-only tool; keep committed env defaults disabled and enable it only in local debug sessions.
 - Project memory guidance is exposed through the local `larapetssocnet-memory-guides` skill and `skills/memory.md` for durable preferences, prior rollout lookup, and explicit memory updates.
 - Feature 5: Posts guidance must match the existing post controllers, actions, validation, media limits, visibility, tagging, soft deletes, and scheduled statuses.
