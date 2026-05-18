@@ -38,6 +38,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated the desktop app shell left rail to scroll within the viewport while containing overscroll from the main page content.
 - Updated registration to route newly-created users to email verification before onboarding and require verified email for application pages.
 - Updated login to remove exposed quick-login seed users and use a dedicated login action for email-or-username credential resolution.
 - Updated login and registration auth pages with inline password reset, username availability feedback, password strength feedback, and masked email verification copy.
@@ -105,6 +106,7 @@
 - Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
 ### Fixed
+- Fixed Explore desktop sidebar scrolling so the left rail can move independently without adding capped inner widget scroll areas.
 - Fixed feed rendering and visibility rules so followed feeds exclude discovery posts, feed theme labels render correctly, and translation-backed copy is shown instead of raw `en.*` keys.
 - Fixed message inbox and conversation Blade components so thread lists, conversation pages, and send-message flows render without component or template errors.
 - Fixed profile privacy regressions by restoring the `privacy.toggle` route, matching the locked-profile copy/state expectations, and preserving `noindex, nofollow` metadata.
@@ -112,6 +114,7 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/InterfaceRefreshTest.php --filter="left rail"`
   - `tests/Feature/Auth`
   - `tests/Feature/AuthenticatedPageAccessTest.php`
   - `tests/Feature/GroupArchiveFeatureTest.php`

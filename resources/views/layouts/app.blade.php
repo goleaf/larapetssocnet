@@ -38,8 +38,8 @@
 'lg:grid-cols-[minmax(0,1fr)]'=> $hideLeftRail,
  ])>
  @unless ($hideLeftRail)
- <aside class="hidden lg:block">
- <div class="sticky top-24 space-y-4">
+ <aside class="hidden lg:block" data-ui="app-left-rail">
+ <div class="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-4 overflow-y-auto overscroll-contain pb-4 pr-1 [scrollbar-gutter:stable]">
  <x-ui.card>
  <div class="flex items-center gap-3">
  <x-ui.avatar :name="$user?->name ??'Guest User'" :src="$user?->avatar_url" size="lg"/>

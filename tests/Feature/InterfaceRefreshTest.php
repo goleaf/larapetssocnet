@@ -37,6 +37,18 @@ it('renders larger touch targets and accessible mobile navigation markers', func
         ->assertSee('min-h-11', false);
 });
 
+it('renders the desktop app left rail as an independent viewport scroll region', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('explore.index'))
+        ->assertSuccessful()
+        ->assertSee('data-ui="app-left-rail"', false)
+        ->assertSee('max-h-[calc(100dvh-7rem)]', false)
+        ->assertSee('overflow-y-auto', false)
+        ->assertSee('overscroll-contain', false);
+});
+
 it('renders feed display controls and semantic feed markup', function (): void {
     $user = User::factory()->create();
 
