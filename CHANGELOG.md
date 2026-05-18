@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a shared `x-ui.page-stack` component for operational pages that should align their main blocks with the app header width.
 - Added root project guidance for design, architecture, skills, hooks, and controller testing.
 - Added detailed skill guides for Warm Editorial design, local hooks, controller testing, and project skill routing.
 - Added local `larapetssocnet-design-guides` and `larapetssocnet-test-hooks-guides` skill routers.
@@ -46,6 +47,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated the pet profile page to remove the page-local width cap and align the profile summary, tabs, and tab content with the app header block.
 - Migrated shared UI primitives, Tailwind theme aliases, app shell, guest shell, forms, buttons, cards, alerts, badges, and component-library examples to the Warm Editorial visual system.
 - Removed competing runtime light/dark theme toggles so the app resolves through one fixed warm editorial standard.
 - Standardized the shared app design system across repeated cards, panels, chips, list rows, media frames, action buttons, and high-traffic browse blocks.
@@ -195,3 +197,9 @@
   - `php scripts/controller-test-map.php --all --format=json`
   - `bash -n .githooks/pre-commit .githooks/pre-push scripts/install-git-hooks.sh`
   - `git diff --check`
+  - `php artisan test --compact tests/Feature/Pets/PetShowTest.php`
+  - `php artisan test --compact tests/Feature/Pets/PetShowTest.php tests/Feature/PetFeatureTest.php`
+  - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php`
+  - `npm run lint:scss`
+  - `npm run build`
+  - Playwright width check for `https://larapetssocnet.test/pets/18` at desktop and mobile viewports

@@ -13,6 +13,7 @@ Use this guide when changing visual layout, UI primitives, responsive behavior, 
 
 - Keep Warm Editorial as the only active visual system.
 - Do not add dark/light switching, `data-theme`, alternate theme classes, profile theme settings, or theme storage.
+- Use `x-ui.page-stack` for in-app operational pages that should align with the shared header width.
 - Extend shared primitives before adding page-local card/button/input styles.
 - Use responsive constraints and `min-w-0` to prevent overflow.
 - Stack action rows on small screens before text or buttons overflow.

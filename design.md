@@ -16,7 +16,7 @@ PetSocial uses one design system: Open Design Warm Editorial. It is a warm, edit
 
 - Do not add dark/light switching, runtime theme toggles, alternate palette controls, `data-theme` behavior, profile theme fields, or theme preference storage.
 - Keep page layouts fluid inside the shared portal container. Do not center operational pages on narrow `max-w-*` wrappers unless the page is intentionally a reading surface.
-- Use shared primitives for repeated blocks: `shell-card`, `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and `btn-*`.
+- Use shared primitives for repeated blocks: `x-ui.page-stack`, `shell-card`, `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and `btn-*`.
 - Avoid new page-local recipes such as one-off gradients, glass panels, arbitrary shadows, `bg-white rounded-xl shadow-sm` card stacks, or competing border palettes.
 - Mobile navigation stays in the page flow. It must not cover forms, feed cards, message composers, or primary action rows.
 

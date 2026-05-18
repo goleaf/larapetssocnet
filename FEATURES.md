@@ -37,6 +37,7 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Project skill guidance is exposed through root `skills.md`, `skills/skill-map.md`, and compact local routers instead of one exposed skill per detailed guide.
 - Project hook guidance is exposed through root `hooks.md`, `controller-testing.md`, `skills/hooks.md`, `skills/controller-testing.md`, and the local `larapetssocnet-test-hooks-guides` router.
 - Local git hooks can be installed with `bash scripts/install-git-hooks.sh`; pre-commit runs Composer validation, Pint, and changed-controller test mapping, while pre-push runs changed-controller mapping, feature/unit tests, SCSS lint, and Vite build.
+- Pet profile guidance keeps profile summary, tabs, and tab content on the shared full-width `x-ui.page-stack` so main blocks align with the app page header instead of using page-local max-width wrappers.
 - Feature 5: Posts guidance must match the existing post controllers, actions, validation, media limits, visibility, tagging, soft deletes, and scheduled statuses.
 - Feature 6: Reactions guidance must match the existing polymorphic reactions table, services, controllers, and counter cache behavior.
 - Feature 7: Comments guidance must match the existing comments table, services, controllers, Blade rendering, two-level threading, and comment reaction behavior.

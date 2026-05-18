@@ -20,6 +20,24 @@ it('returns 200 for a public pet profile', function (): void {
         ->assertSee('Mochi');
 });
 
+it('uses the shared full-width pet profile block system', function (): void {
+    $pet = Pet::factory()
+        ->for(User::factory())
+        ->create([
+            'name' => 'Aligned',
+            'is_public' => true,
+        ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('pets.show', $pet))
+        ->assertSuccessful()
+        ->assertSee('data-ui="pet-profile-stack"', false)
+        ->assertSee('data-ui="pet-profile-summary"', false)
+        ->assertSee('data-ui="pet-profile-tabs"', false)
+        ->assertSee('data-ui="pet-profile-tab-content"', false)
+        ->assertDontSee('max-w-6xl mx-auto', false);
+});
+
 it('returns 403 for a private pet profile when viewer is not authorized', function (): void {
     $pet = Pet::factory()
         ->for(User::factory())
