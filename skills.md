@@ -1,6 +1,6 @@
 # Project Skills
 
-This project exposes compact local router skills under `.agents/skills` and stores detailed project guidance under `skills/*.md`.
+This project exposes compact local router skills under `.agents/skills`, stores detailed project guidance under `skills/*.md`, and vendors the upstream Superpowers Laravel pack under `.claude/skills`.
 
 ## Exposed Router Skills
 
@@ -19,6 +19,16 @@ This project exposes compact local router skills under `.agents/skills` and stor
 ## Detailed Guides
 
 The detailed guides in `skills/` are intentionally not all exposed as top-level local skills. Open only the guide matching the task. Use `skills/skill-map.md` as the index when the right guide is not obvious.
+
+## Installed Superpowers Laravel Pack
+
+The upstream `jpcaparas/superpowers-laravel` skills are installed project-locally:
+
+- `.claude/skills/`: 52 Laravel Superpowers skill folders plus existing project Claude skills.
+- `.claude/commands/superpowers-laravel/`: 39 command wrappers for Claude Code slash-command workflows.
+- `.agents/skills/using-laravel-superpowers`: the compact Codex router that points to the installed pack without exposing every upstream guide at once.
+
+Use project rules, Laravel Boost guidance, and `skills/*.md` before applying generic upstream examples. Open the matching `.claude/skills/<skill>/SKILL.md` only when a task needs deeper Superpowers detail.
 
 ## Adding A New Skill
 

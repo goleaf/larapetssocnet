@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added the project-local Superpowers Laravel skill pack under `.claude/skills` with Claude command wrappers under `.claude/commands/superpowers-laravel`.
 - Added a shared `x-ui.page-stack` component for operational pages that should align their main blocks with the app header width.
 - Added root project guidance for design, architecture, skills, hooks, and controller testing.
 - Added detailed skill guides for Warm Editorial design, local hooks, controller testing, and project skill routing.
@@ -138,6 +139,7 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Unit/ProjectDocumentationAndHooksTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php`
   - `npm run lint:scss`
   - `npm run build`

@@ -6,7 +6,7 @@ it('documents the project design, architecture, skills, hooks, and controller te
     $requiredDocs = [
         'design.md' => ['Open Design Warm Editorial', 'Do not add dark/light switching'],
         'architecture.md' => ['Laravel 13', 'Application pages are private by default'],
-        'skills.md' => ['larapetssocnet-design-guides', 'larapetssocnet-test-hooks-guides'],
+        'skills.md' => ['larapetssocnet-design-guides', 'larapetssocnet-test-hooks-guides', 'Superpowers Laravel'],
         'hooks.md' => ['scripts/install-git-hooks.sh', 'SKIP_PROJECT_HOOKS=1'],
         'controller-testing.md' => ['70 concrete controllers', 'scripts/controller-test-map.php'],
         'skills/design.md' => ['Warm Editorial', 'Playwright'],
@@ -24,6 +24,33 @@ it('documents the project design, architecture, skills, hooks, and controller te
             expect($contents)->toContain($needle);
         }
     }
+});
+
+it('installs the Superpowers Laravel skill pack for project-local AI workflows', function (): void {
+    $laravelSkillFiles = collect(glob(base_path('.claude/skills/*/SKILL.md')) ?: [])
+        ->filter(fn (string $path): bool => str_contains((string) file_get_contents($path), 'name: laravel:'))
+        ->values();
+
+    expect($laravelSkillFiles)->toHaveCount(52);
+
+    foreach ([
+        '.claude/skills/using-laravel-superpowers/SKILL.md',
+        '.claude/skills/runner-selection/SKILL.md',
+        '.claude/skills/tdd-with-pest/SKILL.md',
+        '.claude/skills/quality-checks/SKILL.md',
+        '.claude/commands/superpowers-laravel/brainstorm.md',
+        '.claude/commands/superpowers-laravel/write-plan.md',
+        '.claude/commands/superpowers-laravel/execute-plan.md',
+        '.claude/commands/superpowers-laravel/laravel-check.md',
+    ] as $path) {
+        expect(base_path($path))->toBeFile();
+    }
+
+    expect(glob(base_path('.claude/commands/superpowers-laravel/*.md')) ?: [])->toHaveCount(39);
+
+    expect(file_get_contents(base_path('.agents/skills/using-laravel-superpowers/SKILL.md')))
+        ->toContain('.claude/skills')
+        ->toContain('composer quality');
 });
 
 it('installs local design and test hook router skills', function (): void {

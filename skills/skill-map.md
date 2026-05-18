@@ -21,6 +21,7 @@ Use this index when the right detailed guide is not obvious.
 - `git-changelog-workflow.md`
 - `memory.md`
 - `laravel.md`
+- Superpowers Laravel pack: `.claude/skills/using-laravel-superpowers/SKILL.md`, `.claude/skills/tdd-with-pest/SKILL.md`, `.claude/skills/quality-checks/SKILL.md`, and other matching `.claude/skills/*/SKILL.md` files when upstream workflow detail is useful.
 
 ## Security And Visibility
 

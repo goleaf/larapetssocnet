@@ -43,7 +43,7 @@ The application shell uses a scroll-contained desktop left rail, in-flow mobile 
 
 - `design.md` defines the Warm Editorial design standard and visual review checklist.
 - `architecture.md` summarizes the current Laravel 13 app structure and closed-by-default app surface.
-- `skills.md` maps project skills, exposed local skill routers, and when to use each guide.
+- `skills.md` maps project skills, exposed local skill routers, the installed Superpowers Laravel pack, and when to use each guide.
 - `hooks.md` documents the local git hooks and quality gates.
 - `controller-testing.md` documents controller coverage expectations and the controller-test map guard.
 
