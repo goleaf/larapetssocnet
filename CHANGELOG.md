@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added published Laravel Debugbar configuration with safe committed env defaults for local-only debugging.
 - Added Open Design Warm Editorial token coverage to the shared SCSS/Tailwind design system.
 - Added authentication audit logging for registration, login success/failure, logout, password changes, password resets, email verification, and verification resend events.
 - Added registration DOB, terms acceptance, honeypot, and password-strength validation with focused auth hardening coverage.
@@ -112,6 +113,7 @@
 - Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
 ### Fixed
+- Fixed post-login 500 errors on intended group pages by rendering cast `GroupMemberStatus` enum values safely in group cards.
 - Fixed the app layout so raw Livewire asset directives cannot appear as visible header text when compiled Blade output is stale or Livewire directive registration drifts.
 - Fixed Explore desktop sidebar scrolling so the left rail can move independently without adding capped inner widget scroll areas.
 - Fixed feed design regressions by removing competing feed theme controls, simplifying nested header surfaces, aligning the composer visibility selector with Warm Editorial tokens, and restoring visible post action labels.
@@ -143,6 +145,9 @@
   - `tests/Feature/FollowTest.php`
   - `tests/Feature/PetFollowFeatureTest.php`
   - `tests/Feature/FollowButtonComponentTest.php`
+  - `php artisan test --compact tests/Feature/Auth/AuthenticationTest.php tests/Feature/Auth/AuthenticationHardeningTest.php tests/Feature/InterfaceRefreshTest.php`
+  - `composer validate --strict --no-check-publish`
+  - Playwright login check for `https://larapetssocnet.test/login` reaching `/dashboard` with Debugbar injected and no 500 error
   - `tests/Unit/FeedServiceTest.php`
   - `composer quality`
   - `tests/Feature/BlockTest.php`

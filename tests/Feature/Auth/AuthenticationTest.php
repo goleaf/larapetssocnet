@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Groups\Group;
+use App\Models\Groups\GroupMember;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -71,6 +73,30 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_users_can_login_to_an_intended_group_page_with_existing_membership(): void
+    {
+        $user = User::factory()->create();
+        $group = Group::factory()->public()->create([
+            'name' => 'City Pet Walkers',
+        ]);
+
+        GroupMember::factory()->for($group)->for($user, 'user')->create();
+
+        $this->get(route('groups.index'))
+            ->assertRedirect(route('login'));
+
+        $this->followingRedirects()
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ])
+            ->assertOk()
+            ->assertSee('City Pet Walkers')
+            ->assertSee('Member');
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_users_can_logout(): void

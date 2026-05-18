@@ -28,6 +28,7 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Application shell guidance keeps the desktop left rail scroll-contained to the viewport without giving individual sidebar widgets capped internal scroll areas.
 - Application shell guidance keeps mobile quick navigation in the normal page flow so it never covers forms, feed cards, or action rows.
 - Application shell guidance relies on Livewire automatic asset injection instead of manual `@livewireStyles` / `@livewireScripts` directives in the shared layout.
+- Local debugging guidance uses Laravel Debugbar as a dev-only tool; keep committed env defaults disabled and enable it only in local debug sessions.
 - Feature 5: Posts guidance must match the existing post controllers, actions, validation, media limits, visibility, tagging, soft deletes, and scheduled statuses.
 - Feature 6: Reactions guidance must match the existing polymorphic reactions table, services, controllers, and counter cache behavior.
 - Feature 7: Comments guidance must match the existing comments table, services, controllers, Blade rendering, two-level threading, and comment reaction behavior.

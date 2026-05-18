@@ -27,6 +27,10 @@ npm run build
 
 This project is structured for shared hosting where the repository root is the web-served directory. The Laravel front controller, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` live at the root; private Laravel folders are blocked by `.htaccess`. For active frontend work, run `npm run dev`; for production-like asset checks, run `npm run build`, which writes Vite assets to `build/`.
 
+## Local Debugging
+
+Laravel Debugbar is installed as a dev dependency and configured through `config/debugbar.php`. Keep committed env defaults disabled; for local Herd debugging use `APP_DEBUG=true` and `DEBUGBAR_ENABLED=true` in `.env`. Do not enable Debugbar or open Debugbar storage in production.
+
 ## Design System
 
 The app uses the Open Design Warm Editorial system as its single visual standard. Source tokens live in `resources/scss/abstracts/_tokens.scss` and are exposed as shared CSS custom properties for the warm paper canvas, serif-led headings, terracotta actions, forest/meta accents, underline inputs, flat surfaces, and hover-only elevation.

@@ -12,7 +12,11 @@
     $speciesLabel = \Illuminate\Support\Str::headline(str_replace(['-', '_'], ' ', $speciesValue));
     $groupHref = route('groups.show', $groupRouteKey);
 
-    $membershipStatus = strtolower((string) data_get($membership, 'status', ''));
+    $rawMembershipStatus = data_get($membership, 'status', '');
+    $membershipStatusValue = $rawMembershipStatus instanceof \BackedEnum
+        ? $rawMembershipStatus->value
+        : $rawMembershipStatus;
+    $membershipStatus = strtolower((string) $membershipStatusValue);
     $isMember = $membership && in_array($membershipStatus, ['', 'active', 'accepted'], true);
     $isPending = $membership && $membershipStatus === 'pending';
 
