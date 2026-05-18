@@ -103,6 +103,19 @@ it('keeps shared design primitives as the source for repeated app blocks', funct
         ->toContain('var(--text-muted)');
 });
 
+it('keeps shared select controls to one custom dropdown arrow', function (): void {
+    $forms = stylesheetFile('resources/scss/components/_forms.scss');
+    $select = stylesheetFile('resources/views/components/ui/select.blade.php');
+
+    expect($forms)
+        ->toContain('.form-select.form-select')
+        ->toContain('background-image: none')
+        ->and($select)
+        ->toContain('form-select')
+        ->toContain('appearance-none')
+        ->toContain('pointer-events-none');
+});
+
 it('uses the warm editorial system without competing app theme toggles', function (): void {
     $appLayout = stylesheetFile('resources/views/layouts/app.blade.php');
     $guestLayout = stylesheetFile('resources/views/layouts/guest.blade.php');

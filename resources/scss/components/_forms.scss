@@ -19,6 +19,10 @@
         box-shadow: none;
     }
 
+    .form-select.form-select {
+        background-image: none;
+    }
+
     .dot-divider::before {
         content: "•";
         margin: 0 0.35rem;

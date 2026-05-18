@@ -113,6 +113,7 @@
 - Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
 ### Fixed
+- Fixed shared select inputs showing double dropdown arrows by clearing the Tailwind Forms background-image arrow when the app renders its custom select chevron.
 - Fixed post-login 500 errors on intended group pages by rendering cast `GroupMemberStatus` enum values safely in group cards.
 - Fixed the app layout so raw Livewire asset directives cannot appear as visible header text when compiled Blade output is stale or Livewire directive registration drifts.
 - Fixed Explore desktop sidebar scrolling so the left rail can move independently without adding capped inner widget scroll areas.
@@ -148,6 +149,10 @@
   - `php artisan test --compact tests/Feature/Auth/AuthenticationTest.php tests/Feature/Auth/AuthenticationHardeningTest.php tests/Feature/InterfaceRefreshTest.php`
   - `composer validate --strict --no-check-publish`
   - Playwright login check for `https://larapetssocnet.test/login` reaching `/dashboard` with Debugbar injected and no 500 error
+  - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php --filter="shared select controls"`
+  - `npm run lint:scss`
+  - `npm run build`
+  - Playwright screenshot checks for `https://larapetssocnet.test/register` and `/dev/components` select controls
   - `tests/Unit/FeedServiceTest.php`
   - `composer quality`
   - `tests/Feature/BlockTest.php`
