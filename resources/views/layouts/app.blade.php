@@ -15,7 +15,6 @@
  <link rel="preconnect" href="https://fonts.bunny.net">
  <link href="https://fonts.bunny.net/css?family=outfit:500,600,700,800|nunito-sans:400,500,600,700&display=swap" rel="stylesheet"/>
 
- @livewireStyles
  @vite(['resources/scss/app.scss', 'resources/js/app.js'])
  </head>
  <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
@@ -273,6 +272,5 @@
  </div>
  </nav>
  </div>
- @livewireScripts
  </body>
 </html>

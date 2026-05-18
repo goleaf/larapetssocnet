@@ -6,6 +6,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('does not render livewire asset directives as plain text', function (): void {
+    expect(file_get_contents(resource_path('views/layouts/app.blade.php')))
+        ->not->toContain('@livewireStyles')
+        ->not->toContain('@livewireScripts');
+
     $this->actingAs(User::factory()->create())
         ->get(route('explore.index'))
         ->assertSuccessful()

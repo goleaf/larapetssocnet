@@ -106,6 +106,7 @@
 - Updated upcoming reminders panel to use next due date ordering (ascending) instead of logged date.
 
 ### Fixed
+- Fixed the app layout so raw Livewire asset directives cannot appear as visible header text when compiled Blade output is stale or Livewire directive registration drifts.
 - Fixed Explore desktop sidebar scrolling so the left rail can move independently without adding capped inner widget scroll areas.
 - Fixed feed rendering and visibility rules so followed feeds exclude discovery posts, feed theme labels render correctly, and translation-backed copy is shown instead of raw `en.*` keys.
 - Fixed message inbox and conversation Blade components so thread lists, conversation pages, and send-message flows render without component or template errors.
@@ -114,6 +115,7 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/LayoutLivewireDirectivesTest.php tests/Feature/PostCreateLivewireTest.php`
   - `php artisan test --compact tests/Feature/InterfaceRefreshTest.php --filter="left rail"`
   - `tests/Feature/Auth`
   - `tests/Feature/AuthenticatedPageAccessTest.php`
