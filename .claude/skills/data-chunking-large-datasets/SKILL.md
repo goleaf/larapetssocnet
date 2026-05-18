@@ -5,6 +5,10 @@ description: Process large datasets efficiently using chunk(), chunkById(), lazy
 
 # Data Chunking for Large Datasets
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Process large datasets efficiently by breaking them into manageable chunks to reduce memory consumption and improve performance.
 
 ## The Problem: Memory Exhaustion

@@ -5,6 +5,10 @@ description: Refine AI-generated code through specific feedback—point out erro
 
 # Iterating on Code
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 AI-generated code rarely perfect on first try. Effective iteration gets you from "close" to "exactly right."
 
 ## Incorrect Code

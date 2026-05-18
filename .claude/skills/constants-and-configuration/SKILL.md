@@ -1,9 +1,13 @@
 ---
 name: laravel:constants-and-configuration
-description: Replace hardcoded values with constants, enums, and configuration for maintainability; use PHP 8.1+ enums and config files
+description: Replace hardcoded values with constants, enums, and configuration for maintainability; use PHP 8.4 native enums and config files
 ---
 
 # Constants and Configuration Values
+
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
 
 Avoid hardcoded values throughout your codebase. Use constants, configuration files, and enums to make your application more maintainable, refactorable, and debuggable.
 
@@ -60,7 +64,7 @@ if ($user->role === UserRole::ADMIN) {
 }
 ```
 
-### PHP 8.1+ Enums
+### PHP 8.4 Native Enums
 
 ```php
 // app/Enums/OrderStatus.php
@@ -118,9 +122,15 @@ enum OrderStatus: string
 // Model with enum casting
 class Order extends Model
 {
-    protected $casts = [
-        'status' => OrderStatus::class,
-    ];
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => OrderStatus::class,
+        ];
+    }
 
     public function transitionTo(OrderStatus $newStatus): void
     {
@@ -237,9 +247,15 @@ class Setting extends Model
 {
     protected $fillable = ['key', 'value', 'type'];
 
-    protected $casts = [
-        'value' => 'json',
-    ];
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'value' => 'json',
+        ];
+    }
 
     public static function get(string $key, mixed $default = null): mixed
     {

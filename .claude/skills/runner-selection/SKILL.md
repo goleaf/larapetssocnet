@@ -5,6 +5,10 @@ description: Choose Sail automatically when available, fall back cleanly to host
 
 # Runner Selection for Laravel Commands
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Use Sail when present for environment consistency. Fall back to host tools when Sail is unavailable. Detect once, then stick to the choice for the session.
 
 ## Detecting Sail

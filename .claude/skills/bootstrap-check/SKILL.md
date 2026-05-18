@@ -5,6 +5,10 @@ description: Detect Sail/non‑Sail and print the right command pairs for your e
 
 # Bootstrap Check (Laravel)
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Quickly determine if the project should run with Sail or host tools, then list the correct commands for this session.
 
 ## Detect Runner

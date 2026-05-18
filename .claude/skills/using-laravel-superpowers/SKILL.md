@@ -5,6 +5,10 @@ description: Read first in Laravel repos; explains runner selection (Sail vs non
 
 # Using Superpowers in Laravel Projects
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 This plugin adds Laravel-aware guidance while staying platform-agnostic. It works in any Laravel app with or without Sail.
 
 ## Runner Selection (Sail or non-Sail)

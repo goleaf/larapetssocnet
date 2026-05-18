@@ -5,6 +5,10 @@ description: Execute Laravel plans in small batches with checkpoints—TDD first
 
 # Executing Plans (Laravel)
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Work in small batches. After each batch: tests green, quality clean, checkpoints recorded.
 
 ## Loop

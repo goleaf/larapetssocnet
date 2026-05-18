@@ -9,7 +9,7 @@ Use pivot models when pivot rows carry domain logic/state transitions.
 
 ## Useful features
 - Add methods on pivot model: `approve()`, `reject()`, `cancel()`.
-- Cast pivot attributes via `$casts`.
+- Cast pivot attributes via the Laravel 13 `casts()` method.
 - Access pivot: `$user->followers->first()?->pivot->status`.
 - Update pivot: `->updateExistingPivot($targetId, ['status' => 'accepted'])`.
 

@@ -5,6 +5,10 @@ description: Enforce access via Policies and Gates; use authorize() and authoriz
 
 # Policies and Authorization
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Use Policies for per-model actions; use Gates for cross-cutting checks.
 
 ## Commands

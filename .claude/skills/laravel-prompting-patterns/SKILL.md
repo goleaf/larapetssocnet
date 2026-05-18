@@ -5,6 +5,10 @@ description: Use Laravel-specific vocabulary—Eloquent patterns, Form Requests,
 
 # Laravel Prompting Patterns
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Use Laravel's vocabulary to get idiomatic code. Generic requests produce generic solutions that don't leverage the framework.
 
 ## Database Operations
@@ -126,13 +130,13 @@ If any job fails, chain stops. Handle in `catch()` callback."
 ## Referencing Documentation
 
 ### Effective References
-"Implement according to Laravel's [Eloquent Relationships docs](https://laravel.com/docs/11.x/eloquent-relationships#many-to-many)"
+"Implement according to Laravel's [Eloquent Relationships docs](https://laravel.com/docs/13.x/eloquent-relationships#many-to-many)"
 
-"Follow Laravel's [Form Request Validation pattern](https://laravel.com/docs/11.x/validation#form-request-validation)"
+"Follow Laravel's [Form Request Validation pattern](https://laravel.com/docs/13.x/validation#form-request-validation)"
 
-"Use Laravel's [API Resource](https://laravel.com/docs/11.x/eloquent-resources) pattern for response transformation"
+"Use Laravel's [API Resource](https://laravel.com/docs/13.x/eloquent-resources) pattern for response transformation"
 
-"Configure queues per [Laravel Queue docs](https://laravel.com/docs/11.x/queues)"
+"Configure queues per [Laravel Queue docs](https://laravel.com/docs/13.x/queues)"
 
 ## Pattern Catalog
 
@@ -140,7 +144,7 @@ If any job fails, chain stops. Handle in `catch()` callback."
 - Relationships: `hasMany`, `belongsTo`, `belongsToMany`, `morphMany`
 - Scopes: `scopeActive`, `scopePublished`
 - Accessors/Mutators: `get{Attribute}Attribute`, `set{Attribute}Attribute`
-- Casts: `protected $casts = ['published_at' => 'datetime']`
+- Casts: `protected function casts(): array { return ['published_at' => 'datetime']; }`
 
 **Validation:**
 - Form Requests: `UserStoreRequest`, `ProductUpdateRequest`

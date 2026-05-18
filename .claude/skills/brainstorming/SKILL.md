@@ -5,6 +5,10 @@ description: Interactive design refinement tailored to Laravel projects; clarify
 
 # Brainstorming (Laravel)
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Use this when shaping features or refactors. Keep answers concise, then propose a design and gather confirmation before planning.
 
 ## Ask (one at a time)

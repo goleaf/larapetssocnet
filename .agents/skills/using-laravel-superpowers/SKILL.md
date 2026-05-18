@@ -7,6 +7,10 @@ description: Read first in Laravel repos; explains runner selection (Sail vs non
 
 This plugin adds Laravel-aware guidance while staying platform-agnostic. It works in any Laravel app with or without Sail.
 
+## Laravel 13 Baseline
+
+Use these skills for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Laravel Boost, `AGENTS.md`, and local `skills/*.md` guides override generic upstream examples.
+
 ## Installed Project Pack
 
 The upstream Superpowers Laravel skills from `jpcaparas/superpowers-laravel` are installed for this checkout under `.claude/skills`, with command wrappers under `.claude/commands/superpowers-laravel`.

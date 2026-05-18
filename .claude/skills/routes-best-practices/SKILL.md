@@ -5,6 +5,10 @@ description: Keep routes clean and focused on mapping requests to controllers; a
 
 # Routes Best Practices
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Keep your route files clean and focused on mapping requests to controllers. Routes should never contain business logic, validation, or database operations.
 
 ## Anti-Pattern: Business Logic in Routes

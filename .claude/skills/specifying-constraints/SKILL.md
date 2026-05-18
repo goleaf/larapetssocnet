@@ -5,6 +5,10 @@ description: Define clear constraints—performance, security, testing, architec
 
 # Specifying Constraints
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Constraints guide the AI toward solutions that fit your project. Without them, you get generic code that may not meet your requirements.
 
 ## Performance Constraints
@@ -106,7 +110,7 @@ Constraints guide the AI toward solutions that fit your project. Without them, y
 ### Version Requirements
 "Add image processing feature:
 - Use `intervention/image` ^3.0 (Laravel 13 compatible)
-- Requires PHP 8.2+
+- Requires PHP 8.4
 - Requires GD or Imagick extension
 - Compatible with our existing `spatie/laravel-medialibrary` ^11.0
 - No conflicts with current dependencies"
@@ -117,7 +121,7 @@ Constraints guide the AI toward solutions that fit your project. Without them, y
 - Must handle UTF-8 and special characters
 - Should support headers/footers
 - Prefer actively maintained (updated in last 6 months)
-- Check compatibility with our PHP 8.2 requirement
+- Check compatibility with our PHP 8.4 requirement
 - Consider: `barryvdh/laravel-dompdf` or `spatie/laravel-pdf`"
 
 ## Constraint Templates

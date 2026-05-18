@@ -5,6 +5,10 @@ description: Build with i18n in mind from day one using Laravel translation help
 
 # Internationalization and Translation (i18n)
 
+## Laravel 13 Baseline
+
+Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+
 Build your Laravel application with internationalization in mind from the start. Even if you're only supporting one language initially, wrapping strings in translation functions makes future localization much easier.
 
 ## Why Translate From the Start?
@@ -150,10 +154,16 @@ class Product extends Model
 
     public $translatable = ['name', 'description'];
 
-    protected $casts = [
-        'name' => 'array',
-        'description' => 'array',
-    ];
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'name' => 'array',
+            'description' => 'array',
+        ];
+    }
 }
 
 // Usage

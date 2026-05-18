@@ -28,7 +28,7 @@ The upstream `jpcaparas/superpowers-laravel` skills are installed project-locall
 - `.claude/commands/superpowers-laravel/`: 39 command wrappers for Claude Code slash-command workflows.
 - `.agents/skills/using-laravel-superpowers`: the compact Codex router that points to the installed pack without exposing every upstream guide at once.
 
-Use project rules, Laravel Boost guidance, and `skills/*.md` before applying generic upstream examples. Open the matching `.claude/skills/<skill>/SKILL.md` only when a task needs deeper Superpowers detail.
+Every Laravel Superpowers skill carries this app's Laravel 13.9 / PHP 8.4 baseline. Use project rules, Laravel Boost guidance, and `skills/*.md` before applying generic upstream examples. Open the matching `.claude/skills/<skill>/SKILL.md` only when a task needs deeper Superpowers detail.
 
 ## Adding A New Skill
 
