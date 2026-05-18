@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Added root project guidance for design, architecture, skills, hooks, and controller testing.
+- Added detailed skill guides for Warm Editorial design, local hooks, controller testing, and project skill routing.
+- Added local `larapetssocnet-design-guides` and `larapetssocnet-test-hooks-guides` skill routers.
+- Added installable local git hooks plus a controller-test map guard for changed controller coverage.
+- Added unit coverage for the new project documentation, skill routers, hooks, and controller-test map output.
 - Added a project-local memory guide skill for durable preferences, prior rollout lookup, and explicit user-requested memory updates.
 - Added published Laravel Debugbar configuration with safe committed env defaults for local-only debugging.
 - Added Open Design Warm Editorial token coverage to the shared SCSS/Tailwind design system.
@@ -186,3 +191,7 @@
   - `tests/Feature/PetHealthLogFeatureTest.php`
   - `php artisan test --compact`
   - `php artisan test --compact tests/Unit/DocumentationVersionAlignmentTest.php`
+  - `php artisan test --compact tests/Unit/ProjectDocumentationAndHooksTest.php`
+  - `php scripts/controller-test-map.php --all --format=json`
+  - `bash -n .githooks/pre-commit .githooks/pre-push scripts/install-git-hooks.sh`
+  - `git diff --check`

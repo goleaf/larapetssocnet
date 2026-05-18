@@ -33,6 +33,10 @@ Feature prompts should be reconciled with the current Laravel 13, Livewire 4, Ta
 - Messages guidance keeps inbox and conversation content on one full-width responsive main-column surface with wrapping headers and mobile-safe form actions.
 - Local debugging guidance uses Laravel Debugbar as a dev-only tool; keep committed env defaults disabled and enable it only in local debug sessions.
 - Project memory guidance is exposed through the local `larapetssocnet-memory-guides` skill and `skills/memory.md` for durable preferences, prior rollout lookup, and explicit memory updates.
+- Project design guidance is exposed through root `design.md`, `skills/design.md`, and the local `larapetssocnet-design-guides` router so future UI work keeps one Warm Editorial standard.
+- Project skill guidance is exposed through root `skills.md`, `skills/skill-map.md`, and compact local routers instead of one exposed skill per detailed guide.
+- Project hook guidance is exposed through root `hooks.md`, `controller-testing.md`, `skills/hooks.md`, `skills/controller-testing.md`, and the local `larapetssocnet-test-hooks-guides` router.
+- Local git hooks can be installed with `bash scripts/install-git-hooks.sh`; pre-commit runs Composer validation, Pint, and changed-controller test mapping, while pre-push runs changed-controller mapping, feature/unit tests, SCSS lint, and Vite build.
 - Feature 5: Posts guidance must match the existing post controllers, actions, validation, media limits, visibility, tagging, soft deletes, and scheduled statuses.
 - Feature 6: Reactions guidance must match the existing polymorphic reactions table, services, controllers, and counter cache behavior.
 - Feature 7: Comments guidance must match the existing comments table, services, controllers, Blade rendering, two-level threading, and comment reaction behavior.

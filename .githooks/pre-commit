@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "${SKIP_PROJECT_HOOKS:-0}" = "1" ]; then
+  echo "Skipping project pre-commit hook because SKIP_PROJECT_HOOKS=1."
+  exit 0
+fi
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "Running Composer validation..."
+composer validate --strict --no-check-publish
+
+echo "Formatting dirty PHP with Pint..."
+vendor/bin/pint --dirty --format=agent
+
+echo "Checking changed controller test coverage..."
+php scripts/controller-test-map.php --changed
+
+echo "pre-commit checks passed."

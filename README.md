@@ -39,6 +39,14 @@ Use the shared primitives from `resources/scss`: `shell-card` / `ui-card`, `ui-p
 
 The application shell uses a scroll-contained desktop left rail, in-flow mobile quick navigation, and a fluid 1440px portal container with responsive gutters. Keep primary page content full-width inside the main portal column unless a narrow reading measure is intentional. Do not add fixed mobile navigation that can cover forms, feed cards, or primary action rows.
 
+## Project Guides
+
+- `design.md` defines the Warm Editorial design standard and visual review checklist.
+- `architecture.md` summarizes the current Laravel 13 app structure and closed-by-default app surface.
+- `skills.md` maps project skills, exposed local skill routers, and when to use each guide.
+- `hooks.md` documents the local git hooks and quality gates.
+- `controller-testing.md` documents controller coverage expectations and the controller-test map guard.
+
 ## Daily Commands
 
 ```bash
@@ -53,6 +61,12 @@ composer quality
 ```
 
 Use `composer quality` for the broad local quality gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full Pest suite, lints SCSS, and builds assets.
+
+Install local git hooks once per checkout:
+
+```bash
+bash scripts/install-git-hooks.sh
+```
 
 ## Maintenance Rule
 

@@ -23,6 +23,12 @@
 - Prefer semantic response assertions such as `assertOk()`, `assertForbidden()`, `assertNotFound()`, and `assertInvalid()` over raw common status codes.
 - Keep `only()`, `skip()`, and `todo()` out of committed tests unless the team explicitly accepts a temporary disabled test.
 
+## Controller coverage and local hooks
+- Every changed concrete controller should have at least one related feature test unless the change is purely unreachable cleanup.
+- Prefer route-level assertions that prove the user-visible behavior, authorization boundary, validation branch, and persistence effect.
+- Run `php scripts/controller-test-map.php --changed` before delivery when controller files changed.
+- Install local hooks with `bash scripts/install-git-hooks.sh` so changed-controller mapping, Pint, Composer validation, feature/unit tests, SCSS lint, and Vite build run before repository history receives the change.
+
 ## Testing Visibility Rules
 - Test each visibility level from the relevant viewer perspectives:
   - guest redirect to login for application page routes

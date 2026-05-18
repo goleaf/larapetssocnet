@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "${SKIP_PROJECT_HOOKS:-0}" = "1" ]; then
+  echo "Skipping project pre-push hook because SKIP_PROJECT_HOOKS=1."
+  exit 0
+fi
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "Checking changed controller test coverage..."
+php scripts/controller-test-map.php --changed
+
+echo "Running Feature tests..."
+php artisan test --compact --testsuite=Feature
+
+echo "Running Unit tests..."
+php artisan test --compact --testsuite=Unit
+
+echo "Linting SCSS..."
+npm run lint:scss
+
+echo "Building frontend assets..."
+npm run build
+
+echo "pre-push checks passed."

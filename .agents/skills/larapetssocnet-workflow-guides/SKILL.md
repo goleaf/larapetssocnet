@@ -11,10 +11,12 @@ Also activate other matching skills when relevant:
 - `using-laravel-superpowers`
 - `pest-testing`
 - `tailwindcss-development`
+- `larapetssocnet-test-hooks-guides` for hook installation, controller-test coverage, and changed-controller guard work
 
 ## Workflow Lookup
 
-- Testing and verification: [testing.md](../../../skills/testing.md), [form-requests.md](../../../skills/form-requests.md), [service-pattern.md](../../../skills/service-pattern.md)
+- Testing and verification: [testing.md](../../../skills/testing.md), [controller-testing.md](../../../controller-testing.md), [controller-testing.md](../../../skills/controller-testing.md), [form-requests.md](../../../skills/form-requests.md), [service-pattern.md](../../../skills/service-pattern.md)
+- Hooks and skill routing: [hooks.md](../../../hooks.md), [hooks.md](../../../skills/hooks.md), [skills.md](../../../skills.md), [skill-map.md](../../../skills/skill-map.md)
 - Localization and Blade normalization: [localization-light-ui-workflow.md](../../../skills/localization-light-ui-workflow.md), [blade.md](../../../skills/blade.md), [tailwind.md](../../../skills/tailwind.md)
 - Git close-out workflow: [git-changelog-workflow.md](../../../skills/git-changelog-workflow.md)
 - Core Laravel project rules: [laravel.md](../../../skills/laravel.md), [forms.md](../../../skills/forms.md)

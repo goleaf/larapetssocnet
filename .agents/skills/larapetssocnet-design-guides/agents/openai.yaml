@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Design Guides"
+  short_description: "Route Warm Editorial design and layout work to repo guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#C0512F"
+  default_prompt: "Use $larapetssocnet-design-guides before changing PetSocial layout, design tokens, shared UI primitives, responsive behavior, or design documentation."

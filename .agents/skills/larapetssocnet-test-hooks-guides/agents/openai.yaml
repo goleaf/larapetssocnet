@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Test Hooks"
+  short_description: "Route controller testing and git-hook quality gates to repo guides"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#2F5B4F"
+  default_prompt: "Use $larapetssocnet-test-hooks-guides before changing controller tests, hook scripts, hook docs, or local quality gates."

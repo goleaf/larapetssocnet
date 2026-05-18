@@ -9,11 +9,13 @@ Use this skill for repo-specific UI conventions. Open only the guides that match
 
 Also activate other matching skills when relevant:
 - `tailwindcss-development` for Tailwind utility work
+- `larapetssocnet-design-guides` for design system, token, portal layout, or visual QA work
 - Read [blade.md](../../../skills/blade.md) for Blade structure and composition
 - Use browser or feature-test verification when changing interactive flows
 
 ## UI Lookup
 
+- Design system and visual QA: [design.md](../../../design.md), [design.md](../../../skills/design.md)
 - Blade and component composition: [blade.md](../../../skills/blade.md), [post-card-component.md](../../../skills/post-card-component.md)
 - Alpine behavior: [alpine.md](../../../skills/alpine.md), [alpinejs-patterns.md](../../../skills/alpinejs-patterns.md)
 - Tailwind and layout patterns: [tailwind.md](../../../skills/tailwind.md), [masonry-grid.md](../../../skills/masonry-grid.md), [sidebar-widgets.md](../../../skills/sidebar-widgets.md)
