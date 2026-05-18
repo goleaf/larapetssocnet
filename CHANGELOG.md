@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a project-local memory guide skill for durable preferences, prior rollout lookup, and explicit user-requested memory updates.
 - Added published Laravel Debugbar configuration with safe committed env defaults for local-only debugging.
 - Added Open Design Warm Editorial token coverage to the shared SCSS/Tailwind design system.
 - Added authentication audit logging for registration, login success/failure, logout, password changes, password resets, email verification, and verification resend events.

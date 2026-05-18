@@ -58,6 +58,8 @@ Use `composer quality` for the broad local quality gate. It validates Composer m
 
 After implementation work, update all affected Markdown files, `FEATURES.md`, and `CHANGELOG.md`, then check `git status --short`. Stage only the files that belong to the task, commit when git delivery is requested or the work is ready for history, and push only when explicitly requested.
 
+Use the local `larapetssocnet-memory-guides` skill when work depends on prior rollout context or durable user preferences. Only write project memory when the user explicitly asks to remember something.
+
 ## Testing
 
 Tests are written with Pest. Feature tests cover HTTP workflows, authorization, database behavior, and user-visible flows. Unit tests cover services, architecture rules, tooling configuration, and pure business logic.

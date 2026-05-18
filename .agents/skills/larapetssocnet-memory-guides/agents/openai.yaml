@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Memory Guides"
+  short_description: "Route memory lookup and explicit memory updates to repo rules"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  brand_color: "#4D7C0F"
+  default_prompt: "Use $larapetssocnet-memory-guides to load skills/memory.md before relying on prior rollout context, durable user preferences, or user-requested memory updates."
