@@ -46,7 +46,7 @@
  </p>
 
  <div class="grid gap-3">
- <a href="{{ route('explore.index') }}" class="shell-card group flex min-h-16 items-center justify-between gap-4 px-4 py-3 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <a href="{{ route('explore.index') }}" class="shell-card ui-card-interactive group flex min-h-16 items-center justify-between gap-4 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span>
  <span class="block text-sm font-semibold text-bark group-hover:text-paw">Explore posts</span>
  <span class="text-xs shell-text-muted">Public photos, stories, and updates</span>
@@ -54,7 +54,7 @@
  <span class="text-lg" aria-hidden="true">→</span>
  </a>
 
- <a href="{{ route('pets.adopt') }}" class="shell-card group flex min-h-16 items-center justify-between gap-4 px-4 py-3 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <a href="{{ route('pets.adopt') }}" class="shell-card ui-card-interactive group flex min-h-16 items-center justify-between gap-4 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span>
  <span class="block text-sm font-semibold text-bark group-hover:text-paw">Browse adoption</span>
  <span class="text-xs shell-text-muted">Pets currently looking for homes</span>
@@ -62,7 +62,7 @@
  <span class="text-lg" aria-hidden="true">→</span>
  </a>
 
- <a href="{{ route('events.index') }}" class="shell-card group flex min-h-16 items-center justify-between gap-4 px-4 py-3 transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <a href="{{ route('events.index') }}" class="shell-card ui-card-interactive group flex min-h-16 items-center justify-between gap-4 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span>
  <span class="block text-sm font-semibold text-bark group-hover:text-paw">Find events</span>
  <span class="text-xs shell-text-muted">Walks, meetups, and group activities</span>

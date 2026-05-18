@@ -27,6 +27,10 @@ npm run build
 
 This project is structured for shared hosting where the repository root is the web-served directory. The Laravel front controller, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` live at the root; private Laravel folders are blocked by `.htaccess`. For active frontend work, run `npm run dev`; for production-like asset checks, run `npm run build`, which writes Vite assets to `build/`.
 
+## Design System
+
+The app uses one shared visual system from `resources/scss`: `shell-card` / `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, and `ui-card-interactive`. Keep repeated cards, metric tiles, list rows, media wrappers, and chips on these primitives instead of adding page-specific `bg-white`, `rounded-xl`, `shadow-sm`, or one-off border palettes.
+
 ## Daily Commands
 
 ```bash

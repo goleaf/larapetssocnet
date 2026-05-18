@@ -6,7 +6,7 @@
 'icon'=> null,
 ])
 <span {{ $attributes->merge(['class'=> \Illuminate\Support\Arr::toCssClasses([
- 'inline-flex items-center justify-center gap-1.5 font-medium whitespace-nowrap',
+ 'ui-token justify-center',
  [
  'default'=>'bg-cream text-fur border border-whisker',
  'neutral'=>'bg-cream text-fur border border-whisker',

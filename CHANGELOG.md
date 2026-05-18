@@ -38,6 +38,8 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Standardized the shared app design system across repeated cards, panels, chips, list rows, media frames, action buttons, and high-traffic browse blocks.
+- Aligned SCSS tokens and Tailwind theme fonts/colors so the app uses one visual vocabulary instead of competing page-local palettes.
 - Updated the desktop app shell left rail to scroll within the viewport while containing overscroll from the main page content.
 - Updated registration to route newly-created users to email verification before onboarding and require verified email for application pages.
 - Updated login to remove exposed quick-login seed users and use a dedicated login action for email-or-username credential resolution.
@@ -115,6 +117,9 @@
 
 ### Tests
 - Verified passing suites:
+  - `npm run lint:scss`
+  - `npm run build`
+  - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php tests/Feature/InterfaceRefreshTest.php`
   - `php artisan test --compact tests/Feature/LayoutLivewireDirectivesTest.php tests/Feature/PostCreateLivewireTest.php`
   - `php artisan test --compact tests/Feature/InterfaceRefreshTest.php --filter="left rail"`
   - `tests/Feature/Auth`

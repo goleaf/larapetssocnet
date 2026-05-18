@@ -50,7 +50,7 @@
 
  <div class="mt-4 grid grid-cols-3 gap-2">
  @foreach ($communityStats as $stat)
- <div class="rounded-xl border border-whisker/30 bg-warm-white px-2 py-2 text-center">
+ <div class="ui-list-item px-2 py-2 text-center">
  <p class="text-sm font-bold text-bark">{{ $stat['value'] }}</p>
  <p class="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-fur">{{ $stat['label'] }}</p>
  </div>
@@ -171,7 +171,7 @@
  @forelse ($upcomingEvents as $event)
  <a
  href="{{ route('events.show', $event) }}"
- class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm"
+ class="ui-list-item block px-3 py-2"
  >
  <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $event->title }}</p>
  <p class="mt-0.5 text-xs text-fur">
@@ -196,7 +196,7 @@
  @forelse ($activeContests as $contest)
  <a
  href="{{ Route::has('contests.index') ? route('contests.index') :'#'}}"
- class="block rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm"
+ class="ui-list-item block px-3 py-2"
  >
  <p class="line-clamp-1 text-sm font-semibold text-bark">{{ $contest->title }}</p>
  <p class="mt-0.5 text-xs text-fur">
@@ -221,7 +221,7 @@
  @forelse ($trendingHashtags as $hashtag)
  <a
  href="{{ route('hashtags.show', $hashtag) }}"
- class="flex items-center justify-between rounded-xl border border-whisker/30 bg-warm-white px-3 py-2 hover:bg-cream transition-colors shadow-sm"
+ class="ui-list-item flex items-center justify-between px-3 py-2"
  >
  <span class="text-sm font-semibold text-bark">#{{ $hashtag->name }}</span>
  <span class="text-xs text-fur">{{ number_format((int) $hashtag->posts_count) }}</span>
@@ -258,7 +258,7 @@
  
  <!-- Mobile Bottom Nav -->
  <nav class="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Mobile navigation">
- <div class="flex items-center justify-between rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white px-2 py-2 shadow-card-hover">
+ <div class="shell-card flex items-center justify-between px-2 py-2">
  @foreach ($mobileNav as $item)
  <a
  href="{{ $item['href'] }}"

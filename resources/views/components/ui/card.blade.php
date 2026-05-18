@@ -5,7 +5,7 @@
 ])
 <{{ $as }} {{ $attributes->except('class')->merge(['class'=> \Illuminate\Support\Arr::toCssClasses([
 'shell-card',
- $hover ?'cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-card-hover':'',
+ $hover ?'ui-card-interactive cursor-pointer':'',
  $attributes->get('class'),
 ])]) }}>
  <div class="{{ ['none' => '', '0' => '', 'sm' => 'p-3', 'md' => 'p-5', 'lg' => 'p-7'][(string) $padding] ?? 'p-5' }}">

@@ -71,6 +71,32 @@ it('defines the scss compiler and lint toolchain', function (): void {
         ->and($stylelint)->toContain("'stylelint-order'");
 });
 
+it('keeps shared design primitives as the source for repeated app blocks', function (): void {
+    $tokens = stylesheetFile('resources/scss/abstracts/_tokens.scss');
+    $surfaces = stylesheetFile('resources/scss/components/_surfaces.scss');
+    $actions = stylesheetFile('resources/scss/components/_actions.scss');
+    $tailwind = stylesheetFile('tailwind.config.js');
+
+    expect($tokens)
+        ->toContain("font-display: \"'Outfit'")
+        ->toContain("font-body: \"'Nunito Sans'")
+        ->not->toContain('Playfair Display')
+        ->not->toContain('DM Sans')
+        ->and($tailwind)
+        ->toContain('"Outfit"')
+        ->toContain('"Nunito Sans"')
+        ->and($surfaces)
+        ->toContain('.ui-card-interactive')
+        ->toContain('.ui-list-item')
+        ->toContain('.ui-token')
+        ->toContain('.ui-media-frame')
+        ->and($actions)
+        ->toContain('.btn-default')
+        ->toContain('.btn-outline')
+        ->toContain('var(--surface-muted)')
+        ->toContain('var(--text-muted)');
+});
+
 /**
  * @return array<string, mixed>
  */

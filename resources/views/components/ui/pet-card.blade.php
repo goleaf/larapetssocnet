@@ -40,7 +40,7 @@
         href="{{ $resolvedHref }}"
         data-ui="pet-card"
         aria-label="{{ __('View profile for :name', ['name' => $resolvedName]) }}"
-        {{ $attributes->merge(['class' => 'shell-card group flex min-h-full flex-col overflow-hidden p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw']) }}
+        {{ $attributes->merge(['class' => 'shell-card ui-card-interactive group flex min-h-full flex-col overflow-hidden p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw']) }}
     >
         <div class="relative aspect-[4/3] w-full bg-[color:var(--ui-surface-muted)]">
             @if (filled($resolvedImage))
@@ -66,15 +66,15 @@
 
             <div class="flex flex-wrap gap-2 text-xs shell-text-muted">
                 @if (filled($resolvedBreed))
-                    <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">{{ $resolvedBreed }}</span>
+                    <span class="ui-token">{{ $resolvedBreed }}</span>
                 @endif
 
                 @if (filled($resolvedAge))
-                    <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">{{ $resolvedAge }}</span>
+                    <span class="ui-token">{{ $resolvedAge }}</span>
                 @endif
 
                 @if (filled($resolvedLocation))
-                    <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">📍 {{ $resolvedLocation }}</span>
+                    <span class="ui-token">📍 {{ $resolvedLocation }}</span>
                 @endif
             </div>
 
@@ -84,7 +84,7 @@
         </div>
     </a>
 @else
-    <a href="{{ $resolvedHref }}" data-ui="pet-card" {{ $attributes->merge(['class'=>"shell-card flex-shrink-0 ".($size === 'sm' ? 'w-[120px]' : 'w-[160px]')." p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw snap-start"]) }}>
+    <a href="{{ $resolvedHref }}" data-ui="pet-card" {{ $attributes->merge(['class'=>"shell-card ui-card-interactive flex-shrink-0 ".($size === 'sm' ? 'w-[120px]' : 'w-[160px]')." p-3 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw snap-start"]) }}>
         <x-ui.avatar
             :src="$resolvedImage"
             :name="$resolvedName"

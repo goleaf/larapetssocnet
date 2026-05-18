@@ -21,7 +21,7 @@
  y="72"
  text-anchor="middle"
  class="fill-fur"
- style="font-size: 7px; font-family:'DM Sans', sans-serif;"
+ style="font-size: 7px; font-family:'Nunito Sans', sans-serif;"
  >{{ $item['month'] }}</text>
  @endforeach
  </svg>

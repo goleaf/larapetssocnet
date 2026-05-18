@@ -86,7 +86,7 @@
  </div>
  </div>
 
- <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-sky-light/45 p-4">
+ <div class="ui-subtle-card p-4">
  <div class="flex items-center gap-3">
  <x-ui.avatar :name="$user?->name ?? __('User')" :src="$user?->avatar_url" size="lg"/>
  <div class="min-w-0">
@@ -96,11 +96,11 @@
  </div>
 
  <dl class="mt-5 grid grid-cols-2 gap-2 text-sm">
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-3">
+ <div class="ui-list-item px-3 py-3">
  <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">{{ __('Status') }}</dt>
  <dd class="mt-1 font-semibold text-bark">{{ __('Active') }}</dd>
  </div>
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-3">
+ <div class="ui-list-item px-3 py-3">
  <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">{{ __('Privacy') }}</dt>
  <dd class="mt-1 font-semibold text-bark">{{ $user?->is_private ? __('Private') : __('Public') }}</dd>
  </div>
@@ -121,7 +121,7 @@
  @foreach ($quickActions as $action)
  <a
  href="{{ $action['href'] }}"
- class="group flex min-h-32 flex-col justify-between rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4 shadow-card transition-all hover:-translate-y-0.5 hover:border-paw-light hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ class="shell-card ui-card-interactive group flex min-h-32 flex-col justify-between p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  >
  <span class="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-soft)] text-lg {{ $action['tone'] }}" aria-hidden="true">{{ $action['icon'] }}</span>
  <span>

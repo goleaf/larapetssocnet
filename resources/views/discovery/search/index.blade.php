@@ -80,10 +80,10 @@
  @endphp
 
  <li>
- <article class="shell-card group p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-within:shadow-card-hover" data-ui="search-result-card" aria-label="{{ __('Search result: :title', ['title' => $resultTitle]) }}">
+ <article class="shell-card ui-card-interactive group p-4" data-ui="search-result-card" aria-label="{{ __('Search result: :title', ['title' => $resultTitle]) }}">
  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
  <div class="flex min-w-0 gap-3">
- <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-card)] border border-whisker/40 bg-cream text-lg font-bold text-paw transition-colors group-hover:border-paw-light group-hover:bg-paw-light" aria-hidden="true">
+ <div class="ui-icon-well flex h-12 w-12 shrink-0 items-center justify-center text-lg font-bold transition-colors" aria-hidden="true">
  {{ $resultIcon }}
  </div>
 

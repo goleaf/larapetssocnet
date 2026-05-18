@@ -17,13 +17,13 @@
  $baseClasses = 'btn-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60';
 
  $variants = [
-'default' => 'border border-whisker/50 bg-warm-white text-bark shadow-sm hover:bg-cream',
-'primary' => 'bg-paw text-white shadow-button hover:bg-paw-dark',
-'secondary' => 'bg-paw-light text-paw-dark hover:bg-orange-200',
-'ghost' => 'border border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark',
-'danger' => 'bg-rose text-white shadow-button hover:bg-red-700',
-'success' => 'bg-leaf text-white shadow-button hover:bg-green-700',
-'outline' => 'border border-whisker bg-transparent text-bark hover:bg-cream',
+'default' => 'btn-default',
+'primary' => 'btn-primary',
+'secondary' => 'btn-secondary',
+'ghost' => 'btn-ghost',
+'danger' => 'btn-danger',
+'success' => 'btn-success',
+'outline' => 'btn-outline',
  ];
 
  $sizes = [

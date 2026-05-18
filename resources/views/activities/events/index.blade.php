@@ -88,10 +88,10 @@
  $groupRouteKey = filled((string) ($event->group_slug ??'')) ? $event->group_slug : ($event->group_id ?? null);
  @endphp
 
- <article class="shell-card group flex min-h-full flex-col overflow-hidden p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-within:shadow-card-hover" data-ui="event-card" aria-label="{{ __('Event: :title', ['title' => $event->title]) }}">
- <div class="flex items-start justify-between gap-4 border-b border-whisker/40 bg-cream/50 p-4">
+ <article class="shell-card ui-card-interactive group flex min-h-full flex-col overflow-hidden p-0" data-ui="event-card" aria-label="{{ __('Event: :title', ['title' => $event->title]) }}">
+ <div class="flex items-start justify-between gap-4 border-b ui-border bg-[color:var(--surface-muted)] p-4">
  <div class="flex min-w-0 gap-3">
- <div class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white text-center shadow-card">
+ <div class="ui-list-item flex h-14 w-14 shrink-0 flex-col items-center justify-center text-center">
  <span class="text-2xs font-semibold uppercase text-fur">{{ $startDate?->format('M') ?? 'TBA' }}</span>
  <span class="text-lg font-bold font-display text-bark">{{ $startDate?->format('j') ?? '•' }}</span>
  </div>
@@ -114,14 +114,14 @@
  <div class="flex flex-1 flex-col gap-4 p-4">
  <div class="flex flex-wrap gap-2 text-xs shell-text-muted">
  @if ($location)
- <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">📍 {{ $location }}</span>
+ <span class="ui-token">📍 {{ $location }}</span>
  @endif
 
  @if (!empty($event->creator_name))
- <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">Host: {{ $event->creator_name }}</span>
+ <span class="ui-token">Host: {{ $event->creator_name }}</span>
  @endif
 
- <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">{{ number_format((int) ($event->attendees_count ?? 0)) }} going</span>
+ <span class="ui-token">{{ number_format((int) ($event->attendees_count ?? 0)) }} going</span>
  </div>
 
  @if (!empty($event->description))

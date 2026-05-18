@@ -11,14 +11,14 @@
  <x-ui.card padding="lg">
  <x-ui.card-header title="Typography" icon="🔤"/>
  <div class="space-y-4">
- <h1 class="text-4xl font-display font-bold text-bark">Heading 1 — Playfair Display</h1>
- <h2 class="text-3xl font-display font-bold text-bark">Heading 2 — Playfair Display</h2>
- <h3 class="text-2xl font-display font-semibold text-bark">Heading 3 — Playfair Display</h3>
- <h4 class="text-xl font-display font-semibold text-bark">Heading 4 — Playfair Display</h4>
- <h5 class="text-lg font-display font-semibold text-bark">Heading 5 — Playfair Display</h5>
- <h6 class="text-base font-display font-semibold text-bark">Heading 6 — Playfair Display</h6>
+ <h1 class="text-4xl font-display font-bold text-bark">Heading 1 — Outfit</h1>
+ <h2 class="text-3xl font-display font-bold text-bark">Heading 2 — Outfit</h2>
+ <h3 class="text-2xl font-display font-semibold text-bark">Heading 3 — Outfit</h3>
+ <h4 class="text-xl font-display font-semibold text-bark">Heading 4 — Outfit</h4>
+ <h5 class="text-lg font-display font-semibold text-bark">Heading 5 — Outfit</h5>
+ <h6 class="text-base font-display font-semibold text-bark">Heading 6 — Outfit</h6>
  <x-ui.divider />
- <p class="text-base text-bark font-body">Body text (DM Sans) — The quick brown fox jumps over the lazy dog. PetsSocNet is joyful, warm, and trustworthy.</p>
+ <p class="text-base text-bark font-body">Body text (Nunito Sans) — The quick brown fox jumps over the lazy dog. PetsSocNet is joyful, warm, and trustworthy.</p>
  <p class="text-sm text-fur font-body">Small muted text — Secondary information displayed in fur color.</p>
  <p class="text-xs text-whisker font-body">Extra small text — Timestamps, metadata, fine print.</p>
  <p class="font-mono text-sm text-bark">Monospace (JetBrains Mono) — ID: usr_28fk39x</p>

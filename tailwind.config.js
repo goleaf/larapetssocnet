@@ -35,8 +35,8 @@ export default {
                 'amber-light': '#FEF3DC',
             },
             fontFamily: {
-                display: ['"Playfair Display"', 'Georgia', 'serif'],
-                body: ['"DM Sans"', ...defaultTheme.fontFamily.sans],
+                display: ['"Outfit"', ...defaultTheme.fontFamily.sans],
+                body: ['"Nunito Sans"', ...defaultTheme.fontFamily.sans],
                 mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
             },
             borderRadius: {

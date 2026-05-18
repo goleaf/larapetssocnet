@@ -45,11 +45,11 @@
 @endphp
 
 <article
-    class="shell-card group overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-within:shadow-card-hover md:grid md:grid-cols-[17rem_1fr]"
+    class="shell-card ui-card-interactive group overflow-hidden md:grid md:grid-cols-[17rem_1fr]"
     data-ui="listing-card"
     aria-label="{{ __('Marketplace listing: :title', ['title' => $title]) }}"
 >
-    <div class="relative aspect-[16/10] w-full border-b bg-[color:var(--ui-surface-muted)] ui-border md:aspect-auto md:min-h-56 md:border-b-0 md:border-r">
+    <div class="ui-media-frame relative aspect-[16/10] w-full rounded-none border-x-0 border-t-0 md:aspect-auto md:min-h-56 md:border-b-0 md:border-l-0 md:border-t-0">
         @if ($showHref)
             <a href="{{ $showHref }}" class="absolute inset-0 z-10 rounded-[var(--radius-card)] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-paw" aria-label="{{ __('View listing: :title', ['title' => $title]) }}"></a>
         @endif
@@ -89,9 +89,9 @@
 
         <div class="flex flex-wrap gap-2 text-xs shell-text-muted">
             <span class="chip min-h-8">{{ \Illuminate\Support\Str::headline($listingType) }}</span>
-            <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">📍 {{ $location }}</span>
-            <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">👁️ {{ number_format($viewsCount) }}</span>
-            <span class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] border border-whisker/40 px-2.5">{{ $sellerName }}</span>
+            <span class="ui-token">📍 {{ $location }}</span>
+            <span class="ui-token">👁️ {{ number_format($viewsCount) }}</span>
+            <span class="ui-token">{{ $sellerName }}</span>
         </div>
 
         @if ($showHref)

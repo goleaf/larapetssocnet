@@ -85,7 +85,7 @@
     id="{{ $postDomId }}"
     data-ui="post-card"
     aria-labelledby="{{ $postAuthorId }}"
-    class="group overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover focus-within:shadow-card-hover"
+    class="group overflow-hidden ui-card-interactive"
     x-data="{
     authorName: @js($authorName),
     liked: {{ $isLiked ? 'true' : 'false' }},
@@ -328,7 +328,7 @@
     @endif
 
     @if ($post->location)
-        <p class="mt-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs shell-text-muted ui-border">
+        <p class="mt-3 ui-token">
             <span aria-hidden="true">📍</span>
             <span>{{ $post->location }}</span>
         </p>
@@ -338,7 +338,7 @@
         <div class="mt-4">
             @if ($shownMedia->count() === 1)
                 @php($item = $shownMedia->first())
-                <div class="relative overflow-hidden rounded-[var(--radius-card)] border bg-cream ui-border">
+                <div class="ui-media-frame relative">
                     @if ($isVideoMedia($item))
                         <video controls preload="metadata" aria-label="{{ $mediaAlt }}" class="h-72 w-full object-cover sm:h-96">
                             <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
@@ -350,7 +350,7 @@
             @elseif ($shownMedia->count() === 2)
                 <div class="grid grid-cols-1 gap-2">
                     @foreach ($shownMedia as $item)
-                        <div class="overflow-hidden rounded-[var(--radius-card)] border bg-cream ui-border">
+                        <div class="ui-media-frame">
                             @if ($isVideoMedia($item))
                                 <video controls preload="metadata" aria-label="{{ $mediaAlt }}" class="h-44 w-full object-cover sm:h-56">
                                     <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
@@ -365,7 +365,7 @@
                 <div class="grid grid-cols-1 gap-2">
                     @foreach ($shownMedia as $item)
                         <div @class([
-                            'relative overflow-hidden rounded-[var(--radius-card)] border bg-cream ui-border',
+                            'ui-media-frame relative',
                             'col-span-2' => $loop->first,
                         ])>
                             @if ($isVideoMedia($item))

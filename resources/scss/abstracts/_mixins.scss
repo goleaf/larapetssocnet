@@ -9,6 +9,12 @@
     border: 1px solid var(--border-default);
     border-radius: $radius;
     box-shadow: $shadow;
+    color: var(--text-default);
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        transform 150ms ease;
 }
 
 @mixin control-radius {
