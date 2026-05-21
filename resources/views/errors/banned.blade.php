@@ -13,10 +13,24 @@
  <p class="mt-3 text-sm text-gray-600">
  This account is currently restricted. If this seems incorrect, please contact support.
  </p>
- <div class="mt-6">
+ @if (auth()->check() && auth()->user()?->ban_reason)
+ <p class="mt-3 text-sm text-gray-600">
+ Reason: {{ auth()->user()->ban_reason }}
+ </p>
+ @endif
+ <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+ @auth
+ <form method="POST" action="{{ route('logout') }}">
+ @csrf
+ <button type="submit" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+ Log out
+ </button>
+ </form>
+ @else
  <a href="{{ route('login') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
  Back to Login
  </a>
+ @endauth
  </div>
  </div>
  </main>

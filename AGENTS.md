@@ -95,7 +95,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 ## Skills Activation
 
-This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
+This project has domain-specific skills available. You MUST activate `using-laravel-superpowers` at the start of every Laravel task in this repository, including implementation, review, debugging, testing, documentation, and maintenance work. You MUST also activate every other matching project/router skill for the domains touched by the prompt; do not treat Superpowers as a replacement for project-specific, Pest, Tailwind, security, performance, workflow, or memory skills.
 
 - `using-laravel-superpowers` — Broad Laravel workflow router installed into this project from `jpcaparas/superpowers-laravel`; use it as the default companion skill for most Laravel changes here. The full upstream Superpowers Laravel skill pack is vendored under `.claude/skills/`, but project rules, Laravel Boost, and compact local routers take precedence.
 - `larapetssocnet-domain-guides` — Project-specific router for feeds, posts, reactions, follows, pets, adoption, groups, privacy, moderation, hashtags, search, listings, media, and service/query patterns documented under `skills/`.

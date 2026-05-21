@@ -17,6 +17,10 @@ The upstream Superpowers Laravel skills from `jpcaparas/superpowers-laravel` are
 
 In Codex, keep this compact router active first, then open only the matching installed skill file when deeper Superpowers guidance is needed. Project rules in `AGENTS.md`, Laravel Boost guidance, and the local `skills/*.md` guides take precedence over generic upstream examples.
 
+## Mandatory Activation Rule
+
+Activate this router first for every Laravel implementation, review, debugging, testing, documentation, and maintenance task in this repository. Then activate all other matching local router skills and external skills for the domains touched by the prompt; Superpowers guidance is a baseline companion, not a replacement for project-specific, Pest, Tailwind, security, performance, workflow, or memory skills.
+
 ## Runner Selection (Sail or non-Sail)
 
 Use the minimal wrapper below when running commands:

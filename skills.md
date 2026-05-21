@@ -2,6 +2,10 @@
 
 This project exposes compact local router skills under `.agents/skills`, stores detailed project guidance under `skills/*.md`, and vendors the upstream Superpowers Laravel pack under `.claude/skills`.
 
+## Mandatory Activation Workflow
+
+Always activate `using-laravel-superpowers` first for Laravel implementation, review, debugging, testing, documentation, and maintenance tasks in this repository. Then activate every other matching project router or external skill for the affected domains. The Superpowers router is the baseline companion, not a substitute for domain, UI, design, security, performance, workflow, test-hook, memory, Pest, or Tailwind skills.
+
 ## Exposed Router Skills
 
 - `laravel:using-laravel-superpowers`: default Laravel workflow guidance.

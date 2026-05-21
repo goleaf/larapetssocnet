@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 
 class VisibilityService
 {
@@ -16,7 +17,17 @@ class VisibilityService
     {
         $post->loadMissing(['author', 'pet']);
 
-        if ((bool) $post->author->is_banned) {
+        $author = $post->author;
+
+        if (! $author instanceof User) {
+            return false;
+        }
+
+        if ($author->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -24,15 +35,17 @@ class VisibilityService
             return true;
         }
 
-        if ($viewer?->is($post->author)) {
+        if ($viewer?->is($author)) {
             return true;
         }
 
-        if ($post->pet && ! app(PetVisibilityService::class)->canViewPetPosts($viewer, $post->pet)) {
+        $pet = $post->pet;
+
+        if ($pet instanceof Pet && ! app(PetVisibilityService::class)->canViewPetPosts($viewer, $pet)) {
             return false;
         }
 
-        if ($viewer && $viewer->hasBlockingRelationshipWith($post->author)) {
+        if ($viewer && $viewer->hasBlockingRelationshipWith($author)) {
             return false;
         }
 
@@ -40,8 +53,8 @@ class VisibilityService
             return false;
         }
 
-        $accountPrivate = (bool) $post->author->is_private;
-        $isFollower = $viewer && $viewer->isFollowing($post->author);
+        $accountPrivate = (bool) $author->is_private;
+        $isFollower = $viewer && $viewer->isFollowing($author);
 
         return match ($post->visibility) {
             Post::VISIBILITY_PUBLIC => ! $accountPrivate || $isFollower,

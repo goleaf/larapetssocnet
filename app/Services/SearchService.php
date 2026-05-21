@@ -25,8 +25,13 @@ class SearchService
         $limit = $tab === 'all' ? 3 : 20;
 
         if ($tab === 'all' || $tab === 'users') {
-            $query = User::where('is_banned', false)
-                ->where('is_private', false)
+            $query = User::query()
+                ->visibleTo($viewer)
+                ->where(function ($discoverableQuery): void {
+                    $discoverableQuery
+                        ->whereNull('users.show_in_explore')
+                        ->orWhere('users.show_in_explore', true);
+                })
                 ->search($clean)
                 ->with('media')
                 ->limit($limit);

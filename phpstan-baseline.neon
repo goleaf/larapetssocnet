@@ -405,13 +405,13 @@ parameters:
 		-
 			message: '#^Right side of && is always true\.$#'
 			identifier: booleanAnd.rightAlwaysTrue
-			count: 7
+			count: 5
 			path: app/Http/Controllers/Profile/PublicProfileController.php
 
 		-
 			message: '#^Ternary operator condition is always true\.$#'
 			identifier: ternary.alwaysTrue
-			count: 4
+			count: 3
 			path: app/Http/Controllers/Profile/PublicProfileController.php
 
 		-
@@ -2701,12 +2701,6 @@ parameters:
 			path: app/Models/Identity/User.php
 
 		-
-			message: '#^Method App\\Models\\Identity\\User\:\:profileUrl\(\) return type with generic class Illuminate\\Database\\Eloquent\\Casts\\Attribute does not specify its types\: TGet, TSet$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Identity/User.php
-
-		-
 			message: '#^Method App\\Models\\Identity\\User\:\:reactions\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -4915,42 +4909,6 @@ parameters:
 			path: app/Services/PetService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_banned\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/PetVisibilityService.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:canViewProfile\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Services/PetVisibilityService.php
-
-		-
-			message: '#^Method App\\Services\\PetVisibilityService\:\:applyVisibleScope\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Services/PetVisibilityService.php
-
-		-
-			message: '#^Method App\\Services\\PetVisibilityService\:\:applyVisibleScope\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Services/PetVisibilityService.php
-
-		-
-			message: '#^Parameter \#1 \$user of method App\\Models\\Identity\\User\:\:hasBlockingRelationshipWith\(\) expects App\\Models\\Identity\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/PetVisibilityService.php
-
-		-
-			message: '#^Parameter \#2 \$owner of method App\\Services\\PetVisibilityService\:\:petsVisibilityAllows\(\) expects App\\Models\\Identity\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/PetVisibilityService.php
-
-		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:posts\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -5113,12 +5071,6 @@ parameters:
 			path: app/Services/SyncReactionCountsService.php
 
 		-
-			message: '#^Method App\\Services\\UsernameRedirectResolver\:\:resolve\(\) should return array\{user\: App\\Models\\Identity\\User, redirect\: App\\Models\\Identity\\UsernameRedirect\|null, normalized\: string\}\|null but returns array\{user\: Illuminate\\Database\\Eloquent\\Model, redirect\: App\\Models\\Identity\\UsernameRedirect, normalized\: non\-empty\-string\}\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Services/UsernameRedirectResolver.php
-
-		-
 			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Http\\Request\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
@@ -5133,35 +5085,5 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Content\\Post\:\:\$status\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Services/VisibilityService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_banned\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/VisibilityService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_private\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/VisibilityService.php
-
-		-
-			message: '#^Parameter \#1 \$user of method App\\Models\\Identity\\User\:\:hasBlockingRelationshipWith\(\) expects App\\Models\\Identity\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/VisibilityService.php
-
-		-
-			message: '#^Parameter \#1 \$user of method App\\Models\\Identity\\User\:\:isFollowing\(\) expects App\\Models\\Identity\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/VisibilityService.php
-
-		-
-			message: '#^Parameter \#2 \$pet of method App\\Services\\PetVisibilityService\:\:canViewPetPosts\(\) expects App\\Models\\Pets\\Pet, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
 			count: 1
 			path: app/Services/VisibilityService.php

@@ -18,7 +18,7 @@ it('renders anonymous Blade components with Blaze optimization enabled', functio
     expect($primaryButton)
         ->toContain('Save')
         ->toContain('btn-base')
-        ->toContain('bg-paw')
+        ->toContain('btn-primary')
         ->toContain('data-ui-control="button"');
 
     expect($avatar)

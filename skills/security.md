@@ -16,9 +16,17 @@
 ## Block checks before social actions
 - Enforce block relationship checks before follow/message/react/comment actions.
 
+## Profile security
+- Treat every profile section as private until `ProfileVisibilityService` or the matching visibility service proves the viewer can see it.
+- Reject unavailable profile owners and restricted viewers before loading profile posts, pets, photos, followers, following, likes, groups, message actions, or direct gallery URLs.
+- Never search public profiles by email address or expose private contact/security fields through profile search, stats, tabs, locked states, or sidebar previews.
+- Username redirects must not resolve reserved names and must not point to banned, suspended, deactivated, deleted, or pending-deletion users.
+- Profile audit events should record changed field names and safe metadata only; never log raw bio contents, private contact values, media secrets, or security state.
+
 ## Authentication security
-- Keep app browsing routes behind `auth`, `verified`, `banned`, and `track_last_seen` unless a route is intentionally public.
-- Reject banned accounts during login even when the supplied password is correct, keep the public error generic, and record the blocked attempt in `auth_audit_logs`.
+- Keep app browsing routes behind `auth`, `banned`, `active_account`, `verified`, and `track_last_seen` unless a route is intentionally public.
+- Reject banned accounts during login even when the supplied password is correct, redirect valid banned attempts to the restricted notice, and record the blocked attempt in `auth_audit_logs`.
+- Deny soft-deleted accounts and restrict pending-deletion, deactivated, and suspended accounts to their recovery or notice screens before full app access.
 - Rate-limit repeated failed login attempts by normalized email/username plus IP.
 - Logout must invalidate the session, regenerate the CSRF token, and record a `logout` audit event.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.

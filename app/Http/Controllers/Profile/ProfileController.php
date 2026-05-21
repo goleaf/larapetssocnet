@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdateCoverPositionRequest;
 use App\Http\Requests\Settings\UpdateSettingsProfileRequest;
 use App\Models\Identity\User;
+use App\Services\Auth\AuthAuditLogger;
 use App\Services\ProfileVisibilityService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
@@ -90,23 +91,26 @@ class ProfileController extends Controller
         return view('settings.profile', $buildProfileSettingsViewData->handle($user));
     }
 
-    public function update(UpdateSettingsProfileRequest $request, UpdateProfileAction $updateProfile): RedirectResponse
+    public function update(UpdateSettingsProfileRequest $request, UpdateProfileAction $updateProfile, AuthAuditLogger $auditLogger): RedirectResponse
     {
         $user = $request->user();
         $this->authorize('update', $user);
+        $validated = $request->validated();
 
         try {
-            $updateProfile->handle($user, $request->validated());
+            $updateProfile->handle($user, $validated);
         } catch (UsernameChangeCooldownException|UsernameReservedException|UsernameNotAvailableException $exception) {
             return back()
                 ->withInput()
                 ->withErrors(['username' => $exception->getMessage()]);
         }
 
+        $this->recordProfileUpdateAudit($auditLogger, $request, $user, $validated);
+
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    public function avatarUpdate(Request $request): RedirectResponse|JsonResponse
+    public function avatarUpdate(Request $request, AuthAuditLogger $auditLogger): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $this->authorize('updateAvatar', $user);
@@ -116,6 +120,7 @@ class ProfileController extends Controller
         ]);
 
         $user->updateAvatar($validated['avatar']);
+        $auditLogger->record($user, 'profile_avatar_updated', $request);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -127,7 +132,7 @@ class ProfileController extends Controller
         return back()->with('status', 'profile-avatar-updated');
     }
 
-    public function coverUpdate(Request $request): RedirectResponse|JsonResponse
+    public function coverUpdate(Request $request, AuthAuditLogger $auditLogger): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $this->authorize('updateCover', $user);
@@ -137,6 +142,7 @@ class ProfileController extends Controller
         ]);
 
         $user->updateCover($validated['cover']);
+        $auditLogger->record($user, 'profile_cover_updated', $request);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -148,7 +154,7 @@ class ProfileController extends Controller
         return back()->with('status', 'profile-cover-updated');
     }
 
-    public function updateCoverPosition(UpdateCoverPositionRequest $request): JsonResponse|RedirectResponse
+    public function updateCoverPosition(UpdateCoverPositionRequest $request, AuthAuditLogger $auditLogger): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $position = round((float) $request->validated('position'), 2);
@@ -156,6 +162,10 @@ class ProfileController extends Controller
         $user->forceFill([
             'cover_photo_position' => $position,
         ])->save();
+
+        $auditLogger->record($user, 'profile_cover_position_updated', $request, [
+            'position' => $position,
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -224,6 +234,40 @@ class ProfileController extends Controller
         return response()->json([
             'available' => true,
             'message' => 'Username is available!',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function recordProfileUpdateAudit(AuthAuditLogger $auditLogger, Request $request, User $user, array $validated): void
+    {
+        $auditedFields = [
+            'name',
+            'display_name',
+            'username',
+            'email',
+            'bio',
+            'headline',
+            'pronouns',
+            'location',
+            'website',
+            'social_links',
+            'birth_date',
+            'gender',
+            'locale',
+            'timezone',
+            'avatar',
+            'cover',
+            'remove_avatar',
+            'remove_cover',
+        ];
+
+        $changedFields = array_values(array_intersect($auditedFields, array_keys($validated)));
+
+        $auditLogger->record($user, 'profile_updated', $request, [
+            'changed_fields' => $changedFields,
+            'changed_field_count' => count($changedFields),
         ]);
     }
 

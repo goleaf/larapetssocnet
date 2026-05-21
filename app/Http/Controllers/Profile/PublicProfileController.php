@@ -10,9 +10,11 @@ use App\Models\Activities\Event;
 use App\Models\Analytics\ProfileView;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
 use App\Services\VisibilityService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -28,6 +30,18 @@ class PublicProfileController extends Controller
     public function show(Request $request, User $user): View|RedirectResponse
     {
         $viewer = $request->user();
+
+        if ($viewer instanceof User) {
+            $restrictedRedirect = $this->restrictedViewerRedirect($viewer);
+
+            if ($restrictedRedirect instanceof RedirectResponse) {
+                return $restrictedRedirect;
+            }
+        }
+
+        if ($user->isUnavailableForProfile()) {
+            abort(404);
+        }
 
         if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
             abort(404);
@@ -64,10 +78,12 @@ class PublicProfileController extends Controller
 
         $profileVisibility = $this->profileVisibilityService->resolve($user);
         $canViewContent = $this->profileVisibilityService->canViewFullProfile($viewer, $user);
+        $canViewFollowers = $this->profileVisibilityService->canViewFollowers($viewer, $user);
+        $canViewFollowing = $this->profileVisibilityService->canViewFollowing($viewer, $user);
+        $canViewLocation = $this->profileVisibilityService->canViewLocation($viewer, $user);
+        $canMessage = $this->profileVisibilityService->canMessage($viewer, $user);
         $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
         $isOwner = $viewer && $viewer->is($user);
-
-        $user->loadCount(['acceptedFollowers as followers_count', 'acceptedFollowing as following_count', 'pets', 'posts']);
 
         if (! $canViewContent) {
             return view('profile.private', [
@@ -82,6 +98,7 @@ class PublicProfileController extends Controller
         }
 
         $canViewPets = $this->petVisibilityService->canViewPetsForOwner($viewer, $user);
+        $canViewPhotos = $canViewContent;
 
         $pets = $tab === 'pets' && $canViewPets
             ? $user->pets()->visibleTo($viewer)->latest()->get()
@@ -91,7 +108,7 @@ class PublicProfileController extends Controller
             ? $user->pets()->visibleTo($viewer)->latest()->limit(9)->get()
             : collect();
 
-        $galleries = $tab === 'photos' && $canViewContent
+        $galleries = $tab === 'photos' && $canViewPhotos
             ? $user->photoGalleries()
                 ->with(['coverMedia', 'media'])
                 ->withCount('media')
@@ -99,13 +116,13 @@ class PublicProfileController extends Controller
                 ->get()
             : collect();
 
-        $photos = $tab === 'photos' && $canViewContent
+        $photos = $tab === 'photos' && $canViewPhotos
             ? collect($user->getMedia('photos'))
                 ->merge($user->getMedia('avatar'))
                 ->merge($user->getMedia('cover'))
             : collect();
 
-        $sidebarPhotos = $canViewContent
+        $sidebarPhotos = $canViewPhotos
             ? collect($user->getMedia('photos'))
                 ->merge($user->getMedia('avatar'))
                 ->merge($user->getMedia('cover'))
@@ -113,12 +130,23 @@ class PublicProfileController extends Controller
                 ->values()
             : collect();
 
-        $friendsPreview = $canViewContent
-            ? $user->acceptedFollowing()
+        $friendsPreview = collect();
+
+        if ($canViewFollowing) {
+            $friendsPreviewQuery = User::query()
+                ->whereIn('users.id', $user->acceptedFollowing()->select('users.id'));
+
+            User::applyAvailableForProfiles($friendsPreviewQuery);
+
+            if (! $this->viewerCanBypassThirdPartyPrivacy($viewer, $user)) {
+                (new User)->scopeVisibleTo($friendsPreviewQuery, $viewer);
+            }
+
+            $friendsPreview = $friendsPreviewQuery
                 ->withCount(['acceptedFollowers as followers_count'])
                 ->limit(9)
-                ->get(['users.id', 'users.name', 'users.username', 'users.avatar_path'])
-            : collect();
+                ->get(['users.id', 'users.name', 'users.username', 'users.avatar_path']);
+        }
 
         $posts = $tab === 'posts' && $canViewContent
             ? Post::paginateProfileTimeline($user, $viewer)
@@ -157,6 +185,7 @@ class PublicProfileController extends Controller
         $canViewGroups = $viewer && $viewer->is($user)
             ? true
             : ($canViewContent && ($user->groups_visibility === 'everyone' || ($user->groups_visibility === 'followers_only' && $viewer && $viewer->isFollowing($user))));
+        $canViewLikes = $viewer && ($viewer->is($user) || $viewer->hasAnyRole(['admin', 'moderator']));
 
         $groups = $tab === 'groups' && $canViewGroups
             ? $user->groups()->withCount('members')->get()
@@ -191,13 +220,13 @@ class PublicProfileController extends Controller
 
         // Mutual connections (visitor only)
         $mutualConnections = collect();
-        if ($viewer && ! $isOwner && $canViewContent) {
+        if ($viewer && ! $isOwner && $canViewFollowing) {
             $mutualConnections = $viewer->getMutualFollowers($user);
         }
 
         // Common groups (visitor only)
         $commonGroups = collect();
-        if ($viewer && ! $isOwner && $canViewContent) {
+        if ($viewer && ! $isOwner && $canViewGroups) {
             $viewerGroupIds = $viewer->groups()->pluck('groups.id');
             $commonGroups = $user->groups()
                 ->whereIn('groups.id', $viewerGroupIds)
@@ -218,10 +247,31 @@ class PublicProfileController extends Controller
             $user->forceFill(['profile_completed_at' => now()])->saveQuietly();
         }
 
+        $profileStats = $this->profileStats($user, $viewer, [
+            'followers' => $canViewFollowers,
+            'following' => $canViewFollowing,
+            'pets' => $canViewPets,
+            'posts' => $canViewContent,
+        ]);
+
+        $user->setAttribute('followers_count', $profileStats['followers'] ?? 0);
+        $user->setAttribute('following_count', $profileStats['following'] ?? 0);
+        $user->setAttribute('pets_count', $profileStats['pets'] ?? 0);
+        $user->setAttribute('posts_count', $profileStats['posts'] ?? 0);
+
         return view('profile.show', [
             'profileUser' => $user,
             'tab' => $tab,
             'canViewContent' => $canViewContent,
+            'canViewFollowers' => $canViewFollowers,
+            'canViewFollowing' => $canViewFollowing,
+            'canViewPets' => $canViewPets,
+            'canViewPhotos' => $canViewPhotos,
+            'canViewGroups' => $canViewGroups,
+            'canViewLikes' => $canViewLikes,
+            'canViewLocation' => $canViewLocation,
+            'canMessage' => $canMessage,
+            'profileStats' => $profileStats,
             'profileVisibility' => $profileVisibility->value,
             'profileVisibilityLabel' => $profileVisibility->label(),
             'profileVisibilityIcon' => $profileVisibility->icon(),
@@ -254,6 +304,89 @@ class PublicProfileController extends Controller
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
             'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
         ]);
+    }
+
+    private function restrictedViewerRedirect(User $viewer): ?RedirectResponse
+    {
+        if ((bool) $viewer->is_banned) {
+            return redirect()->route('banned');
+        }
+
+        if ($viewer->hasPendingDeletion()) {
+            return redirect()->route('account.deletion-pending');
+        }
+
+        if ($viewer->isDeactivated()) {
+            return redirect()->route('account.reactivation');
+        }
+
+        if ($viewer->isSuspended()) {
+            return redirect()->route('account.suspended');
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{followers: bool, following: bool, pets: bool, posts: bool}  $permissions
+     * @return array{followers: int|null, following: int|null, pets: int|null, posts: int|null}
+     */
+    private function profileStats(User $user, ?User $viewer, array $permissions): array
+    {
+        return [
+            'followers' => $permissions['followers']
+                ? (int) $this->visibleFollowersQuery($user, $viewer)->count()
+                : null,
+            'following' => $permissions['following']
+                ? (int) $this->visibleFollowingQuery($user, $viewer)->count()
+                : null,
+            'pets' => $permissions['pets']
+                ? (int) (new Pet)->scopeVisibleTo(
+                    Pet::query()->where('user_id', $user->getKey()),
+                    $viewer
+                )->count()
+                : null,
+            'posts' => $permissions['posts']
+                ? (int) Post::query()->forProfile($user)->published()->visibleTo($viewer)->count()
+                : null,
+        ];
+    }
+
+    private function viewerCanBypassThirdPartyPrivacy(?User $viewer, User $profileOwner): bool
+    {
+        return $viewer instanceof User
+            && ($viewer->is($profileOwner) || $viewer->hasAnyRole(['admin', 'moderator']));
+    }
+
+    /**
+     * @return Builder<User>
+     */
+    private function visibleFollowersQuery(User $user, ?User $viewer): Builder
+    {
+        $followersQuery = User::query()
+            ->whereIn('users.id', $user->acceptedFollowers()->select('users.id'));
+
+        User::applyAvailableForProfiles($followersQuery);
+        (new User)->scopeNotBlockedFor($followersQuery, $viewer);
+
+        return $followersQuery;
+    }
+
+    /**
+     * @return Builder<User>
+     */
+    private function visibleFollowingQuery(User $user, ?User $viewer): Builder
+    {
+        $followingQuery = User::query()
+            ->whereIn('users.id', $user->acceptedFollowing()->select('users.id'));
+
+        User::applyAvailableForProfiles($followingQuery);
+
+        if (! $this->viewerCanBypassThirdPartyPrivacy($viewer, $user)) {
+            (new User)->scopeVisibleTo($followingQuery, $viewer);
+        }
+
+        return $followingQuery;
     }
 
     /**

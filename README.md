@@ -2,7 +2,7 @@
 
 PetSocial is a Laravel social network for pet profiles, feeds, groups, adoption browsing, marketplace listings, messaging, notifications, health logs, moderation, and shared media.
 
-Application browsing pages are private by default. Guests can access authentication and system pages such as login, registration, password reset, email verification, and the banned notice; signed-in users must verify their email before accessing Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, and settings.
+Application browsing pages are private by default. Guests can access authentication and system pages such as login, registration, password reset, email verification, and the banned notice; signed-in users must have an active, non-banned, non-suspended, non-deactivated account and verify their email before accessing Explore, search, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, and settings. Public username profile URLs are the controlled exception: they resolve only active profiles and render viewer-aware public or locked states without private sections, private counts, contact details, email search matches, or unavailable accounts. Pending-deletion and deactivated accounts are restricted to password-confirmed recovery screens.
 
 ## Stack
 
@@ -46,6 +46,10 @@ The application shell uses a scroll-contained desktop left rail, in-flow mobile 
 - `skills.md` maps project skills, exposed local skill routers, the installed Superpowers Laravel pack, and when to use each guide.
 - `hooks.md` documents the local git hooks and quality gates.
 - `controller-testing.md` documents controller coverage expectations and the controller-test map guard.
+
+## AI Skill Workflow
+
+Every Laravel task in this repository starts with the `using-laravel-superpowers` router, then activates every other matching project router or external skill for the touched domain. Superpowers guidance complements, but does not replace, project-specific skills such as domain, UI, design, security, performance, workflow, test hooks, memory, Pest, and Tailwind guidance.
 
 ## Daily Commands
 

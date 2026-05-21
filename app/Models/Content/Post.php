@@ -229,9 +229,15 @@ class Post extends Model implements HasMedia
 
     public function scopeVisibleTo(Builder $query, ?User $viewer): void
     {
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
+            $query->whereKey(-1);
+
+            return;
+        }
+
         if ($viewer?->hasAnyRole(['admin', 'moderator'])) {
             $query->whereHas('author', function (Builder $authorQuery): void {
-                $authorQuery->where('is_banned', false);
+                User::applyAvailableForProfiles($authorQuery);
             });
 
             $this->applyPetVisibilityScope($query, $viewer);
@@ -248,9 +254,7 @@ class Post extends Model implements HasMedia
                         ->orWhere('published_at', '<=', now());
                 })
                 ->whereHas('author', function (Builder $authorQuery): void {
-                    $authorQuery
-                        ->where('is_private', false)
-                        ->where('is_banned', false);
+                    User::applyAvailableForProfiles($authorQuery->where('is_private', false));
                 });
 
             $this->applyPetVisibilityScope($query, $viewer);
@@ -279,7 +283,7 @@ class Post extends Model implements HasMedia
                             $blockedQuery->whereNotIn('user_id', $blockedIds);
                         })
                         ->whereHas('author', function (Builder $authorQuery): void {
-                            $authorQuery->where('is_banned', false);
+                            User::applyAvailableForProfiles($authorQuery);
                         })
                         ->where('status', PostStatus::Published->value)
                         ->where(function (Builder $publishedQuery): void {
@@ -483,6 +487,12 @@ class Post extends Model implements HasMedia
 
     public function scopeExplorable(Builder $query, ?User $viewer): void
     {
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
+            $query->whereKey(-1);
+
+            return;
+        }
+
         $query
             ->where('visibility', self::VISIBILITY_PUBLIC)
             ->where('status', PostStatus::Published->value)
@@ -492,9 +502,7 @@ class Post extends Model implements HasMedia
                     ->orWhere('posts.published_at', '<=', now());
             })
             ->whereHas('author', function (Builder $authorQuery): void {
-                $authorQuery
-                    ->where('is_private', false)
-                    ->where('is_banned', false);
+                User::applyAvailableForProfiles($authorQuery->where('is_private', false));
             });
 
         if ($viewer instanceof User) {
@@ -944,7 +952,7 @@ class Post extends Model implements HasMedia
                     });
             })
             ->whereHas('author', function (Builder $authorQuery): void {
-                $authorQuery->where('is_banned', false);
+                User::applyAvailableForProfiles($authorQuery);
             })
             ->whereNull('posts.group_id')
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocked_id')->where('blocks.blocker_id', $userId))

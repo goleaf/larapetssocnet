@@ -8,7 +8,7 @@ description: Use when working on repo-specific development workflow, including t
 Use this skill for repo-specific engineering workflow. Open only the guide files that match the task.
 
 Also activate other matching skills when relevant:
-- `using-laravel-superpowers`
+- `using-laravel-superpowers` first for every Laravel implementation, review, debugging, testing, documentation, and maintenance task
 - `pest-testing`
 - `tailwindcss-development`
 - `larapetssocnet-test-hooks-guides` for hook installation, controller-test coverage, and changed-controller guard work

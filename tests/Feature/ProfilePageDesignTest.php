@@ -49,7 +49,7 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertSee('Photos')
         ->assertSee('Followers')
         ->assertSee('Following')
-        ->assertSee('Likes')
+        ->assertDontSee('Likes')
         ->assertSee('Follow')
         ->assertSee('Message')
         ->assertSee('min-h-11', false)

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Media;
 use App\Http\Controllers\Controller;
 use App\Models\Identity\User;
 use App\Models\Pets\PhotoGallery;
+use App\Services\ProfileVisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -29,9 +30,18 @@ class PhotoGalleryController extends Controller
         ]);
     }
 
-    public function show(User $user, PhotoGallery $gallery): View
+    public function show(Request $request, User $user, PhotoGallery $gallery): View
     {
         abort_unless($gallery->user_id === $user->id, 404);
+        abort_if($user->isUnavailableForProfile(), 404);
+
+        $viewer = $request->user();
+
+        if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
+            abort(404);
+        }
+
+        abort_unless(app(ProfileVisibilityService::class)->canViewFullProfile($viewer, $user), 404);
 
         $gallery->load('media');
 

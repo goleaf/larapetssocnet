@@ -30,6 +30,7 @@ it('silently rejects honeypot registrations without creating an account', functi
 
     $this->post('/register', [
         'name' => 'Bot User',
+        'username' => 'bot_user',
         'email' => 'bot@example.com',
         'password' => 'PetSocial2026!',
         'password_confirmation' => 'PetSocial2026!',
@@ -88,7 +89,7 @@ it('rejects banned users with valid credentials and records the blocked login at
         'email' => $user->email,
         'password' => 'password',
     ])
-        ->assertSessionHasErrors(['email' => trans('auth.failed')]);
+        ->assertRedirect(route('banned', absolute: false));
 
     $this->assertGuest();
 
@@ -103,6 +104,23 @@ it('rejects banned users with valid credentials and records the blocked login at
     ]);
 });
 
+it('lets an already signed-in banned user reach the restricted notice and log out', function (): void {
+    $user = User::factory()->create([
+        'is_banned' => true,
+        'ban_reason' => 'Safety review',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('feed.index'))
+        ->assertRedirect(route('banned'));
+
+    $this->actingAs($user)
+        ->post(route('logout'))
+        ->assertRedirect('/');
+
+    $this->assertGuest();
+});
+
 it('keeps unverified users out of application pages after login', function (): void {
     $user = User::factory()->unverified()->create();
 
@@ -110,7 +128,7 @@ it('keeps unverified users out of application pages after login', function (): v
         'email' => $user->email,
         'password' => 'password',
     ])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('verification.notice', absolute: false));
 
     $this->assertAuthenticatedAs($user);
 
@@ -123,11 +141,160 @@ it('keeps unverified users out of application pages after login', function (): v
     ]);
 });
 
+it('normalizes email and username identifiers before authentication and throttling', function (): void {
+    $emailUser = User::factory()->create([
+        'email' => 'trim-login@example.com',
+    ]);
+    $usernameUser = User::factory()->create([
+        'username' => 'case_login',
+    ]);
+
+    $this->post('/login', [
+        'email' => '  TRIM-LOGIN@EXAMPLE.COM  ',
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($emailUser);
+    auth()->logout();
+
+    $this->post('/login', [
+        'email' => 'Case_Login',
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($usernameUser);
+});
+
+it('rejects soft deleted users with valid credentials and records the deleted account attempt', function (): void {
+    $user = User::factory()->create([
+        'email' => 'deleted-login@example.com',
+    ]);
+
+    $user->delete();
+
+    $this->post('/login', [
+        'email' => 'deleted-login@example.com',
+        'password' => 'password',
+    ])->assertSessionHasErrors(['email' => trans('auth.failed')]);
+
+    $this->assertGuest();
+
+    $auditLog = AuthAuditLog::query()
+        ->where('user_id', $user->id)
+        ->where('event_type', 'login_failure')
+        ->firstOrFail();
+
+    expect($auditLog->metadata)->toMatchArray([
+        'failure_reason' => 'deleted',
+    ]);
+});
+
+it('restricts pending deletion accounts to secure cancellation before app access', function (): void {
+    $user = User::factory()->create([
+        'email' => 'pending-deletion@example.com',
+        'scheduled_deletion_at' => now()->addDays(20),
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('account.deletion-pending', absolute: false));
+
+    $this->assertAuthenticatedAs($user);
+
+    $this->get(route('account.deletion-pending'))
+        ->assertOk()
+        ->assertSee('data-ui="account-deletion-pending-panel"', false);
+
+    $this->get(route('feed.index'))
+        ->assertRedirect(route('account.deletion-pending'));
+
+    $this->post(route('account.cancel-deletion'), [
+        'password' => 'wrong-password',
+    ])->assertSessionHasErrors(['password']);
+
+    expect($user->refresh()->scheduled_deletion_at)->not->toBeNull();
+
+    $this->post(route('account.cancel-deletion'), [
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard'));
+
+    expect($user->refresh()->scheduled_deletion_at)->toBeNull();
+
+    $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->id,
+        'event_type' => 'account_deletion_cancelled',
+    ]);
+});
+
+it('restricts deactivated users to a password-confirmed reactivation screen', function (): void {
+    $user = User::factory()->create([
+        'email' => 'deactivated-login@example.com',
+        'deactivated_at' => now()->subDay(),
+        'deactivation_reason' => 'User requested pause',
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('account.reactivation', absolute: false));
+
+    $this->assertAuthenticatedAs($user);
+
+    $this->get(route('account.reactivation'))
+        ->assertOk()
+        ->assertSee('data-ui="account-reactivation-panel"', false);
+
+    $this->get(route('feed.index'))
+        ->assertRedirect(route('account.reactivation'));
+
+    $this->post(route('account.reactivate'), [
+        'password' => 'password',
+    ])->assertRedirect(route('dashboard'));
+
+    expect($user->refresh()->deactivated_at)->toBeNull();
+});
+
+it('restricts suspended users away from normal application pages', function (): void {
+    $user = User::factory()->create([
+        'email' => 'suspended-login@example.com',
+        'suspended_until' => now()->addDay(),
+        'suspension_reason' => 'Policy review',
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('account.suspended', absolute: false));
+
+    $this->assertAuthenticatedAs($user);
+
+    $this->get(route('account.suspended'))
+        ->assertOk()
+        ->assertSee('Account temporarily suspended');
+
+    $this->get(route('feed.index'))
+        ->assertRedirect(route('account.suspended'));
+});
+
+it('drops unsafe external intended URLs after successful login', function (): void {
+    $user = User::factory()->create();
+
+    $this->withSession(['url.intended' => 'https://evil.example/pets'])
+        ->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($user);
+});
+
 it('rate limits repeated failed login attempts', function (): void {
     $user = User::factory()->create([
         'email' => 'limited-login@example.com',
     ]);
-    $throttleKey = Str::transliterate(Str::lower($user->email).'|127.0.0.1');
+    $throttleKey = Str::transliterate('login|'.Str::lower($user->email).'|127.0.0.1');
 
     RateLimiter::clear($throttleKey);
 

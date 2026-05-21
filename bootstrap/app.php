@@ -6,11 +6,13 @@ use App\Exceptions\CannotFollowSelfException;
 use App\Exceptions\UserBannedException;
 use App\Exceptions\UserBlockedException;
 use App\Http\Middleware\BannedUserMiddleware;
+use App\Http\Middleware\EnsureAccountCanAccessApplication;
 use App\Http\Middleware\RunRealtimeMaintenance;
 use App\Http\Middleware\TrackLastSeen;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
@@ -29,8 +31,37 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'banned' => BannedUserMiddleware::class,
+            'active_account' => EnsureAccountCanAccessApplication::class,
             'track_last_seen' => TrackLastSeen::class,
         ]);
+
+        $middleware->redirectUsersTo(function (Request $request): string {
+            $user = $request->user();
+
+            if ($user === null) {
+                return route('dashboard');
+            }
+
+            if (! empty($user->is_banned)) {
+                return route('banned');
+            }
+
+            if ($user->scheduled_deletion_at !== null) {
+                return route('account.deletion-pending');
+            }
+
+            if ($user->deactivated_at !== null) {
+                return route('account.reactivation');
+            }
+
+            if ($user->suspended_until !== null && $user->suspended_until->isFuture()) {
+                return route('account.suspended');
+            }
+
+            return $user->hasVerifiedEmail()
+                ? route('dashboard')
+                : route('verification.notice');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (CannotFollowSelfException $e) {

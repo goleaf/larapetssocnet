@@ -34,15 +34,18 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 ## Skills Activation
 
-This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
+This project has domain-specific skills available. You MUST activate `using-laravel-superpowers` at the start of every Laravel task in this repository, including implementation, review, debugging, testing, documentation, and maintenance work. You MUST also activate every other matching project/router skill for the domains touched by the prompt; do not treat Superpowers as a replacement for project-specific, Pest, Tailwind, security, performance, workflow, or memory skills.
 
-- `using-laravel-superpowers` — Broad Laravel workflow router installed into this project from `jpcaparas/superpowers-laravel`; use it as the default companion skill for most Laravel changes here.
+- `using-laravel-superpowers` — Broad Laravel workflow router installed into this project from `jpcaparas/superpowers-laravel`; use it as the default companion skill for most Laravel changes here. The full upstream Superpowers Laravel skill pack is vendored under `.claude/skills/`, but project rules, Laravel Boost, and compact local routers take precedence.
 - `larapetssocnet-domain-guides` — Project-specific router for feeds, posts, reactions, follows, pets, adoption, groups, privacy, moderation, hashtags, search, listings, media, and service/query patterns documented under `skills/`.
 - `larapetssocnet-ui-guides` — Project-specific router for Blade, Alpine, Tailwind, forms, accessibility, localization, charts, and layout conventions documented under `skills/`.
+- `larapetssocnet-design-guides` — Project-specific router for the Warm Editorial visual system, design tokens, shared UI primitives, responsive shell rules, and Playwright visual review expectations documented in `design.md` and `skills/design.md`.
 - `larapetssocnet-security-guides` — Project-specific router for authorization, visibility, moderation, guest access, and sanitization rules documented under `skills/`.
 - `larapetssocnet-performance-guides` — Project-specific router for feed/query performance, eager loading, counters, pagination, and SQLite-aware data patterns documented under `skills/`.
 - `larapetssocnet-workflow-guides` — Project-specific router for testing, localization/light-UI workflow, changelog/commit flow, and common service/request patterns documented under `skills/`.
-- Detailed markdown guides in `skills/*.md` are intentionally not exposed one-by-one as local skills, to avoid overflowing the skills context budget. Use the compact router skills above to find and read only the matching guide files.
+- `larapetssocnet-test-hooks-guides` — Project-specific router for local git hooks, changed-controller test coverage, controller-test mapping, and quality-gate expectations documented in `hooks.md`, `controller-testing.md`, `skills/hooks.md`, and `skills/controller-testing.md`.
+- `larapetssocnet-memory-guides` — Project-specific router for memory lookup/update rules, durable preferences, and prior rollout context documented in `skills/memory.md`.
+- Detailed markdown guides in `skills/*.md` and upstream Superpowers guides in `.claude/skills/` are intentionally not all exposed as Codex local skills, to avoid overflowing the skills context budget. Use the compact router skills above to find and read only the matching guide files.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 

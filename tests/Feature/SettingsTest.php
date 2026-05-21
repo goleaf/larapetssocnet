@@ -208,7 +208,9 @@ class SettingsTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->post('/settings/cancel-deletion')
+            ->post('/settings/cancel-deletion', [
+                'password' => 'password123',
+            ])
             ->assertRedirect(route('dashboard'));
 
         $this->assertNull($user->refresh()->scheduled_deletion_at);

@@ -26,7 +26,11 @@ class ProfileVisibilityService
 
     public function canDiscoverProfile(?User $viewer, User $owner): bool
     {
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -47,7 +51,11 @@ class ProfileVisibilityService
 
     public function canViewProfileShell(?User $viewer, User $owner): bool
     {
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -64,7 +72,11 @@ class ProfileVisibilityService
 
     public function canViewFullProfile(?User $viewer, User $owner): bool
     {
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -90,7 +102,11 @@ class ProfileVisibilityService
 
     public function canViewFollowers(?User $viewer, User $owner): bool
     {
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -111,7 +127,11 @@ class ProfileVisibilityService
 
     public function canViewFollowing(?User $viewer, User $owner): bool
     {
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -134,6 +154,46 @@ class ProfileVisibilityService
         }
 
         return $viewer && $viewer->isFollowing($owner);
+    }
+
+    public function canViewLocation(?User $viewer, User $owner): bool
+    {
+        if (! $this->canViewFullProfile($viewer, $owner)) {
+            return false;
+        }
+
+        return $viewer?->is($owner) === true
+            || $viewer?->hasAnyRole(['admin', 'moderator']) === true
+            || (bool) $owner->privacy_display_location;
+    }
+
+    public function canMessage(?User $viewer, User $owner): bool
+    {
+        if (! $viewer instanceof User || $viewer->is($owner)) {
+            return false;
+        }
+
+        if ($owner->isUnavailableForProfile() || $viewer->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer->hasBlockingRelationshipWith($owner)) {
+            return false;
+        }
+
+        if (! $this->canViewProfileShell($viewer, $owner)) {
+            return false;
+        }
+
+        if ($viewer->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if ($owner->messaging_permission === 'followers_only') {
+            return $viewer->isFollowing($owner);
+        }
+
+        return true;
     }
 
     public function syncLegacyPrivacy(User $user, ProfileVisibility $visibility): void

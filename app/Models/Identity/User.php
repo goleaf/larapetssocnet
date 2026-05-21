@@ -35,6 +35,7 @@ use App\Services\ProfileVisibilityService;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use App\Traits\HasCounterCache;
+use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -85,6 +86,10 @@ use Spatie\Permission\Traits\HasRoles;
     'email',
     'password',
     'password_changed_at',
+    'terms_accepted_at',
+    'terms_version',
+    'registration_ip_address',
+    'registration_user_agent',
     'bio',
     'bio_html',
     'headline',
@@ -99,6 +104,10 @@ use Spatie\Permission\Traits\HasRoles;
     'timezone',
     'social_links',
     'interests_text',
+    'privacy_display_email',
+    'privacy_display_location',
+    'privacy_display_birthdate',
+    'privacy_display_last_seen',
     'profile_visibility',
     'messaging_permission',
     'pets_visibility',
@@ -110,6 +119,7 @@ use Spatie\Permission\Traits\HasRoles;
     'onboarding_step',
     'onboarding_completed_at',
     'last_seen_at',
+    'last_login_at',
     'avatar_path',
     'cover_photo_path',
     'cover_photo_position',
@@ -129,6 +139,10 @@ use Spatie\Permission\Traits\HasRoles;
     'role',
     'scheduled_deletion_at',
     'deletion_reason',
+    'deactivated_at',
+    'deactivation_reason',
+    'suspended_until',
+    'suspension_reason',
 ])]
 #[Hidden([
     'password',
@@ -158,6 +172,8 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
 
+    public const CURRENT_TERMS_VERSION = '2026-05-18';
+
     /**
      * @var array<string, bool>
      */
@@ -171,12 +187,17 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'username_changed_at' => 'datetime',
             'password_changed_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
             'profile_visibility' => 'string',
             'messaging_permission' => 'string',
             'pets_visibility' => 'string',
             'groups_visibility' => 'string',
+            'privacy_display_email' => 'boolean',
+            'privacy_display_location' => 'boolean',
+            'privacy_display_birthdate' => 'boolean',
+            'privacy_display_last_seen' => 'boolean',
             'show_in_explore' => 'boolean',
             'open_following' => 'boolean',
             'notification_preferences' => 'array',
@@ -184,6 +205,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'is_private' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'cover_photo_position' => 'float',
             'is_verified' => 'boolean',
             'profile_completed_at' => 'datetime',
@@ -197,6 +219,8 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'blocked_by_count' => 'integer',
             'is_banned' => 'boolean',
             'scheduled_deletion_at' => 'datetime',
+            'deactivated_at' => 'datetime',
+            'suspended_until' => 'datetime',
         ];
     }
 
@@ -265,6 +289,53 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return UsernameRules::isAvailable($username, $ignore?->getKey());
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public static function defaultRegistrationPrivacySettings(): array
+    {
+        return [
+            'is_private' => false,
+            'privacy_display_email' => false,
+            'privacy_display_location' => false,
+            'privacy_display_birthdate' => false,
+            'privacy_display_last_seen' => false,
+            'profile_visibility' => ProfileVisibility::Public->value,
+            'messaging_permission' => 'followers_only',
+            'pets_visibility' => 'followers_only',
+            'groups_visibility' => 'followers_only',
+            'show_in_explore' => true,
+            'open_following' => false,
+        ];
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public static function defaultNotificationPreferences(): array
+    {
+        return [
+            'post_likes' => true,
+            'post_comments' => true,
+            'comment_replies' => true,
+            'mentions' => true,
+            'follow_requests' => true,
+            'new_follower' => true,
+            'direct_messages' => true,
+            'group_invites' => true,
+            'group_updates' => true,
+            'event_invites' => true,
+            'event_reminders' => true,
+            'marketplace_messages' => true,
+            'contest_updates' => true,
+            'system_announcements' => true,
+            'security_alerts' => true,
+            'verification_emails' => true,
+            'password_resets' => true,
+            'marketing' => false,
+        ];
+    }
+
     public function setUsernameAttribute(string $value): void
     {
         $this->attributes['username'] = UsernameNormalizer::normalize($value);
@@ -290,6 +361,32 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         $cooldownDays = (int) config('usernames.cooldown_days', 30);
 
         return (int) now()->diffInDays($this->username_changed_at->copy()->addDays($cooldownDays), false);
+    }
+
+    public function hasPendingDeletion(): bool
+    {
+        return $this->scheduled_deletion_at !== null;
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
+    }
+
+    public function isSuspended(): bool
+    {
+        $suspendedUntil = $this->getAttribute('suspended_until');
+
+        return $suspendedUntil instanceof CarbonInterface && $suspendedUntil->isFuture();
+    }
+
+    public function isUnavailableForProfile(): bool
+    {
+        return $this->trashed()
+            || (bool) $this->is_banned
+            || $this->hasPendingDeletion()
+            || $this->isDeactivated()
+            || $this->isSuspended();
     }
 
     public function profileVisibility(): ProfileVisibility
@@ -696,9 +793,9 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return $query->where(function (Builder $subQuery) use ($term): void {
             $subQuery
                 ->where('name', 'like', "%{$term}%")
+                ->orWhere('display_name', 'like', "%{$term}%")
                 ->orWhere('username', 'like', "%{$term}%")
-                ->orWhere('email', 'like', "%{$term}%")
-                ->orWhere('city', 'like', "%{$term}%");
+                ->orWhere('headline', 'like', "%{$term}%");
         });
     }
 
@@ -709,8 +806,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'users.name',
             'users.display_name',
             'users.username',
-            'users.email',
-            'users.city',
+            'users.headline',
             'users.created_at',
             'users.profile_visibility',
             'users.is_private',
@@ -732,7 +828,12 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function scopeDiscoverable(Builder $query): Builder
     {
-        return $query
+        return self::applyAvailableForProfiles($query)
+            ->where(function (Builder $exploreQuery): void {
+                $exploreQuery
+                    ->whereNull('users.show_in_explore')
+                    ->orWhere('users.show_in_explore', true);
+            })
             ->where(function (Builder $visibilityQuery): void {
                 $visibilityQuery
                     ->whereNull('users.profile_visibility')
@@ -742,13 +843,12 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
                 $legacyPrivacy
                     ->whereNull('users.is_private')
                     ->orWhere('users.is_private', false);
-            })
-            ->where('is_banned', false);
+            });
     }
 
     public function scopePublic(Builder $query): Builder
     {
-        return $query
+        return self::applyAvailableForProfiles($query)
             ->where(function (Builder $visibilityQuery): void {
                 $visibilityQuery
                     ->whereNull('users.profile_visibility')
@@ -758,22 +858,17 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
                 $legacyPrivacy
                     ->whereNull('users.is_private')
                     ->orWhere('users.is_private', false);
-            })
-            ->where('is_banned', false);
+            });
     }
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query
-            ->select(['users.*'])
-            ->where('users.is_banned', false)
-            ->whereNull('users.scheduled_deletion_at');
+        return self::applyAvailableForProfiles($query->select(['users.*']));
     }
 
     public function scopeWithPublicProfile(Builder $query): Builder
     {
-        return $query
-            ->select(['users.*'])
+        return self::applyAvailableForProfiles($query->select(['users.*']))
             ->where(function (Builder $visibilityQuery): void {
                 $visibilityQuery
                     ->whereNull('users.profile_visibility')
@@ -783,8 +878,45 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
                 $privacyQuery
                     ->whereNull('users.is_private')
                     ->orWhere('users.is_private', false);
-            })
-            ->where('users.is_banned', false);
+            });
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAvailableForProfiles(Builder $query): Builder
+    {
+        return self::applyAvailableForProfiles($query);
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function applyAvailableForProfiles(Builder $query): Builder
+    {
+        $query->where('users.is_banned', false);
+
+        if (static::hasUsersColumn('scheduled_deletion_at')) {
+            $query->whereNull('users.scheduled_deletion_at');
+        }
+
+        if (static::hasUsersColumn('deactivated_at')) {
+            $query->whereNull('users.deactivated_at');
+        }
+
+        if (static::hasUsersColumn('suspended_until')) {
+            $query->where(function (Builder $suspensionQuery): void {
+                $suspensionQuery
+                    ->whereNull('users.suspended_until')
+                    ->orWhere('users.suspended_until', '<=', now());
+            });
+        }
+
+        return $query;
     }
 
     public function scopeActiveRecently(Builder $query, int $days = 30): Builder
@@ -817,7 +949,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function scopeVisibleTo(Builder $query, ?self $viewer): Builder
     {
-        $query->select(['users.*'])->where('users.is_banned', false);
+        self::applyAvailableForProfiles($query->select(['users.*']));
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
+            return $query->whereKey(-1);
+        }
 
         if (! $viewer instanceof User) {
             return $query
@@ -1371,14 +1507,15 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     }
 
     /**
-     * @return Attribute<string, never>
+     * @return Attribute<uppercase-string, never>
      */
     protected function profileInitial(): Attribute
     {
         return Attribute::get(function (): string {
             $name = trim((string) ($this->display_name ?: $this->name));
+            $source = $name !== '' ? $name : (string) $this->username;
 
-            return Str::upper(Str::substr($name !== '' ? $name : (string) $this->username, 0, 1));
+            return mb_strtoupper(mb_substr($source, 0, 1));
         });
     }
 
@@ -1498,7 +1635,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function profileCompletenessMissingItemsValue(): array
     {
         return collect($this->profileCompletenessItems())
-            ->reject(fn (array $item): bool => (bool) $item['complete'])
+            ->reject(fn (array $item): bool => $item['complete'])
             ->map(fn (array $item): array => [
                 'key' => $item['key'],
                 'label' => $item['label'],

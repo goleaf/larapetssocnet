@@ -9,8 +9,9 @@ Use all three layers together.
   - `public` / `followers` / `private`
   - account privacy ceiling
   - block relationships
-  - banned-account filtering
+  - banned, suspended, deactivated, deleted, and pending-deletion account filtering
 - Accept nullable viewer: `?User`.
+- Profile, pet, search, feed, and media gallery queries must use the matching shared visibility service/scope instead of loading all records and hiding them in Blade.
 
 ## Layer 2: Policy (single-item access)
 - `PostPolicy::view(?User $viewer, Post $post): bool`.
@@ -22,4 +23,4 @@ Use all three layers together.
 - Show visibility badges only to owner on own profile.
 - Keep selector visible in create/edit forms.
 - On edit, warn (do not block) if visibility downgrade happens on engaged posts.
-
+- Hide profile tabs, counts, contact/location data, likes, pets, photos, followers, following, groups, and message actions when section visibility denies access.

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Account\AccountDeletionController;
+use App\Http\Controllers\Account\AccountReactivationController;
 use App\Http\Controllers\Activities\ContestController;
 use App\Http\Controllers\Activities\ContestEntryController;
 use App\Http\Controllers\Activities\ContestVoteController;
@@ -57,7 +58,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (Auth::check()) {
-        return app(FeedController::class)->index(request());
+        return redirect()->route('feed.index');
     }
 
     return redirect()->route('login');
@@ -65,7 +66,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function (): Factory|View {
     return view('dashboard.index');
-})->middleware(['auth', 'verified', 'banned', 'track_last_seen'])->name('dashboard');
+})->middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])->name('dashboard');
 
 Route::get('/dev/components', function (): Factory|View {
     abort_unless(app()->isLocal(), 404);
@@ -77,11 +78,27 @@ Route::get('/banned', function () {
     return response()->view('errors.banned', [], 403);
 })->name('banned');
 
+Route::middleware('auth')->group(function (): void {
+    Route::get('/account/deletion-pending', [AccountDeletionController::class, 'pending'])
+        ->name('account.deletion-pending');
+    Route::post('/account/cancel-deletion', [AccountDeletionController::class, 'cancel'])
+        ->middleware('throttle:3,60')
+        ->name('account.cancel-deletion');
+    Route::get('/account/reactivate', [AccountReactivationController::class, 'show'])
+        ->name('account.reactivation');
+    Route::post('/account/reactivate', [AccountReactivationController::class, 'store'])
+        ->middleware('throttle:3,60')
+        ->name('account.reactivate');
+    Route::get('/account/suspended', function (): Factory|View {
+        return view('auth.account-suspended');
+    })->name('account.suspended');
+});
+
 Route::get('/api/username-available', [ProfileController::class, 'usernameAvailable'])
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
-Route::middleware(['auth', 'verified', 'banned', 'track_last_seen'])->group(function (): void {
+Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)->name('search.index');
     Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
     Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
@@ -352,7 +369,7 @@ Route::get('/@{user:username}', [PublicProfileController::class, 'show'])
     ->where('user', '[a-zA-Z0-9_]+');
 
 // Admin area
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', AdminMiddleware::class])->group(function (): void {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_account', 'verified', AdminMiddleware::class])->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');

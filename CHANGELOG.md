@@ -14,7 +14,9 @@
 - Added published Laravel Debugbar configuration with safe committed env defaults for local-only debugging.
 - Added Open Design Warm Editorial token coverage to the shared SCSS/Tailwind design system.
 - Added authentication audit logging for registration, login success/failure, logout, password changes, password resets, email verification, and verification resend events.
+- Added restricted account recovery screens for pending deletion, deactivated accounts, and suspended accounts during login.
 - Added registration DOB, terms acceptance, honeypot, and password-strength validation with focused auth hardening coverage.
+- Added safe profile update audit events for profile field changes, avatar updates, cover updates, and cover-position changes without logging raw bio or media secrets.
 - Added group archive/restore actions, routes, owner controls, and `groups.status` / `groups.archived_at` schema support.
 - Added group archive feature coverage for owner archive/restore, read-only archived groups, and secret-group discovery drift.
 - Added main feed source filtering for `source=people|pets` while preserving existing `type=text|photo|video` filtering and cursor query strings.
@@ -48,8 +50,10 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
-- Tightened login/logout security so banned users with valid credentials are rejected, dashboard access uses the same banned/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
+- Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
+- Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.
 - Updated all project-installed Laravel Superpowers skills with the Laravel 13.9 / PHP 8.4 baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
+- Clarified agent and project skill guidance so every Laravel task starts with `using-laravel-superpowers` and then activates every matching project/router skill.
 - Updated the pet profile page to remove the page-local width cap and align the profile summary, tabs, and tab content with the app header block.
 - Migrated shared UI primitives, Tailwind theme aliases, app shell, guest shell, forms, buttons, cards, alerts, badges, and component-library examples to the Warm Editorial visual system.
 - Removed competing runtime light/dark theme toggles so the app resolves through one fixed warm editorial standard.
@@ -137,6 +141,7 @@
 - Fixed feed rendering and visibility rules so followed feeds exclude discovery posts and translation-backed copy is shown instead of raw `en.*` keys.
 - Fixed message inbox and conversation Blade components so thread lists, conversation pages, and send-message flows render without component or template errors.
 - Fixed profile privacy regressions by restoring the `privacy.toggle` route, matching the locked-profile copy/state expectations, and preserving `noindex, nofollow` metadata.
+- Fixed profile privacy leaks where hidden pet/following sections, private gallery URLs, private profile email addresses, unavailable profile owners, reserved old usernames, or public likes tabs could be exposed through alternate profile surfaces.
 - Fixed pet health log ownership handling so non-owners receive `404` on read-only views while mutating actions remain forbidden.
 
 ### Tests
@@ -164,6 +169,9 @@
   - `tests/Feature/PetFollowFeatureTest.php`
   - `tests/Feature/FollowButtonComponentTest.php`
   - `php artisan test --compact tests/Feature/Auth/AuthenticationTest.php tests/Feature/Auth/AuthenticationHardeningTest.php tests/Feature/InterfaceRefreshTest.php`
+  - `php artisan test --compact tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfilePageDesignTest.php tests/Feature/UsernameTest.php tests/Feature/UsernameRedirectTest.php`
+  - `php artisan test --compact tests/Feature/ProfileTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileActivitySummaryTest.php tests/Feature/VisibilityProfileTest.php tests/Unit/ProfileVisibilityServiceTest.php tests/Unit/Models/UserScopesTest.php tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/Settings/PrivacySettingsTest.php`
+  - `php artisan test --compact tests/Feature/ExploreLikesTest.php tests/Feature/ExploreAvatarTest.php tests/Feature/Pets/PetShowTest.php tests/Feature/Pets/PetCrudTest.php tests/Feature/AuthenticatedPageAccessTest.php tests/Feature/FollowRequestFlowTest.php`
   - `composer validate --strict --no-check-publish`
   - Playwright login check for `https://larapetssocnet.test/login` reaching `/dashboard` with Debugbar injected and no 500 error
   - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php --filter="shared select controls"`

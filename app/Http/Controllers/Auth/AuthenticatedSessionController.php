@@ -9,6 +9,7 @@ use App\Services\Auth\AuthAuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -26,11 +27,21 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request, AttemptLoginAction $attemptLogin): RedirectResponse
     {
-        $attemptLogin->handle($request);
+        $restrictedResponse = $attemptLogin->handle($request);
 
-        $request->session()->regenerate();
+        if ($request->user() !== null) {
+            $request->session()->regenerate();
+        }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if ($restrictedResponse instanceof RedirectResponse) {
+            return $restrictedResponse;
+        }
+
+        if (! $request->user()?->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        return $this->redirectToSafeIntendedUrl($request);
     }
 
     /**
@@ -38,7 +49,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request, AuthAuditLogger $auditLogger): RedirectResponse
     {
-        $auditLogger->record($request->user(), 'logout', $request);
+        if ($request->user() !== null) {
+            $auditLogger->record($request->user(), 'logout', $request, [
+                'logout_type' => 'manual',
+            ]);
+        }
 
         Auth::guard('web')->logout();
 
@@ -47,5 +62,28 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function redirectToSafeIntendedUrl(LoginRequest $request): RedirectResponse
+    {
+        $fallback = route('dashboard', absolute: false);
+        $intended = $request->session()->pull('url.intended');
+
+        if (! is_string($intended) || $intended === '') {
+            return redirect($fallback);
+        }
+
+        if (Str::startsWith($intended, '/') && ! Str::startsWith($intended, '//')) {
+            return redirect()->to($intended);
+        }
+
+        $host = parse_url($intended, PHP_URL_HOST);
+        $scheme = parse_url($intended, PHP_URL_SCHEME);
+
+        if ($host === $request->getHost() && in_array($scheme, ['http', 'https'], true)) {
+            return redirect()->to($intended);
+        }
+
+        return redirect($fallback);
     }
 }

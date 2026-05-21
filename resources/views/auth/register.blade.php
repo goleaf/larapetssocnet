@@ -114,7 +114,7 @@
  id="name"
  type="text"
  name="name"
- label="Full name"
+ label="Display name"
  :value="old('name')"
  required
  autofocus
@@ -133,6 +133,7 @@
  prefix="@"
  :value="old('username')"
  maxlength="30"
+ required
  autocomplete="username"
  x-model="username"
  @input="usernameTouched = true"
@@ -238,7 +239,8 @@
  I agree to the
  <button type="button" class="font-semibold text-paw hover:text-paw-dark" @click="termsOpen = true">Terms of Service</button>
  and
- <button type="button" class="font-semibold text-paw hover:text-paw-dark" @click="privacyOpen = true">Privacy Policy</button>.
+ <button type="button" class="font-semibold text-paw hover:text-paw-dark" @click="privacyOpen = true">Privacy Policy</button>
+ and Community Guidelines.
  </span>
  </label>
  @error('terms')

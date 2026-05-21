@@ -23,7 +23,7 @@
  Any groups you own will be transferred to the next oldest admin, or dissolved if no admins remain.
  <br><br>
  Once initiated, you will be logged out. You will have a <strong>30-day grace period</strong>.
- If you log back in within 30 days, your deletion request will be cancelled. If not, your account is
+ If you log back in within 30 days, you must confirm your password to cancel the deletion request. If not, your account is
  permanently purged.
  </p>
 

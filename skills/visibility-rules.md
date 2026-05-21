@@ -33,3 +33,8 @@ If any layer is missing, treat it as a security bug.
 - Post visibility cannot be broader than account visibility.
 - Post visibility can be more restrictive than account visibility.
 - Example: `public` post on private account is still follower-only.
+
+## Profile Privacy Ceiling
+- Profile visibility is also a ceiling for profile sections, pets, photos, likes, followers, following, search, explore, feed, and direct media/gallery URLs.
+- Blocked, banned, suspended, deactivated, deleted, or pending-deletion accounts are not valid visibility targets even when individual content is public.
+- Section visibility can be more restrictive than the profile shell. Do not show tabs, counts, sidebars, or direct route content until the section-specific check passes.

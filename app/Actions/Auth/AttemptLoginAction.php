@@ -5,7 +5,10 @@ namespace App\Actions\Auth;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use Carbon\CarbonInterface;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
@@ -16,53 +19,76 @@ class AttemptLoginAction
     /**
      * @throws ValidationException
      */
-    public function handle(LoginRequest $request): void
+    public function handle(LoginRequest $request): ?RedirectResponse
     {
-        $request->ensureIsNotRateLimited();
-
-        $identifier = trim((string) $request->input('email'));
+        $identifier = $request->normalizedIdentifier();
         $candidateUser = $this->candidateUser($identifier);
-        $credentials = $this->credentialsFor($identifier, (string) $request->input('password'));
 
-        if ($candidateUser !== null && (bool) $candidateUser->is_banned && Auth::validate($credentials)) {
-            $this->failLogin($request, $candidateUser, $identifier, 'banned');
+        try {
+            $request->ensureIsNotRateLimited();
+        } catch (ValidationException $exception) {
+            $this->recordFailure($request, $candidateUser, $identifier, 'rate_limited');
+
+            throw $exception;
         }
 
-        if (! Auth::attempt([...$credentials, 'is_banned' => false], $request->boolean('remember'))) {
+        if (! $candidateUser instanceof User || ! Hash::check((string) $request->input('password'), (string) $candidateUser->password)) {
             $this->failLogin($request, $candidateUser, $identifier, 'invalid_credentials');
         }
 
-        RateLimiter::clear($request->throttleKey());
-        $this->auditLogger->record($request->user(), 'login_success', $request, [
-            'identifier_type' => $this->identifierType($identifier),
-        ]);
-    }
-
-    /**
-     * @return array{password: string, email?: string, username?: string}
-     */
-    private function credentialsFor(string $identifier, string $password): array
-    {
-        if ($this->identifierType($identifier) === 'email') {
-            return [
-                'email' => strtolower($identifier),
-                'password' => $password,
-            ];
+        if ($candidateUser->trashed()) {
+            $this->failLogin($request, $candidateUser, $identifier, 'deleted');
         }
 
-        return [
-            'username' => User::normalizeUsername($identifier),
-            'password' => $password,
-        ];
+        if ((bool) $candidateUser->is_banned) {
+            RateLimiter::hit($request->throttleKey());
+            $this->recordFailure($request, $candidateUser, $identifier, 'banned');
+
+            return redirect()->route('banned')->with('status', 'account-restricted');
+        }
+
+        if ($candidateUser->scheduled_deletion_at !== null) {
+            return $this->restrictedLogin($request, $candidateUser, $identifier, 'scheduled_deletion', 'account.deletion-pending');
+        }
+
+        if ($candidateUser->deactivated_at !== null) {
+            return $this->restrictedLogin($request, $candidateUser, $identifier, 'deactivated', 'account.reactivation');
+        }
+
+        if ($this->userIsSuspended($candidateUser)) {
+            return $this->restrictedLogin($request, $candidateUser, $identifier, 'suspended', 'account.suspended');
+        }
+
+        if (Hash::needsRehash((string) $candidateUser->password)) {
+            $candidateUser->forceFill([
+                'password' => Hash::make((string) $request->input('password')),
+            ])->save();
+        }
+
+        Auth::login($candidateUser, $request->boolean('remember'));
+
+        RateLimiter::clear($request->throttleKey());
+        $candidateUser->forceFill([
+            'last_login_at' => now(),
+            'last_seen_at' => now(),
+        ])->save();
+
+        $this->auditLogger->record($request->user(), 'login_success', $request, [
+            'identifier_type' => $this->identifierType($identifier),
+            'remember' => $request->boolean('remember'),
+            'restricted_to_verification' => ! $candidateUser->hasVerifiedEmail(),
+        ]);
+
+        return null;
     }
 
     private function candidateUser(string $identifier): ?User
     {
         if ($this->identifierType($identifier) === 'email') {
-            return User::query()->where('email', strtolower($identifier))->first();
+            return User::withTrashed()->where('email', $identifier)->first();
         }
 
-        return User::query()->where('username', User::normalizeUsername($identifier))->first();
+        return User::withTrashed()->where('username', $identifier)->first();
     }
 
     /**
@@ -72,14 +98,41 @@ class AttemptLoginAction
     {
         RateLimiter::hit($request->throttleKey());
 
-        $this->auditLogger->record($candidateUser, 'login_failure', $request, [
-            'identifier_type' => $this->identifierType($identifier),
-            'failure_reason' => $reason,
-        ]);
+        $this->recordFailure($request, $candidateUser, $identifier, $reason);
 
         throw ValidationException::withMessages([
             'email' => trans('auth.failed'),
         ]);
+    }
+
+    private function restrictedLogin(LoginRequest $request, User $user, string $identifier, string $reason, string $route): RedirectResponse
+    {
+        Auth::login($user, false);
+
+        $this->auditLogger->record($user, 'login_restricted', $request, [
+            'identifier_type' => $this->identifierType($identifier),
+            'restriction_reason' => $reason,
+            'identifier_hash' => hash('sha256', $identifier),
+        ]);
+
+        return redirect()->route($route);
+    }
+
+    private function recordFailure(LoginRequest $request, ?User $candidateUser, string $identifier, string $reason): void
+    {
+        $this->auditLogger->record($candidateUser, 'login_failure', $request, [
+            'identifier_type' => $this->identifierType($identifier),
+            'identifier_hash' => hash('sha256', $identifier),
+            'failure_reason' => $reason,
+            'rate_limited' => RateLimiter::tooManyAttempts($request->throttleKey(), 5),
+        ]);
+    }
+
+    private function userIsSuspended(User $user): bool
+    {
+        $suspendedUntil = $user->getAttribute('suspended_until');
+
+        return $suspendedUntil instanceof CarbonInterface && $suspendedUntil->isFuture();
     }
 
     private function identifierType(string $identifier): string

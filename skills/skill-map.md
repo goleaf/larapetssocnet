@@ -2,6 +2,10 @@
 
 Use this index when the right detailed guide is not obvious.
 
+## Activation Rule
+
+Start every Laravel task with `using-laravel-superpowers`, then use this map to activate all additional matching project/router skills. Load only the detailed `skills/*.md` or `.claude/skills/*/SKILL.md` files needed for the touched domains.
+
 ## UI And Design
 
 - `design.md`

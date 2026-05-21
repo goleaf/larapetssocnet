@@ -2,13 +2,14 @@
  $avatarUrl = $profileUser->avatar_url;
  $coverUrl = $profileUser->coverImageUrl();
  $coverPosition = (float) ($profileUser->cover_photo_position ?? 50);
- $canInteract = auth()->check() && auth()->id() !== $profileUser->id;
  $isOwner = auth()->check() && auth()->id() === $profileUser->id;
+ $hasBlockingRelationship = ($isBlocked ?? false) || ($isBlockedBy ?? false);
+ $canInteract = auth()->check() && ! $isOwner && ! $hasBlockingRelationship;
  $displayName = $profileUser->display_name ?: $profileUser->name;
- $location = $profileUser->location ?? $profileUser->city ?? null;
- $socialLinks = is_array($profileUser->social_links ?? null) ? $profileUser->social_links : [];
+ $location = ($canViewLocation ?? false) ? ($profileUser->location ?? $profileUser->city ?? null) : null;
+ $socialLinks = ($canViewContent ?? false) && is_array($profileUser->social_links ?? null) ? $profileUser->social_links : [];
 
- $websiteRaw = trim((string) ($profileUser->website ??''));
+ $websiteRaw = ($canViewContent ?? false) ? trim((string) ($profileUser->website ??'')) : '';
  $websiteUrl = $websiteRaw !==''
  ? (\Illuminate\Support\Str::startsWith($websiteRaw, ['http://','https://']) ? $websiteRaw :'https://'. $websiteRaw)
  : null;
@@ -16,15 +17,36 @@
  $tabItems = [
  ['label'=>'Posts','value'=>'posts','count'=> (int) ($profileUser->posts_count ?? 0)],
  ['label'=>'About','value'=>'about','href'=>'#profile-intro'],
- ['label'=>'Pets','value'=>'pets','count'=> (int) ($profileUser->pets_count ?? 0)],
- ['label'=>'Photos','value'=>'photos','count'=> $canViewContent ? $sidebarPhotos->count() : 0],
- ['label'=>'Groups','value'=>'groups'],
- ['label'=>'Events','value'=>'events'],
- ['label'=>'Contests','value'=>'contests'],
- ['label'=>'Followers','value'=>'followers-nav','href'=> route('profile.followers', ['user'=> $profileUser]),'count'=> (int) ($profileUser->followers_count ?? 0)],
- ['label'=>'Following','value'=>'following-nav','href'=> route('profile.following', ['user'=> $profileUser]),'count'=> (int) ($profileUser->following_count ?? 0)],
- ['label'=>'Likes','value'=>'likes'],
  ];
+
+ if ($canViewPets ?? false) {
+ $tabItems[] = ['label'=>'Pets','value'=>'pets','count'=> (int) ($profileUser->pets_count ?? 0)];
+ }
+
+ if ($canViewPhotos ?? false) {
+ $tabItems[] = ['label'=>'Photos','value'=>'photos','count'=> $sidebarPhotos->count()];
+ }
+
+ if ($canViewGroups ?? false) {
+ $tabItems[] = ['label'=>'Groups','value'=>'groups'];
+ }
+
+ if ($canViewContent ?? false) {
+ $tabItems[] = ['label'=>'Events','value'=>'events'];
+ $tabItems[] = ['label'=>'Contests','value'=>'contests'];
+ }
+
+ if ($canViewFollowers ?? false) {
+ $tabItems[] = ['label'=>'Followers','value'=>'followers-nav','href'=> route('profile.followers', ['user'=> $profileUser]),'count'=> (int) ($profileUser->followers_count ?? 0)];
+ }
+
+ if ($canViewFollowing ?? false) {
+ $tabItems[] = ['label'=>'Following','value'=>'following-nav','href'=> route('profile.following', ['user'=> $profileUser]),'count'=> (int) ($profileUser->following_count ?? 0)];
+ }
+
+ if ($canViewLikes ?? false) {
+ $tabItems[] = ['label'=>'Likes','value'=>'likes'];
+ }
 
  if ($isOwner) {
  $tabItems[] = ['label'=>'Scheduled','value'=>'scheduled','count'=> (int) ($scheduledCount ?? 0)];
@@ -233,8 +255,10 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  Cancel request
  </button>
 
+ @if ($canMessage ?? false)
  <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"
  size="sm" class="min-h-11 sm:min-w-28">Message</x-ui.button>
+ @endif
 
  @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
  @elseif (!auth()->check() && Route::has('login'))
@@ -246,6 +270,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" role="list"
  data-ui="profile-stats"
  aria-label="Profile statistics">
+ @if ($canViewFollowers ?? false)
  <a href="{{ route('profile.followers', ['user'=> $profileUser]) }}"
  role="listitem"
  data-ui="profile-stat-card"
@@ -254,6 +279,8 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  {{ number_format((int) $profileUser->followers_count) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Followers</p>
  </a>
+ @endif
+ @if ($canViewFollowing ?? false)
  <a href="{{ route('profile.following', ['user'=> $profileUser]) }}"
  role="listitem"
  data-ui="profile-stat-card"
@@ -262,6 +289,8 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </p>
  <p class="text-xs text-fur group-hover:text-bark">Following</p>
  </a>
+ @endif
+ @if ($canViewPets ?? false)
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
  role="listitem"
  data-ui="profile-stat-card"
@@ -269,6 +298,8 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->pets_count) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Pets</p>
  </a>
+ @endif
+ @if ($canViewContent ?? false)
  <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'posts']) }}"
  role="listitem"
  data-ui="profile-stat-card"
@@ -277,6 +308,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  {{ number_format((int) ($profileUser->posts_count ?? 0)) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Posts</p>
  </a>
+ @endif
  <div class="flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center" role="listitem" data-ui="profile-stat-card">
  <p class="text-xl font-bold text-bark">{{ $profileVisibilityLabel }}</p>
  <p class="text-xs text-fur">Visibility</p>
@@ -445,6 +477,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </x-ui.card>
 
  @if ($canViewContent)
+ @if ($canViewPets ?? false)
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Pets</h3>
@@ -470,7 +503,9 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </div>
  @endif
  </x-ui.card>
+ @endif
 
+ @if ($canViewPhotos ?? false)
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Photos</h3>
@@ -492,7 +527,9 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </div>
  @endif
  </x-ui.card>
+ @endif
 
+ @if ($canViewFollowing ?? false)
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Friends</h3>
@@ -517,6 +554,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </div>
  @endif
  </x-ui.card>
+ @endif
 
  {{-- Mutual Connections panel (visitor only) --}}
  @if ($mutualConnections->isNotEmpty())
@@ -569,7 +607,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  @endif
  </x-ui.empty-state>
  </x-ui.card>
- @elseif ($tab ==='pets')
+ @elseif ($tab ==='pets' && ($canViewPets ?? false))
  <x-ui.card>
  <div class="grid gap-4 sm:grid-cols-2">
  @forelse ($pets as $pet)
@@ -598,7 +636,12 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  @endforelse
  </div>
  </x-ui.card>
- @elseif ($tab ==='photos')
+ @elseif ($tab ==='pets')
+ <x-ui.card>
+ <x-ui.empty-state icon="🔒" title="Pets are private"
+ description="This profile does not share pet details with your current access level."/>
+ </x-ui.card>
+ @elseif ($tab ==='photos' && ($canViewPhotos ?? false))
  <x-ui.card>
  <div class="space-y-6">
  @if ($isOwner)
@@ -740,6 +783,11 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </div>
  </div>
  </x-ui.card>
+ @elseif ($tab ==='photos')
+ <x-ui.card>
+ <x-ui.empty-state icon="🔒" title="Photos are private"
+ description="This profile does not share photos with your current access level."/>
+ </x-ui.card>
  @elseif ($tab ==='scheduled' && $isOwner)
  <x-ui.card>
  <h2 class="mb-4 text-base font-bold font-display text-bark">Scheduled posts</h2>
@@ -751,12 +799,17 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  @endforelse
  </div>
  </x-ui.card>
- @elseif ($tab ==='likes')
+ @elseif ($tab ==='likes' && ($canViewLikes ?? false))
  <x-ui.card>
  <x-ui.empty-state icon="❤️" title="No likes to show"
  description="Likes tab is ready for Wave 2 data integration."/>
  </x-ui.card>
- @elseif ($tab ==='groups')
+ @elseif ($tab ==='likes')
+ <x-ui.card>
+ <x-ui.empty-state icon="🔒" title="Likes are private"
+ description="This profile does not share liked content with your current access level."/>
+ </x-ui.card>
+ @elseif ($tab ==='groups' && ($canViewGroups ?? false))
  <x-ui.card>
  @if ($groups->isEmpty())
  <x-ui.empty-state icon="🏠" title="Not in any groups yet"
@@ -786,6 +839,11 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  @endforeach
  </div>
  @endif
+ </x-ui.card>
+ @elseif ($tab ==='groups')
+ <x-ui.card>
+ <x-ui.empty-state icon="🔒" title="Groups are private"
+ description="This profile does not share groups with your current access level."/>
  </x-ui.card>
  @elseif ($tab ==='events')
  <x-ui.card>

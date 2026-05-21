@@ -15,11 +15,15 @@ class PetVisibilityService
         $pet->loadMissing('owner');
 
         $owner = $pet->owner;
-        if (! $owner) {
+        if (! $owner instanceof User) {
             return false;
         }
 
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -79,7 +83,11 @@ class PetVisibilityService
 
     public function canViewPetsForOwner(?User $viewer, User $owner): bool
     {
-        if ((bool) $owner->is_banned) {
+        if ($owner->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return false;
         }
 
@@ -98,6 +106,10 @@ class PetVisibilityService
         return $this->petsVisibilityAllows($viewer, $owner);
     }
 
+    /**
+     * @param  Builder<Pet>  $query
+     * @return Builder<Pet>
+     */
     public function applyVisibleScope(Builder $query, ?User $viewer): Builder
     {
         $query->select(['pets.*']);
@@ -105,12 +117,12 @@ class PetVisibilityService
         $viewerId = (int) ($viewer?->getKey() ?? 0);
         $isAdmin = $viewer?->hasAnyRole(['admin', 'moderator']) ?? false;
 
-        if ($viewer && (bool) $viewer->is_banned) {
+        if ($viewer instanceof User && $viewer->isUnavailableForProfile()) {
             return $query->whereKey(-1);
         }
 
         $query->whereHas('owner', function (Builder $ownerQuery) use ($viewerId, $isAdmin): void {
-            $ownerQuery->where('is_banned', false);
+            User::applyAvailableForProfiles($ownerQuery);
 
             if ($viewerId > 0 && User::hasBlocksTable()) {
                 $ownerQuery

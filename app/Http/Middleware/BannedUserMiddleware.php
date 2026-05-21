@@ -32,8 +32,6 @@ class BannedUserMiddleware
         }
 
         if (! empty($user->is_banned)) {
-            auth()->logout();
-
             return redirect()->route('banned');
         }
 

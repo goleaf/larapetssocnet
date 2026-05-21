@@ -53,6 +53,36 @@ it('installs the Superpowers Laravel skill pack for project-local AI workflows',
         ->toContain('composer quality');
 });
 
+it('requires Superpowers and all matching router skills in project guidance', function (): void {
+    $requiredDocs = [
+        'AGENTS.md',
+        'CLAUDE.md',
+        'GEMINI.md',
+        'README.md',
+        'skills.md',
+        'skills/skill-map.md',
+        '.agents/skills/using-laravel-superpowers/SKILL.md',
+        '.agents/skills/larapetssocnet-workflow-guides/SKILL.md',
+    ];
+
+    foreach ($requiredDocs as $path) {
+        $contents = file_get_contents(base_path($path));
+
+        expect($contents)->not->toBeFalse()
+            ->and($contents)->toContain('using-laravel-superpowers')
+            ->and($contents)->toContain('matching');
+    }
+
+    foreach (['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'skills.md'] as $path) {
+        $contents = file_get_contents(base_path($path));
+
+        expect($contents)->not->toBeFalse()
+            ->and($contents)->toContain('pest-testing')
+            ->and($contents)->toContain('tailwindcss-development')
+            ->and($contents)->toContain('larapetssocnet-memory-guides');
+    }
+});
+
 it('installs local design and test hook router skills', function (): void {
     $skillPaths = [
         '.agents/skills/larapetssocnet-design-guides/SKILL.md',

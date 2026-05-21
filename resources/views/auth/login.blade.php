@@ -22,7 +22,7 @@
 
  <div class="block pt-1">
  <label for="remember_me" class="inline-flex min-h-11 cursor-pointer items-center rounded-[var(--radius-soft)] group focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-paw">
- <input id="remember_me" type="checkbox" class="rounded border-whisker/50 text-paw shadow-sm focus:ring-paw" name="remember">
+ <input id="remember_me" type="checkbox" class="rounded border-whisker/50 text-paw shadow-sm focus:ring-paw" name="remember" value="1">
  <span class="ms-2 text-sm text-fur transition-colors group-hover:text-bark">{{ __('Remember me') }}</span>
  </label>
  </div>

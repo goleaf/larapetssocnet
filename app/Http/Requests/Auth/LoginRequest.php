@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Identity\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,8 +29,23 @@ class LoginRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string'],
+            'password' => ['required', 'string', 'max:1024'],
+            'remember' => ['sometimes', 'boolean'],
         ];
+    }
+
+    /**
+     * Prepare the login identifier for validation and throttling.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! is_string($this->input('email'))) {
+            return;
+        }
+
+        $this->merge([
+            'email' => $this->normalizedIdentifier(),
+        ]);
     }
 
     /**
@@ -60,8 +76,17 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
+        return Str::transliterate('login|'.$this->normalizedIdentifier().'|'.$this->ip());
+    }
+
+    public function normalizedIdentifier(): string
+    {
         $identifier = trim((string) $this->input('email'));
 
-        return Str::transliterate(Str::lower($identifier).'|'.$this->ip());
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL) !== false) {
+            return Str::lower($identifier);
+        }
+
+        return User::normalizeUsername($identifier);
     }
 }

@@ -12,11 +12,12 @@ return [
     'cooldown_days' => 30,
     'reserve_old_usernames' => true,
     'reserved' => [
-        'about', 'account', 'admin', 'administrator', 'api', 'app', 'assets', 'auth', 'badge', 'badges',
+        'about', 'abuse', 'account', 'admin', 'administrator', 'api', 'app', 'assets', 'auth', 'badge', 'badges',
         'banned', 'blog', 'contact', 'contests', 'dashboard', 'data', 'dev', 'explore', 'events',
         'feed', 'groups', 'help', 'home', 'inbox', 'login', 'logout', 'marketplace', 'messages',
-        'moderation', 'notifications', 'onboarding', 'pets', 'photos', 'post', 'posts', 'profile',
-        'register', 'reports', 'root', 'saved', 'search', 'security', 'settings', 'signup', 'support',
-        'system', 'tips', 'user', 'users', 'www', 'mail', 'null', 'undefined',
+        'moderation', 'notifications', 'official', 'onboarding', 'password', 'pets', 'photos', 'post',
+        'posts', 'privacy', 'profile', 'register', 'reports', 'reset', 'root', 'saved', 'search',
+        'security', 'settings', 'signup', 'staff', 'support', 'system', 'terms', 'tips', 'user',
+        'users', 'verify', 'www', 'mail', 'null', 'undefined',
     ],
 ];
