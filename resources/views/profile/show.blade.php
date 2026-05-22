@@ -26,6 +26,11 @@
  $followingModalPreview = $followingModalPreview ?? collect();
  $hasProfileStats = ($canViewFollowers ?? false) || ($canViewFollowing ?? false) || ($canViewPets ?? false);
  $hasProfileActions = $isOwner || $canInteract || (! auth()->check() && Route::has('login'));
+ $profileUrl = $profileUser->profile_url;
+ $profileShareText = 'Meet '.$displayName.' on PetSocial: '.$profileUrl;
+ $encodedProfileUrl = rawurlencode($profileUrl);
+ $encodedProfileShareText = rawurlencode($profileShareText);
+ $encodedProfileShareSubject = rawurlencode('PetSocial profile for '.$displayName);
  $isNewProfileState = ! filled($profileUser->bio)
  && ! filled($profileUser->headline)
  && ! $location
@@ -391,9 +396,16 @@
  @if ($hasProfileActions)
  <div class="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:min-w-[18rem] lg:justify-end" data-ui="profile-actions">
  @if ($isOwner)
- <x-ui.button :href="route('posts.create')" variant="secondary" size="sm" class="min-h-11">Create Post</x-ui.button>
- <x-ui.button :href="route('settings.profile')" variant="primary" size="sm" class="min-h-11">Edit Profile</x-ui.button>
- <x-ui.button :href="route('settings.data')" variant="outline" size="sm" class="min-h-11">Account Settings</x-ui.button>
+ <div class="grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[18rem]" data-ui="profile-owner-actions">
+ <x-ui.button type="button" variant="primary" size="sm" class="min-h-11"
+ aria-haspopup="dialog"
+ aria-controls="profile-edit-modal"
+ @click="window.toggleModal('profile-edit-modal')">Edit Profile</x-ui.button>
+ <x-ui.button type="button" variant="secondary" size="sm" class="min-h-11"
+ aria-haspopup="dialog"
+ aria-controls="profile-share-modal"
+ @click="window.toggleModal('profile-share-modal')">Share Profile</x-ui.button>
+ </div>
  @elseif ($canInteract)
  <button
  class="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
@@ -560,6 +572,130 @@
  </x-ui.button>
  </x-slot>
  </x-ui.modal>
+ @endif
+
+ @if ($isOwner)
+ <x-ui.modal id="profile-edit-modal" name="profile-edit-modal" title="Edit Profile"
+ description="Update the public details people see on your profile."
+ size="xl"
+ data-ui="profile-edit-modal">
+ <form action="{{ route('settings.profile.update') }}" method="POST" class="space-y-5" data-ui="profile-edit-modal-form">
+ @csrf
+ @method('PUT')
+ <input type="hidden" name="username" value="{{ $profileUser->username }}">
+ <input type="hidden" name="email" value="{{ $profileUser->email }}">
+
+ <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+ <x-ui.input id="profile_modal_name" name="name" label="Name" :value="old('name', $profileUser->name)" required autocomplete="name"/>
+ <x-ui.input id="profile_modal_display_name" name="display_name" label="Display name" :value="old('display_name', $profileUser->display_name)" autocomplete="nickname"/>
+ <div class="sm:col-span-2">
+ <x-ui.textarea id="profile_modal_bio" name="bio" rows="4" label="Bio" :value="old('bio', $profileUser->bio)" maxlength="1000"
+ hint="Brief description for your profile."/>
+ </div>
+ <div class="sm:col-span-2">
+ <x-ui.input id="profile_modal_headline" name="headline" label="Headline" :value="old('headline', $profileUser->headline)"
+ hint="Short status or tagline shown near your name."/>
+ </div>
+ <x-ui.input id="profile_modal_location" name="location" label="Location" :value="old('location', $profileUser->location)"/>
+ <x-ui.input id="profile_modal_website" name="website" type="url" label="Website" :value="old('website', $profileUser->website)"/>
+ </div>
+
+ <div class="flex flex-col gap-2 border-t border-whisker/30 pt-5 sm:flex-row sm:items-center sm:justify-between">
+ <x-ui.button :href="route('settings.profile')" variant="ghost" size="sm" class="min-h-11">Advanced settings</x-ui.button>
+ <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+ <x-ui.button type="button" variant="outline" size="sm" class="min-h-11" @click="window.toggleModal('profile-edit-modal', false)">Cancel</x-ui.button>
+ <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11">Save Profile</x-ui.button>
+ </div>
+ </div>
+ </form>
+ </x-ui.modal>
+
+ <x-ui.modal id="profile-share-modal" name="profile-share-modal" title="Share Profile"
+ description="Copy your profile link, scan the QR code, or send it to another platform."
+ size="lg"
+ data-ui="profile-share-modal">
+ <div class="space-y-5"
+ data-ui="profile-share-panel"
+ x-data="{
+ profileUrl: @js($profileUrl),
+ shareText: @js($profileShareText),
+ copiedLabel: '',
+ copyTimer: null,
+ async copy(value, label) {
+ try {
+ if (navigator.clipboard?.writeText) {
+ await navigator.clipboard.writeText(value);
+ } else {
+ this.$refs.clipboardFallback.value = value;
+ this.$refs.clipboardFallback.select();
+ document.execCommand('copy');
+ }
+
+ this.copiedLabel = label;
+ window.clearTimeout(this.copyTimer);
+ this.copyTimer = window.setTimeout(() => { this.copiedLabel = ''; }, 2000);
+ } catch (error) {
+ this.copiedLabel = 'copy failed';
+ }
+ },
+ }">
+ <textarea x-ref="clipboardFallback" class="sr-only" tabindex="-1" aria-hidden="true" readonly></textarea>
+
+ <div class="space-y-2">
+ <label for="profile-share-url" class="text-sm font-semibold text-bark">Profile URL</label>
+ <div class="flex flex-col gap-2 sm:flex-row">
+ <input id="profile-share-url" data-ui="profile-share-url" type="text" readonly value="{{ $profileUrl }}"
+ class="form-input min-h-11 flex-1 text-sm"
+ @focus="$el.select()">
+ <x-ui.button type="button" variant="primary" size="sm" class="min-h-11 sm:min-w-28"
+ data-ui="profile-share-copy-button"
+ @click="copy(profileUrl, 'profile link')">
+ <span x-text="copiedLabel === 'profile link' ? 'Copied' : 'Copy Link'">Copy Link</span>
+ </x-ui.button>
+ </div>
+ <p class="text-xs text-fur" role="status" aria-live="polite" x-show="copiedLabel" x-text="copiedLabel === 'copy failed' ? 'Copy failed. Select the URL and copy it manually.' : 'Copied ' + copiedLabel + '.'"></p>
+ </div>
+
+ <div class="grid gap-4 sm:grid-cols-[12rem_minmax(0,1fr)] sm:items-center">
+ <div data-ui="profile-share-qr" class="mx-auto flex h-48 w-48 items-center justify-center rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-3 shadow-sm sm:mx-0">
+ <img
+ data-ui="profile-share-qr-code"
+ src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=12&data={{ $encodedProfileUrl }}"
+ alt="QR code for {{ '@'.$profileUser->username }} profile URL"
+ class="h-full w-full"
+ loading="lazy"
+ referrerpolicy="no-referrer">
+ </div>
+ <div class="space-y-2">
+ <h4 class="font-display text-lg font-semibold text-bark">QR code</h4>
+ <p class="text-sm leading-6 text-fur">Use the QR code when sharing your profile from printed material, event tables, or another screen.</p>
+ </div>
+ </div>
+
+ <div data-ui="profile-share-options" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+ <button type="button"
+ class="btn-base btn-secondary min-h-11 px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ data-ui="profile-share-copy-text"
+ @click="copy(shareText, 'share text')">
+ <span x-text="copiedLabel === 'share text' ? 'Copied' : 'Copy share text'">Copy share text</span>
+ </button>
+ <a href="https://twitter.com/intent/tweet?text={{ $encodedProfileShareText }}"
+ target="_blank"
+ rel="noopener noreferrer"
+ class="btn-base btn-outline min-h-11 px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ data-ui="profile-share-x">Share on X</a>
+ <a href="https://www.facebook.com/sharer/sharer.php?u={{ $encodedProfileUrl }}"
+ target="_blank"
+ rel="noopener noreferrer"
+ class="btn-base btn-outline min-h-11 px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ data-ui="profile-share-facebook">Share on Facebook</a>
+ <a href="mailto:?subject={{ $encodedProfileShareSubject }}&body={{ $encodedProfileShareText }}"
+ class="btn-base btn-outline min-h-11 px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ data-ui="profile-share-email">Email profile</a>
+ </div>
+ </div>
+ </x-ui.modal>
+
  @endif
 
  @if ($isOwner)

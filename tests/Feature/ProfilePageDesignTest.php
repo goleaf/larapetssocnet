@@ -236,9 +236,16 @@ it('renders profile action buttons from the viewer relationship state', function
         ->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
         ->assertSee('data-ui="profile-actions"', false)
-        ->assertSee('Create Post')
+        ->assertSee('data-ui="profile-owner-actions"', false)
+        ->assertSee('grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[18rem]', false)
         ->assertSee('Edit Profile')
-        ->assertSee('Account Settings')
+        ->assertSee('Share Profile')
+        ->assertSee('@click="window.toggleModal(\'profile-edit-modal\')"', false)
+        ->assertSee('@click="window.toggleModal(\'profile-share-modal\')"', false)
+        ->assertSee('aria-controls="profile-edit-modal"', false)
+        ->assertSee('aria-controls="profile-share-modal"', false)
+        ->assertDontSee('Create Post')
+        ->assertDontSee('Account Settings')
         ->assertDontSee('@click="toggleFollow"', false)
         ->assertDontSee('Sign In to Follow');
 
@@ -250,6 +257,55 @@ it('renders profile action buttons from the viewer relationship state', function
         ->assertSee('Message')
         ->assertSee('aria-label="Profile actions"', false)
         ->assertDontSee('Edit Profile');
+});
+
+it('renders owner edit and share profile modals from the profile action buttons', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Share Modal Owner',
+        'display_name' => 'Share Crew',
+        'username' => 'share_modal_owner',
+        'bio' => 'A shareable profile with a practical bio.',
+        'headline' => 'Profile modal tester',
+        'location' => 'Vilnius',
+        'website' => 'https://share.example',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $profileUrl = $profileOwner->profile_url;
+
+    $this->actingAs($profileOwner)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-edit-modal"', false)
+        ->assertSee('data-ui="profile-edit-modal-form"', false)
+        ->assertSee('action="'.route('settings.profile.update').'"', false)
+        ->assertSee('name="_method" value="PUT"', false)
+        ->assertSee('id="profile_modal_name"', false)
+        ->assertSee('id="profile_modal_display_name"', false)
+        ->assertSee('id="profile_modal_bio"', false)
+        ->assertSee('id="profile_modal_headline"', false)
+        ->assertSee('id="profile_modal_location"', false)
+        ->assertSee('id="profile_modal_website"', false)
+        ->assertSee('Advanced settings')
+        ->assertSee('Save Profile')
+        ->assertSee('data-ui="profile-share-modal"', false)
+        ->assertSee('data-ui="profile-share-url"', false)
+        ->assertSee('value="'.$profileUrl.'"', false)
+        ->assertSee('data-ui="profile-share-copy-button"', false)
+        ->assertSee('navigator.clipboard?.writeText', false)
+        ->assertSee('document.execCommand(\'copy\')', false)
+        ->assertSee('data-ui="profile-share-qr"', false)
+        ->assertSee('data-ui="profile-share-qr-code"', false)
+        ->assertSee('api.qrserver.com/v1/create-qr-code', false)
+        ->assertSee('data='.rawurlencode($profileUrl), false)
+        ->assertSee('alt="QR code for @share_modal_owner profile URL"', false)
+        ->assertSee('data-ui="profile-share-options"', false)
+        ->assertSee('Copy share text')
+        ->assertSee('Share on X')
+        ->assertSee('Share on Facebook')
+        ->assertSee('Email profile')
+        ->assertSee(rawurlencode('Meet Share Crew on PetSocial: '.$profileUrl), false);
 });
 
 it('renders the profile header as the topmost full-width section in the main profile view', function (): void {
