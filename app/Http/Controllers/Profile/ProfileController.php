@@ -157,7 +157,7 @@ class ProfileController extends Controller
     public function updateCoverPosition(UpdateCoverPositionRequest $request, AuthAuditLogger $auditLogger): JsonResponse|RedirectResponse
     {
         $user = $request->user();
-        $position = round((float) $request->validated('position'), 2);
+        $position = User::normalizeCoverPhotoPosition($request->validated('position'));
 
         $user->forceFill([
             'cover_photo_position' => $position,

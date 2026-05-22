@@ -1,7 +1,7 @@
 @php
  $avatarUrl = $profileUser->avatar_url;
  $coverUrl = $profileUser->coverImageUrl();
- $coverPosition = (float) ($profileUser->cover_photo_position ?? 50);
+ $coverPosition = $profileUser->coverPhotoPositionPercentage();
  $isOwner = auth()->check() && auth()->id() === $profileUser->id;
  $hasBlockingRelationship = ($isBlocked ?? false) || ($isBlockedBy ?? false);
  $canInteract = auth()->check() && ! $isOwner && ! $hasBlockingRelationship;
@@ -161,6 +161,7 @@
  @if ($coverUrl)
  <img data-ui="profile-cover-image" src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
  class="absolute inset-0 h-full w-full select-none object-cover"
+ style="object-position: center {{ $coverPosition }}%"
  x-bind:style="`object-position: center ${position}%`"
  x-bind:class="repositioning ? 'cursor-grab active:cursor-grabbing' : ''"
  @pointerdown.prevent="startCoverDrag($event)"/>

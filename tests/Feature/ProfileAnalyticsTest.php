@@ -265,6 +265,7 @@ it('renders verified profile badge and saved cover focal point', function (): vo
         ->assertOk()
         ->assertSee('Verified PetSocial account')
         ->assertSee('This account has been verified by PetSocial')
+        ->assertSee('style="object-position: center 72.5%"', false)
         ->assertSee('position: 72.5', false);
 });
 
@@ -281,3 +282,30 @@ it('lets profile owners save cover focal point', function (): void {
 
     expect((float) $user->refresh()->cover_photo_position)->toBe(82.25);
 });
+
+it('rejects cover focal points outside the supported percentage range', function (float $position): void {
+    $user = User::factory()->create([
+        'cover_photo_position' => 50,
+    ]);
+
+    $this->actingAs($user)
+        ->patchJson(route('profile.cover-position.update'), ['position' => $position])
+        ->assertInvalid(['position']);
+
+    expect((float) $user->refresh()->cover_photo_position)->toBe(50.0);
+})->with([
+    'below zero' => -0.01,
+    'above one hundred' => 100.01,
+]);
+
+it('normalizes direct cover focal point writes before storage', function (float $position, float $expected): void {
+    $user = User::factory()->create();
+
+    $user->forceFill(['cover_photo_position' => $position])->saveQuietly();
+
+    expect((float) $user->refresh()->cover_photo_position)->toBe($expected);
+})->with([
+    'minimum floor' => [-12.5, User::MIN_COVER_PHOTO_POSITION],
+    'maximum ceiling' => [140.75, User::MAX_COVER_PHOTO_POSITION],
+    'two decimal precision' => [64.987, 64.99],
+]);

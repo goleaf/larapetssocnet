@@ -173,6 +173,12 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
 
+    public const DEFAULT_COVER_PHOTO_POSITION = 50.0;
+
+    public const MIN_COVER_PHOTO_POSITION = 0.0;
+
+    public const MAX_COVER_PHOTO_POSITION = 100.0;
+
     public const CURRENT_TERMS_VERSION = '2026-05-18';
 
     /**
@@ -1389,7 +1395,20 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
         $this->forceFill([
             'cover_photo_path' => null,
+            'cover_photo_position' => self::DEFAULT_COVER_PHOTO_POSITION,
         ])->saveQuietly();
+    }
+
+    public static function normalizeCoverPhotoPosition(mixed $position): float
+    {
+        $value = is_numeric($position) ? (float) $position : self::DEFAULT_COVER_PHOTO_POSITION;
+
+        return round(min(self::MAX_COVER_PHOTO_POSITION, max(self::MIN_COVER_PHOTO_POSITION, $value)), 2);
+    }
+
+    public function coverPhotoPositionPercentage(): float
+    {
+        return self::normalizeCoverPhotoPosition($this->cover_photo_position);
     }
 
     public function coverImageUrl(): ?string
@@ -1414,6 +1433,10 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function setAttribute($key, $value)
     {
+        if ($key === 'cover_photo_position') {
+            $value = self::normalizeCoverPhotoPosition($value);
+        }
+
         if (is_string($key) && $this->shouldIgnoreMissingColumn($key)) {
             return $this;
         }

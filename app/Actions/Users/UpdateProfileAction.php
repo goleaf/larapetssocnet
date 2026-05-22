@@ -147,6 +147,7 @@ class UpdateProfileAction
             $user->clearMediaCollection(User::MEDIA_COLLECTION_COVER);
             $user->forceFill([
                 'cover_photo_path' => null,
+                'cover_photo_position' => User::DEFAULT_COVER_PHOTO_POSITION,
             ])->saveQuietly();
         }
     }

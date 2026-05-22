@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated profile cover focal-point handling so uploaded cover images render with `object-position: center [percentage]%`, keep stored percentages normalized to 0-100, and reset to 50 on new uploads or removals.
 - Updated profile cover banners to use fixed responsive heights with absolute object-cover uploaded images and username-hashed gradient fallbacks, including private profile lockups.
 - Promoted the public profile header to a full-width topmost Blade section inside the main profile view, with the private lockup header following the same content-width behavior.
 - Moved the public profile route to the end of the application route file and enforced reserved username validation during registration and profile username changes.
