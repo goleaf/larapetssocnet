@@ -536,6 +536,39 @@ test('profile pinned post highlight honors viewer visibility', function (): void
         ->assertDontSee($hiddenPinned->body);
 });
 
+test('profile posts tab appends cursor-paginated batches without offset drift', function (): void {
+    $user = User::factory()->create();
+    $posts = collect(range(0, 15))
+        ->map(fn (int $index): Post => Post::factory()->for($user)->create([
+            'body' => 'profile cursor post '.$index,
+            'body_html' => '<p>profile cursor post '.$index.'</p>',
+            'created_at' => now()->subMinutes($index),
+        ]));
+
+    $component = Livewire::actingAs($user)
+        ->test('profile.tabs.posts', ['profileUserId' => $user->getKey()])
+        ->assertSet('postIds', $posts->take(15)->pluck('id')->all())
+        ->assertSet('hasMorePosts', true)
+        ->assertSee('profile cursor post 0')
+        ->assertSee('profile cursor post 14')
+        ->assertDontSee('profile cursor post 15')
+        ->assertSee('wire:intersect.margin.400px="loadMorePosts"', false)
+        ->assertSee('data-ui="profile-posts-loading-skeleton"', false);
+
+    Post::factory()->for($user)->create([
+        'body' => 'profile cursor inserted newest',
+        'body_html' => '<p>profile cursor inserted newest</p>',
+        'created_at' => now()->addMinute(),
+    ]);
+
+    $component
+        ->call('loadMorePosts')
+        ->assertSet('postIds', $posts->pluck('id')->all())
+        ->assertSet('hasMorePosts', false)
+        ->assertSee('profile cursor post 15')
+        ->assertDontSee('profile cursor inserted newest');
+});
+
 test('mutual followers appear on both followers and following pages', function (): void {
     $alice = User::factory()->create([
         'name' => 'Alice User',

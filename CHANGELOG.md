@@ -130,7 +130,7 @@
 - Updated profile settings and registration forms with live username availability checks.
 - Updated `TrackLastSeen` middleware to throttle writes to every 5 minutes.
 - Updated saved posts page to use saved-entry pagination, show saved timestamps, and provide inline unsave actions.
-- Updated profile posts tab to render real posts with a separate viewer-visible pinned highlight, chronological feed ordering, and owner pin/unpin controls.
+- Updated profile posts tab to render real posts with cursor-based infinite scroll in 15-post batches, a separate viewer-visible pinned highlight, chronological feed ordering, and owner pin/unpin controls.
 - Updated post pinning flow to support both web form redirects and JSON responses, and added explicit unpin route.
 - Updated post cards with a Share action that copies the post URL to clipboard (with browser fallback and copied state feedback).
 - Added unified reporting via polymorphic `reports` table for posts, comments, and users.
@@ -180,6 +180,11 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/ProfileTest.php --filter='profile posts tab appends cursor-paginated batches'`
+  - `php artisan test --compact tests/Feature/ProfileTest.php --filter='pin|pinned|cursor-paginated|profile posts tab shows pinned post highlight|profile pinned post highlight'`
+  - `vendor/bin/pint --dirty --format agent`
+  - `php artisan test --compact tests/Feature/ProfileTest.php tests/Feature/ProfileLivewireRouteTest.php tests/Feature/ProfileTabsTest.php tests/Feature/VisibilityProfileTest.php tests/Unit/EngagementServiceTest.php tests/Unit/Models/PostScopesTest.php`
+  - `npm run build`
   - `php artisan test --compact tests/Feature/ProfileTest.php --filter='pin|pinned|profile posts tab shows pinned post highlight|profile pinned post highlight'`
   - `php artisan test --compact tests/Unit/EngagementServiceTest.php --filter='regular profile queries chronologically'`
   - `vendor/bin/pint --dirty --format agent`

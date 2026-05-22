@@ -711,7 +711,7 @@ class Post extends Model implements HasMedia
         return $query->where('posts.user_id', $user->getKey());
     }
 
-    public static function pinnedProfileTimelinePost(User $profileOwner, ?User $viewer): ?self
+    private static function profileTimelineQuery(User $profileOwner, ?User $viewer): Builder
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
         $isOwner = $viewer instanceof User && $viewer->is($profileOwner);
@@ -719,7 +719,6 @@ class Post extends Model implements HasMedia
         return self::query()
             ->profileTimelineColumns()
             ->forProfile($profileOwner)
-            ->where('posts.is_pinned', true)
             ->with([
                 'user',
                 'author.media',
@@ -732,35 +731,44 @@ class Post extends Model implements HasMedia
                 fn (Builder $query): Builder => $query->published(),
             )
             ->visibleTo($viewer)
+            ->withListEngagement($viewerId);
+    }
+
+    public static function pinnedProfileTimelinePost(User $profileOwner, ?User $viewer): ?self
+    {
+        return self::profileTimelineQuery($profileOwner, $viewer)
+            ->where('posts.is_pinned', true)
             ->orderByDesc('posts.pinned_at')
-            ->withListEngagement($viewerId)
             ->first();
     }
 
-    public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 10): LengthAwarePaginator
+    public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 15, ?string $cursor = null): CursorPaginator
     {
-        $viewerId = (int) ($viewer?->getKey() ?? 0);
-        $isOwner = $viewer instanceof User && $viewer->is($profileOwner);
-
-        return self::query()
-            ->profileTimelineColumns()
-            ->forProfile($profileOwner)
-            ->with([
-                'user',
-                'author.media',
-                'hashtags',
-                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
-            ])
-            ->when(
-                $isOwner,
-                fn (Builder $query): Builder => $query->where('posts.status', '!=', PostStatus::Archived->value),
-                fn (Builder $query): Builder => $query->published(),
-            )
-            ->visibleTo($viewer)
+        return self::profileTimelineQuery($profileOwner, $viewer)
             ->when(true, fn (Builder $query) => app(ProfilePostOrderingService::class)->apply($query))
-            ->withListEngagement($viewerId)
-            ->paginate($perPage)
+            ->cursorPaginate($perPage, ['*'], 'profile_posts_cursor', $cursor)
             ->withQueryString();
+    }
+
+    /**
+     * @param  list<int>  $postIds
+     * @return Collection<int, self>
+     */
+    public static function profileTimelinePostsByIds(User $profileOwner, ?User $viewer, array $postIds): Collection
+    {
+        if ($postIds === []) {
+            return collect();
+        }
+
+        $posts = self::profileTimelineQuery($profileOwner, $viewer)
+            ->whereIn('posts.id', $postIds)
+            ->get()
+            ->keyBy(fn (self $post): int => (int) $post->getKey());
+
+        return collect($postIds)
+            ->map(fn (int $postId): ?self => $posts->get($postId))
+            ->filter()
+            ->values();
     }
 
     /**

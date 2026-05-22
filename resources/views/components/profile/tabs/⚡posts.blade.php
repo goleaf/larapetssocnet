@@ -3,20 +3,47 @@
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\ProfileVisibilityService;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 new class extends Component
 {
-    use WithPagination;
+    private const POSTS_PER_PAGE = 15;
 
     public int $profileUserId;
+
+    /**
+     * @var list<int>
+     */
+    public array $postIds = [];
+
+    public ?string $nextCursor = null;
+
+    public bool $hasMorePosts = false;
+
+    public bool $postsLoaded = false;
 
     public function mount(int $profileUserId): void
     {
         $this->profileUserId = $profileUserId;
+    }
+
+    public function loadMorePosts(): void
+    {
+        $profileUser = $this->profileUser();
+        $viewer = $this->viewer();
+
+        if (! app(ProfileVisibilityService::class)->canViewFullProfile($viewer, $profileUser)) {
+            $this->resetTimeline();
+
+            return;
+        }
+
+        if ($this->postsLoaded && ! $this->hasMorePosts) {
+            return;
+        }
+
+        $this->appendTimelinePosts($profileUser, $viewer, $this->postsLoaded ? $this->nextCursor : null);
     }
 
     /**
@@ -25,7 +52,8 @@ new class extends Component
      *     isOwner: bool,
      *     canViewContent: bool,
      *     pinnedPost: ?Post,
-     *     posts: LengthAwarePaginator|Collection<int, Post>
+     *     posts: Collection<int, Post>,
+     *     hasMorePosts: bool
      * }
      */
     public function viewData(): array
@@ -35,16 +63,18 @@ new class extends Component
         $isOwner = $viewer instanceof User && $viewer->is($profileUser);
         $canViewContent = app(ProfileVisibilityService::class)->canViewFullProfile($viewer, $profileUser);
 
+        if ($canViewContent) {
+            $this->ensureTimelineLoaded($profileUser, $viewer);
+        } else {
+            $this->resetTimeline();
+        }
+
         $posts = $canViewContent
-            ? Post::paginateProfileTimeline($profileUser, $viewer)
+            ? Post::profileTimelinePostsByIds($profileUser, $viewer, $this->postIds)
             : collect();
         $pinnedPost = $canViewContent
             ? Post::pinnedProfileTimelinePost($profileUser, $viewer)
             : null;
-
-        if ($posts instanceof LengthAwarePaginator) {
-            $posts->fragment('posts');
-        }
 
         return [
             'profileUser' => $profileUser,
@@ -52,6 +82,7 @@ new class extends Component
             'canViewContent' => $canViewContent,
             'pinnedPost' => $pinnedPost,
             'posts' => $posts,
+            'hasMorePosts' => $this->hasMorePosts,
         ];
     }
 
@@ -68,6 +99,40 @@ new class extends Component
         $viewer = auth()->user();
 
         return $viewer instanceof User ? $viewer : null;
+    }
+
+    private function ensureTimelineLoaded(User $profileUser, ?User $viewer): void
+    {
+        if ($this->postsLoaded) {
+            return;
+        }
+
+        $this->appendTimelinePosts($profileUser, $viewer);
+    }
+
+    private function appendTimelinePosts(User $profileUser, ?User $viewer, ?string $cursor = null): void
+    {
+        $posts = Post::paginateProfileTimeline($profileUser, $viewer, self::POSTS_PER_PAGE, $cursor);
+
+        foreach ($posts->items() as $post) {
+            $postId = (int) $post->getKey();
+
+            if (! in_array($postId, $this->postIds, true)) {
+                $this->postIds[] = $postId;
+            }
+        }
+
+        $this->nextCursor = $posts->nextCursor()?->encode();
+        $this->hasMorePosts = $posts->hasMorePages();
+        $this->postsLoaded = true;
+    }
+
+    private function resetTimeline(): void
+    {
+        $this->postIds = [];
+        $this->nextCursor = null;
+        $this->hasMorePosts = false;
+        $this->postsLoaded = false;
     }
 };
 ?>
@@ -147,10 +212,31 @@ new class extends Component
  <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet."/>
  @endforelse
 
- @if (method_exists($data['posts'],'hasPages') && $data['posts']->hasPages())
+ @if ($data['hasMorePosts'])
+ <div data-ui="profile-posts-infinite-scroll-trigger" wire:intersect.margin.400px="loadMorePosts" aria-live="polite">
+ <div wire:loading.block wire:target="loadMorePosts" data-ui="profile-posts-loading-skeleton" role="status" aria-label="Loading more posts" class="space-y-4">
+ @for ($index = 0; $index < 3; $index++)
  <x-ui.card>
- <x-ui.pagination :paginator="$data['posts']"/>
+ <div class="animate-pulse space-y-4">
+ <div class="flex items-center gap-3">
+ <div class="h-11 w-11 rounded-full bg-gray-200"></div>
+ <div class="min-w-0 flex-1 space-y-2">
+ <div class="h-4 w-32 rounded-full bg-gray-200"></div>
+ <div class="h-3 w-24 rounded-full bg-gray-100"></div>
+ </div>
+ </div>
+ <div class="space-y-2">
+ <div class="h-4 w-full rounded-full bg-gray-200"></div>
+ <div class="h-4 w-5/6 rounded-full bg-gray-200"></div>
+ <div class="h-4 w-2/3 rounded-full bg-gray-100"></div>
+ </div>
+ <div class="h-28 rounded-[var(--radius-soft)] bg-gray-100"></div>
+ </div>
  </x-ui.card>
+ @endfor
+ </div>
+ <div wire:loading.remove wire:target="loadMorePosts" class="h-8" aria-hidden="true"></div>
+ </div>
  @endif
  @endif
 </div>
