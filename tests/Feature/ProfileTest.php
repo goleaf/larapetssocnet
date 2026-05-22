@@ -266,9 +266,13 @@ test('profile pets tab renders responsive cards with pet metadata and follow act
             ->assertSee('Followers')
             ->assertSee('4')
             ->assertSee('Follow Pet')
+            ->assertSee('x-data="petFollowCard', false)
+            ->assertSee('x-text="formatCount(count)"', false)
+            ->assertSee('x-bind:aria-disabled="followed.toString()"', false)
+            ->assertSee('x-bind:aria-pressed="followed.toString()"', false)
+            ->assertSee('@click="follow($wire)"', false)
             ->call('followPet', $pet->getKey())
-            ->assertDontSee('data-ui="profile-pet-follow-action"', false)
-            ->assertSee('5');
+            ->assertNoRedirect();
 
         $this->assertDatabaseHas('pet_followers', [
             'pet_id' => $pet->getKey(),
@@ -276,6 +280,7 @@ test('profile pets tab renders responsive cards with pet metadata and follow act
         ]);
 
         expect($pet->fresh()->followers_count)->toBe(5);
+        expect($viewer->fresh()->following_pets_count)->toBe(1);
     } finally {
         Carbon::setTestNow();
     }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 new class extends Component
@@ -37,7 +38,11 @@ new class extends Component
         ];
     }
 
-    public function followPet(int $petId, PetFollowService $petFollowService): void
+    /**
+     * @return array{followed: bool, followers_count: int}
+     */
+    #[Renderless]
+    public function followPet(int $petId, PetFollowService $petFollowService): array
     {
         $viewer = $this->viewer();
 
@@ -52,6 +57,11 @@ new class extends Component
         Gate::forUser($viewer)->authorize('follow', $pet);
 
         $petFollowService->follow($viewer, $pet);
+
+        return [
+            'followed' => true,
+            'followers_count' => (int) $pet->followers_count,
+        ];
     }
 
     private function profileUser(): User
@@ -125,7 +135,10 @@ new class extends Component
  && ! $data['viewer']->is($data['profileUser'])
  && ! $viewerIsFollowing;
  @endphp
- <article data-ui="profile-pet-card" class="shell-card ui-card-interactive flex min-h-full flex-col overflow-hidden p-0">
+ <article
+ data-ui="profile-pet-card"
+ x-data="petFollowCard({ petId: @js($pet->getKey()), petName: @js($pet->name), followed: @js($viewerIsFollowing), followersCount: @js($petFollowersCount) })"
+ class="shell-card ui-card-interactive flex min-h-full flex-col overflow-hidden p-0">
  <a href="{{ route('pets.show', ['pet'=> $petRouteParam]) }}"
  class="group block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  aria-label="View profile for {{ $pet->name }}">
@@ -146,27 +159,28 @@ new class extends Component
  </div>
  <div>
  <dt class="text-[11px] font-semibold uppercase text-fur">Followers</dt>
- <dd class="mt-0.5 truncate font-semibold text-bark">{{ number_format($petFollowersCount) }}</dd>
+ <dd class="mt-0.5 truncate font-semibold text-bark" data-ui="profile-pet-followers-count" x-text="formatCount(count)">{{ number_format($petFollowersCount) }}</dd>
  </div>
  </dl>
  </div>
  </a>
  @if ($canShowFollowPet)
  <div class="mt-auto border-t border-whisker/30 px-4 py-3">
- <x-ui.button
+ <button
  type="button"
- variant="primary"
- size="sm"
- full
  data-ui="profile-pet-follow-action"
- wire:click="followPet({{ $pet->getKey() }})"
- wire:loading.attr="disabled"
- wire:target="followPet({{ $pet->getKey() }})"
+ class="btn-base h-[var(--control-height-sm)] w-full px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
+ x-bind:class="buttonClass"
+ x-bind:disabled="busy"
+ x-bind:aria-disabled="followed.toString()"
+ x-bind:aria-busy="busy.toString()"
+ x-bind:aria-pressed="followed.toString()"
+ x-bind:aria-label="label + ' ' + petName"
  aria-label="Follow {{ $pet->name }}"
+ @click="follow($wire)"
  >
- <span wire:loading.remove wire:target="followPet({{ $pet->getKey() }})">Follow Pet</span>
- <span wire:loading wire:target="followPet({{ $pet->getKey() }})">Following...</span>
- </x-ui.button>
+ <span x-text="label">Follow Pet</span>
+ </button>
  </div>
  @endif
  </article>

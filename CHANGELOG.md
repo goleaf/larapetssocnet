@@ -53,6 +53,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated profile Pets tab Follow Pet actions to use Alpine optimistic local state backed by a renderless Livewire action so card counts and the button state update without parent profile re-renders.
 - Updated post visibility filtering with friends-only access for mutual followers, owner-visible scheduled/private profile posts, and query-level profile/feed enforcement through shared visibility scopes.
 - Updated profile tabs with a JavaScript-positioned CSS custom property underline that slides between active labels over 200ms with ease-in-out timing.
 - Updated profile tab switching to use hash fragments, per-profile session restoration, and lazy Livewire child panels for Posts, Pets, Photos, About, and owner-only Scheduled content.

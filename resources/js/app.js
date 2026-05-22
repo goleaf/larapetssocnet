@@ -244,6 +244,61 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('petFollowCard', (config = {}) => ({
+ petId: toNumber(config.petId),
+ petName: toStringValue(config.petName, 'pet'),
+ followed: Boolean(config.followed),
+ count: toNumber(config.followersCount),
+ busy: false,
+
+ get label() {
+ return this.followed ? 'Following' : 'Follow Pet';
+ },
+
+ get buttonClass() {
+ return this.followed
+ ? 'btn-outline text-bark cursor-default'
+ : 'btn-primary';
+ },
+
+ formatCount(value) {
+ return window.uiHelpers.formatCount(value);
+ },
+
+ async follow(wire) {
+ if (this.busy || this.followed || !this.petId || !wire) {
+ return;
+ }
+
+ const previousFollowed = this.followed;
+ const previousCount = this.count;
+
+ this.busy = true;
+ this.followed = true;
+ this.count = previousCount + 1;
+
+ try {
+ const result = await wire.followPet(this.petId);
+
+ this.followed = Boolean(result?.followed ?? true);
+ this.count = toNumber(result?.followers_count, this.count);
+
+ window.dispatchEvent(new CustomEvent('pet-followed', {
+ detail: {
+ petId: this.petId,
+ followed: this.followed,
+ followersCount: this.count,
+ },
+ }));
+ } catch {
+ this.followed = previousFollowed;
+ this.count = previousCount;
+ } finally {
+ this.busy = false;
+ }
+ },
+ }));
+
  Alpine.data('saveState', (defaultSaved = false) => ({
  saved: Boolean(defaultSaved),
 
