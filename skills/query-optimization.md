@@ -10,6 +10,7 @@ Prevent N+1 in social-network pages.
 ## Rules
 - Feed pages should eager load all required relations in one `with([...])` chain.
 - Profile pages should eager load user media, pet card media, and count data before rendering.
+- Profile post grids should eager load both `media` and `postMedia`, and media-only filters should use indexed `EXISTS` checks instead of loading all posts and filtering collections.
 - Profile previews that compare social graph data should use SQL joins/subqueries, not PHP collection intersections over whole follower lists.
 - Profile completeness should read only the columns/counts/media-exists flags it needs instead of loading full user records.
 - Never access relation properties inside loops unless eager loaded.

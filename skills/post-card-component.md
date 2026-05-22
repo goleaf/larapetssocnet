@@ -24,6 +24,7 @@
 ## Engagement State
 - Use `liked_by_viewer`, `saved_by_viewer`, and counter attributes when eager-loaded by feed queries.
 - Avoid new per-card database queries for reaction or save state.
+- Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
 
 ## Time Display
 - Use `diffForHumans()` for recent posts (< 7 days).

@@ -10,6 +10,13 @@ $comments = app(CommentService::class)
     ->paginateThread($post, $viewer, 20);
 ```
 
+Profile media modals use:
+
+```php
+$comments = app(CommentService::class)
+    ->threadForPost($post, $viewer);
+```
+
 Implementation details:
 - Top-level comments: `topLevel()` scope (`parent_id` is null).
 - Replies are eager loaded via `replies` relation.

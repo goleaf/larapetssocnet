@@ -447,7 +447,7 @@ class Post extends Model implements HasMedia
 
     public function scopeWithMedia(Builder $query): Builder
     {
-        return $query->select([
+        $query->select([
             'posts.id',
             'posts.user_id',
             'posts.group_id',
@@ -472,10 +472,32 @@ class Post extends Model implements HasMedia
             'posts.created_at',
             'posts.updated_at',
             'posts.deleted_at',
-        ])->where(function (Builder $mediaQuery): void {
+        ]);
+
+        return self::applyContainingMediaFilter($query);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeContainingMedia(Builder $query): Builder
+    {
+        return self::applyContainingMediaFilter($query);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    private static function applyContainingMediaFilter(Builder $query): Builder
+    {
+        return $query->where(function (Builder $mediaQuery): void {
             $mediaQuery
                 ->whereHas('postMedia')
-                ->orWhereHas('media');
+                ->orWhereHas('media', function (Builder $spatieMediaQuery): void {
+                    $spatieMediaQuery->whereIn('collection_name', ['photos', 'images', 'videos', 'video']);
+                });
         });
     }
 
@@ -711,7 +733,10 @@ class Post extends Model implements HasMedia
         return $query->where('posts.user_id', $user->getKey());
     }
 
-    private static function profileTimelineQuery(User $profileOwner, ?User $viewer): Builder
+    /**
+     * @return Builder<self>
+     */
+    private static function profileTimelineQuery(User $profileOwner, ?User $viewer, bool $mediaOnly = false): Builder
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
         $isOwner = $viewer instanceof User && $viewer->is($profileOwner);
@@ -723,8 +748,13 @@ class Post extends Model implements HasMedia
                 'user',
                 'author.media',
                 'hashtags',
-                'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
+                'media',
+                'postMedia',
             ])
+            ->with([
+                'pet' => fn ($petQuery) => $petQuery->visibleTo($viewer),
+            ])
+            ->when($mediaOnly, fn (Builder $query): Builder => self::applyContainingMediaFilter($query))
             ->when(
                 $isOwner,
                 fn (Builder $query): Builder => $query->where('posts.status', '!=', PostStatus::Archived->value),
@@ -742,9 +772,12 @@ class Post extends Model implements HasMedia
             ->first();
     }
 
-    public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 15, ?string $cursor = null): CursorPaginator
+    /**
+     * @return CursorPaginator<int, Model>
+     */
+    public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 15, ?string $cursor = null, bool $mediaOnly = false): CursorPaginator
     {
-        return self::profileTimelineQuery($profileOwner, $viewer)
+        return self::profileTimelineQuery($profileOwner, $viewer, $mediaOnly)
             ->when(true, fn (Builder $query) => app(ProfilePostOrderingService::class)->apply($query))
             ->cursorPaginate($perPage, ['*'], 'profile_posts_cursor', $cursor)
             ->withQueryString();
@@ -754,13 +787,13 @@ class Post extends Model implements HasMedia
      * @param  list<int>  $postIds
      * @return Collection<int, self>
      */
-    public static function profileTimelinePostsByIds(User $profileOwner, ?User $viewer, array $postIds): Collection
+    public static function profileTimelinePostsByIds(User $profileOwner, ?User $viewer, array $postIds, bool $mediaOnly = false): Collection
     {
         if ($postIds === []) {
             return collect();
         }
 
-        $posts = self::profileTimelineQuery($profileOwner, $viewer)
+        $posts = self::profileTimelineQuery($profileOwner, $viewer, $mediaOnly)
             ->whereIn('posts.id', $postIds)
             ->get()
             ->keyBy(fn (self $post): int => (int) $post->getKey());
@@ -769,6 +802,52 @@ class Post extends Model implements HasMedia
             ->map(fn (int $postId): ?self => $posts->get($postId))
             ->filter()
             ->values();
+    }
+
+    public static function profileTimelinePostForModal(User $profileOwner, ?User $viewer, int $postId, bool $mediaOnly = false): ?self
+    {
+        return self::profileTimelineQuery($profileOwner, $viewer, $mediaOnly)
+            ->whereKey($postId)
+            ->first();
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    public function mediaItemsForDisplay(): Collection
+    {
+        $dbMediaItems = $this->relationLoaded('postMedia') ? $this->postMedia->values() : collect();
+
+        if ($dbMediaItems->isNotEmpty()) {
+            return $dbMediaItems;
+        }
+
+        $spatiePhotos = collect($this->getMedia('photos'))->merge($this->getMedia('images'));
+        $spatieVideos = collect($this->getMedia('videos'))->merge($this->getMedia('video'));
+
+        return $spatiePhotos->merge($spatieVideos)->values();
+    }
+
+    public static function mediaItemIsVideo(mixed $item): bool
+    {
+        if (is_object($item) && isset($item->mime_type)) {
+            return str_starts_with((string) $item->mime_type, 'video/');
+        }
+
+        return is_object($item) && (($item->media_type ?? 'image') === 'video');
+    }
+
+    public static function mediaItemUrl(mixed $item): string
+    {
+        if (is_object($item) && method_exists($item, 'getUrl')) {
+            return (string) $item->getUrl();
+        }
+
+        if (is_object($item) && method_exists($item, 'url')) {
+            return (string) $item->url();
+        }
+
+        return '';
     }
 
     /**

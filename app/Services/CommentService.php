@@ -10,6 +10,7 @@ use App\Notifications\MentionedInComment;
 use App\Notifications\NewComment;
 use App\Notifications\NewCommentReply;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -26,43 +27,14 @@ class CommentService
         private readonly VisibilityService $visibility,
     ) {}
 
+    /**
+     * @return LengthAwarePaginator<int, Comment>
+     */
     public function paginateThread(Post $post, ?User $viewer, int $perPage = 20): LengthAwarePaginator
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
 
-        $comments = Comment::query()
-            ->threadColumns()
-            ->where('comments.post_id', $post->getKey())
-            ->topLevel()
-            ->visibleTo($viewer)
-            ->withTrashed()
-            ->with([
-                'user' => fn (BelongsTo $userQuery): BelongsTo => $userQuery->select([
-                    'users.id',
-                    'users.name',
-                    'users.username',
-                    'users.avatar_path',
-                    'users.profile_photo_path',
-                ]),
-                'user.media',
-                'replies' => fn (HasMany $replyQuery): HasMany => $replyQuery
-                    ->threadColumns()
-                    ->visibleTo($viewer)
-                    ->withTrashed()
-                    ->oldest('comments.created_at')
-                    ->with([
-                        'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
-                            'users.id',
-                            'users.name',
-                            'users.username',
-                            'users.avatar_path',
-                            'users.profile_photo_path',
-                        ]),
-                        'user.media',
-                        'reactions',
-                    ]),
-                'reactions',
-            ])
+        $comments = $this->threadQuery($post, $viewer)
             ->oldest('comments.created_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -70,6 +42,21 @@ class CommentService
         $comments->setCollection($this->hydrateThreadMetadata($comments->getCollection(), $viewerId));
 
         return $comments;
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function threadForPost(Post $post, ?User $viewer): Collection
+    {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+
+        return $this->hydrateThreadMetadata(
+            $this->threadQuery($post, $viewer)
+                ->oldest('comments.created_at')
+                ->get(),
+            $viewerId
+        );
     }
 
     public function create(Post $post, User $author, string $body, ?Comment $parent = null): Comment
@@ -169,6 +156,46 @@ class CommentService
 
             return $comment;
         });
+    }
+
+    /**
+     * @return Builder<Comment>
+     */
+    private function threadQuery(Post $post, ?User $viewer): Builder
+    {
+        return Comment::query()
+            ->threadColumns()
+            ->where('comments.post_id', $post->getKey())
+            ->topLevel()
+            ->visibleTo($viewer)
+            ->withTrashed()
+            ->with([
+                'user' => fn (BelongsTo $userQuery): BelongsTo => $userQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'user.media',
+                'replies' => fn (HasMany $replyQuery): HasMany => $replyQuery
+                    ->threadColumns()
+                    ->visibleTo($viewer)
+                    ->withTrashed()
+                    ->oldest('comments.created_at')
+                    ->with([
+                        'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
+                            'users.id',
+                            'users.name',
+                            'users.username',
+                            'users.avatar_path',
+                            'users.profile_photo_path',
+                        ]),
+                        'user.media',
+                        'reactions',
+                    ]),
+                'reactions',
+            ]);
     }
 
     /**

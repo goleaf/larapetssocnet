@@ -13,6 +13,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,9 +80,9 @@ class PublicProfileController extends Controller
         $canViewLocation = $this->profileVisibilityService->canViewLocation($viewer, $user);
         $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
         $isOwner = $viewer && $viewer->is($user);
-        $profileOwnerFollowsViewer = $viewer && ! $isOwner ? $user->isFollowing($viewer) : false;
+        $profileOwnerFollowsViewer = $viewer && ! $isOwner && $user->isFollowing($viewer);
         $canMessage = $this->profileVisibilityService->canMessage($viewer, $user);
-        $tab = $this->resolveProfileTab($request, (bool) $isOwner);
+        $tab = $this->resolveProfileTab($request, $isOwner);
 
         if (! $canViewContent) {
             return view('profile.private', [
@@ -98,20 +99,21 @@ class PublicProfileController extends Controller
         }
 
         $canViewPets = $this->petVisibilityService->canViewPetsForOwner($viewer, $user);
-        $canViewPhotos = $canViewContent;
-
+        $pets = collect();
         $featuredPets = collect();
+
         if ($canViewPets) {
             $featuredPets = $this->profilePetsQuery($user, $viewer)->limit(9)->get();
+            $pets = $tab === 'pets'
+                ? $featuredPets
+                : collect();
         }
 
-        $sidebarPhotos = $canViewPhotos
-            ? collect($user->getMedia('photos'))
-                ->merge($user->getMedia('avatar'))
-                ->merge($user->getMedia('cover'))
-                ->take(9)
-                ->values()
-            : collect();
+        $sidebarPhotos = collect($user->getMedia('photos'))
+            ->merge($user->getMedia('avatar'))
+            ->merge($user->getMedia('cover'))
+            ->take(9)
+            ->values();
 
         $friendsPreview = collect();
 
@@ -137,14 +139,18 @@ class PublicProfileController extends Controller
         }
 
         // Badges — always load (up to 8 most recent)
-        $badges = $canViewContent
-            ? $user->badges()->limit(8)->get()
-            : collect();
+        $badges = $user->badges()->limit(8)->get();
 
         // Groups tab data
-        $canViewGroups = $viewer && $viewer->is($user)
-            ? true
-            : ($canViewContent && ($user->groups_visibility === 'everyone' || ($user->groups_visibility === 'followers_only' && $viewer && $viewer->isFollowing($user))));
+        $canViewGroups = $viewer instanceof User && $viewer->is($user);
+
+        if (! $canViewGroups && $user->groups_visibility === 'everyone') {
+            $canViewGroups = true;
+        }
+
+        if (! $canViewGroups && $user->groups_visibility === 'followers_only' && $viewer instanceof User) {
+            $canViewGroups = $viewer->isFollowing($user);
+        }
         $canViewLikes = $viewer && ($viewer->is($user) || $viewer->hasAnyRole(['admin', 'moderator']));
 
         $groups = $tab === 'groups' && $canViewGroups
@@ -196,9 +202,7 @@ class PublicProfileController extends Controller
         }
 
         // Activity chart — posts per month for last 6 months
-        $activityData = $canViewContent
-            ? Post::monthlyActivitySummaryForUser($user)
-            : [];
+        $activityData = Post::monthlyActivitySummaryForUser($user);
         $profileViewStats = $isOwner
             ? $this->profileViewStats($user)
             : null;
@@ -221,9 +225,9 @@ class PublicProfileController extends Controller
             'posts' => $canViewContent,
         ]);
         $profileTabCounts = [
-            'posts' => $canViewContent ? (int) ($user->posts_count ?? 0) : 0,
+            'posts' => (int) ($user->posts_count ?? 0),
             'pets' => $canViewPets ? (int) ($user->pets_count ?? 0) : 0,
-            'photos' => $canViewPhotos ? (int) ($user->photos_count ?? 0) : 0,
+            'photos' => (int) ($user->photos_count ?? 0),
             'scheduled' => $isOwner ? $scheduledCount : 0,
         ];
 
@@ -241,7 +245,7 @@ class PublicProfileController extends Controller
             'canViewFollowers' => $canViewFollowers,
             'canViewFollowing' => $canViewFollowing,
             'canViewPets' => $canViewPets,
-            'canViewPhotos' => $canViewPhotos,
+            'canViewPhotos' => true,
             'canViewGroups' => $canViewGroups,
             'canViewLikes' => $canViewLikes,
             'canViewLocation' => $canViewLocation,
@@ -253,7 +257,7 @@ class PublicProfileController extends Controller
             'profileVisibility' => $profileVisibility->value,
             'profileVisibilityLabel' => $profileVisibility->label(),
             'profileVisibilityIcon' => $profileVisibility->icon(),
-            'pets' => collect(),
+            'pets' => $pets,
             'featuredPets' => $featuredPets,
             'photos' => collect(),
             'galleries' => collect(),
@@ -390,9 +394,13 @@ class PublicProfileController extends Controller
      */
     private function followersModalPreview(User $user, ?User $viewer): Collection
     {
-        return $user->acceptedFollowers()
-            ->active()
-            ->notBlockedFor($viewer)
+        $query = User::query()
+            ->whereIn('users.id', $user->acceptedFollowers()->select('users.id'));
+
+        User::applyAvailableForProfiles($query);
+        $this->applyNotBlockedForUserQuery($query, $viewer);
+
+        return $query
             ->with('media')
             ->orderBy('users.name')
             ->limit(12)
@@ -404,9 +412,13 @@ class PublicProfileController extends Controller
      */
     private function followingModalPreview(User $user, ?User $viewer): Collection
     {
-        return $user->acceptedFollowing()
-            ->active()
-            ->notBlockedFor($viewer)
+        $query = User::query()
+            ->whereIn('users.id', $user->acceptedFollowing()->select('users.id'));
+
+        User::applyAvailableForProfiles($query);
+        $this->applyNotBlockedForUserQuery($query, $viewer);
+
+        return $query
             ->with('media')
             ->orderBy('users.name')
             ->limit(12)
@@ -471,5 +483,20 @@ class PublicProfileController extends Controller
             'profileUser' => $user,
             'following' => $following,
         ]);
+    }
+
+    /**
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    private function applyNotBlockedForUserQuery(Builder $query, ?User $viewer): Builder
+    {
+        if (! $viewer instanceof User || ! User::hasBlocksTable()) {
+            return $query;
+        }
+
+        return $query
+            ->whereNotIn('users.id', $viewer->blocking()->select('users.id'))
+            ->whereNotIn('users.id', $viewer->blockedBy()->select('users.id'));
     }
 }

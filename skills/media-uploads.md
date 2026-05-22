@@ -24,6 +24,8 @@ Post image conversions:
 - `medium` width 800 webp q85
 - `large` width 1200 webp q90
 
+Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()` and filters with `Post::containingMedia()` so both legacy `post_media` rows and Spatie collections remain visible without PHP-side post filtering.
+
 ## Pet Media
 Pet media uses public disk.
 

@@ -22,11 +22,7 @@
     $postBodyId = $postDomId.'-body';
     $mediaAlt = __('Post media shared by :name', ['name' => $authorName]);
 
-    $spatiePhotos = collect($post->getMedia('photos'))->merge($post->getMedia('images'));
-    $spatieVideos = collect($post->getMedia('videos'))->merge($post->getMedia('video'));
-    $spatieMediaItems = $spatiePhotos->merge($spatieVideos)->values();
-    $dbMediaItems = $post->relationLoaded('postMedia') ? $post->postMedia->values() : collect();
-    $mediaItems = $dbMediaItems->isNotEmpty() ? $dbMediaItems : $spatieMediaItems;
+    $mediaItems = $post->mediaItemsForDisplay();
     $shownMedia = $mediaItems->take(4);
     $hiddenMediaCount = max(0, $mediaItems->count() - $shownMedia->count());
 
@@ -75,25 +71,8 @@
         ? $storedBodyHtml
         : nl2br(e($body));
 
-    $isVideoMedia = static function (mixed $item): bool {
-        if (is_object($item) && isset($item->mime_type)) {
-            return str_starts_with((string) $item->mime_type, 'video/');
-        }
-
-        return is_object($item) && (($item->media_type ?? 'image') === 'video');
-    };
-
-    $mediaUrl = static function (mixed $item): string {
-        if (is_object($item) && method_exists($item, 'getUrl')) {
-            return (string) $item->getUrl();
-        }
-
-        if (is_object($item) && method_exists($item, 'url')) {
-            return (string) $item->url();
-        }
-
-        return '';
-    };
+    $isVideoMedia = static fn (mixed $item): bool => $post::mediaItemIsVideo($item);
+    $mediaUrl = static fn (mixed $item): string => $post::mediaItemUrl($item);
 @endphp
 
 <x-ui.card

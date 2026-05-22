@@ -14,6 +14,9 @@ it('creates a message and dispatches message sent event', function (): void {
     $sender = User::factory()->create(['is_private' => false]);
     $receiver = User::factory()->create(['is_private' => false]);
 
+    $sender->follow($receiver);
+    $receiver->follow($sender);
+
     $message = app(SendMessageAction::class)->handle($sender, $receiver, [
         'body' => 'unit-test-message',
     ]);

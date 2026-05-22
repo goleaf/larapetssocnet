@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a profile Posts tab media-only toggle with an indexed media query, Tailwind masonry grid, and Livewire full-post modal with threaded comments.
 - Added the project-local Superpowers Laravel skill pack under `.claude/skills` with Claude command wrappers under `.claude/commands/superpowers-laravel`.
 - Added a shared `x-ui.page-stack` component for operational pages that should align their main blocks with the app header width.
 - Added root project guidance for design, architecture, skills, hooks, and controller testing.

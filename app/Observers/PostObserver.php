@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Enums\PostStatus;
 use App\Events\PostCreated;
 use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\BadgeService;
 use App\Services\HashtagService;
 use Illuminate\Support\Facades\Cache;
@@ -22,25 +23,27 @@ class PostObserver
      */
     public function created(Post $post): void
     {
+        $author = $this->postAuthor($post);
+
         $this->hashtags->syncHashtags($post);
 
         PostCreated::dispatch($post);
 
         $this->bustFeedCache($post);
 
-        $post->author->increment('posts_count');
+        $author->increment('posts_count');
 
-        if ($this->isScheduledStatus($post->status)) {
-            $post->author->incrementCounter('scheduled_posts_count');
+        if ($this->isScheduledStatus($post->getAttribute('status'))) {
+            $author->incrementCounter('scheduled_posts_count');
         }
 
         if ($post->pet_id) {
             $post->pet->increment('posts_count');
         }
 
-        $this->badges->checkAndAwardBadges($post->author);
+        $this->badges->checkAndAwardBadges($author);
 
-        $this->logActivity('created', $post, $post->author);
+        $this->logActivity('created', $post, $author);
     }
 
     /**
@@ -81,14 +84,15 @@ class PostObserver
 
         if ($post->wasChanged('status')) {
             $wasScheduled = $this->isScheduledStatus($post->getOriginal('status'));
-            $isScheduled = $this->isScheduledStatus($post->status);
+            $author = $this->postAuthor($post);
+            $isScheduled = $this->isScheduledStatus($post->getAttribute('status'));
 
             if (! $wasScheduled && $isScheduled) {
-                $post->author->incrementCounter('scheduled_posts_count');
+                $author->incrementCounter('scheduled_posts_count');
             }
 
             if ($wasScheduled && ! $isScheduled) {
-                $post->author->decrementCounter('scheduled_posts_count');
+                $author->decrementCounter('scheduled_posts_count');
             }
         }
 
@@ -121,12 +125,14 @@ class PostObserver
 
     public function restored(Post $post): void
     {
+        $author = $this->postAuthor($post);
+
         $this->hashtags->syncHashtags($post);
 
-        $post->author->increment('posts_count');
+        $author->increment('posts_count');
 
-        if ($this->isScheduledStatus($post->status)) {
-            $post->author->incrementCounter('scheduled_posts_count');
+        if ($this->isScheduledStatus($post->getAttribute('status'))) {
+            $author->incrementCounter('scheduled_posts_count');
         }
 
         if ($post->pet) {
@@ -143,6 +149,7 @@ class PostObserver
      */
     public function deleted(Post $post): void
     {
+        $author = $this->postAuthor($post);
         $originalStatus = $post->getOriginal('status');
         $statusValue = $originalStatus instanceof PostStatus
             ? $originalStatus->value
@@ -156,10 +163,10 @@ class PostObserver
 
         $this->hashtags->detachAll($post, $wasEligible);
 
-        $post->author->decrement('posts_count');
+        $author->decrement('posts_count');
 
         if ($this->isScheduledStatus($originalStatus)) {
-            $post->author->decrementCounter('scheduled_posts_count');
+            $author->decrementCounter('scheduled_posts_count');
         }
 
         if ($post->pet) {
@@ -187,6 +194,13 @@ class PostObserver
             ->causedBy($causer)
             ->performedOn($post)
             ->log($description);
+    }
+
+    private function postAuthor(Post $post): User
+    {
+        return User::query()
+            ->whereKey($post->getAttribute('user_id'))
+            ->firstOrFail();
     }
 
     private function isScheduledStatus(mixed $status): bool

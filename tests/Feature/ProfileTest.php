@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Profile\PublicProfileController;
+use App\Models\Content\Comment;
 use App\Models\Content\Post;
+use App\Models\Content\PostMedia;
 use App\Models\Gamification\Badge;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
@@ -567,6 +569,73 @@ test('profile posts tab appends cursor-paginated batches without offset drift', 
         ->assertSet('hasMorePosts', false)
         ->assertSee('profile cursor post 15')
         ->assertDontSee('profile cursor inserted newest');
+});
+
+test('profile posts tab toggles to a media grid filtered to media posts', function (): void {
+    $user = User::factory()->create();
+    $mediaPost = Post::factory()->for($user)->create([
+        'body' => 'media timeline post',
+        'body_html' => '<p>media timeline post</p>',
+        'created_at' => now(),
+    ]);
+    $textPost = Post::factory()->for($user)->create([
+        'body' => 'text only timeline post',
+        'body_html' => '<p>text only timeline post</p>',
+        'created_at' => now()->subMinute(),
+    ]);
+
+    PostMedia::factory()->for($mediaPost, 'post')->create([
+        'file_path' => 'posts/profile-media-grid.jpg',
+        'media_type' => 'image',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('profile.tabs.posts', ['profileUserId' => $user->getKey()])
+        ->assertSee('text only timeline post')
+        ->assertSee('data-ui="profile-posts-media-toggle"', false)
+        ->call('toggleMediaOnly')
+        ->assertSet('mediaOnly', true)
+        ->assertSet('postIds', [$mediaPost->getKey()])
+        ->assertSee('data-ui="profile-posts-media-grid"', false)
+        ->assertSee('data-ui="profile-media-grid-item"', false)
+        ->assertDontSee($textPost->body);
+});
+
+test('profile media grid opens a full post modal with comments', function (): void {
+    $user = User::factory()->create();
+    $commenter = User::factory()->create();
+    $post = Post::factory()->for($user)->create([
+        'body' => 'modal media post body',
+        'body_html' => '<p>modal media post body</p>',
+        'created_at' => now(),
+    ]);
+    $textOnlyPost = Post::factory()->for($user)->create([
+        'body' => 'modal text only post',
+        'body_html' => '<p>modal text only post</p>',
+        'created_at' => now()->subMinute(),
+    ]);
+
+    PostMedia::factory()->for($post, 'post')->create([
+        'file_path' => 'posts/profile-modal-grid.jpg',
+        'media_type' => 'image',
+    ]);
+    Comment::factory()->for($post)->for($commenter, 'user')->create([
+        'body' => 'modal visible comment',
+        'body_html' => 'modal visible comment',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('profile.tabs.posts', ['profileUserId' => $user->getKey()])
+        ->call('toggleMediaOnly')
+        ->call('openMediaPost', $textOnlyPost->getKey())
+        ->assertSet('selectedPostId', null)
+        ->call('openMediaPost', $post->getKey())
+        ->assertSet('selectedPostId', $post->getKey())
+        ->assertSee('data-ui="profile-media-post-modal"', false)
+        ->assertSee('modal media post body')
+        ->assertSee('modal visible comment')
+        ->call('closePostModal')
+        ->assertSet('selectedPostId', null);
 });
 
 test('mutual followers appear on both followers and following pages', function (): void {

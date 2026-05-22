@@ -23,3 +23,4 @@ Laravel pagination best practices for this project.
 - Trigger the next batch from a `wire:intersect.margin.400px` sentinel placed after the last rendered post card.
 - Show three fixed-height animated skeleton cards while the Livewire `loadMorePosts` action is in flight.
 - Store appended post IDs in Livewire state and re-query visible posts by ID through the shared profile visibility scope before rendering.
+- Media-only mode must reset the stored cursor and appended IDs, then call the same cursor helpers with the media-only flag so image/video grids never use offset pagination or PHP-side filtering.

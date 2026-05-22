@@ -393,25 +393,13 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:visibleTo\(\)\.$#'
 			identifier: method.notFound
-			count: 2
-			path: app/Http/Controllers/Profile/PublicProfileController.php
-
-		-
-			message: '#^Left side of && is always true\.$#'
-			identifier: booleanAnd.leftAlwaysTrue
 			count: 1
 			path: app/Http/Controllers/Profile/PublicProfileController.php
 
 		-
 			message: '#^Right side of && is always true\.$#'
 			identifier: booleanAnd.rightAlwaysTrue
-			count: 5
-			path: app/Http/Controllers/Profile/PublicProfileController.php
-
-		-
-			message: '#^Ternary operator condition is always true\.$#'
-			identifier: ternary.alwaysTrue
-			count: 3
+			count: 2
 			path: app/Http/Controllers/Profile/PublicProfileController.php
 
 		-
@@ -1359,7 +1347,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:withListEngagement\(\)\.$#'
 			identifier: method.notFound
-			count: 2
+			count: 1
 			path: app/Models/Content/Post.php
 
 		-
@@ -1371,7 +1359,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\:\:visibleTo\(\)\.$#'
 			identifier: method.notFound
-			count: 6
+			count: 5
 			path: app/Models/Content/Post.php
 
 		-
@@ -1460,12 +1448,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Models\\Content\\Post\:\:paginateMainFeedResults\(\) return type with generic interface Illuminate\\Contracts\\Pagination\\CursorPaginator does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Content/Post.php
-
-		-
-			message: '#^Method App\\Models\\Content\\Post\:\:paginateProfileTimeline\(\) return type with generic interface Illuminate\\Contracts\\Pagination\\LengthAwarePaginator does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Content/Post.php
@@ -1833,7 +1815,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$relations of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Content\\Post\>\:\:with\(\) expects array\<array\|\(Closure\(Illuminate\\Database\\Eloquent\\Relations\\Relation\<\*, \*, \*\>\)\: mixed\)\|string\>\|string, array\{0\: ''user'', 1\: ''author\.media'', 2\: ''hashtags'', pet\: Closure\(Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\)\: Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\} given\.$#'
 			identifier: argument.type
-			count: 4
+			count: 3
 			path: app/Models/Content/Post.php
 
 		-
@@ -2583,12 +2565,6 @@ parameters:
 		-
 			message: '#^Method App\\Models\\Identity\\User\:\:followings\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany does not specify its types\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \(2\-4 required\)$#'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/Identity/User.php
-
-		-
-			message: '#^Method App\\Models\\Identity\\User\:\:getMutualFollowers\(\) has no return type specified\.$#'
-			identifier: missingType.return
 			count: 1
 			path: app/Models/Identity/User.php
 
@@ -4375,12 +4351,6 @@ parameters:
 			path: app/Observers/PostObserver.php
 
 		-
-			message: '#^Parameter \#1 \$user of method App\\Services\\BadgeService\:\:checkAndAwardBadges\(\) expects App\\Models\\Identity\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Observers/PostObserver.php
-
-		-
 			message: '#^Variable \$isEligible might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -4641,12 +4611,6 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:threadColumns\(\)\.$#'
 			identifier: method.notFound
-			count: 1
-			path: app/Services/CommentService.php
-
-		-
-			message: '#^Method App\\Services\\CommentService\:\:paginateThread\(\) return type with generic interface Illuminate\\Contracts\\Pagination\\LengthAwarePaginator does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
 			count: 1
 			path: app/Services/CommentService.php
 

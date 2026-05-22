@@ -65,8 +65,8 @@ class CounterCacheService
             ->chunkById(100, function ($users): void {
                 foreach ($users as $user) {
                     $user->updateQuietly([
-                        'photos_count' => (int) $user->computed_photos,
-                        'scheduled_posts_count' => (int) $user->computed_scheduled_posts,
+                        'photos_count' => (int) $user->getAttribute('computed_photos'),
+                        'scheduled_posts_count' => (int) $user->getAttribute('computed_scheduled_posts'),
                     ]);
                 }
             });
