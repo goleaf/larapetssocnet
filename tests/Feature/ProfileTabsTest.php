@@ -1,15 +1,154 @@
 <?php
 
+use App\Enums\PostStatus;
 use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
+use App\Models\Content\Post;
 use App\Models\Gamification\Badge;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
+use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
+
+if (! function_exists('profileTabsMarkup')) {
+    function profileTabsMarkup(string $html): string
+    {
+        $start = strpos($html, 'data-ui="tabs"');
+
+        if ($start === false) {
+            return '';
+        }
+
+        $end = strpos($html, '</nav>', $start);
+
+        return substr($html, $start, $end === false ? null : $end - $start);
+    }
+}
+
+test('profile tab navigation shows requested tabs with counter cached labels', function (): void {
+    $user = User::factory()->create([
+        'username' => 'cached_tab_counts',
+        'posts_count' => 47,
+        'pets_count' => 3,
+        'photos_count' => 128,
+        'scheduled_posts_count' => 4,
+    ]);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]))
+        ->assertOk();
+
+    $tabs = profileTabsMarkup($response->getContent());
+
+    expect($tabs)->toContain('Posts (47)')
+        ->and($tabs)->toContain('Pets (3)')
+        ->and($tabs)->toContain('Photos (128)')
+        ->and($tabs)->toContain('About')
+        ->and($tabs)->not->toContain('Scheduled')
+        ->and($tabs)->not->toContain('Groups')
+        ->and($tabs)->not->toContain('Events')
+        ->and($tabs)->not->toContain('Contests')
+        ->and($tabs)->not->toContain('Followers')
+        ->and($tabs)->not->toContain('Following')
+        ->and($tabs)->not->toContain('Likes');
+});
+
+test('scheduled tab is visible only to the profile owner', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'scheduled_owner',
+        'scheduled_posts_count' => 0,
+    ]);
+
+    Post::factory()->for($owner)->create([
+        'body' => 'scheduled-profile-owner-only-post',
+        'status' => PostStatus::Scheduled->value,
+        'published_at' => now()->addDay(),
+    ]);
+
+    $owner = $owner->fresh();
+
+    $ownerResponse = $this->actingAs($owner)
+        ->get(route('profile.show', ['user' => $owner, 'tab' => 'scheduled']))
+        ->assertOk()
+        ->assertSee('scheduled-profile-owner-only-post');
+
+    expect(profileTabsMarkup($ownerResponse->getContent()))->toContain('Scheduled (1)');
+
+    $visitorResponse = $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $owner, 'tab' => 'scheduled']))
+        ->assertOk()
+        ->assertDontSee('scheduled-profile-owner-only-post');
+
+    expect(profileTabsMarkup($visitorResponse->getContent()))->not->toContain('Scheduled');
+});
+
+test('photo tab count respects profile visibility for the current viewer', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'private_photo_counts',
+        'profile_visibility' => 'followers_only',
+        'is_private' => true,
+        'photos_count' => 128,
+    ]);
+    $follower = User::factory()->create();
+
+    Follow::query()->create([
+        'follower_id' => $follower->getKey(),
+        'following_id' => $owner->getKey(),
+        'status' => 'accepted',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $followerResponse = $this->actingAs($follower)
+        ->get(route('profile.show', ['user' => $owner]))
+        ->assertOk();
+
+    expect(profileTabsMarkup($followerResponse->getContent()))->toContain('Photos (128)');
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $owner]))
+        ->assertOk()
+        ->assertDontSee('Photos (128)');
+});
+
+test('scheduled post counter cache tracks post status transitions', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'scheduled_counter_owner',
+        'scheduled_posts_count' => 0,
+    ]);
+    $post = Post::factory()->for($owner)->create([
+        'status' => PostStatus::Draft->value,
+        'published_at' => null,
+    ]);
+
+    expect($owner->fresh()->scheduled_posts_count)->toBe(0);
+
+    $post->update([
+        'status' => PostStatus::Scheduled->value,
+        'published_at' => now()->addDay(),
+    ]);
+
+    expect($owner->fresh()->scheduled_posts_count)->toBe(1);
+
+    $post->update([
+        'status' => PostStatus::Published->value,
+        'published_at' => now(),
+    ]);
+
+    expect($owner->fresh()->scheduled_posts_count)->toBe(0);
+
+    $post->update([
+        'status' => PostStatus::Scheduled->value,
+        'published_at' => now()->addDay(),
+    ]);
+    $post->delete();
+
+    expect($owner->fresh()->scheduled_posts_count)->toBe(0);
+});
 
 test('groups tab shows user groups with role indicators', function (): void {
     $user = User::factory()->create(['username' => 'group_user']);

@@ -31,8 +31,11 @@
  ? \Illuminate\Support\Str::of($websiteUrl)->replaceStart('https://', '')->replaceStart('http://', '')->before('/')->toString()
  : null;
  $joinedDate = optional($profileUser->created_at)->format('F Y');
- $profilePostsCount = (int) ($profileUser->posts_count ?? 0);
- $profilePetsCount = (int) ($profileUser->pets_count ?? 0);
+ $profileTabCounts = $profileTabCounts ?? [];
+ $profilePostsCount = (int) ($profileTabCounts['posts'] ?? $profileUser->posts_count ?? 0);
+ $profilePetsCount = (int) ($profileTabCounts['pets'] ?? $profileUser->pets_count ?? 0);
+ $profilePhotosCount = (int) ($profileTabCounts['photos'] ?? $profileUser->photos_count ?? 0);
+ $profileScheduledCount = (int) ($profileTabCounts['scheduled'] ?? $scheduledCount ?? $profileUser->scheduled_posts_count ?? 0);
  $profileFollowersCount = (int) ($profileStats['followers'] ?? $profileUser->followers_count ?? 0);
  $profileFollowingCount = (int) ($profileStats['following'] ?? $profileUser->following_count ?? 0);
  $followersModalPreview = $followersModalPreview ?? collect();
@@ -54,42 +57,24 @@
  && $profilePostsCount === 0
  && $profilePetsCount === 0;
 
+ $profileTabLabel = static fn (string $label, int $count): string => sprintf('%s (%s)', $label, number_format($count));
+
  $tabItems = [
- ['label'=>'Posts','value'=>'posts','count'=> $profilePostsCount],
- ['label'=>'About','value'=>'about','href'=>'#profile-intro'],
+ ['label'=> $profileTabLabel('Posts', $profilePostsCount),'value'=>'posts'],
  ];
 
  if ($canViewPets ?? false) {
- $tabItems[] = ['label'=>'Pets','value'=>'pets','count'=> $profilePetsCount];
+ $tabItems[] = ['label'=> $profileTabLabel('Pets', $profilePetsCount),'value'=>'pets'];
  }
 
  if ($canViewPhotos ?? false) {
- $tabItems[] = ['label'=>'Photos','value'=>'photos','count'=> $sidebarPhotos->count()];
+ $tabItems[] = ['label'=> $profileTabLabel('Photos', $profilePhotosCount),'value'=>'photos'];
  }
 
- if ($canViewGroups ?? false) {
- $tabItems[] = ['label'=>'Groups','value'=>'groups'];
- }
-
- if ($canViewContent ?? false) {
- $tabItems[] = ['label'=>'Events','value'=>'events'];
- $tabItems[] = ['label'=>'Contests','value'=>'contests'];
- }
-
- if ($canViewFollowers ?? false) {
- $tabItems[] = ['label'=>'Followers','value'=>'followers-nav','href'=> route('profile.followers', ['user'=> $profileUser]),'count'=> (int) ($profileUser->followers_count ?? 0)];
- }
-
- if ($canViewFollowing ?? false) {
- $tabItems[] = ['label'=>'Following','value'=>'following-nav','href'=> route('profile.following', ['user'=> $profileUser]),'count'=> (int) ($profileUser->following_count ?? 0)];
- }
-
- if ($canViewLikes ?? false) {
- $tabItems[] = ['label'=>'Likes','value'=>'likes'];
- }
+ $tabItems[] = ['label'=>'About','value'=>'about','href'=>'#profile-intro'];
 
  if ($isOwner) {
- $tabItems[] = ['label'=>'Scheduled','value'=>'scheduled','count'=> (int) ($scheduledCount ?? 0)];
+ $tabItems[] = ['label'=> $profileTabLabel('Scheduled', $profileScheduledCount),'value'=>'scheduled'];
  }
 @endphp
 

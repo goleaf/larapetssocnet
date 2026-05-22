@@ -782,10 +782,7 @@ class Post extends Model implements HasMedia
 
     public static function scheduledCountForProfile(User $profileOwner): int
     {
-        return (int) self::query()
-            ->forProfile($profileOwner)
-            ->scheduled()
-            ->count();
+        return (int) ($profileOwner->scheduled_posts_count ?? 0);
     }
 
     /**

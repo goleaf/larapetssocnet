@@ -29,7 +29,7 @@ class extends Component
 
     public string $profileVisibility = 'public';
 
-    private const ALLOWED_TABS = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests', 'scheduled'];
+    private const ALLOWED_TABS = ['posts', 'pets', 'photos', 'about', 'likes', 'groups', 'events', 'contests', 'scheduled'];
 
     public function mount(string $user): void
     {
@@ -41,6 +41,7 @@ class extends Component
 
         $this->abortIfBlocked($viewer, $this->profileOwner);
         $this->redirectRestrictedViewer($viewer);
+        $this->hideOwnerOnlyTabsFromVisitors($viewer);
         $this->markPrivateProfileStateWhenHidden($viewer, $this->profileOwner);
 
         if ($this->showPrivateProfile) {
@@ -233,6 +234,19 @@ class extends Component
 
         $this->showPrivateProfile = true;
         $this->followStatus = $viewer instanceof User ? $viewer->getFollowStatus($owner) : 'none';
+    }
+
+    private function hideOwnerOnlyTabsFromVisitors(mixed $viewer): void
+    {
+        if ($this->activeTab !== 'scheduled') {
+            return;
+        }
+
+        if ($viewer instanceof User && $viewer->is($this->profileOwner)) {
+            return;
+        }
+
+        $this->activeTab = 'posts';
     }
 
     private function loadHeaderProfileData(User $owner): User

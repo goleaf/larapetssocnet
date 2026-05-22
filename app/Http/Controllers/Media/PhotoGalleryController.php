@@ -80,6 +80,7 @@ class PhotoGalleryController extends Controller
 
         $currentMaxOrder = (int) $gallery->media()->max('photo_gallery_media.order');
         $order = $currentMaxOrder;
+        $uploadedCount = 0;
 
         foreach ($validated['photos'] as $file) {
             $media = $user
@@ -91,6 +92,12 @@ class PhotoGalleryController extends Controller
             $gallery->media()->attach($media->id, [
                 'order' => $order,
             ]);
+
+            $uploadedCount++;
+        }
+
+        if ($uploadedCount > 0) {
+            $user->incrementCounter('photos_count', $uploadedCount);
         }
 
         return Redirect::back()->with('status', 'gallery-photos-added');

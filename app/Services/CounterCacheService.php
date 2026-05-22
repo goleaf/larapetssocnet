@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PostStatus;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,6 +14,7 @@ class CounterCacheService
     {
         $this->rebuildFollowCounts();
         $this->rebuildBlockCounts();
+        $this->rebuildProfileTabCounts();
     }
 
     public function rebuildFollowCounts(): void
@@ -46,6 +48,25 @@ class CounterCacheService
                     $user->updateQuietly([
                         'blocked_users_count' => (int) $user->computed_blocked_users,
                         'blocked_by_count' => (int) $user->computed_blocked_by,
+                    ]);
+                }
+            });
+    }
+
+    public function rebuildProfileTabCounts(): void
+    {
+        User::query()
+            ->withCount([
+                'media as computed_photos' => fn ($query) => $query
+                    ->where('collection_name', User::MEDIA_COLLECTION_PHOTOS),
+                'posts as computed_scheduled_posts' => fn ($query) => $query
+                    ->where('status', PostStatus::Scheduled->value),
+            ])
+            ->chunkById(100, function ($users): void {
+                foreach ($users as $user) {
+                    $user->updateQuietly([
+                        'photos_count' => (int) $user->computed_photos,
+                        'scheduled_posts_count' => (int) $user->computed_scheduled_posts,
                     ]);
                 }
             });

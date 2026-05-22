@@ -30,6 +30,10 @@ class PostObserver
 
         $post->author->increment('posts_count');
 
+        if ($this->isScheduledStatus($post->status)) {
+            $post->author->incrementCounter('scheduled_posts_count');
+        }
+
         if ($post->pet_id) {
             $post->pet->increment('posts_count');
         }
@@ -75,6 +79,19 @@ class PostObserver
             $this->hashtags->syncUsageForEligibilityChange($post, $wasEligible, $isEligible, $previousHashtagIds);
         }
 
+        if ($post->wasChanged('status')) {
+            $wasScheduled = $this->isScheduledStatus($post->getOriginal('status'));
+            $isScheduled = $this->isScheduledStatus($post->status);
+
+            if (! $wasScheduled && $isScheduled) {
+                $post->author->incrementCounter('scheduled_posts_count');
+            }
+
+            if ($wasScheduled && ! $isScheduled) {
+                $post->author->decrementCounter('scheduled_posts_count');
+            }
+        }
+
         $this->bustFeedCache($post);
 
         $this->logActivity('updated', $post, auth()->user());
@@ -108,6 +125,10 @@ class PostObserver
 
         $post->author->increment('posts_count');
 
+        if ($this->isScheduledStatus($post->status)) {
+            $post->author->incrementCounter('scheduled_posts_count');
+        }
+
         if ($post->pet) {
             $post->pet->increment('posts_count');
         }
@@ -137,6 +158,10 @@ class PostObserver
 
         $post->author->decrement('posts_count');
 
+        if ($this->isScheduledStatus($originalStatus)) {
+            $post->author->decrementCounter('scheduled_posts_count');
+        }
+
         if ($post->pet) {
             $post->pet->decrement('posts_count');
         }
@@ -162,5 +187,15 @@ class PostObserver
             ->causedBy($causer)
             ->performedOn($post)
             ->log($description);
+    }
+
+    private function isScheduledStatus(mixed $status): bool
+    {
+        return $this->statusValue($status) === PostStatus::Scheduled->value;
+    }
+
+    private function statusValue(mixed $status): string
+    {
+        return $status instanceof PostStatus ? $status->value : (string) $status;
     }
 }

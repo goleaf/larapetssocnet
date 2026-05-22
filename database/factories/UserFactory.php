@@ -103,6 +103,8 @@ class UserFactory extends Factory
             'following_pets_count' => 0,
             'pets_count' => 0,
             'posts_count' => 0,
+            'photos_count' => 0,
+            'scheduled_posts_count' => 0,
             'blocked_users_count' => 0,
             'blocked_by_count' => 0,
         ];

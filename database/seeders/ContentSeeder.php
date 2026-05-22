@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ContentSeeder extends Seeder
@@ -218,6 +219,9 @@ class ContentSeeder extends Seeder
         DB::statement("UPDATE comments SET reactions_count = (SELECT COUNT(*) FROM reactions WHERE reactions.reactable_type = 'App\\Models\\Comment' AND reactions.reactable_id = comments.id)");
         DB::statement('UPDATE pets SET posts_count = (SELECT COUNT(*) FROM posts WHERE posts.pet_id = pets.id)');
         DB::statement('UPDATE users SET posts_count = (SELECT COUNT(*) FROM posts WHERE posts.user_id = users.id)');
+        if (Schema::hasColumn('users', 'scheduled_posts_count')) {
+            DB::statement("UPDATE users SET scheduled_posts_count = (SELECT COUNT(*) FROM posts WHERE posts.user_id = users.id AND posts.status = 'scheduled' AND posts.deleted_at IS NULL)");
+        }
         DB::statement('UPDATE hashtags SET posts_count = (SELECT COUNT(*) FROM post_hashtag WHERE post_hashtag.hashtag_id = hashtags.id)');
     }
 

@@ -74,11 +74,6 @@ class PublicProfileController extends Controller
 
         $user = $this->profileSurfaceUser($user);
 
-        $allowedTabs = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests', 'scheduled'];
-        $tab = in_array($request->string('tab')->toString(), $allowedTabs, true)
-            ? $request->string('tab')->toString()
-            : 'posts';
-
         $profileVisibility = $this->profileVisibilityService->resolve($user);
         $canViewContent = $this->profileVisibilityService->canViewFullProfile($viewer, $user);
         $canViewFollowers = $this->profileVisibilityService->canViewFollowers($viewer, $user);
@@ -88,6 +83,7 @@ class PublicProfileController extends Controller
         $isOwner = $viewer && $viewer->is($user);
         $profileOwnerFollowsViewer = $viewer && ! $isOwner ? $user->isFollowing($viewer) : false;
         $canMessage = $this->profileVisibilityService->canMessage($viewer, $user);
+        $tab = $this->resolveProfileTab($request, (bool) $isOwner);
 
         if (! $canViewContent) {
             return view('profile.private', [
@@ -268,6 +264,12 @@ class PublicProfileController extends Controller
             'pets' => $canViewPets,
             'posts' => $canViewContent,
         ]);
+        $profileTabCounts = [
+            'posts' => $canViewContent ? (int) ($user->posts_count ?? 0) : 0,
+            'pets' => $canViewPets ? (int) ($user->pets_count ?? 0) : 0,
+            'photos' => $canViewPhotos ? (int) ($user->photos_count ?? 0) : 0,
+            'scheduled' => $isOwner ? $scheduledCount : 0,
+        ];
 
         $followersModalPreview = $canViewFollowers
             ? $this->followersModalPreview($user, $viewer)
@@ -289,6 +291,7 @@ class PublicProfileController extends Controller
             'canViewLocation' => $canViewLocation,
             'canMessage' => $canMessage,
             'profileStats' => $profileStats,
+            'profileTabCounts' => $profileTabCounts,
             'followersModalPreview' => $followersModalPreview,
             'followingModalPreview' => $followingModalPreview,
             'profileVisibility' => $profileVisibility->value,
@@ -384,6 +387,18 @@ class PublicProfileController extends Controller
         }
 
         return null;
+    }
+
+    private function resolveProfileTab(Request $request, bool $isOwner): string
+    {
+        $tab = $request->string('tab')->toString();
+        $allowedTabs = ['posts', 'pets', 'photos', 'about', 'likes', 'groups', 'events', 'contests'];
+
+        if ($isOwner) {
+            $allowedTabs[] = 'scheduled';
+        }
+
+        return in_array($tab, $allowedTabs, true) ? $tab : 'posts';
     }
 
     /**
