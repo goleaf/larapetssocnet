@@ -1,6 +1,6 @@
 # Visibility Rules
 
-Post visibility is a three-level access control system and must be enforced at all layers:
+Post visibility is a four-level access control system and must be enforced at all layers:
 
 1. Query layer
 2. Policy layer
@@ -20,6 +20,13 @@ If any layer is missing, treat it as a security bug.
 - Always visible to post owner, admins, and moderators.
 - Never in explore, hashtags, or non-follower search.
 - Direct URL denied for non-followers.
+- Not overridden by account profile type in the more-open direction.
+
+### `friends`
+- Visible only to mutual accepted followers of the author.
+- Always visible to post owner, admins, and moderators.
+- Never in explore, hashtags, or follower-only search.
+- Direct URL denied for one-way followers and non-followers.
 - Not overridden by account profile type in the more-open direction.
 
 ### `private`

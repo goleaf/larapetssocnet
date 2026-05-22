@@ -15,8 +15,8 @@
  showWarn: false,
  hasEngagement: {{ ((int) $postLikes > 0 || (int) $postComments > 0) ? 'true' : 'false' }},
  enabledWarning: {{ $showWarn ?'true':'false'}},
- order: { public: 0, followers: 1, private: 2 },
- values: ['public','followers','private'],
+ order: { public: 0, followers: 1, friends: 2, private: 3 },
+ values: ['public','followers','friends','private'],
  select(val) {
  const isDowngrade = this.order[val] > this.order[this.original];
  this.showWarn = this.enabledWarning && isDowngrade && this.hasEngagement;
@@ -47,6 +47,11 @@
  'icon'=>'👥',
  'label'=>'Followers',
  'sub'=>'Only your followers can see this',
+ ],
+ 'friends'=> [
+ 'icon'=>'🤝',
+ 'label'=>'Friends',
+ 'sub'=>'Only mutual followers can see this',
  ],
  'private'=> [
  'icon'=>'🔒',

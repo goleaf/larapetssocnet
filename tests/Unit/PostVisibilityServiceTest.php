@@ -54,3 +54,26 @@ it('allows followers to view follower-only published posts', function (): void {
 
     expect($service->canView($viewer, $post))->toBeTrue();
 });
+
+it('allows only mutual followers to view friends-only published posts', function (): void {
+    $owner = User::factory()->create();
+    $follower = User::factory()->create();
+    $mutual = User::factory()->create();
+
+    $follower->follow($owner);
+    $owner->approveFollowRequest($follower);
+    $mutual->follow($owner);
+    $owner->approveFollowRequest($mutual);
+    $owner->follow($mutual);
+
+    $post = Post::factory()->for($owner)->create([
+        'status' => PostStatus::Published->value,
+        'published_at' => now()->subMinute(),
+        'visibility' => Post::VISIBILITY_FRIENDS,
+    ]);
+
+    $service = app(VisibilityService::class);
+
+    expect($service->canView($follower, $post))->toBeFalse();
+    expect($service->canView($mutual, $post))->toBeTrue();
+});

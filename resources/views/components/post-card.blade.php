@@ -30,6 +30,7 @@
 
     $isOwner = (int) auth()->id() === (int) $post->user_id;
     $statusValue = $post->status?->value ?? (string) $post->status;
+    $isScheduledProfilePost = $context === 'profile' && $isOwner && $statusValue === 'scheduled';
     $likeCount = (int) ($post->likes_count ?? $post->reactions_count ?? 0);
     $isLiked = (bool) ($post->liked_by_viewer ?? false);
     $commentCount = (int) ($post->comments_count ?? 0);
@@ -96,8 +97,12 @@
     as="article"
     id="{{ $postDomId }}"
     data-ui="post-card"
+    data-post-status="{{ $statusValue }}"
     aria-labelledby="{{ $postAuthorId }}"
-    class="group overflow-hidden ui-card-interactive"
+    @class([
+        'group overflow-hidden ui-card-interactive',
+        'border-amber-300 bg-amber-50/80 ring-2 ring-amber-100' => $isScheduledProfilePost,
+    ])
     x-data="postCard({{ \Illuminate\Support\Js::from($postCardState) }})"
 >
     @if ($context === 'profile' && $post->is_pinned)

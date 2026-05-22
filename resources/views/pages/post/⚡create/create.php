@@ -96,7 +96,7 @@ class extends Component
             'pet_id' => ['nullable', 'integer', $petOwnershipRule],
             'tagged_pets' => ['nullable', 'array'],
             'tagged_pets.*' => ['integer', $petOwnershipRule],
-            'visibility' => ['required', 'string', 'in:public,followers,private'],
+            'visibility' => ['required', 'string', Rule::in(Post::visibilityValues())],
             'status' => ['required', 'string', 'in:draft,published,scheduled'],
             'published_at' => ['nullable', 'date'],
             'location' => ['nullable', 'string', 'max:100'],

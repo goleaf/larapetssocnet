@@ -12,19 +12,26 @@ it('canView handles guest and follower visibility rules', function (): void {
     $service = app(VisibilityService::class);
     $author = User::factory()->create(['is_private' => false]);
     $follower = User::factory()->create();
+    $mutual = User::factory()->create();
     $stranger = User::factory()->create();
 
     $follower->follow($author);
     $author->approveFollowRequest($follower);
+    $mutual->follow($author);
+    $author->approveFollowRequest($mutual);
+    $author->follow($mutual);
 
     $public = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_PUBLIC]);
     $followers = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_FOLLOWERS]);
+    $friends = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_FRIENDS]);
     $private = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_PRIVATE]);
 
     expect($service->canView(null, $public))->toBeTrue();
     expect($service->canView(null, $followers))->toBeFalse();
     expect($service->canView(null, $private))->toBeFalse();
     expect($service->canView($follower, $followers))->toBeTrue();
+    expect($service->canView($follower, $friends))->toBeFalse();
+    expect($service->canView($mutual, $friends))->toBeTrue();
     expect($service->canView($stranger, $followers))->toBeFalse();
     expect($service->canView($author, $private))->toBeTrue();
 });
@@ -61,6 +68,7 @@ it('shouldWarnOnDowngrade is based on engagement and restriction direction', fun
     ]);
 
     expect($service->shouldWarnOnDowngrade($post, Post::VISIBILITY_FOLLOWERS))->toBeTrue();
+    expect($service->shouldWarnOnDowngrade($post, Post::VISIBILITY_FRIENDS))->toBeTrue();
     expect($service->shouldWarnOnDowngrade($post, Post::VISIBILITY_PRIVATE))->toBeTrue();
     expect($service->shouldWarnOnDowngrade($post, Post::VISIBILITY_PUBLIC))->toBeFalse();
 
@@ -73,9 +81,11 @@ it('returns visibility labels and icons', function (): void {
 
     expect($service->getVisibilityLabel(Post::VISIBILITY_PUBLIC))->toBe('Public');
     expect($service->getVisibilityLabel(Post::VISIBILITY_FOLLOWERS))->toBe('Followers');
+    expect($service->getVisibilityLabel(Post::VISIBILITY_FRIENDS))->toBe('Friends');
     expect($service->getVisibilityLabel(Post::VISIBILITY_PRIVATE))->toBe('Only me');
 
     expect($service->getVisibilityIcon(Post::VISIBILITY_PUBLIC))->toBe('🌍');
     expect($service->getVisibilityIcon(Post::VISIBILITY_FOLLOWERS))->toBe('👥');
+    expect($service->getVisibilityIcon(Post::VISIBILITY_FRIENDS))->toBe('🤝');
     expect($service->getVisibilityIcon(Post::VISIBILITY_PRIVATE))->toBe('🔒');
 });

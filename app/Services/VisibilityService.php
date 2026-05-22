@@ -55,10 +55,12 @@ class VisibilityService
 
         $accountPrivate = (bool) $author->is_private;
         $isFollower = $viewer && $viewer->isFollowing($author);
+        $isFriend = $isFollower && $author->isFollowing($viewer);
 
         return match ($post->visibility) {
             Post::VISIBILITY_PUBLIC => ! $accountPrivate || $isFollower,
             Post::VISIBILITY_FOLLOWERS => $isFollower,
+            Post::VISIBILITY_FRIENDS => $isFriend,
             Post::VISIBILITY_PRIVATE => false,
             default => false,
         };
@@ -101,6 +103,7 @@ class VisibilityService
         return match ($visibility) {
             Post::VISIBILITY_PUBLIC => 'Public',
             Post::VISIBILITY_FOLLOWERS => 'Followers',
+            Post::VISIBILITY_FRIENDS => 'Friends',
             Post::VISIBILITY_PRIVATE => 'Only me',
             default => 'Public',
         };
@@ -111,6 +114,7 @@ class VisibilityService
         return match ($visibility) {
             Post::VISIBILITY_PUBLIC => '🌍',
             Post::VISIBILITY_FOLLOWERS => '👥',
+            Post::VISIBILITY_FRIENDS => '🤝',
             Post::VISIBILITY_PRIVATE => '🔒',
             default => '🌍',
         };
@@ -121,7 +125,8 @@ class VisibilityService
         $order = [
             Post::VISIBILITY_PUBLIC => 0,
             Post::VISIBILITY_FOLLOWERS => 1,
-            Post::VISIBILITY_PRIVATE => 2,
+            Post::VISIBILITY_FRIENDS => 2,
+            Post::VISIBILITY_PRIVATE => 3,
         ];
 
         $current = $order[$post->visibility] ?? 0;

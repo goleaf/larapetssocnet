@@ -40,6 +40,7 @@ it('excludes scheduled posts from published scope', function (): void {
 it('returns feed posts for owner and accepted following', function (): void {
     $viewer = User::factory()->create();
     $followed = User::factory()->create();
+    $mutual = User::factory()->create();
     $petOwner = User::factory()->create();
     $followedPet = Pet::factory()->for($petOwner)->create();
     $notFollowed = User::factory()->create();
@@ -56,6 +57,18 @@ it('returns feed posts for owner and accepted following', function (): void {
         'status' => 'pending',
     ]);
 
+    Follow::factory()->create([
+        'follower_id' => $viewer->getKey(),
+        'following_id' => $mutual->getKey(),
+        'status' => 'accepted',
+    ]);
+
+    Follow::factory()->create([
+        'follower_id' => $mutual->getKey(),
+        'following_id' => $viewer->getKey(),
+        'status' => 'accepted',
+    ]);
+
     $viewer->followedPets()->attach($followedPet->getKey());
 
     $ownPost = Post::factory()->create([
@@ -67,6 +80,18 @@ it('returns feed posts for owner and accepted following', function (): void {
     $followedPost = Post::factory()->create([
         'user_id' => $followed->getKey(),
         'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+
+    $followedFriendsPost = Post::factory()->create([
+        'user_id' => $followed->getKey(),
+        'visibility' => Post::VISIBILITY_FRIENDS,
+        'status' => 'published',
+    ]);
+
+    $mutualFriendsPost = Post::factory()->create([
+        'user_id' => $mutual->getKey(),
+        'visibility' => Post::VISIBILITY_FRIENDS,
         'status' => 'published',
     ]);
 
@@ -90,7 +115,9 @@ it('returns feed posts for owner and accepted following', function (): void {
     expect($postIds)
         ->toContain($ownPost->getKey())
         ->toContain($followedPost->getKey())
+        ->toContain($mutualFriendsPost->getKey())
         ->toContain($followedPetPost->getKey())
+        ->not->toContain($followedFriendsPost->getKey())
         ->not->toContain($pendingFollowPost->getKey());
 });
 

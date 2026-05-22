@@ -57,7 +57,7 @@ class StorePostRequest extends FormRequest
                     fn ($query) => $query->where('user_id', (int) $this->user()?->id)
                 ),
             ],
-            'visibility' => ['nullable', 'string', 'in:public,followers,private'],
+            'visibility' => ['nullable', 'string', Rule::in(Post::visibilityValues())],
             'location' => ['nullable', 'string', 'max:100'],
             'metadata' => ['nullable', 'array'],
             'metadata.link' => ['nullable', 'array'],

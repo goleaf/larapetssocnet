@@ -55,6 +55,24 @@ it('followers visibility is only visible to accepted follower and author', funct
     $this->actingAs($author)->get(route('posts.show', $post))->assertOk();
 });
 
+it('friends visibility is only visible to mutual followers and author', function (): void {
+    $author = User::factory()->create(['is_private' => false]);
+    $follower = User::factory()->create();
+    $mutual = User::factory()->create();
+    $nonFollower = User::factory()->create();
+    $post = Post::factory()->for($author)->create(['visibility' => Post::VISIBILITY_FRIENDS]);
+
+    acceptedFollow($follower, $author);
+    acceptedFollow($mutual, $author);
+    acceptedFollow($author, $mutual);
+
+    $this->get(route('posts.show', $post))->assertRedirect(route('login'));
+    $this->actingAs($nonFollower)->get(route('posts.show', $post))->assertForbidden();
+    $this->actingAs($follower)->get(route('posts.show', $post))->assertForbidden();
+    $this->actingAs($mutual)->get(route('posts.show', $post))->assertOk();
+    $this->actingAs($author)->get(route('posts.show', $post))->assertOk();
+});
+
 it('private visibility is only visible to author', function (): void {
     $author = User::factory()->create();
     $follower = User::factory()->create();

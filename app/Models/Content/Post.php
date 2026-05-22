@@ -75,7 +75,22 @@ class Post extends Model implements HasMedia
 
     public const VISIBILITY_FOLLOWERS = 'followers';
 
+    public const VISIBILITY_FRIENDS = 'friends';
+
     public const VISIBILITY_PRIVATE = 'private';
+
+    /**
+     * @return list<string>
+     */
+    public static function visibilityValues(): array
+    {
+        return [
+            self::VISIBILITY_PUBLIC,
+            self::VISIBILITY_FOLLOWERS,
+            self::VISIBILITY_FRIENDS,
+            self::VISIBILITY_PRIVATE,
+        ];
+    }
 
     protected function casts(): array
     {
@@ -268,15 +283,26 @@ class Post extends Model implements HasMedia
             ->unique()
             ->values();
 
-        $followingIds = $viewer->acceptedFollowing()
-            ->pluck('users.id')
-            ->unique()
-            ->values();
+        $followingIdsQuery = static fn () => Follow::query()
+            ->select('follows.following_id')
+            ->where('follows.follower_id', $viewer->getKey())
+            ->where('follows.status', 'accepted');
 
-        $query->where(function (Builder $visibilityQuery) use ($viewer, $blockedIds, $followingIds): void {
+        $mutualFollowingIdsQuery = static fn () => Follow::query()
+            ->from('follows as viewer_follows')
+            ->select('viewer_follows.following_id')
+            ->where('viewer_follows.follower_id', $viewer->getKey())
+            ->where('viewer_follows.status', 'accepted')
+            ->whereIn('viewer_follows.following_id', Follow::query()
+                ->from('follows as author_follows')
+                ->select('author_follows.follower_id')
+                ->where('author_follows.following_id', $viewer->getKey())
+                ->where('author_follows.status', 'accepted'));
+
+        $query->where(function (Builder $visibilityQuery) use ($viewer, $blockedIds, $followingIdsQuery, $mutualFollowingIdsQuery): void {
             $visibilityQuery
                 ->where('user_id', $viewer->getKey())
-                ->orWhere(function (Builder $otherPostsQuery) use ($viewer, $blockedIds, $followingIds): void {
+                ->orWhere(function (Builder $otherPostsQuery) use ($viewer, $blockedIds, $followingIdsQuery, $mutualFollowingIdsQuery): void {
                     $otherPostsQuery
                         ->where('user_id', '!=', $viewer->getKey())
                         ->when($blockedIds->isNotEmpty(), function (Builder $blockedQuery) use ($blockedIds): void {
@@ -291,7 +317,7 @@ class Post extends Model implements HasMedia
                                 ->whereNull('published_at')
                                 ->orWhere('published_at', '<=', now());
                         })
-                        ->where(function (Builder $rulesQuery) use ($followingIds): void {
+                        ->where(function (Builder $rulesQuery) use ($followingIdsQuery, $mutualFollowingIdsQuery): void {
                             $rulesQuery
                                 ->where(function (Builder $publicFromPublicAccounts): void {
                                     $publicFromPublicAccounts
@@ -300,18 +326,23 @@ class Post extends Model implements HasMedia
                                             $authorQuery->where('is_private', false);
                                         });
                                 })
-                                ->orWhere(function (Builder $followersOnlyQuery) use ($followingIds): void {
+                                ->orWhere(function (Builder $followersOnlyQuery) use ($followingIdsQuery): void {
                                     $followersOnlyQuery
                                         ->where('visibility', self::VISIBILITY_FOLLOWERS)
-                                        ->whereIn('user_id', $followingIds);
+                                        ->whereIn('user_id', $followingIdsQuery());
                                 })
-                                ->orWhere(function (Builder $publicFromPrivateAccounts) use ($followingIds): void {
+                                ->orWhere(function (Builder $friendsOnlyQuery) use ($mutualFollowingIdsQuery): void {
+                                    $friendsOnlyQuery
+                                        ->where('visibility', self::VISIBILITY_FRIENDS)
+                                        ->whereIn('user_id', $mutualFollowingIdsQuery());
+                                })
+                                ->orWhere(function (Builder $publicFromPrivateAccounts) use ($followingIdsQuery): void {
                                     $publicFromPrivateAccounts
                                         ->where('visibility', self::VISIBILITY_PUBLIC)
                                         ->whereHas('author', function (Builder $authorQuery): void {
                                             $authorQuery->where('is_private', true);
                                         })
-                                        ->whereIn('user_id', $followingIds);
+                                        ->whereIn('user_id', $followingIdsQuery());
                                 });
                         });
                 });
@@ -683,6 +714,7 @@ class Post extends Model implements HasMedia
     public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 10): LengthAwarePaginator
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
+        $isOwner = $viewer instanceof User && $viewer->is($profileOwner);
 
         return self::query()
             ->profileTimelineColumns()
@@ -693,7 +725,11 @@ class Post extends Model implements HasMedia
                 'hashtags',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
-            ->published()
+            ->when(
+                $isOwner,
+                fn (Builder $query): Builder => $query->where('posts.status', '!=', PostStatus::Archived->value),
+                fn (Builder $query): Builder => $query->published(),
+            )
             ->visibleTo($viewer)
             ->when(true, fn (Builder $query) => app(ProfilePostOrderingService::class)->apply($query))
             ->withListEngagement($viewerId)
@@ -930,20 +966,45 @@ class Post extends Model implements HasMedia
             ->where('follows.follower_id', $userId)
             ->where('follows.status', 'accepted');
 
+        $mutualUserIdsQuery = Follow::query()
+            ->select('follows.following_id')
+            ->where('follows.follower_id', $userId)
+            ->where('follows.status', 'accepted')
+            ->whereIn('follows.following_id', Follow::query()
+                ->select('follows.follower_id')
+                ->where('follows.following_id', $userId)
+                ->where('follows.status', 'accepted'));
+
         return $query
             ->published()
-            ->where(function (Builder $feedQuery) use ($userId, $followedUserIdsQuery): void {
+            ->where(function (Builder $feedQuery) use ($userId, $followedUserIdsQuery, $mutualUserIdsQuery): void {
                 $feedQuery
                     ->where('posts.user_id', $userId)
-                    ->orWhere(function (Builder $followingQuery) use ($followedUserIdsQuery): void {
+                    ->orWhere(function (Builder $followingQuery) use ($followedUserIdsQuery, $mutualUserIdsQuery): void {
                         $followingQuery
                             ->whereIn('posts.user_id', $followedUserIdsQuery)
-                            ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS]);
+                            ->where(function (Builder $visibilityQuery) use ($mutualUserIdsQuery): void {
+                                $visibilityQuery
+                                    ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
+                                    ->orWhere(function (Builder $friendsQuery) use ($mutualUserIdsQuery): void {
+                                        $friendsQuery
+                                            ->where('posts.visibility', self::VISIBILITY_FRIENDS)
+                                            ->whereIn('posts.user_id', $mutualUserIdsQuery);
+                                    });
+                            });
                     })
-                    ->orWhere(function (Builder $followedPetsQuery) use ($userId): void {
+                    ->orWhere(function (Builder $followedPetsQuery) use ($userId, $mutualUserIdsQuery): void {
                         $followedPetsQuery
                             ->where('posts.user_id', '!=', $userId)
-                            ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
+                            ->where(function (Builder $visibilityQuery) use ($mutualUserIdsQuery): void {
+                                $visibilityQuery
+                                    ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
+                                    ->orWhere(function (Builder $friendsQuery) use ($mutualUserIdsQuery): void {
+                                        $friendsQuery
+                                            ->where('posts.visibility', self::VISIBILITY_FRIENDS)
+                                            ->whereIn('posts.user_id', $mutualUserIdsQuery);
+                                    });
+                            })
                             ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
                     });
             })

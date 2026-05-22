@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Content\Post;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,7 @@ class ContentSeeder extends Seeder
                 'user_id' => $userId,
                 'pet_id' => $petId,
                 'body' => $faker->paragraph($faker->numberBetween(1, 4)),
-                'visibility' => $faker->randomElement(['public', 'followers', 'private']),
+                'visibility' => $faker->randomElement(Post::visibilityValues()),
                 'status' => 'published',
                 'comments_count' => 0,
                 'reactions_count' => 0,

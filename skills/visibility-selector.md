@@ -13,6 +13,7 @@ Reusable Blade component: `x-visibility-selector`
 - Radio-style options (not `<select>`):
   - `public`: `🌍 Public`
   - `followers`: `👥 Followers`
+  - `friends`: `🤝 Friends`
   - `private`: `🔒 Only me`
 - Hidden input sync:
   - `<input type="hidden" name="{{ $name }}" :value="selected">`
@@ -28,4 +29,3 @@ Reusable Blade component: `x-visibility-selector`
 - If interactions exist and user selects stricter visibility:
   - show inline warning
   - do not block submission
-

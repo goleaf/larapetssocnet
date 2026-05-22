@@ -85,6 +85,11 @@ it('post create accepts valid visibilities and defaults to public', function ():
     ])->assertRedirect();
 
     $this->actingAs($user)->post(route('posts.store'), [
+        'body' => 'friends post',
+        'visibility' => 'friends',
+    ])->assertRedirect();
+
+    $this->actingAs($user)->post(route('posts.store'), [
         'body' => 'private post',
         'visibility' => 'private',
     ])->assertRedirect();

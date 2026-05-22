@@ -57,7 +57,7 @@ class UpdatePostRequest extends FormRequest
                 PostStatus::Archived->value,
             ])],
             'published_at' => ['nullable', 'date'],
-            'visibility' => ['nullable', 'string', 'in:public,followers,private'],
+            'visibility' => ['nullable', 'string', Rule::in(Post::visibilityValues())],
             'location' => ['nullable', 'string', 'max:100'],
             'metadata' => ['nullable', 'array'],
             'metadata.link' => ['nullable', 'array'],

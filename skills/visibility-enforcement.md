@@ -6,7 +6,7 @@ Use all three layers together.
 - Always use `Post::query()->visibleTo($viewer)`.
 - Never hand-write visibility `where` clauses outside the scope for user-facing queries.
 - Scope must enforce:
-  - `public` / `followers` / `private`
+  - `public` / `followers` / `friends` / `private`
   - account privacy ceiling
   - block relationships
   - banned, suspended, deactivated, deleted, and pending-deletion account filtering

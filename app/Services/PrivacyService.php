@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Social\Follow;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,14 +52,30 @@ class PrivacyService
                     ->where('is_private', false)
                     ->where('is_banned', false)
                 )
-                ->where('visibility', 'public');
+                ->where('visibility', Post::VISIBILITY_PUBLIC);
         }
 
-        return $query->where(function (Builder $visibility) use ($viewer): void {
+        $followingIdsQuery = static fn () => Follow::query()
+            ->select('follows.following_id')
+            ->where('follows.follower_id', $viewer->getKey())
+            ->where('follows.status', 'accepted');
+
+        $mutualFollowingIdsQuery = static fn () => Follow::query()
+            ->from('follows as viewer_follows')
+            ->select('viewer_follows.following_id')
+            ->where('viewer_follows.follower_id', $viewer->getKey())
+            ->where('viewer_follows.status', 'accepted')
+            ->whereIn('viewer_follows.following_id', Follow::query()
+                ->from('follows as author_follows')
+                ->select('author_follows.follower_id')
+                ->where('author_follows.following_id', $viewer->getKey())
+                ->where('author_follows.status', 'accepted'));
+
+        return $query->where(function (Builder $visibility) use ($viewer, $followingIdsQuery, $mutualFollowingIdsQuery): void {
             $visibility
                 ->where('user_id', $viewer->id)
                 ->orWhere(function (Builder $public) use ($viewer): void {
-                    $public->where('visibility', 'public')
+                    $public->where('visibility', Post::VISIBILITY_PUBLIC)
                         ->whereHas('author', function (Builder $author) use ($viewer): void {
                             $author
                                 ->where('is_private', false)
@@ -71,9 +88,13 @@ class PrivacyService
                             }
                         });
                 })
-                ->orWhere(function (Builder $followers) use ($viewer): void {
-                    $followers->whereIn('user_id', $viewer->acceptedFollowing()->pluck('users.id'))
-                        ->whereNotIn('visibility', ['private']);
+                ->orWhere(function (Builder $followers) use ($followingIdsQuery): void {
+                    $followers->whereIn('user_id', $followingIdsQuery())
+                        ->whereIn('visibility', [Post::VISIBILITY_PUBLIC, Post::VISIBILITY_FOLLOWERS]);
+                })
+                ->orWhere(function (Builder $friends) use ($mutualFollowingIdsQuery): void {
+                    $friends->whereIn('user_id', $mutualFollowingIdsQuery())
+                        ->where('visibility', Post::VISIBILITY_FRIENDS);
                 });
         });
     }

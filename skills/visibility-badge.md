@@ -9,6 +9,7 @@ Reusable Blade component: `x-visibility-badge`
 
 ## Variants
 - `followers`: `👥 Followers`
+- `friends`: `🤝 Friends`
 - `private`: `🔒 Only me`
 - `public`: no badge
 
@@ -16,6 +17,8 @@ Reusable Blade component: `x-visibility-badge`
 - Base:
   - `inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full`
 - Followers:
+  - `bg-leaf-light text-leaf`
+- Friends:
   - `bg-leaf-light text-leaf`
 - Private:
   - `bg-cream text-fur`
