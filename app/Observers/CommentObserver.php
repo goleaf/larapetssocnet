@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
+use App\Models\Identity\User;
 use App\Services\CounterCacheService;
 
 class CommentObserver
@@ -14,12 +15,13 @@ class CommentObserver
     public function created(Comment $comment): void
     {
         $post = Post::query()
-            ->select(['id', 'comments_count'])
+            ->select(['id', 'user_id', 'comments_count'])
             ->whereKey($comment->post_id)
             ->first();
 
         if ($post) {
             app(CounterCacheService::class)->safeIncrement($post, 'comments_count');
+            $this->incrementPostOwnerCommentsReceived($post);
         }
 
         if ($comment->parent_id !== null) {
@@ -47,12 +49,13 @@ class CommentObserver
         }
 
         $post = Post::query()
-            ->select(['id', 'comments_count'])
+            ->select(['id', 'user_id', 'comments_count'])
             ->whereKey($comment->post_id)
             ->first();
 
         if ($post) {
             app(CounterCacheService::class)->safeDecrement($post, 'comments_count');
+            $this->decrementPostOwnerCommentsReceived($post);
         }
 
         if ($comment->parent_id !== null) {
@@ -71,12 +74,13 @@ class CommentObserver
     public function restored(Comment $comment): void
     {
         $post = Post::query()
-            ->select(['id', 'comments_count'])
+            ->select(['id', 'user_id', 'comments_count'])
             ->whereKey($comment->post_id)
             ->first();
 
         if ($post) {
             app(CounterCacheService::class)->safeIncrement($post, 'comments_count');
+            $this->incrementPostOwnerCommentsReceived($post);
         }
 
         if ($comment->parent_id !== null) {
@@ -93,4 +97,22 @@ class CommentObserver
      * Handle the Comment "force deleted" event.
      */
     public function forceDeleted(Comment $comment): void {}
+
+    private function incrementPostOwnerCommentsReceived(Post $post): void
+    {
+        User::query()
+            ->select(['id'])
+            ->whereKey($post->getAttribute('user_id'))
+            ->first()
+            ?->incrementCounter('post_comments_received_count');
+    }
+
+    private function decrementPostOwnerCommentsReceived(Post $post): void
+    {
+        User::query()
+            ->select(['id'])
+            ->whereKey($post->getAttribute('user_id'))
+            ->first()
+            ?->decrementCounter('post_comments_received_count');
+    }
 }

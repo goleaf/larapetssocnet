@@ -176,6 +176,15 @@ class PostSeeder extends Seeder
         if (Schema::hasColumn('users', 'scheduled_posts_count')) {
             DB::statement("UPDATE users SET scheduled_posts_count = (SELECT COUNT(*) FROM posts WHERE posts.user_id = users.id AND posts.status = 'scheduled' AND posts.deleted_at IS NULL)");
         }
+        if (Schema::hasColumn('users', 'post_reactions_received_count')) {
+            DB::statement('UPDATE users SET post_reactions_received_count = (SELECT COALESCE(SUM(posts.reactions_count), 0) FROM posts WHERE posts.user_id = users.id AND posts.deleted_at IS NULL)');
+        }
+        if (Schema::hasColumn('users', 'post_comments_received_count')) {
+            DB::statement('UPDATE users SET post_comments_received_count = (SELECT COALESCE(SUM(posts.comments_count), 0) FROM posts WHERE posts.user_id = users.id AND posts.deleted_at IS NULL)');
+        }
+        if (Schema::hasColumn('users', 'last_post_created_at')) {
+            DB::statement('UPDATE users SET last_post_created_at = (SELECT MAX(posts.created_at) FROM posts WHERE posts.user_id = users.id AND posts.deleted_at IS NULL)');
+        }
         DB::statement('UPDATE pets SET posts_count = (SELECT COUNT(*) FROM posts WHERE posts.pet_id = pets.id)');
     }
 

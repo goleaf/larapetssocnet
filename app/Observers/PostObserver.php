@@ -8,6 +8,7 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\BadgeService;
 use App\Services\HashtagService;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
@@ -32,6 +33,8 @@ class PostObserver
         $this->bustFeedCache($post);
 
         $author->increment('posts_count');
+        $this->incrementAuthorActivityFromPost($author, $post, includeComments: true);
+        $this->recordLatestPostCreatedAt($author, $post);
 
         if ($this->isScheduledStatus($post->getAttribute('status'))) {
             $author->incrementCounter('scheduled_posts_count');
@@ -130,6 +133,8 @@ class PostObserver
         $this->hashtags->syncHashtags($post);
 
         $author->increment('posts_count');
+        $this->incrementAuthorActivityFromPost($author, $post, includeComments: false);
+        $this->recordLatestPostCreatedAt($author, $post);
 
         if ($this->isScheduledStatus($post->getAttribute('status'))) {
             $author->incrementCounter('scheduled_posts_count');
@@ -164,6 +169,8 @@ class PostObserver
         $this->hashtags->detachAll($post, $wasEligible);
 
         $author->decrement('posts_count');
+        $this->decrementAuthorActivityFromPost($author, $post, includeComments: false);
+        $this->syncLatestPostCreatedAt($author);
 
         if ($this->isScheduledStatus($originalStatus)) {
             $author->decrementCounter('scheduled_posts_count');
@@ -201,6 +208,64 @@ class PostObserver
         return User::query()
             ->whereKey($post->getAttribute('user_id'))
             ->firstOrFail();
+    }
+
+    private function incrementAuthorActivityFromPost(User $author, Post $post, bool $includeComments): void
+    {
+        if ($includeComments) {
+            $author->incrementCounter('post_comments_received_count', (int) ($post->getAttribute('comments_count') ?? 0));
+        }
+
+        $author->incrementCounter('post_reactions_received_count', (int) ($post->getAttribute('reactions_count') ?? 0));
+    }
+
+    private function decrementAuthorActivityFromPost(User $author, Post $post, bool $includeComments): void
+    {
+        if ($includeComments) {
+            $author->decrementCounter('post_comments_received_count', (int) ($post->getAttribute('comments_count') ?? 0));
+        }
+
+        $author->decrementCounter('post_reactions_received_count', (int) ($post->getAttribute('reactions_count') ?? 0));
+    }
+
+    private function recordLatestPostCreatedAt(User $author, Post $post): void
+    {
+        if (! Schema::hasColumn('users', 'last_post_created_at')) {
+            return;
+        }
+
+        $createdAt = $post->getAttribute('created_at');
+
+        if (! $createdAt instanceof CarbonInterface) {
+            return;
+        }
+
+        User::query()
+            ->whereKey($author->getKey())
+            ->where(function ($query) use ($createdAt): void {
+                $query
+                    ->whereNull('last_post_created_at')
+                    ->orWhere('last_post_created_at', '<', $createdAt);
+            })
+            ->update(['last_post_created_at' => $createdAt]);
+
+        $author->setAttribute('last_post_created_at', $createdAt);
+    }
+
+    private function syncLatestPostCreatedAt(User $author): void
+    {
+        if (! Schema::hasColumn('users', 'last_post_created_at')) {
+            return;
+        }
+
+        User::query()
+            ->whereKey($author->getKey())
+            ->update([
+                'last_post_created_at' => Post::query()
+                    ->where('user_id', $author->getKey())
+                    ->whereNull('deleted_at')
+                    ->max('created_at'),
+            ]);
     }
 
     private function isScheduledStatus(mixed $status): bool

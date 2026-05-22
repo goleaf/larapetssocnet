@@ -105,6 +105,9 @@ class UserFactory extends Factory
             'posts_count' => 0,
             'photos_count' => 0,
             'scheduled_posts_count' => 0,
+            'post_reactions_received_count' => 0,
+            'post_comments_received_count' => 0,
+            'last_post_created_at' => null,
             'blocked_users_count' => 0,
             'blocked_by_count' => 0,
         ];

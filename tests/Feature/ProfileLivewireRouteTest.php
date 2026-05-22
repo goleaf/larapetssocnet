@@ -1,9 +1,12 @@
 <?php
 
+use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Services\CounterCacheService;
+use App\Services\ReactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -315,6 +318,9 @@ it('mounts the lazy about tab component and presents public biographical section
             'posts_count' => 12,
             'pets_count' => 3,
             'photos_count' => 8,
+            'post_reactions_received_count' => 34,
+            'post_comments_received_count' => 9,
+            'last_post_created_at' => Carbon::parse('2026-05-21 10:00:00'),
             'privacy_display_email' => true,
             'privacy_display_location' => true,
             'privacy_display_birthdate' => true,
@@ -340,6 +346,18 @@ it('mounts the lazy about tab component and presents public biographical section
             ->assertSee('data-icon="cake"', false)
             ->assertSee('Age 28')
             ->assertDontSee('May 20, 1998')
+            ->assertSee('data-ui="profile-about-activity-summary"', false)
+            ->assertSee('grid grid-cols-2 gap-3', false)
+            ->assertSee('Activity summary')
+            ->assertSee('Posts created')
+            ->assertSee('12')
+            ->assertSee('Reactions received')
+            ->assertSee('34')
+            ->assertSee('Comments received')
+            ->assertSee('9')
+            ->assertSee('Most recent post')
+            ->assertSee('May 21, 2026')
+            ->assertDontSee('data-ui="profile-about-activity-chart"', false)
             ->assertSee('data-ui="profile-about-overview"', false)
             ->assertSee('Profile basics')
             ->assertSee('About Bio Crew')
@@ -352,13 +370,85 @@ it('mounts the lazy about tab component and presents public biographical section
             ->assertSee('data-ui="profile-about-contact"', false)
             ->assertSee('Instagram')
             ->assertSee('instagram.com/bio_pets')
-            ->assertDontSee('mailto:bio-owner@example.test', false)
-            ->assertSee('data-ui="profile-about-activity-stats"', false)
-            ->assertSee('12')
-            ->assertSee('3')
-            ->assertSee('8')
-            ->assertSee('data-ui="profile-about-activity-chart"', false);
+            ->assertDontSee('mailto:bio-owner@example.test', false);
     } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('renders the about activity summary from precomputed user columns without live aggregate queries', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
+
+    try {
+        $profileOwner = User::factory()->create([
+            'name' => 'Activity Owner',
+            'username' => 'activity_summary_owner',
+            'bio' => 'Activity summary reads cached values.',
+            'is_private' => false,
+            'profile_visibility' => 'public',
+        ]);
+        $reactor = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        $post = Post::factory()->for($profileOwner)->create([
+            'created_at' => Carbon::parse('2026-05-20 09:00:00'),
+            'updated_at' => Carbon::parse('2026-05-20 09:00:00'),
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        Comment::factory()
+            ->for($post)
+            ->for($commenter, 'user')
+            ->create();
+
+        app(ReactionService::class)->react($reactor, $post->fresh(), 'love');
+
+        $profileOwner->refresh();
+
+        expect((int) $profileOwner->posts_count)->toBe(1)
+            ->and((int) $profileOwner->post_comments_received_count)->toBe(1)
+            ->and((int) $profileOwner->post_reactions_received_count)->toBe(1)
+            ->and($profileOwner->last_post_created_at?->toDateTimeString())->toBe('2026-05-20 09:00:00');
+
+        $profileOwner->updateQuietly([
+            'posts_count' => 0,
+            'post_comments_received_count' => 0,
+            'post_reactions_received_count' => 0,
+            'last_post_created_at' => null,
+        ]);
+
+        app(CounterCacheService::class)->rebuildProfileActivitySummary();
+        $profileOwner->refresh();
+
+        expect((int) $profileOwner->posts_count)->toBe(1)
+            ->and((int) $profileOwner->post_comments_received_count)->toBe(1)
+            ->and((int) $profileOwner->post_reactions_received_count)->toBe(1)
+            ->and($profileOwner->last_post_created_at?->toDateTimeString())->toBe('2026-05-20 09:00:00');
+
+        DB::enableQueryLog();
+
+        Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+            ->assertSee('data-ui="profile-about-activity-summary"', false)
+            ->assertSee('Posts created')
+            ->assertSee('1')
+            ->assertSee('Reactions received')
+            ->assertSee('Comments received')
+            ->assertSee('May 20, 2026');
+
+        $queries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->map(fn (string $query): string => strtolower($query))
+            ->implode("\n");
+
+        DB::disableQueryLog();
+
+        expect($queries)
+            ->not->toContain('from "posts"')
+            ->not->toContain('count(*)')
+            ->not->toContain('sum(')
+            ->not->toContain('max(');
+    } finally {
+        DB::disableQueryLog();
         Carbon::setTestNow();
     }
 });

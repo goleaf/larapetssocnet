@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\PostStatus;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class CounterCacheService
 {
@@ -15,6 +16,7 @@ class CounterCacheService
         $this->rebuildFollowCounts();
         $this->rebuildBlockCounts();
         $this->rebuildProfileTabCounts();
+        $this->rebuildProfileActivitySummary();
     }
 
     public function rebuildFollowCounts(): void
@@ -68,6 +70,45 @@ class CounterCacheService
                         'photos_count' => (int) $user->getAttribute('computed_photos'),
                         'scheduled_posts_count' => (int) $user->getAttribute('computed_scheduled_posts'),
                     ]);
+                }
+            });
+    }
+
+    public function rebuildProfileActivitySummary(): void
+    {
+        if (! Schema::hasTable('posts')) {
+            return;
+        }
+
+        User::query()
+            ->select(['users.id'])
+            ->withCount(['posts as computed_posts'])
+            ->withSum('posts as computed_post_reactions_received', 'reactions_count')
+            ->withSum('posts as computed_post_comments_received', 'comments_count')
+            ->withMax('posts as computed_last_post_created_at', 'created_at')
+            ->chunkById(100, function ($users): void {
+                foreach ($users as $user) {
+                    $updates = [];
+
+                    if (Schema::hasColumn('users', 'posts_count')) {
+                        $updates['posts_count'] = (int) $user->getAttribute('computed_posts');
+                    }
+
+                    if (Schema::hasColumn('users', 'post_reactions_received_count')) {
+                        $updates['post_reactions_received_count'] = (int) ($user->getAttribute('computed_post_reactions_received') ?? 0);
+                    }
+
+                    if (Schema::hasColumn('users', 'post_comments_received_count')) {
+                        $updates['post_comments_received_count'] = (int) ($user->getAttribute('computed_post_comments_received') ?? 0);
+                    }
+
+                    if (Schema::hasColumn('users', 'last_post_created_at')) {
+                        $updates['last_post_created_at'] = $user->getAttribute('computed_last_post_created_at');
+                    }
+
+                    if ($updates !== []) {
+                        $user->updateQuietly($updates);
+                    }
                 }
             });
     }

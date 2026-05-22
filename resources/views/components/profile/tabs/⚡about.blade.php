@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Support\Str;
@@ -21,10 +20,10 @@ new class extends Component
      *     displayName: string,
      *     canViewContent: bool,
      *     bioDetails: list<array{label: string, value: string, icon: string, iconPath: string, url?: string, datetime?: string|null}>,
+     *     activitySummaryItems: list<array{label: string, value: string, datetime?: string|null}>,
      *     overviewItems: list<array{label: string, value: string}>,
      *     contactItems: list<array{label: string, url: string, display: string}>,
-     *     interests: list<string>,
-     *     activityData: list<array{month: string, count: int}>
+     *     interests: list<string>
      * }
      */
     public function viewData(): array
@@ -41,10 +40,10 @@ new class extends Component
                 'displayName' => $displayName,
                 'canViewContent' => false,
                 'bioDetails' => [],
+                'activitySummaryItems' => [],
                 'overviewItems' => [],
                 'contactItems' => [],
                 'interests' => [],
-                'activityData' => [],
             ];
         }
 
@@ -58,10 +57,10 @@ new class extends Component
             'displayName' => $displayName,
             'canViewContent' => true,
             'bioDetails' => $this->bioDetails($profileUser, $location, $website),
+            'activitySummaryItems' => $this->activitySummaryItems($profileUser),
             'overviewItems' => $this->overviewItems($profileUser, $displayName),
             'contactItems' => $this->contactItems($profileUser->social_links),
             'interests' => $this->interests($profileUser->interests_text),
-            'activityData' => Post::monthlyActivitySummaryForUser($profileUser),
         ];
     }
 
@@ -92,8 +91,9 @@ new class extends Component
                 'privacy_display_location',
                 'privacy_display_birthdate',
                 'posts_count',
-                'pets_count',
-                'photos_count',
+                'post_reactions_received_count',
+                'post_comments_received_count',
+                'last_post_created_at',
             ])
             ->whereKey($this->profileUserId)
             ->firstOrFail();
@@ -154,6 +154,32 @@ new class extends Component
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @return list<array{label: string, value: string, datetime?: string|null}>
+     */
+    private function activitySummaryItems(User $profileUser): array
+    {
+        return [
+            [
+                'label' => 'Posts created',
+                'value' => number_format((int) ($profileUser->posts_count ?? 0)),
+            ],
+            [
+                'label' => 'Reactions received',
+                'value' => number_format((int) ($profileUser->post_reactions_received_count ?? 0)),
+            ],
+            [
+                'label' => 'Comments received',
+                'value' => number_format((int) ($profileUser->post_comments_received_count ?? 0)),
+            ],
+            [
+                'label' => 'Most recent post',
+                'value' => $profileUser->last_post_created_at?->format('M j, Y') ?? 'No posts yet',
+                'datetime' => $profileUser->last_post_created_at?->toDateString(),
+            ],
+        ];
     }
 
     /**
@@ -322,6 +348,30 @@ new class extends Component
 	 </section>
 	 </x-ui.card>
 
+	 <x-ui.card>
+	 <div class="flex flex-col gap-4">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Activity</p>
+	 <h3 class="mt-1 text-lg font-bold font-display text-bark">Activity summary</h3>
+	 </div>
+
+	 <dl data-ui="profile-about-activity-summary" class="grid grid-cols-2 gap-3">
+	 @foreach ($data['activitySummaryItems'] as $item)
+	 <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 p-3">
+	 <dt class="text-xs font-semibold uppercase tracking-wide text-fur">{{ $item['label'] }}</dt>
+	 <dd class="mt-1 break-words font-display text-xl font-bold text-bark sm:text-2xl">
+	 @if (isset($item['datetime']) && $item['datetime'])
+	 <time datetime="{{ $item['datetime'] }}">{{ $item['value'] }}</time>
+	 @else
+	 {{ $item['value'] }}
+	 @endif
+	 </dd>
+	 </div>
+	 @endforeach
+	 </dl>
+	 </div>
+	 </x-ui.card>
+
 	 @if ($data['overviewItems'] !== [])
 	 <x-ui.card>
 	 <div class="flex flex-col gap-4">
@@ -384,33 +434,5 @@ new class extends Component
 	 </div>
 	 </x-ui.card>
 	 @endif
-
-	 <x-ui.card>
- <div class="flex flex-col gap-4">
- <div>
- <p class="text-xs font-semibold uppercase tracking-wide text-fur">Activity</p>
- <h3 class="mt-1 text-lg font-bold font-display text-bark">Community activity</h3>
- </div>
-
- <dl data-ui="profile-about-activity-stats" class="grid gap-3 sm:grid-cols-3">
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 p-3">
- <dt class="text-xs font-semibold uppercase tracking-wide text-fur">Posts</dt>
- <dd class="mt-1 font-display text-2xl font-bold text-bark">{{ number_format((int) ($data['profileUser']->posts_count ?? 0)) }}</dd>
- </div>
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 p-3">
- <dt class="text-xs font-semibold uppercase tracking-wide text-fur">Pets</dt>
- <dd class="mt-1 font-display text-2xl font-bold text-bark">{{ number_format((int) ($data['profileUser']->pets_count ?? 0)) }}</dd>
- </div>
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/60 p-3">
- <dt class="text-xs font-semibold uppercase tracking-wide text-fur">Photos</dt>
- <dd class="mt-1 font-display text-2xl font-bold text-bark">{{ number_format((int) ($data['profileUser']->photos_count ?? 0)) }}</dd>
- </div>
- </dl>
-
- <div data-ui="profile-about-activity-chart">
- <x-ui.activity-chart :data="$data['activityData']"/>
- </div>
- </div>
- </x-ui.card>
- @endif
+	 @endif
 </div>

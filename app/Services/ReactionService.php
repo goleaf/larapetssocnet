@@ -46,6 +46,7 @@ class ReactionService
                 $existing->delete();
                 $post->decrementCounter('likes_count');
                 $post->decrementCounter('reactions_count');
+                $this->postAuthor($post)?->decrementCounter('post_reactions_received_count');
 
                 return ['action' => 'removed', 'current_reaction' => null];
             }
@@ -65,6 +66,7 @@ class ReactionService
 
             $post->incrementCounter('likes_count');
             $post->incrementCounter('reactions_count');
+            $this->postAuthor($post)?->incrementCounter('post_reactions_received_count');
 
             return ['action' => 'added', 'current_reaction' => $normalizedType];
         });
@@ -98,5 +100,13 @@ class ReactionService
             'acceptedFollowers',
             'acceptedFollowing',
         ]);
+    }
+
+    private function postAuthor(Post $post): ?User
+    {
+        return User::query()
+            ->select(['id'])
+            ->whereKey($post->getAttribute('user_id'))
+            ->first();
     }
 }
