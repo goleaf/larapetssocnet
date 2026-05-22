@@ -27,6 +27,8 @@
  $hasProfileStats = ($canViewFollowers ?? false) || ($canViewFollowing ?? false) || ($canViewPets ?? false);
  $hasProfileActions = $isOwner || $canInteract || (! auth()->check() && Route::has('login'));
  $profileUrl = $profileUser->profile_url;
+ $profilePrimaryFollowLabel = ($profileVisibility ?? 'public') === 'public' ? 'Follow' : 'Request to Follow';
+ $profileMessageUrl = (($canMessage ?? false) && Route::has('messages.conversation')) ? route('messages.conversation', ['peer'=> $profileUser]) : false;
  $profileShareText = 'Meet '.$displayName.' on PetSocial: '.$profileUrl;
  $encodedProfileUrl = rawurlencode($profileUrl);
  $encodedProfileShareText = rawurlencode($profileShareText);
@@ -407,14 +409,19 @@
  @click="window.toggleModal('profile-share-modal')">Share Profile</x-ui.button>
  </div>
  @elseif ($canInteract)
+ <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center" data-ui="profile-visitor-actions">
  <button
- class="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
+ data-ui="profile-follow-primary-action"
+ class="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[var(--radius-control)] px-5 py-2 text-sm font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
  :class="followButtonClass"
  x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
- x-bind:aria-label="followStatus === 'following' ?'Unfollow {{ addslashes($profileUser->name) }}': (followStatus === 'pending' ?'Requested to follow {{ addslashes($profileUser->name) }}' :'Follow {{ addslashes($profileUser->name) }}')"
+ x-bind:aria-label="followStatus === 'following' ? @js('Unfollow '.$profileUser->name) : (followStatus === 'pending' ? @js('Requested to follow '.$profileUser->name) : @js($profilePrimaryFollowLabel.' '.$profileUser->name))"
  @click="toggleFollow">
- <span x-text="busy ?'Saving...': followLabel"></span>
+ <span x-text="busy ? 'Saving...' : (followStatus === 'none' ? @js($profilePrimaryFollowLabel) : followLabel)">{{ $profilePrimaryFollowLabel }}</span>
  </button>
+
+ @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked,'profileUrl'=> $profileUrl,'messageUrl'=> $profileMessageUrl])
+ </div>
 
  <button
  x-show="followStatus === 'pending'"
@@ -424,13 +431,6 @@
  >
  Cancel request
  </button>
-
- @if ($canMessage ?? false)
- <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"
- size="sm" class="min-h-11 sm:min-w-28">Message</x-ui.button>
- @endif
-
- @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
  @elseif (!auth()->check() && Route::has('login'))
  <x-ui.button :href="route('login')" variant="primary" size="sm" class="min-h-11">Sign In to Follow</x-ui.button>
  @endif

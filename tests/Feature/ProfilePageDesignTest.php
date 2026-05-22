@@ -206,9 +206,16 @@ it('places profile relationship actions beside stats on desktop and below stats 
         ->assertSee('grid grid-cols-3 gap-3 lg:flex-1 lg:self-stretch', false)
         ->assertSee('data-ui="profile-actions"', false)
         ->assertSee('flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:min-w-[18rem] lg:justify-end', false)
+        ->assertSee('data-ui="profile-visitor-actions"', false)
+        ->assertSee('data-ui="profile-follow-primary-action"', false)
         ->assertSee('Follow')
-        ->assertSee('Message')
-        ->assertSee('aria-label="Profile actions"', false);
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false)
+        ->assertSee('aria-label="Profile actions"', false)
+        ->assertSee('Send Message')
+        ->assertSee('Suggest to Friends')
+        ->assertSee('Block')
+        ->assertSee('Report')
+        ->assertSee('Copy Profile URL');
 
     $html = $response->getContent();
 
@@ -253,10 +260,39 @@ it('renders profile action buttons from the viewer relationship state', function
         ->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
         ->assertSee('data-ui="profile-actions"', false)
+        ->assertSee('data-ui="profile-visitor-actions"', false)
+        ->assertSee('data-ui="profile-follow-primary-action"', false)
+        ->assertSee('>Follow<', false)
+        ->assertDontSee('Request to Follow')
         ->assertSee('@click="toggleFollow"', false)
-        ->assertSee('Message')
+        ->assertSee('Send Message')
+        ->assertSee('Suggest to Friends')
+        ->assertSee('Block')
+        ->assertSee('Report')
+        ->assertSee('Copy Profile URL')
         ->assertSee('aria-label="Profile actions"', false)
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false)
         ->assertDontSee('Edit Profile');
+});
+
+it('keeps the message menu action disabled when profile messaging policy denies it', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Messaging Limited Owner',
+        'username' => 'messaging_limited_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+        'messaging_permission' => 'followers_only',
+    ]);
+
+    $messageUrl = route('messages.conversation', ['peer' => $profileOwner]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-actions-menu-message"', false)
+        ->assertSee('Send Message')
+        ->assertSee('disabled', false)
+        ->assertDontSee('href="'.$messageUrl.'"', false);
 });
 
 it('renders owner edit and share profile modals from the profile action buttons', function (): void {
@@ -640,7 +676,16 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertSee('aria-labelledby="private-profile-header-title"', false)
         ->assertSee('This account is private')
         ->assertDontSee('bg-[color:var(--surface-muted)]', false)
-        ->assertSee('min-h-11', false);
+        ->assertSee('min-h-11', false)
+        ->assertSee('data-ui="private-profile-actions"', false)
+        ->assertSee('data-ui="profile-follow-primary-action"', false)
+        ->assertSee('Request to Follow')
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false)
+        ->assertSee('Send Message')
+        ->assertSee('Suggest to Friends')
+        ->assertSee('Block')
+        ->assertSee('Report')
+        ->assertSee('Copy Profile URL');
 });
 
 it('renders verified badges beside private profile header names', function (): void {

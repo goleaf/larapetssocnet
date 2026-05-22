@@ -33,9 +33,10 @@ test('profile activity chart data uses a six month window with monthly buckets',
             ->get(route('profile.show', ['user' => $profileUser]));
 
         $response->assertOk();
+        $response->assertSee('aria-label="Activity chart"', false);
 
         /** @var list<array{month: string, count: int}> $activityData */
-        $activityData = $response->viewData('activityData');
+        $activityData = Post::monthlyActivitySummaryForUser($profileUser);
 
         expect($activityData)->toHaveCount(6);
 

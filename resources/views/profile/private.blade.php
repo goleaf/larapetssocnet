@@ -1,5 +1,9 @@
 @php
  $privateDisplayName = $user->display_name ?: $user->name;
+ $privateProfileVisibility = $profileVisibility ?? 'private';
+ $privateFollowStatus = $followStatus ?? 'none';
+ $privateProfileUrl = $user->profile_url;
+ $privateMessageUrl = (($canMessage ?? false) && Route::has('messages.conversation')) ? route('messages.conversation', ['peer'=> $user]) : false;
 @endphp
 
 @section('title','@'.$user->username.'— Private Profile')
@@ -9,7 +13,17 @@
 @endpush
 
 <x-app-layout>
- <div class="w-full min-w-0 space-y-5" data-ui="private-profile-shell">
+ <div class="w-full min-w-0 space-y-5" data-ui="private-profile-shell" x-data="profileActions({
+ followStatus: @js($privateFollowStatus),
+ isFollowing: @js($privateFollowStatus === 'following'),
+ isBlocked: false,
+ isBlockedBy: false,
+ followersCount: @js((int) ($user->followers_count ?? 0)),
+ followUrl: @js(route('users.follow', ['user'=> $user])),
+ unfollowUrl: @js(route('users.unfollow', ['user'=> $user])),
+ blockUrl: @js(route('users.block', ['user'=> $user])),
+ unblockUrl: @js(route('users.unblock', ['user'=> $user]))
+ })">
  <section class="w-full min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="private-profile-hero" data-profile-section="profile-header" aria-labelledby="private-profile-header-title">
  <div data-ui="private-profile-hero-frame" class="relative">
  <div data-ui="private-profile-cover-banner" class="relative h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]">
@@ -46,13 +60,36 @@
  <x-ui.card>
  <x-ui.empty-state icon="🔒"
  title="This account is private"
- :description="($profileVisibility ?? 'private') === 'private'
+ :description="$privateProfileVisibility === 'private'
  ? 'This profile is not available publicly.'
  : 'This profile is private and followers-only. Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
  @auth
  <x-slot name="action">
- @if (($profileVisibility ?? 'private') !== 'private')
- <x-follow-button :user="$user" :follow-status="($followStatus ?? 'none')" size="lg"/>
+ @if ($privateProfileVisibility !== 'private')
+ <div class="flex flex-col items-center gap-2 sm:flex-row sm:justify-center" data-ui="private-profile-actions">
+ <button
+ type="button"
+ data-ui="profile-follow-primary-action"
+ class="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[var(--radius-control)] px-5 py-2 text-sm font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
+ :class="followButtonClass"
+ x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'"
+ x-bind:aria-pressed="(followStatus === 'following').toString()"
+ x-bind:aria-label="followStatus === 'following' ? @js('Unfollow '.$user->name) : (followStatus === 'pending' ? @js('Requested to follow '.$user->name) : @js('Request to Follow '.$user->name))"
+ @click="toggleFollow">
+ <span x-text="busy ? 'Saving...' : (followStatus === 'none' ? 'Request to Follow' : followLabel)">Request to Follow</span>
+ </button>
+
+ @include('profile._actions-dropdown', ['user'=> $user,'isBlocked'=> false,'profileUrl'=> $privateProfileUrl,'messageUrl'=> $privateMessageUrl])
+ </div>
+
+ <button
+ x-show="followStatus === 'pending'"
+ @click="cancelRequest"
+ type="button"
+ class="mt-2 inline-flex min-h-11 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ >
+ Cancel request
+ </button>
  @endif
  </x-slot>
  @else

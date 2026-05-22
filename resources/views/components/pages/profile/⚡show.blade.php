@@ -91,10 +91,16 @@ class extends Component
     public function render(): View
     {
         if ($this->showPrivateProfile) {
+            $viewer = request()->user();
+
             return view('profile.private', [
                 'user' => $this->profileOwner,
                 'followStatus' => $this->followStatus,
                 'profileVisibility' => $this->profileVisibility,
+                'canMessage' => app(\App\Services\ProfileVisibilityService::class)->canMessage(
+                    $viewer instanceof User ? $viewer : null,
+                    $this->profileOwner
+                ),
             ])->layout('layouts.livewire-pass-through');
         }
 

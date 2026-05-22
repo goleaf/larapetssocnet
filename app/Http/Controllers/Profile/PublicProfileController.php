@@ -93,6 +93,7 @@ class PublicProfileController extends Controller
                 'user' => $user,
                 'followStatus' => $followStatus,
                 'profileVisibility' => $profileVisibility->value,
+                'canMessage' => $canMessage,
             ]);
         }
 
