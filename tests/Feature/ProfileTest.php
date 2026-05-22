@@ -7,6 +7,7 @@ use App\Models\Content\PostMedia;
 use App\Models\Gamification\Badge;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -33,6 +34,27 @@ if (! function_exists('profileTestPayload')) {
             'location' => $user->location ?? $user->city,
             'website' => 'https://example.test',
         ], $overrides);
+    }
+}
+
+if (! function_exists('profilePhotoPost')) {
+    function profilePhotoPost(User $owner, string $visibility, string $path, array $overrides = []): Post
+    {
+        $post = Post::factory()->for($owner)->create(array_merge([
+            'body' => 'Profile photo post '.$visibility,
+            'body_html' => '<p>Profile photo post '.$visibility.'</p>',
+            'type' => Post::TYPE_PHOTO,
+            'visibility' => $visibility,
+            'created_at' => now(),
+        ], $overrides));
+
+        PostMedia::factory()->for($post, 'post')->create([
+            'file_path' => $path,
+            'media_type' => 'image',
+            'order' => 0,
+        ]);
+
+        return $post;
     }
 }
 
@@ -827,6 +849,106 @@ test('profile media grid opens a full post modal with comments', function (): vo
         ->assertSee('modal visible comment')
         ->call('closePostModal')
         ->assertSet('selectedPostId', null);
+});
+
+test('profile photos tab renders only photos from posts visible to the viewer', function (): void {
+    $owner = User::factory()->create([
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $nonFollower = User::factory()->create();
+    $follower = User::factory()->create();
+    $mutual = User::factory()->create();
+
+    Follow::query()->create([
+        'follower_id' => $follower->getKey(),
+        'following_id' => $owner->getKey(),
+        'status' => 'accepted',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    Follow::query()->create([
+        'follower_id' => $mutual->getKey(),
+        'following_id' => $owner->getKey(),
+        'status' => 'accepted',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    Follow::query()->create([
+        'follower_id' => $owner->getKey(),
+        'following_id' => $mutual->getKey(),
+        'status' => 'accepted',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-public-photo.jpg');
+    profilePhotoPost($owner, Post::VISIBILITY_FOLLOWERS, 'posts/profile-followers-photo.jpg');
+    profilePhotoPost($owner, Post::VISIBILITY_FRIENDS, 'posts/profile-friends-photo.jpg');
+    profilePhotoPost($owner, Post::VISIBILITY_PRIVATE, 'posts/profile-private-photo.jpg');
+
+    $videoPost = Post::factory()->for($owner)->create([
+        'body' => 'video-only post should not be in photos',
+        'body_html' => '<p>video-only post should not be in photos</p>',
+        'type' => Post::TYPE_VIDEO,
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    PostMedia::factory()->for($videoPost, 'post')->create([
+        'file_path' => 'posts/profile-video-only.mp4',
+        'media_type' => 'video',
+    ]);
+
+    Livewire::test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('data-ui="profile-photos-grid"', false)
+        ->assertSee('profile-public-photo.jpg')
+        ->assertDontSee('profile-followers-photo.jpg')
+        ->assertDontSee('profile-friends-photo.jpg')
+        ->assertDontSee('profile-private-photo.jpg')
+        ->assertDontSee('profile-video-only.mp4');
+
+    Livewire::actingAs($nonFollower)
+        ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('profile-public-photo.jpg')
+        ->assertDontSee('profile-followers-photo.jpg')
+        ->assertDontSee('profile-friends-photo.jpg')
+        ->assertDontSee('profile-private-photo.jpg');
+
+    Livewire::actingAs($follower)
+        ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('profile-public-photo.jpg')
+        ->assertSee('profile-followers-photo.jpg')
+        ->assertDontSee('profile-friends-photo.jpg')
+        ->assertDontSee('profile-private-photo.jpg');
+
+    Livewire::actingAs($mutual)
+        ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('profile-public-photo.jpg')
+        ->assertSee('profile-followers-photo.jpg')
+        ->assertSee('profile-friends-photo.jpg')
+        ->assertDontSee('profile-private-photo.jpg');
+
+    Livewire::actingAs($owner)
+        ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('profile-public-photo.jpg')
+        ->assertSee('profile-followers-photo.jpg')
+        ->assertSee('profile-friends-photo.jpg')
+        ->assertSee('profile-private-photo.jpg')
+        ->assertDontSee('profile-video-only.mp4');
+});
+
+test('profile photos tab hides post photos when profile content is private', function (): void {
+    $owner = User::factory()->create([
+        'is_private' => true,
+        'profile_visibility' => 'private',
+    ]);
+    $viewer = User::factory()->create();
+
+    profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/private-profile-public-photo.jpg');
+
+    Livewire::actingAs($viewer)
+        ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('Photos are private')
+        ->assertDontSee('private-profile-public-photo.jpg');
 });
 
 test('mutual followers appear on both followers and following pages', function (): void {

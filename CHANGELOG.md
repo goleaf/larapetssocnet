@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added the profile Photos tab lazy Livewire grid for post photos, reusing profile post visibility rules so followers-only, friends-only, private, and video-only media are filtered correctly.
 - Added a profile owner first-pet onboarding empty state with an illustrated prompt and modal CTA, while keeping visitor zero-pet profiles to a simple no-pets message.
 - Added an owner-only Add Pet card and on-page Livewire pet creation modal to the profile Pets tab, with immediate grid refresh and parent tab-count update after creation.
 - Added the profile Pets tab responsive Livewire grid with square pet photos, age/follower metadata, and authorized Follow Pet actions.

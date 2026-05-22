@@ -490,6 +490,23 @@ class Post extends Model implements HasMedia
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
+    public function scopeContainingPhotos(Builder $query): Builder
+    {
+        return $query->where(function (Builder $mediaQuery): void {
+            $mediaQuery
+                ->whereHas('postMedia', function (Builder $postMediaQuery): void {
+                    $postMediaQuery->where('media_type', 'image');
+                })
+                ->orWhereHas('media', function (Builder $spatieMediaQuery): void {
+                    $spatieMediaQuery->whereIn('collection_name', ['photos', 'images']);
+                });
+        });
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
     private static function applyContainingMediaFilter(Builder $query): Builder
     {
         return $query->where(function (Builder $mediaQuery): void {
@@ -812,6 +829,17 @@ class Post extends Model implements HasMedia
     }
 
     /**
+     * @return Collection<int, self>
+     */
+    public static function profilePhotoGridPosts(User $profileOwner, ?User $viewer): Collection
+    {
+        return self::profileTimelineQuery($profileOwner, $viewer)
+            ->containingPhotos()
+            ->when(true, fn (Builder $query) => app(ProfilePostOrderingService::class)->apply($query))
+            ->get();
+    }
+
+    /**
      * @return Collection<int, mixed>
      */
     public function mediaItemsForDisplay(): Collection
@@ -835,6 +863,19 @@ class Post extends Model implements HasMedia
         }
 
         return is_object($item) && (($item->media_type ?? 'image') === 'video');
+    }
+
+    public static function mediaItemIsPhoto(mixed $item): bool
+    {
+        if (is_object($item) && isset($item->mime_type)) {
+            return str_starts_with((string) $item->mime_type, 'image/');
+        }
+
+        if (is_object($item) && isset($item->collection_name)) {
+            return in_array((string) $item->collection_name, ['photos', 'images'], true);
+        }
+
+        return is_object($item) && (($item->media_type ?? 'image') === 'image');
     }
 
     public static function mediaItemUrl(mixed $item): string

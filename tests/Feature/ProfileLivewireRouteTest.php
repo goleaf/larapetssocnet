@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Content\Post;
+use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -265,6 +266,28 @@ it('mounts the lazy pets tab component and fetches pets independently', function
     Livewire::test('profile.tabs.pets', ['profileUserId' => $profileOwner->getKey()])
         ->assertSee('Nested Component Pet')
         ->assertSee('data-ui="profile-tab-panel"', false);
+});
+
+it('mounts the lazy photos tab component and fetches visible post photos independently', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'child_photo_tab_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $post = Post::factory()->for($profileOwner)->create([
+        'body' => 'Nested photo tab post',
+        'body_html' => '<p>Nested photo tab post</p>',
+        'type' => Post::TYPE_PHOTO,
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    PostMedia::factory()->for($post, 'post')->create([
+        'file_path' => 'posts/nested-photo-tab.jpg',
+        'media_type' => 'image',
+    ]);
+
+    Livewire::test('profile.tabs.photos', ['profileUserId' => $profileOwner->getKey()])
+        ->assertSee('nested-photo-tab.jpg')
+        ->assertSee('data-ui="profile-photos-grid"', false);
 });
 
 it('mounts the nested posts tab only after posts becomes the active profile tab', function (): void {
