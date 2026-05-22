@@ -263,6 +263,51 @@ it('renders generated profile initials with the username hash palette when no av
         ->not->toBe($differentUsername->profile_default_avatar_color);
 });
 
+it('renders verified badges beside profile header names with an alpine tooltip', function (): void {
+    $verifiedOwner = User::factory()->create([
+        'name' => 'Verified Owner',
+        'display_name' => 'Verified Crew',
+        'username' => 'verified_badge_owner',
+        'is_verified' => true,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $unverifiedOwner = User::factory()->create([
+        'name' => 'Unverified Owner',
+        'username' => 'unverified_badge_owner',
+        'is_verified' => false,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $response = $this->get(route('profile.show', ['user' => $verifiedOwner]))
+        ->assertOk()
+        ->assertSee('Verified Crew')
+        ->assertSee('data-ui="profile-verified-badge"', false)
+        ->assertSee('data-ui="profile-verified-tooltip"', false)
+        ->assertSee('aria-label="Verified PetSocial account"', false)
+        ->assertSee('role="tooltip"', false)
+        ->assertSee('x-data="{ open: false }"', false)
+        ->assertSee('@mouseenter="open = true"', false)
+        ->assertSee('@click="open = true"', false)
+        ->assertSee('x-bind:aria-expanded="open.toString()"', false)
+        ->assertSee('bg-[#0F9F8C]/10 text-[#0F9F8C]', false)
+        ->assertSee('focus-visible:outline-[#0F9F8C]', false)
+        ->assertSee('This account has been verified by PetSocial as a notable pet-related account or organization.')
+        ->assertDontSee('title="Verified PetSocial account"', false)
+        ->assertDontSee('bg-sky-light text-paw shadow-sm', false);
+
+    $html = $response->getContent();
+
+    expect(strpos($html, 'Verified Crew'))->toBeLessThan(strpos($html, 'data-ui="profile-verified-badge"'));
+
+    $this->get(route('profile.show', ['user' => $unverifiedOwner]))
+        ->assertOk()
+        ->assertSee('Unverified Owner')
+        ->assertDontSee('data-ui="profile-verified-badge"', false)
+        ->assertDontSee('Verified PetSocial account');
+});
+
 it('renders a clearer private profile lockup for authenticated visitors', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Private Profile',
@@ -294,6 +339,26 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertSee('This account is private')
         ->assertDontSee('bg-[color:var(--surface-muted)]', false)
         ->assertSee('min-h-11', false);
+});
+
+it('renders verified badges beside private profile header names', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Private Verified Profile',
+        'username' => 'private_verified_badge',
+        'avatar_path' => null,
+        'profile_photo_path' => null,
+        'is_private' => true,
+        'profile_visibility' => 'followers_only',
+        'is_verified' => true,
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('Private Verified Profile')
+        ->assertSee('data-ui="profile-verified-badge"', false)
+        ->assertSee('private-profile-header-verified-tooltip', false)
+        ->assertSee('This account has been verified by PetSocial as a notable pet-related account or organization.');
 });
 
 it('renders an intentional empty state for brand new public profiles', function (): void {

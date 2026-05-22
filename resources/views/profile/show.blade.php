@@ -235,18 +235,7 @@
  <div class="flex flex-wrap items-center gap-2">
  <h1 id="profile-header-title" class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
  @if ($profileUser->profile_verified)
- <span class="relative inline-flex" x-data="{ open: false }">
- <button type="button"
- class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-light text-paw shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
- @mouseenter="open = true" @mouseleave="open = false" @click="open = !open"
- aria-label="Verified PetSocial account">
- <span aria-hidden="true">🐾</span>
- </button>
- <span x-show="open" x-cloak x-transition
- class="absolute left-1/2 top-10 z-20 w-64 -translate-x-1/2 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card">
- This account has been verified by PetSocial as a notable pet-related account or organization.
- </span>
- </span>
+ <x-ui.verified-badge tooltip-id="profile-header-verified-tooltip"/>
  @endif
  </div>
  <p class="text-sm font-semibold text-fur">&#64;{{ $profileUser->username }}</p>

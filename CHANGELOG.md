@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated the profile verified badge to use a reserved verification color, SVG paw icon, and Alpine-controlled tooltip beside public and private profile header names.
 - Updated profile avatars to overlap the cover edge with responsive 90px/120px circular sizing, white borders, object-cover uploaded images, and username-hashed initial fallbacks.
 - Updated profile cover repositioning to use owner-only Alpine mouse/touch dragging with a Livewire action save path and cancel rollback behavior.
 - Updated profile cover focal-point handling so uploaded cover images render with `object-position: center [percentage]%`, keep stored percentages normalized to 0-100, and reset to 50 on new uploads or removals.

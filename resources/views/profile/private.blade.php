@@ -27,7 +27,12 @@
  <div class="px-6 pb-6 pt-14 lg:pt-4">
  <div class="flex flex-col gap-1 lg:pl-36">
  <div class="pb-1">
+ <div class="flex flex-wrap items-center gap-2">
  <h1 id="private-profile-header-title" class="text-2xl font-bold font-display text-bark">{{ $user->name }}</h1>
+ @if ($user->profile_verified)
+ <x-ui.verified-badge tooltip-id="private-profile-header-verified-tooltip"/>
+ @endif
+ </div>
  <p class="text-sm text-fur">&#64;{{ $user->username }}</p>
  </div>
  </div>
