@@ -13,6 +13,9 @@
  $websiteUrl = $websiteRaw !==''
  ? (\Illuminate\Support\Str::startsWith($websiteRaw, ['http://','https://']) ? $websiteRaw :'https://'. $websiteRaw)
  : null;
+ $websiteDisplay = $websiteUrl
+ ? \Illuminate\Support\Str::of($websiteUrl)->replaceStart('https://', '')->replaceStart('http://', '')->before('/')->toString()
+ : null;
 
  $tabItems = [
  ['label'=>'Posts','value'=>'posts','count'=> (int) ($profileUser->posts_count ?? 0)],
@@ -339,6 +342,57 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  @endif
 
  <p class="mt-3 text-sm text-fur" role="status" aria-live="polite" x-show="notice" x-text="notice"></p>
+
+ <div class="mt-5 border-t border-whisker/30 pt-4" data-ui="profile-identity-panel">
+ <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+ <div class="min-w-0">
+ @if ($profileUser->bio)
+ <p class="max-w-3xl whitespace-pre-line text-base leading-7 text-bark">{{ $profileUser->bio }}</p>
+ @elseif ($isOwner)
+ <p class="max-w-3xl text-base leading-7 text-fur">Add a short introduction so visitors know the person behind the profile.</p>
+ @endif
+ </div>
+
+ <ul class="flex flex-wrap gap-2 lg:max-w-md lg:justify-end" role="list" aria-label="Profile highlights">
+ @if ($location)
+ <li data-ui="profile-identity-chip"
+ class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
+ <span aria-hidden="true">📍</span>
+ <span>{{ $location }}</span>
+ </li>
+ @endif
+ @if ($websiteUrl)
+ <li>
+ <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer" data-ui="profile-identity-chip"
+ aria-label="Visit {{ $displayName }} website"
+ class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-paw transition-colors hover:border-paw hover:bg-paw-light/30 hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <span aria-hidden="true">🔗</span>
+ <span>{{ $websiteDisplay }}</span>
+ </a>
+ </li>
+ @endif
+ <li data-ui="profile-identity-chip"
+ class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
+ <span aria-hidden="true">🗓️</span>
+ <span>Member since {{ optional($profileUser->created_at)->format('M Y') }}</span>
+ </li>
+ @if ($canViewPets ?? false)
+ <li data-ui="profile-identity-chip"
+ class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
+ <span aria-hidden="true">🐾</span>
+ <span>{{ number_format((int) $profileUser->pets_count) }} {{ Str::plural('pet', (int) $profileUser->pets_count) }}</span>
+ </li>
+ @endif
+ @if ($canViewContent ?? false)
+ <li data-ui="profile-identity-chip"
+ class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
+ <span aria-hidden="true">✍</span>
+ <span>{{ number_format((int) ($profileUser->posts_count ?? 0)) }} {{ Str::plural('post', (int) ($profileUser->posts_count ?? 0)) }}</span>
+ </li>
+ @endif
+ </ul>
+ </div>
+ </div>
  </div>
  </section>
 
@@ -438,7 +492,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  <div class="mt-3 space-y-2 text-sm text-fur">
  @if ($profileUser->bio)
  <p class="whitespace-pre-line text-bark">{{ $profileUser->bio }}</p>
- @else
+ @elseif ($isOwner)
  <p>No bio added yet.</p>
  @endif
 

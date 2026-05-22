@@ -10,7 +10,13 @@ uses(RefreshDatabase::class);
 it('renders facebook-style profile sections and actions for public profiles', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Ava Carter',
+        'display_name' => 'Ava and Luna',
         'username' => 'ava_carter01',
+        'headline' => 'Neighborhood rescue volunteer',
+        'bio' => 'Ava shares slow weekend walks, foster wins, and practical notes for anxious rescue dogs.',
+        'location' => 'Portland',
+        'website' => 'https://ava.example',
+        'privacy_display_location' => true,
         'is_private' => false,
     ]);
 
@@ -39,8 +45,15 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertSee('data-ui="profile-hero"', false)
         ->assertSee('data-ui="profile-stats"', false)
         ->assertSee('data-ui="profile-stat-card"', false)
+        ->assertSee('data-ui="profile-identity-panel"', false)
+        ->assertSee('data-ui="profile-identity-chip"', false)
         ->assertSee('data-ui="profile-tabs"', false)
         ->assertSee('data-ui="tabs"', false)
+        ->assertSee('Ava and Luna')
+        ->assertSee('Neighborhood rescue volunteer')
+        ->assertSee('Ava shares slow weekend walks')
+        ->assertSee('Portland')
+        ->assertSee('ava.example')
         ->assertSee('Intro')
         ->assertSee('Friends')
         ->assertSee('Posts')

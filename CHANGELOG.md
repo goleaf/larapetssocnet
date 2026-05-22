@@ -50,6 +50,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated the public profile hero with a privacy-aware identity panel that surfaces the member bio, safe location, website, join date, pet count, and post count in the Warm Editorial visual system.
 - Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, use profile-view upserts against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.
@@ -151,6 +152,8 @@
 - Verified passing suites:
   - `php artisan test --compact tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php`
   - `php artisan test --compact tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/SettingsProfileCoverTest.php tests/Feature/ProfilePageDesignTest.php tests/Unit/Models/UserScopesTest.php`
+  - `php artisan test --compact tests/Feature/ProfilePageDesignTest.php tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/SettingsProfileCoverTest.php tests/Unit/Models/UserScopesTest.php`
+  - `npm run build`
   - `php artisan test --compact tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfilePageDesignTest.php tests/Unit/Models/UserScopesTest.php`
   - `php artisan test --compact tests/Feature/Auth tests/Feature/AuthenticatedPageAccessTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/ProjectDocumentationAndHooksTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
