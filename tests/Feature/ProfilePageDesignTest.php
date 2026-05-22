@@ -81,6 +81,9 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
         ->assertSee('data-ui="profile-shell"', false)
+        ->assertSee('data-ui="profile-header"', false)
+        ->assertSee('aria-labelledby="profile-header-title"', false)
+        ->assertSee('id="profile-header-title"', false)
         ->assertSee('data-ui="profile-hero"', false)
         ->assertSee('data-ui="profile-stats"', false)
         ->assertSee('data-ui="profile-stat-card"', false)
@@ -111,6 +114,27 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertDontSee('Who To Follow');
 });
 
+it('renders the profile header as the topmost full-width section in the main profile view', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Top Header Owner',
+        'username' => 'top_header_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $response = $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-header"', false)
+        ->assertSee('w-full min-w-0 overflow-hidden', false)
+        ->assertDontSee('<livewire:profile-header', false)
+        ->assertDontSee('wire:id="profile-header', false);
+
+    $html = $response->getContent();
+
+    expect(strpos($html, 'data-ui="profile-header"'))->toBeLessThan(strpos($html, 'data-ui="profile-completeness"') ?: PHP_INT_MAX)
+        ->and(strpos($html, 'data-ui="profile-header"'))->toBeLessThan(strpos($html, 'data-ui="profile-tabs"'));
+});
+
 it('renders a clearer private profile lockup for authenticated visitors', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Private Profile',
@@ -123,6 +147,8 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertOk()
         ->assertSee('data-ui="private-profile-shell"', false)
         ->assertSee('data-ui="private-profile-hero"', false)
+        ->assertSee('data-profile-section="profile-header"', false)
+        ->assertSee('aria-labelledby="private-profile-header-title"', false)
         ->assertSee('This account is private')
         ->assertSee('min-h-11', false);
 });

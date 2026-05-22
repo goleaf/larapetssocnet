@@ -5,8 +5,8 @@
 @endpush
 
 <x-app-layout>
- <div class="mx-auto max-w-3xl space-y-5" data-ui="private-profile-shell">
- <section class="overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="private-profile-hero">
+ <div class="w-full min-w-0 space-y-5" data-ui="private-profile-shell">
+ <section class="w-full min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="private-profile-hero" data-profile-section="profile-header" aria-labelledby="private-profile-header-title">
  <div class="h-40 w-full bg-[color:var(--surface-muted)]"></div>
 
  <div class="px-6 pb-6">
@@ -14,7 +14,7 @@
  <x-ui.avatar :src="$user->avatar_url" :name="$user->name" size="2xl" class="h-24 w-24 border-4 border-warm-white bg-warm-white"/>
 
  <div class="pb-1">
- <h1 class="text-2xl font-bold font-display text-bark">{{ $user->name }}</h1>
+ <h1 id="private-profile-header-title" class="text-2xl font-bold font-display text-bark">{{ $user->name }}</h1>
  <p class="text-sm text-fur">&#64;{{ $user->username }}</p>
  </div>
  </div>

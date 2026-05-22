@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Promoted the public profile header to a full-width topmost Blade section inside the main profile view, with the private lockup header following the same content-width behavior.
 - Moved the public profile route to the end of the application route file and enforced reserved username validation during registration and profile username changes.
 - Routed public username profiles through a full-page Livewire component at `/@username` while preserving canonical username casing redirects and blocked-viewer denial.
 - Updated profile Livewire mounting to resolve active usernames before block/private/header queries, return 404 for old or unavailable profile usernames without consulting redirect history, and load header data only for visible profiles.

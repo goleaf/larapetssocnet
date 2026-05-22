@@ -84,7 +84,7 @@
 @endpush
 
 <x-app-layout>
- <div class="space-y-5" data-ui="profile-shell" x-data="profileActions({
+ <div class="w-full min-w-0 space-y-5" data-ui="profile-shell" x-data="profileActions({
  followStatus: @js($followStatus),
  isFollowing: @js($isFollowing),
  isBlocked: @js($isBlocked),
@@ -96,8 +96,9 @@
  unblockUrl: @js(route('users.unblock', ['user'=> $profileUser]))
  })">
 
- <section class="overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card"
- data-ui="profile-hero"
+ <section class="w-full min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card"
+ data-ui="profile-header"
+ aria-labelledby="profile-header-title"
  x-data="{
  position: @js($coverPosition),
  savedPosition: @js($coverPosition),
@@ -155,6 +156,7 @@
  @pointermove.window="moveCover($event)"
  @pointerup.window="stopCoverDrag()"
  @pointercancel.window="stopCoverDrag()">
+ <div data-ui="profile-hero" class="contents"></div>
  <div class="relative h-36 w-full sm:h-44 lg:h-[280px]">
  @if ($coverUrl)
  <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
@@ -209,7 +211,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
 
  <div class="pb-1">
  <div class="flex flex-wrap items-center gap-2">
- <h1 class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
+ <h1 id="profile-header-title" class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
  @if ($profileUser->profile_verified)
  <span class="relative inline-flex" x-data="{ open: false }">
  <button type="button"
