@@ -688,6 +688,47 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertSee('Copy Profile URL');
 });
 
+it('renders a requested confirmation dropdown for pending private follow requests', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Pending Private Profile',
+        'username' => 'pending_private_profile',
+        'avatar_path' => null,
+        'profile_photo_path' => null,
+        'is_private' => true,
+        'profile_visibility' => 'followers_only',
+    ]);
+    $viewer = User::factory()->create();
+
+    Follow::query()->create([
+        'follower_id' => $viewer->id,
+        'following_id' => $profileOwner->id,
+        'status' => 'pending',
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="private-profile-actions"', false)
+        ->assertSee('data-ui="profile-follow-primary-action"', false)
+        ->assertSee('data-follow-status="pending"', false)
+        ->assertSee('Requested')
+        ->assertSee('aria-controls="profile-withdraw-request-dropdown"', false)
+        ->assertSee('data-ui="profile-withdraw-request-dropdown"', false)
+        ->assertSee('Withdraw follow request?')
+        ->assertSee('Withdraw Request')
+        ->assertSee('Keep Request')
+        ->assertSee('@click="if (followStatus === \'pending\') { confirmWithdraw = ! confirmWithdraw; return; } toggleFollow()"', false)
+        ->assertSee('@click="confirmWithdraw = false; cancelRequest()"', false)
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false)
+        ->assertSee('Send Message')
+        ->assertSee('Suggest to Friends')
+        ->assertSee('Block')
+        ->assertSee('Report')
+        ->assertSee('Copy Profile URL')
+        ->assertDontSee('Cancel request');
+});
+
 it('renders verified badges beside private profile header names', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Private Verified Profile',

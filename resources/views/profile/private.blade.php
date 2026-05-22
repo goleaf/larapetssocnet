@@ -67,29 +67,48 @@
  <x-slot name="action">
  @if ($privateProfileVisibility !== 'private')
  <div class="flex flex-col items-center gap-2 sm:flex-row sm:justify-center" data-ui="private-profile-actions">
+ <div class="relative" x-data="{ confirmWithdraw: false }" @click.outside="confirmWithdraw = false" @keydown.escape.window="confirmWithdraw = false">
  <button
  type="button"
  data-ui="profile-follow-primary-action"
+ data-follow-status="{{ $privateFollowStatus }}"
+ x-bind:data-requested="followStatus === 'pending'"
  class="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[var(--radius-control)] px-5 py-2 text-sm font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
  :class="followButtonClass"
- x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'"
+ x-bind:disabled="busy || hasBlockingRelationship"
  x-bind:aria-pressed="(followStatus === 'following').toString()"
+ aria-haspopup="menu"
+ aria-controls="profile-withdraw-request-dropdown"
+ x-bind:aria-expanded="(confirmWithdraw && followStatus === 'pending').toString()"
  x-bind:aria-label="followStatus === 'following' ? @js('Unfollow '.$user->name) : (followStatus === 'pending' ? @js('Requested to follow '.$user->name) : @js('Request to Follow '.$user->name))"
- @click="toggleFollow">
- <span x-text="busy ? 'Saving...' : (followStatus === 'none' ? 'Request to Follow' : followLabel)">Request to Follow</span>
+ @click="if (followStatus === 'pending') { confirmWithdraw = ! confirmWithdraw; return; } toggleFollow()">
+ <span x-text="busy ? 'Saving...' : (followStatus === 'none' ? 'Request to Follow' : followLabel)">{{ $privateFollowStatus === 'pending' ? 'Requested' : 'Request to Follow' }}</span>
  </button>
+
+ <div
+ id="profile-withdraw-request-dropdown"
+ x-show="confirmWithdraw && followStatus === 'pending'"
+ x-cloak
+ x-transition
+ data-ui="profile-withdraw-request-dropdown"
+ class="absolute left-1/2 z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-[var(--ui-border)] bg-[color:var(--ui-surface)] p-3 text-left shadow-lg"
+ role="menu"
+ aria-label="Pending follow request options"
+ >
+ <p class="text-xs font-semibold text-bark">Withdraw follow request?</p>
+ <div class="mt-2 grid gap-1">
+ <button type="button" data-ui="profile-withdraw-request-action" class="flex min-h-10 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="confirmWithdraw = false; cancelRequest()">
+ Withdraw Request
+ </button>
+ <button type="button" data-ui="profile-keep-request-action" class="flex min-h-10 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="confirmWithdraw = false">
+ Keep Request
+ </button>
+ </div>
+ </div>
+ </div>
 
  @include('profile._actions-dropdown', ['user'=> $user,'isBlocked'=> false,'profileUrl'=> $privateProfileUrl,'messageUrl'=> $privateMessageUrl])
  </div>
-
- <button
- x-show="followStatus === 'pending'"
- @click="cancelRequest"
- type="button"
- class="mt-2 inline-flex min-h-11 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
- >
- Cancel request
- </button>
  @endif
  </x-slot>
  @else

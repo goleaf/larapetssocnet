@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated pending private-profile follow requests to show a Requested button with an inline Withdraw Request / Keep Request confirmation dropdown.
 - Updated non-following profile viewer actions to use one prominent Follow or Request to Follow button plus a three-dot menu for message, suggestion, block, report, and profile URL copy actions.
 - Updated owner profile actions to show side-by-side Edit Profile and Share Profile buttons with edit and profile-sharing modals.
 - Updated profile relationship action buttons so owner, viewer, and guest actions sit beside the cached stats bar on desktop and below it on mobile.
