@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
@@ -45,7 +47,85 @@ it('renders the profile page component directly', function (): void {
         'profile_visibility' => 'public',
     ]);
 
-    Livewire::test('pages.profile.show', ['user' => $profileOwner])
+    Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
         ->assertSee('Direct Livewire Member')
         ->assertSee('@direct_livewire_member');
+});
+
+it('stops after the active user lookup when the username is missing', function (): void {
+    $queries = [];
+
+    DB::listen(function ($event) use (&$queries): void {
+        $queries[] = $event->sql;
+    });
+
+    $this->get('/@missing_livewire_member')->assertNotFound();
+
+    $profileQueries = collect($queries)
+        ->filter(fn (string $query): bool => str_contains($query, 'from "users"')
+            || str_contains($query, 'from "blocks"')
+            || str_contains($query, 'from "follows"')
+            || str_contains($query, 'from "media"'))
+        ->values();
+
+    $usernameLookups = $profileQueries
+        ->filter(fn (string $query): bool => str_contains($query, 'from "users"') && str_contains($query, '"username" = ?'))
+        ->values();
+
+    expect($usernameLookups)->toHaveCount(1)
+        ->and($profileQueries->implode("\n"))->not->toContain('from "blocks"')
+        ->and($profileQueries->implode("\n"))->not->toContain('from "follows"')
+        ->and($profileQueries->implode("\n"))->not->toContain('from "media"');
+});
+
+it('checks block relationships before private profile rendering', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'blocked_private_owner',
+        'is_private' => true,
+        'profile_visibility' => 'followers_only',
+    ]);
+    $viewer = User::factory()->create();
+
+    $profileOwner->block($viewer);
+
+    $this->actingAs($viewer)
+        ->get('/@blocked_private_owner')
+        ->assertNotFound();
+});
+
+it('renders private state from mount for non-followers', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'mount_private_owner',
+        'is_private' => true,
+        'profile_visibility' => 'followers_only',
+    ]);
+
+    Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('showPrivateProfile', true)
+        ->assertSet('profileVisibility', 'followers_only')
+        ->assertSee('This account is private')
+        ->assertDontSee('data-ui="profile-shell"', false);
+});
+
+it('loads header data and defaults the active tab to posts for visible profiles', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'header_loaded_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $follower = User::factory()->create();
+
+    $follower->follow($profileOwner);
+    Pet::factory()->count(2)->for($profileOwner)->create();
+
+    $component = Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('activeTab', 'posts')
+        ->assertSet('showPrivateProfile', false);
+
+    $resolvedOwner = $component->instance()->profileOwner;
+
+    expect($resolvedOwner)->toBeInstanceOf(User::class)
+        ->and($resolvedOwner->relationLoaded('media'))->toBeTrue()
+        ->and((int) $resolvedOwner->followers_count)->toBe(1)
+        ->and((int) $resolvedOwner->pets_count)->toBe(2);
 });

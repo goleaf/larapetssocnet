@@ -28,15 +28,14 @@ it('accessing uppercase username redirects to lowercase permanently', function (
         ->assertStatus(301);
 });
 
-it('old username redirects to new username for 90 days', function (): void {
+it('old profile usernames return 404 even while username redirects are retained', function (): void {
     $user = User::factory()->create(['username' => 'oldname']);
 
     app(UsernameService::class)->change($user, 'newname');
 
     $this->actingAs(User::factory()->create())
         ->get('/@oldname')
-        ->assertRedirect('/@newname')
-        ->assertStatus(301);
+        ->assertNotFound();
 });
 
 it('expired old username redirect returns 404', function (): void {

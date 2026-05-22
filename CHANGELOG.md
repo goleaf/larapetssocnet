@@ -50,7 +50,8 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
-- Routed public username profiles through a full-page Livewire component at `/@username` while preserving canonical username redirects and blocked-viewer denial.
+- Routed public username profiles through a full-page Livewire component at `/@username` while preserving canonical username casing redirects and blocked-viewer denial.
+- Updated profile Livewire mounting to resolve active usernames before block/private/header queries, return 404 for old or unavailable profile usernames without consulting redirect history, and load header data only for visible profiles.
 - Updated profile empty, guest, high-volume, followers-only, and blocked states so each renders intentional copy, actions, counters, or access denial instead of falling through to generic profile surfaces.
 - Updated the public profile hero with a privacy-aware identity panel that surfaces the member bio, safe location, website, join date, pet count, and post count in the Warm Editorial visual system.
 - Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, use profile-view upserts against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.

@@ -1,7 +1,11 @@
 <?php
 
+use App\Enums\ProfileVisibility;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Models\Identity\User;
+use App\Models\Social\Block;
+use App\Models\Social\Follow;
+use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -12,20 +16,48 @@ new
 #[Layout('layouts.livewire-pass-through')]
 class extends Component
 {
-    public User $user;
+    public User $profileOwner;
 
-    public function mount(User $user): void
+    public string $activeTab = 'posts';
+
+    public bool $showPrivateProfile = false;
+
+    public string $followStatus = 'none';
+
+    public string $profileVisibility = 'public';
+
+    public function mount(string $user): void
     {
-        $this->user = $user;
+        $this->activeTab = 'posts';
 
-        $this->redirectRestrictedViewer();
-        $this->abortBlockedViewer();
-        $this->redirectCanonicalUsername();
+        $this->profileOwner = $this->resolveActiveProfileOwner($user);
+
+        $viewer = request()->user();
+
+        $this->abortIfBlocked($viewer, $this->profileOwner);
+        $this->redirectRestrictedViewer($viewer);
+        $this->markPrivateProfileStateWhenHidden($viewer, $this->profileOwner);
+
+        if ($this->showPrivateProfile) {
+            return;
+        }
+
+        $this->redirectCanonicalUsername($user, $this->profileOwner);
+
+        $this->profileOwner = $this->loadHeaderProfileData($this->profileOwner);
     }
 
     public function render(): View
     {
-        $response = app(PublicProfileController::class)->show(request(), $this->user);
+        if ($this->showPrivateProfile) {
+            return view('profile.private', [
+                'user' => $this->profileOwner,
+                'followStatus' => $this->followStatus,
+                'profileVisibility' => $this->profileVisibility,
+            ])->layout('layouts.livewire-pass-through');
+        }
+
+        $response = app(PublicProfileController::class)->show(request(), $this->profileOwner);
 
         if ($response instanceof RedirectResponse) {
             throw new HttpResponseException($response);
@@ -34,10 +66,35 @@ class extends Component
         return $response->layout('layouts.livewire-pass-through');
     }
 
-    private function redirectRestrictedViewer(): void
+    private function resolveActiveProfileOwner(string $rawUsername): User
     {
-        $viewer = request()->user();
+        $username = UsernameNormalizer::normalize($rawUsername);
 
+        if ($username === '') {
+            abort(404);
+        }
+
+        $user = User::query()
+            ->where('username', $username)
+            ->where('is_banned', false)
+            ->whereNull('scheduled_deletion_at')
+            ->whereNull('deactivated_at')
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('suspended_until')
+                    ->orWhere('suspended_until', '<=', now());
+            })
+            ->first();
+
+        if (! $user instanceof User) {
+            abort(404);
+        }
+
+        return $user;
+    }
+
+    private function redirectRestrictedViewer(mixed $viewer): void
+    {
         if (! $viewer instanceof User) {
             return;
         }
@@ -59,33 +116,13 @@ class extends Component
         }
     }
 
-    private function abortBlockedViewer(): void
+    private function redirectCanonicalUsername(string $rawUsername, User $owner): void
     {
-        $viewer = request()->user();
-
-        if ($viewer instanceof User && $viewer->hasBlockingRelationshipWith($this->user)) {
-            abort(404);
-        }
-    }
-
-    private function redirectCanonicalUsername(): void
-    {
-        $redirect = request()->attributes->get('username_redirect');
-
-        if ($redirect) {
-            $this->redirectToCanonicalProfile((string) $redirect->user->username);
+        if ($rawUsername === $owner->username) {
+            return;
         }
 
-        $rawUsername = (string) request()->attributes->get('username_raw', $this->user->username);
-
-        if ($rawUsername !== $this->user->username) {
-            $this->redirectToCanonicalProfile((string) $this->user->username);
-        }
-    }
-
-    private function redirectToCanonicalProfile(string $username): never
-    {
-        $target = route('profile.show', ['user' => $username]);
+        $target = route('profile.show', ['user' => $owner->username], false);
         $query = request()->getQueryString();
 
         if ($query) {
@@ -93,6 +130,73 @@ class extends Component
         }
 
         throw new HttpResponseException(new RedirectResponse($target, 301));
+    }
+
+    private function abortIfBlocked(mixed $viewer, User $owner): void
+    {
+        if (! $viewer instanceof User) {
+            return;
+        }
+
+        $blocked = Block::query()
+            ->where(function ($query) use ($viewer, $owner): void {
+                $query
+                    ->where('blocker_id', $viewer->getKey())
+                    ->where('blocked_id', $owner->getKey());
+            })
+            ->orWhere(function ($query) use ($viewer, $owner): void {
+                $query
+                    ->where('blocker_id', $owner->getKey())
+                    ->where('blocked_id', $viewer->getKey());
+            })
+            ->exists();
+
+        if ($blocked) {
+            abort(404);
+        }
+    }
+
+    private function markPrivateProfileStateWhenHidden(mixed $viewer, User $owner): void
+    {
+        $visibility = app(\App\Services\ProfileVisibilityService::class)->resolve($owner);
+
+        $this->profileVisibility = $visibility->value;
+
+        if ($visibility === ProfileVisibility::Public) {
+            return;
+        }
+
+        $isOwner = $viewer instanceof User && $viewer->is($owner);
+
+        if ($isOwner) {
+            return;
+        }
+
+        $isApprovedFollower = $viewer instanceof User && Follow::query()
+            ->where('follower_id', $viewer->getKey())
+            ->where('following_id', $owner->getKey())
+            ->where('status', 'accepted')
+            ->exists();
+
+        if ($isApprovedFollower) {
+            return;
+        }
+
+        $this->showPrivateProfile = true;
+        $this->followStatus = $viewer instanceof User ? $viewer->getFollowStatus($owner) : 'none';
+    }
+
+    private function loadHeaderProfileData(User $owner): User
+    {
+        return User::query()
+            ->whereKey($owner->getKey())
+            ->with('media')
+            ->withCount([
+                'acceptedFollowers as followers_count',
+                'acceptedFollowing as following_count',
+                'pets as pets_count',
+            ])
+            ->firstOrFail();
     }
 };
 ?>

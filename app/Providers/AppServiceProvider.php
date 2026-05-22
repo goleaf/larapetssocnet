@@ -119,9 +119,15 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        Route::bind('user', function (string $value): User {
+        Route::bind('user', function (string $value): User|string {
             request()->attributes->set('username_raw', $value);
             request()->attributes->set('username_normalized', UsernameNormalizer::normalize($value));
+
+            $route = request()->route();
+
+            if ($route?->getName() === 'profile.show' || $route?->getAction('livewire_component') === 'pages.profile.show') {
+                return $value;
+            }
 
             $resolution = app(UsernameRedirectResolver::class)->resolve($value);
 

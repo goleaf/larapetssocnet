@@ -6,18 +6,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('redirects old usernames to the current username and preserves query strings', function (): void {
+it('returns 404 for old profile usernames before consulting username redirects', function (): void {
     $user = User::factory()->create(['username' => 'alpha']);
 
     app(UsernameService::class)->change($user, 'bravo', $user);
 
-    $response = $this->actingAs(User::factory()->create())
-        ->get(route('profile.show', ['user' => 'alpha', 'tab' => 'posts']));
-
-    $response->assertRedirect(route('profile.show', ['user' => 'bravo', 'tab' => 'posts']));
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => 'alpha', 'tab' => 'posts']))
+        ->assertNotFound();
 });
 
-it('resolves chained username redirects to the latest username', function (): void {
+it('returns 404 for chained old profile usernames before consulting username redirects', function (): void {
     $user = User::factory()->create(['username' => 'first']);
 
     app(UsernameService::class)->change($user, 'second', $user, 'test', true);
@@ -25,11 +24,11 @@ it('resolves chained username redirects to the latest username', function (): vo
 
     $this->actingAs(User::factory()->create())
         ->get(route('profile.show', ['user' => 'first']))
-        ->assertRedirect(route('profile.show', ['user' => 'third']));
+        ->assertNotFound();
 
     $this->actingAs(User::factory()->create())
         ->get(route('profile.show', ['user' => 'second']))
-        ->assertRedirect(route('profile.show', ['user' => 'third']));
+        ->assertNotFound();
 });
 
 it('returns 404 for nonexistent usernames', function (): void {
