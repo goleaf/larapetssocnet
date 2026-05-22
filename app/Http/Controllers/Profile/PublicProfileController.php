@@ -288,6 +288,8 @@ class PublicProfileController extends Controller
             'profileOwnerFollowsViewer' => $profileOwnerFollowsViewer,
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
             'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
+            'showEditProfileModal' => (bool) $request->attributes->get('profile_show_edit_modal', false),
+            'editProfileFocusTarget' => $request->attributes->get('profile_edit_focus_target'),
         ]);
     }
 

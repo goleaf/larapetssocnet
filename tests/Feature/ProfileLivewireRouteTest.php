@@ -200,6 +200,79 @@ it('refreshes the profile pets tab count after a nested pet create event', funct
         ->assertSee('Pets (1)');
 });
 
+it('opens and closes the nested edit profile modal from the profile livewire page', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Nested Modal Owner',
+        'username' => 'nested_modal_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('showEditProfileModal', false)
+        ->assertSet('editProfileFocusTarget', null)
+        ->call('openEditProfileModal', 'profile_modal_bio')
+        ->assertSet('showEditProfileModal', true)
+        ->assertSet('editProfileFocusTarget', 'profile_modal_bio')
+        ->assertSee('profile-edit-modal-'.$profileOwner->getKey().'-profile_modal_bio', false)
+        ->dispatch('profile-edit-closed')
+        ->assertSet('showEditProfileModal', false)
+        ->assertSet('editProfileFocusTarget', null);
+});
+
+it('rejects nested edit profile modal access for non owners', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'nested_modal_forbidden_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->assertForbidden();
+});
+
+it('saves profile edits from the nested modal without redirecting away from the profile page', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Original Modal Name',
+        'display_name' => null,
+        'username' => 'nested_modal_saver',
+        'bio' => null,
+        'headline' => null,
+        'location' => null,
+        'website' => null,
+        'birth_date' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('name', 'Updated Modal Name')
+        ->set('display_name', 'Updated Modal Display')
+        ->set('bio', 'A modal bio with enough detail to describe this profile.')
+        ->set('headline', 'Nested editor')
+        ->set('location', 'Kaunas')
+        ->set('website', 'modal.example')
+        ->set('birth_date', '1990-01-01')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertNoRedirect()
+        ->assertDispatched('profile-edit-saved');
+
+    $profileOwner->refresh();
+
+    expect($profileOwner->name)->toBe('Updated Modal Name')
+        ->and($profileOwner->display_name)->toBe('Updated Modal Display')
+        ->and($profileOwner->bio)->toBe('A modal bio with enough detail to describe this profile.')
+        ->and($profileOwner->headline)->toBe('Nested editor')
+        ->and($profileOwner->location)->toBe('Kaunas')
+        ->and($profileOwner->city)->toBe('Kaunas')
+        ->and($profileOwner->website)->toBe('https://modal.example')
+        ->and($profileOwner->birth_date?->toDateString())->toBe('1990-01-01');
+});
+
 it('restores the last profile tab from the browser session', function (): void {
     $profileOwner = User::factory()->create([
         'username' => 'session_tab_owner',

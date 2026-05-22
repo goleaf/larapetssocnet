@@ -8,6 +8,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added a nested Livewire edit profile modal that mounts from the owner profile page, saves profile fields in place, and renders as a centered desktop overlay or full-screen mobile sheet without navigating away.
 - Added an authenticated non-follower "Also followed by" recommendation section to the profile About tab, using the mutual connection SQL intersection capped to five people for social proof.
 - Added an authenticated visitor-only mutual connections section to the profile About tab, showing up to 8 shared followers with avatar links and a see-all mutual followers link backed by SQL intersections.
 - Added a compact profile About pet summary strip that links visible pet avatars to their pet profiles without per-pet queries.

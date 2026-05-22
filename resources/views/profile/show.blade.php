@@ -404,7 +404,7 @@
  <x-ui.button type="button" variant="primary" size="sm" class="min-h-11"
  aria-haspopup="dialog"
  aria-controls="profile-edit-modal"
- @click="window.toggleModal('profile-edit-modal')">Edit Profile</x-ui.button>
+ wire:click="openEditProfileModal">Edit Profile</x-ui.button>
  <x-ui.button type="button" variant="secondary" size="sm" class="min-h-11"
  aria-haspopup="dialog"
  aria-controls="profile-share-modal"
@@ -639,85 +639,15 @@
  </x-ui.modal>
  @endif
 
- @if ($isOwner)
- <x-ui.modal id="profile-edit-modal" name="profile-edit-modal" title="Edit Profile"
- description="Update the public details people see on your profile."
- size="xl"
- data-ui="profile-edit-modal">
- <form action="{{ route('settings.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-5" data-ui="profile-edit-modal-form">
- @csrf
- @method('PUT')
- <input type="hidden" name="username" value="{{ $profileUser->username }}">
- <input type="hidden" name="email" value="{{ $profileUser->email }}">
-
- <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <div id="profile_modal_avatar_field" class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-1" data-ui="profile-modal-avatar-field">
- <x-ui.file-upload
- id="profile_modal_avatar"
- name="avatar"
- label="Avatar"
- accept="image/jpeg,image/png,image/webp"
- maxSize="10MB"
- preview
- help="JPG, PNG, or WEBP. Square image recommended."
+ @if ($isOwner && ($showEditProfileModal ?? false))
+ <livewire:profile.edit-modal
+ :user-id="$profileUser->getKey()"
+ :focus-target="$editProfileFocusTarget ?? null"
+ wire:key="profile-edit-modal-{{ $profileUser->getKey() }}-{{ $editProfileFocusTarget ?? 'default' }}"
  />
- <div class="flex items-center gap-3">
- <x-ui.avatar :src="$profileUser->avatar_url" :name="$profileUser->name" size="md"/>
- <span class="text-xs leading-5 text-fur">Shown beside your posts and in profile lists.</span>
- </div>
- </div>
-
- <div id="profile_modal_cover_field" class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-1" data-ui="profile-modal-cover-field">
- <x-ui.file-upload
- id="profile_modal_cover"
- name="cover"
- label="Cover Photo"
- accept="image/jpeg,image/png,image/webp,image/gif"
- maxSize="5MB"
- preview
- help="JPG, PNG, WEBP, or GIF. Recommended 1600×480."
- />
- @if ($profileUser->cover_photo_url)
- <img src="{{ $profileUser->cover_photo_url }}" alt="{{ $profileUser->name }} cover preview" class="h-20 w-full rounded-[var(--radius-soft)] object-cover">
  @endif
- </div>
 
- <x-ui.input id="profile_modal_name" name="name" label="Name" :value="old('name', $profileUser->name)" required autocomplete="name"/>
- <x-ui.input id="profile_modal_display_name" name="display_name" label="Display name" :value="old('display_name', $profileUser->display_name)" autocomplete="nickname"/>
- <div class="sm:col-span-2">
- <x-ui.textarea id="profile_modal_bio" name="bio" rows="4" label="Bio" :value="old('bio', $profileUser->bio)" maxlength="1000"
- hint="Brief description for your profile."/>
- </div>
- <div class="sm:col-span-2">
- <x-ui.input id="profile_modal_headline" name="headline" label="Headline" :value="old('headline', $profileUser->headline)"
- hint="Short status or tagline shown near your name."/>
- </div>
- <x-ui.input id="profile_modal_location" name="location" label="Location" :value="old('location', $profileUser->location)"/>
- <x-ui.input id="profile_modal_website" name="website" type="url" label="Website" :value="old('website', $profileUser->website)"/>
- <x-ui.input id="profile_modal_birth_date" name="birth_date" type="date" label="Birth Date"
- :value="old('birth_date', $profileUser->birth_date ? $profileUser->birth_date->format('Y-m-d') : '')"/>
- <div id="profile_modal_pets" class="flex flex-col gap-2 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4" data-ui="profile-modal-pets-field">
- <p class="text-sm font-semibold text-bark">Pets</p>
- <p class="text-xs leading-5 text-fur">Add a pet profile so visitors can meet your companion.</p>
- <a href="{{ route('pets.create') }}" class="inline-flex min-h-9 w-fit items-center rounded-full border border-whisker/40 bg-warm-white px-3 text-xs font-semibold text-paw transition-colors hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Add Pet</a>
- </div>
- <div id="profile_modal_following" class="flex flex-col gap-2 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4" data-ui="profile-modal-following-field">
- <p class="text-sm font-semibold text-bark">Following</p>
- <p class="text-xs leading-5 text-fur">Follow a few members to personalize your community graph.</p>
- <a href="{{ route('explore.index', ['tab' => 'users']) }}" class="inline-flex min-h-9 w-fit items-center rounded-full border border-whisker/40 bg-warm-white px-3 text-xs font-semibold text-paw transition-colors hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Find Members</a>
- </div>
- </div>
-
- <div class="flex flex-col gap-2 border-t border-whisker/30 pt-5 sm:flex-row sm:items-center sm:justify-between">
- <x-ui.button :href="route('settings.profile')" variant="ghost" size="sm" class="min-h-11">Advanced settings</x-ui.button>
- <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
- <x-ui.button type="button" variant="outline" size="sm" class="min-h-11" @click="window.toggleModal('profile-edit-modal', false)">Cancel</x-ui.button>
- <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11">Save Profile</x-ui.button>
- </div>
- </div>
- </form>
- </x-ui.modal>
-
+ @if ($isOwner)
  <x-ui.modal id="profile-share-modal" name="profile-share-modal" title="Share Profile"
  description="Copy your profile link, scan the QR code, or send it to another platform."
  size="lg"
@@ -841,22 +771,7 @@
  x-data="{
  progress: 0,
  openProfileEditTarget(targetId) {
- window.toggleModal('profile-edit-modal');
- window.setTimeout(() => {
- const target = document.getElementById(targetId);
-
- if (! target) {
- return;
- }
-
- target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
- const focusable = target.matches('input, textarea, select, button, a')
- ? target
- : target.querySelector('input, textarea, select, button, a');
-
- focusable?.focus({ preventScroll: true });
- }, 260);
+ $wire.openEditProfileModal(targetId);
  },
  }"
  x-init="$nextTick(() => { progress = {{ $profileCompleteness }} })">

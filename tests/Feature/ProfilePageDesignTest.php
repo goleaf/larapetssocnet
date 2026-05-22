@@ -327,7 +327,8 @@ it('renders profile action buttons from the viewer relationship state', function
         ->assertSee('grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[18rem]', false)
         ->assertSee('Edit Profile')
         ->assertSee('Share Profile')
-        ->assertSee('@click="window.toggleModal(\'profile-edit-modal\')"', false)
+        ->assertSee('wire:click="openEditProfileModal"', false)
+        ->assertDontSee('@click="window.toggleModal(\'profile-edit-modal\')"', false)
         ->assertSee('@click="window.toggleModal(\'profile-share-modal\')"', false)
         ->assertSee('aria-controls="profile-edit-modal"', false)
         ->assertSee('aria-controls="profile-share-modal"', false)
@@ -449,7 +450,7 @@ it('renders the secondary message action only when the follow is mutual', functi
         ->assertSee('data-ui="profile-actions-menu-trigger"', false);
 });
 
-it('renders owner edit and share profile modals from the profile action buttons', function (): void {
+it('keeps the owner edit profile modal lazy while rendering the share modal', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Share Modal Owner',
         'display_name' => 'Share Crew',
@@ -467,26 +468,12 @@ it('renders owner edit and share profile modals from the profile action buttons'
     $this->actingAs($profileOwner)
         ->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
-        ->assertSee('data-ui="profile-edit-modal"', false)
-        ->assertSee('data-ui="profile-edit-modal-form"', false)
-        ->assertSee('action="'.route('settings.profile.update').'"', false)
-        ->assertSee('enctype="multipart/form-data"', false)
-        ->assertSee('name="_method" value="PUT"', false)
-        ->assertSee('id="profile_modal_avatar_field"', false)
-        ->assertSee('id="profile_modal_avatar"', false)
-        ->assertSee('id="profile_modal_cover_field"', false)
-        ->assertSee('id="profile_modal_cover"', false)
-        ->assertSee('id="profile_modal_name"', false)
-        ->assertSee('id="profile_modal_display_name"', false)
-        ->assertSee('id="profile_modal_bio"', false)
-        ->assertSee('id="profile_modal_headline"', false)
-        ->assertSee('id="profile_modal_location"', false)
-        ->assertSee('id="profile_modal_website"', false)
-        ->assertSee('id="profile_modal_birth_date"', false)
-        ->assertSee('id="profile_modal_pets"', false)
-        ->assertSee('id="profile_modal_following"', false)
-        ->assertSee('Advanced settings')
-        ->assertSee('Save Profile')
+        ->assertSee('wire:click="openEditProfileModal"', false)
+        ->assertDontSee('data-ui="profile-edit-modal"', false)
+        ->assertDontSee('data-ui="profile-edit-modal-form"', false)
+        ->assertDontSee('action="'.route('settings.profile.update').'"', false)
+        ->assertDontSee('name="_method" value="PUT"', false)
+        ->assertDontSee('Advanced settings')
         ->assertSee('data-ui="profile-share-modal"', false)
         ->assertSee('data-ui="profile-share-url"', false)
         ->assertSee('value="'.$profileUrl.'"', false)
@@ -547,6 +534,7 @@ it('renders a profile completeness meter only for the profile owner with edit mo
         ->assertSee('Create at least one pet profile')
         ->assertSee('Follow at least 5 accounts')
         ->assertSee('aria-controls="profile-edit-modal"', false)
+        ->assertSee('$wire.openEditProfileModal(targetId)', false)
         ->assertSee('openProfileEditTarget(\'profile_modal_avatar_field\')', false)
         ->assertSee('openProfileEditTarget(\'profile_modal_cover_field\')', false)
         ->assertSee('openProfileEditTarget(\'profile_modal_bio\')', false)

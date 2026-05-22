@@ -30,6 +30,10 @@ class extends Component
 
     public string $profileVisibility = 'public';
 
+    public bool $showEditProfileModal = false;
+
+    public ?string $editProfileFocusTarget = null;
+
     private const ALLOWED_TABS = ['posts', 'pets', 'photos', 'about', 'likes', 'groups', 'events', 'contests', 'scheduled'];
 
     public function mount(string $user): void
@@ -97,6 +101,30 @@ class extends Component
         $this->profileOwner = $this->loadHeaderProfileData($this->profileOwner);
     }
 
+    public function openEditProfileModal(?string $focusTarget = null): void
+    {
+        $viewer = request()->user() ?: auth()->user();
+
+        abort_unless($viewer instanceof User && $viewer->is($this->profileOwner), 403);
+
+        $this->editProfileFocusTarget = $this->sanitizeEditProfileFocusTarget($focusTarget);
+        $this->showEditProfileModal = true;
+    }
+
+    #[On('profile-edit-closed')]
+    public function closeEditProfileModal(): void
+    {
+        $this->showEditProfileModal = false;
+        $this->editProfileFocusTarget = null;
+    }
+
+    #[On('profile-edit-saved')]
+    public function refreshAfterProfileEdit(): void
+    {
+        $this->profileOwner = $this->loadHeaderProfileData($this->profileOwner);
+        $this->closeEditProfileModal();
+    }
+
     public function render(): View
     {
         if ($this->showPrivateProfile) {
@@ -114,6 +142,8 @@ class extends Component
         }
 
         request()->attributes->set('profile_active_tab', $this->activeTab);
+        request()->attributes->set('profile_show_edit_modal', $this->showEditProfileModal);
+        request()->attributes->set('profile_edit_focus_target', $this->editProfileFocusTarget);
 
         $response = app(PublicProfileController::class)->show(request(), $this->profileOwner);
 
@@ -291,6 +321,27 @@ class extends Component
     private function normalizeTab(string $tab): string
     {
         return in_array($tab, self::ALLOWED_TABS, true) ? $tab : 'posts';
+    }
+
+    private function sanitizeEditProfileFocusTarget(?string $target): ?string
+    {
+        $target = trim((string) $target);
+
+        $allowedTargets = [
+            'profile_modal_avatar_field',
+            'profile_modal_cover_field',
+            'profile_modal_name',
+            'profile_modal_display_name',
+            'profile_modal_bio',
+            'profile_modal_headline',
+            'profile_modal_location',
+            'profile_modal_website',
+            'profile_modal_birth_date',
+            'profile_modal_pets',
+            'profile_modal_following',
+        ];
+
+        return in_array($target, $allowedTargets, true) ? $target : null;
     }
 };
 ?>
