@@ -22,6 +22,12 @@ Pet profiles are user-owned sub-entities.
 
 ## Privacy
 - Pet visibility is controlled by `is_public` and enforced via `PetVisibilityService` and `Pet::visibleTo()` after the viewer is authenticated.
+- Profile Pets tab queries must keep visibility in `Pet::visibleTo($viewer)`, eager-load pet media, and annotate `viewer_is_following` in SQL before rendering cards.
+
+## Profile Tab Cards
+- The profile Pets tab is a lazy nested Livewire component mounted only when the Pets tab is active.
+- Render a responsive card grid: one column on mobile, two on tablet, three on desktop.
+- Each card shows a square pet photo, name, species/breed subtitle, dynamic `age_formatted`, cached follower count, and an authorized Follow Pet action only for authenticated viewers who do not already follow the pet and do not own it.
 
 ## Media
 Pet uses Spatie MediaLibrary (public disk).

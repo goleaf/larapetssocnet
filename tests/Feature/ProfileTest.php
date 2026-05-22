@@ -237,6 +237,71 @@ test('profile owner can view private profile pets tab', function (): void {
         ->assertSee('Nora');
 });
 
+test('profile pets tab renders responsive cards with pet metadata and follow action', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-23 10:00:00'));
+
+    try {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create([
+            'name' => 'Poppy',
+            'species' => 'dog',
+            'breed' => 'Collie',
+            'birth_date' => now()->subYears(3)->toDateString(),
+            'avatar_path' => 'https://example.test/poppy.jpg',
+            'followers_count' => 0,
+        ]);
+        User::factory()
+            ->count(4)
+            ->create()
+            ->each(fn (User $follower): bool => $follower->followPet($pet));
+
+        Livewire::actingAs($viewer)
+            ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+            ->assertSee('data-ui="profile-pet-card-grid"', false)
+            ->assertSee('grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3', false)
+            ->assertSee('Poppy')
+            ->assertSee('Dog · Collie')
+            ->assertSee('3 years')
+            ->assertSee('Followers')
+            ->assertSee('4')
+            ->assertSee('Follow Pet')
+            ->call('followPet', $pet->getKey())
+            ->assertDontSee('data-ui="profile-pet-follow-action"', false)
+            ->assertSee('5');
+
+        $this->assertDatabaseHas('pet_followers', [
+            'pet_id' => $pet->getKey(),
+            'user_id' => $viewer->getKey(),
+        ]);
+
+        expect($pet->fresh()->followers_count)->toBe(5);
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+test('profile pets tab hides follow action for already followed and own pets', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $followedPet = Pet::factory()->for($owner)->create([
+        'name' => 'Already Followed Pet',
+        'followers_count' => 0,
+    ]);
+
+    $viewer->followPet($followedPet);
+
+    Livewire::actingAs($viewer)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('Already Followed Pet')
+        ->assertDontSee('data-ui="profile-pet-follow-action"', false);
+
+    Livewire::actingAs($owner)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('Already Followed Pet')
+        ->assertDontSee('data-ui="profile-pet-follow-action"', false);
+});
+
 test('users can follow and unfollow with counter updates', function (): void {
     $follower = User::factory()->create();
     $followed = User::factory()->create();
