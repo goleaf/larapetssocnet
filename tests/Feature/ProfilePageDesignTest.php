@@ -64,6 +64,34 @@ if (! function_exists('profileCompletenessProgressMarkup')) {
     }
 }
 
+if (! function_exists('profileDesignCompleteOwner')) {
+    function profileDesignCompleteOwner(array $attributes = []): User
+    {
+        $owner = User::factory()->create(array_merge([
+            'avatar_path' => 'https://example.test/avatar.jpg',
+            'profile_photo_path' => null,
+            'cover_photo_path' => 'https://example.test/cover.jpg',
+            'bio' => 'A complete profile bio with enough useful detail.',
+            'location' => 'Vilnius',
+            'website' => 'https://example.test',
+            'birth_date' => '1994-05-20',
+            'is_private' => false,
+            'profile_visibility' => 'public',
+        ], $attributes));
+
+        Pet::factory()
+            ->for($owner)
+            ->create();
+
+        User::factory()
+            ->count(5)
+            ->create()
+            ->each(fn (User $followedUser): string => $owner->follow($followedUser));
+
+        return $owner->refresh();
+    }
+}
+
 it('renders facebook-style profile sections and actions for public profiles', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Ava Carter',
@@ -619,6 +647,59 @@ it('uses encouraging profile completeness progress colors at each threshold', fu
         ->toContain('bg-emerald-500')
         ->not->toContain('bg-red')
         ->not->toContain('bg-rose');
+});
+
+it('replaces the owner completeness meter with a seven day completion celebration', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-22 12:00:00'));
+
+    try {
+        $newlyCompletedOwner = profileDesignCompleteOwner([
+            'username' => 'completion_new_owner',
+            'profile_completed_at' => null,
+        ]);
+
+        $newResponse = $this->actingAs($newlyCompletedOwner)
+            ->get(route('profile.show', ['user' => $newlyCompletedOwner]))
+            ->assertOk()
+            ->assertSee('data-ui="profile-completeness-complete-card"', false)
+            ->assertSee('Your profile is complete!')
+            ->assertSee('🎉', false)
+            ->assertDontSee('data-ui="profile-completeness-progress"', false)
+            ->assertDontSee('Complete your profile');
+
+        expect(strpos($newResponse->getContent(), 'data-ui="profile-header"'))->toBeLessThan(strpos($newResponse->getContent(), 'data-ui="profile-completeness-complete-card"'))
+            ->and(strpos($newResponse->getContent(), 'data-ui="profile-completeness-complete-card"'))->toBeLessThan(strpos($newResponse->getContent(), 'data-ui="profile-tabs"'))
+            ->and($newlyCompletedOwner->refresh()->profile_completed_at?->equalTo(now()))->toBeTrue();
+
+        $recentCompletedOwner = profileDesignCompleteOwner([
+            'username' => 'completion_recent_owner',
+            'profile_completed_at' => now()->subDays(7),
+        ]);
+
+        $this->actingAs($recentCompletedOwner)
+            ->get(route('profile.show', ['user' => $recentCompletedOwner]))
+            ->assertOk()
+            ->assertSee('data-ui="profile-completeness-complete-card"', false)
+            ->assertSee('Your profile is complete!')
+            ->assertDontSee('data-ui="profile-completeness-progress"', false)
+            ->assertDontSee('Complete your profile');
+
+        $expiredCompletedOwner = profileDesignCompleteOwner([
+            'username' => 'completion_expired_owner',
+            'profile_completed_at' => now()->subDays(8),
+        ]);
+
+        $this->actingAs($expiredCompletedOwner)
+            ->get(route('profile.show', ['user' => $expiredCompletedOwner]))
+            ->assertOk()
+            ->assertDontSee('data-ui="profile-completeness-complete-card"', false)
+            ->assertDontSee('data-ui="profile-completeness"', false)
+            ->assertDontSee('data-ui="profile-completeness-progress"', false)
+            ->assertDontSee('Your profile is complete!')
+            ->assertDontSee('Complete your profile');
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 it('renders the profile header as the topmost full-width section in the main profile view', function (): void {

@@ -823,6 +823,9 @@
  $profileCompleteness = (int) ($profileCompletenessPercentage ?? $profileUser->profile_completeness_percentage);
  $completionMissingItems = $profileCompletenessMissingItems ?? $profileUser->profile_completeness_missing_items;
  $completionColor = $profileCompleteness > 80 ? 'bg-emerald-500' : ($profileCompleteness >= 50 ? 'bg-amber-500' : 'bg-blue-500');
+ $showCompletedCard = $profileCompleteness === 100
+ && $profileUser->profile_completed_at
+ && $profileUser->profile_completed_at->greaterThanOrEqualTo(now()->subDays(7));
  $completionTargetIds = [
  'avatar' => 'profile_modal_avatar_field',
  'cover' => 'profile_modal_cover_field',
@@ -834,6 +837,17 @@
  'following' => 'profile_modal_following',
  ];
  @endphp
+ @if ($showCompletedCard)
+ <x-ui.card data-ui="profile-completeness-complete-card">
+ <div class="flex items-center gap-3">
+ <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-light text-lg" aria-hidden="true">🎉</span>
+ <div class="min-w-0">
+ <h2 class="text-base font-bold font-display text-bark">Your profile is complete!</h2>
+ <p class="mt-1 text-sm text-fur">All core profile details are filled in.</p>
+ </div>
+ </div>
+ </x-ui.card>
+ @elseif ($profileCompleteness < 100)
  <x-ui.card
  data-ui="profile-completeness"
  x-data="{
@@ -875,7 +889,6 @@
  data-ui="profile-completeness-progress">
  <div class="h-full rounded-full {{ $completionColor }} transition-[width] duration-[600ms] ease-out motion-reduce:transition-none" x-bind:style="`width: ${progress}%`"></div>
  </div>
- @if ($completionMissingItems !== [])
  <div class="mt-4 flex flex-wrap gap-2">
  @foreach ($completionMissingItems as $item)
  @php
@@ -890,10 +903,8 @@
  </a>
  @endforeach
  </div>
- @else
- <p class="mt-4 text-sm font-medium text-emerald-700" data-ui="profile-completeness-complete">All key details are filled in.</p>
- @endif
  </x-ui.card>
+ @endif
  @endif
 
  {{-- Badge strip --}}

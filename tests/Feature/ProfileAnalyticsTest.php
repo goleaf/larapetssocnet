@@ -195,9 +195,11 @@ it('recalculates owner profile completeness fresh on each profile page load', fu
     $this->actingAs($owner)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
-        ->assertSee('aria-valuenow="100"', false)
-        ->assertSee('100%')
-        ->assertSee('All key details are filled in.');
+        ->assertSee('data-ui="profile-completeness-complete-card"', false)
+        ->assertSee('Your profile is complete!')
+        ->assertDontSee('data-ui="profile-completeness-progress"', false);
+
+    expect($owner->refresh()->profile_completed_at)->not->toBeNull();
 });
 
 it('calculates profile completeness from a narrow summary query', function (): void {
