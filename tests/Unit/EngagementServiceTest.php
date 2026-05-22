@@ -76,15 +76,22 @@ it('tracks shares idempotently per user', function (): void {
     expect(Share::query()->count())->toBe(1);
 });
 
-it('orders pinned posts first for profile queries', function (): void {
+it('orders regular profile queries chronologically', function (): void {
     $user = User::factory()->create();
-    $pinned = Post::factory()->for($user)->create(['is_pinned' => true, 'pinned_at' => now()->subHour()]);
-    $regular = Post::factory()->for($user)->create(['is_pinned' => false]);
+    $pinned = Post::factory()->for($user)->create([
+        'is_pinned' => true,
+        'pinned_at' => now(),
+        'created_at' => now()->subDay(),
+    ]);
+    $regular = Post::factory()->for($user)->create([
+        'is_pinned' => false,
+        'created_at' => now(),
+    ]);
 
     $service = app(ProfilePostOrderingService::class);
 
     $ordered = $service->apply(Post::query()->forProfile($user))->get();
 
-    expect($ordered->first()->id)->toBe($pinned->id);
-    expect($ordered->last()->id)->toBe($regular->id);
+    expect($ordered->first()->id)->toBe($regular->id);
+    expect($ordered->last()->id)->toBe($pinned->id);
 });

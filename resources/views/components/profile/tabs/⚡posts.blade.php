@@ -24,6 +24,7 @@ new class extends Component
      *     profileUser: User,
      *     isOwner: bool,
      *     canViewContent: bool,
+     *     pinnedPost: ?Post,
      *     posts: LengthAwarePaginator|Collection<int, Post>
      * }
      */
@@ -37,6 +38,9 @@ new class extends Component
         $posts = $canViewContent
             ? Post::paginateProfileTimeline($profileUser, $viewer)
             : collect();
+        $pinnedPost = $canViewContent
+            ? Post::pinnedProfileTimelinePost($profileUser, $viewer)
+            : null;
 
         if ($posts instanceof LengthAwarePaginator) {
             $posts->fragment('posts');
@@ -46,6 +50,7 @@ new class extends Component
             'profileUser' => $profileUser,
             'isOwner' => $isOwner,
             'canViewContent' => $canViewContent,
+            'pinnedPost' => $pinnedPost,
             'posts' => $posts,
         ];
     }
@@ -111,6 +116,12 @@ new class extends Component
  Life event</a>
  </div>
  </x-ui.card>
+ @endif
+
+ @if ($data['pinnedPost'] instanceof Post)
+ <section data-ui="profile-pinned-post-section" aria-label="Pinned post">
+ <x-post-card :post="$data['pinnedPost']" context="profile" instance="pinned-highlight"/>
+ </section>
  @endif
 
  @forelse ($data['posts'] as $post)

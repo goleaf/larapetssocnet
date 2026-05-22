@@ -2,6 +2,7 @@
     'post',
     'viewer' => null,
     'context' => 'feed',
+    'instance' => null,
 ])
 
 @php
@@ -15,7 +16,8 @@
     $timeTitle = $displayedAt?->format('M j, Y g:i A');
     $authorAvatar = $author?->avatar_url;
     $authorName = $author?->name ?? __('a community member');
-    $postDomId = 'post-card-'.$post->getKey();
+    $postDomSuffix = filled($instance) ? '-'.\Illuminate\Support\Str::slug((string) $instance) : '';
+    $postDomId = 'post-card-'.$post->getKey().$postDomSuffix;
     $postAuthorId = $postDomId.'-author';
     $postBodyId = $postDomId.'-body';
     $mediaAlt = __('Post media shared by :name', ['name' => $authorName]);
@@ -49,6 +51,7 @@
         'shareUrl' => route('posts.share', $post),
         'showUrl' => route('posts.show', $post),
     ];
+    $pinIcon = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 17v5" /><path stroke-linecap="round" stroke-linejoin="round" d="M5 17h14l-3.5-4V5.5L17 4V2H7v2l1.5 1.5V13L5 17Z" />';
 
     $followStatus = null;
 
@@ -97,6 +100,7 @@
     as="article"
     id="{{ $postDomId }}"
     data-ui="post-card"
+    data-post-card-instance="{{ $instance ?? 'feed' }}"
     data-post-status="{{ $statusValue }}"
     aria-labelledby="{{ $postAuthorId }}"
     @class([
@@ -106,9 +110,15 @@
     x-data="postCard({{ \Illuminate\Support\Js::from($postCardState) }})"
 >
     @if ($context === 'profile' && $post->is_pinned)
-        <div class="flex items-center gap-2 border-b bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800" style="border-color: var(--ui-border);">
-            📌 Pinned post
-        </div>
+        <x-ui.badge
+            variant="warning"
+            size="sm"
+            :icon="$pinIcon"
+            data-ui="post-pinned-badge"
+            class="mb-3 w-fit"
+        >
+            Pinned
+        </x-ui.badge>
     @endif
 
     <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -135,13 +145,6 @@
                     <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs shell-text-muted">
                         @if ($timeIso && $timeLabel)
                             <time datetime="{{ $timeIso }}" title="{{ $timeTitle }}" class="inline-flex min-h-5 items-center">{{ $timeLabel }}</time>
-                        @endif
-
-                        @if ($post->is_pinned)
-                            <span aria-hidden="true">•</span>
-                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                                📌 Pinned
-                            </span>
                         @endif
 
                         @if ($post->pet && $petUrl)

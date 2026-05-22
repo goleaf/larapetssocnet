@@ -465,27 +465,75 @@ test('users cannot pin posts they do not own', function (): void {
         ->assertForbidden();
 });
 
-test('profile posts tab shows pinned post first', function (): void {
+test('profile posts tab shows pinned post highlight and keeps chronological feed', function (): void {
     $user = User::factory()->create();
+    $olderRegular = Post::factory()->for($user)->create([
+        'body' => 'older regular post',
+        'body_html' => '<p>older regular post</p>',
+        'is_pinned' => false,
+        'created_at' => now()->subDays(5),
+    ]);
     $olderPinned = Post::factory()->for($user)->create([
         'body' => 'older pinned post',
+        'body_html' => '<p>older pinned post</p>',
         'is_pinned' => true,
-        'created_at' => now()->subDay(),
+        'pinned_at' => now(),
+        'created_at' => now()->subDays(3),
     ]);
     $newerRegular = Post::factory()->for($user)->create([
         'body' => 'newer regular post',
+        'body_html' => '<p>newer regular post</p>',
         'is_pinned' => false,
-        'created_at' => now(),
+        'created_at' => now()->subDay(),
     ]);
 
     $response = $this->actingAs($user)
         ->get(route('profile.show', ['user' => $user, 'tab' => 'posts']));
 
     $response->assertOk();
-    $response->assertSeeInOrder([
-        $olderPinned->body,
-        $newerRegular->body,
+    $response
+        ->assertSee('data-ui="profile-pinned-post-section"', false)
+        ->assertSee('data-ui="post-pinned-badge"', false);
+
+    $html = $response->getContent();
+    $firstPinnedPosition = strpos($html, $olderPinned->body);
+    $secondPinnedPosition = strpos($html, $olderPinned->body, ((int) $firstPinnedPosition) + 1);
+    $newerRegularPosition = strpos($html, $newerRegular->body);
+    $olderRegularPosition = strpos($html, $olderRegular->body);
+
+    expect(substr_count($html, $olderPinned->body))->toBe(2);
+    expect($firstPinnedPosition)->toBeInt();
+    expect($secondPinnedPosition)->toBeInt();
+    expect($newerRegularPosition)->toBeInt();
+    expect($olderRegularPosition)->toBeInt();
+    expect($firstPinnedPosition)->toBeLessThan($newerRegularPosition);
+    expect($newerRegularPosition)->toBeLessThan($secondPinnedPosition);
+    expect($secondPinnedPosition)->toBeLessThan($olderRegularPosition);
+});
+
+test('profile pinned post highlight honors viewer visibility', function (): void {
+    $owner = User::factory()->create(['is_private' => false]);
+    $viewer = User::factory()->create();
+    $hiddenPinned = Post::factory()->for($owner)->create([
+        'body' => 'private pinned post hidden from strangers',
+        'body_html' => '<p>private pinned post hidden from strangers</p>',
+        'visibility' => Post::VISIBILITY_PRIVATE,
+        'is_pinned' => true,
+        'pinned_at' => now(),
+        'created_at' => now()->subDay(),
     ]);
+    Post::factory()->for($owner)->create([
+        'body' => 'public regular post for strangers',
+        'body_html' => '<p>public regular post for strangers</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $owner, 'tab' => 'posts']))
+        ->assertOk()
+        ->assertDontSee('data-ui="profile-pinned-post-section"', false)
+        ->assertDontSee($hiddenPinned->body);
 });
 
 test('mutual followers appear on both followers and following pages', function (): void {

@@ -34,5 +34,5 @@ Implementation notes:
 
 ## UI
 On profile posts tab:
-- show pinned post at top with `Pinned post` marker
+- show the viewer-visible pinned post in a dedicated top section with a small `Pinned` label and pin icon badge on the post card
 - keep same post in natural chronological position below

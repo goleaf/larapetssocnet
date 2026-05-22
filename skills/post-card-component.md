@@ -8,7 +8,7 @@
 - `$context`: `feed|profile|explore`.
 
 ## Sections Order
-1. Pin banner (only pinned on profile context).
+1. Pinned badge (only pinned on profile context).
 2. Header (avatar, name, time, options).
 3. Body text with read-more.
 4. Media (photo grid or video player).
