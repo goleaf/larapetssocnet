@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -210,7 +211,11 @@ test('followers can view private profile pets tab', function (): void {
     $data = $view->getData();
 
     expect($data['canViewContent'])->toBeTrue();
-    expect($data['pets']->pluck('name')->all())->toContain('Milo');
+    expect($data['tab'])->toBe('pets');
+
+    Livewire::actingAs($follower)
+        ->test('profile.tabs.pets', ['profileUserId' => $privateUser->getKey()])
+        ->assertSee('Milo');
 });
 
 test('profile owner can view private profile pets tab', function (): void {

@@ -33,14 +33,13 @@ class extends Component
 
     public function mount(string $user): void
     {
-        $this->activeTab = $this->normalizeTab((string) request()->query('tab', 'posts'));
-
         $this->profileOwner = $this->resolveActiveProfileOwner($user);
 
         $viewer = request()->user() ?: auth()->user();
 
         $this->abortIfBlocked($viewer, $this->profileOwner);
         $this->redirectRestrictedViewer($viewer);
+        $this->activeTab = $this->resolveInitialTab();
         $this->hideOwnerOnlyTabsFromVisitors($viewer);
         $this->markPrivateProfileStateWhenHidden($viewer, $this->profileOwner);
 
@@ -87,6 +86,8 @@ class extends Component
     public function activateTab(string $tab): void
     {
         $this->activeTab = $this->normalizeTab($tab);
+        $this->hideOwnerOnlyTabsFromVisitors(request()->user() ?: auth()->user());
+        $this->storeLastVisitedTab();
     }
 
     public function render(): View
@@ -105,7 +106,7 @@ class extends Component
             ])->layout('layouts.livewire-pass-through');
         }
 
-        request()->query->set('tab', $this->activeTab);
+        request()->attributes->set('profile_active_tab', $this->activeTab);
 
         $response = app(PublicProfileController::class)->show(request(), $this->profileOwner);
 
@@ -247,6 +248,29 @@ class extends Component
         }
 
         $this->activeTab = 'posts';
+    }
+
+    private function resolveInitialTab(): string
+    {
+        $requestedTab = request()->query('tab');
+
+        if (is_string($requestedTab) && $requestedTab !== '') {
+            return $this->normalizeTab($requestedTab);
+        }
+
+        $storedTab = session()->get($this->lastVisitedTabSessionKey());
+
+        return is_string($storedTab) ? $this->normalizeTab($storedTab) : 'posts';
+    }
+
+    private function storeLastVisitedTab(): void
+    {
+        session()->put($this->lastVisitedTabSessionKey(), $this->activeTab);
+    }
+
+    private function lastVisitedTabSessionKey(): string
+    {
+        return sprintf('profiles.%s.active_tab', $this->profileOwner->getKey());
     }
 
     private function loadHeaderProfileData(User $owner): User

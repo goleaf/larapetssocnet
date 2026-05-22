@@ -166,6 +166,82 @@ it('activates the pets tab through the profile livewire action', function (): vo
         ->assertSet('activeTab', 'pets')
         ->assertSee('Stats Tab Pet')
         ->assertSee('aria-current="page"', false);
+
+    expect(session('profiles.'.$profileOwner->getKey().'.active_tab'))->toBe('pets');
+});
+
+it('restores the last profile tab from the browser session', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'session_tab_owner',
+        'pets_count' => 1,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Pet::factory()->for($profileOwner)->create([
+        'name' => 'Remembered Session Pet',
+    ]);
+
+    $this->withSession([
+        'profiles.'.$profileOwner->getKey().'.active_tab' => 'pets',
+    ]);
+
+    Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('activeTab', 'pets')
+        ->assertSee('Remembered Session Pet')
+        ->assertSee('href="#pets"', false);
+});
+
+it('ignores an owner-only scheduled tab stored for a visitor session', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'visitor_scheduled_session_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->withSession([
+            'profiles.'.$profileOwner->getKey().'.active_tab' => 'scheduled',
+        ]);
+
+    Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('activeTab', 'posts')
+        ->assertDontSee('Scheduled (', false);
+});
+
+it('renders hash based profile tab links for browser activation', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'hash_tabs_owner',
+        'pets_count' => 1,
+        'photos_count' => 2,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get('/@hash_tabs_owner')
+        ->assertOk()
+        ->assertSee('x-data="profileTabs(', false)
+        ->assertSee('href="#posts"', false)
+        ->assertSee('href="#pets"', false)
+        ->assertSee('href="#photos"', false)
+        ->assertSee('href="#about"', false)
+        ->assertDontSee('?tab=pets', false);
+});
+
+it('mounts the lazy pets tab component and fetches pets independently', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'child_pet_tab_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Pet::factory()->for($profileOwner)->create([
+        'name' => 'Nested Component Pet',
+    ]);
+
+    Livewire::test('profile.tabs.pets', ['profileUserId' => $profileOwner->getKey()])
+        ->assertSee('Nested Component Pet')
+        ->assertSee('data-ui="profile-tab-panel"', false);
 });
 
 it('saves cover focal point through the profile livewire action for the owner', function (): void {

@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated profile tab switching to use hash fragments, per-profile session restoration, and lazy Livewire child panels for Posts, Pets, Photos, About, and owner-only Scheduled content.
 - Updated profile tabs to show only Posts, Pets, Photos, About, and owner-only Scheduled with parenthesized counter-cache counts.
 - Updated profile tab navigation to use a CSS sticky, translucent Warm Editorial surface with backdrop blur and no scroll listeners.
 - Updated completed owner profiles to replace the completeness meter with a 7-day congratulatory card, then hide completion UI after that window.

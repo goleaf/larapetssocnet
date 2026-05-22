@@ -56,6 +56,7 @@
  @foreach($normalizedTabs as $tab)
  <a
  href="{{ $tab['href'] }}"
+ data-tab-value="{{ $tab['value'] }}"
  class="flex min-h-11 items-center gap-2 whitespace-nowrap rounded-t-[var(--radius-soft)] border-b-2 px-1 py-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $tab['active'] ?'border-paw font-semibold text-paw':'border-transparent text-fur hover:border-whisker hover:text-bark'}}"
  @if($tab['active'])
  aria-current="page"

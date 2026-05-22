@@ -417,6 +417,96 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('profileTabs', (config = {}) => ({
+ tabs: Array.isArray(config.tabs) ? config.tabs.map((tab) => toStringValue(tab)) : [],
+ activeTab: toStringValue(config.activeTab,'posts'),
+
+ init() {
+ this.activateFromHash();
+
+ if (!window.location.hash && this.isAllowed(this.activeTab)) {
+ this.replaceHash(this.activeTab);
+ }
+
+ this.hashChangeHandler = () => this.activateFromHash();
+ window.addEventListener('hashchange', this.hashChangeHandler);
+ window.addEventListener('popstate', this.hashChangeHandler);
+ },
+
+ isAllowed(tab) {
+ return this.tabs.includes(toStringValue(tab));
+ },
+
+ tabFromHash() {
+ const hash = decodeURIComponent(window.location.hash ||'').replace(/^#/,'').trim().toLowerCase();
+
+ return this.isAllowed(hash) ? hash : null;
+ },
+
+ async activateFromHash() {
+ const tab = this.tabFromHash();
+
+ if (!tab || tab === this.activeTab) {
+ return;
+ }
+
+ await this.activate(tab);
+ },
+
+ async activate(tab, options = {}) {
+ const normalizedTab = toStringValue(tab).toLowerCase();
+
+ if (!this.isAllowed(normalizedTab)) {
+ return;
+ }
+
+ this.activeTab = normalizedTab;
+
+ if (options.push) {
+ this.pushHash(normalizedTab);
+ } else if (options.replace) {
+ this.replaceHash(normalizedTab);
+ }
+
+ await this.$wire.activateTab(normalizedTab);
+
+ if (options.scroll) {
+ this.$nextTick(() => document.getElementById('profile-tabs')?.scrollIntoView({ behavior:'smooth', block:'start' }));
+ }
+ },
+
+ selectFromClick(event) {
+ const link = event.target.closest('[data-tab-value]');
+
+ if (!link || !this.$el.contains(link)) {
+ return;
+ }
+
+ const tab = toStringValue(link.dataset.tabValue).toLowerCase();
+
+ if (!this.isAllowed(tab)) {
+ return;
+ }
+
+ event.preventDefault();
+ this.activate(tab, { push: true });
+ },
+
+ pushHash(tab) {
+ const nextUrl = `${window.location.pathname}${window.location.search}#${encodeURIComponent(tab)}`;
+
+ if (window.location.hash !== `#${tab}`) {
+ window.history.pushState(null,'', nextUrl);
+ }
+ },
+
+ replaceHash(tab) {
+ const nextUrl = `${window.location.pathname}${window.location.search}#${encodeURIComponent(tab)}`;
+
+ window.history.replaceState(null,'', nextUrl);
+ },
+ }));
+
  Alpine.data('searchFormState', (defaultQuery ='') => ({
  query: defaultQuery,
 

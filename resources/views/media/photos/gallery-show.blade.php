@@ -6,7 +6,7 @@
  <div class="flex items-center justify-between gap-3">
  <div>
  <p class="text-xs font-semibold text-fur mb-1">
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'photos']) }}"
+ <a href="{{ route('profile.show', ['user'=> $profileUser]).'#photos' }}"
  class="text-paw hover:underline">
  &larr; Back to Photos
  </a>

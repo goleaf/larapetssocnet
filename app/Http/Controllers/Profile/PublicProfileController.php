@@ -13,7 +13,6 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
-use App\Services\VisibilityService;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +22,6 @@ use Illuminate\View\View;
 class PublicProfileController extends Controller
 {
     public function __construct(
-        private readonly VisibilityService $visibilityService,
         private readonly PetVisibilityService $petVisibilityService,
         private readonly ProfileVisibilityService $profileVisibilityService,
     ) {}
@@ -102,30 +100,10 @@ class PublicProfileController extends Controller
         $canViewPets = $this->petVisibilityService->canViewPetsForOwner($viewer, $user);
         $canViewPhotos = $canViewContent;
 
-        $pets = $tab === 'pets' && $canViewPets
-            ? $this->profilePetsQuery($user, $viewer)->get()
-            : collect();
-
         $featuredPets = collect();
         if ($canViewPets) {
-            $featuredPets = $tab === 'pets'
-                ? $pets->take(9)->values()
-                : $this->profilePetsQuery($user, $viewer)->limit(9)->get();
+            $featuredPets = $this->profilePetsQuery($user, $viewer)->limit(9)->get();
         }
-
-        $galleries = $tab === 'photos' && $canViewPhotos
-            ? $user->photoGalleries()
-                ->with(['coverMedia', 'media'])
-                ->withCount('media')
-                ->latest()
-                ->get()
-            : collect();
-
-        $photos = $tab === 'photos' && $canViewPhotos
-            ? collect($user->getMedia('photos'))
-                ->merge($user->getMedia('avatar'))
-                ->merge($user->getMedia('cover'))
-            : collect();
 
         $sidebarPhotos = $canViewPhotos
             ? collect($user->getMedia('photos'))
@@ -152,32 +130,10 @@ class PublicProfileController extends Controller
                 ->get(['users.id', 'users.name', 'users.username', 'users.avatar_path']);
         }
 
-        $posts = $tab === 'posts' && $canViewContent
-            ? Post::paginateProfileTimeline($user, $viewer)
-            : collect();
-
-        $privatePosts = collect();
-        $privateCount = 0;
-        $draftPosts = collect();
-        $draftCount = 0;
-        $scheduledPosts = collect();
         $scheduledCount = 0;
 
         if ($viewer && $viewer->is($user)) {
             $scheduledCount = Post::scheduledCountForProfile($user);
-
-            if (in_array($tab, ['posts', 'scheduled'], true)) {
-                $privatePosts = Post::recentPrivateForProfileOwner($user)
-                    ->filter(fn (Post $post): bool => $this->visibilityService->canViewOnProfile($viewer, $post))
-                    ->values();
-
-                $privateCount = Post::privateCountForProfile($user);
-
-                $draftPosts = Post::recentDraftsForProfileOwner($user);
-                $draftCount = Post::draftCountForProfile($user);
-
-                $scheduledPosts = Post::recentScheduledForProfileOwner($user);
-            }
         }
 
         // Badges — always load (up to 8 most recent)
@@ -297,18 +253,18 @@ class PublicProfileController extends Controller
             'profileVisibility' => $profileVisibility->value,
             'profileVisibilityLabel' => $profileVisibility->label(),
             'profileVisibilityIcon' => $profileVisibility->icon(),
-            'pets' => $pets,
+            'pets' => collect(),
             'featuredPets' => $featuredPets,
-            'photos' => $photos,
-            'galleries' => $galleries,
+            'photos' => collect(),
+            'galleries' => collect(),
             'sidebarPhotos' => $sidebarPhotos,
             'friendsPreview' => $friendsPreview,
-            'posts' => $posts,
-            'privatePosts' => $privatePosts,
-            'privateCount' => $privateCount,
-            'draftPosts' => $draftPosts,
-            'draftCount' => $draftCount,
-            'scheduledPosts' => $scheduledPosts,
+            'posts' => collect(),
+            'privatePosts' => collect(),
+            'privateCount' => 0,
+            'draftPosts' => collect(),
+            'draftCount' => 0,
+            'scheduledPosts' => collect(),
             'scheduledCount' => $scheduledCount,
             'likes' => collect(),
             'badges' => $badges,
@@ -391,7 +347,7 @@ class PublicProfileController extends Controller
 
     private function resolveProfileTab(Request $request, bool $isOwner): string
     {
-        $tab = $request->string('tab')->toString();
+        $tab = (string) $request->attributes->get('profile_active_tab', $request->string('tab')->toString());
         $allowedTabs = ['posts', 'pets', 'photos', 'about', 'likes', 'groups', 'events', 'contests'];
 
         if ($isOwner) {

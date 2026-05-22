@@ -60,22 +60,25 @@
  $profileTabLabel = static fn (string $label, int $count): string => sprintf('%s (%s)', $label, number_format($count));
 
  $tabItems = [
- ['label'=> $profileTabLabel('Posts', $profilePostsCount),'value'=>'posts'],
+ ['label'=> $profileTabLabel('Posts', $profilePostsCount),'value'=>'posts','href'=>'#posts'],
  ];
 
  if ($canViewPets ?? false) {
- $tabItems[] = ['label'=> $profileTabLabel('Pets', $profilePetsCount),'value'=>'pets'];
+ $tabItems[] = ['label'=> $profileTabLabel('Pets', $profilePetsCount),'value'=>'pets','href'=>'#pets'];
  }
 
  if ($canViewPhotos ?? false) {
- $tabItems[] = ['label'=> $profileTabLabel('Photos', $profilePhotosCount),'value'=>'photos'];
+ $tabItems[] = ['label'=> $profileTabLabel('Photos', $profilePhotosCount),'value'=>'photos','href'=>'#photos'];
  }
 
- $tabItems[] = ['label'=>'About','value'=>'about','href'=>'#profile-intro'];
+ $tabItems[] = ['label'=>'About','value'=>'about','href'=>'#about'];
 
  if ($isOwner) {
- $tabItems[] = ['label'=> $profileTabLabel('Scheduled', $profileScheduledCount),'value'=>'scheduled'];
+ $tabItems[] = ['label'=> $profileTabLabel('Scheduled', $profileScheduledCount),'value'=>'scheduled','href'=>'#scheduled'];
  }
+
+ $profileTabValues = collect($tabItems)->pluck('value')->values()->all();
+ $profileTabsLazy = ! app()->environment('testing');
 @endphp
 
 @section('title','@'. $profileUser->username .'— PetSocial')
@@ -380,11 +383,11 @@
  @endif
  @if ($canViewPets ?? false)
  <li role="listitem">
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}#profile-tabs"
+ <a href="#pets"
  data-ui="profile-stat-card"
  data-stat="pets"
  aria-controls="profile-tabs"
- @click.prevent="$wire.activateTab('pets').then(() => $nextTick(() => document.getElementById('profile-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })))"
+ @click.prevent="window.dispatchEvent(new CustomEvent('profile-tab-requested', { detail: { tab: 'pets', scroll: true } }))"
  class="group flex min-h-20 w-full flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <p class="font-display text-2xl font-bold leading-none text-bark">{{ number_format($profilePetsCount) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Pets</p>
@@ -856,7 +859,7 @@
  }, 260);
  },
  }"
- x-init="$nextTick(() => { progress = @js($profileCompleteness) })">
+ x-init="$nextTick(() => { progress = {{ $profileCompleteness }} })">
  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
  <div class="min-w-0">
  <h2 class="text-base font-bold font-display text-bark">Complete your profile</h2>
@@ -896,7 +899,7 @@
  @if ($badges->isNotEmpty())
  <x-ui.card padding="sm">
  <x-ui.badge-strip :badges="$badges" :max="8"
- :badges-url="route('profile.show', ['user'=> $profileUser,'tab'=>'posts'])"/>
+ :badges-url="route('profile.show', ['user'=> $profileUser]).'#posts'"/>
  </x-ui.card>
  @endif
 
@@ -905,7 +908,7 @@
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between">
  <h3 class="text-sm font-semibold text-bark">🐾 Pets</h3>
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
+ <a href="#pets"
  class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
  <div class="-mx-1 flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
@@ -933,7 +936,14 @@
  </x-ui.card>
  @endif
 
- <x-ui.card id="profile-tabs" padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 scroll-mt-24 border-whisker/50 bg-warm-white/85 backdrop-blur-md!">
+ <x-ui.card
+ id="profile-tabs"
+ padding="sm"
+ data-ui="profile-tabs"
+ class="sticky top-20 z-30 scroll-mt-24 border-whisker/50 bg-warm-white/85 backdrop-blur-md!"
+ x-data="profileTabs({ activeTab: @js($tab), tabs: @js($profileTabValues) })"
+ @click="selectFromClick($event)"
+ @profile-tab-requested.window="activate($event.detail.tab, { push: true, scroll: Boolean($event.detail.scroll) })">
  <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 
@@ -988,7 +998,7 @@
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Pets</h3>
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
+ <a href="#pets"
  class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
 
@@ -1016,7 +1026,7 @@
  <x-ui.card>
  <div class="mb-3 flex items-center justify-between gap-2">
  <h3 class="text-sm font-semibold text-bark">Photos</h3>
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'photos']) }}"
+ <a href="#photos"
  class="inline-flex min-h-10 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">See all</a>
  </div>
 
@@ -1025,7 +1035,7 @@
  @else
  <div class="grid grid-cols-3 gap-2">
  @foreach ($sidebarPhotos as $photo)
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'photos']) }}"
+ <a href="#photos"
  class="overflow-hidden rounded-lg border border-whisker/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <img src="{{ $photo->getUrl() }}" alt="{{ $profileUser->name }} photo"
  class="h-16 w-full object-cover" loading="lazy"/>
@@ -1114,6 +1124,31 @@
  @endif
  </x-ui.empty-state>
  </x-ui.card>
+ @elseif ($tab ==='posts')
+ <livewire:profile.tabs.posts
+ :profile-user-id="$profileUser->getKey()"
+ :lazy="$profileTabsLazy"
+ wire:key="profile-tab-posts-{{ $profileUser->getKey() }}"/>
+ @elseif ($tab ==='pets')
+ <livewire:profile.tabs.pets
+ :profile-user-id="$profileUser->getKey()"
+ :lazy="$profileTabsLazy"
+ wire:key="profile-tab-pets-{{ $profileUser->getKey() }}"/>
+ @elseif ($tab ==='photos')
+ <livewire:profile.tabs.photos
+ :profile-user-id="$profileUser->getKey()"
+ :lazy="$profileTabsLazy"
+ wire:key="profile-tab-photos-{{ $profileUser->getKey() }}"/>
+ @elseif ($tab ==='about')
+ <livewire:profile.tabs.about
+ :profile-user-id="$profileUser->getKey()"
+ :lazy="$profileTabsLazy"
+ wire:key="profile-tab-about-{{ $profileUser->getKey() }}"/>
+ @elseif ($tab ==='scheduled' && $isOwner)
+ <livewire:profile.tabs.scheduled
+ :profile-user-id="$profileUser->getKey()"
+ :lazy="$profileTabsLazy"
+ wire:key="profile-tab-scheduled-{{ $profileUser->getKey() }}"/>
  @elseif ($tab ==='pets' && ($canViewPets ?? false))
  <x-ui.card>
  <div class="grid gap-4 sm:grid-cols-2">
