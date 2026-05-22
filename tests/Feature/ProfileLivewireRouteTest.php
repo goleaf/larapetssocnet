@@ -5,6 +5,7 @@ use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
@@ -288,6 +289,118 @@ it('mounts the lazy photos tab component and fetches visible post photos indepen
     Livewire::test('profile.tabs.photos', ['profileUserId' => $profileOwner->getKey()])
         ->assertSee('nested-photo-tab.jpg')
         ->assertSee('data-ui="profile-photos-grid"', false);
+});
+
+it('mounts the lazy about tab component and presents public biographical sections', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
+
+    try {
+        $profileOwner = User::factory()->create([
+            'name' => 'Biographical Owner',
+            'display_name' => 'Bio Crew',
+            'username' => 'bio_section_owner',
+            'email' => 'bio-owner@example.test',
+            'headline' => 'Neighborhood rescue coordinator',
+            'pronouns' => 'they/them',
+            'bio' => 'I help senior pets find patient homes.',
+            'location' => 'Vilnius',
+            'website' => 'https://bio.example/about',
+            'social_links' => [
+                'instagram' => 'https://instagram.com/bio_pets',
+            ],
+            'interests_text' => 'rescue, senior pets, training',
+            'birth_date' => '1994-05-20',
+            'last_seen_at' => Carbon::parse('2026-05-22 12:00:00'),
+            'created_at' => Carbon::parse('2024-02-14 12:00:00'),
+            'posts_count' => 12,
+            'pets_count' => 3,
+            'photos_count' => 8,
+            'privacy_display_email' => true,
+            'privacy_display_location' => true,
+            'privacy_display_birthdate' => true,
+            'privacy_display_last_seen' => true,
+            'is_private' => false,
+            'profile_visibility' => 'public',
+        ]);
+
+        Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+            ->assertSee('data-ui="profile-tab-panel"', false)
+            ->assertSee('data-ui="profile-about-overview"', false)
+            ->assertSee('Overview')
+            ->assertSee('About Bio Crew')
+            ->assertSee('Neighborhood rescue coordinator')
+            ->assertSee('they/them')
+            ->assertSee('data-ui="profile-about-bio"', false)
+            ->assertSee('I help senior pets find patient homes.')
+            ->assertSee('data-ui="profile-about-interests"', false)
+            ->assertSee('rescue')
+            ->assertSee('senior pets')
+            ->assertSee('training')
+            ->assertSee('data-ui="profile-about-details"', false)
+            ->assertSee('Vilnius')
+            ->assertSee('May 20, 1994')
+            ->assertSee('Joined')
+            ->assertSee('February 2024')
+            ->assertSee('Last active')
+            ->assertSee('1 day ago')
+            ->assertSee('data-ui="profile-about-contact"', false)
+            ->assertSee('href="https://bio.example/about"', false)
+            ->assertSee('bio.example/about')
+            ->assertSee('Instagram')
+            ->assertSee('instagram.com/bio_pets')
+            ->assertSee('mailto:bio-owner@example.test', false)
+            ->assertSee('data-ui="profile-about-activity-stats"', false)
+            ->assertSee('12')
+            ->assertSee('3')
+            ->assertSee('8')
+            ->assertSee('data-ui="profile-about-activity-chart"', false);
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('keeps privacy-gated about fields hidden from visitors while showing them to the owner', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
+
+    try {
+        $profileOwner = User::factory()->create([
+            'name' => 'Private Details Owner',
+            'username' => 'private_about_fields',
+            'email' => 'private-about@example.test',
+            'bio' => 'Public bio remains visible.',
+            'location' => 'Hidden City',
+            'website' => null,
+            'social_links' => null,
+            'interests_text' => null,
+            'birth_date' => '1994-05-20',
+            'last_seen_at' => Carbon::parse('2026-05-22 12:00:00'),
+            'privacy_display_email' => false,
+            'privacy_display_location' => false,
+            'privacy_display_birthdate' => false,
+            'privacy_display_last_seen' => false,
+            'is_private' => false,
+            'profile_visibility' => 'public',
+        ]);
+
+        Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+            ->assertSee('Public bio remains visible.')
+            ->assertDontSee('Hidden City')
+            ->assertDontSee('May 20, 1994')
+            ->assertDontSee('Last active')
+            ->assertDontSee('private-about@example.test')
+            ->assertDontSee('mailto:private-about@example.test', false);
+
+        Livewire::actingAs($profileOwner)
+            ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+            ->assertSee('Hidden City')
+            ->assertSee('May 20, 1994')
+            ->assertSee('Last active')
+            ->assertSee('1 day ago')
+            ->assertSee('private-about@example.test')
+            ->assertSee('mailto:private-about@example.test', false);
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 it('mounts the nested posts tab only after posts becomes the active profile tab', function (): void {

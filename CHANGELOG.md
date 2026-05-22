@@ -7,6 +7,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added a richer lazy profile About tab with clearly labeled biography, public details, contact links, interests, and activity sections while honoring profile privacy flags for email, location, birth date, and last seen.
 - Added a profile Photos lightbox with full-photo viewing, post context, pet/location tags, reactions, comments, keyboard arrows, Escape close, and mobile swipe navigation.
 - Added the profile Photos tab lazy Livewire grid for post photos, reusing profile post visibility rules so followers-only, friends-only, private, and video-only media are filtered correctly.
 - Added a profile owner first-pet onboarding empty state with an illustrated prompt and modal CTA, while keeping visitor zero-pet profiles to a simple no-pets message.
