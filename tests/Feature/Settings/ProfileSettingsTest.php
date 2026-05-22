@@ -140,18 +140,25 @@ it('does not render profile theme controls in settings', function (): void {
         ->assertDontSee('name="profile_theme"', false);
 });
 
-it('rejects reserved usernames during profile updates', function (): void {
+it('rejects reserved usernames during profile updates', function (string $username): void {
     $user = User::factory()->create(['username' => 'validname']);
 
     $this->actingAs($user)
         ->from(route('settings.profile'))
         ->put(route('settings.profile.update'), profileSettingsPayload($user, [
-            'username' => 'settings',
+            'username' => $username,
             'username_confirm' => 'validname',
         ]))
         ->assertSessionHasErrors(['username'])
         ->assertRedirect(route('settings.profile'));
-});
+
+    expect($user->refresh()->username)->toBe('validname');
+})->with([
+    'platform route name' => 'settings',
+    'administrative path' => 'admin',
+    'common web path' => 'api',
+    'culturally sensitive term' => 'nazi',
+]);
 
 it('rejects numeric-only usernames during profile updates', function (): void {
     $user = User::factory()->create(['username' => 'validname']);

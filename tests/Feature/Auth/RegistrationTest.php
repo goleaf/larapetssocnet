@@ -42,4 +42,27 @@ class RegistrationTest extends TestCase
         ]);
         $this->assertSame($birthDate->toDateString(), auth()->user()->fresh()->birth_date->toDateString());
     }
+
+    public function test_reserved_usernames_cannot_register(): void
+    {
+        $birthDate = now()->subYears(20);
+
+        $this->post('/register', [
+            'name' => 'Reserved User',
+            'username' => 'explore',
+            'email' => 'reserved@example.com',
+            'password' => 'PetSocial2026!',
+            'password_confirmation' => 'PetSocial2026!',
+            'birth_day' => $birthDate->day,
+            'birth_month' => $birthDate->month,
+            'birth_year' => $birthDate->year,
+            'terms' => '1',
+        ])
+            ->assertInvalid(['username' => 'reserved']);
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'reserved@example.com',
+        ]);
+    }
 }

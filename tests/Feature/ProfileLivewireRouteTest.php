@@ -20,6 +20,23 @@ it('routes username profiles through a full-page livewire component', function (
         ->and(route('profile.show', ['user' => 'social_handle'], false))->toBe('/@social_handle');
 });
 
+it('registers the public profile route after application named routes', function (): void {
+    $namedRoutes = collect(Route::getRoutes()->getRoutes())
+        ->filter(fn ($route): bool => is_string($route->getName()) && $route->getName() !== '')
+        ->values();
+
+    $profileIndex = $namedRoutes->search(fn ($route): bool => $route->getName() === 'profile.show');
+
+    expect($profileIndex)->not->toBeFalse();
+
+    $applicationRoutesAfterProfile = $namedRoutes
+        ->slice((int) $profileIndex + 1)
+        ->reject(fn ($route): bool => str_starts_with((string) $route->getName(), 'storage.'))
+        ->values();
+
+    expect($applicationRoutesAfterProfile->map(fn ($route): ?string => $route->getName())->all())->toBe([]);
+});
+
 it('renders the public profile page from the livewire route', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Livewire Routed Member',

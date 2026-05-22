@@ -48,8 +48,10 @@
 - Added reusable username helpers in `app/helpers.php`: `username_url()` and `at_username()`.
 - Added `MentionService` and integrated mention link parsing with `@username` profile URLs.
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
+- Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Moved the public profile route to the end of the application route file and enforced reserved username validation during registration and profile username changes.
 - Routed public username profiles through a full-page Livewire component at `/@username` while preserving canonical username casing redirects and blocked-viewer denial.
 - Updated profile Livewire mounting to resolve active usernames before block/private/header queries, return 404 for old or unavailable profile usernames without consulting redirect history, and load header data only for visible profiles.
 - Updated profile empty, guest, high-volume, followers-only, and blocked states so each renders intentional copy, actions, counters, or access denial instead of falling through to generic profile surfaces.

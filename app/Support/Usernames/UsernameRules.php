@@ -45,15 +45,15 @@ final class UsernameRules
      */
     public static function reservedList(): array
     {
-        $configReserved = config('usernames.reserved', []);
+        $configReserved = array_merge(
+            self::configuredReservedValues(config('usernames.reserved', [])),
+            self::configuredReservedValues(config('reserved_usernames', [])),
+        );
 
-        if (! is_array($configReserved)) {
-            $configReserved = [];
+        $normalized = [];
+        foreach ($configReserved as $value) {
+            array_push($normalized, ...self::normalizedReservedVariants($value));
         }
-
-        $normalized = array_map(static function (string $value): string {
-            return (string) Str::of($value)->lower()->trim();
-        }, $configReserved);
 
         return array_values(array_unique(array_filter($normalized, static fn (string $value): bool => $value !== '')));
     }
@@ -72,11 +72,20 @@ final class UsernameRules
             $uri = (string) $route->uri();
             $first = trim(Str::before($uri, '/'));
 
-            if ($first === '' || str_contains($first, '{') || str_starts_with($first, '@')) {
+            if ($first !== '' && ! str_contains($first, '{') && ! str_starts_with($first, '@')) {
+                array_push($segments, ...self::normalizedReservedVariants($first));
+            }
+
+            $name = $route->getName();
+            if (! is_string($name) || $name === '') {
                 continue;
             }
 
-            $segments[] = Str::lower($first);
+            $routeNamePrefix = trim(Str::before($name, '.'));
+
+            if ($routeNamePrefix !== '') {
+                array_push($segments, ...self::normalizedReservedVariants($routeNamePrefix));
+            }
         }
 
         self::$routeReservedCache = array_values(array_unique($segments));
@@ -101,6 +110,47 @@ final class UsernameRules
         }
 
         return ReservedUsername::isReserved($normalized);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function configuredReservedValues(mixed $value): array
+    {
+        if (is_string($value)) {
+            return [$value];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $values = [];
+
+        foreach ($value as $entry) {
+            array_push($values, ...self::configuredReservedValues($entry));
+        }
+
+        return $values;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function normalizedReservedVariants(string $value): array
+    {
+        $trimmed = (string) Str::of($value)->lower()->trim();
+
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $withUnderscores = (string) Str::of($trimmed)->replace(['-', '.', '/', ' '], '_');
+
+        return array_values(array_unique(array_filter([
+            UsernameNormalizer::normalize($trimmed),
+            UsernameNormalizer::normalize($withUnderscores),
+        ], static fn (string $normalized): bool => $normalized !== '')));
     }
 
     /**

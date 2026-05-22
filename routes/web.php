@@ -364,10 +364,6 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
     // Legacy settings routes removed
 });
 
-Route::livewire('/@{user:username}', 'pages.profile.show')
-    ->name('profile.show')
-    ->where('user', '[a-zA-Z0-9_]+');
-
 // Admin area
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_account', 'verified', AdminMiddleware::class])->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -388,3 +384,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_ac
 });
 
 require __DIR__.'/auth.php';
+
+Route::livewire('/@{user:username}', 'pages.profile.show')
+    ->name('profile.show')
+    ->where('user', '[a-zA-Z0-9_]+');

@@ -22,6 +22,17 @@ it('treats reserved usernames as unavailable', function (): void {
     expect(UsernameRules::isAvailable('settings'))->toBeFalse();
 });
 
+it('treats configured reserved username categories as unavailable', function (string $username): void {
+    expect(UsernameRules::isReserved($username))->toBeTrue()
+        ->and(UsernameRules::isAvailable($username))->toBeFalse();
+})->with([
+    'platform route name' => 'explore',
+    'administrative path' => 'admin',
+    'common web path' => 'api',
+    'culturally sensitive term' => 'nazi',
+    'hyphenated route alias' => 'photo_galleries',
+]);
+
 it('treats usernames as case-insensitively unique', function (): void {
     User::factory()->create(['username' => 'CaseTest']);
 
