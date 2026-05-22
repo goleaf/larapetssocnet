@@ -94,6 +94,73 @@ it('calculates profile completeness and missing items from profile fields', func
         ->and($user->profile_completeness_missing_items)->toBe([]);
 });
 
+it('calculates profile completeness percentages for varied field combinations', function (array $attributes, int $expectedPercentage, array $expectedMissing): void {
+    $user = User::factory()->create([
+        'avatar_path' => null,
+        'cover_photo_path' => null,
+        'profile_photo_path' => null,
+        'bio' => null,
+        'location' => null,
+        'city' => null,
+        'website' => null,
+        'birth_date' => null,
+        'pets_count' => 0,
+        'following_count' => 0,
+    ]);
+
+    $user->forceFill($attributes)->save();
+    $user->refresh();
+
+    expect($user->profile_completeness_percentage)->toBe($expectedPercentage)
+        ->and(collect($user->profile_completeness_missing_items)->pluck('key')->all())
+        ->toEqual($expectedMissing);
+})->with([
+    'empty profile' => [
+        [],
+        0,
+        ['avatar', 'cover', 'bio', 'location', 'website', 'birth_date', 'pets', 'following'],
+    ],
+    'avatar bio and location' => [
+        [
+            'avatar_path' => 'https://example.test/avatar.jpg',
+            'bio' => 'A partial profile bio with enough detail.',
+            'city' => 'Vilnius',
+        ],
+        40,
+        ['cover', 'website', 'birth_date', 'pets', 'following'],
+    ],
+    'contact and date fields' => [
+        [
+            'website' => 'https://example.test',
+            'birth_date' => '1994-05-20',
+        ],
+        20,
+        ['avatar', 'cover', 'bio', 'location', 'pets', 'following'],
+    ],
+    'pet and following requirements' => [
+        [
+            'pets_count' => 1,
+            'following_count' => 5,
+        ],
+        25,
+        ['avatar', 'cover', 'bio', 'location', 'website', 'birth_date'],
+    ],
+    'complete profile' => [
+        [
+            'avatar_path' => 'https://example.test/avatar.jpg',
+            'cover_photo_path' => 'https://example.test/cover.jpg',
+            'bio' => 'A complete profile bio with enough useful detail.',
+            'location' => 'Vilnius',
+            'website' => 'https://example.test',
+            'birth_date' => '1994-05-20',
+            'pets_count' => 1,
+            'following_count' => 5,
+        ],
+        100,
+        [],
+    ],
+]);
+
 it('calculates profile completeness from a narrow summary query', function (): void {
     $user = User::factory()->create([
         'avatar_path' => null,

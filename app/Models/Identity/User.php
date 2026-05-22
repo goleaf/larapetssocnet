@@ -1578,23 +1578,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
      */
     protected function profileVerified(): Attribute
     {
-        return Attribute::get(function (): bool {
-            if ((bool) ($this->is_verified ?? false)) {
-                return true;
-            }
-
-            $flags = (string) ($this->flags ?? '');
-
-            if (collect(preg_split('/[\s,|]+/', $flags) ?: [])->contains('verified')) {
-                return true;
-            }
-
-            if ($this->relationLoaded('badges')) {
-                return $this->badges->contains('slug', 'verified');
-            }
-
-            return false;
-        });
+        return Attribute::get(fn (): bool => (bool) ($this->is_verified ?? false));
     }
 
     /**

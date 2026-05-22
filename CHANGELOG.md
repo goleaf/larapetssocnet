@@ -132,6 +132,7 @@
 - Removed remaining interface theme-switching paths: app `data-theme` attributes, Alpine UI theme state, the profile theme settings field, profile theme persistence/export handling, the `users.profile_theme` column, and Debugbar auto light/dark mode.
 
 ### Fixed
+- Fixed profile verification badge rendering so it is driven only by the `users.is_verified` database flag, not legacy badge slugs or flags.
 - Fixed profile hot-path query behavior so profile owner media, pet media, follow counts, daily view records, mutual followers, and completeness checks use explicit eager loading or indexed lookup plans.
 - Fixed the messages inbox and conversation layouts to use one full-width responsive main-column surface, real message translations, wrapping page headers, mobile-safe action rows, and a wider fluid portal container.
 - Fixed shared select inputs showing double dropdown arrows by clearing the Tailwind Forms background-image arrow when the app renders its custom select chevron.
@@ -148,6 +149,8 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php`
+  - `php artisan test --compact tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/SettingsProfileCoverTest.php tests/Feature/ProfilePageDesignTest.php tests/Unit/Models/UserScopesTest.php`
   - `php artisan test --compact tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfilePageDesignTest.php tests/Unit/Models/UserScopesTest.php`
   - `php artisan test --compact tests/Feature/Auth tests/Feature/AuthenticatedPageAccessTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/ProjectDocumentationAndHooksTest.php tests/Unit/DocumentationVersionAlignmentTest.php`

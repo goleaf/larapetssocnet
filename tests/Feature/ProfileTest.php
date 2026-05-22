@@ -534,9 +534,30 @@ test('delete account requires correct password confirmation', function (): void 
     expect($user->fresh())->not()->toBeNull();
 });
 
-test('verified badge data is available on public profile', function (): void {
+test('verified profile badge is driven by users table flag', function (): void {
     $user = User::factory()->create([
         'username' => 'verified_user',
+        'is_verified' => true,
+    ]);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $user]));
+
+    $response
+        ->assertOk()
+        ->assertSee('Verified PetSocial account');
+
+    /** @var User $profileUser */
+    $profileUser = $response->viewData('profileUser');
+
+    expect($profileUser->profile_verified)->toBeTrue();
+});
+
+test('legacy badges and flags do not render the verified profile badge', function (): void {
+    $user = User::factory()->create([
+        'username' => 'legacy_verified_user',
+        'flags' => 'verified',
+        'is_verified' => false,
     ]);
 
     $badge = Badge::query()->create([
@@ -550,12 +571,15 @@ test('verified badge data is available on public profile', function (): void {
     $response = $this->actingAs(User::factory()->create())
         ->get(route('profile.show', ['user' => $user]));
 
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertDontSee('Verified PetSocial account');
 
     /** @var User $profileUser */
     $profileUser = $response->viewData('profileUser');
 
-    expect($profileUser->badges()->where('slug', 'verified')->exists())->toBeTrue();
+    expect($profileUser->profile_verified)->toBeFalse()
+        ->and($profileUser->badges()->where('slug', 'verified')->exists())->toBeTrue();
 });
 
 test('authenticated profile requests refresh online indicator timestamp', function (): void {

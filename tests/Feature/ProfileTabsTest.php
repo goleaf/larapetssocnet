@@ -82,9 +82,17 @@ test('mutual connections shown to visitor who shares follows', function (): void
     $alice = User::factory()->create(['username' => 'alice_mutual']);
     $bob = User::factory()->create(['username' => 'bob_mutual']);
     $shared = User::factory()->create(['username' => 'shared_friend', 'name' => 'Shared Friend']);
+    $profileOnly = User::factory()->create(['username' => 'profile_only_friend']);
+    $viewerOnly = User::factory()->create(['username' => 'viewer_only_friend']);
+    $blockedShared = User::factory()->create(['username' => 'blocked_shared_friend']);
 
     $shared->follow($alice);
     $shared->follow($bob);
+    $profileOnly->follow($bob);
+    $viewerOnly->follow($alice);
+    $blockedShared->follow($alice);
+    $blockedShared->follow($bob);
+    $blockedShared->blocking()->attach($alice->getKey());
 
     DB::flushQueryLog();
     DB::enableQueryLog();
