@@ -364,7 +364,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
     // Legacy settings routes removed
 });
 
-Route::get('/@{user:username}', [PublicProfileController::class, 'show'])
+Route::livewire('/@{user:username}', 'pages.profile.show')
     ->name('profile.show')
     ->where('user', '[a-zA-Z0-9_]+');
 

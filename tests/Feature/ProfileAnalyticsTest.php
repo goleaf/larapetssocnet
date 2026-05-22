@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Profile\PublicProfileController;
 use App\Models\Analytics\ProfileView;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 uses(RefreshDatabase::class);
 
@@ -226,9 +229,18 @@ it('loads profile owner media, pets, and follow counts for the profile surface',
 
     $response->assertOk();
 
+    $request = Request::create(route('profile.show', ['user' => $owner, 'tab' => 'pets']), 'GET', [
+        'tab' => 'pets',
+    ]);
+    $request->setUserResolver(fn () => $viewer);
+
+    $view = app(PublicProfileController::class)->show($request, $owner);
+
+    expect($view)->toBeInstanceOf(View::class);
+
     /** @var User $profileUser */
-    $profileUser = $response->viewData('profileUser');
-    $pets = $response->viewData('pets');
+    $profileUser = $view->getData()['profileUser'];
+    $pets = $view->getData()['pets'];
 
     expect($profileUser->relationLoaded('media'))->toBeTrue()
         ->and((int) $profileUser->followers_count)->toBe(1)

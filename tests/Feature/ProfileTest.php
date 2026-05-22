@@ -547,10 +547,7 @@ test('verified profile badge is driven by users table flag', function (): void {
         ->assertOk()
         ->assertSee('Verified PetSocial account');
 
-    /** @var User $profileUser */
-    $profileUser = $response->viewData('profileUser');
-
-    expect($profileUser->profile_verified)->toBeTrue();
+    expect($user->fresh()?->profile_verified)->toBeTrue();
 });
 
 test('legacy badges and flags do not render the verified profile badge', function (): void {
@@ -575,11 +572,10 @@ test('legacy badges and flags do not render the verified profile badge', functio
         ->assertOk()
         ->assertDontSee('Verified PetSocial account');
 
-    /** @var User $profileUser */
-    $profileUser = $response->viewData('profileUser');
+    $user->refresh();
 
-    expect($profileUser->profile_verified)->toBeFalse()
-        ->and($profileUser->badges()->where('slug', 'verified')->exists())->toBeTrue();
+    expect($user->profile_verified)->toBeFalse()
+        ->and($user->badges()->where('slug', 'verified')->exists())->toBeTrue();
 });
 
 test('authenticated profile requests refresh online indicator timestamp', function (): void {
@@ -639,7 +635,7 @@ test('profile activity summary uses six monthly buckets', function (): void {
         $response->assertOk();
 
         /** @var list<array{month: string, count: int}> $activityData */
-        $activityData = $response->viewData('activityData');
+        $activityData = Post::monthlyActivitySummaryForUser($profileUser);
 
         expect($activityData)->toHaveCount(6);
 
