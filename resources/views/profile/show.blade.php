@@ -108,16 +108,34 @@
  startPosition: @js($coverPosition),
  savingCoverPosition: false,
  coverNotice: '',
+ clampPosition(value) {
+ return Math.min(100, Math.max(0, Number(value) || 0));
+ },
+ coverPointerY(event) {
+ if (event.touches && event.touches.length > 0) return event.touches[0].clientY;
+ if (event.changedTouches && event.changedTouches.length > 0) return event.changedTouches[0].clientY;
+ return event.clientY ?? this.startY;
+ },
+ beginRepositioning() {
+ this.savedPosition = this.position;
+ this.startPosition = this.position;
+ this.repositioning = true;
+ this.coverNotice = '';
+ },
  startCoverDrag(event) {
  if (!this.repositioning) return;
+ event.preventDefault();
  this.dragging = true;
- this.startY = event.clientY;
+ this.startY = this.coverPointerY(event);
  this.startPosition = this.position;
  },
  moveCover(event) {
  if (!this.dragging) return;
- const next = this.startPosition + ((event.clientY - this.startY) / 2);
- this.position = Math.min(100, Math.max(0, next));
+ event.preventDefault();
+ const currentY = this.coverPointerY(event);
+ const bannerHeight = Math.max(1, this.$refs.coverBanner?.clientHeight || 280);
+ const deltaPercent = ((currentY - this.startY) / bannerHeight) * 100;
+ this.position = this.clampPosition(this.startPosition - deltaPercent);
  },
  stopCoverDrag() {
  this.dragging = false;
@@ -130,18 +148,8 @@
  async saveCoverPosition() {
  this.savingCoverPosition = true;
  try {
- const response = await fetch(@js(route('profile.cover-position.update')), {
- method: 'PATCH',
- headers: {
- 'Accept': 'application/json',
- 'Content-Type': 'application/json',
- 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
- },
- body: JSON.stringify({ position: this.position }),
- });
- if (!response.ok) throw new Error('save_failed');
- const data = await response.json();
- this.position = data.position ?? this.position;
+ const savedPosition = await $wire.saveCoverPosition(this.position);
+ this.position = this.clampPosition(savedPosition ?? this.position);
  this.savedPosition = this.position;
  this.repositioning = false;
  this.coverNotice = 'Cover position saved.';
@@ -153,18 +161,22 @@
  }
  },
  }"
- @pointermove.window="moveCover($event)"
- @pointerup.window="stopCoverDrag()"
- @pointercancel.window="stopCoverDrag()">
+ @mousemove.window="moveCover($event)"
+ @mouseup.window="stopCoverDrag()"
+ @touchmove.window="moveCover($event)"
+ @touchend.window="stopCoverDrag()"
+ @touchcancel.window="stopCoverDrag()">
  <div data-ui="profile-hero" class="contents"></div>
- <div data-ui="profile-cover-banner" class="relative h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]">
+ <div data-ui="profile-cover-banner" x-ref="coverBanner" class="relative h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]">
  @if ($coverUrl)
  <img data-ui="profile-cover-image" src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
  class="absolute inset-0 h-full w-full select-none object-cover"
  style="object-position: center {{ $coverPosition }}%"
  x-bind:style="`object-position: center ${position}%`"
- x-bind:class="repositioning ? 'cursor-grab active:cursor-grabbing' : ''"
- @pointerdown.prevent="startCoverDrag($event)"/>
+ x-bind:class="repositioning ? (dragging ? 'cursor-grabbing touch-none' : 'cursor-grab touch-none') : ''"
+ draggable="false"
+ @mousedown="startCoverDrag($event)"
+ @touchstart="startCoverDrag($event)"/>
  @else
  <div data-ui="profile-cover-fallback" class="absolute inset-0 {{ $profileUser->profile_default_gradient }}"></div>
  @endif
@@ -174,12 +186,13 @@
  <div class="absolute left-4 right-4 top-4 flex items-center justify-between gap-2 sm:left-auto sm:justify-end">
  @if ($isOwner && $coverUrl)
  <div class="flex items-center gap-2">
- <button x-show="!repositioning" type="button" @click="repositioning = true; coverNotice = ''"
+ <button data-ui="cover-reposition-trigger" x-show="!repositioning" type="button" @click="beginRepositioning()"
  class="inline-flex min-h-10 items-center rounded-[var(--radius-control)] bg-warm-white/90 px-3 py-2 text-xs font-semibold text-bark shadow-sm transition-colors hover:bg-warm-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  Reposition cover
  </button>
- <div x-show="repositioning" x-cloak class="flex items-center gap-2">
+ <div data-ui="cover-reposition-actions" x-show="repositioning" x-cloak class="flex items-center gap-2">
  <button type="button" @click="saveCoverPosition()" x-bind:disabled="savingCoverPosition"
+ x-bind:aria-busy="savingCoverPosition.toString()"
  class="inline-flex min-h-10 items-center rounded-[var(--radius-control)] bg-paw px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:opacity-60">
  <span x-text="savingCoverPosition ? 'Saving...' : 'Save position'"></span>
  </button>

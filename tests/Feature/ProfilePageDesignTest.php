@@ -148,12 +148,46 @@ it('renders cover photos as absolute object-cover layers inside fixed responsive
     $this->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
         ->assertSee('data-ui="profile-cover-banner"', false)
+        ->assertSee('x-ref="coverBanner"', false)
         ->assertSee('h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]', false)
         ->assertSee('data-ui="profile-cover-image"', false)
         ->assertSee('https://example.test/cover-wide.jpg', false)
         ->assertSee('absolute inset-0 h-full w-full select-none object-cover', false)
         ->assertSee('object-position: center ${position}%', false)
+        ->assertSee('@mousedown="startCoverDrag($event)"', false)
+        ->assertSee('@touchstart="startCoverDrag($event)"', false)
+        ->assertSee('@mousemove.window="moveCover($event)"', false)
+        ->assertSee('@touchmove.window="moveCover($event)"', false)
         ->assertDontSee('data-ui="profile-cover-fallback"', false);
+});
+
+it('shows cover repositioning controls only to the profile owner', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Cover Owner',
+        'username' => 'cover_reposition_owner',
+        'cover_photo_path' => 'https://example.test/cover-owner.jpg',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->actingAs($profileOwner)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="cover-reposition-trigger"', false)
+        ->assertSee('Reposition cover')
+        ->assertSee('data-ui="cover-reposition-actions"', false)
+        ->assertSee('Save position', false)
+        ->assertSee('Cancel')
+        ->assertSee('$wire.saveCoverPosition(this.position)', false)
+        ->assertSee('cursor-grabbing touch-none', false)
+        ->assertSee('aria-busy', false);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertDontSee('data-ui="cover-reposition-trigger"', false)
+        ->assertDontSee('data-ui="cover-reposition-actions"', false)
+        ->assertDontSee('Reposition cover');
 });
 
 it('renders a username-derived cover gradient fallback when no cover photo exists', function (): void {

@@ -146,3 +146,51 @@ it('loads header data and defaults the active tab to posts for visible profiles'
         ->and((int) $resolvedOwner->followers_count)->toBe(1)
         ->and((int) $resolvedOwner->pets_count)->toBe(2);
 });
+
+it('saves cover focal point through the profile livewire action for the owner', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'cover_action_owner',
+        'cover_photo_position' => 50,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('pages.profile.show', ['user' => $profileOwner->username])
+        ->call('saveCoverPosition', 78.456)
+        ->assertReturned(78.46);
+
+    expect((float) $profileOwner->refresh()->cover_photo_position)->toBe(78.46);
+});
+
+it('rejects cover focal point livewire saves from non-owners', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'cover_action_locked',
+        'cover_photo_position' => 50,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages.profile.show', ['user' => $profileOwner->username])
+        ->call('saveCoverPosition', 80)
+        ->assertForbidden();
+
+    expect((float) $profileOwner->refresh()->cover_photo_position)->toBe(50.0);
+});
+
+it('validates cover focal point values in the profile livewire action', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'cover_action_validation',
+        'cover_photo_position' => 50,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('pages.profile.show', ['user' => $profileOwner->username])
+        ->call('saveCoverPosition', 101)
+        ->assertHasErrors(['position' => 'max']);
+
+    expect((float) $profileOwner->refresh()->cover_photo_position)->toBe(50.0);
+});

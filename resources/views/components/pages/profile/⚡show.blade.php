@@ -5,11 +5,14 @@ use App\Http\Controllers\Profile\PublicProfileController;
 use App\Models\Identity\User;
 use App\Models\Social\Block;
 use App\Models\Social\Follow;
+use App\Services\Auth\AuthAuditLogger;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 new
@@ -45,6 +48,37 @@ class extends Component
         $this->redirectCanonicalUsername($user, $this->profileOwner);
 
         $this->profileOwner = $this->loadHeaderProfileData($this->profileOwner);
+    }
+
+    #[Renderless]
+    public function saveCoverPosition(mixed $position): float
+    {
+        $viewer = request()->user();
+
+        abort_unless($viewer instanceof User && $viewer->is($this->profileOwner), 403);
+
+        $validated = Validator::make(
+            ['position' => $position],
+            ['position' => ['required', 'numeric', 'min:0', 'max:100']],
+            [
+                'position.required' => 'Choose a cover focal point before saving.',
+                'position.numeric' => 'Cover position must be a number.',
+                'position.min' => 'Cover position must be between 0 and 100.',
+                'position.max' => 'Cover position must be between 0 and 100.',
+            ]
+        )->validate();
+
+        $normalizedPosition = User::normalizeCoverPhotoPosition($validated['position']);
+
+        $this->profileOwner->forceFill([
+            'cover_photo_position' => $normalizedPosition,
+        ])->save();
+
+        app(AuthAuditLogger::class)->record($viewer, 'profile_cover_position_updated', request(), [
+            'position' => $normalizedPosition,
+        ]);
+
+        return $normalizedPosition;
     }
 
     public function render(): View
