@@ -429,8 +429,18 @@ document.addEventListener('alpine:init', () => {
  }
 
  this.hashChangeHandler = () => this.activateFromHash();
+ this.resizeHandler = () => this.updateIndicator();
  window.addEventListener('hashchange', this.hashChangeHandler);
  window.addEventListener('popstate', this.hashChangeHandler);
+ window.addEventListener('resize', this.resizeHandler);
+ this.$watch('activeTab', () => this.$nextTick(() => this.updateIndicator()));
+ this.$nextTick(() => this.updateIndicator());
+ },
+
+ destroy() {
+ window.removeEventListener('hashchange', this.hashChangeHandler);
+ window.removeEventListener('popstate', this.hashChangeHandler);
+ window.removeEventListener('resize', this.resizeHandler);
  },
 
  isAllowed(tab) {
@@ -461,6 +471,7 @@ document.addEventListener('alpine:init', () => {
  }
 
  this.activeTab = normalizedTab;
+ this.$nextTick(() => this.updateIndicator());
 
  if (options.push) {
  this.pushHash(normalizedTab);
@@ -469,10 +480,36 @@ document.addEventListener('alpine:init', () => {
  }
 
  await this.$wire.activateTab(normalizedTab);
+ this.$nextTick(() => this.updateIndicator());
 
  if (options.scroll) {
  this.$nextTick(() => document.getElementById('profile-tabs')?.scrollIntoView({ behavior:'smooth', block:'start' }));
  }
+ },
+
+ updateIndicator() {
+ const tabsRoot = this.$el.querySelector('[data-ui="tabs"]');
+ const nav = this.$refs.tabNav || tabsRoot?.querySelector('nav');
+
+ if (!tabsRoot || !nav) {
+ return;
+ }
+
+ const activeLink = Array.from(nav.querySelectorAll('[data-tab-value]'))
+ .find((link) => toStringValue(link.dataset.tabValue).toLowerCase() === this.activeTab);
+ const anchor = activeLink?.querySelector('[data-tab-indicator-anchor]') || activeLink;
+
+ if (!anchor) {
+ tabsRoot.style.setProperty('--profile-tab-indicator-width','0px');
+ return;
+ }
+
+ const navRect = nav.getBoundingClientRect();
+ const anchorRect = anchor.getBoundingClientRect();
+ const left = anchorRect.left - navRect.left + nav.scrollLeft;
+
+ tabsRoot.style.setProperty('--profile-tab-indicator-left', `${Math.max(0, left)}px`);
+ tabsRoot.style.setProperty('--profile-tab-indicator-width', `${Math.max(0, anchorRect.width)}px`);
  },
 
  selectFromClick(event) {

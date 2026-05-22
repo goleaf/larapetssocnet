@@ -944,7 +944,7 @@
  x-data="profileTabs({ activeTab: @js($tab), tabs: @js($profileTabValues) })"
  @click="selectFromClick($event)"
  @profile-tab-requested.window="activate($event.detail.tab, { push: true, scroll: Boolean($event.detail.scroll) })">
- <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
+ <x-ui.tabs :tabs="$tabItems" :active="$tab" :animated-indicator="true" class="mb-0"/>
  </x-ui.card>
 
  <div class="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">

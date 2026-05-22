@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated profile tabs with a JavaScript-positioned CSS custom property underline that slides between active labels over 200ms with ease-in-out timing.
 - Updated profile tab switching to use hash fragments, per-profile session restoration, and lazy Livewire child panels for Posts, Pets, Photos, About, and owner-only Scheduled content.
 - Updated profile tabs to show only Posts, Pets, Photos, About, and owner-only Scheduled with parenthesized counter-cache counts.
 - Updated profile tab navigation to use a CSS sticky, translucent Warm Editorial surface with backdrop blur and no scroll listeners.

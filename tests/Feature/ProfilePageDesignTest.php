@@ -176,9 +176,22 @@ it('renders profile tabs as a CSS sticky translucent blur bar', function (): voi
         ->assertSee('sticky top-20 z-30 scroll-mt-24', false)
         ->assertSee('bg-warm-white/85', false)
         ->assertSee('backdrop-blur-md!', false)
+        ->assertSee('data-ui="tabs-active-indicator"', false)
+        ->assertSee('data-tab-indicator-anchor', false)
+        ->assertSee('x-ref="tabNav"', false)
+        ->assertSee('[--profile-tab-indicator-left:0px]', false)
+        ->assertSee('[--profile-tab-indicator-width:0px]', false)
+        ->assertSee('transition-[left,width] duration-200 ease-in-out', false)
         ->assertDontSee('addEventListener(\'scroll\'', false)
         ->assertDontSee('window.onscroll', false)
         ->assertDontSee('@scroll.window', false);
+
+    $profileTabsController = file_get_contents(resource_path('js/app.js'));
+
+    expect($profileTabsController)->toContain('updateIndicator()')
+        ->and($profileTabsController)->toContain('--profile-tab-indicator-left')
+        ->and($profileTabsController)->toContain('--profile-tab-indicator-width')
+        ->and($profileTabsController)->toContain('getBoundingClientRect()');
 });
 
 it('renders cached profile stats as modal and pets tab actions', function (): void {
