@@ -37,12 +37,20 @@ class RecordProfileView implements ShouldQueue
             ? CarbonImmutable::parse($this->viewedOn, $timezone)->toDateString()
             : CarbonImmutable::now($timezone)->toDateString();
 
-        ProfileView::query()->insertOrIgnore([
-            'profile_user_id' => $this->profileUserId,
-            'viewer_user_id' => $this->viewerUserId,
-            'viewed_on' => $viewedOn,
-            'created_at' => now(),
-            'updated_at' => now(),
+        ProfileView::query()->upsert([
+            [
+                'profile_user_id' => $this->profileUserId,
+                'viewer_user_id' => $this->viewerUserId,
+                'viewed_on' => $viewedOn,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ], uniqueBy: [
+            'profile_user_id',
+            'viewer_user_id',
+            'viewed_on',
+        ], update: [
+            'updated_at',
         ]);
     }
 }

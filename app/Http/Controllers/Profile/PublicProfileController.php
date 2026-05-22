@@ -15,6 +15,7 @@ use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
 use App\Services\VisibilityService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -71,6 +72,8 @@ class PublicProfileController extends Controller
             return redirect()->to($target, 301);
         }
 
+        $user = $this->profileSurfaceUser($user);
+
         $allowedTabs = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests', 'scheduled'];
         $tab = in_array($request->string('tab')->toString(), $allowedTabs, true)
             ? $request->string('tab')->toString()
@@ -101,12 +104,15 @@ class PublicProfileController extends Controller
         $canViewPhotos = $canViewContent;
 
         $pets = $tab === 'pets' && $canViewPets
-            ? $user->pets()->visibleTo($viewer)->latest()->get()
+            ? $this->profilePetsQuery($user, $viewer)->get()
             : collect();
 
-        $featuredPets = $canViewPets
-            ? $user->pets()->visibleTo($viewer)->latest()->limit(9)->get()
-            : collect();
+        $featuredPets = collect();
+        if ($canViewPets) {
+            $featuredPets = $tab === 'pets'
+                ? $pets->take(9)->values()
+                : $this->profilePetsQuery($user, $viewer)->limit(9)->get();
+        }
 
         $galleries = $tab === 'photos' && $canViewPhotos
             ? $user->photoGalleries()
@@ -243,7 +249,14 @@ class PublicProfileController extends Controller
             ? $this->profileViewStats($user)
             : null;
 
-        if ($isOwner && $user->profileCompletenessPercentageValue() === 100 && ! $user->profile_completed_at) {
+        $profileCompleteness = $isOwner
+            ? User::profileCompletenessSummaryFor((int) $user->getKey())
+            : [
+                'percentage' => 0,
+                'missing_items' => [],
+            ];
+
+        if ($isOwner && $profileCompleteness['percentage'] === 100 && ! $user->profile_completed_at) {
             $user->forceFill(['profile_completed_at' => now()])->saveQuietly();
         }
 
@@ -299,11 +312,38 @@ class PublicProfileController extends Controller
             'commonGroups' => $commonGroups,
             'activityData' => $activityData,
             'profileViewStats' => $profileViewStats,
+            'profileCompletenessPercentage' => $profileCompleteness['percentage'],
+            'profileCompletenessMissingItems' => $profileCompleteness['missing_items'],
             'followStatus' => $followStatus,
             'isFollowing' => $followStatus === 'following',
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
             'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
         ]);
+    }
+
+    private function profileSurfaceUser(User $user): User
+    {
+        return User::query()
+            ->whereKey($user->getKey())
+            ->with('media')
+            ->withCount([
+                'acceptedFollowers as followers_count',
+                'acceptedFollowing as following_count',
+                'pets as pets_count',
+            ])
+            ->firstOrFail();
+    }
+
+    /**
+     * @return HasMany<Pet, User>
+     */
+    private function profilePetsQuery(User $user, ?User $viewer): HasMany
+    {
+        return $user->pets()
+            ->visibleTo($viewer)
+            ->without(['user', 'species', 'breed', 'tags'])
+            ->with('media')
+            ->latest('pets.created_at');
     }
 
     private function restrictedViewerRedirect(User $viewer): ?RedirectResponse

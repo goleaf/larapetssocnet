@@ -53,6 +53,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
@@ -1178,13 +1179,45 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         });
     }
 
-    public function getMutualFollowers(self $other)
+    /**
+     * @return Collection<int, self>
+     */
+    public function getMutualFollowers(self $other, int $limit = 5): Collection
     {
-        $myFollowerIds = $this->acceptedFollowers()->pluck('users.id');
-        $otherFollowerIds = $other->acceptedFollowers()->pluck('users.id');
-        $mutualIds = $myFollowerIds->intersect($otherFollowerIds)->take(5);
+        $viewerId = (int) $this->getKey();
+        $profileUserId = (int) $other->getKey();
 
-        return self::query()->whereIn('id', $mutualIds)->with('media')->get();
+        if ($viewerId === 0 || $profileUserId === 0 || $viewerId === $profileUserId) {
+            return collect();
+        }
+
+        $query = self::query()
+            ->select([
+                'users.id',
+                'users.name',
+                'users.username',
+                'users.avatar_path',
+                'users.profile_photo_path',
+            ])
+            ->join('follows as viewer_followers', function (JoinClause $join) use ($viewerId): void {
+                $join
+                    ->on('viewer_followers.follower_id', '=', 'users.id')
+                    ->where('viewer_followers.following_id', $viewerId)
+                    ->where('viewer_followers.status', 'accepted');
+            })
+            ->join('follows as profile_followers', function (JoinClause $join) use ($profileUserId): void {
+                $join
+                    ->on('profile_followers.follower_id', '=', 'users.id')
+                    ->where('profile_followers.following_id', $profileUserId)
+                    ->where('profile_followers.status', 'accepted');
+            })
+            ->notBlockedFor($this)
+            ->limit(max(1, $limit))
+            ->with('media');
+
+        self::applyAvailableForProfiles($query);
+
+        return $query->get();
     }
 
     public function getSuggestedUsersToFollow(int $limit = 6): Collection
@@ -1630,6 +1663,56 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     }
 
     /**
+     * @return array{percentage: int, missing_items: list<array{key: string, label: string}>}
+     */
+    public static function profileCompletenessSummaryFor(int $userId): array
+    {
+        $user = self::query()
+            ->select([
+                'id',
+                'bio',
+                'location',
+                'city',
+                'website',
+                'birth_date',
+                'avatar_path',
+                'profile_photo_path',
+                'cover_photo_path',
+            ])
+            ->withCount([
+                'pets as pets_count',
+                'acceptedFollowing as following_count',
+            ])
+            ->withExists([
+                'media as has_profile_avatar_media' => fn (Builder $query): Builder => $query
+                    ->where('collection_name', self::MEDIA_COLLECTION_AVATAR),
+                'media as has_profile_cover_media' => fn (Builder $query): Builder => $query
+                    ->where('collection_name', self::MEDIA_COLLECTION_COVER),
+            ])
+            ->find($userId);
+
+        if (! $user instanceof self) {
+            return [
+                'percentage' => 0,
+                'missing_items' => [],
+            ];
+        }
+
+        return $user->profileCompletenessSummaryValue();
+    }
+
+    /**
+     * @return array{percentage: int, missing_items: list<array{key: string, label: string}>}
+     */
+    public function profileCompletenessSummaryValue(): array
+    {
+        return [
+            'percentage' => $this->profileCompletenessPercentageValue(),
+            'missing_items' => $this->profileCompletenessMissingItemsValue(),
+        ];
+    }
+
+    /**
      * @return list<array{key: string, label: string}>
      */
     public function profileCompletenessMissingItemsValue(): array
@@ -1703,6 +1786,12 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     protected function hasProfileAvatar(): bool
     {
+        if (array_key_exists('has_profile_avatar_media', $this->attributes)) {
+            return (bool) $this->attributes['has_profile_avatar_media']
+                || filled($this->avatar_path)
+                || filled($this->profile_photo_path);
+        }
+
         return $this->firstMediaUrl(self::MEDIA_COLLECTION_AVATAR) !== ''
             || filled($this->avatar_path)
             || filled($this->profile_photo_path);
@@ -1710,6 +1799,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     protected function hasProfileCover(): bool
     {
+        if (array_key_exists('has_profile_cover_media', $this->attributes)) {
+            return (bool) $this->attributes['has_profile_cover_media']
+                || filled($this->cover_photo_path);
+        }
+
         return $this->firstMediaUrl(self::MEDIA_COLLECTION_COVER) !== ''
             || filled($this->cover_photo_path);
     }

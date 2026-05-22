@@ -344,8 +344,8 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
 
  @if ($isOwner)
  @php
- $profileCompleteness = (int) $profileUser->profile_completeness_percentage;
- $completionMissingItems = $profileUser->profile_completeness_missing_items;
+ $profileCompleteness = (int) ($profileCompletenessPercentage ?? $profileUser->profile_completeness_percentage);
+ $completionMissingItems = $profileCompletenessMissingItems ?? $profileUser->profile_completeness_missing_items;
  $completionColor = $profileCompleteness >= 80 ? 'bg-emerald-500' : ($profileCompleteness >= 50 ? 'bg-amber-500' : 'bg-sky-500');
  $showCompletedCard = $profileCompleteness === 100
  && $profileUser->profile_completed_at
@@ -403,7 +403,7 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  </div>
  <div class="-mx-1 flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
  @foreach ($featuredPets as $pet)
- <x-ui.pet-card :pet="$pet" size="md"/>
+ <x-ui.pet-card :pet="$pet" :owner="$profileUser->name" size="md"/>
  @endforeach
  @if ($isOwner)
  <a href="{{ route('pets.create') }}"

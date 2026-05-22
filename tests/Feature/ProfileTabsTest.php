@@ -7,6 +7,7 @@ use App\Models\Gamification\Badge;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -84,6 +85,21 @@ test('mutual connections shown to visitor who shares follows', function (): void
 
     $shared->follow($alice);
     $shared->follow($bob);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $mutualConnections = $alice->getMutualFollowers($bob);
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($mutualConnections->pluck('username')->all())->toBe(['shared_friend'])
+        ->and(strtolower((string) $queries[0]['query']))
+        ->toContain('join "follows" as "viewer_followers"')
+        ->toContain('join "follows" as "profile_followers"');
 
     $this->actingAs($alice)
         ->get(route('profile.show', ['user' => $bob]))

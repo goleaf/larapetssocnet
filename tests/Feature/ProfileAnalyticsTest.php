@@ -2,8 +2,10 @@
 
 use App\Models\Analytics\ProfileView;
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -90,6 +92,85 @@ it('calculates profile completeness and missing items from profile fields', func
 
     expect($user->profile_completeness_percentage)->toBe(100)
         ->and($user->profile_completeness_missing_items)->toBe([]);
+});
+
+it('calculates profile completeness from a narrow summary query', function (): void {
+    $user = User::factory()->create([
+        'avatar_path' => null,
+        'cover_photo_path' => null,
+        'profile_photo_path' => null,
+        'bio' => 'Too short',
+        'location' => null,
+        'city' => null,
+        'website' => null,
+        'birth_date' => null,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $summary = User::profileCompletenessSummaryFor((int) $user->getKey());
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($summary['percentage'])->toBe(0)
+        ->and(collect($summary['missing_items'])->pluck('key')->all())
+        ->toContain('avatar', 'cover', 'bio', 'location', 'website', 'birth_date', 'pets', 'following');
+
+    $profileQueries = collect($queries)
+        ->pluck('query')
+        ->filter(fn (string $query): bool => str_contains($query, 'from "users"') && str_contains($query, '"bio"'))
+        ->values();
+
+    expect($profileQueries)->toHaveCount(1);
+
+    $sql = strtolower((string) $profileQueries->first());
+
+    expect($sql)
+        ->toContain('"bio"')
+        ->toContain('"website"')
+        ->toContain('"birth_date"')
+        ->not->toContain('select * from "users"')
+        ->not->toContain('select "users".*')
+        ->not->toContain('"email"')
+        ->not->toContain('"password"');
+});
+
+it('loads profile owner media, pets, and follow counts for the profile surface', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'surface_owner',
+        'is_private' => false,
+    ]);
+    $viewer = User::factory()->create();
+    $follower = User::factory()->create();
+
+    Pet::factory()
+        ->count(3)
+        ->for($owner)
+        ->create();
+
+    $follower->follow($owner);
+
+    $response = $this->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $owner, 'tab' => 'pets']));
+
+    $response->assertOk();
+
+    /** @var User $profileUser */
+    $profileUser = $response->viewData('profileUser');
+    $pets = $response->viewData('pets');
+
+    expect($profileUser->relationLoaded('media'))->toBeTrue()
+        ->and((int) $profileUser->followers_count)->toBe(1)
+        ->and($pets)->toHaveCount(3);
+
+    $pets->each(function (Pet $pet): void {
+        expect($pet->relationLoaded('media'))->toBeTrue()
+            ->and($pet->relationLoaded('user'))->toBeFalse();
+    });
 });
 
 it('renders verified profile badge and saved cover focal point', function (): void {

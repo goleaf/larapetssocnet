@@ -50,6 +50,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, use profile-view upserts against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.
 - Updated all project-installed Laravel Superpowers skills with the Laravel 13.9 / PHP 8.4 baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
@@ -131,6 +132,7 @@
 - Removed remaining interface theme-switching paths: app `data-theme` attributes, Alpine UI theme state, the profile theme settings field, profile theme persistence/export handling, the `users.profile_theme` column, and Debugbar auto light/dark mode.
 
 ### Fixed
+- Fixed profile hot-path query behavior so profile owner media, pet media, follow counts, daily view records, mutual followers, and completeness checks use explicit eager loading or indexed lookup plans.
 - Fixed the messages inbox and conversation layouts to use one full-width responsive main-column surface, real message translations, wrapping page headers, mobile-safe action rows, and a wider fluid portal container.
 - Fixed shared select inputs showing double dropdown arrows by clearing the Tailwind Forms background-image arrow when the app renders its custom select chevron.
 - Fixed post-login 500 errors on intended group pages by rendering cast `GroupMemberStatus` enum values safely in group cards.
@@ -146,6 +148,7 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfilePageDesignTest.php tests/Unit/Models/UserScopesTest.php`
   - `php artisan test --compact tests/Feature/Auth tests/Feature/AuthenticatedPageAccessTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/ProjectDocumentationAndHooksTest.php tests/Unit/DocumentationVersionAlignmentTest.php`
   - `php artisan test --compact tests/Unit/StylesheetPipelineTest.php`
