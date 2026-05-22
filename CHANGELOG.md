@@ -8,6 +8,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added a compact profile About pet summary strip that links visible pet avatars to their pet profiles without per-pet queries.
 - Added precomputed user profile activity summary counters for reactions received, comments received, and latest post date so the About tab can render its two-by-two activity section without live aggregate queries.
 - Added a richer lazy profile About tab with clearly labeled biography, public metadata, social links, interests, and activity sections while honoring profile privacy rules for location and public age.
 - Added a profile Photos lightbox with full-photo viewing, post context, pet/location tags, reactions, comments, keyboard arrows, Escape close, and mobile swipe navigation.

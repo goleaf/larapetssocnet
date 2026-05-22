@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -21,6 +22,7 @@ new class extends Component
      *     canViewContent: bool,
      *     bioDetails: list<array{label: string, value: string, icon: string, iconPath: string, url?: string, datetime?: string|null}>,
      *     activitySummaryItems: list<array{label: string, value: string, datetime?: string|null}>,
+     *     petSummaryItems: list<array{name: string, url: string, avatarUrl: string|null}>,
      *     overviewItems: list<array{label: string, value: string}>,
      *     contactItems: list<array{label: string, url: string, display: string}>,
      *     interests: list<string>
@@ -41,6 +43,7 @@ new class extends Component
                 'canViewContent' => false,
                 'bioDetails' => [],
                 'activitySummaryItems' => [],
+                'petSummaryItems' => [],
                 'overviewItems' => [],
                 'contactItems' => [],
                 'interests' => [],
@@ -58,6 +61,7 @@ new class extends Component
             'canViewContent' => true,
             'bioDetails' => $this->bioDetails($profileUser, $location, $website),
             'activitySummaryItems' => $this->activitySummaryItems($profileUser),
+            'petSummaryItems' => $this->petSummaryItems($profileUser, $viewer),
             'overviewItems' => $this->overviewItems($profileUser, $displayName),
             'contactItems' => $this->contactItems($profileUser->social_links),
             'interests' => $this->interests($profileUser->interests_text),
@@ -180,6 +184,55 @@ new class extends Component
                 'datetime' => $profileUser->last_post_created_at?->toDateString(),
             ],
         ];
+    }
+
+    /**
+     * @return list<array{name: string, url: string, avatarUrl: string|null}>
+     */
+    private function petSummaryItems(User $profileUser, ?User $viewer): array
+    {
+        return $profileUser->pets()
+            ->visibleTo($viewer)
+            ->without(['user', 'species', 'breed', 'media', 'tags'])
+            ->with([
+                'media' => fn ($mediaQuery) => $mediaQuery
+                    ->where('collection_name', Pet::MEDIA_COLLECTION_AVATAR)
+                    ->orderBy('order_column'),
+            ])
+            ->select([
+                'pets.id',
+                'pets.user_id',
+                'pets.name',
+                'pets.slug',
+                'pets.avatar_path',
+                'pets.created_at',
+            ])
+            ->latest('pets.created_at')
+            ->get()
+            ->map(fn (Pet $pet): array => [
+                'name' => (string) $pet->name,
+                'url' => route('pets.show', ['pet' => $pet->slug ?? $pet->getKey()]),
+                'avatarUrl' => $this->petSummaryAvatarUrl($pet),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function petSummaryAvatarUrl(Pet $pet): ?string
+    {
+        $mediaUrl = $pet->getFirstMediaUrl(Pet::MEDIA_COLLECTION_AVATAR, Pet::MEDIA_CONVERSION_AVATAR_THUMB);
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        $mediaUrl = $pet->getFirstMediaUrl(Pet::MEDIA_COLLECTION_AVATAR);
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        return $this->filledString($pet->avatar_path);
     }
 
     /**
@@ -370,6 +423,32 @@ new class extends Component
 	 @endforeach
 	 </dl>
 	 </div>
+	 </x-ui.card>
+
+	 <x-ui.card>
+	 <section data-ui="profile-about-pet-summary" class="flex flex-col gap-4" aria-labelledby="profile-about-pet-summary-heading">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Pets</p>
+	 <h3 id="profile-about-pet-summary-heading" class="mt-1 text-lg font-bold font-display text-bark">Pets at a glance</h3>
+	 </div>
+
+	 @if ($data['petSummaryItems'] !== [])
+	 <ul class="flex gap-4 overflow-x-auto pb-1" role="list" aria-label="{{ $data['displayName'] }} pets">
+	 @foreach ($data['petSummaryItems'] as $pet)
+	 <li class="shrink-0">
+	 <a href="{{ $pet['url'] }}"
+	 class="group flex w-20 flex-col items-center gap-2 rounded-[var(--radius-soft)] p-2 text-center transition-colors hover:bg-cream/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+	 aria-label="View {{ $pet['name'] }} pet profile">
+	 <x-ui.avatar :src="$pet['avatarUrl']" :name="$pet['name']" :alt="$pet['name'].' profile photo'" size="lg" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
+	 <span class="block w-full truncate text-xs font-semibold leading-tight text-bark group-hover:text-paw">{{ $pet['name'] }}</span>
+	 </a>
+	 </li>
+	 @endforeach
+	 </ul>
+	 @else
+	 <p class="text-sm text-fur">No pets visible yet.</p>
+	 @endif
+	 </section>
 	 </x-ui.card>
 
 	 @if ($data['overviewItems'] !== [])

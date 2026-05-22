@@ -32,6 +32,10 @@ Pet profiles are user-owned sub-entities.
 - Profile owners with pets see an Add Pet card as the first grid item. Owners with no pets see an illustrated onboarding empty state with an Add Your First Pet button. Visitors with no visible pets see only a simple No Pets Yet empty state.
 - Owner add-pet actions open an on-page Livewire modal, validate the same core Feature 3 pet fields, persist through `CreatePetAction`, refresh the lazy grid, and dispatch a parent profile event so the Pets tab counter updates without navigation.
 
+## Profile About Summary
+- The user profile About tab includes a compact horizontal pet strip after the activity summary. Query it through `Pet::visibleTo($viewer)`, eager-load only avatar media, and render circular avatar/name links to each visible pet profile.
+- Keep this strip read-only and lightweight: no follow controls, no per-pet relationship queries, and no private pets for visitors who cannot view them.
+
 ## Media
 Pet uses Spatie MediaLibrary (public disk).
 

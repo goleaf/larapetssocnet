@@ -8,9 +8,11 @@ use App\Models\Pets\Pet;
 use App\Services\CounterCacheService;
 use App\Services\ReactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 
@@ -451,6 +453,87 @@ it('renders the about activity summary from precomputed user columns without liv
         DB::disableQueryLog();
         Carbon::setTestNow();
     }
+});
+
+it('renders a compact about pet summary from visible pets without per-pet queries', function (): void {
+    Storage::fake('public');
+
+    $profileOwner = User::factory()->create([
+        'name' => 'Pet Summary Owner',
+        'display_name' => 'Pet Summary Crew',
+        'username' => 'pet_summary_owner',
+        'bio' => 'Pet summary should preview visible pets.',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $visiblePet = Pet::factory()->for($profileOwner)->create([
+        'name' => 'Pickles',
+        'is_public' => true,
+        'created_at' => Carbon::parse('2026-05-22 10:00:00'),
+    ]);
+    $olderVisiblePet = Pet::factory()->for($profileOwner)->create([
+        'name' => 'Mochi',
+        'is_public' => true,
+        'created_at' => Carbon::parse('2026-05-20 10:00:00'),
+    ]);
+    $privatePet = Pet::factory()->for($profileOwner)->create([
+        'name' => 'Hidden Whiskers',
+        'is_public' => false,
+        'created_at' => Carbon::parse('2026-05-23 10:00:00'),
+    ]);
+
+    $visiblePet->addMedia(UploadedFile::fake()->image('pickles.jpg', 160, 160))
+        ->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
+    $olderVisiblePet->addMedia(UploadedFile::fake()->image('mochi.jpg', 160, 160))
+        ->toMediaCollection(Pet::MEDIA_COLLECTION_AVATAR);
+
+    DB::enableQueryLog();
+
+    Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertSee('data-ui="profile-about-activity-summary"', false)
+        ->assertSee('data-ui="profile-about-pet-summary"', false)
+        ->assertSee('Pets at a glance')
+        ->assertSee('href="'.route('pets.show', ['pet' => $visiblePet->slug]).'"', false)
+        ->assertSee('href="'.route('pets.show', ['pet' => $olderVisiblePet->slug]).'"', false)
+        ->assertSee('Pickles')
+        ->assertSee('Pickles profile photo')
+        ->assertSee('Mochi')
+        ->assertSee('Mochi profile photo')
+        ->assertDontSee('Hidden Whiskers');
+
+    $queries = collect(DB::getQueryLog())
+        ->pluck('query')
+        ->map(fn (string $query): string => strtolower($query));
+
+    DB::disableQueryLog();
+
+    expect($queries->filter(fn (string $query): bool => str_contains($query, 'from "pets"'))->count())->toBe(1)
+        ->and($queries->filter(fn (string $query): bool => str_contains($query, 'from "media"'))->count())->toBe(1)
+        ->and($queries->implode("\n"))
+        ->not->toContain('from "species"')
+        ->not->toContain('from "breeds"')
+        ->not->toContain('from "pet_tags"');
+});
+
+it('shows private pets in the about pet summary to the profile owner', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Private Pet Owner',
+        'username' => 'private_pet_summary_owner',
+        'bio' => 'Owner can see all pets in their summary.',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Pet::factory()->for($profileOwner)->create([
+        'name' => 'Private Pancake',
+        'is_public' => false,
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertSee('data-ui="profile-about-pet-summary"', false)
+        ->assertSee('Private Pancake');
 });
 
 it('keeps privacy-gated about fields hidden from visitors and never reveals the birth date', function (): void {

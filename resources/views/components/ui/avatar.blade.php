@@ -1,15 +1,22 @@
 @props([
 'src'=> null,
 'name'=>'User',
+'alt'=> null,
 'size'=>'md',
 'online'=> false,
 ])
+
+@php
+ $avatarLabel = filled(trim((string) $alt))
+     ? trim((string) $alt)
+     : (trim((string) $name) !== '' ? (string) $name : 'User');
+@endphp
 
 <div {{ $attributes->merge(['class'=>'relative inline-block shrink-0']) }}>
  @if(filled(is_string($src) ? trim($src) : null))
  <img
  src="{{ is_string($src) ? trim($src) : null }}"
- alt="{{ trim((string) $name) !== '' ? (string) $name : 'User' }}"
+ alt="{{ $avatarLabel }}"
  loading="lazy"
  class="{{ [
     'xs'=>'h-6 w-6 text-[0.625rem]',
@@ -34,7 +41,7 @@
     'bg-sky-light text-sky',
     'bg-amber-light text-amber',
     'bg-rose-light text-rose',
-  ][abs(crc32(trim((string) $name) !== '' ? (string) $name : 'User')) % 5] }} flex items-center justify-center rounded-pill border border-whisker/30 font-bold font-display uppercase">
+  ][abs(crc32(trim((string) $name) !== '' ? (string) $name : 'User')) % 5] }} flex items-center justify-center rounded-pill border border-whisker/30 font-bold font-display uppercase" role="img" aria-label="{{ $avatarLabel }}">
  {{ ($initials = collect(preg_split('/\s+/', trim((string) $name) !== '' ? (string) $name : 'User', -1, PREG_SPLIT_NO_EMPTY) ?: [])->map(static fn (string $segment): string => mb_substr($segment, 0, 1))->take(2)->join('')) !== '' ? $initials : 'U' }}
  </div>
  @endif
