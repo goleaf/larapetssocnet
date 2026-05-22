@@ -3,11 +3,12 @@
 ## Unreleased
 
 ### Changed
+- Updated the profile About tab to start with the complete untruncated bio, "Member since" metadata, privacy-safe location, website, and public age while never exposing the raw birth date.
 - Updated the profile Photos tab to use 30-photo `post_media.id` cursor batches with a 600px Livewire intersection sentinel and skeleton loading state instead of loading the full visible photo history at once.
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
-- Added a richer lazy profile About tab with clearly labeled biography, public details, contact links, interests, and activity sections while honoring profile privacy flags for email, location, birth date, and last seen.
+- Added a richer lazy profile About tab with clearly labeled biography, public metadata, social links, interests, and activity sections while honoring profile privacy rules for location and public age.
 - Added a profile Photos lightbox with full-photo viewing, post context, pet/location tags, reactions, comments, keyboard arrows, Escape close, and mobile swipe navigation.
 - Added the profile Photos tab lazy Livewire grid for post photos, reusing profile post visibility rules so followers-only, friends-only, private, and video-only media are filtered correctly.
 - Added a profile owner first-pet onboarding empty state with an illustrated prompt and modal CTA, while keeping visitor zero-pet profiles to a simple no-pets message.

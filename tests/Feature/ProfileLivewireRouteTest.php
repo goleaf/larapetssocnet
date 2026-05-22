@@ -302,16 +302,16 @@ it('mounts the lazy about tab component and presents public biographical section
             'email' => 'bio-owner@example.test',
             'headline' => 'Neighborhood rescue coordinator',
             'pronouns' => 'they/them',
-            'bio' => 'I help senior pets find patient homes.',
+            'bio' => "I help senior pets find patient homes.\nEvery weekend, I coordinate foster visits and transport.",
             'location' => 'Vilnius',
             'website' => 'https://bio.example/about',
             'social_links' => [
                 'instagram' => 'https://instagram.com/bio_pets',
             ],
             'interests_text' => 'rescue, senior pets, training',
-            'birth_date' => '1994-05-20',
+            'birth_date' => '1998-05-20',
             'last_seen_at' => Carbon::parse('2026-05-22 12:00:00'),
-            'created_at' => Carbon::parse('2024-02-14 12:00:00'),
+            'created_at' => Carbon::parse('2024-04-14 12:00:00'),
             'posts_count' => 12,
             'pets_count' => 3,
             'photos_count' => 8,
@@ -325,30 +325,34 @@ it('mounts the lazy about tab component and presents public biographical section
 
         Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
             ->assertSee('data-ui="profile-tab-panel"', false)
+            ->assertSee('data-ui="profile-about-bio"', false)
+            ->assertSee('I help senior pets find patient homes.')
+            ->assertSee('Every weekend, I coordinate foster visits and transport.')
+            ->assertDontSee('line-clamp', false)
+            ->assertSee('data-ui="profile-about-bio-details"', false)
+            ->assertSee('Member since April 2024.')
+            ->assertSee('data-icon="calendar"', false)
+            ->assertSee('data-icon="map-pin"', false)
+            ->assertSee('Vilnius')
+            ->assertSee('data-icon="external-link"', false)
+            ->assertSee('href="https://bio.example/about"', false)
+            ->assertSee('bio.example/about')
+            ->assertSee('data-icon="cake"', false)
+            ->assertSee('Age 28')
+            ->assertDontSee('May 20, 1998')
             ->assertSee('data-ui="profile-about-overview"', false)
-            ->assertSee('Overview')
+            ->assertSee('Profile basics')
             ->assertSee('About Bio Crew')
             ->assertSee('Neighborhood rescue coordinator')
             ->assertSee('they/them')
-            ->assertSee('data-ui="profile-about-bio"', false)
-            ->assertSee('I help senior pets find patient homes.')
             ->assertSee('data-ui="profile-about-interests"', false)
             ->assertSee('rescue')
             ->assertSee('senior pets')
             ->assertSee('training')
-            ->assertSee('data-ui="profile-about-details"', false)
-            ->assertSee('Vilnius')
-            ->assertSee('May 20, 1994')
-            ->assertSee('Joined')
-            ->assertSee('February 2024')
-            ->assertSee('Last active')
-            ->assertSee('1 day ago')
             ->assertSee('data-ui="profile-about-contact"', false)
-            ->assertSee('href="https://bio.example/about"', false)
-            ->assertSee('bio.example/about')
             ->assertSee('Instagram')
             ->assertSee('instagram.com/bio_pets')
-            ->assertSee('mailto:bio-owner@example.test', false)
+            ->assertDontSee('mailto:bio-owner@example.test', false)
             ->assertSee('data-ui="profile-about-activity-stats"', false)
             ->assertSee('12')
             ->assertSee('3')
@@ -359,7 +363,7 @@ it('mounts the lazy about tab component and presents public biographical section
     }
 });
 
-it('keeps privacy-gated about fields hidden from visitors while showing them to the owner', function (): void {
+it('keeps privacy-gated about fields hidden from visitors and never reveals the birth date', function (): void {
     Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
 
     try {
@@ -384,20 +388,20 @@ it('keeps privacy-gated about fields hidden from visitors while showing them to 
 
         Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
             ->assertSee('Public bio remains visible.')
+            ->assertSee('Member since')
             ->assertDontSee('Hidden City')
             ->assertDontSee('May 20, 1994')
-            ->assertDontSee('Last active')
+            ->assertDontSee('Age 32')
             ->assertDontSee('private-about@example.test')
             ->assertDontSee('mailto:private-about@example.test', false);
 
         Livewire::actingAs($profileOwner)
             ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
             ->assertSee('Hidden City')
-            ->assertSee('May 20, 1994')
-            ->assertSee('Last active')
-            ->assertSee('1 day ago')
-            ->assertSee('private-about@example.test')
-            ->assertSee('mailto:private-about@example.test', false);
+            ->assertDontSee('May 20, 1994')
+            ->assertDontSee('Age 32')
+            ->assertDontSee('private-about@example.test')
+            ->assertDontSee('mailto:private-about@example.test', false);
     } finally {
         Carbon::setTestNow();
     }

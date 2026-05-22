@@ -20,8 +20,8 @@ new class extends Component
      *     profileUser: User,
      *     displayName: string,
      *     canViewContent: bool,
+     *     bioDetails: list<array{label: string, value: string, icon: string, iconPath: string, url?: string, datetime?: string|null}>,
      *     overviewItems: list<array{label: string, value: string}>,
-     *     detailItems: list<array{label: string, value: string, datetime?: string|null}>,
      *     contactItems: list<array{label: string, url: string, display: string}>,
      *     interests: list<string>,
      *     activityData: list<array{month: string, count: int}>
@@ -40,26 +40,16 @@ new class extends Component
                 'profileUser' => $profileUser,
                 'displayName' => $displayName,
                 'canViewContent' => false,
+                'bioDetails' => [],
                 'overviewItems' => [],
-                'detailItems' => [],
                 'contactItems' => [],
                 'interests' => [],
                 'activityData' => [],
             ];
         }
 
-        $canViewSensitiveProfileFields = $this->canViewSensitiveProfileFields($viewer, $profileUser);
         $location = $visibility->canViewLocation($viewer, $profileUser)
             ? $this->filledString($profileUser->location) ?? $this->filledString($profileUser->city)
-            : null;
-        $birthDate = ($canViewSensitiveProfileFields || (bool) $profileUser->privacy_display_birthdate)
-            ? $profileUser->birth_date?->format('F j, Y')
-            : null;
-        $lastSeen = ($canViewSensitiveProfileFields || (bool) $profileUser->privacy_display_last_seen)
-            ? $profileUser->last_seen_at
-            : null;
-        $email = ($canViewSensitiveProfileFields || (bool) $profileUser->privacy_display_email)
-            ? $this->filledString($profileUser->email)
             : null;
         $website = $this->externalLink($profileUser->website);
 
@@ -67,9 +57,9 @@ new class extends Component
             'profileUser' => $profileUser,
             'displayName' => $displayName,
             'canViewContent' => true,
+            'bioDetails' => $this->bioDetails($profileUser, $location, $website),
             'overviewItems' => $this->overviewItems($profileUser, $displayName),
-            'detailItems' => $this->detailItems($profileUser, $location, $birthDate, $lastSeen),
-            'contactItems' => $this->contactItems($website, $email, $profileUser->social_links),
+            'contactItems' => $this->contactItems($profileUser->social_links),
             'interests' => $this->interests($profileUser->interests_text),
             'activityData' => Post::monthlyActivitySummaryForUser($profileUser),
         ];
@@ -83,7 +73,6 @@ new class extends Component
                 'name',
                 'display_name',
                 'username',
-                'email',
                 'bio',
                 'headline',
                 'pronouns',
@@ -94,17 +83,14 @@ new class extends Component
                 'interests_text',
                 'created_at',
                 'birth_date',
-                'last_seen_at',
                 'profile_visibility',
                 'is_private',
                 'is_banned',
                 'scheduled_deletion_at',
                 'deactivated_at',
                 'suspended_until',
-                'privacy_display_email',
                 'privacy_display_location',
                 'privacy_display_birthdate',
-                'privacy_display_last_seen',
                 'posts_count',
                 'pets_count',
                 'photos_count',
@@ -120,10 +106,54 @@ new class extends Component
         return $viewer instanceof User ? $viewer : null;
     }
 
-    private function canViewSensitiveProfileFields(?User $viewer, User $profileUser): bool
+    /**
+     * @param  array{url: string, display: string}|null  $website
+     * @return list<array{label: string, value: string, icon: string, iconPath: string, url?: string, datetime?: string|null}>
+     */
+    private function bioDetails(User $profileUser, ?string $location, ?array $website): array
     {
-        return $viewer instanceof User
-            && ($viewer->is($profileUser) || $viewer->hasAnyRole(['admin', 'moderator']));
+        $items = collect([
+            [
+                'label' => 'Member since',
+                'value' => 'Member since '.$profileUser->created_at?->format('F Y').'.',
+                'icon' => 'calendar',
+                'datetime' => $profileUser->created_at?->toIso8601String(),
+            ],
+        ]);
+
+        if ($location !== null) {
+            $items->push([
+                'label' => 'Location',
+                'value' => $location,
+                'icon' => 'map-pin',
+            ]);
+        }
+
+        if (is_array($website)) {
+            $items->push([
+                'label' => 'Website',
+                'value' => $website['display'],
+                'url' => $website['url'],
+                'icon' => 'external-link',
+            ]);
+        }
+
+        if ((bool) $profileUser->privacy_display_birthdate && $profileUser->birth_date !== null) {
+            $items->push([
+                'label' => 'Age',
+                'value' => 'Age '.$profileUser->birth_date->age,
+                'icon' => 'cake',
+            ]);
+        }
+
+        return $items
+            ->filter(fn (array $item): bool => filled($item['value']))
+            ->map(fn (array $item): array => [
+                ...$item,
+                'iconPath' => $this->metadataIcon((string) $item['icon']),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -143,51 +173,11 @@ new class extends Component
     }
 
     /**
-     * @return list<array{label: string, value: string, datetime?: string|null}>
-     */
-    private function detailItems(User $profileUser, ?string $location, ?string $birthDate, mixed $lastSeen): array
-    {
-        return collect([
-            [
-                'label' => 'Location',
-                'value' => $location,
-            ],
-            [
-                'label' => 'Birthday',
-                'value' => $birthDate,
-                'datetime' => $profileUser->birth_date?->toDateString(),
-            ],
-            [
-                'label' => 'Joined',
-                'value' => $profileUser->created_at?->format('F Y'),
-                'datetime' => $profileUser->created_at?->toIso8601String(),
-            ],
-            [
-                'label' => 'Last active',
-                'value' => is_object($lastSeen) && method_exists($lastSeen, 'diffForHumans') ? $lastSeen->diffForHumans() : null,
-                'datetime' => is_object($lastSeen) && method_exists($lastSeen, 'toIso8601String') ? $lastSeen->toIso8601String() : null,
-            ],
-        ])
-            ->filter(fn (array $item): bool => filled($item['value']))
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $socialLinks
      * @return list<array{label: string, url: string, display: string}>
      */
-    private function contactItems(?array $website, ?string $email, ?array $socialLinks): array
+    private function contactItems(?array $socialLinks): array
     {
         $items = collect();
-
-        if (is_array($website)) {
-            $items->push([
-                'label' => 'Website',
-                'url' => $website['url'],
-                'display' => $website['display'],
-            ]);
-        }
 
         foreach ($socialLinks ?? [] as $label => $url) {
             $link = $this->externalLink($url);
@@ -203,15 +193,18 @@ new class extends Component
             ]);
         }
 
-        if ($email !== null) {
-            $items->push([
-                'label' => 'Email',
-                'url' => 'mailto:'.$email,
-                'display' => $email,
-            ]);
-        }
-
         return $items->values()->all();
+    }
+
+    private function metadataIcon(string $icon): string
+    {
+        return match ($icon) {
+            'calendar' => '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+            'map-pin' => '<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+            'external-link' => '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+            'cake' => '<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/>',
+            default => '',
+        };
     }
 
     /**
@@ -290,104 +283,109 @@ new class extends Component
  <x-ui.card>
  <x-ui.empty-state icon="🔒" title="About details are private"
  description="Follow {{ $data['profileUser']->name }} to view their profile details."/>
- </x-ui.card>
- @else
- <x-ui.card>
- <div class="flex flex-col gap-5">
- <div>
- <p class="text-xs font-semibold uppercase tracking-wide text-fur">Overview</p>
- <h2 class="mt-1 text-xl font-bold font-display text-bark">About {{ $data['displayName'] }}</h2>
- </div>
+	 </x-ui.card>
+	 @else
+	 <x-ui.card>
+	 <section data-ui="profile-about-bio" class="flex flex-col gap-5" aria-labelledby="profile-about-bio-heading">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Bio</p>
+	 <h2 id="profile-about-bio-heading" class="mt-1 text-xl font-bold font-display text-bark">About {{ $data['displayName'] }}</h2>
+	 </div>
 
- @if ($data['overviewItems'] !== [])
- <dl data-ui="profile-about-overview" class="grid gap-3 sm:grid-cols-2">
- @foreach ($data['overviewItems'] as $item)
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3">
- <dt class="text-xs font-semibold uppercase tracking-wide text-fur">{{ $item['label'] }}</dt>
- <dd class="mt-1 break-words text-sm font-semibold text-bark">{{ $item['value'] }}</dd>
- </div>
- @endforeach
- </dl>
- @endif
+	 @if ($data['profileUser']->bio)
+	 <p class="whitespace-pre-line text-sm leading-6 text-bark">{{ $data['profileUser']->bio }}</p>
+	 @else
+	 <p class="text-sm text-fur">No bio added yet.</p>
+	 @endif
 
- <div data-ui="profile-about-bio" class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white p-4">
- <h3 class="text-sm font-semibold text-bark">Bio</h3>
- @if ($data['profileUser']->bio)
- <p class="mt-2 whitespace-pre-line text-sm leading-6 text-bark">{{ $data['profileUser']->bio }}</p>
- @else
- <p class="mt-2 text-sm text-fur">No bio added yet.</p>
- @endif
- </div>
+	 <ul data-ui="profile-about-bio-details" class="flex flex-col gap-3 border-t border-whisker/30 pt-4 text-sm text-bark" role="list" aria-label="Profile biography details">
+	 @foreach ($data['bioDetails'] as $item)
+	 <li class="flex items-start gap-3">
+	 <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-cream text-fur" aria-hidden="true">
+	 <svg data-icon="{{ $item['icon'] }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">{!! $item['iconPath'] !!}</svg>
+	 </span>
+	 <span class="min-w-0 flex-1 leading-7">
+	 @if (isset($item['url']))
+	 <a href="{{ $item['url'] }}" target="_blank" rel="noopener noreferrer"
+	 class="inline-flex min-h-8 max-w-full items-center break-all rounded-[var(--radius-soft)] font-semibold text-paw transition-colors hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+	 {{ $item['value'] }}
+	 </a>
+	 @elseif (isset($item['datetime']) && $item['datetime'])
+	 <time datetime="{{ $item['datetime'] }}">{{ $item['value'] }}</time>
+	 @else
+	 {{ $item['value'] }}
+	 @endif
+	 </span>
+	 </li>
+	 @endforeach
+	 </ul>
+	 </section>
+	 </x-ui.card>
 
- @if ($data['interests'] !== [])
- <div data-ui="profile-about-interests" class="space-y-2">
- <h3 class="text-sm font-semibold text-bark">Interests</h3>
- <ul class="flex flex-wrap gap-2" role="list" aria-label="Profile interests">
- @foreach ($data['interests'] as $interest)
- <li>
- <x-ui.badge variant="neutral" size="md">{{ $interest }}</x-ui.badge>
- </li>
- @endforeach
- </ul>
- </div>
- @endif
- </div>
- </x-ui.card>
+	 @if ($data['overviewItems'] !== [])
+	 <x-ui.card>
+	 <div class="flex flex-col gap-4">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Basics</p>
+	 <h3 class="mt-1 text-lg font-bold font-display text-bark">Profile basics</h3>
+	 </div>
 
- <x-ui.card>
- <div class="flex flex-col gap-4">
- <div>
- <p class="text-xs font-semibold uppercase tracking-wide text-fur">Details</p>
- <h3 class="mt-1 text-lg font-bold font-display text-bark">Public profile details</h3>
- </div>
+	 <dl data-ui="profile-about-overview" class="grid gap-3 sm:grid-cols-2">
+	 @foreach ($data['overviewItems'] as $item)
+	 <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3">
+	 <dt class="text-xs font-semibold uppercase tracking-wide text-fur">{{ $item['label'] }}</dt>
+	 <dd class="mt-1 break-words text-sm font-semibold text-bark">
+	 {{ $item['value'] }}
+	 </dd>
+	 </div>
+	 @endforeach
+	 </dl>
+	 </div>
+	 </x-ui.card>
+	 @endif
 
- @if ($data['detailItems'] !== [])
- <dl data-ui="profile-about-details" class="grid gap-3 sm:grid-cols-2">
- @foreach ($data['detailItems'] as $item)
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3">
- <dt class="text-xs font-semibold uppercase tracking-wide text-fur">{{ $item['label'] }}</dt>
- <dd class="mt-1 break-words text-sm font-semibold text-bark">
- @if (isset($item['datetime']) && $item['datetime'])
- <time datetime="{{ $item['datetime'] }}">{{ $item['value'] }}</time>
- @else
- {{ $item['value'] }}
- @endif
- </dd>
- </div>
- @endforeach
- </dl>
- @else
- <p class="text-sm text-fur">No public details added yet.</p>
- @endif
- </div>
- </x-ui.card>
+	 @if ($data['interests'] !== [])
+	 <x-ui.card>
+	 <div data-ui="profile-about-interests" class="space-y-3">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Interests</p>
+	 <h3 class="mt-1 text-lg font-bold font-display text-bark">What they care about</h3>
+	 </div>
+	 <ul class="flex flex-wrap gap-2" role="list" aria-label="Profile interests">
+	 @foreach ($data['interests'] as $interest)
+	 <li>
+	 <x-ui.badge variant="neutral" size="md">{{ $interest }}</x-ui.badge>
+	 </li>
+	 @endforeach
+	 </ul>
+	 </div>
+	 </x-ui.card>
+	 @endif
 
- <x-ui.card>
- <div class="flex flex-col gap-4">
- <div>
- <p class="text-xs font-semibold uppercase tracking-wide text-fur">Links</p>
- <h3 class="mt-1 text-lg font-bold font-display text-bark">Public links and contact</h3>
- </div>
+	 @if ($data['contactItems'] !== [])
+	 <x-ui.card>
+	 <div class="flex flex-col gap-4">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Links</p>
+	 <h3 class="mt-1 text-lg font-bold font-display text-bark">Social links</h3>
+	 </div>
 
- @if ($data['contactItems'] !== [])
- <ul data-ui="profile-about-contact" class="grid gap-3 sm:grid-cols-2" role="list" aria-label="Public profile links">
- @foreach ($data['contactItems'] as $item)
- <li class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3">
- <p class="text-xs font-semibold uppercase tracking-wide text-fur">{{ $item['label'] }}</p>
- <a href="{{ $item['url'] }}" @if (! Str::startsWith($item['url'], 'mailto:')) target="_blank" rel="noopener noreferrer" @endif
- class="mt-1 inline-flex min-h-8 max-w-full items-center break-all rounded-[var(--radius-soft)] text-sm font-semibold text-paw transition-colors hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- {{ $item['display'] }}
- </a>
- </li>
- @endforeach
- </ul>
- @else
- <p class="text-sm text-fur">No public links added yet.</p>
- @endif
- </div>
- </x-ui.card>
+	 <ul data-ui="profile-about-contact" class="grid gap-3 sm:grid-cols-2" role="list" aria-label="Public profile links">
+	 @foreach ($data['contactItems'] as $item)
+	 <li class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3">
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">{{ $item['label'] }}</p>
+	 <a href="{{ $item['url'] }}" target="_blank" rel="noopener noreferrer"
+	 class="mt-1 inline-flex min-h-8 max-w-full items-center break-all rounded-[var(--radius-soft)] text-sm font-semibold text-paw transition-colors hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+	 {{ $item['display'] }}
+	 </a>
+	 </li>
+	 @endforeach
+	 </ul>
+	 </div>
+	 </x-ui.card>
+	 @endif
 
- <x-ui.card>
+	 <x-ui.card>
  <div class="flex flex-col gap-4">
  <div>
  <p class="text-xs font-semibold uppercase tracking-wide text-fur">Activity</p>

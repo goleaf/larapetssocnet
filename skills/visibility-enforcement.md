@@ -24,4 +24,4 @@ Use all three layers together.
 - Keep selector visible in create/edit forms.
 - On edit, warn (do not block) if visibility downgrade happens on engaged posts.
 - Hide profile tabs, counts, contact/location data, likes, pets, photos, followers, following, groups, and message actions when section visibility denies access.
-- Profile About data must be treated as section-scoped profile data: only render email, location, birth date, or last-seen values when full profile visibility passes and the matching privacy flag allows it, unless the viewer is the owner or a moderation role.
+- Profile About data must be treated as section-scoped profile data: only render location when full profile visibility passes and the location privacy rule allows it, render age only when the birth-date privacy flag allows public age display, and never render the raw birth date.
