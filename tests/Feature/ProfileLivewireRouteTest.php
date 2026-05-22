@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -242,6 +243,38 @@ it('mounts the lazy pets tab component and fetches pets independently', function
     Livewire::test('profile.tabs.pets', ['profileUserId' => $profileOwner->getKey()])
         ->assertSee('Nested Component Pet')
         ->assertSee('data-ui="profile-tab-panel"', false);
+});
+
+it('mounts the nested posts tab only after posts becomes the active profile tab', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'child_post_tab_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Pet::factory()->for($profileOwner)->create([
+        'name' => 'Initially Active Pet Tab',
+    ]);
+
+    Post::factory()->for($profileOwner)->create([
+        'body' => 'Nested Component Post Body',
+        'body_html' => '<p>Nested Component Post Body</p>',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->withSession([
+        'profiles.'.$profileOwner->getKey().'.active_tab' => 'pets',
+    ]);
+
+    Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('activeTab', 'pets')
+        ->assertSee('Initially Active Pet Tab')
+        ->assertDontSee('Nested Component Post Body')
+        ->assertDontSee('id="profile-panel-posts"', false)
+        ->call('activateTab', 'posts')
+        ->assertSet('activeTab', 'posts')
+        ->assertSee('Nested Component Post Body')
+        ->assertSee('id="profile-panel-posts"', false);
 });
 
 it('saves cover focal point through the profile livewire action for the owner', function (): void {

@@ -3,7 +3,6 @@
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\ProfileVisibilityService;
-use App\Services\VisibilityService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Component;
@@ -25,13 +24,7 @@ new class extends Component
      *     profileUser: User,
      *     isOwner: bool,
      *     canViewContent: bool,
-     *     posts: LengthAwarePaginator|Collection<int, Post>,
-     *     privatePosts: Collection<int, Post>,
-     *     privateCount: int,
-     *     draftPosts: Collection<int, Post>,
-     *     draftCount: int,
-     *     scheduledPosts: Collection<int, Post>,
-     *     scheduledCount: int
+     *     posts: LengthAwarePaginator|Collection<int, Post>
      * }
      */
     public function viewData(): array
@@ -49,35 +42,11 @@ new class extends Component
             $posts->fragment('posts');
         }
 
-        $privatePosts = collect();
-        $privateCount = 0;
-        $draftPosts = collect();
-        $draftCount = 0;
-        $scheduledPosts = collect();
-        $scheduledCount = 0;
-
-        if ($isOwner && $canViewContent) {
-            $privatePosts = Post::recentPrivateForProfileOwner($profileUser)
-                ->filter(fn (Post $post): bool => app(VisibilityService::class)->canViewOnProfile($viewer, $post))
-                ->values();
-            $privateCount = Post::privateCountForProfile($profileUser);
-            $draftPosts = Post::recentDraftsForProfileOwner($profileUser);
-            $draftCount = Post::draftCountForProfile($profileUser);
-            $scheduledPosts = Post::recentScheduledForProfileOwner($profileUser);
-            $scheduledCount = Post::scheduledCountForProfile($profileUser);
-        }
-
         return [
             'profileUser' => $profileUser,
             'isOwner' => $isOwner,
             'canViewContent' => $canViewContent,
             'posts' => $posts,
-            'privatePosts' => $privatePosts,
-            'privateCount' => $privateCount,
-            'draftPosts' => $draftPosts,
-            'draftCount' => $draftCount,
-            'scheduledPosts' => $scheduledPosts,
-            'scheduledCount' => $scheduledCount,
         ];
     }
 
@@ -166,51 +135,6 @@ new class extends Component
  @empty
  <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet."/>
  @endforelse
-
- @if ($data['isOwner'] && $data['privateCount'] > 0)
- <x-ui.card>
- <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-fur">
- <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
- stroke="currentColor">
- <path stroke-linecap="round" stroke-linejoin="round"
- d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
- </svg>
- Private posts
- <x-ui.badge variant="default" size="sm">{{ $data['privateCount'] }}</x-ui.badge>
- </h3>
-
- <div class="space-y-4">
- @foreach ($data['privatePosts'] as $post)
- <x-post-card :post="$post" context="profile"/>
- @endforeach
- </div>
- </x-ui.card>
- @endif
-
- @if ($data['isOwner'] && ($data['draftCount'] > 0 || $data['scheduledCount'] > 0))
- <x-ui.card>
- <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-fur">
- <span aria-hidden="true">🗂️</span>
- Drafts & Scheduled
- @if ($data['draftCount'] > 0)
- <x-ui.badge variant="default" size="sm">{{ $data['draftCount'] }} drafts</x-ui.badge>
- @endif
- @if ($data['scheduledCount'] > 0)
- <x-ui.badge variant="warning" size="sm">{{ $data['scheduledCount'] }} scheduled</x-ui.badge>
- @endif
- </h3>
-
- <div class="space-y-4">
- @foreach ($data['draftPosts'] as $post)
- <x-post-card :post="$post" context="profile"/>
- @endforeach
-
- @foreach ($data['scheduledPosts'] as $post)
- <x-post-card :post="$post" context="profile"/>
- @endforeach
- </div>
- </x-ui.card>
- @endif
 
  @if (method_exists($data['posts'],'hasPages') && $data['posts']->hasPages())
  <x-ui.card>

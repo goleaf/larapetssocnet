@@ -695,7 +695,6 @@ class Post extends Model implements HasMedia
             ])
             ->published()
             ->visibleTo($viewer)
-            ->where('posts.visibility', '!=', self::VISIBILITY_PRIVATE)
             ->when(true, fn (Builder $query) => app(ProfilePostOrderingService::class)->apply($query))
             ->withListEngagement($viewerId)
             ->paginate($perPage)

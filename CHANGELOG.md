@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated the profile Posts tab to mount as a lazy child panel and load only `Post::visibleTo()` timeline results, including owner-visible private posts, without PHP-side post filtering or owner-only draft/scheduled side queries.
 - Updated profile tabs with a JavaScript-positioned CSS custom property underline that slides between active labels over 200ms with ease-in-out timing.
 - Updated profile tab switching to use hash fragments, per-profile session restoration, and lazy Livewire child panels for Posts, Pets, Photos, About, and owner-only Scheduled content.
 - Updated profile tabs to show only Posts, Pets, Photos, About, and owner-only Scheduled with parenthesized counter-cache counts.
@@ -179,6 +180,8 @@
 
 ### Tests
 - Verified passing suites:
+  - `vendor/bin/pint --dirty --format agent`
+  - `php artisan test --compact tests/Feature/ProfileLivewireRouteTest.php tests/Feature/VisibilityProfileTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfilePageDesignTest.php`
   - `php artisan test --compact tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/ProfileTest.php`
   - `php artisan test --compact tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/SettingsProfileCoverTest.php tests/Feature/ProfilePageDesignTest.php tests/Unit/Models/UserScopesTest.php`
   - `php artisan test --compact tests/Feature/ProfilePageDesignTest.php tests/Feature/ProfileTest.php tests/Feature/ProfilePrivacyTest.php tests/Feature/ProfileAnalyticsTest.php tests/Feature/ProfileTabsTest.php tests/Feature/Settings/ProfileSettingsTest.php tests/Feature/SettingsProfileCoverTest.php tests/Unit/Models/UserScopesTest.php`
