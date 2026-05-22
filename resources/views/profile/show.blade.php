@@ -20,6 +20,10 @@
  $joinedDate = optional($profileUser->created_at)->format('F Y');
  $profilePostsCount = (int) ($profileUser->posts_count ?? 0);
  $profilePetsCount = (int) ($profileUser->pets_count ?? 0);
+ $profileFollowersCount = (int) ($profileStats['followers'] ?? $profileUser->followers_count ?? 0);
+ $profileFollowingCount = (int) ($profileStats['following'] ?? $profileUser->following_count ?? 0);
+ $followersModalPreview = $followersModalPreview ?? collect();
+ $followingModalPreview = $followingModalPreview ?? collect();
  $isNewProfileState = ! filled($profileUser->bio)
  && ! filled($profileUser->headline)
  && ! $location
@@ -368,53 +372,54 @@
  </div>
  </div>
 
- <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" role="list"
+ @if (($canViewFollowers ?? false) || ($canViewFollowing ?? false) || ($canViewPets ?? false))
+ <ul class="mt-5 grid grid-cols-3 gap-3" role="list"
  data-ui="profile-stats"
  aria-label="Profile statistics">
  @if ($canViewFollowers ?? false)
- <a href="{{ route('profile.followers', ['user'=> $profileUser]) }}"
- role="listitem"
+ <li role="listitem">
+ <button type="button"
  data-ui="profile-stat-card"
- class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <p class="text-xl font-bold text-bark" x-text="formatCount(followersCount)">
- {{ number_format((int) $profileUser->followers_count) }}</p>
+ data-stat="followers"
+ aria-haspopup="dialog"
+ aria-controls="profile-followers-modal"
+ @click="window.toggleModal('profile-followers-modal')"
+ class="group flex min-h-20 w-full flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <p class="font-display text-2xl font-bold leading-none text-bark" x-text="formatCount(followersCount)">
+ {{ number_format($profileFollowersCount) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Followers</p>
- </a>
+ </button>
+ </li>
  @endif
  @if ($canViewFollowing ?? false)
- <a href="{{ route('profile.following', ['user'=> $profileUser]) }}"
- role="listitem"
+ <li role="listitem">
+ <button type="button"
  data-ui="profile-stat-card"
- class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->following_count) }}
- </p>
+ data-stat="following"
+ aria-haspopup="dialog"
+ aria-controls="profile-following-modal"
+ @click="window.toggleModal('profile-following-modal')"
+ class="group flex min-h-20 w-full flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <p class="font-display text-2xl font-bold leading-none text-bark">{{ number_format($profileFollowingCount) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Following</p>
- </a>
+ </button>
+ </li>
  @endif
  @if ($canViewPets ?? false)
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}"
- role="listitem"
+ <li role="listitem">
+ <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'pets']) }}#profile-tabs"
  data-ui="profile-stat-card"
- class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <p class="text-xl font-bold text-bark">{{ number_format((int) $profileUser->pets_count) }}</p>
+ data-stat="pets"
+ aria-controls="profile-tabs"
+ @click.prevent="$wire.activateTab('pets').then(() => $nextTick(() => document.getElementById('profile-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })))"
+ class="group flex min-h-20 w-full flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <p class="font-display text-2xl font-bold leading-none text-bark">{{ number_format($profilePetsCount) }}</p>
  <p class="text-xs text-fur group-hover:text-bark">Pets</p>
  </a>
+ </li>
  @endif
- @if ($canViewContent ?? false)
- <a href="{{ route('profile.show', ['user'=> $profileUser,'tab'=>'posts']) }}"
- role="listitem"
- data-ui="profile-stat-card"
- class="group flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center transition-all hover:-translate-y-0.5 hover:bg-cream hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <p class="text-xl font-bold text-bark">
- {{ number_format((int) ($profileUser->posts_count ?? 0)) }}</p>
- <p class="text-xs text-fur group-hover:text-bark">Posts</p>
- </a>
+ </ul>
  @endif
- <div class="flex min-h-20 flex-col items-center justify-center rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white px-3 py-2 text-center" role="listitem" data-ui="profile-stat-card">
- <p class="text-xl font-bold text-bark">{{ $profileVisibilityLabel }}</p>
- <p class="text-xs text-fur">Visibility</p>
- </div>
- </div>
 
  @if ($isOwner && is_array($profileViewStats ?? null))
  <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-fur" data-ui="profile-view-analytics">
@@ -492,6 +497,64 @@
  @endguest
  </div>
  </section>
+
+ @if ($canViewFollowers ?? false)
+ <x-ui.modal id="profile-followers-modal" name="profile-followers-modal" title="Followers"
+ :description="number_format($profileFollowersCount).' '.Str::plural('follower', $profileFollowersCount)"
+ size="lg"
+ data-ui="profile-followers-modal">
+ <div class="max-h-[28rem] overflow-y-auto pr-1" data-ui="profile-followers-modal-list">
+ @forelse ($followersModalPreview as $follower)
+ <a href="{{ route('profile.show', ['user'=> $follower]) }}"
+ data-ui="profile-followers-modal-user"
+ class="flex min-h-16 items-center gap-3 rounded-[var(--radius-soft)] px-3 py-2 transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <x-ui.avatar :src="$follower->avatar_url" :name="$follower->name" size="md"/>
+ <span class="min-w-0">
+ <span class="block truncate text-sm font-semibold text-bark">{{ $follower->name }}</span>
+ <span class="block truncate text-xs text-fur">&#64;{{ $follower->username }}</span>
+ </span>
+ </a>
+ @empty
+ <x-ui.empty-state icon="" title="No followers yet" description="Followers will appear here." class="py-10"/>
+ @endforelse
+ </div>
+
+ <x-slot name="footer">
+ <x-ui.button :href="route('profile.followers', ['user'=> $profileUser])" variant="outline" size="sm" class="min-h-11">
+ View all followers
+ </x-ui.button>
+ </x-slot>
+ </x-ui.modal>
+ @endif
+
+ @if ($canViewFollowing ?? false)
+ <x-ui.modal id="profile-following-modal" name="profile-following-modal" title="Following"
+ :description="number_format($profileFollowingCount).' following'"
+ size="lg"
+ data-ui="profile-following-modal">
+ <div class="max-h-[28rem] overflow-y-auto pr-1" data-ui="profile-following-modal-list">
+ @forelse ($followingModalPreview as $followedUser)
+ <a href="{{ route('profile.show', ['user'=> $followedUser]) }}"
+ data-ui="profile-following-modal-user"
+ class="flex min-h-16 items-center gap-3 rounded-[var(--radius-soft)] px-3 py-2 transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <x-ui.avatar :src="$followedUser->avatar_url" :name="$followedUser->name" size="md"/>
+ <span class="min-w-0">
+ <span class="block truncate text-sm font-semibold text-bark">{{ $followedUser->name }}</span>
+ <span class="block truncate text-xs text-fur">&#64;{{ $followedUser->username }}</span>
+ </span>
+ </a>
+ @empty
+ <x-ui.empty-state icon="" title="Not following anyone yet" description="Profiles followed by this user will appear here." class="py-10"/>
+ @endforelse
+ </div>
+
+ <x-slot name="footer">
+ <x-ui.button :href="route('profile.following', ['user'=> $profileUser])" variant="outline" size="sm" class="min-h-11">
+ View all following
+ </x-ui.button>
+ </x-slot>
+ </x-ui.modal>
+ @endif
 
  @if ($isOwner)
  @php
@@ -577,7 +640,7 @@
  </x-ui.card>
  @endif
 
- <x-ui.card padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 bg-warm-white">
+ <x-ui.card id="profile-tabs" padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 scroll-mt-24 bg-warm-white">
  <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 

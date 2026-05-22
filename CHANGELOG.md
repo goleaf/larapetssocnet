@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated the profile stats bar to use cached follower, following, and pet counters with relationship list modals and a smooth Pets-tab activation action.
 - Updated the profile header metadata to render safe location, protocol-stripped website links, and joined date as a responsive row below the bio.
 - Updated profile header identity layout so display names, usernames, and expandable 3-line bios sit directly below the overlapping avatar.
 - Updated the profile verified badge to use a reserved verification color, SVG paw icon, and Alpine-controlled tooltip beside public and private profile header names.

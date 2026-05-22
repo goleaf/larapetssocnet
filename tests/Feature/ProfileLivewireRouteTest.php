@@ -134,6 +134,7 @@ it('loads header data and defaults the active tab to posts for visible profiles'
 
     $follower->follow($profileOwner);
     Pet::factory()->count(2)->for($profileOwner)->create();
+    $profileOwner->forceFill(['pets_count' => 2])->saveQuietly();
 
     $component = Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
         ->assertSet('activeTab', 'posts')
@@ -145,6 +146,26 @@ it('loads header data and defaults the active tab to posts for visible profiles'
         ->and($resolvedOwner->relationLoaded('media'))->toBeTrue()
         ->and((int) $resolvedOwner->followers_count)->toBe(1)
         ->and((int) $resolvedOwner->pets_count)->toBe(2);
+});
+
+it('activates the pets tab through the profile livewire action', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'stats_pet_tab_owner',
+        'pets_count' => 1,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Pet::factory()->for($profileOwner)->create([
+        'name' => 'Stats Tab Pet',
+    ]);
+
+    Livewire::test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSet('activeTab', 'posts')
+        ->call('activateTab', 'pets')
+        ->assertSet('activeTab', 'pets')
+        ->assertSee('Stats Tab Pet')
+        ->assertSee('aria-current="page"', false);
 });
 
 it('saves cover focal point through the profile livewire action for the owner', function (): void {

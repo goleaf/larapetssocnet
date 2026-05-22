@@ -14,10 +14,10 @@ use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
 use App\Services\VisibilityService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class PublicProfileController extends Controller
@@ -149,7 +149,6 @@ class PublicProfileController extends Controller
             }
 
             $friendsPreview = $friendsPreviewQuery
-                ->withCount(['acceptedFollowers as followers_count'])
                 ->limit(9)
                 ->get(['users.id', 'users.name', 'users.username', 'users.avatar_path']);
         }
@@ -260,17 +259,19 @@ class PublicProfileController extends Controller
             $user->forceFill(['profile_completed_at' => now()])->saveQuietly();
         }
 
-        $profileStats = $this->profileStats($user, $viewer, [
+        $profileStats = $this->profileStats($user, [
             'followers' => $canViewFollowers,
             'following' => $canViewFollowing,
             'pets' => $canViewPets,
             'posts' => $canViewContent,
         ]);
 
-        $user->setAttribute('followers_count', $profileStats['followers'] ?? 0);
-        $user->setAttribute('following_count', $profileStats['following'] ?? 0);
-        $user->setAttribute('pets_count', $profileStats['pets'] ?? 0);
-        $user->setAttribute('posts_count', $profileStats['posts'] ?? 0);
+        $followersModalPreview = $canViewFollowers
+            ? $this->followersModalPreview($user, $viewer)
+            : collect();
+        $followingModalPreview = $canViewFollowing
+            ? $this->followingModalPreview($user, $viewer)
+            : collect();
 
         return view('profile.show', [
             'profileUser' => $user,
@@ -285,6 +286,8 @@ class PublicProfileController extends Controller
             'canViewLocation' => $canViewLocation,
             'canMessage' => $canMessage,
             'profileStats' => $profileStats,
+            'followersModalPreview' => $followersModalPreview,
+            'followingModalPreview' => $followingModalPreview,
             'profileVisibility' => $profileVisibility->value,
             'profileVisibilityLabel' => $profileVisibility->label(),
             'profileVisibilityIcon' => $profileVisibility->icon(),
@@ -326,11 +329,6 @@ class PublicProfileController extends Controller
         return User::query()
             ->whereKey($user->getKey())
             ->with('media')
-            ->withCount([
-                'acceptedFollowers as followers_count',
-                'acceptedFollowing as following_count',
-                'pets as pets_count',
-            ])
             ->firstOrFail();
     }
 
@@ -371,23 +369,20 @@ class PublicProfileController extends Controller
      * @param  array{followers: bool, following: bool, pets: bool, posts: bool}  $permissions
      * @return array{followers: int|null, following: int|null, pets: int|null, posts: int|null}
      */
-    private function profileStats(User $user, ?User $viewer, array $permissions): array
+    private function profileStats(User $user, array $permissions): array
     {
         return [
             'followers' => $permissions['followers']
-                ? (int) $this->visibleFollowersQuery($user, $viewer)->count()
+                ? (int) ($user->followers_count ?? 0)
                 : null,
             'following' => $permissions['following']
-                ? (int) $this->visibleFollowingQuery($user, $viewer)->count()
+                ? (int) ($user->following_count ?? 0)
                 : null,
             'pets' => $permissions['pets']
-                ? (int) (new Pet)->scopeVisibleTo(
-                    Pet::query()->where('user_id', $user->getKey()),
-                    $viewer
-                )->count()
+                ? (int) ($user->pets_count ?? 0)
                 : null,
             'posts' => $permissions['posts']
-                ? (int) Post::query()->forProfile($user)->published()->visibleTo($viewer)->count()
+                ? (int) ($user->posts_count ?? 0)
                 : null,
         ];
     }
@@ -399,34 +394,31 @@ class PublicProfileController extends Controller
     }
 
     /**
-     * @return Builder<User>
+     * @return Collection<int, User>
      */
-    private function visibleFollowersQuery(User $user, ?User $viewer): Builder
+    private function followersModalPreview(User $user, ?User $viewer): Collection
     {
-        $followersQuery = User::query()
-            ->whereIn('users.id', $user->acceptedFollowers()->select('users.id'));
-
-        User::applyAvailableForProfiles($followersQuery);
-        (new User)->scopeNotBlockedFor($followersQuery, $viewer);
-
-        return $followersQuery;
+        return $user->acceptedFollowers()
+            ->active()
+            ->notBlockedFor($viewer)
+            ->with('media')
+            ->orderBy('users.name')
+            ->limit(12)
+            ->get();
     }
 
     /**
-     * @return Builder<User>
+     * @return Collection<int, User>
      */
-    private function visibleFollowingQuery(User $user, ?User $viewer): Builder
+    private function followingModalPreview(User $user, ?User $viewer): Collection
     {
-        $followingQuery = User::query()
-            ->whereIn('users.id', $user->acceptedFollowing()->select('users.id'));
-
-        User::applyAvailableForProfiles($followingQuery);
-
-        if (! $this->viewerCanBypassThirdPartyPrivacy($viewer, $user)) {
-            (new User)->scopeVisibleTo($followingQuery, $viewer);
-        }
-
-        return $followingQuery;
+        return $user->acceptedFollowing()
+            ->active()
+            ->notBlockedFor($viewer)
+            ->with('media')
+            ->orderBy('users.name')
+            ->limit(12)
+            ->get();
     }
 
     /**

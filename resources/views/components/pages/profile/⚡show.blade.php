@@ -29,9 +29,11 @@ class extends Component
 
     public string $profileVisibility = 'public';
 
+    private const ALLOWED_TABS = ['posts', 'pets', 'photos', 'likes', 'groups', 'events', 'contests', 'scheduled'];
+
     public function mount(string $user): void
     {
-        $this->activeTab = 'posts';
+        $this->activeTab = $this->normalizeTab((string) request()->query('tab', 'posts'));
 
         $this->profileOwner = $this->resolveActiveProfileOwner($user);
 
@@ -81,6 +83,11 @@ class extends Component
         return $normalizedPosition;
     }
 
+    public function activateTab(string $tab): void
+    {
+        $this->activeTab = $this->normalizeTab($tab);
+    }
+
     public function render(): View
     {
         if ($this->showPrivateProfile) {
@@ -90,6 +97,8 @@ class extends Component
                 'profileVisibility' => $this->profileVisibility,
             ])->layout('layouts.livewire-pass-through');
         }
+
+        request()->query->set('tab', $this->activeTab);
 
         $response = app(PublicProfileController::class)->show(request(), $this->profileOwner);
 
@@ -225,12 +234,12 @@ class extends Component
         return User::query()
             ->whereKey($owner->getKey())
             ->with('media')
-            ->withCount([
-                'acceptedFollowers as followers_count',
-                'acceptedFollowing as following_count',
-                'pets as pets_count',
-            ])
             ->firstOrFail();
+    }
+
+    private function normalizeTab(string $tab): string
+    {
+        return in_array($tab, self::ALLOWED_TABS, true) ? $tab : 'posts';
     }
 };
 ?>

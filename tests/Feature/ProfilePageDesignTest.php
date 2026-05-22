@@ -44,6 +44,8 @@ if (! function_exists('profileDesignFollowers')) {
                     'updated_at' => $now,
                 ])->all());
             });
+
+        $owner->forceFill(['followers_count' => $count])->saveQuietly();
     }
 }
 
@@ -113,6 +115,73 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertSee('Friend User')
         ->assertSee('profile-post-visible')
         ->assertDontSee('Who To Follow');
+});
+
+it('renders cached profile stats as modal and pets tab actions', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Stats Owner',
+        'username' => 'stats_owner',
+        'followers_count' => 42,
+        'following_count' => 17,
+        'pets_count' => 3,
+        'posts_count' => 9,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $follower = User::factory()->create([
+        'name' => 'Follower Modal User',
+        'username' => 'follower_modal_user',
+    ]);
+    $followedUser = User::factory()->create([
+        'name' => 'Following Modal User',
+        'username' => 'following_modal_user',
+    ]);
+
+    $follower->follow($profileOwner);
+    $profileOwner->follow($followedUser);
+    Pet::factory()->for($profileOwner)->create(['name' => 'Stats Pet']);
+
+    $profileOwner->forceFill([
+        'followers_count' => 42,
+        'following_count' => 17,
+        'pets_count' => 3,
+        'posts_count' => 9,
+    ])->saveQuietly();
+
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-stats"', false)
+        ->assertSee('grid grid-cols-3 gap-3', false)
+        ->assertSee('data-stat="followers"', false)
+        ->assertSee('window.toggleModal(\'profile-followers-modal\')', false)
+        ->assertSee('aria-controls="profile-followers-modal"', false)
+        ->assertSee('data-stat="following"', false)
+        ->assertSee('window.toggleModal(\'profile-following-modal\')', false)
+        ->assertSee('aria-controls="profile-following-modal"', false)
+        ->assertSee('data-stat="pets"', false)
+        ->assertSee('$wire.activateTab(\'pets\')', false)
+        ->assertSee('scrollIntoView({ behavior: \'smooth\', block: \'start\' })', false)
+        ->assertSee('href="'.route('profile.show', ['user' => $profileOwner, 'tab' => 'pets']).'#profile-tabs"', false)
+        ->assertSee('id="profile-tabs"', false)
+        ->assertSee('scroll-mt-24', false)
+        ->assertSee('data-ui="profile-followers-modal"', false)
+        ->assertSee('Follower Modal User')
+        ->assertSee('data-ui="profile-following-modal"', false)
+        ->assertSee('Following Modal User')
+        ->assertDontSee('data-stat="posts"', false)
+        ->assertDontSee('data-stat="visibility"', false);
+
+    $html = $response->getContent();
+    preg_match('/<ul[^>]+data-ui="profile-stats"[\s\S]*?<\/ul>/', $html, $statsMatch);
+    $statsHtml = $statsMatch[0] ?? '';
+
+    expect($statsHtml)->toContain('42')
+        ->and($statsHtml)->toContain('17')
+        ->and($statsHtml)->toContain('3')
+        ->and($statsHtml)->not->toContain('9')
+        ->and($statsHtml)->not->toContain('Posts')
+        ->and($statsHtml)->not->toContain('Visibility');
 });
 
 it('renders the profile header as the topmost full-width section in the main profile view', function (): void {
@@ -528,6 +597,7 @@ it('keeps high volume profiles readable with formatted counters', function (): v
 
     profileDesignFollowers($profileOwner, 1001);
     Pet::factory()->count(24)->for($profileOwner)->create();
+    $profileOwner->forceFill(['pets_count' => 24])->saveQuietly();
     Post::factory()->count(125)->for($profileOwner)->create([
         'visibility' => Post::VISIBILITY_PUBLIC,
     ]);
