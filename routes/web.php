@@ -385,6 +385,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_ac
 
 require __DIR__.'/auth.php';
 
+Route::post('/@{user:username}/follow', [PublicProfileController::class, 'guestFollowPrompt'])
+    ->name('profile.guest-follow')
+    ->where('user', '[a-zA-Z0-9_]+');
+
 Route::livewire('/@{user:username}', 'pages.profile.show')
     ->name('profile.show')
     ->where('user', '[a-zA-Z0-9_]+');

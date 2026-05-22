@@ -328,6 +328,23 @@ class PublicProfileController extends Controller
         ]);
     }
 
+    public function guestFollowPrompt(Request $request, User $user): RedirectResponse
+    {
+        if ($user->isUnavailableForProfile()) {
+            abort(404);
+        }
+
+        if ($request->user() instanceof User) {
+            return redirect()->route('profile.show', ['user' => $user]);
+        }
+
+        $request->session()->put('url.intended', route('profile.show', ['user' => $user]));
+
+        return redirect()
+            ->route('login')
+            ->with('status', 'Log in to follow people and see their content.');
+    }
+
     private function profileSurfaceUser(User $user): User
     {
         return User::query()

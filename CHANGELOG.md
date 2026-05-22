@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated guest profile follow actions to render a Follow button that redirects to login with a follow-context flash message and intended profile URL.
 - Updated followed profile viewer actions to show a Following button that becomes Unfollow on desktop hover, uses a mobile unfollow confirmation sheet, and exposes the secondary Message action only for mutual follows.
 - Tightened direct messaging eligibility so profile, conversation, send-message, and marketplace contact flows require a mutual follow unless handled by moderation roles.
 - Updated pending private-profile follow requests to show a Requested button with an inline Withdraw Request / Keep Request confirmation dropdown.

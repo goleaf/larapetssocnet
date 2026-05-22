@@ -505,8 +505,11 @@
  >
  Cancel request
  </button>
- @elseif (!auth()->check() && Route::has('login'))
- <x-ui.button :href="route('login')" variant="primary" size="sm" class="min-h-11">Sign In to Follow</x-ui.button>
+ @elseif (!auth()->check() && Route::has('profile.guest-follow'))
+ <form method="POST" action="{{ route('profile.guest-follow', ['user'=> $profileUser]) }}" data-ui="profile-guest-follow-form" class="w-full sm:w-auto">
+ @csrf
+ <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11 sm:min-w-28" data-ui="profile-guest-follow-action">Follow</x-ui.button>
+ </form>
  @endif
  </div>
  @endif

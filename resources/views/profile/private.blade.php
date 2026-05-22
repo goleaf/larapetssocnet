@@ -114,10 +114,15 @@
  @else
  <x-slot name="action">
  <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
- @if (Route::has('register'))
- <x-ui.button :href="route('register')" variant="primary" size="sm" class="min-h-11">Join PetSocial</x-ui.button>
+ @if (Route::has('profile.guest-follow'))
+ <form method="POST" action="{{ route('profile.guest-follow', ['user'=> $user]) }}" data-ui="private-profile-guest-follow-form" class="w-full sm:w-auto">
+ @csrf
+ <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11 sm:min-w-28" data-ui="private-profile-guest-follow-action">Follow</x-ui.button>
+ </form>
  @endif
+ @if (Route::has('login'))
  <x-ui.button :href="route('login')" variant="outline" size="sm" class="min-h-11">Log In</x-ui.button>
+ @endif
  </div>
  </x-slot>
  @endauth

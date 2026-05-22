@@ -235,7 +235,11 @@ it('renders profile action buttons from the viewer relationship state', function
     $this->get(route('profile.show', ['user' => $profileOwner]))
         ->assertOk()
         ->assertSee('data-ui="profile-actions"', false)
-        ->assertSee('Sign In to Follow')
+        ->assertSee('data-ui="profile-guest-follow-form"', false)
+        ->assertSee('data-ui="profile-guest-follow-action"', false)
+        ->assertSee('action="'.route('profile.guest-follow', ['user' => $profileOwner]).'"', false)
+        ->assertSee('Follow')
+        ->assertDontSee('Sign In to Follow')
         ->assertDontSee('>Message</a>', false)
         ->assertDontSee('@click="toggleFollow"', false);
 
@@ -292,6 +296,21 @@ it('keeps the message menu action disabled when profile messaging policy denies 
         ->assertSee('Send Message')
         ->assertSee('disabled', false)
         ->assertDontSee('href="'.$messageUrl.'"', false);
+});
+
+it('redirects guest follow intent to login with a follow context flash message', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Guest Follow Owner',
+        'username' => 'guest_follow_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->from(route('profile.show', ['user' => $profileOwner]))
+        ->post(route('profile.guest-follow', ['user' => $profileOwner]))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('status', 'Log in to follow people and see their content.')
+        ->assertSessionHas('url.intended', route('profile.show', ['user' => $profileOwner]));
 });
 
 it('renders followed profile actions with desktop unfollow hover and a mobile confirmation sheet', function (): void {
@@ -849,6 +868,7 @@ it('shows guests public profile information with clear join prompts', function (
         ->assertSee('data-ui="profile-guest-cta"', false)
         ->assertSee('Join PetSocial')
         ->assertSee('Log In')
+        ->assertSee('data-ui="profile-guest-follow-action"', false)
         ->assertSee('Public bio for guests')
         ->assertSee('guest-visible.example')
         ->assertDontSee('Hidden City')
@@ -900,7 +920,9 @@ it('shows followers-only profiles as locked to guests and open to approved follo
         ->assertOk()
         ->assertSee('data-ui="private-profile-shell"', false)
         ->assertSee('followers-only')
-        ->assertSee('Join PetSocial')
+        ->assertSee('data-ui="private-profile-guest-follow-action"', false)
+        ->assertSee('Log In')
+        ->assertDontSee('Join PetSocial')
         ->assertDontSee('approved-follower-visible-post');
 
     $follower->follow($profileOwner);
