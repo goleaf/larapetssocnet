@@ -74,6 +74,7 @@ use Spatie\Permission\Traits\HasRoles;
     'profile_photo_url',
     'profile_initial',
     'profile_default_gradient',
+    'profile_default_avatar_color',
     'profile_verified',
     'profile_completeness_percentage',
     'profile_completeness_missing_items',
@@ -180,6 +181,22 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public const MAX_COVER_PHOTO_POSITION = 100.0;
 
     public const CURRENT_TERMS_VERSION = '2026-05-18';
+
+    private const PROFILE_DEFAULT_GRADIENTS = [
+        'bg-gradient-to-r from-paw-light via-cream to-sky-light',
+        'bg-gradient-to-r from-amber-100 via-cream to-paw-light',
+        'bg-gradient-to-r from-emerald-100 via-cream to-sky-light',
+        'bg-gradient-to-r from-rose-light via-cream to-amber-100',
+        'bg-gradient-to-r from-sky-light via-cream to-emerald-100',
+    ];
+
+    private const PROFILE_DEFAULT_AVATAR_COLORS = [
+        'bg-paw-light text-paw-dark',
+        'bg-amber-100 text-amber',
+        'bg-emerald-100 text-leaf',
+        'bg-rose-light text-rose',
+        'bg-sky-light text-sky',
+    ];
 
     /**
      * @var array<string, bool>
@@ -1568,8 +1585,9 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     protected function profileInitial(): Attribute
     {
         return Attribute::get(function (): string {
-            $name = trim((string) ($this->display_name ?: $this->name));
-            $source = $name !== '' ? $name : (string) $this->username;
+            $name = trim((string) $this->name);
+            $displayName = trim((string) $this->display_name);
+            $source = $name !== '' ? $name : ($displayName !== '' ? $displayName : (string) $this->username);
 
             return mb_strtoupper(mb_substr($source, 0, 1));
         });
@@ -1580,20 +1598,22 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
      */
     protected function profileDefaultGradient(): Attribute
     {
-        return Attribute::get(function (): string {
-            $gradients = [
-                'bg-gradient-to-r from-paw-light via-cream to-sky-light',
-                'bg-gradient-to-r from-amber-100 via-cream to-paw-light',
-                'bg-gradient-to-r from-emerald-100 via-cream to-sky-light',
-                'bg-gradient-to-r from-rose-light via-cream to-amber-100',
-                'bg-gradient-to-r from-sky-light via-cream to-emerald-100',
-            ];
+        return Attribute::get(fn (): string => self::PROFILE_DEFAULT_GRADIENTS[$this->profileDefaultPaletteIndex()]);
+    }
 
-            $seed = (string) ($this->username ?: $this->email ?: $this->getKey());
-            $index = abs(crc32($seed)) % count($gradients);
+    /**
+     * @return Attribute<string, never>
+     */
+    protected function profileDefaultAvatarColor(): Attribute
+    {
+        return Attribute::get(fn (): string => self::PROFILE_DEFAULT_AVATAR_COLORS[$this->profileDefaultPaletteIndex()]);
+    }
 
-            return $gradients[$index];
-        });
+    private function profileDefaultPaletteIndex(): int
+    {
+        $seed = (string) ($this->username ?: $this->email ?: $this->getKey());
+
+        return abs(crc32($seed)) % count(self::PROFILE_DEFAULT_GRADIENTS);
     }
 
     /**

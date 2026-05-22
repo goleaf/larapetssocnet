@@ -166,7 +166,7 @@
  @touchmove.window="moveCover($event)"
  @touchend.window="stopCoverDrag()"
  @touchcancel.window="stopCoverDrag()">
- <div data-ui="profile-hero" class="contents"></div>
+ <div data-ui="profile-hero" class="relative">
  <div data-ui="profile-cover-banner" x-ref="coverBanner" class="relative h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]">
  @if ($coverUrl)
  <img data-ui="profile-cover-image" src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
@@ -216,13 +216,21 @@
  @endif
  </div>
 
- <div class="px-4 pb-5 sm:px-6">
- <p x-show="coverNotice" x-cloak class="pt-3 text-sm font-semibold text-fur" x-text="coverNotice"></p>
- <div class="-mt-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
- <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
- <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="2xl"
-class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
+ <div data-ui="profile-avatar" class="absolute left-4 -bottom-[45px] z-10 flex h-[90px] w-[90px] items-center justify-center overflow-hidden rounded-full border-4 border-white bg-warm-white shadow-card lg:left-6 lg:-bottom-[60px] lg:h-[120px] lg:w-[120px]">
+ @if ($avatarUrl)
+ <img data-ui="profile-avatar-image" src="{{ $avatarUrl }}" alt="{{ $displayName }} profile avatar" class="h-full w-full object-cover" loading="lazy">
+ @else
+ <div data-ui="profile-avatar-initial" class="flex h-full w-full items-center justify-center {{ $profileUser->profile_default_avatar_color }}" role="img" aria-label="{{ $displayName }} generated avatar">
+ <span class="font-display text-4xl font-bold uppercase lg:text-5xl" aria-hidden="true">{{ $profileUser->profile_initial }}</span>
+ </div>
+ @endif
+ </div>
+ </div>
 
+ <div class="px-4 pb-5 pt-14 sm:px-6 lg:pt-4">
+ <p x-show="coverNotice" x-cloak class="pt-3 text-sm font-semibold text-fur" x-text="coverNotice"></p>
+ <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+ <div class="flex flex-col gap-4 lg:pl-36">
  <div class="pb-1">
  <div class="flex flex-wrap items-center gap-2">
  <h1 id="profile-header-title" class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>

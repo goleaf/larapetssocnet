@@ -213,11 +213,63 @@ it('renders a username-derived cover gradient fallback when no cover photo exist
         ->not->toBe($differentUsername->profile_default_gradient);
 });
 
+it('renders uploaded profile avatars as circular images overlapping the cover edge', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Avatar Owner',
+        'username' => 'avatar_photo_owner',
+        'avatar_path' => 'https://example.test/avatar-square.jpg',
+        'profile_photo_path' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-avatar"', false)
+        ->assertSee('absolute left-4 -bottom-[45px] z-10 flex h-[90px] w-[90px]', false)
+        ->assertSee('border-4 border-white', false)
+        ->assertSee('lg:-bottom-[60px] lg:h-[120px] lg:w-[120px]', false)
+        ->assertSee('data-ui="profile-avatar-image"', false)
+        ->assertSee('https://example.test/avatar-square.jpg', false)
+        ->assertSee('alt="Avatar Owner profile avatar"', false)
+        ->assertSee('class="h-full w-full object-cover"', false)
+        ->assertDontSee('data-ui="profile-avatar-initial"', false);
+});
+
+it('renders generated profile initials with the username hash palette when no avatar exists', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Ava Carter',
+        'display_name' => 'Luna Crew',
+        'username' => 'avatar_alpha',
+        'avatar_path' => null,
+        'profile_photo_path' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $sameUsername = User::factory()->make(['username' => 'avatar_alpha']);
+    $differentUsername = User::factory()->make(['username' => 'avatar_beta']);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-avatar-initial"', false)
+        ->assertSee('aria-label="Luna Crew generated avatar"', false)
+        ->assertSee($profileOwner->profile_default_avatar_color, false)
+        ->assertSee('>A</span>', false)
+        ->assertDontSee('data-ui="profile-avatar-image"', false);
+
+    expect($profileOwner->profile_initial)->toBe('A')
+        ->and($profileOwner->profile_default_avatar_color)
+        ->toBe($sameUsername->profile_default_avatar_color)
+        ->not->toBe($differentUsername->profile_default_avatar_color);
+});
+
 it('renders a clearer private profile lockup for authenticated visitors', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Private Profile',
         'username' => 'private_profile_design',
         'cover_photo_path' => 'https://example.test/private-cover.jpg',
+        'avatar_path' => null,
+        'profile_photo_path' => null,
         'is_private' => true,
     ]);
 
@@ -229,7 +281,12 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertSee('data-ui="private-profile-cover-banner"', false)
         ->assertSee('h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]', false)
         ->assertSee('data-ui="private-profile-cover-fallback"', false)
+        ->assertSee('data-ui="private-profile-avatar"', false)
+        ->assertSee('data-ui="profile-avatar-initial"', false)
+        ->assertSee('h-[90px] w-[90px]', false)
+        ->assertSee('lg:h-[120px] lg:w-[120px]', false)
         ->assertSee($profileOwner->profile_default_gradient, false)
+        ->assertSee($profileOwner->profile_default_avatar_color, false)
         ->assertDontSee('data-ui="private-profile-cover-image"', false)
         ->assertDontSee('https://example.test/private-cover.jpg', false)
         ->assertSee('data-profile-section="profile-header"', false)
