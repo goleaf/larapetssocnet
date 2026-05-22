@@ -263,6 +263,47 @@ it('renders generated profile initials with the username hash palette when no av
         ->not->toBe($differentUsername->profile_default_avatar_color);
 });
 
+it('renders the profile identity stack below the avatar with expandable bio text', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Long Bio Owner',
+        'display_name' => 'Long Bio Crew',
+        'username' => 'long_bio_owner',
+        'bio' => collect(range(1, 36))->map(fn (int $index): string => 'Bio detail '.$index)->implode(' '),
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $response = $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-header-identity"', false)
+        ->assertSee('data-ui="profile-display-name"', false)
+        ->assertSee('Long Bio Crew')
+        ->assertSee('data-ui="profile-username"', false)
+        ->assertSee('class="text-sm font-medium text-fur"', false)
+        ->assertSee('@long_bio_owner')
+        ->assertSee('data-ui="profile-header-bio"', false)
+        ->assertSee('data-ui="profile-bio-text"', false)
+        ->assertSee('line-clamp-3', false)
+        ->assertSee('transition-[max-height] duration-300 ease-out', false)
+        ->assertSee('x-bind:class="canToggle', false)
+        ->assertSee('line-clamp-none', false)
+        ->assertSee('x-bind:style="bioStyle()"', false)
+        ->assertSee('@resize.window.debounce.150ms="measureBio()"', false)
+        ->assertSee('data-ui="profile-bio-toggle"', false)
+        ->assertSee('x-bind:aria-expanded="expanded.toString()"', false)
+        ->assertSee('aria-controls="profile-header-bio"', false)
+        ->assertSee('@click="toggleBio()"', false)
+        ->assertSee("expanded ? 'Read less' : 'Read more'", false)
+        ->assertSee('Read more')
+        ->assertDontSee('lg:pl-36', false);
+
+    $html = $response->getContent();
+
+    expect(strpos($html, 'data-ui="profile-avatar"'))->toBeLessThan(strpos($html, 'data-ui="profile-header-identity"'))
+        ->and(strpos($html, 'data-ui="profile-display-name"'))->toBeLessThan(strpos($html, 'data-ui="profile-username"'))
+        ->and(strpos($html, 'data-ui="profile-username"'))->toBeLessThan(strpos($html, 'data-ui="profile-header-bio"'));
+});
+
 it('renders verified badges beside profile header names with an alpine tooltip', function (): void {
     $verifiedOwner = User::factory()->create([
         'name' => 'Verified Owner',
@@ -330,6 +371,9 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertSee('data-ui="profile-avatar-initial"', false)
         ->assertSee('h-[90px] w-[90px]', false)
         ->assertSee('lg:h-[120px] lg:w-[120px]', false)
+        ->assertSee('lg:pt-16', false)
+        ->assertSee('data-ui="profile-display-name"', false)
+        ->assertSee('data-ui="profile-username"', false)
         ->assertSee($profileOwner->profile_default_gradient, false)
         ->assertSee($profileOwner->profile_default_avatar_color, false)
         ->assertDontSee('data-ui="private-profile-cover-image"', false)

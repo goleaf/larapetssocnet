@@ -6,6 +6,7 @@
  $hasBlockingRelationship = ($isBlocked ?? false) || ($isBlockedBy ?? false);
  $canInteract = auth()->check() && ! $isOwner && ! $hasBlockingRelationship;
  $displayName = $profileUser->display_name ?: $profileUser->name;
+ $profileBio = trim((string) ($profileUser->bio ?? ''));
  $location = ($canViewLocation ?? false) ? ($profileUser->location ?? $profileUser->city ?? null) : null;
  $socialLinks = ($canViewContent ?? false) && is_array($profileUser->social_links ?? null) ? $profileUser->social_links : [];
 
@@ -227,18 +228,67 @@
  </div>
  </div>
 
- <div class="px-4 pb-5 pt-14 sm:px-6 lg:pt-4">
+ <div class="px-4 pb-5 pt-14 sm:px-6 lg:pt-16">
  <p x-show="coverNotice" x-cloak class="pt-3 text-sm font-semibold text-fur" x-text="coverNotice"></p>
- <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
- <div class="flex flex-col gap-4 lg:pl-36">
+ <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+ <div data-ui="profile-header-identity" class="flex max-w-3xl flex-col gap-2">
  <div class="pb-1">
  <div class="flex flex-wrap items-center gap-2">
- <h1 id="profile-header-title" class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
+ <h1 id="profile-header-title" data-ui="profile-display-name" class="text-3xl font-bold font-display text-bark">{{ $displayName }}</h1>
  @if ($profileUser->profile_verified)
  <x-ui.verified-badge tooltip-id="profile-header-verified-tooltip"/>
  @endif
  </div>
- <p class="text-sm font-semibold text-fur">&#64;{{ $profileUser->username }}</p>
+ <p data-ui="profile-username" class="text-sm font-medium text-fur">&#64;{{ $profileUser->username }}</p>
+
+ @if ($profileBio !== '')
+ <div
+ data-ui="profile-header-bio"
+ class="mt-2"
+ x-data="{
+ expanded: false,
+ canToggle: false,
+ collapsedHeight: 84,
+ expandedHeight: 84,
+ measureBio() {
+ const bio = this.$refs.bioText;
+ if (!bio) return;
+ const lineHeight = parseFloat(getComputedStyle(bio).lineHeight) || 28;
+ this.collapsedHeight = Math.round(lineHeight * 3);
+ this.expandedHeight = bio.scrollHeight;
+ this.canToggle = this.expandedHeight > this.collapsedHeight + 2;
+ },
+ bioStyle() {
+ return this.canToggle ? `max-height: ${this.expanded ? this.expandedHeight : this.collapsedHeight}px` : '';
+ },
+ toggleBio() {
+ this.measureBio();
+ this.expanded = !this.expanded;
+ this.$nextTick(() => this.measureBio());
+ },
+ }"
+ x-init="measureBio()"
+ @resize.window.debounce.150ms="measureBio()">
+ <p
+ id="profile-header-bio"
+ x-ref="bioText"
+ data-ui="profile-bio-text"
+ class="max-w-3xl overflow-hidden whitespace-pre-line text-base leading-7 text-bark transition-[max-height] duration-300 ease-out line-clamp-3"
+ x-bind:class="canToggle && !expanded ? 'line-clamp-3' : 'line-clamp-none'"
+ x-bind:style="bioStyle()">{{ $profileBio }}</p>
+ <button
+ data-ui="profile-bio-toggle"
+ x-show="canToggle"
+ x-cloak
+ type="button"
+ class="mt-1 inline text-sm font-semibold text-paw underline underline-offset-4 transition-colors hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-bind:aria-expanded="expanded.toString()"
+ aria-controls="profile-header-bio"
+ @click="toggleBio()">
+ <span x-text="expanded ? 'Read less' : 'Read more'">Read more</span>
+ </button>
+ </div>
+ @endif
 
  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fur">
  @if ($profileUser->headline)
@@ -367,11 +417,9 @@
  <div class="mt-5 border-t border-whisker/30 pt-4" data-ui="profile-identity-panel">
  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
  <div class="min-w-0">
- @if ($profileUser->bio)
- <p class="max-w-3xl whitespace-pre-line text-base leading-7 text-bark">{{ $profileUser->bio }}</p>
- @elseif ($isOwner)
+ @if ($profileBio === '' && $isOwner)
  <p class="max-w-3xl text-base leading-7 text-fur">Add a short introduction so visitors know the person behind the profile.</p>
- @elseif ($isNewProfileState)
+ @elseif ($profileBio === '' && $isNewProfileState)
  <p class="max-w-3xl text-base leading-7 text-fur" data-ui="profile-new-state">New member. {{ $displayName }} is getting settled in.</p>
  @endif
  </div>
