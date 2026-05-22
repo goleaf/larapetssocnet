@@ -394,13 +394,21 @@ it('renders owner edit and share profile modals from the profile action buttons'
         ->assertSee('data-ui="profile-edit-modal"', false)
         ->assertSee('data-ui="profile-edit-modal-form"', false)
         ->assertSee('action="'.route('settings.profile.update').'"', false)
+        ->assertSee('enctype="multipart/form-data"', false)
         ->assertSee('name="_method" value="PUT"', false)
+        ->assertSee('id="profile_modal_avatar_field"', false)
+        ->assertSee('id="profile_modal_avatar"', false)
+        ->assertSee('id="profile_modal_cover_field"', false)
+        ->assertSee('id="profile_modal_cover"', false)
         ->assertSee('id="profile_modal_name"', false)
         ->assertSee('id="profile_modal_display_name"', false)
         ->assertSee('id="profile_modal_bio"', false)
         ->assertSee('id="profile_modal_headline"', false)
         ->assertSee('id="profile_modal_location"', false)
         ->assertSee('id="profile_modal_website"', false)
+        ->assertSee('id="profile_modal_birth_date"', false)
+        ->assertSee('id="profile_modal_pets"', false)
+        ->assertSee('id="profile_modal_following"', false)
         ->assertSee('Advanced settings')
         ->assertSee('Save Profile')
         ->assertSee('data-ui="profile-share-modal"', false)
@@ -420,6 +428,76 @@ it('renders owner edit and share profile modals from the profile action buttons'
         ->assertSee('Share on Facebook')
         ->assertSee('Email profile')
         ->assertSee(rawurlencode('Meet Share Crew on PetSocial: '.$profileUrl), false);
+});
+
+it('renders a profile completeness meter only for the profile owner with edit modal deep links', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Completion Owner',
+        'username' => 'completion_owner',
+        'avatar_path' => null,
+        'profile_photo_path' => null,
+        'cover_photo_path' => null,
+        'bio' => 'Too short',
+        'location' => null,
+        'city' => null,
+        'website' => null,
+        'birth_date' => null,
+        'pets_count' => 0,
+        'following_count' => 0,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $response = $this->actingAs($profileOwner)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-completeness"', false)
+        ->assertSee('Complete your profile')
+        ->assertSee('data-ui="profile-completeness-progress"', false)
+        ->assertSee('role="progressbar"', false)
+        ->assertSee('aria-valuenow="0"', false)
+        ->assertSee('x-init', false)
+        ->assertSee('progress: 0', false)
+        ->assertSee('x-bind:style="`width: ${progress}%`"', false)
+        ->assertSee('transition-[width] duration-700 ease-out motion-reduce:transition-none', false)
+        ->assertSee('0%')
+        ->assertSee('Add a profile photo')
+        ->assertSee('Add a cover photo')
+        ->assertSee('Write a bio of at least 20 characters')
+        ->assertSee('Add your location')
+        ->assertSee('Add your website')
+        ->assertSee('Add your date of birth')
+        ->assertSee('Create at least one pet profile')
+        ->assertSee('Follow at least 5 accounts')
+        ->assertSee('aria-controls="profile-edit-modal"', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_avatar_field\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_cover_field\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_bio\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_location\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_website\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_birth_date\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_pets\')', false)
+        ->assertSee('openProfileEditTarget(\'profile_modal_following\')', false);
+
+    $html = $response->getContent();
+
+    expect(strpos($html, 'data-ui="profile-header"'))->toBeLessThan(strpos($html, 'data-ui="profile-completeness"'))
+        ->and(strpos($html, 'data-ui="profile-completeness"'))->toBeLessThan(strpos($html, 'data-ui="profile-tabs"'));
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertDontSee('data-ui="profile-completeness"', false)
+        ->assertDontSee('Complete your profile')
+        ->assertDontSee('data-ui="profile-completeness-missing-link"', false);
+
+    auth()->logout();
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertDontSee('data-ui="profile-completeness"', false)
+        ->assertDontSee('Complete your profile')
+        ->assertDontSee('data-ui="profile-completeness-missing-link"', false);
 });
 
 it('renders the profile header as the topmost full-width section in the main profile view', function (): void {

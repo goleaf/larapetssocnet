@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated the owner-only profile completeness card to always render the completion meter with an animated progress bar and incomplete-item links that open the edit profile modal at the matching field.
 - Updated guest profile follow actions to render a Follow button that redirects to login with a follow-context flash message and intended profile URL.
 - Updated followed profile viewer actions to show a Following button that becomes Unfollow on desktop hover, uses a mobile unfollow confirmation sheet, and exposes the secondary Message action only for mutual follows.
 - Tightened direct messaging eligibility so profile, conversation, send-message, and marketplace contact flows require a mutual follow unless handled by moderation roles.

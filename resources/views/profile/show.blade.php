@@ -656,13 +656,44 @@
  description="Update the public details people see on your profile."
  size="xl"
  data-ui="profile-edit-modal">
- <form action="{{ route('settings.profile.update') }}" method="POST" class="space-y-5" data-ui="profile-edit-modal-form">
+ <form action="{{ route('settings.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-5" data-ui="profile-edit-modal-form">
  @csrf
  @method('PUT')
  <input type="hidden" name="username" value="{{ $profileUser->username }}">
  <input type="hidden" name="email" value="{{ $profileUser->email }}">
 
  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+ <div id="profile_modal_avatar_field" class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-1" data-ui="profile-modal-avatar-field">
+ <x-ui.file-upload
+ id="profile_modal_avatar"
+ name="avatar"
+ label="Avatar"
+ accept="image/jpeg,image/png,image/webp"
+ maxSize="10MB"
+ preview
+ help="JPG, PNG, or WEBP. Square image recommended."
+ />
+ <div class="flex items-center gap-3">
+ <x-ui.avatar :src="$profileUser->avatar_url" :name="$profileUser->name" size="md"/>
+ <span class="text-xs leading-5 text-fur">Shown beside your posts and in profile lists.</span>
+ </div>
+ </div>
+
+ <div id="profile_modal_cover_field" class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-1" data-ui="profile-modal-cover-field">
+ <x-ui.file-upload
+ id="profile_modal_cover"
+ name="cover"
+ label="Cover Photo"
+ accept="image/jpeg,image/png,image/webp,image/gif"
+ maxSize="5MB"
+ preview
+ help="JPG, PNG, WEBP, or GIF. Recommended 1600×480."
+ />
+ @if ($profileUser->cover_photo_url)
+ <img src="{{ $profileUser->cover_photo_url }}" alt="{{ $profileUser->name }} cover preview" class="h-20 w-full rounded-[var(--radius-soft)] object-cover">
+ @endif
+ </div>
+
  <x-ui.input id="profile_modal_name" name="name" label="Name" :value="old('name', $profileUser->name)" required autocomplete="name"/>
  <x-ui.input id="profile_modal_display_name" name="display_name" label="Display name" :value="old('display_name', $profileUser->display_name)" autocomplete="nickname"/>
  <div class="sm:col-span-2">
@@ -675,6 +706,18 @@
  </div>
  <x-ui.input id="profile_modal_location" name="location" label="Location" :value="old('location', $profileUser->location)"/>
  <x-ui.input id="profile_modal_website" name="website" type="url" label="Website" :value="old('website', $profileUser->website)"/>
+ <x-ui.input id="profile_modal_birth_date" name="birth_date" type="date" label="Birth Date"
+ :value="old('birth_date', $profileUser->birth_date ? $profileUser->birth_date->format('Y-m-d') : '')"/>
+ <div id="profile_modal_pets" class="flex flex-col gap-2 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4" data-ui="profile-modal-pets-field">
+ <p class="text-sm font-semibold text-bark">Pets</p>
+ <p class="text-xs leading-5 text-fur">Add a pet profile so visitors can meet your companion.</p>
+ <a href="{{ route('pets.create') }}" class="inline-flex min-h-9 w-fit items-center rounded-full border border-whisker/40 bg-warm-white px-3 text-xs font-semibold text-paw transition-colors hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Add Pet</a>
+ </div>
+ <div id="profile_modal_following" class="flex flex-col gap-2 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4" data-ui="profile-modal-following-field">
+ <p class="text-sm font-semibold text-bark">Following</p>
+ <p class="text-xs leading-5 text-fur">Follow a few members to personalize your community graph.</p>
+ <a href="{{ route('explore.index', ['tab' => 'users']) }}" class="inline-flex min-h-9 w-fit items-center rounded-full border border-whisker/40 bg-warm-white px-3 text-xs font-semibold text-paw transition-colors hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Find Members</a>
+ </div>
  </div>
 
  <div class="flex flex-col gap-2 border-t border-whisker/30 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -780,20 +823,41 @@
  $profileCompleteness = (int) ($profileCompletenessPercentage ?? $profileUser->profile_completeness_percentage);
  $completionMissingItems = $profileCompletenessMissingItems ?? $profileUser->profile_completeness_missing_items;
  $completionColor = $profileCompleteness >= 80 ? 'bg-emerald-500' : ($profileCompleteness >= 50 ? 'bg-amber-500' : 'bg-sky-500');
- $showCompletedCard = $profileCompleteness === 100
- && $profileUser->profile_completed_at
- && $profileUser->profile_completed_at->greaterThanOrEqualTo(now()->subDays(7));
+ $completionTargetIds = [
+ 'avatar' => 'profile_modal_avatar_field',
+ 'cover' => 'profile_modal_cover_field',
+ 'bio' => 'profile_modal_bio',
+ 'location' => 'profile_modal_location',
+ 'website' => 'profile_modal_website',
+ 'birth_date' => 'profile_modal_birth_date',
+ 'pets' => 'profile_modal_pets',
+ 'following' => 'profile_modal_following',
+ ];
  @endphp
- <x-ui.card data-ui="profile-completeness">
- @if ($showCompletedCard)
- <div class="flex items-center gap-3">
- <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-paw-light text-lg" aria-hidden="true">🎉</span>
- <div>
- <h2 class="text-base font-bold font-display text-bark">Your profile is complete!</h2>
- <p class="text-sm text-fur">Your public profile has all core identity details filled in.</p>
- </div>
- </div>
- @else
+ <x-ui.card
+ data-ui="profile-completeness"
+ x-data="{
+ progress: 0,
+ openProfileEditTarget(targetId) {
+ window.toggleModal('profile-edit-modal');
+ window.setTimeout(() => {
+ const target = document.getElementById(targetId);
+
+ if (! target) {
+ return;
+ }
+
+ target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+ const focusable = target.matches('input, textarea, select, button, a')
+ ? target
+ : target.querySelector('input, textarea, select, button, a');
+
+ focusable?.focus({ preventScroll: true });
+ }, 260);
+ },
+ }"
+ x-init="$nextTick(() => { progress = @js($profileCompleteness) })">
  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
  <div class="min-w-0">
  <h2 class="text-base font-bold font-display text-bark">Complete your profile</h2>
@@ -801,19 +865,33 @@
  </div>
  <span class="text-sm font-bold text-bark">{{ $profileCompleteness }}%</span>
  </div>
- <div class="mt-4 h-3 overflow-hidden rounded-full bg-cream" x-data="{ width: 0 }" x-init="$nextTick(() => { width = @js($profileCompleteness) })">
- <div class="h-full rounded-full {{ $completionColor }} transition-[width] duration-[600ms] ease-out" x-bind:style="`width: ${width}%`"></div>
+ <div
+ class="mt-4 h-3 overflow-hidden rounded-full bg-cream"
+ role="progressbar"
+ aria-label="Profile completeness"
+ aria-valuemin="0"
+ aria-valuemax="100"
+ aria-valuenow="{{ $profileCompleteness }}"
+ data-ui="profile-completeness-progress">
+ <div class="h-full rounded-full {{ $completionColor }} transition-[width] duration-700 ease-out motion-reduce:transition-none" x-bind:style="`width: ${progress}%`"></div>
  </div>
  @if ($completionMissingItems !== [])
  <div class="mt-4 flex flex-wrap gap-2">
  @foreach ($completionMissingItems as $item)
- <a href="{{ route('settings.profile') }}#{{ $item['key'] }}"
+ @php
+ $targetId = $completionTargetIds[$item['key']] ?? 'profile_modal_name';
+ @endphp
+ <a href="#{{ $targetId }}"
+ aria-controls="profile-edit-modal"
+ data-ui="profile-completeness-missing-link"
+ @click.prevent="openProfileEditTarget(@js($targetId))"
  class="inline-flex min-h-9 items-center rounded-full border border-whisker/40 bg-warm-white px-3 text-xs font-semibold text-fur transition-colors hover:border-paw hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  {{ $item['label'] }}
  </a>
  @endforeach
  </div>
- @endif
+ @else
+ <p class="mt-4 text-sm font-medium text-emerald-700" data-ui="profile-completeness-complete">All key details are filled in.</p>
  @endif
  </x-ui.card>
  @endif
