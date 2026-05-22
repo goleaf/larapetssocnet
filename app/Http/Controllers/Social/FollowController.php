@@ -86,6 +86,7 @@ class FollowController extends Controller
     public function followers(Request $request, User $user): View
     {
         $viewer = $request->user();
+        $showMutualOnly = $request->boolean('mutual') && $viewer instanceof User && ! $viewer->is($user);
 
         if ($viewer && $viewer->hasBlockingRelationshipWith($user)) {
             abort(404);
@@ -98,6 +99,15 @@ class FollowController extends Controller
             ->notBlockedFor($viewer)
             ->with('media')
             ->withCount(['acceptedFollowers as followers_count', 'posts'])
+            ->when($showMutualOnly, function ($query) use ($viewer): void {
+                $query->whereIn(
+                    'users.id',
+                    Follow::query()
+                        ->select('following_id')
+                        ->where('follower_id', $viewer->getKey())
+                        ->where('status', 'accepted')
+                );
+            })
             ->when($request->string('q')->toString(), function ($query, $term): void {
                 $query->where(function ($subQuery) use ($term): void {
                     $subQuery
@@ -112,7 +122,12 @@ class FollowController extends Controller
             ? $this->followService->followStatusMap($viewer, $followers->getCollection())
             : [];
 
-        return view('profile.followers', ['user' => $user, 'followers' => $followers, 'followStatusMap' => $followStatusMap]);
+        return view('profile.followers', [
+            'user' => $user,
+            'followers' => $followers,
+            'followStatusMap' => $followStatusMap,
+            'showMutualOnly' => $showMutualOnly,
+        ]);
     }
 
     public function following(Request $request, User $user): View

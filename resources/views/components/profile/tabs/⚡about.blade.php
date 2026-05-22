@@ -3,6 +3,8 @@
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\ProfileVisibilityService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -23,6 +25,7 @@ new class extends Component
      *     bioDetails: list<array{label: string, value: string, icon: string, iconPath: string, url?: string, datetime?: string|null}>,
      *     activitySummaryItems: list<array{label: string, value: string, datetime?: string|null}>,
      *     petSummaryItems: list<array{name: string, url: string, avatarUrl: string|null}>,
+     *     mutualConnections: array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>},
      *     overviewItems: list<array{label: string, value: string}>,
      *     contactItems: list<array{label: string, url: string, display: string}>,
      *     interests: list<string>
@@ -44,6 +47,7 @@ new class extends Component
                 'bioDetails' => [],
                 'activitySummaryItems' => [],
                 'petSummaryItems' => [],
+                'mutualConnections' => $this->emptyMutualConnections(),
                 'overviewItems' => [],
                 'contactItems' => [],
                 'interests' => [],
@@ -62,6 +66,7 @@ new class extends Component
             'bioDetails' => $this->bioDetails($profileUser, $location, $website),
             'activitySummaryItems' => $this->activitySummaryItems($profileUser),
             'petSummaryItems' => $this->petSummaryItems($profileUser, $viewer),
+            'mutualConnections' => $this->mutualConnections($profileUser, $viewer),
             'overviewItems' => $this->overviewItems($profileUser, $displayName),
             'contactItems' => $this->contactItems($profileUser->social_links),
             'interests' => $this->interests($profileUser->interests_text),
@@ -233,6 +238,109 @@ new class extends Component
         }
 
         return $this->filledString($pet->avatar_path);
+    }
+
+    /**
+     * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     */
+    private function mutualConnections(User $profileUser, ?User $viewer): array
+    {
+        if (! $viewer instanceof User || $viewer->is($profileUser)) {
+            return $this->emptyMutualConnections();
+        }
+
+        $baseQuery = $this->mutualConnectionsQuery($profileUser, $viewer);
+        $count = (int) (clone $baseQuery)->count('users.id');
+
+        $items = (clone $baseQuery)
+            ->select([
+                'users.id',
+                'users.name',
+                'users.display_name',
+                'users.username',
+                'users.avatar_path',
+                'users.profile_photo_path',
+            ])
+            ->with([
+                'media' => fn ($mediaQuery) => $mediaQuery
+                    ->where('collection_name', User::MEDIA_COLLECTION_AVATAR)
+                    ->orderBy('order_column'),
+            ])
+            ->limit(8)
+            ->get()
+            ->map(fn (User $connection): array => [
+                'name' => (string) ($connection->display_name ?: $connection->name),
+                'username' => (string) $connection->username,
+                'url' => route('profile.show', ['user' => $connection->username]),
+                'avatarUrl' => $this->mutualConnectionAvatarUrl($connection),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'canShow' => true,
+            'count' => $count,
+            'hasMore' => $count > 8,
+            'seeAllUrl' => route('profile.followers', ['user' => $profileUser->username, 'mutual' => 1]),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @return Builder<User>
+     */
+    private function mutualConnectionsQuery(User $profileUser, User $viewer): Builder
+    {
+        $viewerId = (int) $viewer->getKey();
+        $profileUserId = (int) $profileUser->getKey();
+
+        $query = User::query()
+            ->join('follows as viewer_following', function (JoinClause $join) use ($viewerId): void {
+                $join
+                    ->on('viewer_following.following_id', '=', 'users.id')
+                    ->where('viewer_following.follower_id', $viewerId)
+                    ->where('viewer_following.status', 'accepted');
+            })
+            ->join('follows as profile_followers', function (JoinClause $join) use ($profileUserId): void {
+                $join
+                    ->on('profile_followers.follower_id', '=', 'users.id')
+                    ->where('profile_followers.following_id', $profileUserId)
+                    ->where('profile_followers.status', 'accepted');
+            })
+            ->notBlockedFor($viewer);
+
+        return User::applyAvailableForProfiles($query);
+    }
+
+    private function mutualConnectionAvatarUrl(User $connection): ?string
+    {
+        $mediaUrl = $connection->getFirstMediaUrl(User::MEDIA_COLLECTION_AVATAR, User::MEDIA_CONVERSION_AVATAR_THUMB);
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        $mediaUrl = $connection->getFirstMediaUrl(User::MEDIA_COLLECTION_AVATAR);
+
+        if ($mediaUrl !== '') {
+            return $mediaUrl;
+        }
+
+        return $this->filledString($connection->avatar_path) ?? $this->filledString($connection->profile_photo_path);
+    }
+
+    /**
+     * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     */
+    private function emptyMutualConnections(): array
+    {
+        return [
+            'canShow' => false,
+            'count' => 0,
+            'hasMore' => false,
+            'seeAllUrl' => null,
+            'items' => [],
+        ];
     }
 
     /**
@@ -450,6 +558,41 @@ new class extends Component
 	 @endif
 	 </section>
 	 </x-ui.card>
+
+	 @if ($data['mutualConnections']['canShow'])
+	 <x-ui.card>
+	 <section data-ui="profile-about-mutual-connections" class="flex flex-col gap-4" aria-labelledby="profile-about-mutual-connections-heading">
+	 <div>
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Connections</p>
+	 <h3 id="profile-about-mutual-connections-heading" class="mt-1 text-lg font-bold font-display text-bark">Mutual connections</h3>
+	 </div>
+
+	 @if ($data['mutualConnections']['items'] !== [])
+	 <ul class="flex gap-4 overflow-x-auto pb-1" role="list" aria-label="Mutual connections">
+	 @foreach ($data['mutualConnections']['items'] as $connection)
+	 <li class="shrink-0">
+	 <a href="{{ $connection['url'] }}"
+	 class="group flex w-20 flex-col items-center gap-2 rounded-[var(--radius-soft)] p-2 text-center transition-colors hover:bg-cream/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+	 aria-label="View {{ $connection['name'] }} profile">
+	 <x-ui.avatar :src="$connection['avatarUrl']" :name="$connection['name']" :alt="$connection['name'].' profile photo'" size="lg" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
+	 <span class="block w-full truncate text-xs font-semibold leading-tight text-bark group-hover:text-paw">{{ $connection['name'] }}</span>
+	 </a>
+	 </li>
+	 @endforeach
+	 </ul>
+	 @else
+	 <p class="text-sm text-fur">No mutual connections yet.</p>
+	 @endif
+
+	 @if ($data['mutualConnections']['hasMore'] && $data['mutualConnections']['seeAllUrl'])
+	 <a href="{{ $data['mutualConnections']['seeAllUrl'] }}"
+	 class="inline-flex min-h-9 w-fit items-center rounded-[var(--radius-soft)] text-sm font-semibold text-paw transition-colors hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+	 See all {{ number_format($data['mutualConnections']['count']) }} mutual connections
+	 </a>
+	 @endif
+	 </section>
+	 </x-ui.card>
+	 @endif
 
 	 @if ($data['overviewItems'] !== [])
 	 <x-ui.card>

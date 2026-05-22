@@ -536,6 +536,145 @@ it('shows private pets in the about pet summary to the profile owner', function 
         ->assertSee('Private Pancake');
 });
 
+it('renders mutual connections from a database intersection for authenticated visitors', function (): void {
+    Storage::fake('public');
+
+    $viewer = User::factory()->create([
+        'name' => 'Mutual Viewer',
+        'username' => 'mutual_about_viewer',
+    ]);
+    $profileOwner = User::factory()->create([
+        'name' => 'Mutual Profile Owner',
+        'username' => 'mutual_about_owner',
+        'bio' => 'Mutual connections should be shown to visitors.',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $mutualUsers = collect(range(1, 10))->map(function (int $index) use ($viewer, $profileOwner): User {
+        $mutual = User::factory()->create([
+            'name' => 'Shared Friend '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+            'username' => 'shared_friend_'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        ]);
+
+        $viewer->follow($mutual);
+        $mutual->follow($profileOwner);
+
+        return $mutual;
+    });
+
+    $mutualUsers->take(2)->each(function (User $mutual, int $index): void {
+        $mutual->addMedia(UploadedFile::fake()->image('shared-'.$index.'.jpg', 160, 160))
+            ->toMediaCollection(User::MEDIA_COLLECTION_AVATAR);
+    });
+
+    $viewerOnly = User::factory()->create([
+        'name' => 'Viewer Only Follow',
+        'username' => 'viewer_only_follow',
+    ]);
+    $profileOnly = User::factory()->create([
+        'name' => 'Profile Only Follower',
+        'username' => 'profile_only_follower',
+    ]);
+
+    $viewer->follow($viewerOnly);
+    $profileOnly->follow($profileOwner);
+
+    DB::enableQueryLog();
+
+    try {
+        Livewire::actingAs($viewer)
+            ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+            ->assertSee('data-ui="profile-about-mutual-connections"', false)
+            ->assertSee('Mutual connections')
+            ->assertSee('Shared Friend 01')
+            ->assertSee('Shared Friend 01 profile photo')
+            ->assertSee('href="'.route('profile.show', ['user' => 'shared_friend_01']).'"', false)
+            ->assertDontSee('Viewer Only Follow')
+            ->assertDontSee('Profile Only Follower')
+            ->assertSee('See all 10 mutual connections')
+            ->assertSee('href="'.route('profile.followers', ['user' => $profileOwner->username, 'mutual' => 1]).'"', false);
+
+        $queries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->map(fn (string $query): string => strtolower($query));
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $mutualQueries = $queries->filter(
+        fn (string $query): bool => str_contains($query, 'join "follows" as "viewer_following"')
+            && str_contains($query, 'join "follows" as "profile_followers"')
+    )->values();
+
+    expect($mutualQueries)->toHaveCount(2)
+        ->and($mutualQueries->implode("\n"))
+        ->toContain('"viewer_following"."following_id" = "users"."id"')
+        ->toContain('"profile_followers"."follower_id" = "users"."id"')
+        ->toContain('count("users"."id") as aggregate')
+        ->toContain('limit 8')
+        ->not->toContain('select *')
+        ->and($queries->filter(fn (string $query): bool => str_contains($query, 'from "media"'))->count())->toBe(1);
+});
+
+it('hides about mutual connections from guests and profile owners', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'No Mutual Owner',
+        'username' => 'no_mutual_owner',
+        'bio' => 'This visitor-only panel should stay hidden here.',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertDontSee('data-ui="profile-about-mutual-connections"', false)
+        ->assertDontSee('Mutual connections');
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertDontSee('data-ui="profile-about-mutual-connections"', false)
+        ->assertDontSee('Mutual connections');
+});
+
+it('filters the followers page to mutual connections when requested from the about link', function (): void {
+    $viewer = User::factory()->create([
+        'name' => 'Filtered Mutual Viewer',
+        'username' => 'filtered_mutual_viewer',
+    ]);
+    $profileOwner = User::factory()->create([
+        'name' => 'Filtered Mutual Owner',
+        'username' => 'filtered_mutual_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $mutual = User::factory()->create([
+        'name' => 'Filtered Shared Friend',
+        'username' => 'filtered_shared_friend',
+    ]);
+    $profileOnly = User::factory()->create([
+        'name' => 'Filtered Profile Only',
+        'username' => 'filtered_profile_only',
+    ]);
+    $viewerOnly = User::factory()->create([
+        'name' => 'Filtered Viewer Only',
+        'username' => 'filtered_viewer_only',
+    ]);
+
+    $viewer->follow($mutual);
+    $mutual->follow($profileOwner);
+    $profileOnly->follow($profileOwner);
+    $viewer->follow($viewerOnly);
+
+    $this->actingAs($viewer)
+        ->get(route('profile.followers', ['user' => $profileOwner->username, 'mutual' => 1]))
+        ->assertOk()
+        ->assertSee('Mutual connections')
+        ->assertSee('Filtered Shared Friend')
+        ->assertDontSee('Filtered Profile Only')
+        ->assertDontSee('Filtered Viewer Only')
+        ->assertSee('name="mutual"', false);
+});
+
 it('keeps privacy-gated about fields hidden from visitors and never reveals the birth date', function (): void {
     Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
 

@@ -8,6 +8,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added an authenticated visitor-only mutual connections section to the profile About tab, showing up to 8 shared followers with avatar links and a see-all mutual followers link backed by SQL intersections.
 - Added a compact profile About pet summary strip that links visible pet avatars to their pet profiles without per-pet queries.
 - Added precomputed user profile activity summary counters for reactions received, comments received, and latest post date so the About tab can render its two-by-two activity section without live aggregate queries.
 - Added a richer lazy profile About tab with clearly labeled biography, public metadata, social links, interests, and activity sections while honoring profile privacy rules for location and public age.

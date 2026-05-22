@@ -2,12 +2,19 @@
 
 <x-app-layout>
  <x-slot name="header">
- <x-ui.page-header title="Followers" :description="'@'.$user->username.' · '.number_format((int) $user->followers_count).' followers'" icon="👥" />
+ <x-ui.page-header
+ :title="($showMutualOnly ?? false) ? 'Mutual connections' : 'Followers'"
+ :description="'@'.$user->username.' · '.number_format((int) $user->followers_count).' followers'"
+ icon="👥"
+ />
  </x-slot>
 
  <section class="shell-card p-5">
  <form method="GET" class="mb-4">
- <input type="search" name="q" value="{{ request('q') }}" placeholder="Search followers..."
+ @if ($showMutualOnly ?? false)
+ <input type="hidden" name="mutual" value="1">
+ @endif
+ <input type="search" name="q" value="{{ request('q') }}" placeholder="{{ ($showMutualOnly ?? false) ? 'Search mutual connections...' : 'Search followers...' }}"
  class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
  </form>
 
@@ -32,7 +39,7 @@
 	 @endauth
  </article>
  @empty
- <x-ui.empty-state icon="users" title="No followers yet" description="Followers will appear here."/>
+ <x-ui.empty-state icon="users" :title="($showMutualOnly ?? false) ? 'No mutual connections yet' : 'No followers yet'" :description="($showMutualOnly ?? false) ? 'People you follow who also follow this profile will appear here.' : 'Followers will appear here.'"/>
  @endforelse
  </div>
 
