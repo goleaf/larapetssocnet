@@ -1734,8 +1734,8 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function profileCompletenessSummaryValue(): array
     {
         return [
-            'percentage' => $this->profileCompletenessPercentageValue(),
-            'missing_items' => $this->profileCompletenessMissingItemsValue(),
+            'percentage' => $this->profile_completeness_percentage,
+            'missing_items' => $this->profile_completeness_missing_items,
         ];
     }
 

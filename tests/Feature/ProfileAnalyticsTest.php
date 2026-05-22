@@ -164,6 +164,42 @@ it('calculates profile completeness percentages for varied field combinations', 
     ],
 ]);
 
+it('recalculates owner profile completeness fresh on each profile page load', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'fresh_completion_owner',
+        'avatar_path' => 'https://example.test/avatar.jpg',
+        'cover_photo_path' => 'https://example.test/cover.jpg',
+        'bio' => 'A complete profile bio with enough useful detail.',
+        'location' => 'Vilnius',
+        'website' => 'https://example.test',
+        'birth_date' => '1994-05-20',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('profile.show', ['user' => $owner]))
+        ->assertOk()
+        ->assertSee('aria-valuenow="75"', false)
+        ->assertSee('75%');
+
+    Pet::factory()
+        ->for($owner)
+        ->create();
+
+    User::factory()
+        ->count(5)
+        ->create()
+        ->each(fn (User $followedUser): string => $owner->follow($followedUser));
+
+    $this->actingAs($owner)
+        ->get(route('profile.show', ['user' => $owner]))
+        ->assertOk()
+        ->assertSee('aria-valuenow="100"', false)
+        ->assertSee('100%')
+        ->assertSee('All key details are filled in.');
+});
+
 it('calculates profile completeness from a narrow summary query', function (): void {
     $user = User::factory()->create([
         'avatar_path' => null,
