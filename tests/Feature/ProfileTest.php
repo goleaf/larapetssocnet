@@ -311,6 +311,43 @@ test('profile owner sees add pet card first and visitors do not', function (): v
         ->assertDontSee('Add a pet');
 });
 
+test('profile owner with no pets sees first pet onboarding state', function (): void {
+    $owner = User::factory()->create();
+
+    Livewire::actingAs($owner)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('data-ui="profile-pet-owner-empty"', false)
+        ->assertSee('Add your first pet profile')
+        ->assertSee('Pet profiles give each pet a dedicated place')
+        ->assertSee('Add your first pet')
+        ->assertSee('profile-pet-create-modal', false)
+        ->assertDontSee('data-ui="profile-pet-card-grid"', false)
+        ->assertDontSee('data-ui="profile-add-pet-card"', false)
+        ->assertDontSee('This user has not added pets to their profile.');
+});
+
+test('visitor sees simple no pets message without owner call to action', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Livewire::actingAs($viewer)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('No pets yet')
+        ->assertSee('This user has not added pets to their profile.')
+        ->assertDontSee('data-ui="profile-pet-owner-empty"', false)
+        ->assertDontSee('Add your first pet')
+        ->assertDontSee('profile-pet-create-modal', false);
+
+    auth()->logout();
+
+    Livewire::test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('No pets yet')
+        ->assertSee('This user has not added pets to their profile.')
+        ->assertDontSee('data-ui="profile-pet-owner-empty"', false)
+        ->assertDontSee('Add your first pet')
+        ->assertDontSee('profile-pet-create-modal', false);
+});
+
 test('profile owner can create a pet from the pets tab modal', function (): void {
     $owner = User::factory()->create([
         'username' => 'modal_pet_owner',
@@ -319,7 +356,8 @@ test('profile owner can create a pet from the pets tab modal', function (): void
 
     Livewire::actingAs($owner)
         ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
-        ->assertSee('data-ui="profile-add-pet-card"', false)
+        ->assertSee('data-ui="profile-pet-owner-empty"', false)
+        ->assertSee('Add your first pet')
         ->assertSee('profile-pet-create-modal', false)
         ->set('name', 'Modal Pet')
         ->set('species', 'dog')
@@ -333,6 +371,7 @@ test('profile owner can create a pet from the pets tab modal', function (): void
         ->assertHasNoErrors()
         ->assertNoRedirect()
         ->assertDispatched('profile-pet-created')
+        ->assertSee('data-ui="profile-add-pet-card"', false)
         ->assertSee('Modal Pet')
         ->assertSee('Dog · Retriever')
         ->assertSee('~2 years');

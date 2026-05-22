@@ -265,10 +265,47 @@ new class extends Component
 
 <div data-ui="profile-tab-panel" id="profile-panel-pets">
  @if ($data['canViewPets'])
+ @if ($isOwner && $data['pets']->isEmpty())
+ <section
+ data-ui="profile-pet-owner-empty"
+ class="shell-card flex flex-col items-center gap-6 border-2 border-dashed border-whisker/60 bg-cream/45 px-5 py-10 text-center sm:px-8"
+ aria-labelledby="profile-pet-owner-empty-title"
+ >
+ <div class="relative h-32 w-40" aria-hidden="true">
+ <div class="absolute left-1/2 top-8 h-20 w-28 -translate-x-1/2 rounded-[var(--radius-card)] border border-whisker/50 bg-warm-white shadow-card"></div>
+ <div class="absolute left-8 top-3 h-12 w-12 rotate-[-8deg] rounded-[var(--radius-card)] border border-whisker/50 bg-sage/20"></div>
+ <div class="absolute right-7 top-6 h-14 w-14 rotate-[10deg] rounded-[var(--radius-card)] border border-whisker/50 bg-paw-light/40"></div>
+ <div class="absolute left-1/2 top-12 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full border-2 border-dashed border-paw/60 bg-warm-white text-3xl text-paw">🐾</div>
+ <div class="absolute bottom-1 left-5 h-3 w-20 rounded-full bg-whisker/20"></div>
+ <div class="absolute bottom-1 right-7 h-3 w-12 rounded-full bg-whisker/20"></div>
+ </div>
+
+ <div class="max-w-2xl space-y-3">
+ <p class="text-xs font-semibold uppercase text-paw">Start their story</p>
+ <h3 id="profile-pet-owner-empty-title" class="font-display text-2xl font-bold text-bark">Add your first pet profile</h3>
+ <p class="text-sm leading-6 text-fur">
+ Pet profiles give each pet a dedicated place for photos, details, personality notes, follower updates, and future posts. Creating one helps friends recognize them across your profile and makes your PetSocial page feel complete.
+ </p>
+ </div>
+
+ <x-ui.button
+ type="button"
+ variant="primary"
+ size="lg"
+ class="min-h-12 px-6"
+ aria-haspopup="dialog"
+ aria-controls="profile-pet-create-modal"
+ @click="window.toggleModal('profile-pet-create-modal')"
+ >
+ Add your first pet
+ </x-ui.button>
+ </section>
+ @else
  <div data-ui="profile-pet-card-grid" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
  @if ($isOwner)
  <button
  type="button"
+ wire:key="profile-add-pet-card"
  data-ui="profile-add-pet-card"
  class="shell-card ui-card-interactive flex min-h-72 flex-col items-center justify-center border-2 border-dashed border-whisker/60 bg-cream/45 p-6 text-center transition-all hover:-translate-y-0.5 hover:border-paw hover:bg-paw-light/30 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  aria-haspopup="dialog"
@@ -295,6 +332,7 @@ new class extends Component
  && ! $viewerIsFollowing;
  @endphp
  <article
+ wire:key="profile-pet-card-{{ $pet->getKey() }}"
  data-ui="profile-pet-card"
  x-data="petFollowCard({ petId: @js($pet->getKey()), petName: @js($pet->name), followed: @js($viewerIsFollowing), followersCount: @js($petFollowersCount) })"
  class="shell-card ui-card-interactive flex min-h-full flex-col overflow-hidden p-0">
@@ -352,6 +390,7 @@ new class extends Component
  </div>
  @endif
  </div>
+ @endif
 
  @if ($isOwner)
  <x-ui.modal id="profile-pet-create-modal" name="profile-pet-create-modal" title="Add a pet" description="Create a pet profile without leaving your profile page." size="2xl">

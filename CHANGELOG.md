@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a profile owner first-pet onboarding empty state with an illustrated prompt and modal CTA, while keeping visitor zero-pet profiles to a simple no-pets message.
 - Added an owner-only Add Pet card and on-page Livewire pet creation modal to the profile Pets tab, with immediate grid refresh and parent tab-count update after creation.
 - Added the profile Pets tab responsive Livewire grid with square pet photos, age/follower metadata, and authorized Follow Pet actions.
 - Added a profile Posts tab media-only toggle with an indexed media query, Tailwind masonry grid, and Livewire full-post modal with threaded comments.
