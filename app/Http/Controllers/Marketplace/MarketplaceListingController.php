@@ -255,8 +255,8 @@ class MarketplaceListingController extends Controller
             return 'Messaging is unavailable because one user has blocked the other.';
         }
 
-        if ((bool) $recipient->is_private && ! $this->isFollowing($sender, $recipient)) {
-            return 'This profile is private. Follow the user before sending a message.';
+        if (! $sender->hasAnyRole(['admin', 'moderator']) && (! $this->isFollowing($sender, $recipient) || ! $this->isFollowing($recipient, $sender))) {
+            return 'Messaging is available only when both users follow each other.';
         }
 
         return null;

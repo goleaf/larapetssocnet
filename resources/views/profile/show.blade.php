@@ -5,6 +5,19 @@
  $isOwner = auth()->check() && auth()->id() === $profileUser->id;
  $hasBlockingRelationship = ($isBlocked ?? false) || ($isBlockedBy ?? false);
  $canInteract = auth()->check() && ! $isOwner && ! $hasBlockingRelationship;
+ $profileViewer = auth()->user();
+ $profileFollowStatus = (string) ($followStatus ?? 'none');
+ $profileOwnerFollowsViewer = (bool) ($profileOwnerFollowsViewer ?? false);
+ if ($profileViewer instanceof \App\Models\Identity\User && ! $isOwner) {
+ $profileFollowStatus = $profileViewer->getFollowStatus($profileUser);
+ $profileOwnerFollowsViewer = $profileUser->isFollowing($profileViewer);
+ }
+ $profileCanMessage = (bool) ($canMessage ?? false) || (
+ $profileViewer instanceof \App\Models\Identity\User
+ && ! $isOwner
+ && $profileFollowStatus === 'following'
+ && $profileOwnerFollowsViewer
+ );
  $displayName = $profileUser->display_name ?: $profileUser->name;
  $profileBio = trim((string) ($profileUser->bio ?? ''));
  $location = ($canViewLocation ?? false) ? ($profileUser->location ?? $profileUser->city ?? null) : null;
@@ -28,7 +41,8 @@
  $hasProfileActions = $isOwner || $canInteract || (! auth()->check() && Route::has('login'));
  $profileUrl = $profileUser->profile_url;
  $profilePrimaryFollowLabel = ($profileVisibility ?? 'public') === 'public' ? 'Follow' : 'Request to Follow';
- $profileMessageUrl = (($canMessage ?? false) && Route::has('messages.conversation')) ? route('messages.conversation', ['peer'=> $profileUser]) : false;
+ $profileMessageUrl = ($profileCanMessage && Route::has('messages.conversation')) ? route('messages.conversation', ['peer'=> $profileUser]) : false;
+ $profilePotentialMessageUrl = (($profileCanMessage || $profileOwnerFollowsViewer) && Route::has('messages.conversation')) ? route('messages.conversation', ['peer'=> $profileUser]) : false;
  $profileShareText = 'Meet '.$displayName.' on PetSocial: '.$profileUrl;
  $encodedProfileUrl = rawurlencode($profileUrl);
  $encodedProfileShareText = rawurlencode($profileShareText);
@@ -100,8 +114,8 @@
 
 <x-app-layout>
  <div class="w-full min-w-0 space-y-5" data-ui="profile-shell" x-data="profileActions({
- followStatus: @js($followStatus),
- isFollowing: @js($isFollowing),
+ followStatus: @js($profileFollowStatus),
+ isFollowing: @js($profileFollowStatus === 'following'),
  isBlocked: @js($isBlocked),
  isBlockedBy: @js($isBlockedBy ?? false),
  followersCount: @js($profileUser->followers_count),
@@ -409,18 +423,78 @@
  @click="window.toggleModal('profile-share-modal')">Share Profile</x-ui.button>
  </div>
  @elseif ($canInteract)
- <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center" data-ui="profile-visitor-actions">
+ <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center" data-ui="profile-visitor-actions" x-data="{ followingHovered: false, showUnfollowSheet: false }" @keydown.escape.window="showUnfollowSheet = false">
  <button
  data-ui="profile-follow-primary-action"
- class="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[var(--radius-control)] px-5 py-2 text-sm font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
+ data-follow-status="{{ $profileFollowStatus }}"
+ class="hidden min-h-11 min-w-[10rem] items-center justify-center rounded-[var(--radius-control)] px-5 py-2 text-sm font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
  :class="followButtonClass"
  x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
  x-bind:aria-label="followStatus === 'following' ? @js('Unfollow '.$profileUser->name) : (followStatus === 'pending' ? @js('Requested to follow '.$profileUser->name) : @js($profilePrimaryFollowLabel.' '.$profileUser->name))"
+ @mouseenter="followingHovered = followStatus === 'following'"
+ @mouseleave="followingHovered = false"
  @click="toggleFollow">
- <span x-text="busy ? 'Saving...' : (followStatus === 'none' ? @js($profilePrimaryFollowLabel) : followLabel)">{{ $profilePrimaryFollowLabel }}</span>
+ <span x-text="busy ? 'Saving...' : (followStatus === 'following' ? (followingHovered ? 'Unfollow' : 'Following') : (followStatus === 'none' ? @js($profilePrimaryFollowLabel) : followLabel))">{{ $profileFollowStatus === 'following' ? 'Following' : $profilePrimaryFollowLabel }}</span>
  </button>
 
+ <button
+ type="button"
+ data-ui="profile-follow-mobile-action"
+ data-follow-status="{{ $profileFollowStatus }}"
+ class="inline-flex min-h-11 min-w-[10rem] items-center justify-center rounded-[var(--radius-control)] px-5 py-2 text-sm font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60 md:hidden"
+ :class="followButtonClass"
+ x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'"
+ x-bind:aria-pressed="(followStatus === 'following').toString()"
+ x-bind:aria-label="followStatus === 'following' ? @js('Manage following '.$profileUser->name) : (followStatus === 'pending' ? @js('Requested to follow '.$profileUser->name) : @js($profilePrimaryFollowLabel.' '.$profileUser->name))"
+ @click="if (followStatus === 'following') { showUnfollowSheet = true; return; } toggleFollow()">
+ <span x-text="busy ? 'Saving...' : (followStatus === 'none' ? @js($profilePrimaryFollowLabel) : followLabel)">{{ $profileFollowStatus === 'following' ? 'Following' : $profilePrimaryFollowLabel }}</span>
+ </button>
+
+ @if ($profilePotentialMessageUrl)
+ <x-ui.button
+ :href="$profilePotentialMessageUrl"
+ variant="secondary"
+ size="sm"
+ class="min-h-11 sm:min-w-28"
+ data-ui="profile-mutual-message-action"
+ x-show="followStatus === 'following' && @js($profileOwnerFollowsViewer)"
+ x-cloak>Message</x-ui.button>
+ @endif
+
  @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked,'profileUrl'=> $profileUrl,'messageUrl'=> $profileMessageUrl])
+
+ <div
+ x-show="showUnfollowSheet && followStatus === 'following'"
+ x-cloak
+ x-transition.opacity
+ data-ui="profile-unfollow-bottom-sheet"
+ class="fixed inset-0 z-50 md:hidden"
+ role="dialog"
+ aria-modal="true"
+ aria-labelledby="profile-unfollow-sheet-title"
+ >
+ <button type="button" class="absolute inset-0 h-full w-full bg-bark/40" aria-label="Keep following {{ $profileUser->name }}" @click="showUnfollowSheet = false"></button>
+ <div class="absolute inset-x-0 bottom-0 rounded-t-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4 shadow-card">
+ <p id="profile-unfollow-sheet-title" class="text-base font-semibold text-bark">Unfollow &#64;{{ $profileUser->username }}?</p>
+ <p class="mt-1 text-sm text-fur">Their public updates will stop appearing in your following feed.</p>
+ <div class="mt-4 grid gap-2">
+ <button
+ type="button"
+ data-ui="profile-unfollow-confirm-action"
+ class="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-control)] bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ @click="showUnfollowSheet = false; toggleFollow()">
+ Unfollow
+ </button>
+ <button
+ type="button"
+ data-ui="profile-unfollow-keep-action"
+ class="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-control)] border border-whisker/40 bg-warm-white px-4 py-2 text-sm font-semibold text-bark transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ @click="showUnfollowSheet = false">
+ Keep Following
+ </button>
+ </div>
+ </div>
+ </div>
  </div>
 
  <button

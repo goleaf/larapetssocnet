@@ -24,6 +24,18 @@ class SendMessageAction
             ]);
         }
 
+        if ($sender->hasBlockingRelationshipWith($receiver)) {
+            throw ValidationException::withMessages([
+                'receiver_id' => ['Messaging is unavailable because one user has blocked the other.'],
+            ]);
+        }
+
+        if (! $sender->hasAnyRole(['admin', 'moderator']) && (! $sender->isFollowing($receiver) || ! $receiver->isFollowing($sender))) {
+            throw ValidationException::withMessages([
+                'receiver_id' => ['Messaging is available only when both users follow each other.'],
+            ]);
+        }
+
         $body = trim((string) ($data['body'] ?? ''));
 
         if ($body === '') {

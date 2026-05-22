@@ -17,10 +17,24 @@ it('prevents a third user from reading others direct messages', function (): voi
         'body' => 'private-message-between-two-users',
     ]);
 
+    $intruder->follow($secondUser);
+    $secondUser->follow($intruder);
+
     $this->actingAs($intruder)
         ->get(route('messages.conversation', ['peer' => $secondUser]))
         ->assertOk()
         ->assertDontSee('private-message-between-two-users');
+});
+
+it('requires a mutual follow before opening a direct message thread', function (): void {
+    $viewer = User::factory()->create(['is_private' => false]);
+    $peer = User::factory()->create(['is_private' => false]);
+
+    $viewer->follow($peer);
+
+    $this->actingAs($viewer)
+        ->get(route('messages.conversation', ['peer' => $peer]))
+        ->assertForbidden();
 });
 
 it('prevents deleting message owned by another user', function (): void {

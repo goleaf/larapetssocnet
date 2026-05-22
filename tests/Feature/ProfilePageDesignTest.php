@@ -281,7 +281,6 @@ it('keeps the message menu action disabled when profile messaging policy denies 
         'username' => 'messaging_limited_owner',
         'is_private' => false,
         'profile_visibility' => 'public',
-        'messaging_permission' => 'followers_only',
     ]);
 
     $messageUrl = route('messages.conversation', ['peer' => $profileOwner]);
@@ -293,6 +292,66 @@ it('keeps the message menu action disabled when profile messaging policy denies 
         ->assertSee('Send Message')
         ->assertSee('disabled', false)
         ->assertDontSee('href="'.$messageUrl.'"', false);
+});
+
+it('renders followed profile actions with desktop unfollow hover and a mobile confirmation sheet', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Followed Action Owner',
+        'username' => 'followed_action_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $viewer = User::factory()->create();
+
+    $viewer->follow($profileOwner);
+
+    expect($viewer->getFollowStatus($profileOwner))->toBe('following');
+
+    $this->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-visitor-actions"', false)
+        ->assertSee('data-ui="profile-follow-primary-action"', false)
+        ->assertSee('data-follow-status="following"', false)
+        ->assertSee('@mouseenter="followingHovered = followStatus === \'following\'"', false)
+        ->assertSee("followingHovered ? 'Unfollow' : 'Following'", false)
+        ->assertSee('data-ui="profile-follow-mobile-action"', false)
+        ->assertSee('@click="if (followStatus === \'following\') { showUnfollowSheet = true; return; } toggleFollow()"', false)
+        ->assertSee('data-ui="profile-unfollow-bottom-sheet"', false)
+        ->assertSee('Unfollow &#64;followed_action_owner?', false)
+        ->assertSee('data-ui="profile-unfollow-confirm-action"', false)
+        ->assertSee('Keep Following')
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false)
+        ->assertSee('Send Message')
+        ->assertDontSee('data-ui="profile-mutual-message-action"', false);
+});
+
+it('renders the secondary message action only when the follow is mutual', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Mutual Action Owner',
+        'username' => 'mutual_action_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $viewer = User::factory()->create([
+        'name' => 'Mutual Action Viewer',
+        'username' => 'mutual_action_viewer',
+    ]);
+
+    $viewer->follow($profileOwner);
+    $profileOwner->follow($viewer);
+
+    expect($viewer->getFollowStatus($profileOwner))->toBe('following')
+        ->and($profileOwner->getFollowStatus($viewer))->toBe('following');
+
+    $messageUrl = route('messages.conversation', ['peer' => $profileOwner]);
+
+    $this->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-mutual-message-action"', false)
+        ->assertSee('href="'.$messageUrl.'"', false)
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false);
 });
 
 it('renders owner edit and share profile modals from the profile action buttons', function (): void {

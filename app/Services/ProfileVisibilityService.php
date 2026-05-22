@@ -189,11 +189,7 @@ class ProfileVisibilityService
             return true;
         }
 
-        if ($owner->messaging_permission === 'followers_only') {
-            return $viewer->isFollowing($owner);
-        }
-
-        return true;
+        return $viewer->isFollowing($owner) && $owner->isFollowing($viewer);
     }
 
     public function syncLegacyPrivacy(User $user, ProfileVisibility $visibility): void

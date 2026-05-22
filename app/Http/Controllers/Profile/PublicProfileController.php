@@ -30,7 +30,7 @@ class PublicProfileController extends Controller
 
     public function show(Request $request, User $user): View|RedirectResponse
     {
-        $viewer = $request->user();
+        $viewer = $request->user() ?: auth()->user();
 
         if ($viewer instanceof User) {
             $restrictedRedirect = $this->restrictedViewerRedirect($viewer);
@@ -84,9 +84,10 @@ class PublicProfileController extends Controller
         $canViewFollowers = $this->profileVisibilityService->canViewFollowers($viewer, $user);
         $canViewFollowing = $this->profileVisibilityService->canViewFollowing($viewer, $user);
         $canViewLocation = $this->profileVisibilityService->canViewLocation($viewer, $user);
-        $canMessage = $this->profileVisibilityService->canMessage($viewer, $user);
         $followStatus = $viewer ? $viewer->getFollowStatus($user) : 'none';
         $isOwner = $viewer && $viewer->is($user);
+        $profileOwnerFollowsViewer = $viewer && ! $isOwner ? $user->isFollowing($viewer) : false;
+        $canMessage = $this->profileVisibilityService->canMessage($viewer, $user);
 
         if (! $canViewContent) {
             return view('profile.private', [
@@ -94,6 +95,7 @@ class PublicProfileController extends Controller
                 'followStatus' => $followStatus,
                 'profileVisibility' => $profileVisibility->value,
                 'canMessage' => $canMessage,
+                'profileOwnerFollowsViewer' => $profileOwnerFollowsViewer,
             ]);
         }
 
@@ -320,6 +322,7 @@ class PublicProfileController extends Controller
             'profileCompletenessMissingItems' => $profileCompleteness['missing_items'],
             'followStatus' => $followStatus,
             'isFollowing' => $followStatus === 'following',
+            'profileOwnerFollowsViewer' => $profileOwnerFollowsViewer,
             'isBlocked' => $viewer ? $viewer->hasBlocked($user) : false,
             'isBlockedBy' => $viewer ? $viewer->isBlockedBy($user) : false,
         ]);

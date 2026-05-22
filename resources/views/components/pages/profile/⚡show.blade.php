@@ -37,7 +37,7 @@ class extends Component
 
         $this->profileOwner = $this->resolveActiveProfileOwner($user);
 
-        $viewer = request()->user();
+        $viewer = request()->user() ?: auth()->user();
 
         $this->abortIfBlocked($viewer, $this->profileOwner);
         $this->redirectRestrictedViewer($viewer);
@@ -55,7 +55,7 @@ class extends Component
     #[Renderless]
     public function saveCoverPosition(mixed $position): float
     {
-        $viewer = request()->user();
+        $viewer = request()->user() ?: auth()->user();
 
         abort_unless($viewer instanceof User && $viewer->is($this->profileOwner), 403);
 
@@ -91,7 +91,7 @@ class extends Component
     public function render(): View
     {
         if ($this->showPrivateProfile) {
-            $viewer = request()->user();
+            $viewer = request()->user() ?: auth()->user();
 
             return view('profile.private', [
                 'user' => $this->profileOwner,

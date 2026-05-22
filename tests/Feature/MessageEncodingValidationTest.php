@@ -9,6 +9,9 @@ it('accepts valid utf-8 message bodies', function (): void {
     $sender = User::factory()->create(['is_private' => false]);
     $receiver = User::factory()->create(['is_private' => false]);
 
+    $sender->follow($receiver);
+    $receiver->follow($sender);
+
     $this->actingAs($sender)
         ->post(route('messages.store', $receiver), [
             'body' => 'Sveikas 👋',
@@ -24,6 +27,9 @@ it('accepts valid utf-8 message bodies', function (): void {
 it('rejects message bodies that are not valid utf-8', function (): void {
     $sender = User::factory()->create(['is_private' => false]);
     $receiver = User::factory()->create(['is_private' => false]);
+
+    $sender->follow($receiver);
+    $receiver->follow($sender);
 
     $invalidBody = "\xB1\x31";
 

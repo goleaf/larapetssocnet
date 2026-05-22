@@ -14,6 +14,9 @@ it('sends a valid direct message', function (): void {
     $sender = User::factory()->create(['is_private' => false]);
     $receiver = User::factory()->create(['is_private' => false]);
 
+    $sender->follow($receiver);
+    $receiver->follow($sender);
+
     $this->actingAs($sender)
         ->from(route('messages.conversation', ['peer' => $receiver]))
         ->post(route('messages.store', ['peer' => $receiver]), [
@@ -35,6 +38,9 @@ it('rejects invalid message payload', function (): void {
     $sender = User::factory()->create(['is_private' => false]);
     $receiver = User::factory()->create(['is_private' => false]);
 
+    $sender->follow($receiver);
+    $receiver->follow($sender);
+
     $this->actingAs($sender)
         ->from(route('messages.conversation', ['peer' => $receiver]))
         ->post(route('messages.store', ['peer' => $receiver]), [
@@ -42,6 +48,25 @@ it('rejects invalid message payload', function (): void {
         ])
         ->assertRedirect(route('messages.conversation', ['peer' => $receiver]))
         ->assertSessionHasErrors('body');
+});
+
+it('requires a mutual follow before sending a direct message', function (): void {
+    $sender = User::factory()->create(['is_private' => false]);
+    $receiver = User::factory()->create(['is_private' => false]);
+
+    $sender->follow($receiver);
+
+    $this->actingAs($sender)
+        ->post(route('messages.store', ['peer' => $receiver]), [
+            'body' => 'hello without mutual follow',
+        ])
+        ->assertForbidden();
+
+    $this->assertDatabaseMissing('messages', [
+        'sender_id' => $sender->getKey(),
+        'receiver_id' => $receiver->getKey(),
+        'body' => 'hello without mutual follow',
+    ]);
 });
 
 it('blocks self messaging', function (): void {

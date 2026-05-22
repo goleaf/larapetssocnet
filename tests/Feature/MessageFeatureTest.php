@@ -97,6 +97,9 @@ class MessageFeatureTest extends TestCase
         $sender = User::factory()->create(['is_private' => false]);
         $receiver = User::factory()->create(['is_private' => false]);
 
+        $sender->follow($receiver);
+        $receiver->follow($sender);
+
         $this->actingAs($sender)
             ->post(route('messages.store', $receiver), [
                 'body' => 'Hey there!',

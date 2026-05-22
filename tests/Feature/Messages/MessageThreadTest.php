@@ -52,6 +52,9 @@ it('loads a thread between two users with pagination', function (): void {
     $viewer = User::factory()->create(['is_private' => false]);
     $peer = User::factory()->create(['is_private' => false]);
 
+    $viewer->follow($peer);
+    $peer->follow($viewer);
+
     Message::factory()->count(35)->create([
         'sender_id' => $peer->getKey(),
         'receiver_id' => $viewer->getKey(),

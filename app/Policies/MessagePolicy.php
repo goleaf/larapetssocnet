@@ -28,24 +28,33 @@ class MessagePolicy
 
     public function viewThread(User $user, User $peer): bool
     {
-        if ((int) $user->getKey() === (int) $peer->getKey()) {
-            return false;
-        }
-
-        return ! $user->hasBlocked($peer) && ! $peer->hasBlocked($user);
+        return $this->canMessagePeer($user, $peer);
     }
 
     public function create(User $user, User $recipient): bool
     {
-        if ((int) $user->getKey() === (int) $recipient->getKey()) {
-            return false;
-        }
-
-        return ! $user->hasBlocked($recipient) && ! $recipient->hasBlocked($user);
+        return $this->canMessagePeer($user, $recipient);
     }
 
     public function delete(User $user, Message $message): bool
     {
         return (int) $message->sender_id === (int) $user->getKey();
+    }
+
+    private function canMessagePeer(User $user, User $peer): bool
+    {
+        if ((int) $user->getKey() === (int) $peer->getKey()) {
+            return false;
+        }
+
+        if ($user->hasBlocked($peer) || $peer->hasBlocked($user)) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        return $user->isFollowing($peer) && $peer->isFollowing($user);
     }
 }

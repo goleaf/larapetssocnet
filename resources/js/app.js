@@ -452,7 +452,7 @@ Alpine.data('profileActions', (config = {}) => ({
 
  get followButtonClass() {
  if (this.followStatus === 'following') {
- return 'border border-whisker bg-warm-white text-bark hover:bg-cream';
+ return 'border border-whisker bg-warm-white text-bark hover:border-rose-400/50 hover:bg-rose-500/10 hover:text-rose-700';
  }
 
  if (this.followStatus === 'pending') {
