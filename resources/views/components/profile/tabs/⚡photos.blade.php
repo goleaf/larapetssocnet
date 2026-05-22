@@ -2,6 +2,7 @@
 
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
+use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\CommentService;
@@ -12,13 +13,45 @@ use Livewire\Component;
 
 new class extends Component
 {
+    private const PHOTOS_PER_PAGE = 30;
+
     public int $profileUserId;
+
+    /**
+     * @var list<int>
+     */
+    public array $photoMediaIds = [];
+
+    public ?int $nextPhotoCursor = null;
+
+    public bool $hasMorePhotos = false;
+
+    public bool $photosLoaded = false;
 
     public ?string $selectedPhotoKey = null;
 
     public function mount(int $profileUserId): void
     {
         $this->profileUserId = $profileUserId;
+    }
+
+    public function loadMorePhotos(): void
+    {
+        $profileUser = $this->profileUser();
+        $viewer = $this->viewer();
+
+        if (! app(ProfileVisibilityService::class)->canViewFullProfile($viewer, $profileUser)) {
+            $this->selectedPhotoKey = null;
+            $this->resetPhotos();
+
+            return;
+        }
+
+        if ($this->photosLoaded && ! $this->hasMorePhotos) {
+            return;
+        }
+
+        $this->appendPhotos($profileUser, $viewer, $this->photosLoaded ? $this->nextPhotoCursor : null);
     }
 
     public function openPhotoLightbox(string $photoKey): void
@@ -57,7 +90,8 @@ new class extends Component
      *     selectedPhotoBodyHtml: string,
      *     selectedPostState: array<string, mixed>,
      *     hasPreviousPhoto: bool,
-     *     hasNextPhoto: bool
+     *     hasNextPhoto: bool,
+     *     hasMorePhotos: bool
      * }
      */
     public function viewData(): array
@@ -65,6 +99,14 @@ new class extends Component
         $profileUser = $this->profileUser();
         $viewer = $this->viewer();
         $canViewPhotos = app(ProfileVisibilityService::class)->canViewFullProfile($viewer, $profileUser);
+
+        if ($canViewPhotos) {
+            $this->ensurePhotosLoaded($profileUser, $viewer);
+        } else {
+            $this->selectedPhotoKey = null;
+            $this->resetPhotos();
+        }
+
         $photos = $canViewPhotos ? $this->postPhotos($profileUser, $viewer) : collect();
         [$selectedPhoto, $selectedPhotoIndex] = $this->selectedPhotoFrom($photos);
         $selectedPhotoComments = collect();
@@ -92,7 +134,8 @@ new class extends Component
             'selectedPhotoBodyHtml' => $selectedPhotoBodyHtml,
             'selectedPostState' => $selectedPostState,
             'hasPreviousPhoto' => is_int($selectedPhotoIndex) && $selectedPhotoIndex > 0,
-            'hasNextPhoto' => is_int($selectedPhotoIndex) && $selectedPhotoIndex < $photos->count() - 1,
+            'hasNextPhoto' => is_int($selectedPhotoIndex) && ($selectedPhotoIndex < $photos->count() - 1 || $this->hasMorePhotos),
+            'hasMorePhotos' => $this->hasMorePhotos,
         ];
     }
 
@@ -116,31 +159,32 @@ new class extends Component
      */
     private function postPhotos(User $profileUser, ?User $viewer): Collection
     {
-        return Post::profilePhotoGridPosts($profileUser, $viewer)
-            ->flatMap(function (Post $post) use ($profileUser): Collection {
-                return $post->mediaItemsForDisplay()
-                    ->filter(fn (mixed $mediaItem): bool => Post::mediaItemIsPhoto($mediaItem))
-                    ->map(function (mixed $mediaItem) use ($post, $profileUser): ?array {
-                        $url = Post::mediaItemUrl($mediaItem);
+        return Post::profilePhotoMediaByIds($profileUser, $viewer, $this->photoMediaIds)
+            ->map(function (PostMedia $mediaItem) use ($profileUser): ?array {
+                $post = $mediaItem->post;
 
-                        if ($url === '') {
-                            return null;
-                        }
+                if (! $post instanceof Post) {
+                    return null;
+                }
 
-                        $postedAt = $post->created_at?->format('M j, Y') ?? '';
+                $url = Post::mediaItemUrl($mediaItem);
 
-                        return [
-                            'key' => $this->photoKey($post, $mediaItem),
-                            'url' => $url,
-                            'alt' => __('Photo from :name\'s post', ['name' => $profileUser->name]),
-                            'post' => $post,
-                            'posted_at' => $postedAt,
-                            'posted_at_iso' => $post->created_at?->toIso8601String(),
-                        ];
-                    })
-                    ->filter()
-                    ->values();
+                if ($url === '') {
+                    return null;
+                }
+
+                $postedAt = $post->created_at?->format('M j, Y') ?? '';
+
+                return [
+                    'key' => $this->photoKey($post, $mediaItem),
+                    'url' => $url,
+                    'alt' => __('Photo from :name\'s post', ['name' => $profileUser->name]),
+                    'post' => $post,
+                    'posted_at' => $postedAt,
+                    'posted_at_iso' => $post->created_at?->toIso8601String(),
+                ];
             })
+            ->filter()
             ->values();
     }
 
@@ -169,6 +213,8 @@ new class extends Component
             return collect();
         }
 
+        $this->ensurePhotosLoaded($profileUser, $viewer);
+
         return $this->postPhotos($profileUser, $viewer);
     }
 
@@ -188,6 +234,24 @@ new class extends Component
         }
 
         $nextIndex = $selectedPhotoIndex + $direction;
+
+        if (! $photos->has($nextIndex) && $direction > 0 && $this->hasMorePhotos) {
+            $profileUser = $this->profileUser();
+            $viewer = $this->viewer();
+
+            $this->appendPhotos($profileUser, $viewer, $this->nextPhotoCursor);
+
+            $photos = $this->lightboxPhotos();
+            $selectedPhotoIndex = $photos->search(fn (array $photo): bool => $photo['key'] === $this->selectedPhotoKey);
+
+            if (! is_int($selectedPhotoIndex)) {
+                $this->selectedPhotoKey = null;
+
+                return;
+            }
+
+            $nextIndex = $selectedPhotoIndex + $direction;
+        }
 
         if (! $photos->has($nextIndex)) {
             return;
@@ -218,6 +282,42 @@ new class extends Component
         $selectedPhoto = $photos->get($selectedPhotoIndex);
 
         return [is_array($selectedPhoto) ? $selectedPhoto : null, $selectedPhotoIndex];
+    }
+
+    private function ensurePhotosLoaded(User $profileUser, ?User $viewer): void
+    {
+        if ($this->photosLoaded) {
+            return;
+        }
+
+        $this->appendPhotos($profileUser, $viewer);
+    }
+
+    private function appendPhotos(User $profileUser, ?User $viewer, ?int $cursor = null): void
+    {
+        $mediaPage = Post::profilePhotoMediaPage($profileUser, $viewer, self::PHOTOS_PER_PAGE, $cursor);
+        $visiblePageItems = $mediaPage->take(self::PHOTOS_PER_PAGE);
+
+        foreach ($visiblePageItems as $mediaItem) {
+            $mediaId = (int) $mediaItem->getKey();
+
+            if (! in_array($mediaId, $this->photoMediaIds, true)) {
+                $this->photoMediaIds[] = $mediaId;
+            }
+        }
+
+        $lastMediaItem = $visiblePageItems->last();
+        $this->nextPhotoCursor = $lastMediaItem instanceof PostMedia ? (int) $lastMediaItem->getKey() : null;
+        $this->hasMorePhotos = $mediaPage->count() > self::PHOTOS_PER_PAGE;
+        $this->photosLoaded = true;
+    }
+
+    private function resetPhotos(): void
+    {
+        $this->photoMediaIds = [];
+        $this->nextPhotoCursor = null;
+        $this->hasMorePhotos = false;
+        $this->photosLoaded = false;
     }
 
     /**
@@ -329,6 +429,16 @@ new class extends Component
  </button>
  @endforeach
  </div>
+ @if ($data['hasMorePhotos'])
+ <div data-ui="profile-photos-infinite-scroll-trigger" wire:intersect.margin.600px="loadMorePhotos" aria-live="polite" class="mt-3">
+ <div wire:loading.block wire:target="loadMorePhotos" data-ui="profile-photos-loading-skeleton" role="status" aria-label="Loading more photos" class="grid grid-cols-2 gap-2 lg:grid-cols-3">
+ @for ($index = 0; $index < 6; $index++)
+ <div class="aspect-square animate-pulse rounded-[var(--radius-soft)] bg-cream"></div>
+ @endfor
+ </div>
+ <div wire:loading.remove wire:target="loadMorePhotos" class="h-8" aria-hidden="true"></div>
+ </div>
+ @endif
  @else
  <x-ui.empty-state icon="📷" title="No photos yet"
  description="When this user shares visible post photos, they will appear here."/>

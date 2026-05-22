@@ -858,6 +858,66 @@ test('profile media grid opens a full post modal with comments', function (): vo
         ->assertSet('selectedPostId', null);
 });
 
+test('profile photos tab appends cursor-paginated batches by photo id', function (): void {
+    $user = User::factory()->create();
+    $mediaItems = collect(range(0, 30))
+        ->map(function (int $index) use ($user): PostMedia {
+            $post = Post::factory()->for($user)->create([
+                'body' => 'profile photo cursor post '.$index,
+                'body_html' => '<p>profile photo cursor post '.$index.'</p>',
+                'type' => Post::TYPE_PHOTO,
+                'created_at' => now()->subMinutes($index),
+            ]);
+
+            return PostMedia::factory()->for($post, 'post')->create([
+                'file_path' => 'posts/profile-photo-cursor-'.$index.'.jpg',
+                'media_type' => 'image',
+                'order' => 0,
+            ]);
+        });
+
+    $expectedFirstPageIds = $mediaItems
+        ->sortByDesc(fn (PostMedia $media): int => (int) $media->getKey())
+        ->take(30)
+        ->pluck('id')
+        ->values()
+        ->all();
+    $expectedAllIds = $mediaItems
+        ->sortByDesc(fn (PostMedia $media): int => (int) $media->getKey())
+        ->pluck('id')
+        ->values()
+        ->all();
+
+    $component = Livewire::actingAs($user)
+        ->test('profile.tabs.photos', ['profileUserId' => $user->getKey()])
+        ->assertSet('photoMediaIds', $expectedFirstPageIds)
+        ->assertSet('hasMorePhotos', true)
+        ->assertSee('profile-photo-cursor-30.jpg')
+        ->assertSee('profile-photo-cursor-1.jpg')
+        ->assertDontSee('profile-photo-cursor-0.jpg')
+        ->assertSee('wire:intersect.margin.600px="loadMorePhotos"', false)
+        ->assertSee('data-ui="profile-photos-loading-skeleton"', false);
+
+    $newPost = Post::factory()->for($user)->create([
+        'body' => 'profile photo cursor inserted newest',
+        'body_html' => '<p>profile photo cursor inserted newest</p>',
+        'type' => Post::TYPE_PHOTO,
+        'created_at' => now()->addMinute(),
+    ]);
+    PostMedia::factory()->for($newPost, 'post')->create([
+        'file_path' => 'posts/profile-photo-cursor-newest.jpg',
+        'media_type' => 'image',
+        'order' => 0,
+    ]);
+
+    $component
+        ->call('loadMorePhotos')
+        ->assertSet('photoMediaIds', $expectedAllIds)
+        ->assertSet('hasMorePhotos', false)
+        ->assertSee('profile-photo-cursor-0.jpg')
+        ->assertDontSee('profile-photo-cursor-newest.jpg');
+});
+
 test('profile photos tab opens a navigable lightbox with post context', function (): void {
     $owner = User::factory()->create([
         'is_private' => false,
@@ -870,6 +930,12 @@ test('profile photos tab opens a navigable lightbox with post context', function
         'name' => 'Milo Lightbox',
         'slug' => 'milo-lightbox',
         'is_public' => true,
+    ]);
+
+    $secondPost = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-lightbox-second.jpg', [
+        'body' => 'Second lightbox post body',
+        'body_html' => '<p>Second lightbox post body</p>',
+        'created_at' => now()->subMinute(),
     ]);
 
     $firstPost = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-lightbox-first.jpg', [
@@ -885,12 +951,6 @@ test('profile photos tab opens a navigable lightbox with post context', function
     Comment::factory()->for($firstPost)->for($commenter, 'user')->create([
         'body' => 'lightbox visible comment',
         'body_html' => 'lightbox visible comment',
-    ]);
-
-    $secondPost = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-lightbox-second.jpg', [
-        'body' => 'Second lightbox post body',
-        'body_html' => '<p>Second lightbox post body</p>',
-        'created_at' => now()->subMinute(),
     ]);
 
     $firstMedia = $firstPost->postMedia()->firstOrFail();

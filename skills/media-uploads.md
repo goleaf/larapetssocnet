@@ -24,7 +24,7 @@ Post image conversions:
 - `medium` width 800 webp q85
 - `large` width 1200 webp q90
 
-Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()` and filters with `Post::containingMedia()` so both legacy `post_media` rows and Spatie collections remain visible without PHP-side post filtering. Profile Photos reads the same media sources through visible post queries and `Post::containingPhotos()`, then renders image-only media in a square two-column mobile/tablet and three-column desktop grid with desktop hover reaction/comment overlays while excluding videos. Opening a profile photo must keep using the same visible-photo collection for the Livewire lightbox so navigation never reveals hidden post media.
+Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()` and filters with `Post::containingMedia()` so both legacy `post_media` rows and Spatie collections remain visible without PHP-side post filtering. Profile Photos treats `post_media` as the canonical thumbnail cursor because current post uploads write a `post_media` row beside each Spatie media item: load 30 image rows at a time through `Post::profilePhotoMediaPage()`, append only media IDs to Livewire state, and rehydrate through `Post::profilePhotoMediaByIds()` before rendering the square two-column mobile/tablet and three-column desktop grid. Opening a profile photo must keep using the same loaded, visibility-scoped photo collection for the Livewire lightbox so navigation never reveals hidden post media.
 
 ## Pet Media
 Pet media uses public disk.

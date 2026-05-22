@@ -759,11 +759,9 @@ class Post extends Model implements HasMedia
     private static function profileTimelineQuery(User $profileOwner, ?User $viewer, bool $mediaOnly = false): Builder
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
-        $isOwner = $viewer instanceof User && $viewer->is($profileOwner);
 
-        return self::query()
+        $query = self::query()
             ->profileTimelineColumns()
-            ->forProfile($profileOwner)
             ->with([
                 'user',
                 'author.media',
@@ -774,14 +772,28 @@ class Post extends Model implements HasMedia
             ->with([
                 'pet' => fn ($petQuery) => $petQuery->visibleTo($viewer),
             ])
-            ->when($mediaOnly, fn (Builder $query): Builder => self::applyContainingMediaFilter($query))
+            ->when($mediaOnly, fn (Builder $query): Builder => self::applyContainingMediaFilter($query));
+
+        return self::applyProfileTimelineVisibility($query, $profileOwner, $viewer)
+            ->withListEngagement($viewerId);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    private static function applyProfileTimelineVisibility(Builder $query, User $profileOwner, ?User $viewer): Builder
+    {
+        $isOwner = $viewer instanceof User && $viewer->is($profileOwner);
+
+        return $query
+            ->forProfile($profileOwner)
             ->when(
                 $isOwner,
                 fn (Builder $query): Builder => $query->where('posts.status', '!=', PostStatus::Archived->value),
                 fn (Builder $query): Builder => $query->published(),
             )
-            ->visibleTo($viewer)
-            ->withListEngagement($viewerId);
+            ->visibleTo($viewer);
     }
 
     public static function pinnedProfileTimelinePost(User $profileOwner, ?User $viewer): ?self
@@ -840,6 +852,66 @@ class Post extends Model implements HasMedia
             ->containingPhotos()
             ->when(true, fn (Builder $query) => app(ProfilePostOrderingService::class)->apply($query))
             ->get();
+    }
+
+    /**
+     * @return Collection<int, PostMedia>
+     */
+    public static function profilePhotoMediaPage(User $profileOwner, ?User $viewer, int $perPage = 30, ?int $cursorId = null): Collection
+    {
+        return self::profilePhotoMediaQuery($profileOwner, $viewer)
+            ->when($cursorId !== null, fn (Builder $query): Builder => $query->where('post_media.id', '<', $cursorId))
+            ->orderByDesc('post_media.id')
+            ->limit(max(1, $perPage) + 1)
+            ->get();
+    }
+
+    /**
+     * @param  list<int>  $mediaIds
+     * @return Collection<int, PostMedia>
+     */
+    public static function profilePhotoMediaByIds(User $profileOwner, ?User $viewer, array $mediaIds): Collection
+    {
+        if ($mediaIds === []) {
+            return collect();
+        }
+
+        $media = self::profilePhotoMediaQuery($profileOwner, $viewer)
+            ->whereIn('post_media.id', $mediaIds)
+            ->get()
+            ->keyBy(fn (PostMedia $media): int => (int) $media->getKey());
+
+        return collect($mediaIds)
+            ->map(fn (int $mediaId): ?PostMedia => $media->get($mediaId))
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * @return Builder<PostMedia>
+     */
+    private static function profilePhotoMediaQuery(User $profileOwner, ?User $viewer): Builder
+    {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+
+        return PostMedia::query()
+            ->where('post_media.media_type', 'image')
+            ->whereHas('post', fn (Builder $postQuery): Builder => self::applyProfileTimelineVisibility($postQuery, $profileOwner, $viewer))
+            ->with([
+                'post' => function ($postQuery) use ($viewer, $viewerId): void {
+                    $postQuery
+                        ->profileTimelineColumns()
+                        ->with([
+                            'user',
+                            'author.media',
+                            'hashtags',
+                            'media',
+                            'postMedia',
+                            'pet' => fn ($petQuery) => $petQuery->visibleTo($viewer),
+                        ])
+                        ->withListEngagement($viewerId);
+                },
+            ]);
     }
 
     /**

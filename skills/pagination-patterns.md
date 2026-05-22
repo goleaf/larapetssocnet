@@ -24,3 +24,10 @@ Laravel pagination best practices for this project.
 - Show three fixed-height animated skeleton cards while the Livewire `loadMorePosts` action is in flight.
 - Store appended post IDs in Livewire state and re-query visible posts by ID through the shared profile visibility scope before rendering.
 - Media-only mode must reset the stored cursor and appended IDs, then call the same cursor helpers with the media-only flag so image/video grids never use offset pagination or PHP-side filtering.
+
+## Infinite Scroll Pattern (Profile Photos)
+- Use cursor pagination only; never use numeric offset pagination for profile photo grids.
+- Load 30 image media rows per batch ordered by descending `post_media.id`.
+- Trigger the next batch from a `wire:intersect.margin.600px` sentinel placed after the current grid.
+- Store appended media IDs in Livewire state and re-query visible media rows by ID through the shared profile visibility scope before rendering.
+- Keep the lightbox navigation on that same loaded, rehydrated collection; when advancing past the last loaded item, fetch the next page before selecting the next photo.

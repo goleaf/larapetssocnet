@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated the profile Photos tab to use 30-photo `post_media.id` cursor batches with a 600px Livewire intersection sentinel and skeleton loading state instead of loading the full visible photo history at once.
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
