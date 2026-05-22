@@ -286,6 +286,88 @@ test('profile pets tab renders responsive cards with pet metadata and follow act
     }
 });
 
+test('profile owner sees add pet card first and visitors do not', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Pet::factory()->for($owner)->create([
+        'name' => 'Existing Profile Pet',
+        'species' => 'cat',
+    ]);
+
+    Livewire::actingAs($owner)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('data-ui="profile-add-pet-card"', false)
+        ->assertSee('Add a pet')
+        ->assertSeeInOrder([
+            'data-ui="profile-add-pet-card"',
+            'Existing Profile Pet',
+        ], false);
+
+    Livewire::actingAs($viewer)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('Existing Profile Pet')
+        ->assertDontSee('data-ui="profile-add-pet-card"', false)
+        ->assertDontSee('Add a pet');
+});
+
+test('profile owner can create a pet from the pets tab modal', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'modal_pet_owner',
+        'pets_count' => 0,
+    ]);
+
+    Livewire::actingAs($owner)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->assertSee('data-ui="profile-add-pet-card"', false)
+        ->assertSee('profile-pet-create-modal', false)
+        ->set('name', 'Modal Pet')
+        ->set('species', 'dog')
+        ->set('breed', 'Retriever')
+        ->set('sex', 'female')
+        ->set('age_text', '~2 years')
+        ->set('bio', 'Created directly from the profile pets tab.')
+        ->set('personality_tags', 'playful, gentle')
+        ->set('is_public', true)
+        ->call('createPet')
+        ->assertHasNoErrors()
+        ->assertNoRedirect()
+        ->assertDispatched('profile-pet-created')
+        ->assertSee('Modal Pet')
+        ->assertSee('Dog · Retriever')
+        ->assertSee('~2 years');
+
+    $this->assertDatabaseHas('pets', [
+        'user_id' => $owner->getKey(),
+        'name' => 'Modal Pet',
+        'species' => 'dog',
+        'breed' => 'Retriever',
+        'is_public' => 1,
+    ]);
+
+    $pet = Pet::query()->where('name', 'Modal Pet')->firstOrFail();
+
+    expect($owner->fresh()->pets_count)->toBe(1)
+        ->and($pet->personality_tags)->toBe(['playful', 'gentle']);
+});
+
+test('visitors cannot create pets from another users pets tab', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Livewire::actingAs($viewer)
+        ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
+        ->set('name', 'Unauthorized Pet')
+        ->set('species', 'dog')
+        ->call('createPet')
+        ->assertForbidden();
+
+    $this->assertDatabaseMissing('pets', [
+        'user_id' => $viewer->getKey(),
+        'name' => 'Unauthorized Pet',
+    ]);
+});
+
 test('profile pets tab hides follow action for already followed and own pets', function (): void {
     $owner = User::factory()->create();
     $viewer = User::factory()->create();

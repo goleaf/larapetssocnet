@@ -1,20 +1,57 @@
 <?php
 
+use App\Actions\Pets\CreatePetAction;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\PetFollowService;
 use App\Services\PetVisibilityService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new class extends Component
 {
+    use WithFileUploads;
+
     public int $profileUserId;
+
+    public string $name = '';
+
+    public string $species = 'dog';
+
+    public ?string $breed = null;
+
+    public string $sex = 'unknown';
+
+    public ?string $birth_date = null;
+
+    public ?string $age_text = null;
+
+    public ?string $size = null;
+
+    public ?string $bio = null;
+
+    public ?string $personality_tags = null;
+
+    public bool $is_public = true;
+
+    public bool $is_adoptable = false;
+
+    public bool $is_deceased = false;
+
+    public mixed $avatar = null;
+
+    /**
+     * @var array<int, UploadedFile>
+     */
+    public array $gallery_photos = [];
 
     public function mount(int $profileUserId): void
     {
@@ -36,6 +73,31 @@ new class extends Component
             'canViewPets' => $canViewPets,
             'pets' => $canViewPets ? $this->profilePetsQuery($profileUser, $viewer)->get() : collect(),
         ];
+    }
+
+    public function createPet(CreatePetAction $createPetAction): void
+    {
+        $viewer = $this->viewer();
+        $profileUser = $this->profileUser();
+
+        abort_unless($viewer instanceof User && $viewer->is($profileUser), 403);
+
+        Gate::forUser($viewer)->authorize('create', Pet::class);
+
+        $validated = $this->validate();
+
+        $pet = $createPetAction->handle(
+            $viewer,
+            $this->petPayload($validated),
+            $this->avatar instanceof UploadedFile ? $this->avatar : null,
+            $this->gallery_photos
+        );
+
+        $this->resetPetForm();
+        $this->resetValidation();
+
+        $this->dispatch('profile-pet-created', petId: $pet->getKey());
+        $this->js("window.toggleModal('profile-pet-create-modal', false)");
     }
 
     /**
@@ -99,6 +161,85 @@ new class extends Component
 
         return $query;
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function rules(): array
+    {
+        $galleryMaxUpload = (int) config('pets.gallery.max_upload', 5);
+        $galleryMaxFileSize = (int) config('pets.gallery.max_file_size_kb', 5120);
+        $galleryMimes = implode(',', (array) config('pets.gallery.allowed_mimes', ['jpg', 'jpeg', 'png', 'webp', 'gif']));
+
+        return [
+            'name' => ['required', 'string', 'max:50'],
+            'species' => ['required', 'string', Rule::in(Pet::SPECIES)],
+            'breed' => ['nullable', 'string', 'max:120'],
+            'sex' => ['nullable', Rule::in(Pet::GENDERS)],
+            'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'age_text' => ['nullable', 'string', 'max:50'],
+            'size' => ['nullable', Rule::in(Pet::SIZES)],
+            'bio' => ['nullable', 'string', 'max:500'],
+            'personality_tags' => ['nullable', 'string', 'max:300'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'is_public' => ['boolean'],
+            'is_adoptable' => ['boolean'],
+            'is_deceased' => ['boolean'],
+            'gallery_photos' => ['nullable', 'array', 'max:'.$galleryMaxUpload],
+            'gallery_photos.*' => ['image', 'mimes:'.$galleryMimes, 'max:'.$galleryMaxFileSize],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function petPayload(array $validated): array
+    {
+        return [
+            'name' => $validated['name'],
+            'species' => $validated['species'],
+            'breed' => $this->nullableString($validated['breed'] ?? null),
+            'sex' => $validated['sex'] ?? 'unknown',
+            'gender' => $validated['sex'] ?? 'unknown',
+            'size' => $validated['size'] ?? null,
+            'birthdate' => $validated['birth_date'] ?? null,
+            'age_text' => $this->nullableString($validated['age_text'] ?? null),
+            'bio' => $this->nullableString($validated['bio'] ?? null),
+            'personality_tags' => $this->nullableString($validated['personality_tags'] ?? null),
+            'is_public' => (bool) ($validated['is_public'] ?? false),
+            'is_adoptable' => (bool) ($validated['is_adoptable'] ?? false),
+            'is_deceased' => (bool) ($validated['is_deceased'] ?? false),
+        ];
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $normalized = trim((string) $value);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function resetPetForm(): void
+    {
+        $this->reset([
+            'name',
+            'breed',
+            'birth_date',
+            'age_text',
+            'size',
+            'bio',
+            'personality_tags',
+            'avatar',
+            'gallery_photos',
+            'is_adoptable',
+            'is_deceased',
+        ]);
+
+        $this->species = 'dog';
+        $this->sex = 'unknown';
+        $this->is_public = true;
+    }
 };
 ?>
 
@@ -116,12 +257,30 @@ new class extends Component
 
 @php
  $data = $this->viewData();
+ $isOwner = $data['viewer'] instanceof User && $data['viewer']->is($data['profileUser']);
+ $speciesOptions = collect(Pet::SPECIES)->map(static fn (string $species): array => ['value' => $species, 'label' => Str::headline($species)])->all();
+ $genderOptions = collect(Pet::GENDERS)->map(static fn (string $gender): array => ['value' => $gender, 'label' => Str::headline($gender)])->all();
+ $sizeOptions = collect(Pet::SIZES)->map(static fn (string $size): array => ['value' => $size, 'label' => Str::headline($size)])->all();
 @endphp
 
 <div data-ui="profile-tab-panel" id="profile-panel-pets">
  @if ($data['canViewPets'])
  <div data-ui="profile-pet-card-grid" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
- @forelse ($data['pets'] as $pet)
+ @if ($isOwner)
+ <button
+ type="button"
+ data-ui="profile-add-pet-card"
+ class="shell-card ui-card-interactive flex min-h-72 flex-col items-center justify-center border-2 border-dashed border-whisker/60 bg-cream/45 p-6 text-center transition-all hover:-translate-y-0.5 hover:border-paw hover:bg-paw-light/30 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-haspopup="dialog"
+ aria-controls="profile-pet-create-modal"
+ @click="window.toggleModal('profile-pet-create-modal')"
+ >
+ <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-paw/60 bg-warm-white text-5xl font-light leading-none text-paw" aria-hidden="true">+</span>
+ <span class="mt-4 font-display text-lg font-bold text-bark">Add a pet</span>
+ </button>
+ @endif
+
+ @foreach ($data['pets'] as $pet)
  @php
  $petRouteParam = $pet->slug ?? $pet->getKey();
  $petImage = $pet->getFirstMediaUrl(Pet::MEDIA_COLLECTION_AVATAR) ?: $pet->avatar_url;
@@ -184,13 +343,81 @@ new class extends Component
  </div>
  @endif
  </article>
- @empty
+ @endforeach
+
+ @if (!$isOwner && $data['pets']->isEmpty())
  <div class="col-span-full">
  <x-ui.empty-state icon="🐾" title="No pets yet"
  description="This user has not added pets to their profile."/>
  </div>
- @endforelse
+ @endif
  </div>
+
+ @if ($isOwner)
+ <x-ui.modal id="profile-pet-create-modal" name="profile-pet-create-modal" title="Add a pet" description="Create a pet profile without leaving your profile page." size="2xl">
+ <form wire:submit="createPet" class="space-y-5">
+ <div class="grid gap-4 sm:grid-cols-2">
+ <x-ui.input id="profile_pet_name" name="name" label="Pet name" required wire:model.blur="name"/>
+
+ <x-ui.select id="profile_pet_species" name="species" label="Species" :options="$speciesOptions" required wire:model="species"/>
+
+ <x-ui.input id="profile_pet_breed" name="breed" label="Breed" wire:model.blur="breed"/>
+
+ <x-ui.select id="profile_pet_sex" name="sex" label="Sex" :options="$genderOptions" wire:model="sex"/>
+
+ <x-ui.input id="profile_pet_birth_date" name="birth_date" type="date" label="Birth date" wire:model.blur="birth_date"/>
+
+ <x-ui.input id="profile_pet_age_text" name="age_text" label="Approx age" placeholder="~2 years" wire:model.blur="age_text"/>
+
+ <x-ui.select id="profile_pet_size" name="size" label="Size" :options="$sizeOptions" placeholder="Choose size" wire:model="size"/>
+
+ <x-ui.input id="profile_pet_personality_tags" name="personality_tags" label="Personality tags" placeholder="playful, gentle, loyal" wire:model.blur="personality_tags"/>
+ </div>
+
+ <x-ui.textarea id="profile_pet_bio" name="bio" rows="4" maxlength="500" label="Bio" wire:model.blur="bio"/>
+
+ <div class="grid gap-4 sm:grid-cols-2">
+ <x-ui.file-upload
+ id="profile_pet_avatar"
+ name="avatar"
+ label="Avatar"
+ accept="image/jpeg,image/png,image/webp,image/gif"
+ maxSize="5MB"
+ preview
+ wire:model="avatar"
+ />
+
+ <x-ui.file-upload
+ id="profile_pet_gallery_photos"
+ name="gallery_photos"
+ label="Photo Gallery"
+ accept="image/jpeg,image/png,image/webp,image/gif"
+ multiple
+ maxSize="5MB"
+ wire:model="gallery_photos"
+ />
+ </div>
+
+ <div class="space-y-3">
+ <x-ui.checkbox name="is_public" label="Public profile" :checked="$this->is_public" wire:model="is_public"/>
+ <x-ui.checkbox name="is_adoptable" label="Available for adoption" :checked="$this->is_adoptable" wire:model="is_adoptable"/>
+ <x-ui.checkbox name="is_deceased" label="Mark as deceased (Rainbow Bridge)" :checked="$this->is_deceased" wire:model="is_deceased"/>
+ </div>
+
+ <div wire:loading wire:target="avatar,gallery_photos" class="text-xs font-semibold text-paw">
+ Uploading photos...
+ </div>
+
+ <div class="flex flex-col-reverse gap-2 border-t border-whisker/40 pt-4 sm:flex-row sm:justify-end">
+ <x-ui.button type="button" variant="outline" size="sm" class="min-h-11" @click="window.toggleModal('profile-pet-create-modal', false)">Cancel</x-ui.button>
+ <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11" wire:loading.attr="disabled" wire:target="createPet,avatar,gallery_photos">
+ <span wire:loading.remove wire:target="createPet">Create pet</span>
+ <span wire:loading wire:target="createPet">Creating...</span>
+ </x-ui.button>
+ </div>
+ </form>
+ </x-ui.modal>
+ @endif
  @else
  <x-ui.card>
  <x-ui.empty-state icon="🔒" title="Pets are private"

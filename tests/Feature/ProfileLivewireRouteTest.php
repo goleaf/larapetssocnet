@@ -171,6 +171,28 @@ it('activates the pets tab through the profile livewire action', function (): vo
     expect(session('profiles.'.$profileOwner->getKey().'.active_tab'))->toBe('pets');
 });
 
+it('refreshes the profile pets tab count after a nested pet create event', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'pet_count_refresh_owner',
+        'pets_count' => 0,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $component = Livewire::actingAs($profileOwner)
+        ->test('pages.profile.show', ['user' => $profileOwner->username])
+        ->assertSee('Pets (0)');
+
+    $pet = Pet::factory()->for($profileOwner)->create([
+        'name' => 'Count Refresh Pet',
+    ]);
+    $profileOwner->forceFill(['pets_count' => 1])->saveQuietly();
+
+    $component
+        ->dispatch('profile-pet-created', petId: $pet->getKey())
+        ->assertSee('Pets (1)');
+});
+
 it('restores the last profile tab from the browser session', function (): void {
     $profileOwner = User::factory()->create([
         'username' => 'session_tab_owner',

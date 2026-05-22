@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
@@ -88,6 +89,12 @@ class extends Component
         $this->activeTab = $this->normalizeTab($tab);
         $this->hideOwnerOnlyTabsFromVisitors(request()->user() ?: auth()->user());
         $this->storeLastVisitedTab();
+    }
+
+    #[On('profile-pet-created')]
+    public function refreshProfilePetCounts(): void
+    {
+        $this->profileOwner = $this->loadHeaderProfileData($this->profileOwner);
     }
 
     public function render(): View

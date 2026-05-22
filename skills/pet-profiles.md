@@ -29,6 +29,7 @@ Pet profiles are user-owned sub-entities.
 - Render a responsive card grid: one column on mobile, two on tablet, three on desktop.
 - Each card shows a square pet photo, name, species/breed subtitle, dynamic `age_formatted`, cached follower count, and an authorized optimistic Follow Pet action only for authenticated viewers who do not already follow the pet and do not own it.
 - Profile card Follow Pet actions keep state local to the card: Alpine immediately updates the count and switches the button to "Following", while a renderless Livewire action persists through `PetFollowService` and returns the canonical count without re-rendering the parent profile component.
+- Profile owners see an Add Pet card as the first grid item. It opens an on-page Livewire modal, validates the same core Feature 3 pet fields, persists through `CreatePetAction`, refreshes the lazy grid, and dispatches a parent profile event so the Pets tab counter updates without navigation.
 
 ## Media
 Pet uses Spatie MediaLibrary (public disk).

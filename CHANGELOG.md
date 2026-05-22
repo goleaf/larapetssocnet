@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added an owner-only Add Pet card and on-page Livewire pet creation modal to the profile Pets tab, with immediate grid refresh and parent tab-count update after creation.
 - Added the profile Pets tab responsive Livewire grid with square pet photos, age/follower metadata, and authorized Follow Pet actions.
 - Added a profile Posts tab media-only toggle with an indexed media query, Tailwind masonry grid, and Livewire full-post modal with threaded comments.
 - Added the project-local Superpowers Laravel skill pack under `.claude/skills` with Claude command wrappers under `.claude/commands/superpowers-laravel`.
