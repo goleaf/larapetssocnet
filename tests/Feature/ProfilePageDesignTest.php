@@ -135,10 +135,55 @@ it('renders the profile header as the topmost full-width section in the main pro
         ->and(strpos($html, 'data-ui="profile-header"'))->toBeLessThan(strpos($html, 'data-ui="profile-tabs"'));
 });
 
+it('renders cover photos as absolute object-cover layers inside fixed responsive banners', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Cover Photo Owner',
+        'username' => 'cover_photo_owner',
+        'cover_photo_path' => 'https://example.test/cover-wide.jpg',
+        'cover_photo_position' => 61.25,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-cover-banner"', false)
+        ->assertSee('h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]', false)
+        ->assertSee('data-ui="profile-cover-image"', false)
+        ->assertSee('https://example.test/cover-wide.jpg', false)
+        ->assertSee('absolute inset-0 h-full w-full select-none object-cover', false)
+        ->assertSee('object-position: center ${position}%', false)
+        ->assertDontSee('data-ui="profile-cover-fallback"', false);
+});
+
+it('renders a username-derived cover gradient fallback when no cover photo exists', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Gradient Fallback Owner',
+        'username' => 'gradient_alpha',
+        'cover_photo_path' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $sameUsername = User::factory()->make(['username' => 'gradient_alpha']);
+    $differentUsername = User::factory()->make(['username' => 'gradient_beta']);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-cover-fallback"', false)
+        ->assertSee('absolute inset-0 '.$profileOwner->profile_default_gradient, false)
+        ->assertDontSee('data-ui="profile-cover-image"', false)
+        ->assertDontSee('bg-[color:var(--surface-muted)]', false);
+
+    expect($profileOwner->profile_default_gradient)
+        ->toBe($sameUsername->profile_default_gradient)
+        ->not->toBe($differentUsername->profile_default_gradient);
+});
+
 it('renders a clearer private profile lockup for authenticated visitors', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Private Profile',
         'username' => 'private_profile_design',
+        'cover_photo_path' => 'https://example.test/private-cover.jpg',
         'is_private' => true,
     ]);
 
@@ -147,9 +192,16 @@ it('renders a clearer private profile lockup for authenticated visitors', functi
         ->assertOk()
         ->assertSee('data-ui="private-profile-shell"', false)
         ->assertSee('data-ui="private-profile-hero"', false)
+        ->assertSee('data-ui="private-profile-cover-banner"', false)
+        ->assertSee('h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]', false)
+        ->assertSee('data-ui="private-profile-cover-fallback"', false)
+        ->assertSee($profileOwner->profile_default_gradient, false)
+        ->assertDontSee('data-ui="private-profile-cover-image"', false)
+        ->assertDontSee('https://example.test/private-cover.jpg', false)
         ->assertSee('data-profile-section="profile-header"', false)
         ->assertSee('aria-labelledby="private-profile-header-title"', false)
         ->assertSee('This account is private')
+        ->assertDontSee('bg-[color:var(--surface-muted)]', false)
         ->assertSee('min-h-11', false);
 });
 

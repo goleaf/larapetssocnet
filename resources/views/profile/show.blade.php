@@ -157,15 +157,15 @@
  @pointerup.window="stopCoverDrag()"
  @pointercancel.window="stopCoverDrag()">
  <div data-ui="profile-hero" class="contents"></div>
- <div class="relative h-36 w-full sm:h-44 lg:h-[280px]">
+ <div data-ui="profile-cover-banner" class="relative h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]">
  @if ($coverUrl)
- <img src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
- class="h-full w-full select-none object-cover"
+ <img data-ui="profile-cover-image" src="{{ $coverUrl }}" alt="{{ $profileUser->name }} cover image"
+ class="absolute inset-0 h-full w-full select-none object-cover"
  x-bind:style="`object-position: center ${position}%`"
  x-bind:class="repositioning ? 'cursor-grab active:cursor-grabbing' : ''"
  @pointerdown.prevent="startCoverDrag($event)"/>
  @else
- <div class="h-full w-full {{ $profileUser->profile_default_gradient }}"></div>
+ <div data-ui="profile-cover-fallback" class="absolute inset-0 {{ $profileUser->profile_default_gradient }}"></div>
  @endif
 
  <div class="absolute inset-0 bg-bark/35"></div>

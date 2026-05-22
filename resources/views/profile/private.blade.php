@@ -7,7 +7,10 @@
 <x-app-layout>
  <div class="w-full min-w-0 space-y-5" data-ui="private-profile-shell">
  <section class="w-full min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card" data-ui="private-profile-hero" data-profile-section="profile-header" aria-labelledby="private-profile-header-title">
- <div class="h-40 w-full bg-[color:var(--surface-muted)]"></div>
+ <div data-ui="private-profile-cover-banner" class="relative h-[140px] w-full overflow-hidden md:h-[180px] lg:h-[280px]">
+ <div data-ui="private-profile-cover-fallback" class="absolute inset-0 {{ $user->profile_default_gradient }}"></div>
+ <div class="absolute inset-0 bg-bark/35"></div>
+ </div>
 
  <div class="px-6 pb-6">
  <div class="-mt-12 flex items-end gap-4">
