@@ -460,6 +460,127 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('profilePhotoLightbox', () => ({
+ touchStartX: null,
+ touchStartY: null,
+
+ focusClose() {
+ this.$nextTick(() => {
+ this.$refs.closeButton?.focus();
+ });
+ },
+
+ handleKeydown(event, wire) {
+ if (event.key ==='Tab') {
+ this.trapFocus(event);
+
+ return;
+ }
+
+ if (this.isEditableTarget(event.target)) {
+ return;
+ }
+
+ if (event.key ==='Escape') {
+ event.preventDefault();
+ wire.closePhotoLightbox();
+
+ return;
+ }
+
+ if (event.key ==='ArrowLeft') {
+ event.preventDefault();
+ wire.showPreviousPhoto();
+
+ return;
+ }
+
+ if (event.key ==='ArrowRight') {
+ event.preventDefault();
+ wire.showNextPhoto();
+ }
+ },
+
+ startSwipe(event) {
+ const touch = event.touches?.[0];
+
+ if (!touch) {
+ return;
+ }
+
+ this.touchStartX = touch.clientX;
+ this.touchStartY = touch.clientY;
+ },
+
+ finishSwipe(event, wire) {
+ const touch = event.changedTouches?.[0];
+
+ if (!touch || this.touchStartX === null || this.touchStartY === null) {
+ this.resetSwipe();
+
+ return;
+ }
+
+ const deltaX = touch.clientX - this.touchStartX;
+ const deltaY = touch.clientY - this.touchStartY;
+ const horizontalDistance = Math.abs(deltaX);
+ const verticalDistance = Math.abs(deltaY);
+
+ this.resetSwipe();
+
+ if (horizontalDistance < 50 || horizontalDistance < verticalDistance * 1.25) {
+ return;
+ }
+
+ if (deltaX < 0) {
+ wire.showNextPhoto();
+
+ return;
+ }
+
+ wire.showPreviousPhoto();
+ },
+
+ resetSwipe() {
+ this.touchStartX = null;
+ this.touchStartY = null;
+ },
+
+ isEditableTarget(target) {
+ return Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"]'));
+ },
+
+ trapFocus(event) {
+ const focusable = Array.from(this.$el.querySelectorAll([
+'a[href]',
+'button:not([disabled])',
+'input:not([disabled])',
+'select:not([disabled])',
+'textarea:not([disabled])',
+'[tabindex]:not([tabindex="-1"])',
+ ].join(','))).filter((element) => element.getClientRects().length > 0);
+
+ if (focusable.length === 0) {
+ return;
+ }
+
+ const first = focusable[0];
+ const last = focusable[focusable.length - 1];
+
+ if (event.shiftKey && document.activeElement === first) {
+ event.preventDefault();
+ last.focus();
+
+ return;
+ }
+
+ if (!event.shiftKey && document.activeElement === last) {
+ event.preventDefault();
+ first.focus();
+ }
+ },
+ }));
+
  Alpine.data('tabsState', (defaultTab = null) => ({
  activeTab: defaultTab,
 

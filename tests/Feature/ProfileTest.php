@@ -58,6 +58,13 @@ if (! function_exists('profilePhotoPost')) {
     }
 }
 
+if (! function_exists('profilePhotoKey')) {
+    function profilePhotoKey(Post $post, PostMedia $media): string
+    {
+        return sprintf('profile-photo-%s-post-media-%s', $post->getKey(), $media->getKey());
+    }
+}
+
 test('profile settings page is displayed', function (): void {
     $user = User::factory()->create();
 
@@ -851,6 +858,85 @@ test('profile media grid opens a full post modal with comments', function (): vo
         ->assertSet('selectedPostId', null);
 });
 
+test('profile photos tab opens a navigable lightbox with post context', function (): void {
+    $owner = User::factory()->create([
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $commenter = User::factory()->create([
+        'name' => 'Comment Author',
+    ]);
+    $pet = Pet::factory()->for($owner, 'owner')->create([
+        'name' => 'Milo Lightbox',
+        'slug' => 'milo-lightbox',
+        'is_public' => true,
+    ]);
+
+    $firstPost = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-lightbox-first.jpg', [
+        'body' => 'First lightbox post body',
+        'body_html' => '<p>First lightbox post body</p>',
+        'location' => 'Porto, Portugal',
+        'pet_id' => $pet->getKey(),
+        'tagged_pets' => [$pet->getKey()],
+        'likes_count' => 5,
+        'reactions_count' => 5,
+        'created_at' => now(),
+    ]);
+    Comment::factory()->for($firstPost)->for($commenter, 'user')->create([
+        'body' => 'lightbox visible comment',
+        'body_html' => 'lightbox visible comment',
+    ]);
+
+    $secondPost = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-lightbox-second.jpg', [
+        'body' => 'Second lightbox post body',
+        'body_html' => '<p>Second lightbox post body</p>',
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $firstMedia = $firstPost->postMedia()->firstOrFail();
+    $secondMedia = $secondPost->postMedia()->firstOrFail();
+    $firstPhotoKey = profilePhotoKey($firstPost, $firstMedia);
+    $secondPhotoKey = profilePhotoKey($secondPost, $secondMedia);
+
+    Livewire::actingAs($owner)
+        ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
+        ->assertSee('wire:click="openPhotoLightbox', false)
+        ->assertDontSee('data-ui="profile-photo-lightbox-modal"', false)
+        ->call('openPhotoLightbox', $firstPhotoKey)
+        ->assertSet('selectedPhotoKey', $firstPhotoKey)
+        ->assertSee('data-ui="profile-photo-lightbox-modal"', false)
+        ->assertSee('role="dialog"', false)
+        ->assertSee('aria-modal="true"', false)
+        ->assertSee('x-data="profilePhotoLightbox()"', false)
+        ->assertSee('@keydown.window="handleKeydown($event, $wire)"', false)
+        ->assertSee('@touchstart.passive="startSwipe($event)"', false)
+        ->assertSee('@touchend.passive="finishSwipe($event, $wire)"', false)
+        ->assertSee('data-ui="profile-photo-lightbox-media"', false)
+        ->assertSee('data-ui="profile-photo-lightbox-context"', false)
+        ->assertSee('profile-lightbox-first.jpg')
+        ->assertSee('First lightbox post body')
+        ->assertSee('Milo Lightbox')
+        ->assertSee('Porto, Portugal')
+        ->assertSee('5 reactions')
+        ->assertSee('1 comment')
+        ->assertSee('lightbox visible comment')
+        ->assertSee('data-ui="profile-photo-lightbox-next"', false)
+        ->assertDontSee('data-ui="profile-photo-lightbox-previous"', false)
+        ->call('showNextPhoto')
+        ->assertSet('selectedPhotoKey', $secondPhotoKey)
+        ->assertSee('Second lightbox post body')
+        ->assertSee('data-ui="profile-photo-lightbox-previous"', false)
+        ->assertDontSee('data-ui="profile-photo-lightbox-next"', false)
+        ->call('showPreviousPhoto')
+        ->assertSet('selectedPhotoKey', $firstPhotoKey)
+        ->call('openPhotoLightbox', 'missing-photo-key')
+        ->assertSet('selectedPhotoKey', null)
+        ->call('openPhotoLightbox', $firstPhotoKey)
+        ->call('closePhotoLightbox')
+        ->assertSet('selectedPhotoKey', null)
+        ->assertDontSee('data-ui="profile-photo-lightbox-modal"', false);
+});
+
 test('profile photos tab renders only photos from posts visible to the viewer', function (): void {
     $owner = User::factory()->create([
         'is_private' => false,
@@ -953,12 +1039,16 @@ test('profile photos tab hides post photos when profile content is private', fun
     ]);
     $viewer = User::factory()->create();
 
-    profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/private-profile-public-photo.jpg');
+    $post = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/private-profile-public-photo.jpg');
+    $photoKey = profilePhotoKey($post, $post->postMedia()->firstOrFail());
 
     Livewire::actingAs($viewer)
         ->test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
         ->assertSee('Photos are private')
-        ->assertDontSee('private-profile-public-photo.jpg');
+        ->assertDontSee('private-profile-public-photo.jpg')
+        ->call('openPhotoLightbox', $photoKey)
+        ->assertSet('selectedPhotoKey', null)
+        ->assertDontSee('data-ui="profile-photo-lightbox-modal"', false);
 });
 
 test('mutual followers appear on both followers and following pages', function (): void {
