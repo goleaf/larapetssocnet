@@ -184,6 +184,74 @@ it('renders cached profile stats as modal and pets tab actions', function (): vo
         ->and($statsHtml)->not->toContain('Visibility');
 });
 
+it('places profile relationship actions beside stats on desktop and below stats on mobile', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Action Layout Owner',
+        'username' => 'action_layout_owner',
+        'followers_count' => 12,
+        'following_count' => 4,
+        'pets_count' => 2,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Pet::factory()->for($profileOwner)->create(['name' => 'Action Pet']);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-stats-actions"', false)
+        ->assertSee('mt-5 flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between', false)
+        ->assertSee('data-ui="profile-stats"', false)
+        ->assertSee('grid grid-cols-3 gap-3 lg:flex-1 lg:self-stretch', false)
+        ->assertSee('data-ui="profile-actions"', false)
+        ->assertSee('flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:min-w-[18rem] lg:justify-end', false)
+        ->assertSee('Follow')
+        ->assertSee('Message')
+        ->assertSee('aria-label="Profile actions"', false);
+
+    $html = $response->getContent();
+
+    expect(strpos($html, 'data-ui="profile-stats-actions"'))->toBeLessThan(strpos($html, 'data-ui="profile-stats"'))
+        ->and(strpos($html, 'data-ui="profile-stats"'))->toBeLessThan(strpos($html, 'data-ui="profile-actions"'))
+        ->and(strpos($html, 'data-stat="pets"'))->toBeLessThan(strpos($html, 'data-ui="profile-actions"'));
+});
+
+it('renders profile action buttons from the viewer relationship state', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Relationship Action Owner',
+        'username' => 'relationship_action_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-actions"', false)
+        ->assertSee('Sign In to Follow')
+        ->assertDontSee('>Message</a>', false)
+        ->assertDontSee('@click="toggleFollow"', false);
+
+    $this->actingAs($profileOwner)
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-actions"', false)
+        ->assertSee('Create Post')
+        ->assertSee('Edit Profile')
+        ->assertSee('Account Settings')
+        ->assertDontSee('@click="toggleFollow"', false)
+        ->assertDontSee('Sign In to Follow');
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-actions"', false)
+        ->assertSee('@click="toggleFollow"', false)
+        ->assertSee('Message')
+        ->assertSee('aria-label="Profile actions"', false)
+        ->assertDontSee('Edit Profile');
+});
+
 it('renders the profile header as the topmost full-width section in the main profile view', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Top Header Owner',

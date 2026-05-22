@@ -24,6 +24,8 @@
  $profileFollowingCount = (int) ($profileStats['following'] ?? $profileUser->following_count ?? 0);
  $followersModalPreview = $followersModalPreview ?? collect();
  $followingModalPreview = $followingModalPreview ?? collect();
+ $hasProfileStats = ($canViewFollowers ?? false) || ($canViewFollowing ?? false) || ($canViewPets ?? false);
+ $hasProfileActions = $isOwner || $canInteract || (! auth()->check() && Route::has('login'));
  $isNewProfileState = ! filled($profileUser->bio)
  && ! filled($profileUser->headline)
  && ! $location
@@ -235,7 +237,6 @@
 
  <div class="px-4 pb-5 pt-14 sm:px-6 lg:pt-16">
  <p x-show="coverNotice" x-cloak class="pt-3 text-sm font-semibold text-fur" x-text="coverNotice"></p>
- <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
  <div data-ui="profile-header-identity" class="flex max-w-3xl flex-col gap-2">
  <div class="pb-1">
  <div class="flex flex-wrap items-center gap-2">
@@ -336,44 +337,10 @@
  </div>
  </div>
 
- <div class="flex flex-wrap items-center gap-2" data-ui="profile-actions">
- @if ($isOwner)
- <x-ui.button :href="route('posts.create')" variant="secondary" size="sm" class="min-h-11">Create Post</x-ui.button>
- <x-ui.button :href="route('settings.profile')" variant="primary" size="sm" class="min-h-11">Edit Profile</x-ui.button>
- <x-ui.button :href="route('settings.data')" variant="outline" size="sm" class="min-h-11">Account Settings</x-ui.button>
- @elseif ($canInteract)
- <button
- class="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
- :class="followButtonClass"
- x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
- x-bind:aria-label="followStatus === 'following' ?'Unfollow {{ addslashes($profileUser->name) }}': (followStatus === 'pending' ?'Requested to follow {{ addslashes($profileUser->name) }}' :'Follow {{ addslashes($profileUser->name) }}')"
- @click="toggleFollow">
- <span x-text="busy ?'Saving...': followLabel"></span>
- </button>
-
- <button
- x-show="followStatus === 'pending'"
- @click="cancelRequest"
- type="button"
- class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
- >
- Cancel request
- </button>
-
- @if ($canMessage ?? false)
- <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"
- size="sm" class="min-h-11 sm:min-w-28">Message</x-ui.button>
- @endif
-
- @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
- @elseif (!auth()->check() && Route::has('login'))
- <x-ui.button :href="route('login')" variant="primary" size="sm" class="min-h-11">Sign In to Follow</x-ui.button>
- @endif
- </div>
- </div>
-
- @if (($canViewFollowers ?? false) || ($canViewFollowing ?? false) || ($canViewPets ?? false))
- <ul class="mt-5 grid grid-cols-3 gap-3" role="list"
+ @if ($hasProfileStats || $hasProfileActions)
+ <div class="mt-5 flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between" data-ui="profile-stats-actions">
+ @if ($hasProfileStats)
+ <ul class="grid grid-cols-3 gap-3 lg:flex-1 lg:self-stretch" role="list"
  data-ui="profile-stats"
  aria-label="Profile statistics">
  @if ($canViewFollowers ?? false)
@@ -419,6 +386,45 @@
  </li>
  @endif
  </ul>
+ @endif
+
+ @if ($hasProfileActions)
+ <div class="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:min-w-[18rem] lg:justify-end" data-ui="profile-actions">
+ @if ($isOwner)
+ <x-ui.button :href="route('posts.create')" variant="secondary" size="sm" class="min-h-11">Create Post</x-ui.button>
+ <x-ui.button :href="route('settings.profile')" variant="primary" size="sm" class="min-h-11">Edit Profile</x-ui.button>
+ <x-ui.button :href="route('settings.data')" variant="outline" size="sm" class="min-h-11">Account Settings</x-ui.button>
+ @elseif ($canInteract)
+ <button
+ class="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
+ :class="followButtonClass"
+ x-bind:disabled="busy || hasBlockingRelationship || followStatus === 'pending'" x-bind:aria-pressed="(followStatus === 'following').toString()"
+ x-bind:aria-label="followStatus === 'following' ?'Unfollow {{ addslashes($profileUser->name) }}': (followStatus === 'pending' ?'Requested to follow {{ addslashes($profileUser->name) }}' :'Follow {{ addslashes($profileUser->name) }}')"
+ @click="toggleFollow">
+ <span x-text="busy ?'Saving...': followLabel"></span>
+ </button>
+
+ <button
+ x-show="followStatus === 'pending'"
+ @click="cancelRequest"
+ type="button"
+ class="inline-flex min-h-11 items-center rounded-[var(--radius-soft)] text-xs font-semibold text-fur underline transition-colors hover:text-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ >
+ Cancel request
+ </button>
+
+ @if ($canMessage ?? false)
+ <x-ui.button :href="route('messages.conversation', ['peer'=> $profileUser])" variant="outline"
+ size="sm" class="min-h-11 sm:min-w-28">Message</x-ui.button>
+ @endif
+
+ @include('profile._actions-dropdown', ['user'=> $profileUser,'isBlocked'=> $isBlocked])
+ @elseif (!auth()->check() && Route::has('login'))
+ <x-ui.button :href="route('login')" variant="primary" size="sm" class="min-h-11">Sign In to Follow</x-ui.button>
+ @endif
+ </div>
+ @endif
+ </div>
  @endif
 
  @if ($isOwner && is_array($profileViewStats ?? null))
