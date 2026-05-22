@@ -2,6 +2,7 @@
 
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Social\Follow;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
@@ -26,6 +27,7 @@ new class extends Component
      *     activitySummaryItems: list<array{label: string, value: string, datetime?: string|null}>,
      *     petSummaryItems: list<array{name: string, url: string, avatarUrl: string|null}>,
      *     mutualConnections: array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>},
+     *     alsoFollowedBy: array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>},
      *     overviewItems: list<array{label: string, value: string}>,
      *     contactItems: list<array{label: string, url: string, display: string}>,
      *     interests: list<string>
@@ -48,6 +50,7 @@ new class extends Component
                 'activitySummaryItems' => [],
                 'petSummaryItems' => [],
                 'mutualConnections' => $this->emptyMutualConnections(),
+                'alsoFollowedBy' => $this->emptyAlsoFollowedBy(),
                 'overviewItems' => [],
                 'contactItems' => [],
                 'interests' => [],
@@ -67,6 +70,7 @@ new class extends Component
             'activitySummaryItems' => $this->activitySummaryItems($profileUser),
             'petSummaryItems' => $this->petSummaryItems($profileUser, $viewer),
             'mutualConnections' => $this->mutualConnections($profileUser, $viewer),
+            'alsoFollowedBy' => $this->alsoFollowedBy($profileUser, $viewer),
             'overviewItems' => $this->overviewItems($profileUser, $displayName),
             'contactItems' => $this->contactItems($profileUser->social_links),
             'interests' => $this->interests($profileUser->interests_text),
@@ -252,7 +256,45 @@ new class extends Component
         $baseQuery = $this->mutualConnectionsQuery($profileUser, $viewer);
         $count = (int) (clone $baseQuery)->count('users.id');
 
-        $items = (clone $baseQuery)
+        $items = $this->connectionPreviewItems($baseQuery, 8);
+
+        return [
+            'canShow' => true,
+            'count' => $count,
+            'hasMore' => $count > 8,
+            'seeAllUrl' => route('profile.followers', ['user' => $profileUser->username, 'mutual' => 1]),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @return array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     */
+    private function alsoFollowedBy(User $profileUser, ?User $viewer): array
+    {
+        if (! $viewer instanceof User || $viewer->is($profileUser) || $this->viewerFollowsProfile($profileUser, $viewer)) {
+            return $this->emptyAlsoFollowedBy();
+        }
+
+        $items = $this->connectionPreviewItems($this->mutualConnectionsQuery($profileUser, $viewer), 5);
+
+        if (count($items) < 3) {
+            return $this->emptyAlsoFollowedBy();
+        }
+
+        return [
+            'canShow' => true,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @param  Builder<User>  $baseQuery
+     * @return list<array{name: string, username: string, url: string, avatarUrl: string|null}>
+     */
+    private function connectionPreviewItems(Builder $baseQuery, int $limit): array
+    {
+        return (clone $baseQuery)
             ->select([
                 'users.id',
                 'users.name',
@@ -266,7 +308,7 @@ new class extends Component
                     ->where('collection_name', User::MEDIA_COLLECTION_AVATAR)
                     ->orderBy('order_column'),
             ])
-            ->limit(8)
+            ->limit($limit)
             ->get()
             ->map(fn (User $connection): array => [
                 'name' => (string) ($connection->display_name ?: $connection->name),
@@ -276,14 +318,6 @@ new class extends Component
             ])
             ->values()
             ->all();
-
-        return [
-            'canShow' => true,
-            'count' => $count,
-            'hasMore' => $count > 8,
-            'seeAllUrl' => route('profile.followers', ['user' => $profileUser->username, 'mutual' => 1]),
-            'items' => $items,
-        ];
     }
 
     /**
@@ -329,6 +363,15 @@ new class extends Component
         return $this->filledString($connection->avatar_path) ?? $this->filledString($connection->profile_photo_path);
     }
 
+    private function viewerFollowsProfile(User $profileUser, User $viewer): bool
+    {
+        return Follow::query()
+            ->where('follower_id', $viewer->getKey())
+            ->where('following_id', $profileUser->getKey())
+            ->where('status', 'accepted')
+            ->exists();
+    }
+
     /**
      * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
      */
@@ -339,6 +382,17 @@ new class extends Component
             'count' => 0,
             'hasMore' => false,
             'seeAllUrl' => null,
+            'items' => [],
+        ];
+    }
+
+    /**
+     * @return array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     */
+    private function emptyAlsoFollowedBy(): array
+    {
+        return [
+            'canShow' => false,
             'items' => [],
         ];
     }
@@ -590,6 +644,31 @@ new class extends Component
 	 See all {{ number_format($data['mutualConnections']['count']) }} mutual connections
 	 </a>
 	 @endif
+	 </section>
+	 </x-ui.card>
+	 @endif
+
+	 @if ($data['alsoFollowedBy']['canShow'])
+	 <x-ui.card>
+	 <section data-ui="profile-about-also-followed-by" class="flex flex-col gap-4" aria-labelledby="profile-about-also-followed-by-heading">
+	 <div class="flex flex-col gap-2">
+	 <p class="text-xs font-semibold uppercase tracking-wide text-fur">Recommended</p>
+	 <h3 id="profile-about-also-followed-by-heading" class="text-lg font-bold font-display text-bark">Also followed by</h3>
+	 <p class="max-w-2xl text-sm leading-6 text-fur">People you follow already follow {{ $data['displayName'] }}.</p>
+	 </div>
+
+	 <ul class="flex flex-wrap gap-3" role="list" aria-label="People you follow who also follow {{ $data['displayName'] }}">
+	 @foreach ($data['alsoFollowedBy']['items'] as $connection)
+	 <li class="min-w-0 flex-1 basis-24 sm:flex-none">
+	 <a href="{{ $connection['url'] }}"
+	 class="group flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3 text-center transition-colors hover:border-paw/30 hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+	 aria-label="View {{ $connection['name'] }} profile">
+	 <x-ui.avatar :src="$connection['avatarUrl']" :name="$connection['name']" :alt="$connection['name'].' profile photo'" size="md" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
+	 <span class="block w-full truncate text-xs font-semibold leading-tight text-bark group-hover:text-paw">{{ $connection['name'] }}</span>
+	 </a>
+	 </li>
+	 @endforeach
+	 </ul>
 	 </section>
 	 </x-ui.card>
 	 @endif

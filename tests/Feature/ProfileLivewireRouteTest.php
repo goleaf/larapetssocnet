@@ -578,6 +578,7 @@ it('renders mutual connections from a database intersection for authenticated vi
     ]);
 
     $viewer->follow($viewerOnly);
+    $viewer->follow($profileOwner);
     $profileOnly->follow($profileOwner);
 
     DB::enableQueryLog();
@@ -615,6 +616,146 @@ it('renders mutual connections from a database intersection for authenticated vi
         ->toContain('limit 8')
         ->not->toContain('select *')
         ->and($queries->filter(fn (string $query): bool => str_contains($query, 'from "media"'))->count())->toBe(1);
+});
+
+it('renders also followed by recommendations for authenticated non-followers', function (): void {
+    Storage::fake('public');
+
+    $viewer = User::factory()->create([
+        'name' => 'Recommendation Viewer',
+        'username' => 'recommendation_viewer',
+    ]);
+    $profileOwner = User::factory()->create([
+        'name' => 'Recommendation Owner',
+        'username' => 'recommendation_owner',
+        'bio' => 'Recommendation social proof should help visitors decide to follow.',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    collect(range(1, 5))->each(function (int $index) use ($viewer, $profileOwner): void {
+        $connection = User::factory()->create([
+            'name' => 'Recommendation Friend '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+            'username' => 'recommendation_friend_'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        ]);
+
+        $viewer->follow($connection);
+        $connection->follow($profileOwner);
+    });
+
+    $viewerOnly = User::factory()->create([
+        'name' => 'Recommendation Viewer Only',
+        'username' => 'recommendation_viewer_only',
+    ]);
+    $profileOnly = User::factory()->create([
+        'name' => 'Recommendation Profile Only',
+        'username' => 'recommendation_profile_only',
+    ]);
+
+    $viewer->follow($viewerOnly);
+    $profileOnly->follow($profileOwner);
+
+    DB::enableQueryLog();
+
+    try {
+        Livewire::actingAs($viewer)
+            ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+            ->assertSee('data-ui="profile-about-also-followed-by"', false)
+            ->assertSee('Also followed by')
+            ->assertSee('People you follow already follow Recommendation Owner.')
+            ->assertSeeInOrder([
+                'data-ui="profile-about-also-followed-by"',
+                'Recommendation Friend 01',
+                'Recommendation Friend 05',
+            ], false)
+            ->assertDontSee('Recommendation Viewer Only')
+            ->assertDontSee('Recommendation Profile Only');
+
+        $queries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->map(fn (string $query): string => strtolower($query));
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $recommendationQueries = $queries->filter(
+        fn (string $query): bool => str_contains($query, 'join "follows" as "viewer_following"')
+            && str_contains($query, 'join "follows" as "profile_followers"')
+            && str_contains($query, 'limit 5')
+    )->values();
+
+    expect($recommendationQueries)->toHaveCount(1)
+        ->and($recommendationQueries->first())
+        ->toContain('"viewer_following"."following_id" = "users"."id"')
+        ->toContain('"profile_followers"."follower_id" = "users"."id"')
+        ->not->toContain('select *')
+        ->and($queries->filter(fn (string $query): bool => str_contains($query, 'from "media"'))->count())->toBe(2);
+});
+
+it('hides also followed by recommendations from guests owners followers and sparse matches', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Recommendation Hidden Owner',
+        'username' => 'recommendation_hidden_owner',
+        'bio' => 'Recommendation social proof should stay scoped.',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $viewer = User::factory()->create([
+        'name' => 'Recommendation Hidden Viewer',
+        'username' => 'recommendation_hidden_viewer',
+    ]);
+
+    collect(range(1, 3))->each(function (int $index) use ($viewer, $profileOwner): void {
+        $connection = User::factory()->create([
+            'name' => 'Hidden Recommendation Friend '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+            'username' => 'hidden_recommendation_friend_'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        ]);
+
+        $viewer->follow($connection);
+        $connection->follow($profileOwner);
+    });
+
+    Livewire::test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertDontSee('data-ui="profile-about-also-followed-by"', false)
+        ->assertDontSee('Also followed by');
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertDontSee('data-ui="profile-about-also-followed-by"', false)
+        ->assertDontSee('Also followed by');
+
+    $viewer->follow($profileOwner);
+
+    Livewire::actingAs($viewer)
+        ->test('profile.tabs.about', ['profileUserId' => $profileOwner->getKey()])
+        ->assertDontSee('data-ui="profile-about-also-followed-by"', false)
+        ->assertDontSee('Also followed by');
+
+    $sparseViewer = User::factory()->create([
+        'name' => 'Sparse Recommendation Viewer',
+        'username' => 'sparse_recommendation_viewer',
+    ]);
+    $sparseOwner = User::factory()->create([
+        'name' => 'Sparse Recommendation Owner',
+        'username' => 'sparse_recommendation_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    collect(range(1, 2))->each(function (int $index) use ($sparseViewer, $sparseOwner): void {
+        $connection = User::factory()->create([
+            'name' => 'Sparse Recommendation Friend '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+            'username' => 'sparse_recommendation_friend_'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+        ]);
+
+        $sparseViewer->follow($connection);
+        $connection->follow($sparseOwner);
+    });
+
+    Livewire::actingAs($sparseViewer)
+        ->test('profile.tabs.about', ['profileUserId' => $sparseOwner->getKey()])
+        ->assertDontSee('data-ui="profile-about-also-followed-by"', false)
+        ->assertDontSee('Also followed by');
 });
 
 it('hides about mutual connections from guests and profile owners', function (): void {

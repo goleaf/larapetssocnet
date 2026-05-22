@@ -12,7 +12,7 @@ Prevent N+1 in social-network pages.
 - Profile pages should eager load user media, pet card media, and count data before rendering.
 - Profile Pets tab queries should eager load pet media and add `viewer_is_following` with `withExists` against `pet_followers`; do not call `isFollowingPet()` inside card loops.
 - Profile About pet summary strips should query visible pets once, eager-load only avatar media, and avoid owner/species/breed/tag default eager-loads when the strip only renders linked avatars and names.
-- Profile About mutual connection strips should join or subquery the accepted `follows` rows for the viewer and profile owner, select only the user columns required for linked avatars, and cap the display query instead of loading full user records or entire follower collections.
+- Profile About mutual connection and "Also followed by" strips should join or subquery the accepted `follows` rows for the viewer and profile owner, select only the user columns required for linked avatars, and cap the display query instead of loading full user records or entire follower collections.
 - Profile post grids should eager load both `media` and `postMedia`, and media-only filters should use indexed `EXISTS` checks instead of loading all posts and filtering collections.
 - Profile previews that compare social graph data should use SQL joins/subqueries, not PHP collection intersections over whole follower lists.
 - Profile completeness should read only the columns/counts/media-exists flags it needs instead of loading full user records.
