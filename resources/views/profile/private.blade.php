@@ -25,7 +25,7 @@
  <x-ui.empty-state icon="🔒"
  title="This account is private"
  :description="($profileVisibility ?? 'private') === 'private'
- ? 'Only you can view this profile.'
+ ? 'This profile is not available publicly.'
  : 'This profile is private and followers-only. Follow @'.$user->username.' to see posts, photos, and pet profiles.'">
  @auth
  <x-slot name="action">
@@ -35,7 +35,12 @@
  </x-slot>
  @else
  <x-slot name="action">
- <x-ui.button :href="route('login')" variant="primary" size="sm" class="min-h-11">Log In to Follow</x-ui.button>
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+ @if (Route::has('register'))
+ <x-ui.button :href="route('register')" variant="primary" size="sm" class="min-h-11">Join PetSocial</x-ui.button>
+ @endif
+ <x-ui.button :href="route('login')" variant="outline" size="sm" class="min-h-11">Log In</x-ui.button>
+ </div>
  </x-slot>
  @endauth
  </x-ui.empty-state>

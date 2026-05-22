@@ -84,7 +84,7 @@ it('authenticated strangers cannot view private profiles', function (): void {
     $this->actingAs(User::factory()->create())
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
-        ->assertSee('Only you can view this profile');
+        ->assertSee('This profile is not available publicly.');
 });
 
 it('blocked users cannot access profiles or username redirects', function (): void {

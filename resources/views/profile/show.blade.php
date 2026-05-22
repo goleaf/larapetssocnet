@@ -16,14 +16,22 @@
  $websiteDisplay = $websiteUrl
  ? \Illuminate\Support\Str::of($websiteUrl)->replaceStart('https://', '')->replaceStart('http://', '')->before('/')->toString()
  : null;
+ $profilePostsCount = (int) ($profileUser->posts_count ?? 0);
+ $profilePetsCount = (int) ($profileUser->pets_count ?? 0);
+ $isNewProfileState = ! filled($profileUser->bio)
+ && ! filled($profileUser->headline)
+ && ! $location
+ && ! $websiteUrl
+ && $profilePostsCount === 0
+ && $profilePetsCount === 0;
 
  $tabItems = [
- ['label'=>'Posts','value'=>'posts','count'=> (int) ($profileUser->posts_count ?? 0)],
+ ['label'=>'Posts','value'=>'posts','count'=> $profilePostsCount],
  ['label'=>'About','value'=>'about','href'=>'#profile-intro'],
  ];
 
  if ($canViewPets ?? false) {
- $tabItems[] = ['label'=>'Pets','value'=>'pets','count'=> (int) ($profileUser->pets_count ?? 0)];
+ $tabItems[] = ['label'=>'Pets','value'=>'pets','count'=> $profilePetsCount];
  }
 
  if ($canViewPhotos ?? false) {
@@ -350,6 +358,8 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  <p class="max-w-3xl whitespace-pre-line text-base leading-7 text-bark">{{ $profileUser->bio }}</p>
  @elseif ($isOwner)
  <p class="max-w-3xl text-base leading-7 text-fur">Add a short introduction so visitors know the person behind the profile.</p>
+ @elseif ($isNewProfileState)
+ <p class="max-w-3xl text-base leading-7 text-fur" data-ui="profile-new-state">New member. {{ $displayName }} is getting settled in.</p>
  @endif
  </div>
 
@@ -380,19 +390,31 @@ class="h-28 w-28 border-4 border-warm-white bg-warm-white"/>
  <li data-ui="profile-identity-chip"
  class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
  <span aria-hidden="true">🐾</span>
- <span>{{ number_format((int) $profileUser->pets_count) }} {{ Str::plural('pet', (int) $profileUser->pets_count) }}</span>
+ <span>{{ number_format($profilePetsCount) }} {{ Str::plural('pet', $profilePetsCount) }}</span>
  </li>
  @endif
  @if ($canViewContent ?? false)
  <li data-ui="profile-identity-chip"
  class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
  <span aria-hidden="true">✍</span>
- <span>{{ number_format((int) ($profileUser->posts_count ?? 0)) }} {{ Str::plural('post', (int) ($profileUser->posts_count ?? 0)) }}</span>
+ <span>{{ number_format($profilePostsCount) }} {{ Str::plural('post', $profilePostsCount) }}</span>
  </li>
  @endif
  </ul>
  </div>
  </div>
+
+ @guest
+ @if (Route::has('register'))
+ <div class="mt-4 flex flex-col gap-3 rounded-[var(--radius-soft)] border border-paw-light bg-paw-light/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-ui="profile-guest-cta">
+ <p class="text-sm font-medium text-bark">Join PetSocial to follow {{ $displayName }} and start your own profile.</p>
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+ <x-ui.button :href="route('register')" variant="primary" size="sm" class="min-h-11">Join PetSocial</x-ui.button>
+ <x-ui.button :href="route('login')" variant="outline" size="sm" class="min-h-11">Log In</x-ui.button>
+ </div>
+ </div>
+ @endif
+ @endguest
  </div>
  </section>
 

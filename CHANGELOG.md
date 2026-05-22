@@ -50,6 +50,7 @@
 - Added `tests/Feature/UsernameTest.php` for username URL, redirect, availability, cooldown, and helper coverage.
 
 ### Changed
+- Updated profile empty, guest, high-volume, followers-only, and blocked states so each renders intentional copy, actions, counters, or access denial instead of falling through to generic profile surfaces.
 - Updated the public profile hero with a privacy-aware identity panel that surfaces the member bio, safe location, website, join date, pet count, and post count in the Warm Editorial visual system.
 - Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, use profile-view upserts against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
