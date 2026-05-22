@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated the profile completeness progress bar to use encouraging blue, amber, and emerald states with a 600ms ease-out fill animation and no red error coloring.
 - Updated profile completeness summaries to read through fresh `User` model computed accessors and added coverage for owner profile reloads after pet/follow actions.
 - Updated the owner-only profile completeness card to always render the completion meter with an animated progress bar and incomplete-item links that open the edit profile modal at the matching field.
 - Updated guest profile follow actions to render a Follow button that redirects to login with a follow-context flash message and intended profile URL.

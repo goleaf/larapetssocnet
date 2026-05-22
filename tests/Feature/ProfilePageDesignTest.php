@@ -49,6 +49,21 @@ if (! function_exists('profileDesignFollowers')) {
     }
 }
 
+if (! function_exists('profileCompletenessProgressMarkup')) {
+    function profileCompletenessProgressMarkup(string $html): string
+    {
+        $start = strpos($html, 'data-ui="profile-completeness-progress"');
+
+        if ($start === false) {
+            return '';
+        }
+
+        $end = strpos($html, 'x-bind:style', $start);
+
+        return substr($html, $start, $end === false ? null : $end - $start);
+    }
+}
+
 it('renders facebook-style profile sections and actions for public profiles', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Ava Carter',
@@ -459,7 +474,8 @@ it('renders a profile completeness meter only for the profile owner with edit mo
         ->assertSee('x-init', false)
         ->assertSee('progress: 0', false)
         ->assertSee('x-bind:style="`width: ${progress}%`"', false)
-        ->assertSee('transition-[width] duration-700 ease-out motion-reduce:transition-none', false)
+        ->assertSee('transition-[width] duration-[600ms] ease-out motion-reduce:transition-none', false)
+        ->assertSee('bg-blue-500', false)
         ->assertSee('0%')
         ->assertSee('Add a profile photo')
         ->assertSee('Add a cover photo')
@@ -480,8 +496,13 @@ it('renders a profile completeness meter only for the profile owner with edit mo
         ->assertSee('openProfileEditTarget(\'profile_modal_following\')', false);
 
     $html = $response->getContent();
+    $progressMarkup = profileCompletenessProgressMarkup($html);
 
-    expect(strpos($html, 'data-ui="profile-header"'))->toBeLessThan(strpos($html, 'data-ui="profile-completeness"'))
+    expect($progressMarkup)
+        ->toContain('bg-blue-500')
+        ->not->toContain('bg-red')
+        ->not->toContain('bg-rose')
+        ->and(strpos($html, 'data-ui="profile-header"'))->toBeLessThan(strpos($html, 'data-ui="profile-completeness"'))
         ->and(strpos($html, 'data-ui="profile-completeness"'))->toBeLessThan(strpos($html, 'data-ui="profile-tabs"'));
 
     $this->actingAs(User::factory()->create())
@@ -498,6 +519,106 @@ it('renders a profile completeness meter only for the profile owner with edit mo
         ->assertDontSee('data-ui="profile-completeness"', false)
         ->assertDontSee('Complete your profile')
         ->assertDontSee('data-ui="profile-completeness-missing-link"', false);
+});
+
+it('uses encouraging profile completeness progress colors at each threshold', function (): void {
+    $blueOwner = User::factory()->create([
+        'username' => 'completion_blue_owner',
+        'avatar_path' => 'https://example.test/avatar.jpg',
+        'profile_photo_path' => null,
+        'cover_photo_path' => null,
+        'bio' => 'A partial profile bio with enough detail.',
+        'location' => 'Vilnius',
+        'website' => null,
+        'birth_date' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $blueResponse = $this->actingAs($blueOwner)
+        ->get(route('profile.show', ['user' => $blueOwner]))
+        ->assertOk()
+        ->assertSee('aria-valuenow="40"', false)
+        ->assertSee('bg-blue-500', false);
+
+    expect(profileCompletenessProgressMarkup($blueResponse->getContent()))
+        ->toContain('bg-blue-500')
+        ->not->toContain('bg-red')
+        ->not->toContain('bg-rose');
+
+    $amberOwner = User::factory()->create([
+        'username' => 'completion_amber_owner',
+        'avatar_path' => 'https://example.test/avatar.jpg',
+        'profile_photo_path' => null,
+        'cover_photo_path' => 'https://example.test/cover.jpg',
+        'bio' => null,
+        'location' => 'Vilnius',
+        'website' => 'https://example.test',
+        'birth_date' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $amberResponse = $this->actingAs($amberOwner)
+        ->get(route('profile.show', ['user' => $amberOwner]))
+        ->assertOk()
+        ->assertSee('aria-valuenow="50"', false)
+        ->assertSee('bg-amber-500', false);
+
+    expect(profileCompletenessProgressMarkup($amberResponse->getContent()))
+        ->toContain('bg-amber-500')
+        ->not->toContain('bg-red')
+        ->not->toContain('bg-rose');
+
+    $edgeOwner = User::factory()->create([
+        'username' => 'completion_edge_owner',
+        'avatar_path' => 'https://example.test/avatar.jpg',
+        'profile_photo_path' => null,
+        'cover_photo_path' => 'https://example.test/cover.jpg',
+        'bio' => 'A nearly complete profile bio with enough detail.',
+        'location' => 'Vilnius',
+        'website' => 'https://example.test',
+        'birth_date' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    Pet::factory()->for($edgeOwner)->create();
+
+    $edgeResponse = $this->actingAs($edgeOwner)
+        ->get(route('profile.show', ['user' => $edgeOwner]))
+        ->assertOk()
+        ->assertSee('aria-valuenow="80"', false)
+        ->assertSee('bg-amber-500', false);
+
+    expect(profileCompletenessProgressMarkup($edgeResponse->getContent()))
+        ->toContain('bg-amber-500')
+        ->not->toContain('bg-red')
+        ->not->toContain('bg-rose');
+
+    $greenOwner = User::factory()->create([
+        'username' => 'completion_green_owner',
+        'avatar_path' => 'https://example.test/avatar.jpg',
+        'profile_photo_path' => null,
+        'cover_photo_path' => 'https://example.test/cover.jpg',
+        'bio' => 'A complete profile bio with enough useful detail.',
+        'location' => 'Vilnius',
+        'website' => 'https://example.test',
+        'birth_date' => '1994-05-20',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    Pet::factory()->for($greenOwner)->create();
+
+    $greenResponse = $this->actingAs($greenOwner)
+        ->get(route('profile.show', ['user' => $greenOwner]))
+        ->assertOk()
+        ->assertSee('aria-valuenow="90"', false)
+        ->assertSee('bg-emerald-500', false);
+
+    expect(profileCompletenessProgressMarkup($greenResponse->getContent()))
+        ->toContain('bg-emerald-500')
+        ->not->toContain('bg-red')
+        ->not->toContain('bg-rose');
 });
 
 it('renders the profile header as the topmost full-width section in the main profile view', function (): void {

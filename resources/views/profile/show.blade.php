@@ -822,7 +822,7 @@
  @php
  $profileCompleteness = (int) ($profileCompletenessPercentage ?? $profileUser->profile_completeness_percentage);
  $completionMissingItems = $profileCompletenessMissingItems ?? $profileUser->profile_completeness_missing_items;
- $completionColor = $profileCompleteness >= 80 ? 'bg-emerald-500' : ($profileCompleteness >= 50 ? 'bg-amber-500' : 'bg-sky-500');
+ $completionColor = $profileCompleteness > 80 ? 'bg-emerald-500' : ($profileCompleteness >= 50 ? 'bg-amber-500' : 'bg-blue-500');
  $completionTargetIds = [
  'avatar' => 'profile_modal_avatar_field',
  'cover' => 'profile_modal_cover_field',
@@ -873,7 +873,7 @@
  aria-valuemax="100"
  aria-valuenow="{{ $profileCompleteness }}"
  data-ui="profile-completeness-progress">
- <div class="h-full rounded-full {{ $completionColor }} transition-[width] duration-700 ease-out motion-reduce:transition-none" x-bind:style="`width: ${progress}%`"></div>
+ <div class="h-full rounded-full {{ $completionColor }} transition-[width] duration-[600ms] ease-out motion-reduce:transition-none" x-bind:style="`width: ${progress}%`"></div>
  </div>
  @if ($completionMissingItems !== [])
  <div class="mt-4 flex flex-wrap gap-2">
