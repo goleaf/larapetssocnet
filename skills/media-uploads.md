@@ -24,7 +24,7 @@ Post image conversions:
 - `medium` width 800 webp q85
 - `large` width 1200 webp q90
 
-Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()` and filters with `Post::containingMedia()` so both legacy `post_media` rows and Spatie collections remain visible without PHP-side post filtering. Profile Photos reads the same media sources through visible post queries and `Post::containingPhotos()`, then renders image-only media while excluding videos.
+Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()` and filters with `Post::containingMedia()` so both legacy `post_media` rows and Spatie collections remain visible without PHP-side post filtering. Profile Photos reads the same media sources through visible post queries and `Post::containingPhotos()`, then renders image-only media in a square two-column mobile/tablet and three-column desktop grid with desktop hover reaction/comment overlays while excluding videos.
 
 ## Pet Media
 Pet media uses public disk.

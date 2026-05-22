@@ -101,7 +101,7 @@ new class extends Component
 @placeholder
 <div data-ui="profile-tab-panel-loading" id="profile-panel-photos" aria-busy="true">
  <x-ui.card>
- <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+ <div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
  @for ($index = 0; $index < 8; $index++)
  <div class="aspect-square animate-pulse rounded-[var(--radius-soft)] bg-cream"></div>
  @endfor
@@ -118,17 +118,19 @@ new class extends Component
  @if ($data['canViewPhotos'])
  <x-ui.card>
  @if ($data['photos']->isNotEmpty())
- <div data-ui="profile-photos-grid" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+ <div data-ui="profile-photos-grid" class="grid grid-cols-2 gap-2 lg:grid-cols-3">
  @foreach ($data['photos'] as $photo)
  <figure
  wire:key="{{ $photo['key'] }}"
  data-ui="profile-photo-grid-item"
- class="group relative overflow-hidden rounded-[var(--radius-soft)] border border-whisker/30 bg-cream"
+ class="group relative aspect-square overflow-hidden rounded-[var(--radius-soft)] border border-whisker/30 bg-cream"
  >
- <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] }}" class="aspect-square w-full object-cover transition-[scale] duration-200 group-hover:scale-[1.02]" loading="lazy">
- <figcaption class="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-between gap-2 bg-bark/70 px-3 py-2 text-xs font-semibold text-white opacity-0 backdrop-blur-sm transition-[opacity,translate] duration-150 group-hover:translate-y-0 group-hover:opacity-100">
- <span class="truncate">{{ $photo['posted_at'] }}</span>
- <span>{{ number_format((int) ($photo['post']->likes_count ?? 0)) }} likes</span>
+ <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] }}" class="h-full w-full object-cover transition-[scale] duration-200 lg:group-hover:scale-[1.02]" loading="lazy">
+ <figcaption class="pointer-events-none absolute inset-0 hidden items-center justify-center bg-bark/0 text-white opacity-0 transition-[background-color,opacity] duration-150 lg:flex lg:group-hover:bg-bark/45 lg:group-hover:opacity-100">
+ <span class="inline-flex items-center gap-3 rounded-full bg-bark/60 px-3 py-1.5 text-xs font-semibold shadow-sm backdrop-blur-sm">
+ <span>{{ number_format((int) ($photo['post']->reactions_count ?? $photo['post']->likes_count ?? 0)) }} reactions</span>
+ <span>{{ number_format((int) ($photo['post']->comments_count ?? 0)) }} comments</span>
+ </span>
  </figcaption>
  </figure>
  @endforeach

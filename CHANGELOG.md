@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
+
 ### Added
 - Added the profile Photos tab lazy Livewire grid for post photos, reusing profile post visibility rules so followers-only, friends-only, private, and video-only media are filtered correctly.
 - Added a profile owner first-pet onboarding empty state with an illustrated prompt and modal CTA, while keeping visitor zero-pet profiles to a simple no-pets message.

@@ -882,7 +882,11 @@ test('profile photos tab renders only photos from posts visible to the viewer', 
         'updated_at' => now(),
     ]);
 
-    profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-public-photo.jpg');
+    $publicPhotoPost = profilePhotoPost($owner, Post::VISIBILITY_PUBLIC, 'posts/profile-public-photo.jpg', [
+        'likes_count' => 7,
+        'reactions_count' => 7,
+    ]);
+    Comment::factory()->count(3)->for($publicPhotoPost, 'post')->create();
     profilePhotoPost($owner, Post::VISIBILITY_FOLLOWERS, 'posts/profile-followers-photo.jpg');
     profilePhotoPost($owner, Post::VISIBILITY_FRIENDS, 'posts/profile-friends-photo.jpg');
     profilePhotoPost($owner, Post::VISIBILITY_PRIVATE, 'posts/profile-private-photo.jpg');
@@ -900,6 +904,12 @@ test('profile photos tab renders only photos from posts visible to the viewer', 
 
     Livewire::test('profile.tabs.photos', ['profileUserId' => $owner->getKey()])
         ->assertSee('data-ui="profile-photos-grid"', false)
+        ->assertSee('grid grid-cols-2 gap-2 lg:grid-cols-3', false)
+        ->assertSee('class="group relative aspect-square overflow-hidden', false)
+        ->assertSee('h-full w-full object-cover', false)
+        ->assertSee('lg:group-hover:bg-bark/45', false)
+        ->assertSee('7 reactions')
+        ->assertSee('3 comments')
         ->assertSee('profile-public-photo.jpg')
         ->assertDontSee('profile-followers-photo.jpg')
         ->assertDontSee('profile-friends-photo.jpg')
