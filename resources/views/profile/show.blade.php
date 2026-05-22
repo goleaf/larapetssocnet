@@ -17,6 +17,7 @@
  $websiteDisplay = $websiteUrl
  ? \Illuminate\Support\Str::of($websiteUrl)->replaceStart('https://', '')->replaceStart('http://', '')->before('/')->toString()
  : null;
+ $joinedDate = optional($profileUser->created_at)->format('F Y');
  $profilePostsCount = (int) ($profileUser->posts_count ?? 0);
  $profilePetsCount = (int) ($profileUser->pets_count ?? 0);
  $isNewProfileState = ! filled($profileUser->bio)
@@ -290,18 +291,44 @@
  </div>
  @endif
 
- <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fur">
- @if ($profileUser->headline)
- <span class="font-medium text-bark">{{ $profileUser->headline }}</span>
- @endif
- @if ($profileUser->pronouns)
- <span>• {{ $profileUser->pronouns }}</span>
- @endif
+ @if ($location || ($websiteUrl && $websiteDisplay) || $joinedDate)
+ <ul data-ui="profile-metadata"
+ class="mt-3 flex flex-col gap-2 text-sm text-fur sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2"
+ role="list"
+ aria-label="Profile metadata">
  @if ($location)
- <span>📍 {{ $location }}</span>
+ <li data-ui="profile-metadata-location" class="inline-flex min-h-7 items-center gap-1.5">
+ <svg class="h-4 w-4 shrink-0 text-fur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s6-5.7 6-11a6 6 0 1 0-12 0c0 5.3 6 11 6 11Z"/>
+ <circle cx="12" cy="10" r="2.4"/>
+ </svg>
+ <span>{{ $location }}</span>
+ </li>
  @endif
- <span>Joined {{ optional($profileUser->created_at)->format('M Y') }}</span>
- </div>
+ @if ($websiteUrl && $websiteDisplay)
+ <li data-ui="profile-metadata-website" class="inline-flex min-h-7 min-w-0 items-center gap-1.5">
+ <svg class="h-4 w-4 shrink-0 text-fur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 13.5a3 3 0 0 0 4.2 0l3.3-3.3a3 3 0 0 0-4.2-4.2l-.8.8"/>
+ <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5a3 3 0 0 0-4.2 0L6 13.8A3 3 0 0 0 10.2 18l.8-.8"/>
+ </svg>
+ <a href="{{ $websiteUrl }}"
+ target="_blank"
+ rel="noopener noreferrer"
+ class="min-w-0 truncate font-semibold text-paw transition-colors hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ {{ $websiteDisplay }}
+ </a>
+ </li>
+ @endif
+ @if ($joinedDate)
+ <li data-ui="profile-metadata-joined" class="inline-flex min-h-7 items-center gap-1.5">
+ <svg class="h-4 w-4 shrink-0 text-fur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M7 3v3M17 3v3M4.5 8h15M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z"/>
+ </svg>
+ <span>Joined {{ $joinedDate }}</span>
+ </li>
+ @endif
+ </ul>
+ @endif
  </div>
  </div>
 
@@ -417,7 +444,16 @@
  <div class="mt-5 border-t border-whisker/30 pt-4" data-ui="profile-identity-panel">
  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
  <div class="min-w-0">
- @if ($profileBio === '' && $isOwner)
+ @if (($profileUser->headline || $profileUser->pronouns) && ! $isNewProfileState)
+ <div class="max-w-3xl space-y-1">
+ @if ($profileUser->headline)
+ <p data-ui="profile-headline" class="text-sm font-semibold text-bark">{{ $profileUser->headline }}</p>
+ @endif
+ @if ($profileUser->pronouns)
+ <p data-ui="profile-pronouns" class="text-sm text-fur">{{ $profileUser->pronouns }}</p>
+ @endif
+ </div>
+ @elseif ($profileBio === '' && $isOwner)
  <p class="max-w-3xl text-base leading-7 text-fur">Add a short introduction so visitors know the person behind the profile.</p>
  @elseif ($profileBio === '' && $isNewProfileState)
  <p class="max-w-3xl text-base leading-7 text-fur" data-ui="profile-new-state">New member. {{ $displayName }} is getting settled in.</p>
@@ -425,28 +461,6 @@
  </div>
 
  <ul class="flex flex-wrap gap-2 lg:max-w-md lg:justify-end" role="list" aria-label="Profile highlights">
- @if ($location)
- <li data-ui="profile-identity-chip"
- class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
- <span aria-hidden="true">📍</span>
- <span>{{ $location }}</span>
- </li>
- @endif
- @if ($websiteUrl)
- <li>
- <a href="{{ $websiteUrl }}" target="_blank" rel="noopener noreferrer" data-ui="profile-identity-chip"
- aria-label="Visit {{ $displayName }} website"
- class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-paw transition-colors hover:border-paw hover:bg-paw-light/30 hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <span aria-hidden="true">🔗</span>
- <span>{{ $websiteDisplay }}</span>
- </a>
- </li>
- @endif
- <li data-ui="profile-identity-chip"
- class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">
- <span aria-hidden="true">🗓️</span>
- <span>Member since {{ optional($profileUser->created_at)->format('M Y') }}</span>
- </li>
  @if ($canViewPets ?? false)
  <li data-ui="profile-identity-chip"
  class="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-cream px-3 text-xs font-semibold text-bark">

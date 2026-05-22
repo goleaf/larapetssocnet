@@ -51,6 +51,7 @@
 - Expanded the reserved username configuration for platform route names, administrative paths, common web paths, brand names, and sensitive terms.
 
 ### Changed
+- Updated the profile header metadata to render safe location, protocol-stripped website links, and joined date as a responsive row below the bio.
 - Updated profile header identity layout so display names, usernames, and expandable 3-line bios sit directly below the overlapping avatar.
 - Updated the profile verified badge to use a reserved verification color, SVG paw icon, and Alpine-controlled tooltip beside public and private profile header names.
 - Updated profile avatars to overlap the cover edge with responsive 90px/120px circular sizing, white borders, object-cover uploaded images, and username-hashed initial fallbacks.
@@ -62,7 +63,7 @@
 - Routed public username profiles through a full-page Livewire component at `/@username` while preserving canonical username casing redirects and blocked-viewer denial.
 - Updated profile Livewire mounting to resolve active usernames before block/private/header queries, return 404 for old or unavailable profile usernames without consulting redirect history, and load header data only for visible profiles.
 - Updated profile empty, guest, high-volume, followers-only, and blocked states so each renders intentional copy, actions, counters, or access denial instead of falling through to generic profile surfaces.
-- Updated the public profile hero with a privacy-aware identity panel that surfaces the member bio, safe location, website, join date, pet count, and post count in the Warm Editorial visual system.
+- Updated the public profile hero with a privacy-aware identity panel that surfaces profile headline, pronouns, pet count, and post count in the Warm Editorial visual system.
 - Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, use profile-view upserts against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.

@@ -5,6 +5,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 uses(RefreshDatabase::class);
@@ -302,6 +303,70 @@ it('renders the profile identity stack below the avatar with expandable bio text
     expect(strpos($html, 'data-ui="profile-avatar"'))->toBeLessThan(strpos($html, 'data-ui="profile-header-identity"'))
         ->and(strpos($html, 'data-ui="profile-display-name"'))->toBeLessThan(strpos($html, 'data-ui="profile-username"'))
         ->and(strpos($html, 'data-ui="profile-username"'))->toBeLessThan(strpos($html, 'data-ui="profile-header-bio"'));
+});
+
+it('renders profile metadata below the bio with responsive layout and safe website display', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Metadata Owner',
+        'display_name' => 'Metadata Crew',
+        'username' => 'metadata_owner',
+        'bio' => 'Profile metadata appears after this introduction.',
+        'location' => 'Prague',
+        'website' => 'https://prus.dev/work',
+        'privacy_display_location' => true,
+        'created_at' => Carbon::parse('2024-02-14 12:00:00'),
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $response = $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-metadata"', false)
+        ->assertSee('aria-label="Profile metadata"', false)
+        ->assertSee('flex flex-col gap-2 text-sm text-fur sm:flex-row sm:flex-wrap sm:items-center', false)
+        ->assertSee('data-ui="profile-metadata-location"', false)
+        ->assertSee('Prague')
+        ->assertSee('data-ui="profile-metadata-website"', false)
+        ->assertSee('href="https://prus.dev/work"', false)
+        ->assertSee('target="_blank"', false)
+        ->assertSee('rel="noopener noreferrer"', false)
+        ->assertSee('prus.dev')
+        ->assertSee('data-ui="profile-metadata-joined"', false)
+        ->assertSee('Joined February 2024')
+        ->assertSee('focus-visible:outline-paw', false)
+        ->assertDontSee('Member since', false);
+
+    $html = $response->getContent();
+    preg_match('/<li data-ui="profile-metadata-website"[\s\S]*?<\/li>/', $html, $metadataWebsiteMatch);
+
+    expect($metadataWebsiteMatch[0] ?? '')->toMatch('/<a[^>]+href="https:\/\/prus\.dev\/work"[^>]*>\s*prus\.dev\s*<\/a>/')
+        ->and($metadataWebsiteMatch[0] ?? '')->not->toContain('>https://prus.dev')
+        ->and(strpos($html, 'data-ui="profile-header-bio"'))->toBeLessThan(strpos($html, 'data-ui="profile-metadata"'))
+        ->and(strpos($html, 'data-ui="profile-metadata-location"'))->toBeLessThan(strpos($html, 'data-ui="profile-metadata-website"'))
+        ->and(strpos($html, 'data-ui="profile-metadata-website"'))->toBeLessThan(strpos($html, 'data-ui="profile-metadata-joined"'));
+});
+
+it('omits empty optional profile metadata items without placeholder spacing', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Sparse Metadata Owner',
+        'username' => 'sparse_metadata_owner',
+        'bio' => 'A simple public profile.',
+        'location' => null,
+        'city' => null,
+        'website' => null,
+        'privacy_display_location' => true,
+        'created_at' => Carbon::parse('2023-11-03 09:30:00'),
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('data-ui="profile-metadata"', false)
+        ->assertSee('data-ui="profile-metadata-joined"', false)
+        ->assertSee('Joined November 2023')
+        ->assertDontSee('data-ui="profile-metadata-location"', false)
+        ->assertDontSee('data-ui="profile-metadata-website"', false);
 });
 
 it('renders verified badges beside profile header names with an alpine tooltip', function (): void {
