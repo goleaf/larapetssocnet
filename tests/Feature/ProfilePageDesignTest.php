@@ -160,6 +160,27 @@ it('renders facebook-style profile sections and actions for public profiles', fu
         ->assertDontSee('Who To Follow');
 });
 
+it('renders profile tabs as a CSS sticky translucent blur bar', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Sticky Tabs Owner',
+        'username' => 'sticky_tabs_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.show', ['user' => $profileOwner]))
+        ->assertOk()
+        ->assertSee('id="profile-tabs"', false)
+        ->assertSee('data-ui="profile-tabs"', false)
+        ->assertSee('sticky top-20 z-30 scroll-mt-24', false)
+        ->assertSee('bg-warm-white/85', false)
+        ->assertSee('backdrop-blur-md!', false)
+        ->assertDontSee('addEventListener(\'scroll\'', false)
+        ->assertDontSee('window.onscroll', false)
+        ->assertDontSee('@scroll.window', false);
+});
+
 it('renders cached profile stats as modal and pets tab actions', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Stats Owner',

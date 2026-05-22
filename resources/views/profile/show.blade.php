@@ -948,7 +948,7 @@
  </x-ui.card>
  @endif
 
- <x-ui.card id="profile-tabs" padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 scroll-mt-24 bg-warm-white">
+ <x-ui.card id="profile-tabs" padding="sm" data-ui="profile-tabs" class="sticky top-20 z-30 scroll-mt-24 border-whisker/50 bg-warm-white/85 backdrop-blur-md!">
  <x-ui.tabs :tabs="$tabItems" :active="$tab" class="mb-0"/>
  </x-ui.card>
 
