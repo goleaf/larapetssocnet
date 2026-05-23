@@ -2,6 +2,12 @@ name: Production smoke diagnostics
 
 on:
   workflow_dispatch:
+    inputs:
+      fetch_logs:
+        description: Fetch the remote Laravel log tail even when smoke checks pass.
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   login:
@@ -64,7 +70,7 @@ jobs:
           fi
 
       - name: Fetch remote Laravel log after smoke failure
-        if: failure()
+        if: ${{ failure() || inputs.fetch_logs }}
         run: |
           set -euo pipefail
 

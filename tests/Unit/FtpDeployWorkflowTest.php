@@ -49,6 +49,8 @@ it('checks the production login smoke with livewire csrf handling', function ():
     $workflow = (string) file_get_contents(base_path('.github/workflows/production-smoke.yml'));
 
     expect($workflow)
+        ->toContain('fetch_logs:')
+        ->toContain('failure() || inputs.fetch_logs')
         ->toContain('csrf-token')
         ->toContain('--header "X-CSRF-TOKEN: $csrf"')
         ->toContain("--data-urlencode 'credential=missing-login-probe@example.invalid'")
