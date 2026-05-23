@@ -126,6 +126,29 @@
  </x-ui.card>
  @endif
 
+ @if (($pendingInvitation ?? null) && ! $isMember)
+ <x-ui.card padding="base" class="border-sky-200 bg-sky-50">
+ <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <p class="text-sm font-semibold text-bark">You have an invitation to join this group.</p>
+ <p class="mt-1 text-sm text-fur">Accepting adds you as a member and reveals the group feed.</p>
+ </div>
+ <div class="flex flex-wrap items-center gap-2">
+ <form method="POST" action="{{ route('groups.invitations.accept', ['group' => $groupRouteKey, 'invitation' => $pendingInvitation->id]) }}">
+ @csrf
+ @method('PATCH')
+ <x-ui.button type="submit" variant="primary" size="sm">Accept</x-ui.button>
+ </form>
+ <form method="POST" action="{{ route('groups.invitations.decline', ['group' => $groupRouteKey, 'invitation' => $pendingInvitation->id]) }}">
+ @csrf
+ @method('PATCH')
+ <x-ui.button type="submit" variant="ghost" size="sm">Decline</x-ui.button>
+ </form>
+ </div>
+ </div>
+ </x-ui.card>
+ @endif
+
  @if ($activeTab ==='about')
  <x-ui.card padding="lg" class="space-y-6">
  <div>
@@ -212,6 +235,14 @@
  <x-slot:action>
  @if ($canManageMembers && $roleValue !=='owner')
  <div class="flex items-center gap-2">
+ @if ($isOwner)
+ <form method="POST" action="{{ route('groups.ownership.transfer', $groupRouteKey) }}">
+ @csrf
+ @method('PATCH')
+ <input type="hidden" name="membership_id" value="{{ $memberItem->id }}" />
+ <x-ui.button type="submit" variant="ghost" size="sm">Make Owner</x-ui.button>
+ </form>
+ @endif
  @if (in_array($roleValue, ['member','moderator'], true))
  <form method="POST" action="{{ route('groups.members.promote', ['group'=> $groupRouteKey,'membership'=> $memberItem->id]) }}">
  @csrf
@@ -270,7 +301,24 @@
  <p class="mt-2 text-sm shell-text-muted">Join this group to view and participate in posts.</p>
  </article>
  @else
- <div class="space-y-4">
+ <div
+ class="space-y-4"
+ x-data="groupFeed({
+ latestUrl: @js(route('groups.posts.latest', $groupRouteKey)),
+ latestPostId: @js((int) ($latestPostId ?? 0)),
+ nextUrl: @js($feedPosts instanceof \Illuminate\Contracts\Pagination\Paginator ? $feedPosts->nextPageUrl() : null),
+ })"
+ >
+ <button
+ type="button"
+ class="hidden w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-bark transition hover:bg-sky-100"
+ x-bind:class="{ 'hidden': ! hasNewPosts }"
+ x-on:click="refreshFeed"
+ >
+ New group posts available
+ </button>
+
+ <div class="space-y-4" data-group-feed-items>
  @forelse ($feedPosts ?? [] as $post)
     <x-post-card :post="$post" :viewer="$viewer"/>
  @empty
@@ -279,9 +327,24 @@
  description="Start the conversation by sharing the first post."
  />
  @endforelse
+ </div>
 
  @if ($feedPosts instanceof \Illuminate\Contracts\Pagination\Paginator)
- <div class="shell-card p-4">{{ $feedPosts->links() }}</div>
+ <div class="shell-card p-4" x-show="! nextUrl">{{ $feedPosts->links() }}</div>
+ <a
+ href="{{ $feedPosts->nextPageUrl() }}"
+ data-group-feed-next
+ class="sr-only"
+ @if (! $feedPosts->hasMorePages()) aria-disabled="true" @endif
+ >Next page</a>
+ <div
+ x-ref="sentinel"
+ class="flex h-12 items-center justify-center text-xs font-semibold uppercase tracking-wide text-fur"
+ x-show="nextUrl"
+ >
+ <span x-show="! loadingMore">Loading more posts</span>
+ <span x-show="loadingMore">Loading</span>
+ </div>
  @endif
  </div>
  @endif
@@ -324,6 +387,21 @@
  @endforelse
  </div>
  </x-ui.card>
+
+ @if ($canManageMembers && ! $isArchived)
+ <x-ui.card padding="md">
+ <x-slot:header>
+ <x-ui.card-header title="Invite Member" class="pb-3 mb-3"/>
+ </x-slot:header>
+
+ <form method="POST" action="{{ route('groups.invitations.store', $groupRouteKey) }}" class="space-y-3">
+ @csrf
+ <x-ui.input name="user_id" type="number" min="1" label="User ID" :value="old('user_id')" />
+ <x-ui.textarea name="message" label="Message" rows="2" placeholder="Optional note">{{ old('message') }}</x-ui.textarea>
+ <x-ui.button type="submit" variant="primary" :full="true" size="sm">Send Invitation</x-ui.button>
+ </form>
+ </x-ui.card>
+ @endif
 
  @if ($canManageMembers)
  <x-ui.card padding="md">

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated the authentication user model/factory support for encrypted two-factor fields, pending email changes, account status enums, profile-completeness scores, failed-login counters, and separate social account relationships.
 - Added five accessible, config-backed profile themes stored on `users.profile_theme` and applied as CSS custom property overrides on public or locked profile roots only.
 - Updated the pet profile show page with first-class identity facts, species-aware life-stage labels, personality pills, a milestone story preview, stewardship context, QR sharing, and owner-only care notes.
 - Updated pet deletion cleanup to soft-delete linked pet posts, pet milestones, and pet adoption marketplace listings while still removing follower rows and counter-cache state.
@@ -32,6 +33,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added the authentication security schema foundation with encrypted two-factor columns, pending email change storage, profile completeness tracking, account status and failed-login tracking columns, case-insensitive username and reserved-username unique indexes, and a separate encrypted `social_accounts` table for OAuth provider identities.
 - Added privacy-gated currently-active avatar indicators backed by `users.last_seen_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.
 - Added public profile portfolio mode at `/@username/portfolio`, backed by an ordered `profile_portfolio_posts` pivot table, a settings management form for up to 12 published public posts, and a responsive magazine-style showcase grid.
 - Added first-class pet profile ownership extensions with scoped co-owner permissions, pet milestones with optional automatic post sharing, authenticated breed autocomplete, server-generated QR SVGs, and daily pet birthday notifications.

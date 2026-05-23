@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AccountStatus;
 use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -73,7 +74,9 @@ class UserFactory extends Factory
             'flags' => fake()->optional(0.1)->randomElement(['verified', 'staff', 'early_access']),
             'is_verified' => false,
             'profile_completed_at' => null,
+            'profile_completeness_score' => 0,
             'is_banned' => false,
+            'account_status' => AccountStatus::Active->value,
             'ban_reason' => null,
             'is_private' => false,
             'privacy_display_email' => fake()->boolean(10),
@@ -91,6 +94,8 @@ class UserFactory extends Factory
             'password_changed_at' => null,
             'last_seen_at' => fake()->dateTimeBetween('-7 days', 'now'),
             'last_login_at' => null,
+            'failed_login_attempts' => 0,
+            'last_failed_login_at' => null,
             'scheduled_deletion_at' => null,
             'deactivated_at' => null,
             'deactivation_reason' => null,

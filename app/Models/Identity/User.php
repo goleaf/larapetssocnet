@@ -2,6 +2,7 @@
 
 namespace App\Models\Identity;
 
+use App\Enums\AccountStatus;
 use App\Enums\ProfileTheme;
 use App\Enums\ProfileVisibility;
 use App\Models\Activities\ContestEntry;
@@ -89,8 +90,11 @@ use Spatie\Permission\Traits\HasRoles;
     'username',
     'username_changed_at',
     'email',
+    'pending_email',
     'password',
     'password_changed_at',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
     'terms_accepted_at',
     'terms_version',
     'registration_ip_address',
@@ -134,6 +138,7 @@ use Spatie\Permission\Traits\HasRoles;
     'profile_photo_path',
     'is_verified',
     'profile_completed_at',
+    'profile_completeness_score',
     'followers_count',
     'following_count',
     'follow_requests_count',
@@ -148,6 +153,7 @@ use Spatie\Permission\Traits\HasRoles;
     'blocked_users_count',
     'blocked_by_count',
     'is_banned',
+    'account_status',
     'ban_reason',
     'role',
     'scheduled_deletion_at',
@@ -156,10 +162,15 @@ use Spatie\Permission\Traits\HasRoles;
     'deactivation_reason',
     'suspended_until',
     'suspension_reason',
+    'failed_login_attempts',
+    'last_failed_login_at',
 ])]
 #[Hidden([
     'password',
     'remember_token',
+    'pending_email',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
 ])]
 class User extends Authenticatable implements HasMedia, MustVerifyEmail
 {
@@ -224,8 +235,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'pending_email' => 'string',
             'username_changed_at' => 'datetime',
             'password_changed_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
             'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
@@ -251,6 +265,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'cover_photo_position' => 'float',
             'is_verified' => 'boolean',
             'profile_completed_at' => 'datetime',
+            'profile_completeness_score' => 'integer',
             'followers_count' => 'integer',
             'following_count' => 'integer',
             'follow_requests_count' => 'integer',
@@ -265,9 +280,12 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'blocked_users_count' => 'integer',
             'blocked_by_count' => 'integer',
             'is_banned' => 'boolean',
+            'account_status' => AccountStatus::class,
             'scheduled_deletion_at' => 'datetime',
             'deactivated_at' => 'datetime',
             'suspended_until' => 'datetime',
+            'failed_login_attempts' => 'integer',
+            'last_failed_login_at' => 'datetime',
         ];
     }
 
@@ -691,6 +709,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function usernameChanges(): HasMany
     {
         return $this->hasMany(UsernameChange::class);
+    }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
     }
 
     public function sentMessages(): HasMany

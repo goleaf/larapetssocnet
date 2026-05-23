@@ -549,6 +549,118 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('groupFeed', (config = {}) => ({
+ latestUrl: toStringValue(config.latestUrl),
+ latestPostId: toNumber(config.latestPostId),
+ nextUrl: toStringValue(config.nextUrl) || null,
+ hasNewPosts: false,
+ loadingMore: false,
+ observer: null,
+ pollTimer: null,
+
+ init() {
+ if (this.latestUrl) {
+ this.pollTimer = window.setInterval(() => this.checkForNewPosts(), 30000);
+ this.checkForNewPosts();
+ }
+
+ this.$nextTick(() => this.observeSentinel());
+ },
+
+ destroy() {
+ if (this.pollTimer) {
+ window.clearInterval(this.pollTimer);
+ }
+
+ if (this.observer) {
+ this.observer.disconnect();
+ }
+ },
+
+ refreshFeed() {
+ window.location.reload();
+ },
+
+ async checkForNewPosts() {
+ if (!this.latestUrl || this.latestPostId <= 0) {
+ return;
+ }
+
+ const url = new URL(this.latestUrl, window.location.origin);
+ url.searchParams.set('after_id', String(this.latestPostId));
+
+ try {
+ const response = await fetch(url.toString(), {
+ headers: { Accept:'application/json' },
+ });
+
+ if (!response.ok) {
+ return;
+ }
+
+ const payload = await response.json();
+ this.hasNewPosts = Boolean(payload.has_new_posts);
+ } catch {
+ this.hasNewPosts = false;
+ }
+ },
+
+ observeSentinel() {
+ if (!this.$refs.sentinel || !this.nextUrl || !('IntersectionObserver' in window)) {
+ return;
+ }
+
+ this.observer = new IntersectionObserver((entries) => {
+ if (entries.some((entry) => entry.isIntersecting)) {
+ this.loadMore();
+ }
+ }, {
+ rootMargin:'240px',
+ });
+
+ this.observer.observe(this.$refs.sentinel);
+ },
+
+ async loadMore() {
+ if (this.loadingMore || !this.nextUrl) {
+ return;
+ }
+
+ this.loadingMore = true;
+
+ try {
+ const response = await fetch(this.nextUrl, {
+ headers: { Accept:'text/html' },
+ });
+
+ if (!response.ok) {
+ return;
+ }
+
+ const html = await response.text();
+ const documentFragment = new DOMParser().parseFromString(html, 'text/html');
+ const nextItems = documentFragment.querySelector('[data-group-feed-items]');
+ const currentItems = this.$root.querySelector('[data-group-feed-items]');
+ const nextLink = documentFragment.querySelector('[data-group-feed-next]');
+
+ if (nextItems && currentItems) {
+ Array.from(nextItems.children).forEach((child) => {
+ currentItems.appendChild(child);
+ Alpine.initTree(child);
+ });
+ }
+
+ this.nextUrl = nextLink?.getAttribute('href') || null;
+
+ if (!this.nextUrl && this.observer) {
+ this.observer.disconnect();
+ }
+ } finally {
+ this.loadingMore = false;
+ }
+ },
+ }));
+
  Alpine.data('profilePhotoLightbox', () => ({
  touchStartX: null,
  touchStartY: null,
