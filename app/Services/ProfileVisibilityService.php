@@ -118,6 +118,10 @@ class ProfileVisibilityService
             return true;
         }
 
+        if ((bool) $owner->is_private) {
+            return $viewer instanceof User && $viewer->isFollowing($owner);
+        }
+
         return match ($this->resolve($owner)) {
             ProfileVisibility::Public => true,
             ProfileVisibility::FollowersOnly => $viewer && $viewer->isFollowing($owner),
@@ -141,6 +145,10 @@ class ProfileVisibilityService
 
         if ($viewer && ($viewer->is($owner) || $viewer->hasAnyRole(['admin', 'moderator']))) {
             return true;
+        }
+
+        if ((bool) $owner->is_private) {
+            return false;
         }
 
         $visibility = $this->resolve($owner);

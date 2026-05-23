@@ -44,6 +44,9 @@ new class extends Component
      *     viewer: User|null,
      *     followStatusMap: array<int, string>,
      *     hasMore: bool,
+     *     isLocked: bool,
+     *     lockedFollowStatus: string,
+     *     lockedCanRequestFollow: bool,
      *     modalId: string,
      *     title: string,
      *     description: string,
@@ -59,7 +62,28 @@ new class extends Component
         $profileUser = $this->profileUser();
         $viewer = $this->viewer();
 
-        abort_if(Gate::denies($this->ability(), $profileUser), 403);
+        if (! $this->canViewList($profileUser, $viewer)) {
+            abort_unless($this->canRenderLockedState($profileUser, $viewer), 403);
+
+            return [
+                'profileUser' => $profileUser,
+                'users' => collect(),
+                'viewer' => $viewer,
+                'followStatusMap' => [],
+                'hasMore' => false,
+                'isLocked' => true,
+                'lockedFollowStatus' => $viewer instanceof User ? $viewer->getFollowStatus($profileUser) : 'none',
+                'lockedCanRequestFollow' => $profileUser->canBeFollowedBy($viewer),
+                'modalId' => $this->modalId(),
+                'title' => $this->title(),
+                'description' => "Visibility is limited by this account's privacy settings.",
+                'searchPlaceholder' => $this->searchPlaceholder(),
+                'emptyTitle' => $this->emptyTitle(),
+                'emptyDescription' => $this->emptyDescription(),
+                'viewAllLabel' => $this->viewAllLabel(),
+                'viewAllUrl' => route($this->viewAllRouteName(), ['user' => $profileUser]),
+            ];
+        }
 
         $query = $this->followListQuery($profileUser, $viewer);
         $searchTerm = $this->searchTerm();
@@ -98,6 +122,9 @@ new class extends Component
             'viewer' => $viewer,
             'followStatusMap' => $this->followStatusMap($users, $viewer),
             'hasMore' => $hasMore,
+            'isLocked' => false,
+            'lockedFollowStatus' => 'none',
+            'lockedCanRequestFollow' => false,
             'modalId' => $this->modalId(),
             'title' => $this->title(),
             'description' => $this->description($profileUser),
@@ -117,6 +144,36 @@ new class extends Component
     public function loadMore(): void
     {
         $this->page++;
+    }
+
+    /**
+     * @return array{follow_status: string, follower_count: int}
+     */
+    #[Renderless]
+    public function requestFollow(FollowService $followService): array
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $target = User::query()
+            ->active()
+            ->notBlockedFor($viewer)
+            ->whereKey($this->profileUserId)
+            ->firstOrFail();
+
+        $status = $viewer->getFollowStatus($target);
+
+        if ($status === 'none') {
+            Gate::forUser($viewer)->authorize(FollowAbility::Follow, $target);
+
+            $status = $followService->follow($viewer, $target);
+        }
+
+        return [
+            'follow_status' => $status,
+            'follower_count' => (int) $target->fresh()->followers_count,
+        ];
     }
 
     /**
@@ -166,11 +223,28 @@ new class extends Component
         return $viewer instanceof User ? $viewer : null;
     }
 
-    private function ability(): FollowAbility
+    private function canViewList(User $profileUser, ?User $viewer): bool
     {
         return $this->mode === 'followers'
-            ? FollowAbility::ViewFollowers
-            : FollowAbility::ViewFollowing;
+            ? $profileUser->canViewFollowersList($viewer)
+            : $profileUser->canViewFollowingList($viewer);
+    }
+
+    private function canRenderLockedState(User $profileUser, ?User $viewer): bool
+    {
+        if (! (bool) $profileUser->is_private || $profileUser->isUnavailableForProfile()) {
+            return false;
+        }
+
+        if (! $viewer instanceof User) {
+            return true;
+        }
+
+        if ($viewer->isUnavailableForProfile() || $viewer->hasBlockingRelationshipWith($profileUser)) {
+            return false;
+        }
+
+        return ! $viewer->is($profileUser);
     }
 
     /**
@@ -294,6 +368,71 @@ description="{{ $data['description'] }}"
 size="lg"
 data-ui="{{ $data['modalId'] }}"
 >
+@if ($data['isLocked'])
+<div class="flex min-h-[18rem] flex-col items-center justify-center gap-4 px-4 py-10 text-center" data-ui="{{ $data['modalId'] }}-locked-state">
+<div class="flex h-12 w-12 items-center justify-center rounded-full bg-cream text-fur" aria-hidden="true">
+<svg data-ui="{{ $data['modalId'] }}-locked-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+<path stroke-linecap="round" stroke-linejoin="round" d="M7 10V8a5 5 0 0 1 10 0v2"/>
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.5 10h11A1.5 1.5 0 0 1 19 11.5v7A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-7A1.5 1.5 0 0 1 6.5 10Z"/>
+</svg>
+</div>
+<div class="max-w-sm space-y-2">
+<h3 class="font-display text-xl font-bold text-bark">This list is private</h3>
+<p class="text-sm leading-6 text-fur">Follow &#64;{{ $data['profileUser']->username }} to request access to private profile details.</p>
+</div>
+
+@if ($data['viewer'] instanceof User && ! $data['viewer']->is($data['profileUser']))
+<div
+x-data="{
+    status: @js($data['lockedFollowStatus']),
+    canRequest: @js($data['lockedCanRequestFollow']),
+    loading: false,
+    get label() {
+        if (this.loading) {
+            return 'Sending...'
+        }
+
+        return { following: 'Following', pending: 'Requested', none: 'Request to Follow' }[this.status] ?? 'Request to Follow'
+    },
+    async request() {
+        if (this.loading || ! this.canRequest || this.status !== 'none') {
+            return
+        }
+
+        this.loading = true
+
+        try {
+            const result = await $wire.requestFollow()
+            this.status = result?.follow_status ?? this.status
+        } finally {
+            this.loading = false
+        }
+    },
+}"
+data-ui="{{ $data['modalId'] }}-locked-follow-state">
+<x-ui.button
+type="button"
+variant="primary"
+size="sm"
+@click="request()"
+x-bind:disabled="loading || !canRequest || status !== 'none'"
+x-bind:aria-busy="loading.toString()"
+x-bind:aria-label="label + ' {{ '@'.$data['profileUser']->username }}'"
+class="min-h-11 min-w-36 justify-center"
+data-ui="{{ $data['modalId'] }}-locked-follow-action">
+<span x-text="label">{{ $data['lockedFollowStatus'] === 'pending' ? 'Requested' : ($data['lockedFollowStatus'] === 'following' ? 'Following' : 'Request to Follow') }}</span>
+</x-ui.button>
+</div>
+@elseif (! ($data['viewer'] instanceof User) && Route::has('profile.guest-follow'))
+<form method="POST" action="{{ route('profile.guest-follow', ['user'=> $data['profileUser']]) }}" data-ui="{{ $data['modalId'] }}-locked-guest-follow-form">
+@csrf
+<x-ui.button type="submit" variant="primary" size="sm" class="min-h-11 min-w-36 justify-center" data-ui="{{ $data['modalId'] }}-locked-follow-action">
+Request to Follow
+</x-ui.button>
+</form>
+@endif
+</div>
+@else
 <div class="pb-4" data-ui="{{ $data['modalId'] }}-search">
 <label for="{{ $data['modalId'] }}-search-input" class="sr-only">{{ $data['searchPlaceholder'] }}</label>
 <div class="relative">
@@ -480,10 +619,13 @@ Loading more {{ strtolower($data['title']) }}
 @endif
 </div>
 </div>
+@endif
 
 <x-slot name="footer">
+@unless ($data['isLocked'])
 <x-ui.button :href="$data['viewAllUrl']" variant="outline" size="sm" class="min-h-11">
 {{ $data['viewAllLabel'] }}
 </x-ui.button>
+@endunless
 </x-slot>
 </x-ui.modal>

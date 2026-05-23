@@ -12,6 +12,7 @@ Use all three layers together.
   - banned, suspended, deactivated, deleted, and pending-deletion account filtering
 - Accept nullable viewer: `?User`.
 - Profile, pet, search, feed, and media gallery queries must use the matching shared visibility service/scope instead of loading all records and hiding them in Blade.
+- Private-account followers lists are owner-or-accepted-follower only, and private-account following lists are owner-only; Livewire modals must return locked states before constructing the accepted-follow relationship query for unauthorized viewers.
 
 ## Layer 2: Policy (single-item access)
 - `PostPolicy::view(?User $viewer, Post $post): bool`.

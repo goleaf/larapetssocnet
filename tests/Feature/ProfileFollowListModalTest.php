@@ -80,6 +80,119 @@ it('enforces profile following visibility inside the reusable modal component', 
         ->assertForbidden();
 });
 
+it('locks a private account followers list for guests and non-followers while allowing the owner and accepted followers', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'private_followers_owner',
+        'is_private' => true,
+        'profile_visibility' => 'followers_only',
+    ]);
+    $listedFollower = User::factory()->create([
+        'name' => 'Private Listed Follower',
+        'username' => 'private_listed_follower',
+    ]);
+    $acceptedViewer = User::factory()->create([
+        'name' => 'Accepted Viewer',
+        'username' => 'accepted_viewer',
+    ]);
+    $stranger = User::factory()->create([
+        'name' => 'Outside Viewer',
+        'username' => 'outside_viewer',
+    ]);
+
+    $listedFollower->follow($profileOwner);
+    $profileOwner->approveFollowRequest($listedFollower);
+    $acceptedViewer->follow($profileOwner);
+    $profileOwner->approveFollowRequest($acceptedViewer);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'followers',
+        ])
+        ->assertSee('Private Listed Follower')
+        ->assertDontSee('This list is private');
+
+    Livewire::actingAs($acceptedViewer)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'followers',
+        ])
+        ->assertSee('Private Listed Follower')
+        ->assertDontSee('This list is private');
+
+    Livewire::actingAs($stranger)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'followers',
+        ])
+        ->assertSee('data-ui="profile-followers-modal-locked-state"', false)
+        ->assertSee('data-ui="profile-followers-modal-locked-icon"', false)
+        ->assertSee('This list is private')
+        ->assertSee('Request to Follow')
+        ->assertDontSee('Private Listed Follower')
+        ->assertDontSee('data-ui="profile-followers-modal-search-input"', false)
+        ->call('requestFollow');
+
+    $this->assertDatabaseHas('follows', [
+        'follower_id' => $stranger->getKey(),
+        'following_id' => $profileOwner->getKey(),
+        'status' => 'pending',
+    ]);
+});
+
+it('locks a private account following list for everyone except the owner', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'private_following_owner',
+        'is_private' => true,
+        'profile_visibility' => 'followers_only',
+        'open_following' => true,
+    ]);
+    $followedUser = User::factory()->create([
+        'name' => 'Hidden Followed User',
+        'username' => 'hidden_followed_user',
+    ]);
+    $acceptedViewer = User::factory()->create([
+        'name' => 'Accepted Following Viewer',
+        'username' => 'accepted_following_viewer',
+    ]);
+    $stranger = User::factory()->create([
+        'name' => 'Private Stranger',
+        'username' => 'private_stranger',
+    ]);
+
+    $profileOwner->follow($followedUser);
+    $acceptedViewer->follow($profileOwner);
+    $profileOwner->approveFollowRequest($acceptedViewer);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'following',
+        ])
+        ->assertSee('Hidden Followed User')
+        ->assertDontSee('This list is private');
+
+    Livewire::actingAs($acceptedViewer)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'following',
+        ])
+        ->assertSee('data-ui="profile-following-modal-locked-state"', false)
+        ->assertSee('This list is private')
+        ->assertSee('Following')
+        ->assertDontSee('Hidden Followed User')
+        ->assertDontSee('data-ui="profile-following-modal-search-input"', false);
+
+    Livewire::actingAs($stranger)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'following',
+        ])
+        ->assertSee('This list is private')
+        ->assertSee('Request to Follow')
+        ->assertDontSee('Hidden Followed User');
+});
+
 it('renders detailed follower rows with mutual counts and toggles follows through livewire', function (): void {
     $profileOwner = User::factory()->create([
         'username' => 'detailed_modal_owner',

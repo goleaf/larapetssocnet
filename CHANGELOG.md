@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Restricted private-account followers/following list visibility so followers lists are owner-or-accepted-follower only, following lists are owner-only, and locked Livewire modal states avoid querying hidden rows.
 - Updated the reusable profile followers/following modal to load entries in 20-row batches with an Intersection Observer sentinel scoped to the modal scroll container.
 - Updated the reusable profile followers/following modal rows with 48px avatars, display names, verified badges, usernames, one-line bio snippets, mutual counts, and inline Livewire follow/unfollow actions.
 - Updated the reusable profile followers/following modal with a 300ms debounced search input that filters only within the viewed profile's accepted followers or following list by name or username.
