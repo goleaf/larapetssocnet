@@ -35,6 +35,7 @@ Implementation notes:
 
 ## UI
 On profile posts tab:
-- show the viewer-visible pinned post in a dedicated top section with a small `Pinned` label and pin icon badge on the post card
+- show the viewer-visible pinned post in a dedicated top section with an edge-to-edge `Pinned post` banner and secondary-color pin icon
+- keep the pinned post card body, media, reactions, comments, and owner menu identical to a regular post card
 - keep same post in natural chronological position below
 - expose `Pin to profile` / `Unpin from profile` only in the owner-visible post-card three-dot menu

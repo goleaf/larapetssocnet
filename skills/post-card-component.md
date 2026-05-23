@@ -8,7 +8,7 @@
 - `$context`: `feed|profile|explore`.
 
 ## Sections Order
-1. Pinned badge (only pinned on profile context).
+1. Pinned banner (only the dedicated profile pinned-highlight instance).
 2. Header (avatar, name, time, options).
 3. Body text with read-more.
 4. Media (photo grid or video player).
@@ -30,6 +30,10 @@
 - In profile context, render the owner-only three-dot menu from inside `x-post-card`.
 - Keep profile pinning actions in that menu as `Pin to profile` / `Unpin from profile`; do not add separate inline pin buttons below profile posts.
 - Non-owners and non-profile contexts must not render owner post actions.
+
+## Pinned Highlight
+- The top profile pinned post uses the same post card content as regular posts, with only an edge-to-edge `Pinned post` banner prepended above the card body.
+- Do not render a floating pinned badge inside chronological duplicates of the same post.
 
 ## Time Display
 - Use `diffForHumans()` for recent posts (< 7 days).

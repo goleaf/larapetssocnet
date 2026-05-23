@@ -786,22 +786,34 @@ test('profile posts tab shows pinned post highlight and keeps chronological feed
     $response->assertOk();
     $response
         ->assertSee('data-ui="profile-pinned-post-section"', false)
-        ->assertSee('data-ui="post-pinned-badge"', false);
+        ->assertSee('data-ui="post-pinned-banner"', false)
+        ->assertSee('Pinned post')
+        ->assertDontSee('data-ui="post-pinned-badge"', false);
 
     $html = $response->getContent();
+    $pinnedBannerPosition = strpos($html, 'data-ui="post-pinned-banner"');
     $firstPinnedPosition = strpos($html, $olderPinned->body);
     $secondPinnedPosition = strpos($html, $olderPinned->body, ((int) $firstPinnedPosition) + 1);
     $newerRegularPosition = strpos($html, $newerRegular->body);
     $olderRegularPosition = strpos($html, $olderRegular->body);
 
+    expect(substr_count($html, 'data-ui="post-pinned-banner"'))->toBe(1);
     expect(substr_count($html, $olderPinned->body))->toBe(2);
+    expect($pinnedBannerPosition)->toBeInt();
     expect($firstPinnedPosition)->toBeInt();
     expect($secondPinnedPosition)->toBeInt();
     expect($newerRegularPosition)->toBeInt();
     expect($olderRegularPosition)->toBeInt();
+    expect($pinnedBannerPosition)->toBeLessThan($firstPinnedPosition);
     expect($firstPinnedPosition)->toBeLessThan($newerRegularPosition);
     expect($newerRegularPosition)->toBeLessThan($secondPinnedPosition);
     expect($secondPinnedPosition)->toBeLessThan($olderRegularPosition);
+
+    $topPinnedCardHtml = substr($html, (int) $pinnedBannerPosition, (int) $newerRegularPosition - (int) $pinnedBannerPosition);
+
+    expect($topPinnedCardHtml)
+        ->toContain('data-testid="like-toggle"')
+        ->toContain('data-testid="comments-toggle"');
 });
 
 test('profile pinned post highlight honors viewer visibility', function (): void {

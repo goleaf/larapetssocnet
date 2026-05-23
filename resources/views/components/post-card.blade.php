@@ -28,6 +28,7 @@
 
     $isOwner = (int) auth()->id() === (int) $post->user_id;
     $showOwnerProfileMenu = $context === 'profile' && $isOwner;
+    $showPinnedProfileBanner = $context === 'profile' && $post->is_pinned && $instance === 'pinned-highlight';
     $statusValue = $post->status?->value ?? (string) $post->status;
     $isScheduledProfilePost = $context === 'profile' && $isOwner && $statusValue === 'scheduled';
     $likeCount = (int) ($post->likes_count ?? $post->reactions_count ?? 0);
@@ -78,6 +79,7 @@
 
 <x-ui.card
     as="article"
+    padding="none"
     id="{{ $postDomId }}"
     data-ui="post-card"
     data-post-card-instance="{{ $instance ?? 'feed' }}"
@@ -89,18 +91,19 @@
     ])
     x-data="postCard({{ \Illuminate\Support\Js::from($postCardState) }})"
 >
-    @if ($context === 'profile' && $post->is_pinned)
-        <x-ui.badge
-            variant="warning"
-            size="sm"
-            :icon="$pinIcon"
-            data-ui="post-pinned-badge"
-            class="mb-3 w-fit"
+    @if ($showPinnedProfileBanner)
+        <div
+            data-ui="post-pinned-banner"
+            class="flex min-h-10 items-center gap-2 border-b border-leaf/20 bg-leaf-light px-6 py-2 text-xs font-semibold text-leaf"
         >
-            Pinned
-        </x-ui.badge>
+            <svg class="h-4 w-4 shrink-0 text-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                {!! $pinIcon !!}
+            </svg>
+            <span>Pinned post</span>
+        </div>
     @endif
 
+    <div class="p-6">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 flex-1">
             <div class="flex items-start gap-3">
@@ -376,5 +379,6 @@
                 @endif
             @endauth
         </div>
+    </div>
     </div>
 </x-ui.card>
