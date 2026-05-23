@@ -233,6 +233,48 @@ it('rejects nested edit profile modal access for non owners', function (): void 
         ->assertForbidden();
 });
 
+it('renders the nested edit profile modal as a scrollable sectioned form', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Sectioned Modal Owner',
+        'username' => 'sectioned_modal_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->assertSee('data-ui="profile-edit-modal-scroll"', false)
+        ->assertSee('overflow-y-auto scroll-smooth', false)
+        ->assertSee('data-ui="profile-edit-modal-section-basic"', false)
+        ->assertSee('Basic Information')
+        ->assertSee('data-ui="profile-edit-modal-section-media"', false)
+        ->assertSee('Profile Media')
+        ->assertSee('data-ui="profile-edit-modal-section-social"', false)
+        ->assertSee('Social Links')
+        ->assertSee('data-ui="profile-edit-modal-section-privacy"', false)
+        ->assertSee('Privacy')
+        ->assertSee('novalidate', false)
+        ->assertSee('scrollToTarget(targetId)', false)
+        ->assertSee('scrollIntoView({ behavior: \'smooth\', block: \'center\' })', false)
+        ->assertSee('@profile-edit-validation-failed.window="scrollToTarget($event.detail.target)"', false);
+});
+
+it('dispatches the first invalid field target when nested edit profile validation fails', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Invalid Modal Owner',
+        'username' => 'invalid_modal_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('name', '')
+        ->call('save')
+        ->assertHasErrors(['name'])
+        ->assertDispatched('profile-edit-validation-failed', target: 'profile_modal_name');
+});
+
 it('saves profile edits from the nested modal without redirecting away from the profile page', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Original Modal Name',
@@ -240,8 +282,14 @@ it('saves profile edits from the nested modal without redirecting away from the 
         'username' => 'nested_modal_saver',
         'bio' => null,
         'headline' => null,
+        'pronouns' => null,
         'location' => null,
         'website' => null,
+        'social_links' => null,
+        'privacy_display_location' => false,
+        'privacy_display_birthdate' => false,
+        'show_in_explore' => true,
+        'open_following' => false,
         'birth_date' => null,
         'is_private' => false,
         'profile_visibility' => 'public',
@@ -253,9 +301,18 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->set('display_name', 'Updated Modal Display')
         ->set('bio', 'A modal bio with enough detail to describe this profile.')
         ->set('headline', 'Nested editor')
+        ->set('pronouns', 'they/them')
         ->set('location', 'Kaunas')
         ->set('website', 'modal.example')
+        ->set('social_links.x', 'x.com/nestedmodal')
+        ->set('social_links.instagram', 'instagram.com/nestedmodal')
         ->set('birth_date', '1990-01-01')
+        ->set('gender', 'prefer_not_to_say')
+        ->set('profile_visibility', 'followers_only')
+        ->set('privacy_display_location', true)
+        ->set('privacy_display_birthdate', true)
+        ->set('show_in_explore', false)
+        ->set('open_following', true)
         ->call('save')
         ->assertHasNoErrors()
         ->assertNoRedirect()
@@ -267,10 +324,22 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->and($profileOwner->display_name)->toBe('Updated Modal Display')
         ->and($profileOwner->bio)->toBe('A modal bio with enough detail to describe this profile.')
         ->and($profileOwner->headline)->toBe('Nested editor')
+        ->and($profileOwner->pronouns)->toBe('they/them')
         ->and($profileOwner->location)->toBe('Kaunas')
         ->and($profileOwner->city)->toBe('Kaunas')
         ->and($profileOwner->website)->toBe('https://modal.example')
-        ->and($profileOwner->birth_date?->toDateString())->toBe('1990-01-01');
+        ->and($profileOwner->birth_date?->toDateString())->toBe('1990-01-01')
+        ->and($profileOwner->gender)->toBe('prefer_not_to_say')
+        ->and($profileOwner->social_links)->toMatchArray([
+            'x' => 'https://x.com/nestedmodal',
+            'instagram' => 'https://instagram.com/nestedmodal',
+        ])
+        ->and($profileOwner->profile_visibility)->toBe('followers_only')
+        ->and($profileOwner->is_private)->toBeTrue()
+        ->and($profileOwner->privacy_display_location)->toBeTrue()
+        ->and($profileOwner->privacy_display_birthdate)->toBeTrue()
+        ->and($profileOwner->show_in_explore)->toBeFalse()
+        ->and($profileOwner->open_following)->toBeTrue();
 });
 
 it('restores the last profile tab from the browser session', function (): void {

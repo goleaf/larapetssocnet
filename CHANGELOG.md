@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated the nested profile edit modal into a scrollable sectioned Livewire form with Basic Information, Profile Media, Social Links, and Privacy sections plus smooth first-error scrolling.
 - Updated the profile About tab to start with the complete untruncated bio, "Member since" metadata, privacy-safe location, website, and public age while never exposing the raw birth date.
 - Updated the profile Photos tab to use 30-photo `post_media.id` cursor batches with a 600px Livewire intersection sentinel and skeleton loading state instead of loading the full visible photo history at once.
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.

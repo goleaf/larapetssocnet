@@ -89,6 +89,14 @@ class UpdateProfileAction
             $payload['social_links'] = $data['social_links'] ?? null;
         }
 
+        if (array_key_exists('privacy_display_location', $data)) {
+            $payload['privacy_display_location'] = (bool) $data['privacy_display_location'];
+        }
+
+        if (array_key_exists('privacy_display_birthdate', $data)) {
+            $payload['privacy_display_birthdate'] = (bool) $data['privacy_display_birthdate'];
+        }
+
         if (array_key_exists('location', $data) || array_key_exists('city', $data)) {
             $location = $data['location'] ?? $data['city'] ?? null;
             $payload['location'] = $location;
