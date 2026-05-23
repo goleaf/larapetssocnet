@@ -178,6 +178,11 @@ class Group extends Model implements HasMedia
         return $this->hasMany(GroupJoinRequest::class);
     }
 
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(GroupInvitation::class);
+    }
+
     public function bans(): HasMany
     {
         return $this->hasMany(GroupBan::class);
@@ -327,14 +332,18 @@ class Group extends Model implements HasMedia
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (! $term) {
+        $term = trim((string) $term);
+
+        if ($term === '') {
             return $query;
         }
 
         return $query->where(function (Builder $subQuery) use ($term): void {
+            $slugTerm = str($term)->slug()->toString();
+
             $subQuery
-                ->where('name', 'like', "%{$term}%")
-                ->orWhere('slug', 'like', "%{$term}%")
+                ->where('name', 'like', "{$term}%")
+                ->orWhere('slug', 'like', "{$slugTerm}%")
                 ->orWhere('description', 'like', "%{$term}%");
         });
     }
@@ -426,10 +435,12 @@ class Group extends Model implements HasMedia
 
         if ($search !== '') {
             $query->where(function (Builder $searchQuery) use ($search): void {
+                $slugSearch = str($search)->slug()->toString();
+
                 $searchQuery
-                    ->where('groups.name', 'like', "%{$search}%")
-                    ->orWhere('groups.description', 'like', "%{$search}%")
-                    ->orWhere('groups.slug', 'like', "%{$search}%");
+                    ->where('groups.name', 'like', "{$search}%")
+                    ->orWhere('groups.slug', 'like', "{$slugSearch}%")
+                    ->orWhere('groups.description', 'like', "%{$search}%");
             });
         }
 

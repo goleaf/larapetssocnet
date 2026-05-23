@@ -84,6 +84,16 @@ class GroupPolicy
             && in_array((string) ($membership?->role?->value ?? ''), GroupMemberRole::managerValues(), true);
     }
 
+    public function invite(User $user, Group $group): bool
+    {
+        return ! $group->isArchived() && $this->manageMembers($user, $group);
+    }
+
+    public function transferOwnership(User $user, Group $group): bool
+    {
+        return ! $group->isArchived() && $this->visibility->isOwner($user, $group);
+    }
+
     public function moderate(User $user, Group $group): bool
     {
         if ($this->visibility->isOwner($user, $group)) {

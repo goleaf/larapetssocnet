@@ -3,23 +3,28 @@
 namespace App\Notifications;
 
 use App\Models\Groups\Group;
-use App\Models\Identity\User;
+use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class GroupJoinApproved extends Notification implements ShouldQueue
+class GroupDigestReady extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public function __construct(
-        public readonly User $approver,
         public readonly Group $group,
+        public readonly int $postCount,
+        public readonly CarbonInterface $windowStart,
+        public readonly CarbonInterface $windowEnd,
     ) {
         $this->afterCommit();
     }
 
+    /**
+     * @return list<string>
+     */
     public function via(object $notifiable): array
     {
         return ['database'];
@@ -30,18 +35,23 @@ class GroupJoinApproved extends Notification implements ShouldQueue
      */
     public function toDatabase(object $notifiable): array
     {
+        $plural = $this->postCount === 1 ? 'post' : 'posts';
+
         return [
-            'type' => 'group_join_approved',
-            'message' => $this->approver->name.' approved your request to join '.$this->group->name.'.',
+            'type' => 'group_digest',
+            'message' => "{$this->group->name} has {$this->postCount} new {$plural}.",
             'route' => $this->resolveRoute(),
-            'actor_id' => $this->approver->id,
-            'actor_name' => $this->approver->name,
-            'actor_username' => $this->approver->username,
             'group_id' => $this->group->id,
             'group_name' => $this->group->name,
+            'post_count' => $this->postCount,
+            'window_start' => $this->windowStart->toIso8601String(),
+            'window_end' => $this->windowEnd->toIso8601String(),
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(object $notifiable): array
     {
         return $this->toDatabase($notifiable);
@@ -53,10 +63,6 @@ class GroupJoinApproved extends Notification implements ShouldQueue
             return route('groups.show', ['group' => $this->group]);
         }
 
-        if (Route::has('explore.index')) {
-            return route('explore.index');
-        }
-
-        return url('/');
+        return route('groups.index');
     }
 }

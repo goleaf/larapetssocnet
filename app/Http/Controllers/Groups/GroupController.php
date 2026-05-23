@@ -17,6 +17,7 @@ use App\Http\Requests\Groups\StoreGroupRequest;
 use App\Http\Requests\Groups\UpdateGroupRequest;
 use App\Models\Content\Post;
 use App\Models\Groups\Group;
+use App\Models\Groups\GroupInvitation;
 use App\Models\Groups\GroupMember;
 use App\Services\GroupVisibilityService;
 use Illuminate\Http\RedirectResponse;
@@ -100,6 +101,11 @@ class GroupController extends Controller
         }
 
         $membership = $group->membershipForUserId((int) $viewer->getKey());
+        $pendingInvitation = GroupInvitation::query()
+            ->pending()
+            ->where('group_id', $group->getKey())
+            ->where('invited_user_id', $viewer->getKey())
+            ->first();
         $isArchived = $group->isArchived();
         $isOwner = $group->isOwner($viewer);
         $isMember = $isOwner || $group->isActiveMembership($membership);
@@ -116,6 +122,7 @@ class GroupController extends Controller
         $eventsCount = $group->eventsCount();
 
         $feedPosts = null;
+        $latestPostId = null;
         $activeMembers = null;
         $pendingMembers = collect();
         $events = null;
@@ -127,6 +134,10 @@ class GroupController extends Controller
         if ($activeTab === 'feed') {
             if ($visibility->canViewGroupPosts($viewer, $group)) {
                 $feedPosts = Post::paginateGroupFeed($group, $viewer);
+                $latestPostId = Post::query()
+                    ->where('group_id', $group->getKey())
+                    ->latest('created_at')
+                    ->value('id');
             } else {
                 $feedPosts = Post::paginateEmpty();
             }
@@ -172,6 +183,7 @@ class GroupController extends Controller
             'group' => $group,
             'owner' => $group->owner,
             'membership' => $membership,
+            'pendingInvitation' => $pendingInvitation,
             'isArchived' => $isArchived,
             'isOwner' => $isOwner,
             'isAdmin' => $isAdmin,
@@ -184,6 +196,7 @@ class GroupController extends Controller
             'postsCount' => $postsCount,
             'eventsCount' => $eventsCount,
             'feedPosts' => $feedPosts,
+            'latestPostId' => $latestPostId,
             'activeMembers' => $activeMembers,
             'pendingMembers' => $pendingMembers,
             'events' => $events,

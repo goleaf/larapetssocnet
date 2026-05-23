@@ -4,13 +4,18 @@ namespace App\Services;
 
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
+use App\Enums\GroupInvitationStatus;
+use App\Models\Content\Post;
 use App\Models\Groups\Group;
 use App\Models\Groups\GroupBan;
+use App\Models\Groups\GroupInvitation;
 use App\Models\Groups\GroupJoinRequest;
 use App\Models\Groups\GroupMember;
 use App\Models\Identity\User;
+use App\Notifications\GroupInvitationReceived;
 use App\Notifications\GroupJoinApproved;
 use App\Notifications\GroupJoinRequest as GroupJoinRequestNotification;
+use App\Notifications\GroupModerationAlert;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +29,8 @@ class GroupService
     private ?bool $hasGroupJoinRequestsTable = null;
 
     private ?bool $hasGroupBansTable = null;
+
+    private ?bool $hasGroupInvitationsTable = null;
 
     public function __construct(
         private readonly SyncGroupCountersService $counters,
@@ -122,6 +129,208 @@ class GroupService
 
             return $membership->fresh();
         });
+    }
+
+    public function inviteUser(User $actor, Group $group, User $invitee, ?string $message = null): GroupInvitation
+    {
+        return DB::transaction(function () use ($actor, $group, $invitee, $message): GroupInvitation {
+            if (! $this->hasGroupInvitationsTable()) {
+                throw $this->validation('Group invitations are not available.');
+            }
+
+            if ($group->isArchived()) {
+                throw $this->validation('Archived groups are read-only.');
+            }
+
+            if ((int) $actor->getKey() === (int) $invitee->getKey()) {
+                throw $this->validation('You cannot invite yourself.');
+            }
+
+            if ($this->actorRank($actor, $group, true) < GroupMemberRole::Admin->rank()) {
+                throw new AuthorizationException('You are not allowed to invite members to this group.');
+            }
+
+            if ($this->isUserBanned($group, $invitee)) {
+                throw $this->validation('This user cannot be invited to the group.');
+            }
+
+            $membership = $this->membershipForUser($group, (int) $invitee->getKey(), true);
+
+            if ($membership instanceof GroupMember && $this->isActiveMembership($membership)) {
+                throw $this->validation('This user is already a group member.');
+            }
+
+            $invitation = GroupInvitation::query()->updateOrCreate(
+                [
+                    'group_id' => $group->getKey(),
+                    'invited_user_id' => $invitee->getKey(),
+                ],
+                [
+                    'invited_by_user_id' => $actor->getKey(),
+                    'status' => GroupInvitationStatus::Pending->value,
+                    'role' => GroupMemberRole::Member->value,
+                    'message' => $message,
+                    'responded_at' => null,
+                    'expires_at' => now()->addDays(14),
+                ],
+            );
+
+            $invitee->notify(new GroupInvitationReceived($group, $invitation, $actor));
+
+            return $invitation->fresh();
+        });
+    }
+
+    public function acceptInvitation(User $invitee, Group $group, GroupInvitation|int $invitation): GroupMember
+    {
+        return DB::transaction(function () use ($invitee, $group, $invitation): GroupMember {
+            $invitation = $this->resolveInvitation($group, $invitation, true);
+
+            if ((int) $invitation->invited_user_id !== (int) $invitee->getKey()) {
+                throw $this->validation('This invitation belongs to another user.');
+            }
+
+            if (! $invitation->isPending()) {
+                throw $this->validation('This invitation is no longer active.');
+            }
+
+            if ($group->isArchived()) {
+                throw $this->validation('Archived groups are read-only.');
+            }
+
+            if ($this->isUserBanned($group, $invitee)) {
+                throw $this->validation('You are banned from this group.');
+            }
+
+            $membership = $this->membershipForUser($group, (int) $invitee->getKey(), true);
+
+            $payload = [
+                'role' => $invitation->roleValue(),
+                'status' => GroupMemberStatus::Active->value,
+                'joined_at' => now(),
+                'invited_by' => $invitation->invited_by_user_id,
+            ];
+
+            if ($membership instanceof GroupMember) {
+                $membership->forceFill($payload)->save();
+            } else {
+                $membership = GroupMember::query()->create($payload + [
+                    'group_id' => $group->getKey(),
+                    'user_id' => $invitee->getKey(),
+                ]);
+            }
+
+            $invitation->forceFill([
+                'status' => GroupInvitationStatus::Accepted->value,
+                'responded_at' => now(),
+            ])->save();
+
+            if ($this->hasGroupJoinRequestsTable()) {
+                GroupJoinRequest::query()
+                    ->where('group_id', $group->getKey())
+                    ->where('user_id', $invitee->getKey())
+                    ->delete();
+            }
+
+            $this->counters->syncMembersCount($group);
+
+            return $membership->fresh();
+        });
+    }
+
+    public function declineInvitation(User $invitee, Group $group, GroupInvitation|int $invitation): GroupInvitation
+    {
+        return DB::transaction(function () use ($invitee, $group, $invitation): GroupInvitation {
+            $invitation = $this->resolveInvitation($group, $invitation, true);
+
+            if ((int) $invitation->invited_user_id !== (int) $invitee->getKey()) {
+                throw $this->validation('This invitation belongs to another user.');
+            }
+
+            if (! $invitation->isPending()) {
+                return $invitation;
+            }
+
+            $invitation->forceFill([
+                'status' => GroupInvitationStatus::Declined->value,
+                'responded_at' => now(),
+            ])->save();
+
+            return $invitation->fresh();
+        });
+    }
+
+    public function transferOwnership(User $actor, Group $group, GroupMember|int $membership): Group
+    {
+        return DB::transaction(function () use ($actor, $group, $membership): Group {
+            if ((int) $this->ownerId($group) !== (int) $actor->getKey()) {
+                throw new AuthorizationException('Only the current owner can transfer group ownership.');
+            }
+
+            $targetMembership = $this->resolveMembership($group, $membership, true);
+
+            if (! $this->isActiveMembership($targetMembership)) {
+                throw $this->validation('Ownership can only be transferred to an active member.');
+            }
+
+            if ((int) $targetMembership->user_id === (int) $actor->getKey()) {
+                throw $this->validation('Choose another active member to receive ownership.');
+            }
+
+            GroupMember::query()
+                ->where('group_id', $group->getKey())
+                ->where('role', GroupMemberRole::Owner->value)
+                ->whereKeyNot($targetMembership->getKey())
+                ->update(['role' => GroupMemberRole::Admin->value]);
+
+            $previousOwnerMembership = $this->membershipForUser($group, (int) $actor->getKey(), true);
+
+            if ($previousOwnerMembership instanceof GroupMember) {
+                $previousOwnerMembership->forceFill([
+                    'role' => GroupMemberRole::Admin->value,
+                    'status' => GroupMemberStatus::Active->value,
+                    'joined_at' => $previousOwnerMembership->joined_at ?: now(),
+                ])->save();
+            } else {
+                GroupMember::query()->create([
+                    'group_id' => $group->getKey(),
+                    'user_id' => $actor->getKey(),
+                    'role' => GroupMemberRole::Admin->value,
+                    'status' => GroupMemberStatus::Active->value,
+                    'joined_at' => now(),
+                ]);
+            }
+
+            $targetMembership->forceFill([
+                'role' => GroupMemberRole::Owner->value,
+                'status' => GroupMemberStatus::Active->value,
+                'joined_at' => $targetMembership->joined_at ?: now(),
+            ])->save();
+
+            $group->forceFill([
+                'owner_id' => $targetMembership->user_id,
+                'owner_user_id' => $targetMembership->user_id,
+            ])->save();
+
+            return $group->fresh();
+        });
+    }
+
+    public function notifyPostRemoved(User $moderator, Group $group, Post $post): void
+    {
+        if ((int) $post->user_id === (int) $moderator->getKey()) {
+            return;
+        }
+
+        $author = User::query()
+            ->whereKey($post->user_id)
+            ->first(['id', 'name', 'username']);
+
+        if (! $author instanceof User) {
+            return;
+        }
+
+        $author->notify(new GroupModerationAlert($group, $post, $moderator, 'removed'));
     }
 
     public function leave(User|Group $first, User|Group $second): bool
@@ -585,6 +794,35 @@ class GroupService
         return $query->firstOrFail();
     }
 
+    private function resolveInvitation(Group $group, GroupInvitation|int $invitation, bool $lockForUpdate = false): GroupInvitation
+    {
+        if ($invitation instanceof GroupInvitation) {
+            if ((int) $invitation->group_id !== (int) $group->getKey()) {
+                throw $this->validation('Invitation does not belong to this group.');
+            }
+
+            if (! $lockForUpdate) {
+                return $invitation;
+            }
+
+            return GroupInvitation::query()
+                ->where('group_id', $group->getKey())
+                ->whereKey($invitation->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+        }
+
+        $query = GroupInvitation::query()
+            ->where('group_id', $group->getKey())
+            ->whereKey($invitation);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->firstOrFail();
+    }
+
     private function membershipForUser(Group $group, int $userId, bool $lockForUpdate = false): ?GroupMember
     {
         $query = GroupMember::query()
@@ -695,6 +933,15 @@ class GroupService
         }
 
         return $this->hasGroupBansTable;
+    }
+
+    private function hasGroupInvitationsTable(): bool
+    {
+        if ($this->hasGroupInvitationsTable === null) {
+            $this->hasGroupInvitationsTable = Schema::hasTable('group_invitations');
+        }
+
+        return $this->hasGroupInvitationsTable;
     }
 
     private function validation(string $message): ValidationException

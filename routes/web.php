@@ -17,8 +17,10 @@ use App\Http\Controllers\Gamification\BadgeController;
 use App\Http\Controllers\Groups\GroupBanController;
 use App\Http\Controllers\Groups\GroupController;
 use App\Http\Controllers\Groups\GroupCoverController;
+use App\Http\Controllers\Groups\GroupInvitationController;
 use App\Http\Controllers\Groups\GroupJoinRequestController;
 use App\Http\Controllers\Groups\GroupMemberController;
+use App\Http\Controllers\Groups\GroupOwnershipController;
 use App\Http\Controllers\Groups\GroupPostController;
 use App\Http\Controllers\Marketplace\MarketplaceListingController;
 use App\Http\Controllers\Media\PhotoGalleryController;
@@ -276,6 +278,11 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
         Route::post('/{group:slug}/join', [GroupController::class, 'join'])->name('join');
         Route::delete('/{group:slug}/leave', [GroupController::class, 'leave'])->name('leave');
 
+        Route::post('/{group:slug}/invitations', [GroupInvitationController::class, 'store'])->name('invitations.store');
+        Route::patch('/{group:slug}/invitations/{invitation}/accept', [GroupInvitationController::class, 'accept'])->name('invitations.accept');
+        Route::patch('/{group:slug}/invitations/{invitation}/decline', [GroupInvitationController::class, 'decline'])->name('invitations.decline');
+        Route::patch('/{group:slug}/ownership', [GroupOwnershipController::class, 'update'])->name('ownership.transfer');
+
         Route::get('/{group:slug}/requests', [GroupJoinRequestController::class, 'index'])->name('requests.index');
         Route::post('/{group:slug}/requests', [GroupJoinRequestController::class, 'store'])->name('requests.store');
         Route::delete('/{group:slug}/requests/cancel', [GroupJoinRequestController::class, 'cancel'])->name('requests.cancel');
@@ -292,6 +299,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
         Route::delete('/{group:slug}/bans/{user}', [GroupBanController::class, 'destroy'])->name('bans.destroy');
 
         Route::post('/{group:slug}/posts', [GroupPostController::class, 'store'])->name('posts.store');
+        Route::get('/{group:slug}/posts/latest', [GroupPostController::class, 'latest'])->name('posts.latest');
         Route::delete('/{group:slug}/posts/{post}', [GroupPostController::class, 'destroy'])->name('posts.destroy');
     });
 

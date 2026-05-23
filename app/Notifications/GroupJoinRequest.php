@@ -5,17 +5,20 @@ namespace App\Notifications;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class GroupJoinRequest extends Notification
+class GroupJoinRequest extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public function __construct(
         public readonly User $requester,
         public readonly Group $group,
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     public function via(object $notifiable): array
     {
