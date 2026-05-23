@@ -1,0 +1,112 @@
+name: Production smoke diagnostics
+
+on:
+  workflow_dispatch:
+
+jobs:
+  login:
+    name: Login smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      APP_URL: ${{ vars.APP_URL || 'https://petsocial.prus.dev' }}
+      FTP_HOST: ${{ secrets.FTP_HOST }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+      FTP_PORT: ${{ vars.FTP_PORT || '21' }}
+      FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || 'petsocial/' }}
+      FTP_SSL_VERIFY: ${{ vars.FTP_SSL_VERIFY || 'true' }}
+
+    steps:
+      - name: Install FTP client
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends lftp
+
+      - name: Smoke test login page and invalid credentials
+        run: |
+          set -euo pipefail
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          base="${APP_URL%/}"
+
+          curl --fail --silent --show-error --location --max-time 20 \
+            --cookie-jar "$tmpdir/cookies.txt" \
+            --dump-header "$tmpdir/login.headers" \
+            "$base/login" \
+            --output "$tmpdir/login.html"
+
+          csrf="$(
+            php -r '$html=file_get_contents($argv[1]); if (preg_match("/<input[^>]+name=\"_token\"[^>]+value=\"([^\"]+)\"/", $html, $m)) { echo html_entity_decode($m[1], ENT_QUOTES); }' "$tmpdir/login.html"
+          )"
+
+          test -n "$csrf" || { echo "Missing CSRF token on login page"; exit 1; }
+          grep -q 'data-ui="login-form"' "$tmpdir/login.html" || { echo "Missing login form marker"; exit 1; }
+
+          status="$(
+            curl --silent --show-error --max-time 20 \
+              --cookie "$tmpdir/cookies.txt" \
+              --cookie-jar "$tmpdir/cookies.txt" \
+              --dump-header "$tmpdir/post.headers" \
+              --header 'Content-Type: application/x-www-form-urlencoded' \
+              --data-urlencode "_token=$csrf" \
+              --data-urlencode 'email=missing-login-probe@example.invalid' \
+              --data-urlencode 'password=wrong-password' \
+              --output "$tmpdir/post.html" \
+              --write-out '%{http_code}' \
+              "$base/login"
+          )"
+
+          if [[ "$status" != "302" && "$status" != "303" ]]; then
+            echo "Expected invalid login to redirect with validation errors, got HTTP $status"
+            sed -n '1,80p' "$tmpdir/post.headers"
+            exit 1
+          fi
+
+      - name: Fetch remote Laravel log after smoke failure
+        if: failure()
+        run: |
+          set -euo pipefail
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          remote_dir="${FTP_SERVER_DIR%/}"
+          remote_log="$remote_dir/laravel/storage/logs/laravel.log"
+
+          ssl_verify="yes"
+          case "$FTP_SSL_VERIFY" in
+            false | no) ssl_verify="no" ;;
+          esac
+
+          commands_file="$(mktemp)"
+          trap 'rm -rf "$tmpdir"; rm -f "$commands_file"' EXIT
+
+          {
+            echo "set cmd:fail-exit yes"
+            echo "set net:max-retries 2"
+            echo "set net:timeout 30"
+            echo "set ssl:verify-certificate $ssl_verify"
+
+            if [[ "$FTP_PROTOCOL" == "ftps" ]]; then
+              echo "set ftp:ssl-force yes"
+              echo "set ftp:ssl-protect-data yes"
+            else
+              echo "set ftp:ssl-allow no"
+            fi
+
+            echo "open --user '$FTP_USERNAME' --env-password -p '$FTP_PORT' '${FTP_PROTOCOL}://${FTP_HOST}'"
+            echo "get '$remote_log' -o '$tmpdir/laravel.log'"
+            echo "bye"
+          } > "$commands_file"
+
+          LFTP_PASSWORD="$FTP_PASSWORD" lftp --norc -f "$commands_file" || {
+            echo "Could not fetch $remote_log"
+            exit 0
+          }
+
+          echo "::group::Remote laravel.log tail"
+          tail -n 180 "$tmpdir/laravel.log"
+          echo "::endgroup::"
