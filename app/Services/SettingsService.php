@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ProfileVisibility;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
 use App\Support\Usernames\UsernameNormalizer;
@@ -65,11 +66,16 @@ class SettingsService
 
         if ($privacySettings->isNotEmpty()) {
             $normalizedSettings = $privacySettings->toArray();
+            $profileVisibility = null;
 
             foreach (['show_in_explore', 'open_following'] as $booleanSetting) {
                 if (array_key_exists($booleanSetting, $normalizedSettings)) {
                     $normalizedSettings[$booleanSetting] = (bool) $normalizedSettings[$booleanSetting];
                 }
+            }
+
+            if (array_key_exists('profile_visibility', $normalizedSettings)) {
+                $profileVisibility = ProfileVisibility::fromValue((string) $normalizedSettings['profile_visibility']);
             }
 
             if (array_key_exists('profile_visibility', $normalizedSettings)
@@ -83,7 +89,7 @@ class SettingsService
             if (array_key_exists('profile_visibility', $normalizedSettings)) {
                 app(ProfileVisibilityService::class)->syncLegacyPrivacy(
                     $user,
-                    $user->profileVisibility()
+                    $profileVisibility ?? $user->profileVisibility()
                 );
             }
         }

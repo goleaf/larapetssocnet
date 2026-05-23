@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Users\UpdateProfileAction;
+use App\Enums\ProfileVisibility;
 use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
@@ -13,8 +14,9 @@ use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\MessageBag;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\MessageBag;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -81,13 +83,11 @@ new class extends Component
 
     public string $profile_visibility = 'public';
 
-    public bool $privacy_display_location = false;
+    public bool $account_is_private = false;
 
     public bool $privacy_display_birthdate = false;
 
-    public bool $show_in_explore = true;
-
-    public bool $open_following = false;
+    public bool $privacy_display_email = false;
 
     public mixed $avatar = null;
 
@@ -123,11 +123,9 @@ new class extends Component
         'social_links.instagram' => 'profile_modal_social_instagram',
         'social_links.facebook' => 'profile_modal_social_facebook',
         'social_links.youtube' => 'profile_modal_social_youtube',
-        'profile_visibility' => 'profile_modal_profile_visibility',
-        'privacy_display_location' => 'profile_modal_privacy_display_location',
+        'account_is_private' => 'profile_modal_account_visibility',
         'privacy_display_birthdate' => 'profile_modal_privacy_display_birthdate',
-        'show_in_explore' => 'profile_modal_show_in_explore',
-        'open_following' => 'profile_modal_open_following',
+        'privacy_display_email' => 'profile_modal_privacy_display_email',
         'remove_avatar' => 'profile_modal_remove_avatar',
         'remove_cover' => 'profile_modal_remove_cover',
     ];
@@ -162,22 +160,16 @@ new class extends Component
         $this->setBirthDateParts($user);
         $this->gender = $user->gender;
         $this->social_links = SocialLinkNormalizer::editable($user->social_links);
-        $this->profile_visibility = $user->profile_visibility ?: 'public';
-        $this->privacy_display_location = (bool) $user->privacy_display_location;
+        $this->profile_visibility = $user->profileVisibility()->value;
+        $this->account_is_private = $user->profileVisibility()->marksAccountPrivate();
         $this->privacy_display_birthdate = (bool) $user->privacy_display_birthdate;
-        $this->show_in_explore = (bool) $user->show_in_explore;
-        $this->open_following = (bool) $user->open_following;
+        $this->privacy_display_email = (bool) $user->privacy_display_email;
         $this->cover_photo_position = $user->coverPhotoPositionPercentage();
     }
 
-    public function save(UpdateProfileAction $updateProfile, SettingsService $settingsService, AuthAuditLogger $auditLogger): void
+    public function save(UpdateProfileAction $updateProfile, AuthAuditLogger $auditLogger): void
     {
-        $user = $this->profileUser();
-        $viewer = $this->viewer();
-
-        abort_unless($viewer instanceof User && $viewer->is($user), 403);
-
-        Gate::forUser($viewer)->authorize('update', $user);
+        [$user, $viewer] = $this->authorizeProfileOwnerUpdate();
 
         $this->normalizeForValidation();
 
@@ -205,8 +197,6 @@ new class extends Component
                 'birth_date' => $validated['birth_date'] ?? null,
                 'gender' => $validated['gender'] ?? null,
                 'social_links' => ($validated['social_links'] ?? []) !== [] ? $validated['social_links'] : null,
-                'privacy_display_location' => (bool) ($validated['privacy_display_location'] ?? false),
-                'privacy_display_birthdate' => (bool) ($validated['privacy_display_birthdate'] ?? false),
                 'avatar' => $this->avatar instanceof UploadedFile ? $this->avatar : null,
                 'cover' => $this->cover instanceof UploadedFile ? $this->cover : null,
                 'cover_photo_position' => (float) ($validated['cover_photo_position'] ?? User::DEFAULT_COVER_PHOTO_POSITION),
@@ -220,12 +210,6 @@ new class extends Component
             return;
         }
 
-        $settingsService->savePrivacySettings($user, [
-            'profile_visibility' => $validated['profile_visibility'],
-            'show_in_explore' => (bool) ($validated['show_in_explore'] ?? false),
-            'open_following' => (bool) ($validated['open_following'] ?? false),
-        ]);
-
         $changedFields = $this->changedFields($validated);
 
         $auditLogger->record($viewer, 'profile_updated', request(), [
@@ -238,6 +222,69 @@ new class extends Component
 
         $this->js("document.body.classList.remove('overflow-hidden')");
         $this->dispatch('profile-edit-saved');
+    }
+
+    public function updateAccountVisibility(mixed $private, SettingsService $settingsService, AuthAuditLogger $auditLogger): void
+    {
+        [$user, $viewer] = $this->authorizeProfileOwnerUpdate();
+        $isPrivate = $this->validatedBoolean($private, 'account_is_private');
+        $visibility = $isPrivate ? ProfileVisibility::FollowersOnly : ProfileVisibility::Public;
+
+        $settingsService->savePrivacySettings($user, [
+            'profile_visibility' => $visibility->value,
+        ]);
+
+        $user->refresh();
+        $this->profile_visibility = $user->profileVisibility()->value;
+        $this->account_is_private = $user->profileVisibility()->marksAccountPrivate();
+
+        $this->recordPrivacyToggleAudit($auditLogger, $viewer, 'account_visibility', $visibility->value);
+
+        $this->dispatch(
+            'profile-privacy-setting-saved',
+            setting: 'account_visibility',
+            value: $visibility->value,
+        );
+    }
+
+    public function updateShowAge(mixed $showAge, AuthAuditLogger $auditLogger): void
+    {
+        [$user, $viewer] = $this->authorizeProfileOwnerUpdate();
+        $value = $this->validatedBoolean($showAge, 'privacy_display_birthdate');
+
+        $user->forceFill([
+            'privacy_display_birthdate' => $value,
+        ])->save();
+
+        $this->privacy_display_birthdate = $value;
+
+        $this->recordPrivacyToggleAudit($auditLogger, $viewer, 'privacy_display_birthdate', $value);
+
+        $this->dispatch(
+            'profile-privacy-setting-saved',
+            setting: 'privacy_display_birthdate',
+            value: $value,
+        );
+    }
+
+    public function updateEmailDiscovery(mixed $allowEmailDiscovery, AuthAuditLogger $auditLogger): void
+    {
+        [$user, $viewer] = $this->authorizeProfileOwnerUpdate();
+        $value = $this->validatedBoolean($allowEmailDiscovery, 'privacy_display_email');
+
+        $user->forceFill([
+            'privacy_display_email' => $value,
+        ])->save();
+
+        $this->privacy_display_email = $value;
+
+        $this->recordPrivacyToggleAudit($auditLogger, $viewer, 'privacy_display_email', $value);
+
+        $this->dispatch(
+            'profile-privacy-setting-saved',
+            setting: 'privacy_display_email',
+            value: $value,
+        );
     }
 
     public function close(): void
@@ -333,11 +380,6 @@ new class extends Component
             'social_links.instagram' => ['nullable', 'string', 'max:31', 'regex:/^@[A-Za-z0-9](?:[A-Za-z0-9._]{0,28}[A-Za-z0-9])?$/'],
             'social_links.facebook' => ['nullable', 'url:http,https', 'max:255'],
             'social_links.youtube' => ['nullable', 'url:http,https', 'max:255'],
-            'profile_visibility' => ['required', 'string', 'in:public,followers_only,private'],
-            'privacy_display_location' => ['boolean'],
-            'privacy_display_birthdate' => ['boolean'],
-            'show_in_explore' => ['boolean'],
-            'open_following' => ['boolean'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120', 'dimensions:min_width=1200,min_height=400'],
             'cover_photo_position' => ['nullable', 'numeric', 'between:0,100'],
@@ -375,8 +417,40 @@ new class extends Component
             'social_links.instagram.regex' => 'Enter a valid Instagram username.',
             'social_links.facebook.url' => 'Enter a valid Facebook profile URL.',
             'social_links.youtube.url' => 'Enter a valid YouTube channel URL.',
-            'profile_visibility.in' => 'Select a valid profile visibility setting.',
         ];
+    }
+
+    /**
+     * @return array{0: User, 1: User}
+     */
+    private function authorizeProfileOwnerUpdate(): array
+    {
+        $user = $this->profileUser();
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User && $viewer->is($user), 403);
+
+        Gate::forUser($viewer)->authorize('update', $user);
+
+        return [$user, $viewer];
+    }
+
+    private function validatedBoolean(mixed $value, string $field): bool
+    {
+        $validated = Validator::make(
+            [$field => $value],
+            [$field => ['present', 'boolean']]
+        )->validate();
+
+        return (bool) $validated[$field];
+    }
+
+    private function recordPrivacyToggleAudit(AuthAuditLogger $auditLogger, User $viewer, string $setting, bool|string $value): void
+    {
+        $auditLogger->record($viewer, 'profile_privacy_setting_updated', request(), [
+            'setting' => $setting,
+            'value' => $value,
+        ]);
     }
 
     private function profileUser(): User
@@ -526,11 +600,9 @@ new class extends Component
             'profile_modal_social_instagram',
             'profile_modal_social_facebook',
             'profile_modal_social_youtube',
-            'profile_modal_profile_visibility',
-            'profile_modal_privacy_display_location',
+            'profile_modal_account_visibility',
             'profile_modal_privacy_display_birthdate',
-            'profile_modal_show_in_explore',
-            'profile_modal_open_following',
+            'profile_modal_privacy_display_email',
         ];
 
         return in_array($target, $allowedTargets, true) ? $target : null;
@@ -567,11 +639,6 @@ new class extends Component
             'birth_date',
             'gender',
             'social_links',
-            'privacy_display_location',
-            'privacy_display_birthdate',
-            'profile_visibility',
-            'show_in_explore',
-            'open_following',
         ];
 
         if (($validated['avatar'] ?? null) instanceof UploadedFile) {
@@ -1359,36 +1426,88 @@ new class extends Component
  <section class="space-y-4 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/25 p-4" data-ui="profile-edit-modal-section-privacy" aria-labelledby="profile-edit-privacy-title">
  <div>
  <h3 id="profile-edit-privacy-title" class="font-display text-base font-bold text-bark">Privacy</h3>
- <p class="mt-1 text-sm leading-6 text-fur">Choose how much of your profile is visible to other members.</p>
+ <p class="mt-1 text-sm leading-6 text-fur">Update the most common privacy preferences immediately, without saving the full profile form.</p>
  </div>
 
- <x-ui.select
- id="profile_modal_profile_visibility"
- name="profile_visibility"
- label="Profile visibility"
- :options="[
- 'public' => 'Public',
- 'followers_only' => 'Followers only',
- 'private' => 'Private',
- ]"
- :selected="$profile_visibility"
- :error="$errors->first('profile_visibility')"
- required
- wire:model.live.blur="profile_visibility"
- />
+ <div class="space-y-3" data-ui="profile-privacy-toggle-list">
+ <div id="profile_modal_account_visibility" data-ui="profile-privacy-toggle-account-visibility" class="flex flex-col gap-3 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-4 sm:flex-row sm:items-center sm:justify-between">
+ <div class="min-w-0">
+ <p class="text-sm font-bold text-bark">Account Visibility</p>
+ <p class="mt-1 text-xs leading-5 text-fur">
+ {{ $account_is_private ? 'Private profiles only reveal full content to accepted followers.' : 'Public profiles can be viewed by guests and members who are not blocked.' }}
+ </p>
+ </div>
+ <div class="flex shrink-0 items-center gap-3">
+ <span class="min-w-14 text-right text-xs font-bold uppercase {{ $account_is_private ? 'text-paw-dark' : 'text-fur' }}" aria-live="polite">
+ {{ $account_is_private ? 'Private' : 'Public' }}
+ </span>
+ <button
+ type="button"
+ role="switch"
+ aria-checked="{{ $account_is_private ? 'true' : 'false' }}"
+ aria-label="Set account visibility to {{ $account_is_private ? 'public' : 'private' }}"
+ wire:click="updateAccountVisibility({{ $account_is_private ? 'false' : 'true' }})"
+ wire:loading.attr="disabled"
+ wire:target="updateAccountVisibility"
+ class="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border border-whisker/40 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-wait disabled:opacity-70 {{ $account_is_private ? 'bg-paw' : 'bg-cream' }}"
+ >
+ <span class="sr-only">Toggle account visibility</span>
+ <span class="inline-block h-6 w-6 rounded-full bg-warm-white shadow-sm transition-transform duration-200 {{ $account_is_private ? 'translate-x-9' : 'translate-x-1' }}" aria-hidden="true"></span>
+ </button>
+ <span wire:loading wire:target="updateAccountVisibility" class="text-xs font-semibold text-fur" role="status">Saving...</span>
+ </div>
+ </div>
 
- <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
- <div id="profile_modal_privacy_display_location" class="rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-3">
- <x-ui.checkbox name="privacy_display_location" label="Show location on profile" description="Visitors only see this when profile visibility also allows it." :checked="$privacy_display_location" wire:model="privacy_display_location"/>
+ <div id="profile_modal_privacy_display_birthdate" data-ui="profile-privacy-toggle-age" class="flex flex-col gap-3 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-4 sm:flex-row sm:items-center sm:justify-between">
+ <div class="min-w-0">
+ <p class="text-sm font-bold text-bark">Show age on profile</p>
+ <p class="mt-1 text-xs leading-5 text-fur">Only your calculated age is shown; your birth date is never displayed.</p>
  </div>
- <div id="profile_modal_privacy_display_birthdate" class="rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-3">
- <x-ui.checkbox name="privacy_display_birthdate" label="Show age on profile" description="Only your calculated age is shown, never your birth date." :checked="$privacy_display_birthdate" wire:model="privacy_display_birthdate"/>
+ <div class="flex shrink-0 items-center gap-3">
+ <span class="min-w-10 text-right text-xs font-bold uppercase {{ $privacy_display_birthdate ? 'text-paw-dark' : 'text-fur' }}" aria-live="polite">
+ {{ $privacy_display_birthdate ? 'On' : 'Off' }}
+ </span>
+ <button
+ type="button"
+ role="switch"
+ aria-checked="{{ $privacy_display_birthdate ? 'true' : 'false' }}"
+ aria-label="{{ $privacy_display_birthdate ? 'Hide age on profile' : 'Show age on profile' }}"
+ wire:click="updateShowAge({{ $privacy_display_birthdate ? 'false' : 'true' }})"
+ wire:loading.attr="disabled"
+ wire:target="updateShowAge"
+ class="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border border-whisker/40 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-wait disabled:opacity-70 {{ $privacy_display_birthdate ? 'bg-paw' : 'bg-cream' }}"
+ >
+ <span class="sr-only">Toggle age display</span>
+ <span class="inline-block h-6 w-6 rounded-full bg-warm-white shadow-sm transition-transform duration-200 {{ $privacy_display_birthdate ? 'translate-x-9' : 'translate-x-1' }}" aria-hidden="true"></span>
+ </button>
+ <span wire:loading wire:target="updateShowAge" class="text-xs font-semibold text-fur" role="status">Saving...</span>
  </div>
- <div id="profile_modal_show_in_explore" class="rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-3">
- <x-ui.checkbox name="show_in_explore" label="Show in Explore" description="Allow your profile to be recommended to other members." :checked="$show_in_explore" wire:model="show_in_explore"/>
  </div>
- <div id="profile_modal_open_following" class="rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-3">
- <x-ui.checkbox name="open_following" label="Open following list" description="Allow others to see who you follow when profile visibility permits it." :checked="$open_following" wire:model="open_following"/>
+
+ <div id="profile_modal_privacy_display_email" data-ui="profile-privacy-toggle-email" class="flex flex-col gap-3 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-4 sm:flex-row sm:items-center sm:justify-between">
+ <div class="min-w-0">
+ <p class="text-sm font-bold text-bark">Allow people to find me by email address</p>
+ <p class="mt-1 text-xs leading-5 text-fur">Lets signed-in members discover your profile when they already know your email address.</p>
+ </div>
+ <div class="flex shrink-0 items-center gap-3">
+ <span class="min-w-10 text-right text-xs font-bold uppercase {{ $privacy_display_email ? 'text-paw-dark' : 'text-fur' }}" aria-live="polite">
+ {{ $privacy_display_email ? 'On' : 'Off' }}
+ </span>
+ <button
+ type="button"
+ role="switch"
+ aria-checked="{{ $privacy_display_email ? 'true' : 'false' }}"
+ aria-label="{{ $privacy_display_email ? 'Disable email discovery' : 'Enable email discovery' }}"
+ wire:click="updateEmailDiscovery({{ $privacy_display_email ? 'false' : 'true' }})"
+ wire:loading.attr="disabled"
+ wire:target="updateEmailDiscovery"
+ class="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full border border-whisker/40 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-wait disabled:opacity-70 {{ $privacy_display_email ? 'bg-paw' : 'bg-cream' }}"
+ >
+ <span class="sr-only">Toggle email discovery</span>
+ <span class="inline-block h-6 w-6 rounded-full bg-warm-white shadow-sm transition-transform duration-200 {{ $privacy_display_email ? 'translate-x-9' : 'translate-x-1' }}" aria-hidden="true"></span>
+ </button>
+ <span wire:loading wire:target="updateEmailDiscovery" class="text-xs font-semibold text-fur" role="status">Saving...</span>
+ </div>
  </div>
  </div>
  </section>

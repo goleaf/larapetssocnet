@@ -240,6 +240,8 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
     $profileOwner = User::factory()->create([
         'name' => 'Sectioned Modal Owner',
         'username' => 'sectioned_modal_owner',
+        'privacy_display_birthdate' => false,
+        'privacy_display_email' => false,
         'is_private' => false,
         'profile_visibility' => 'public',
     ]);
@@ -309,10 +311,96 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
         ->assertDontSee('profile_modal_social_tiktok', false)
         ->assertSee('data-ui="profile-edit-modal-section-privacy"', false)
         ->assertSee('Privacy')
+        ->assertSee('data-ui="profile-privacy-toggle-list"', false)
+        ->assertSee('data-ui="profile-privacy-toggle-account-visibility"', false)
+        ->assertSee('Account Visibility')
+        ->assertSee('wire:click="updateAccountVisibility(true)"', false)
+        ->assertSee('data-ui="profile-privacy-toggle-age"', false)
+        ->assertSee('Show age on profile')
+        ->assertSee('wire:click="updateShowAge(true)"', false)
+        ->assertSee('data-ui="profile-privacy-toggle-email"', false)
+        ->assertSee('Allow people to find me by email address')
+        ->assertSee('wire:click="updateEmailDiscovery(true)"', false)
+        ->assertDontSee('profile_modal_profile_visibility', false)
+        ->assertDontSee('profile_modal_privacy_display_location', false)
+        ->assertDontSee('profile_modal_show_in_explore', false)
+        ->assertDontSee('profile_modal_open_following', false)
         ->assertSee('novalidate', false)
         ->assertSee('scrollToTarget(targetId)', false)
         ->assertSee('scrollIntoView({ behavior: \'smooth\', block: \'center\' })', false)
         ->assertSee('@profile-edit-validation-failed.window="scrollToTarget($event.detail.target)"', false);
+});
+
+it('updates account visibility immediately from the nested privacy toggle', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Immediate Privacy Owner',
+        'username' => 'immediate_privacy_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    $component = Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->call('updateAccountVisibility', true)
+        ->assertHasNoErrors()
+        ->assertSet('account_is_private', true)
+        ->assertSet('profile_visibility', 'followers_only')
+        ->assertDispatched('profile-privacy-setting-saved');
+
+    $profileOwner->refresh();
+
+    expect($profileOwner->profile_visibility)->toBe('followers_only')
+        ->and($profileOwner->is_private)->toBeTrue();
+
+    $component
+        ->call('updateAccountVisibility', false)
+        ->assertHasNoErrors()
+        ->assertSet('account_is_private', false)
+        ->assertSet('profile_visibility', 'public')
+        ->assertDispatched('profile-privacy-setting-saved');
+
+    $profileOwner->refresh();
+
+    expect($profileOwner->profile_visibility)->toBe('public')
+        ->and($profileOwner->is_private)->toBeFalse();
+});
+
+it('updates show age immediately from the nested privacy toggle', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Age Privacy Owner',
+        'username' => 'age_privacy_owner',
+        'privacy_display_birthdate' => false,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->call('updateShowAge', true)
+        ->assertHasNoErrors()
+        ->assertSet('privacy_display_birthdate', true)
+        ->assertDispatched('profile-privacy-setting-saved');
+
+    expect($profileOwner->refresh()->privacy_display_birthdate)->toBeTrue();
+});
+
+it('updates email discovery immediately from the nested privacy toggle', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Email Discovery Owner',
+        'username' => 'email_discovery_owner',
+        'privacy_display_email' => false,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->call('updateEmailDiscovery', true)
+        ->assertHasNoErrors()
+        ->assertSet('privacy_display_email', true)
+        ->assertDispatched('profile-privacy-setting-saved');
+
+    expect($profileOwner->refresh()->privacy_display_email)->toBeTrue();
 });
 
 it('enforces the nested modal avatar upload type and size limits server side', function (Closure $avatarFactory, string $message): void {
@@ -466,11 +554,6 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->set('birth_month', '1')
         ->set('birth_year', '1990')
         ->set('gender', 'prefer_not_to_say')
-        ->set('profile_visibility', 'followers_only')
-        ->set('privacy_display_location', true)
-        ->set('privacy_display_birthdate', true)
-        ->set('show_in_explore', false)
-        ->set('open_following', true)
         ->call('save')
         ->assertHasNoErrors()
         ->assertNoRedirect()
@@ -498,12 +581,12 @@ it('saves profile edits from the nested modal without redirecting away from the 
             'facebook' => 'https://facebook.com/nestedmodal',
             'youtube' => 'https://youtube.com/@nestedmodal',
         ])
-        ->and($profileOwner->profile_visibility)->toBe('followers_only')
-        ->and($profileOwner->is_private)->toBeTrue()
-        ->and($profileOwner->privacy_display_location)->toBeTrue()
-        ->and($profileOwner->privacy_display_birthdate)->toBeTrue()
-        ->and($profileOwner->show_in_explore)->toBeFalse()
-        ->and($profileOwner->open_following)->toBeTrue();
+        ->and($profileOwner->profile_visibility)->toBe('public')
+        ->and($profileOwner->is_private)->toBeFalse()
+        ->and($profileOwner->privacy_display_location)->toBeFalse()
+        ->and($profileOwner->privacy_display_birthdate)->toBeFalse()
+        ->and($profileOwner->show_in_explore)->toBeTrue()
+        ->and($profileOwner->open_following)->toBeFalse();
 });
 
 it('checks username availability and reports the cooldown state in the edit profile modal', function (): void {
