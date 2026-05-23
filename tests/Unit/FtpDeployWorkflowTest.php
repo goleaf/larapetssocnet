@@ -18,7 +18,8 @@ it('cleans stale ftp files before a parallel mirror upload while preserving runt
 
     expect($script)
         ->toContain('FTP_PARALLEL="${FTP_PARALLEL:-4}"')
-        ->toContain('mirror --reverse --delete --delete-first --no-perms --parallel=%s --verbose=1')
+        ->toContain('set ftp:use-mdtm no')
+        ->toContain('mirror --reverse --delete --delete-first --ignore-time --transfer-all --no-perms --parallel=%s --verbose=1')
         ->not->toContain('--scan-all-first')
         ->toContain('set ftp:ssl-allow no')
         ->toContain('mkdir -f -p')
