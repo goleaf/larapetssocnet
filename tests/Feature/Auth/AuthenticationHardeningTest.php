@@ -5,47 +5,37 @@ use App\Models\Security\AuthAuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
 it('requires age confirmation terms and a non-common password at registration', function (): void {
     $underageDate = now()->subYears(10);
 
-    $this->post('/register', [
-        'name' => 'Young User',
-        'email' => 'young@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-        'birth_day' => $underageDate->day,
-        'birth_month' => $underageDate->month,
-        'birth_year' => $underageDate->year,
-    ])
-        ->assertSessionHasErrors(['password', 'birth_date', 'terms']);
+    Livewire::test('pages.auth.register')
+        ->set('name', 'Young User')
+        ->set('username', 'young-user')
+        ->set('email', 'young.user@gmail.com')
+        ->set('password', 'password')
+        ->set('password_confirmation', 'password')
+        ->set('birth_day', (string) $underageDate->day)
+        ->set('birth_month', (string) $underageDate->month)
+        ->set('birth_year', (string) $underageDate->year)
+        ->call('register')
+        ->assertHasErrors(['password', 'birth_date', 'terms']);
 
-    expect(User::query()->where('email', 'young@example.com')->exists())->toBeFalse();
+    expect(User::query()->where('email', 'young.user@gmail.com')->exists())->toBeFalse();
 });
 
 it('silently rejects honeypot registrations without creating an account', function (): void {
-    $birthDate = now()->subYears(24);
-
-    $this->post('/register', [
-        'name' => 'Bot User',
-        'username' => 'bot_user',
-        'email' => 'bot@example.com',
-        'password' => 'PetSocial2026!',
-        'password_confirmation' => 'PetSocial2026!',
-        'birth_day' => $birthDate->day,
-        'birth_month' => $birthDate->month,
-        'birth_year' => $birthDate->year,
-        'terms' => '1',
-        'company_name' => 'Acme Bot',
-    ])
-        ->assertRedirect(route('login', absolute: false))
-        ->assertSessionHas('status');
+    Livewire::test('pages.auth.register')
+        ->set('middleName', 'Acme Bot')
+        ->call('register')
+        ->assertRedirect(route('verification.notice'));
 
     $this->assertGuest();
-    $this->assertDatabaseMissing('users', ['email' => 'bot@example.com']);
-    $this->assertDatabaseHas('auth_audit_logs', ['event_type' => 'registration_honeypot']);
+    $this->assertDatabaseCount('users', 0);
+    $this->assertDatabaseCount('auth_audit_logs', 0);
 });
 
 it('records successful and failed login attempts without revealing which credential failed', function (): void {

@@ -1,6 +1,7 @@
 # Forms
 
 - Use dedicated Form Request per action.
+- Exception: registration is intentionally handled by the full-page Livewire `pages.auth.register` component instead of a controller/Form Request; keep all registration field state and validation in that component unless the product decision is reversed.
 - Normalize values in `prepareForValidation()`.
 - Return user-friendly validation messages.
 - New password fields should use `x-ui.input` with `autocomplete="new-password"` so the shared `PasswordPolicy` and Laravel-generated `passwordrules` attribute stay aligned with server validation.

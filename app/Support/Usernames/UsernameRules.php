@@ -146,10 +146,12 @@ final class UsernameRules
         }
 
         $withUnderscores = (string) Str::of($trimmed)->replace(['-', '.', '/', ' '], '_');
+        $withHyphens = (string) Str::of($trimmed)->replace(['_', '.', '/', ' '], '-');
 
         return array_values(array_unique(array_filter([
             UsernameNormalizer::normalize($trimmed),
             UsernameNormalizer::normalize($withUnderscores),
+            UsernameNormalizer::normalize($withHyphens),
         ], static fn (string $normalized): bool => $normalized !== '')));
     }
 

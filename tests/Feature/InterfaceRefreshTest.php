@@ -219,7 +219,7 @@ it('renders guest auth pages with clearer headers and touch-sized actions', func
     $this->get(route('register'))
         ->assertSuccessful()
         ->assertSee('data-ui="register-form"', false)
-        ->assertSee('Start your pet profile network')
+        ->assertSee('Create your PetSocial account')
         ->assertSee('sm:grid-cols-2', false)
         ->assertSee('min-h-11', false);
 

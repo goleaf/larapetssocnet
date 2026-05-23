@@ -5,8 +5,8 @@ declare(strict_types=1);
 return [
     'min_length' => 3,
     'max_length' => 30,
-    'pattern' => '/^[a-z0-9_]+$/',
-    'strip_pattern' => '/[^a-z0-9_]/',
+    'pattern' => '/^[a-z0-9_-]+$/',
+    'strip_pattern' => '/[^a-z0-9_-]/',
     'disallow_numeric_only' => true,
     'redirect_ttl_days' => 36500,
     'cooldown_days' => 30,

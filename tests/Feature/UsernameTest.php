@@ -7,6 +7,7 @@ use App\Models\Identity\UsernameRedirect;
 use App\Services\ContentService;
 use App\Services\UsernameService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -80,13 +81,9 @@ it('reserved username cannot be used during registration', function (): void {
         'created_at' => now(),
     ]);
 
-    $this->post(route('register'), [
-        'name' => 'New User',
-        'username' => 'admin',
-        'email' => 'new@example.test',
-        'password' => 'password',
-        'password_confirmation' => 'password',
-    ])->assertSessionHasErrors('username');
+    Livewire::test('pages.auth.register')
+        ->set('username', 'admin')
+        ->assertHasErrors('username');
 });
 
 it('username change is blocked during cooldown', function (): void {

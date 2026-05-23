@@ -15,15 +15,15 @@ final class UsernameNormalizer
         return (string) Str::of((string) $username)
             ->lower()
             ->replaceMatches(self::stripPattern(), '')
-            ->trim('_');
+            ->trim('_-');
     }
 
     public static function generateBase(string $seed): string
     {
         return (string) Str::of($seed)
             ->lower()
-            ->replaceMatches('/[^a-z0-9_]+/', '_')
-            ->trim('_');
+            ->replaceMatches('/[^a-z0-9_-]+/', '_')
+            ->trim('_-');
     }
 
     public static function stripPattern(): string

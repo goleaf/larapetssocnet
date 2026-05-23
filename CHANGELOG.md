@@ -10,11 +10,13 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire registration coverage for route wiring, authenticated redirects, successful account creation, username suggestions, username/email validation, underage DOB rejection, common-password rejection, and honeypot false success.
 - Added schema coverage proving the authentication database changes remain in one focused migration and that the requested auth indexes exist.
 - Added lifecycle coverage for magic login links, password reset non-enumeration and session invalidation, Google OAuth account creation/returning/merge flows, device-session scoping, and TOTP/recovery-code challenges.
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Replaced the registration POST controller flow with a full-page Livewire registration component at `/register`, including debounced username/email validation, DNS email checks, hyphenated usernames, Alpine password strength feedback, date-of-birth selects, legal document modals, and a honeypot path that creates no account or audit rows.
 - Consolidated authentication database changes into one focused migration, renamed online presence tracking to `users.last_active_at`, renamed username cooldown tracking to `users.username_change_allowed_at`, rebuilt OAuth provider columns around `provider_user_id` / encrypted `provider_token`, and moved one-time login storage to `magic_link_tokens`.
 - Updated the GitHub Actions FTP deployment to use a single parallel `lftp mirror` upload that cleans stale remote files before transfer and keeps normal deploys from overwriting remote SQLite/runtime data.
 - Updated local authentication foundation defaults to use database sessions, database queues, and Mailpit SMTP instead of file sessions, sync queues, or log-only mail.
@@ -51,6 +53,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added static Terms of Service and Privacy Policy documents for the registration modal flow and expanded the common-password blocklist to 500 entries with client-side SHA-256 hash matching.
 - Added queued one-time magic login links with hashed single-use tokens, TOTP two-factor setup/challenge pages with hashed recovery codes, device-session review/logout controls, and Google/Facebook OAuth redirect/callback handling that stores provider identities in `social_accounts`.
 - Added the authentication security schema foundation with encrypted two-factor columns, pending email change storage, profile completeness tracking, account status and failed-login tracking columns, case-insensitive username and reserved-username unique indexes, and a separate encrypted `social_accounts` table for OAuth provider identities.
 - Added privacy-gated currently-active avatar indicators backed by `users.last_active_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.

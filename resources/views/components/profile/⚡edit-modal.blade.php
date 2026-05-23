@@ -877,7 +877,7 @@ new class extends Component
  </span>
  </div>
  <div id="profile_modal_username_hint" class="mt-1 flex flex-col gap-1 text-xs" aria-live="polite">
- <p class="text-fur">3-30 chars. Letters, numbers, and underscores.</p>
+ <p class="text-fur">3-30 chars. Letters, numbers, hyphens, and underscores.</p>
  @if ($usernameChangeLocked)
  <p class="font-medium text-amber">{{ $this->usernameCooldownMessage() }}</p>
  @endif

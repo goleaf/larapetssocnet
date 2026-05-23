@@ -39,7 +39,7 @@ class ContentService
 
     private function linkMentions(string $input): string
     {
-        return preg_replace_callback('/@(\w{3,30})/', function (array $matches): string {
+        return preg_replace_callback('/@([A-Za-z0-9_-]{3,30})/', function (array $matches): string {
             $username = $matches[1];
 
             // In a real scenario we might cache valid usernames inside a request, but we just link here.

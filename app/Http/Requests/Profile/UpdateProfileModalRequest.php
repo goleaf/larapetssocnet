@@ -103,7 +103,7 @@ class UpdateProfileModalRequest extends FormRequest
         return [
             'username.min' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
             'username.max' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
-            'username.regex' => 'Only letters, numbers and underscores allowed.',
+            'username.regex' => 'Only letters, numbers, hyphens, and underscores allowed.',
             'username.unique' => 'Username is already taken.',
             'display_name.max' => 'Display name must be 50 characters or fewer.',
             'bio.max' => 'Bio must be 160 characters or fewer.',

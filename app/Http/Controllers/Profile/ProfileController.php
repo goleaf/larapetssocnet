@@ -220,7 +220,7 @@ class ProfileController extends Controller
         ], [
             'username.min' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
             'username.max' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
-            'username.regex' => 'Only letters, numbers and underscores allowed.',
+            'username.regex' => 'Only letters, numbers, hyphens, and underscores allowed.',
             'username.unique' => 'Username is already taken.',
         ]);
 

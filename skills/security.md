@@ -41,4 +41,6 @@
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.
 - Record security-significant auth events in `auth_audit_logs` through `AuthAuditLogger`.
 - Registration must validate DOB, terms acceptance, password strength, and the off-screen honeypot before account creation.
+- Registration is a deliberate Livewire exception to the normal controller/Form Request pattern: `/register` is handled by the full-page `pages.auth.register` component, which owns form state, validation, and submission directly.
+- Registration honeypot submissions must return the same verification-pending redirect shape without creating users, audit logs, or any other database rows.
 - Registration, reset-password, profile password, and settings password updates must use `App\Support\Auth\PasswordPolicy` so server validation and generated HTML `passwordrules` hints remain consistent.

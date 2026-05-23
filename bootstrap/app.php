@@ -40,6 +40,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(function (Request $request): string {
             $user = $request->user();
 
+            if ($request->routeIs('register')) {
+                return route('feed.index');
+            }
+
             if ($user === null) {
                 return route('dashboard');
             }

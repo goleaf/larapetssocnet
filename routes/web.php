@@ -396,9 +396,9 @@ Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified',
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/@{user:username}/photos/galleries/{gallery}', [PhotoGalleryController::class, 'show'])
         ->name('photo-galleries.show');
-    Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_]+');
-    Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_]+');
-    Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_]+');
+    Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_-]+');
+    Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_-]+');
+    Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_-]+');
 
     // Legacy settings routes removed
 });
@@ -426,12 +426,12 @@ require __DIR__.'/auth.php';
 
 Route::post('/@{user:username}/follow', [PublicProfileController::class, 'guestFollowPrompt'])
     ->name('profile.guest-follow')
-    ->where('user', '[a-zA-Z0-9_]+');
+    ->where('user', '[a-zA-Z0-9_-]+');
 
 Route::get('/@{user:username}/portfolio', ProfilePortfolioController::class)
     ->name('profile.portfolio')
-    ->where('user', '[a-zA-Z0-9_]+');
+    ->where('user', '[a-zA-Z0-9_-]+');
 
 Route::livewire('/@{user:username}', 'pages.profile.show')
     ->name('profile.show')
-    ->where('user', '[a-zA-Z0-9_]+');
+    ->where('user', '[a-zA-Z0-9_-]+');
