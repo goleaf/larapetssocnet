@@ -510,10 +510,10 @@
  <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-fur" data-ui="profile-view-analytics">
  <span class="relative inline-flex items-center gap-1" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" @click="open = !open">
  <span aria-hidden="true">👁</span>
- <span>{{ number_format((int) $profileViewStats['current']) }} profile visits in the last 30 days</span>
+ <span>{{ number_format((int) $profileViewStats['current']) }} unique profile {{ Str::plural('viewer', (int) $profileViewStats['current']) }} in the last 30 days</span>
  <span x-show="open" x-cloak x-transition
- class="absolute left-0 top-7 z-20 w-40 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card">
- Only you can see this.
+ class="absolute left-0 top-7 z-20 w-56 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card">
+ Counts distinct signed-in visitors. Only you can see this.
  </span>
  </span>
  @if (($profileViewStats['trend_percent'] ?? null) !== null)

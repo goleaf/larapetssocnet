@@ -51,15 +51,77 @@ it('shows profile view analytics only to the profile owner', function (): void {
         'viewed_on' => now()->toDateString(),
     ]);
 
+    expect(ProfileView::uniqueViewerCountForProfile(
+        $owner,
+        now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS - 1)->toDateString(),
+        now()->toDateString(),
+    ))->toBe(1);
+
     $this->actingAs($owner)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
-        ->assertSee('profile visits in the last 30 days');
+        ->assertSee('data-ui="profile-view-analytics"', false)
+        ->assertSeeText('unique profile viewer in the last 30 days');
 
     $this->actingAs($viewer)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
-        ->assertDontSee('profile visits in the last 30 days');
+        ->assertDontSee('unique profile viewer in the last 30 days')
+        ->assertDontSee('data-ui="profile-view-analytics"', false);
+});
+
+it('counts unique profile viewers across the owner local last 30 days', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
+
+    try {
+        $owner = User::factory()->create([
+            'username' => 'unique_view_owner',
+            'timezone' => 'Europe/Vilnius',
+        ]);
+        $firstViewer = User::factory()->create();
+        $secondViewer = User::factory()->create();
+        $oldViewer = User::factory()->create();
+
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $firstViewer->id,
+            'viewed_on' => now()->toDateString(),
+        ]);
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $firstViewer->id,
+            'viewed_on' => now()->subDay()->toDateString(),
+        ]);
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $secondViewer->id,
+            'viewed_on' => now()->subDays(29)->toDateString(),
+        ]);
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $oldViewer->id,
+            'viewed_on' => now()->subDays(30)->toDateString(),
+        ]);
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $owner->id,
+            'viewed_on' => now()->toDateString(),
+        ]);
+
+        expect(ProfileView::uniqueViewerCountForProfile(
+            $owner,
+            now()->subDays(29)->toDateString(),
+            now()->toDateString(),
+        ))->toBe(2);
+
+        $this->actingAs($owner)
+            ->get(route('profile.show', ['user' => $owner]))
+            ->assertOk()
+            ->assertSee('2 unique profile viewers in the last 30 days')
+            ->assertDontSee('3 unique profile viewers in the last 30 days');
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 it('calculates profile completeness and missing items from profile fields', function (): void {

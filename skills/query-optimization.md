@@ -16,6 +16,7 @@ Prevent N+1 in social-network pages.
 - Profile post grids should eager load both `media` and `postMedia`, and media-only filters should use indexed `EXISTS` checks instead of loading all posts and filtering collections.
 - Profile previews that compare social graph data should use SQL joins/subqueries, not PHP collection intersections over whole follower lists.
 - Profile completeness should read only the columns/counts/media-exists flags it needs instead of loading full user records.
+- Profile view analytics should use the `profile_views(profile_user_id, viewed_on)` index for date-window scans and count distinct signed-in `viewer_user_id` values only for the owner-facing analytics panel.
 - Never access relation properties inside loops unless eager loaded.
 
 ## Correct patterns

@@ -13,6 +13,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
@@ -432,22 +433,14 @@ class PublicProfileController extends Controller
      */
     private function profileViewStats(User $user): array
     {
-        $today = now()->toDateString();
-        $currentStart = now()->subDays(29)->toDateString();
-        $previousStart = now()->subDays(59)->toDateString();
-        $previousEnd = now()->subDays(30)->toDateString();
+        $timezone = $user->timezone ?: config('app.timezone');
+        $today = CarbonImmutable::now($timezone);
+        $currentStart = $today->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS - 1)->toDateString();
+        $previousStart = $today->subDays((ProfileView::RECENT_UNIQUE_VIEWER_DAYS * 2) - 1)->toDateString();
+        $previousEnd = $today->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS)->toDateString();
 
-        $current = (int) ProfileView::query()
-            ->where('profile_user_id', $user->getKey())
-            ->whereBetween('viewed_on', [$currentStart, $today])
-            ->distinct('viewer_user_id')
-            ->count('viewer_user_id');
-
-        $previous = (int) ProfileView::query()
-            ->where('profile_user_id', $user->getKey())
-            ->whereBetween('viewed_on', [$previousStart, $previousEnd])
-            ->distinct('viewer_user_id')
-            ->count('viewer_user_id');
+        $current = ProfileView::uniqueViewerCountForProfile($user, $currentStart, $today->toDateString());
+        $previous = ProfileView::uniqueViewerCountForProfile($user, $previousStart, $previousEnd);
 
         $trendPercent = $previous > 0
             ? (int) round((($current - $previous) / $previous) * 100)
