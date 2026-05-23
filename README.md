@@ -1,4 +1,4 @@
-# PetSocial
+# PetSocial 
 
 PetSocial is a Laravel social network for pet profiles, feeds, groups, adoption browsing, marketplace listings, messaging, notifications, health logs, moderation, and shared media.
 
