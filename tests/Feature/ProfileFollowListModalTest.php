@@ -133,6 +133,46 @@ it('renders detailed follower rows with mutual counts and toggles follows throug
     ]);
 });
 
+it('loads follow list entries in pages of twenty from a modal scoped sentinel', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'paged_followers_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    for ($index = 1; $index <= 25; $index++) {
+        $listedUser = User::factory()->create([
+            'name' => sprintf('Modal Page %02d', $index),
+            'username' => sprintf('modal_page_%02d', $index),
+        ]);
+
+        $listedUser->follow($profileOwner);
+    }
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'followers',
+        ])
+        ->assertSet('page', 1)
+        ->assertSee('x-ref="scrollContainer"', false)
+        ->assertSee('new IntersectionObserver', false)
+        ->assertSee('root: $refs.scrollContainer', false)
+        ->assertSee('data-ui="profile-followers-modal-load-more-sentinel"', false)
+        ->assertSee('Modal Page 01')
+        ->assertSee('Modal Page 20')
+        ->assertDontSee('Modal Page 21')
+        ->call('loadMore')
+        ->assertSet('page', 2)
+        ->assertSee('Modal Page 21')
+        ->assertSee('Modal Page 25')
+        ->assertDontSee('data-ui="profile-followers-modal-load-more-sentinel"', false)
+        ->set('search', 'Modal Page 25')
+        ->assertSet('page', 1)
+        ->assertSee('Modal Page 25')
+        ->assertDontSee('Modal Page 01');
+});
+
 it('filters followers by name or username without searching outside the profile follower list', function (): void {
     $profileOwner = User::factory()->create([
         'username' => 'searchable_followers_owner',

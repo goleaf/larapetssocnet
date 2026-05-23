@@ -22,9 +22,11 @@ new class extends Component
 
     public string $search = '';
 
+    public int $page = 1;
+
     private const MODES = ['followers', 'following'];
 
-    private const PREVIEW_LIMIT = 12;
+    private const PAGE_SIZE = 20;
 
     public function mount(int $profileUserId, string $mode, ?int $total = null): void
     {
@@ -41,6 +43,7 @@ new class extends Component
      *     users: Collection<int, User>,
      *     viewer: User|null,
      *     followStatusMap: array<int, string>,
+     *     hasMore: bool,
      *     modalId: string,
      *     title: string,
      *     description: string,
@@ -82,15 +85,19 @@ new class extends Component
             ]);
         }
 
+        $loadedLimit = $this->loadedLimit();
         $users = $query
-            ->limit(self::PREVIEW_LIMIT)
+            ->limit($loadedLimit + 1)
             ->get();
+        $hasMore = $users->count() > $loadedLimit;
+        $users = $users->take($loadedLimit)->values();
 
         return [
             'profileUser' => $profileUser,
             'users' => $users,
             'viewer' => $viewer,
             'followStatusMap' => $this->followStatusMap($users, $viewer),
+            'hasMore' => $hasMore,
             'modalId' => $this->modalId(),
             'title' => $this->title(),
             'description' => $this->description($profileUser),
@@ -100,6 +107,16 @@ new class extends Component
             'viewAllLabel' => $this->viewAllLabel(),
             'viewAllUrl' => route($this->viewAllRouteName(), ['user' => $profileUser]),
         ];
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->page = 1;
+    }
+
+    public function loadMore(): void
+    {
+        $this->page++;
     }
 
     /**
@@ -188,6 +205,11 @@ new class extends Component
     private function searchTerm(): string
     {
         return trim($this->search);
+    }
+
+    private function loadedLimit(): int
+    {
+        return max(1, $this->page) * self::PAGE_SIZE;
     }
 
     private function modalId(): string
@@ -295,7 +317,25 @@ data-ui="{{ $data['modalId'] }}-search-input"
 </div>
 </div>
 
-<div class="max-h-[28rem] overflow-y-auto pr-1" data-ui="{{ $data['modalId'] }}-list">
+<div
+x-data="{
+    loadingMore: false,
+    async loadMoreEntries() {
+        if (this.loadingMore) {
+            return
+        }
+
+        this.loadingMore = true
+
+        try {
+            await $wire.loadMore()
+        } finally {
+            this.loadingMore = false
+        }
+    },
+}"
+data-ui="{{ $data['modalId'] }}-infinite-scroll">
+<div x-ref="scrollContainer" class="max-h-[28rem] overflow-y-auto pr-1" data-ui="{{ $data['modalId'] }}-list">
 @forelse ($data['users'] as $listedUser)
 @php
  $listedDisplayName = (string) ($listedUser->display_name ?: $listedUser->name);
@@ -415,6 +455,30 @@ You
 @empty
 <x-ui.empty-state icon="" :title="$data['emptyTitle']" :description="$data['emptyDescription']" class="py-10"/>
 @endforelse
+@if ($data['hasMore'])
+<div
+x-ref="sentinel"
+x-init="
+    const state = $data
+    const observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+            state.loadMoreEntries()
+        }
+    }, { root: $refs.scrollContainer, rootMargin: '160px 0px', threshold: 0 })
+
+    observer.observe($el)
+    $cleanup(() => observer.disconnect())
+"
+class="flex min-h-12 items-center justify-center py-3"
+data-ui="{{ $data['modalId'] }}-load-more-sentinel">
+<span wire:loading.delay wire:target="loadMore" class="inline-flex items-center gap-2 text-xs font-semibold text-fur">
+<x-ui.loading-spinner size="sm" color="fur" label="Loading more {{ strtolower($data['title']) }}"/>
+Loading more {{ strtolower($data['title']) }}
+</span>
+<span wire:loading.remove wire:target="loadMore" class="sr-only">Load more {{ strtolower($data['title']) }}</span>
+</div>
+@endif
+</div>
 </div>
 
 <x-slot name="footer">
