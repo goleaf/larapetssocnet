@@ -18,6 +18,7 @@ it('cleans stale ftp files before a parallel mirror upload while preserving runt
 
     expect($script)
         ->toContain('mirror --reverse --delete --delete-first --scan-all-first --no-perms --parallel=%s --verbose=1')
+        ->toContain('mkdir -f -p')
         ->toContain('set mirror:parallel-directories yes')
         ->toContain('laravel/database/*.sqlite*')
         ->toContain('laravel/storage/app/public/**')

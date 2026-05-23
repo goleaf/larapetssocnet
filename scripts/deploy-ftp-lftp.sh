@@ -118,7 +118,7 @@ trap 'rm -f "$commands_file"' EXIT
     fi
 
     echo "open --user $(lftp_quote "$FTP_USERNAME") --env-password -p $(lftp_quote "$FTP_PORT") $(lftp_quote "${FTP_PROTOCOL}://${FTP_HOST}")"
-    echo "mkdir -p $(lftp_quote "$REMOTE_DIR")"
+    echo "mkdir -f -p $(lftp_quote "$REMOTE_DIR")"
 
     printf 'mirror --reverse --delete --delete-first --scan-all-first --no-perms --parallel=%s --verbose=1' "$FTP_PARALLEL"
 
