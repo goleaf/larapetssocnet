@@ -8,6 +8,8 @@ it('deploys with one ftp archive instead of mirror sync state', function (): voi
     expect($workflow)
         ->toContain('sudo apt-get update && sudo apt-get install --yes --no-install-recommends lftp zip')
         ->toContain('scripts/deploy-ftp-archive.sh')
+        ->toContain('uses: actions/setup-node@v6')
+        ->not->toContain('uses: actions/setup-node@v4')
         ->not->toContain('SamKirkland/FTP-Deploy-Action')
         ->not->toContain('state-name: .ftp-deploy-sync-state.json')
         ->not->toContain('FTP_PARALLEL');
