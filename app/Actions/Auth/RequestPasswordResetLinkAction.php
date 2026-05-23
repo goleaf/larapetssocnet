@@ -2,12 +2,11 @@
 
 namespace App\Actions\Auth;
 
-use App\Mail\Auth\PasswordResetLinkMail;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\AuthMailDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -20,7 +19,10 @@ class RequestPasswordResetLinkAction
 
     private const int DECAY_SECONDS = 3600;
 
-    public function __construct(private readonly AuthAuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuthAuditLogger $auditLogger,
+        private readonly AuthMailDispatcher $mailDispatcher,
+    ) {}
 
     public function handle(string $email, Request $request, string $source = 'password_reset_request'): string
     {
@@ -45,6 +47,8 @@ class RequestPasswordResetLinkAction
             ->where('email', $email)
             ->first();
 
+        $mailQueued = false;
+
         if ($user instanceof User) {
             $token = Password::broker()->createToken($user);
 
@@ -54,15 +58,16 @@ class RequestPasswordResetLinkAction
                     'token_hash' => hash('sha256', $token),
                 ]);
 
-            Mail::to($user->email)->queue(new PasswordResetLinkMail(
+            $mailQueued = $this->mailDispatcher->queuePasswordResetLink(
                 user: $user,
                 resetUrl: route('password.reset', ['token' => $token]),
-            ));
+            );
         }
 
         $this->auditLogger->record($user, 'password_reset_requested', $request, [
             'identifier_hash' => hash('sha256', $email),
             'matched_user' => $user instanceof User,
+            'mail_queued' => $mailQueued,
             'rate_limited' => false,
             'source' => $source,
         ]);

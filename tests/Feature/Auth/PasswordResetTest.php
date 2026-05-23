@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 uses(RefreshDatabase::class);
 
@@ -49,6 +50,32 @@ it('queues a password reset mailable for existing emails and stores a determinis
     $tokenRecord = DB::table('password_reset_tokens')->where('email', $user->email)->first();
 
     expect($tokenRecord?->token_hash)->toBeString()->toHaveLength(64);
+});
+
+it('keeps password reset requests generic when mail delivery fails', function (): void {
+    Mail::shouldReceive('to')
+        ->once()
+        ->andThrow(new TransportException('SMTP auth failed'));
+
+    $user = User::factory()->create([
+        'email' => 'reset-mail-failure@example.com',
+    ]);
+
+    Livewire::test('pages.auth.forgot-password')
+        ->set('resetEmail', 'RESET-MAIL-FAILURE@EXAMPLE.COM')
+        ->call('sendPasswordResetLink')
+        ->assertSet('resetEmail', 'reset-mail-failure@example.com')
+        ->assertSet('resetStatusMessage', RequestPasswordResetLinkAction::RESPONSE_MESSAGE)
+        ->assertDispatched('password-reset-link-sent');
+
+    $tokenRecord = DB::table('password_reset_tokens')->where('email', $user->email)->first();
+
+    expect($tokenRecord?->token_hash)->toBeString()->toHaveLength(64);
+
+    $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->getKey(),
+        'event_type' => 'password_reset_requested',
+    ]);
 });
 
 it('uses the same password reset response for missing emails without sending mail', function (): void {

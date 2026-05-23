@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\AuthMailDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
 class EmailVerificationNotificationController extends Controller
 {
-    public function store(Request $request, AuthAuditLogger $auditLogger): RedirectResponse
+    public function store(Request $request, AuthAuditLogger $auditLogger, AuthMailDispatcher $mailDispatcher): RedirectResponse
     {
         $user = $request->user();
 
@@ -28,7 +29,11 @@ class EmailVerificationNotificationController extends Controller
         }
 
         RateLimiter::hit($key, 3600);
-        $user->sendEmailVerificationNotification();
+
+        if (! $mailDispatcher->queueVerificationEmail($user)) {
+            return back()->with('status', 'verification-link-failed');
+        }
+
         $auditLogger->record($user, 'verification_email_resent', $request);
 
         return back()->with('status', 'verification-link-sent');

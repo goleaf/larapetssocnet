@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 uses(RefreshDatabase::class);
 
@@ -46,6 +47,26 @@ it('queues a branded verification mailable when the pending page resends the ema
     });
 
     $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->getKey(),
+        'event_type' => 'verification_email_resent',
+    ]);
+});
+
+it('shows a resend failure message when mail delivery fails', function (): void {
+    Mail::shouldReceive('to')
+        ->once()
+        ->andThrow(new TransportException('SMTP auth failed'));
+
+    $user = User::factory()->unverified()->create();
+
+    RateLimiter::clear('verification-email-resend:user:'.$user->getKey());
+
+    Livewire::actingAs($user)
+        ->test('pages.auth.verify-email')
+        ->call('resendVerificationEmail')
+        ->assertSet('errorMessage', 'We could not send that email right now. Please try again later.');
+
+    $this->assertDatabaseMissing('auth_audit_logs', [
         'user_id' => $user->getKey(),
         'event_type' => 'verification_email_resent',
     ]);

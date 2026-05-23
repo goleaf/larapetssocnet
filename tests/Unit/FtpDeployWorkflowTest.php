@@ -11,6 +11,8 @@ it('deploys with one ftp archive instead of mirror sync state', function (): voi
         ->toContain('composer install --optimize-autoloader --no-interaction --prefer-dist')
         ->toContain('Restore production PHP dependencies')
         ->toContain('composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist')
+        ->toContain("MAIL_MAILER: \${{ vars.MAIL_MAILER || 'sendmail' }}")
+        ->toContain('if [ "${MAIL_MAILER}" = "smtp" ]; then')
         ->toContain('scripts/deploy-ftp-archive.sh')
         ->toContain('uses: actions/setup-node@v6')
         ->not->toContain('uses: actions/setup-node@v4')

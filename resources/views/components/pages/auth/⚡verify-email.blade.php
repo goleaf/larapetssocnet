@@ -2,6 +2,7 @@
 
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\AuthMailDispatcher;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -25,7 +26,7 @@ class extends Component
         }
     }
 
-    public function resendVerificationEmail(AuthAuditLogger $auditLogger): void
+    public function resendVerificationEmail(AuthAuditLogger $auditLogger, AuthMailDispatcher $mailDispatcher): void
     {
         $user = $this->currentUser();
 
@@ -47,7 +48,13 @@ class extends Component
         }
 
         RateLimiter::hit($key, 3600);
-        $user->sendEmailVerificationNotification();
+
+        if (! $mailDispatcher->queueVerificationEmail($user)) {
+            $this->errorMessage = 'We could not send that email right now. Please try again later.';
+
+            return;
+        }
+
         $auditLogger->record($user, 'verification_email_resent', request());
 
         $this->statusMessage = 'Verification email sent — check your inbox and spam folder.';
@@ -141,6 +148,10 @@ class extends Component
  @elseif (session('status') === 'verification-link-rate-limited')
  <x-ui.alert type="error" class="w-full text-left">
  You have requested too many verification emails. Please wait before trying again.
+ </x-ui.alert>
+ @elseif (session('status') === 'verification-link-failed')
+ <x-ui.alert type="error" class="w-full text-left">
+ We could not send that email right now. Please try again later.
  </x-ui.alert>
  @elseif (session('status') === 'account-reactivated')
  <x-ui.alert type="success" class="w-full text-left">

@@ -2,10 +2,10 @@
 
 namespace App\Actions\Auth;
 
-use App\Mail\Auth\PasswordChangedSecurityAlertMail;
 use App\Models\Identity\User;
 use App\Models\Security\AccountSecurityAction;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\AuthMailDispatcher;
 use App\Services\Auth\DeviceSessionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\PasswordReset;
@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -31,6 +30,7 @@ class ResetPasswordAction
     public function __construct(
         private readonly AuthAuditLogger $auditLogger,
         private readonly DeviceSessionService $sessions,
+        private readonly AuthMailDispatcher $mailDispatcher,
     ) {}
 
     public function findTokenRecord(string $token): ?stdClass
@@ -96,11 +96,7 @@ class ResetPasswordAction
                 'security_action_id' => $securityAction->getKey(),
             ]);
 
-            Mail::to($user->email)->queue(new PasswordChangedSecurityAlertMail(
-                user: $user,
-                emergencyUrl: $emergencyUrl,
-                changedAt: $changedAt,
-            ));
+            $this->mailDispatcher->queuePasswordChangedSecurityAlert($user, $emergencyUrl, $changedAt);
 
             $updatedUser = $user;
         });

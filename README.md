@@ -117,6 +117,6 @@ The repository includes an FTP deployment workflow for shared hosting:
 - `scripts/prepare-ftp-deploy.sh`
 - `scripts/deploy-ftp-archive.sh`
 
-Required GitHub secrets are `APP_KEY`, `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD`, and `MAIL_PASSWORD`. Runtime deployment values such as `APP_URL`, `REMOTE_BASE`, `FTP_SERVER_DIR`, FTP protocol settings, and mail settings can be configured as GitHub Actions variables.
+Required GitHub secrets are `APP_KEY`, `FTP_HOST`, `FTP_USERNAME`, and `FTP_PASSWORD`. Runtime deployment values such as `APP_URL`, `REMOTE_BASE`, `FTP_SERVER_DIR`, FTP protocol settings, and mail settings can be configured as GitHub Actions variables. Shared-hosting deploys default `MAIL_MAILER` to `sendmail`; set `MAIL_MAILER=smtp` and provide the `MAIL_PASSWORD` secret only when the production SMTP credentials are known-good.
 
 The deployment package keeps Laravel application code under `laravel/`, publishes the shared-hosting entry point and root assets at the FTP target, uploads one ZIP archive over FTP, and triggers a temporary token-protected PHP deployer over HTTPS. The deployer removes stale remote application files before extracting the archive, while normal deploys preserve remote SQLite/runtime data unless the manual `include_sqlite` workflow input is enabled for first installation.

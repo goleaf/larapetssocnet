@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -79,6 +80,42 @@ class RegistrationTest extends TestCase
                 && $mail->user->is($user)
                 && str_contains($mail->verificationUrl, 'verify-email');
         });
+    }
+
+    public function test_registration_still_creates_account_when_verification_email_delivery_fails(): void
+    {
+        Mail::shouldReceive('to')
+            ->once()
+            ->andThrow(new TransportException('SMTP auth failed'));
+
+        $birthDate = now()->subYears(20);
+
+        Livewire::test('pages.auth.register')
+            ->set('name', ' Mail Failure ')
+            ->set('username', 'mail-failure')
+            ->set('email', 'mail.failure@gmail.com')
+            ->set('password', 'PetSocial2026!')
+            ->set('password_confirmation', 'PetSocial2026!')
+            ->set('birth_day', (string) $birthDate->day)
+            ->set('birth_month', (string) $birthDate->month)
+            ->set('birth_year', (string) $birthDate->year)
+            ->set('terms', true)
+            ->call('register')
+            ->assertHasNoErrors()
+            ->assertDispatched('registration-created');
+
+        $user = User::query()->where('email', 'mail.failure@gmail.com')->firstOrFail();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseHas('users', [
+            'email' => 'mail.failure@gmail.com',
+            'username' => 'mail-failure',
+            'email_verified_at' => null,
+        ]);
+        $this->assertDatabaseMissing('auth_audit_logs', [
+            'user_id' => $user->getKey(),
+            'event_type' => 'verification_email_sent',
+        ]);
     }
 
     public function test_name_generates_hyphenated_username_suggestion_until_username_is_manually_edited(): void

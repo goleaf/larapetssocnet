@@ -5,7 +5,6 @@ namespace App\Models\Identity;
 use App\Enums\AccountStatus;
 use App\Enums\ProfileTheme;
 use App\Enums\ProfileVisibility;
-use App\Mail\Auth\VerifyEmailAddressMail;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
 use App\Models\Activities\EventAttendee;
@@ -32,6 +31,7 @@ use App\Models\Pets\PhotoGallery;
 use App\Models\Social\Block;
 use App\Models\Social\Follow;
 use App\Notifications\FollowRequestApproved;
+use App\Services\Auth\AuthMailDispatcher;
 use App\Services\BlockService;
 use App\Services\FollowService;
 use App\Services\FollowSuggestionService;
@@ -64,9 +64,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -459,17 +457,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function sendEmailVerificationNotification(): void
     {
-        Mail::to($this)->queue(new VerifyEmailAddressMail(
-            user: $this,
-            verificationUrl: URL::temporarySignedRoute(
-                'verification.verify',
-                now()->addMinutes(60),
-                [
-                    'id' => $this->getKey(),
-                    'hash' => sha1($this->getEmailForVerification()),
-                ],
-            ),
-        ));
+        app(AuthMailDispatcher::class)->queueVerificationEmail($this);
     }
 
     public function hasPendingDeletion(): bool

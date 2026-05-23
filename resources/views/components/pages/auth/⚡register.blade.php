@@ -2,10 +2,10 @@
 
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\AuthMailDispatcher;
 use App\Support\Auth\PasswordPolicy;
 use App\Support\Usernames\UsernameRules;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -149,7 +149,7 @@ class extends Component
         $this->validateBirthDateField();
     }
 
-    public function register(AuthAuditLogger $auditLogger): void
+    public function register(AuthAuditLogger $auditLogger, AuthMailDispatcher $mailDispatcher): void
     {
         if (trim($this->middleName) !== '') {
             $this->redirectRoute('verification.notice', navigate: false);
@@ -219,8 +219,9 @@ class extends Component
             ]);
         }
 
-        event(new Registered($user));
-        $auditLogger->record($user, 'verification_email_sent', request());
+        if ($mailDispatcher->queueVerificationEmail($user)) {
+            $auditLogger->record($user, 'verification_email_sent', request());
+        }
 
         Auth::login($user);
         session()->regenerate();

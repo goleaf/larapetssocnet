@@ -2,10 +2,10 @@
 
 namespace App\Jobs\Auth;
 
-use App\Mail\Auth\LoginAnomalySecurityAlertMail;
 use App\Models\Identity\User;
 use App\Models\Security\AuthAuditLog;
 use App\Models\Security\LoginSecurityAlert;
+use App\Services\Auth\AuthMailDispatcher;
 use App\Services\Auth\GeoIpLookupService;
 use App\Services\Auth\UserAgentDetailsService;
 use Carbon\CarbonImmutable;
@@ -13,7 +13,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -101,12 +100,7 @@ class DetectLoginAnomaly implements ShouldQueue
             'token' => $plainToken,
         ]);
 
-        Mail::to($user->email)->queue(new LoginAnomalySecurityAlertMail(
-            user: $user,
-            alert: $alert,
-            dismissUrl: $dismissUrl,
-            secureUrl: $secureUrl,
-        ));
+        app(AuthMailDispatcher::class)->queueLoginAnomalySecurityAlert($user, $alert, $dismissUrl, $secureUrl);
     }
 
     private function countrySeenRecently(User $user, string $countryCode, string $country, CarbonImmutable $loginAt): bool

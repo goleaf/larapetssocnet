@@ -27,7 +27,7 @@ jobs:
       APP_URL: ${{ vars.APP_URL || 'https://petsocial.prus.dev' }}
       REMOTE_BASE: ${{ vars.REMOTE_BASE || '/home/anjdiiaev/domains/prus.dev/public_html/petsocial' }}
       INCLUDE_SQLITE: ${{ github.event_name == 'workflow_dispatch' && inputs.include_sqlite && 'true' || 'false' }}
-      MAIL_MAILER: ${{ vars.MAIL_MAILER || 'smtp' }}
+      MAIL_MAILER: ${{ vars.MAIL_MAILER || 'sendmail' }}
       MAIL_SCHEME: ${{ vars.MAIL_SCHEME || 'null' }}
       MAIL_HOST: ${{ vars.MAIL_HOST || 'obojus.serveriai.lt' }}
       MAIL_PORT: ${{ vars.MAIL_PORT || '465' }}
@@ -67,7 +67,9 @@ jobs:
           test -n "${FTP_HOST_SECRET}" || { echo "Missing FTP_HOST secret"; exit 2; }
           test -n "${FTP_USERNAME_SECRET}" || { echo "Missing FTP_USERNAME secret"; exit 2; }
           test -n "${FTP_PASSWORD_SECRET}" || { echo "Missing FTP_PASSWORD secret"; exit 2; }
-          test -n "${MAIL_PASSWORD_SECRET}" || { echo "Missing MAIL_PASSWORD secret"; exit 2; }
+          if [ "${MAIL_MAILER}" = "smtp" ]; then
+            test -n "${MAIL_PASSWORD_SECRET}" || { echo "Missing MAIL_PASSWORD secret"; exit 2; }
+          fi
 
       - name: Install PHP dependencies
         run: |
