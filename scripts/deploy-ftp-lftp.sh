@@ -115,6 +115,8 @@ trap 'rm -f "$commands_file"' EXIT
     if [[ "$FTP_PROTOCOL" == "ftps" ]]; then
         echo "set ftp:ssl-force yes"
         echo "set ftp:ssl-protect-data yes"
+    else
+        echo "set ftp:ssl-allow no"
     fi
 
     echo "open --user $(lftp_quote "$FTP_USERNAME") --env-password -p $(lftp_quote "$FTP_PORT") $(lftp_quote "${FTP_PROTOCOL}://${FTP_HOST}")"
