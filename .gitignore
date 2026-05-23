@@ -17,6 +17,8 @@
 /build
 /hot
 /storage/*.key
+/storage/mailpit.db*
+/storage/mailpit.pid
 /storage/pail
 /vendor
 Homestead.json

@@ -13,6 +13,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Updated local authentication foundation defaults to use database sessions, database queues, and Mailpit SMTP instead of file sessions, sync queues, or log-only mail.
 - Updated protected app routes with a two-factor challenge gate, added password-reset/password-change database session invalidation, and made reset-link requests return the same user-facing response for existing and missing emails.
 - Updated Livewire/Alpine bootstrapping to use Livewire 4's ESM bundle once through `resources/js/app.js`, removing duplicate Alpine runtime warnings while preserving existing Alpine components.
 - Updated failed login handling to increment/reset persisted counters and write an indexed hashed identifier on auth audit rows for IP-plus-credential lockout lookups without storing raw email addresses.
