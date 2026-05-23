@@ -44,3 +44,14 @@ it('uploads a single archive and runs a token protected server cleanup', functio
         ->toContain('storage')
         ->toContain('deploy_is_sqlite_database');
 });
+
+it('checks the production login smoke with livewire csrf handling', function (): void {
+    $workflow = (string) file_get_contents(base_path('.github/workflows/production-smoke.yml'));
+
+    expect($workflow)
+        ->toContain('csrf-token')
+        ->toContain('--header "X-CSRF-TOKEN: $csrf"')
+        ->toContain("--data-urlencode 'credential=missing-login-probe@example.invalid'")
+        ->toContain('sudo apt-get install --yes --no-install-recommends lftp')
+        ->not->toContain('- name: Install FTP client');
+});
