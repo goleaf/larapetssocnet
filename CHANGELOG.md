@@ -215,6 +215,7 @@
 - Fixed pet health log ownership handling so non-owners receive `404` on read-only views while mutating actions remain forbidden.
 
 ### Tests
+- Added regression coverage for unpinning a profile post from the owner three-dot menu so the pinned highlight disappears and the post remains once in chronological feed order.
 - Verified passing suites:
   - `php artisan test --compact tests/Feature/ProfileLivewireRouteTest.php`
   - `php artisan test --compact tests/Feature/ProfilePageDesignTest.php`

@@ -758,6 +758,72 @@ test('profile owner can access pin actions from the post card menu', function ()
         ->assertDontSee('Unpin from profile');
 });
 
+test('profile owner can unpin from the post card menu and keep the post in chronological feed', function (): void {
+    $owner = User::factory()->create();
+    $profileUrl = route('profile.show', ['user' => $owner, 'tab' => 'posts']);
+
+    $newerRegular = Post::factory()->for($owner)->create([
+        'body' => 'newer regular post after unpin',
+        'body_html' => '<p>newer regular post after unpin</p>',
+        'is_pinned' => false,
+        'created_at' => now(),
+    ]);
+    $pinned = Post::factory()->for($owner)->create([
+        'body' => 'formerly pinned chronological post',
+        'body_html' => '<p>formerly pinned chronological post</p>',
+        'is_pinned' => true,
+        'pinned_at' => now(),
+        'created_at' => now()->subDay(),
+    ]);
+    $olderRegular = Post::factory()->for($owner)->create([
+        'body' => 'older regular post after unpin',
+        'body_html' => '<p>older regular post after unpin</p>',
+        'is_pinned' => false,
+        'created_at' => now()->subDays(2),
+    ]);
+
+    $this->actingAs($owner)
+        ->get($profileUrl)
+        ->assertOk()
+        ->assertSee('data-ui="profile-pinned-post-section"', false)
+        ->assertSee('data-ui="post-card-menu-unpin"', false)
+        ->assertSee('Unpin from profile');
+
+    $this->actingAs($owner)
+        ->from($profileUrl)
+        ->delete(route('posts.unpin', ['post' => $pinned]))
+        ->assertRedirect($profileUrl)
+        ->assertSessionHas('success', 'Post unpinned successfully.');
+
+    $pinned->refresh();
+
+    expect($pinned->is_pinned)->toBeFalse();
+    expect($pinned->pinned_at)->toBeNull();
+
+    $response = $this->actingAs($owner)->get($profileUrl);
+
+    $response
+        ->assertOk()
+        ->assertDontSee('data-ui="profile-pinned-post-section"', false)
+        ->assertDontSee('data-ui="post-pinned-banner"', false)
+        ->assertDontSee('data-ui="post-card-menu-unpin"', false)
+        ->assertDontSee('Unpin from profile')
+        ->assertSee('data-ui="post-card-menu-pin"', false)
+        ->assertSee('Pin to profile');
+
+    $html = $response->getContent();
+    $newerPosition = strpos($html, $newerRegular->body);
+    $unpinnedPosition = strpos($html, $pinned->body);
+    $olderPosition = strpos($html, $olderRegular->body);
+
+    expect(substr_count($html, $pinned->body))->toBe(1);
+    expect($newerPosition)->toBeInt();
+    expect($unpinnedPosition)->toBeInt();
+    expect($olderPosition)->toBeInt();
+    expect($newerPosition)->toBeLessThan($unpinnedPosition);
+    expect($unpinnedPosition)->toBeLessThan($olderPosition);
+});
+
 test('profile posts tab shows pinned post highlight and keeps chronological feed', function (): void {
     $user = User::factory()->create();
     $olderRegular = Post::factory()->for($user)->create([
