@@ -90,12 +90,7 @@
  </button>
  @endif
 
- <form method="POST" action="{{ route('users.report', ['user'=> $user]) }}">
- @csrf
- <input type="hidden" name="reason" value="other">
- <input type="hidden" name="details" value="Reported from profile actions dropdown.">
- <button type="submit" data-ui="profile-actions-menu-report" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem">Report</button>
- </form>
+ <button type="button" data-ui="profile-actions-menu-report" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="open = false; window.toggleModal(@js('profile-report-modal-'.$user->getKey()))">Report profile</button>
 
  <button type="button" data-ui="profile-actions-menu-copy" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="copyProfileUrl()">
  <span x-text="copied ? 'Copied Profile URL' : 'Copy Profile URL'">Copy Profile URL</span>

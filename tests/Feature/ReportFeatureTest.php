@@ -72,7 +72,7 @@ class ReportFeatureTest extends TestCase
 
         $this->actingAs($reporter)
             ->post(route('users.report', $target), [
-                'reason' => 'other',
+                'reason' => Report::PROFILE_REASON_FAKE_OR_MISLEADING,
                 'details' => 'Inappropriate behavior',
             ])
             ->assertRedirect();
@@ -81,8 +81,25 @@ class ReportFeatureTest extends TestCase
             'reporter_user_id' => $reporter->id,
             'reportable_type' => (new User)->getMorphClass(),
             'reportable_id' => $target->id,
-            'reason' => 'other',
+            'reason' => Report::PROFILE_REASON_FAKE_OR_MISLEADING,
         ]);
+    }
+
+    public function test_profile_report_reasons_are_not_valid_for_post_reports(): void
+    {
+        $reporter = User::factory()->create();
+        $author = User::factory()->create();
+        $post = Post::factory()->for($author)->create([
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+
+        $this->actingAs($reporter)
+            ->post(route('posts.report', $post), [
+                'reason' => Report::PROFILE_REASON_SPAM_ACCOUNT,
+            ])
+            ->assertSessionHasErrors('reason');
+
+        $this->assertSame(0, Report::query()->count());
     }
 
     public function test_user_cannot_report_own_post(): void
@@ -108,10 +125,9 @@ class ReportFeatureTest extends TestCase
         $this->actingAs($user)
             ->from(route('profile.show', ['user' => $user]))
             ->post(route('users.report', $user), [
-                'reason' => 'other',
+                'reason' => Report::PROFILE_REASON_FAKE_OR_MISLEADING,
             ])
-            ->assertRedirect(route('profile.show', ['user' => $user]))
-            ->assertSessionHasErrors('report');
+            ->assertForbidden();
 
         $this->assertSame(0, Report::query()->count());
     }

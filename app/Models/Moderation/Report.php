@@ -52,6 +52,16 @@ class Report extends Model
 
     public const REASON_ABUSE = 'abuse';
 
+    public const PROFILE_REASON_IMPERSONATION = 'profile_impersonation';
+
+    public const PROFILE_REASON_FAKE_OR_MISLEADING = 'profile_fake_or_misleading';
+
+    public const PROFILE_REASON_INAPPROPRIATE_CONTENT = 'profile_inappropriate_content';
+
+    public const PROFILE_REASON_SPAM_ACCOUNT = 'profile_spam_account';
+
+    public const PROFILE_REASON_HARMFUL_CONTENT = 'profile_harmful_content';
+
     /**
      * @var list<string>
      */
@@ -65,6 +75,36 @@ class Report extends Model
         self::REASON_OTHER,
         self::REASON_ABUSE,
     ];
+
+    /**
+     * @var list<string>
+     */
+    public const PROFILE_REASONS = [
+        self::PROFILE_REASON_IMPERSONATION,
+        self::PROFILE_REASON_FAKE_OR_MISLEADING,
+        self::PROFILE_REASON_INAPPROPRIATE_CONTENT,
+        self::PROFILE_REASON_SPAM_ACCOUNT,
+        self::PROFILE_REASON_HARMFUL_CONTENT,
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function profileReasonOptions(): array
+    {
+        return [
+            self::PROFILE_REASON_IMPERSONATION => 'Impersonating another person or pet',
+            self::PROFILE_REASON_FAKE_OR_MISLEADING => 'Fake or misleading profile',
+            self::PROFILE_REASON_INAPPROPRIATE_CONTENT => 'Inappropriate profile content',
+            self::PROFILE_REASON_SPAM_ACCOUNT => 'Spam account',
+            self::PROFILE_REASON_HARMFUL_CONTENT => 'Harmful or dangerous content',
+        ];
+    }
+
+    public static function profileReasonLabel(string $reason): string
+    {
+        return self::profileReasonOptions()[$reason] ?? str($reason)->replace('_', ' ')->title()->toString();
+    }
 
     protected function casts(): array
     {

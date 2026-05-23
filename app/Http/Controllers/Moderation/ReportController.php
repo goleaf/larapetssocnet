@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Moderation;
 use App\Actions\Engagement\CreateReportAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Moderation\StoreGenericReportRequest;
+use App\Http\Requests\Moderation\StoreProfileReportRequest;
 use App\Http\Requests\Moderation\StoreReportRequest;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
@@ -96,7 +97,7 @@ class ReportController extends Controller
         return back()->with('status', 'Comment reported. Thank you.');
     }
 
-    public function reportUser(StoreReportRequest $request, User $user): RedirectResponse
+    public function reportUser(StoreProfileReportRequest $request, User $user): RedirectResponse
     {
         $viewer = $request->user();
 

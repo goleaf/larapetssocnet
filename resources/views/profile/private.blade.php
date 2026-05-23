@@ -128,5 +128,14 @@
  @endauth
  </x-ui.empty-state>
  </x-ui.card>
+
+ @auth
+ @if ((int) auth()->id() !== (int) $user->getKey())
+ <livewire:profile.report-modal
+ :profile-user-id="$user->getKey()"
+ wire:key="private-profile-report-modal-{{ $user->getKey() }}"
+ />
+ @endif
+ @endauth
  </div>
 </x-app-layout>

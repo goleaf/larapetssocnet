@@ -620,6 +620,13 @@ wire:key="profile-follow-list-modal-following-{{ $profileUser->getKey() }}"
 />
 @endif
 
+@if ($canInteract)
+<livewire:profile.report-modal
+:profile-user-id="$profileUser->getKey()"
+wire:key="profile-report-modal-{{ $profileUser->getKey() }}"
+/>
+@endif
+
  @if ($isOwner && ($showEditProfileModal ?? false))
  <livewire:profile.edit-modal
  :user-id="$profileUser->getKey()"

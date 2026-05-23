@@ -16,10 +16,15 @@ class StoreGenericReportRequest extends FormRequest
 
     public function rules(): array
     {
+        $reportReasons = array_values(array_unique([
+            ...Report::REASONS,
+            ...Report::PROFILE_REASONS,
+        ]));
+
         return [
             'reportable_type' => ['required', 'string', 'in:post,comment,user'],
             'reportable_id' => ['required', 'integer', 'min:1'],
-            'reason' => ['required', 'string', 'in:'.implode(',', Report::REASONS)],
+            'reason' => ['required', 'string', 'in:'.implode(',', $reportReasons)],
             'details' => ['nullable', 'string', 'max:2000'],
         ];
     }

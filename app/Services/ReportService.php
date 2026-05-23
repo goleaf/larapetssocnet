@@ -6,7 +6,10 @@ use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
+use App\Notifications\ProfileReportSubmitted;
 use App\Notifications\ReportThresholdReached;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -20,7 +23,7 @@ class ReportService
     {
         $normalizedReason = strtolower(trim($reason));
 
-        if (! in_array($normalizedReason, Report::REASONS, true)) {
+        if (! in_array($normalizedReason, $this->allowedReasonsFor($reportable), true)) {
             throw ValidationException::withMessages(['reason' => 'Invalid report reason.']);
         }
 
@@ -59,10 +62,22 @@ class ReportService
                 'reviewed_at' => null,
             ]);
 
+            if ($reportable instanceof User) {
+                $this->notifyModerationTeamOfProfileReport($report, $reporter, $reportable);
+            }
+
             $this->notifyAdminsIfThresholdReached($reportable);
 
             return $report;
         });
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedReasonsFor(Model $reportable): array
+    {
+        return $reportable instanceof User ? Report::PROFILE_REASONS : Report::REASONS;
     }
 
     private function isSelfReport(User $reporter, Model $reportable): bool
@@ -97,5 +112,35 @@ class ReportService
         }
 
         Notification::send($admins, new ReportThresholdReached($reportable, $pendingCount));
+    }
+
+    private function notifyModerationTeamOfProfileReport(Report $report, User $reporter, User $reportedUser): void
+    {
+        $moderators = $this->moderationTeam();
+
+        if ($moderators->isEmpty()) {
+            return;
+        }
+
+        Notification::send($moderators, new ProfileReportSubmitted($report, $reporter, $reportedUser));
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function moderationTeam(): Collection
+    {
+        return User::query()
+            ->select(['users.id', 'users.name', 'users.email', 'users.role'])
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereIn('users.role', ['admin', 'moderator'])
+                    ->orWhereHas('roles', function (Builder $roleQuery): void {
+                        $roleQuery->whereIn('name', ['admin', 'moderator']);
+                    });
+            })
+            ->get()
+            ->unique('id')
+            ->values();
     }
 }
