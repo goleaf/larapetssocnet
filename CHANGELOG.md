@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated the profile edit Profile Media section with distinct avatar and cover upload panels that sit side by side on desktop, stack on mobile, and show current or selected-image previews.
 - Updated the profile edit Basic Information section with live display-name and bio counters, cooldown-aware username availability checks, server-side location autocomplete, coordinate persistence, and registration-matched date-of-birth selects.
 - Updated the nested profile edit modal into a scrollable sectioned Livewire form with Basic Information, Profile Media, Social Links, and Privacy sections plus smooth first-error scrolling.
 - Updated the profile About tab to start with the complete untruncated bio, "Member since" metadata, privacy-safe location, website, and public age while never exposing the raw birth date.

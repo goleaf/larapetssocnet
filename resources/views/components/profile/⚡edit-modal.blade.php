@@ -594,6 +594,27 @@ new class extends Component
  $user = $this->profileUser();
  $displayName = $user->display_name ?: $user->name;
  $coverUrl = $user->coverImageUrl();
+ $avatarTemporaryUrl = null;
+ $coverTemporaryUrl = null;
+
+ if (is_object($avatar) && method_exists($avatar, 'temporaryUrl')) {
+ try {
+ $avatarTemporaryUrl = $avatar->temporaryUrl();
+ } catch (\Throwable) {
+ $avatarTemporaryUrl = null;
+ }
+ }
+
+ if (is_object($cover) && method_exists($cover, 'temporaryUrl')) {
+ try {
+ $coverTemporaryUrl = $cover->temporaryUrl();
+ } catch (\Throwable) {
+ $coverTemporaryUrl = null;
+ }
+ }
+
+ $avatarPreviewUrl = $avatarTemporaryUrl ?: $user->avatar_url;
+ $coverPreviewUrl = $coverTemporaryUrl ?: $coverUrl;
  $currentYear = now()->year;
  $monthOptions = [
   1 => 'January',
@@ -900,12 +921,41 @@ new class extends Component
  <p class="mt-1 text-sm leading-6 text-fur">Update the avatar and cover image that frame your profile.</p>
  </div>
 
- <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <div id="profile_modal_avatar_field" class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4" data-ui="profile-modal-avatar-field">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-2" data-ui="profile-media-upload-grid">
+ <div id="profile_modal_avatar_field" class="flex min-w-0 flex-col gap-4 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4" data-ui="profile-avatar-upload-panel">
+ <div class="flex items-start justify-between gap-3">
+ <div class="min-w-0">
+ <h4 class="text-sm font-bold text-bark">Avatar</h4>
+ <p class="mt-1 text-xs leading-5 text-fur">Shown beside posts, comments, profile lists, and messages.</p>
+ </div>
+ <span class="ui-token shrink-0">Square</span>
+ </div>
+
+ <div class="flex items-center gap-4">
+ <div class="relative h-24 w-24 shrink-0 overflow-hidden rounded-pill border-4 border-warm-white bg-cream shadow-sm ring-1 ring-whisker/50" data-ui="profile-avatar-preview">
+ @if ($avatarPreviewUrl)
+ <img src="{{ $avatarPreviewUrl }}" alt="{{ $user->name }} avatar preview" class="h-full w-full object-cover">
+ @else
+ <div class="{{ $user->profile_default_avatar_color }} flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase" aria-label="{{ $user->name }} avatar initial" role="img">
+ {{ $user->profile_initial }}
+ </div>
+ @endif
+ <div wire:loading.flex wire:target="avatar" class="absolute inset-0 items-center justify-center bg-warm-white/75 text-xs font-semibold text-bark">
+ Previewing
+ </div>
+ </div>
+ <div class="min-w-0 text-xs leading-5 text-fur">
+ <p>Use a clear face or pet portrait. The crop is circular across the app.</p>
+ @if ($avatarTemporaryUrl)
+ <p class="mt-1 font-semibold text-success" role="status">New avatar selected.</p>
+ @endif
+ </div>
+ </div>
+
  <x-ui.file-upload
  id="profile_modal_avatar"
  name="avatar"
- label="Avatar"
+ label="Upload avatar"
  accept="image/jpeg,image/png,image/webp"
  maxSize="10MB"
  preview
@@ -913,20 +963,40 @@ new class extends Component
  :error="$errors->first('avatar')"
  wire:model="avatar"
  />
- <div class="flex items-center gap-3">
- <x-ui.avatar :src="$user->avatar_url" :name="$user->name" size="md"/>
- <span class="text-xs leading-5 text-fur">Shown beside your posts and in profile lists.</span>
- </div>
  @if ($user->avatar_url)
+ <div class="rounded-[var(--radius-soft)] border border-whisker/40 bg-cream/35 p-3">
  <x-ui.checkbox id="profile_modal_remove_avatar" name="remove_avatar" label="Remove current avatar" wire:model="remove_avatar"/>
+ </div>
  @endif
  </div>
 
- <div id="profile_modal_cover_field" class="space-y-3 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4" data-ui="profile-modal-cover-field">
+ <div id="profile_modal_cover_field" class="flex min-w-0 flex-col gap-4 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4" data-ui="profile-cover-upload-panel">
+ <div class="flex items-start justify-between gap-3">
+ <div class="min-w-0">
+ <h4 class="text-sm font-bold text-bark">Cover Photo</h4>
+ <p class="mt-1 text-xs leading-5 text-fur">This banner frames the top of your profile on desktop and mobile.</p>
+ </div>
+ <span class="ui-token shrink-0">Wide</span>
+ </div>
+
+ <div class="relative aspect-[16/7] w-full overflow-hidden rounded-[var(--radius-soft)] border border-whisker/50 bg-cream" data-ui="profile-cover-preview">
+ @if ($coverPreviewUrl)
+ <img src="{{ $coverPreviewUrl }}" alt="{{ $user->name }} cover photo preview" class="h-full w-full object-cover">
+ @else
+ <div class="{{ $user->profile_default_gradient }} h-full w-full"></div>
+ @endif
+ <div class="absolute inset-x-0 bottom-0 bg-bark/45 px-3 py-2 text-xs font-semibold text-warm-white">
+ {{ $coverTemporaryUrl ? 'New cover selected' : 'Current cover preview' }}
+ </div>
+ <div wire:loading.flex wire:target="cover" class="absolute inset-0 items-center justify-center bg-warm-white/75 text-xs font-semibold text-bark">
+ Previewing
+ </div>
+ </div>
+
  <x-ui.file-upload
  id="profile_modal_cover"
  name="cover"
- label="Cover Photo"
+ label="Upload cover photo"
  accept="image/jpeg,image/png,image/webp,image/gif"
  maxSize="5MB"
  preview
@@ -935,8 +1005,9 @@ new class extends Component
  wire:model="cover"
  />
  @if ($coverUrl)
- <img src="{{ $coverUrl }}" alt="{{ $user->name }} cover preview" class="h-20 w-full rounded-[var(--radius-soft)] object-cover">
+ <div class="rounded-[var(--radius-soft)] border border-whisker/40 bg-cream/35 p-3">
  <x-ui.checkbox id="profile_modal_remove_cover" name="remove_cover" label="Remove current cover photo" wire:model="remove_cover"/>
+ </div>
  @endif
  </div>
  </div>

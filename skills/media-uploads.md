@@ -26,6 +26,11 @@ Post image conversions:
 
 Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()` and filters with `Post::containingMedia()` so both legacy `post_media` rows and Spatie collections remain visible without PHP-side post filtering. Profile Photos treats `post_media` as the canonical thumbnail cursor because current post uploads write a `post_media` row beside each Spatie media item: load 30 image rows at a time through `Post::profilePhotoMediaPage()`, append only media IDs to Livewire state, and rehydrate through `Post::profilePhotoMediaByIds()` before rendering the square two-column mobile/tablet and three-column desktop grid. Opening a profile photo must keep using the same loaded, visibility-scoped photo collection for the Livewire lightbox so navigation never reveals hidden post media.
 
+## Profile Media
+The profile edit modal uses two distinct Livewire upload panels for owner media: avatar and cover photo. Keep them in one responsive grid that stacks on mobile and uses two columns from desktop widths, with separate previews, validation errors, and removal controls for each media collection.
+
+Avatar uploads should preview as a circular crop because the same image is rendered in profile headers, lists, comments, and messages. Cover uploads should preview in a wide banner frame and continue to reset the stored cover focal point to the default center position after a new file is saved.
+
 ## Pet Media
 Pet media uses public disk.
 
