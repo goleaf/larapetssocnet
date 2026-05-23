@@ -7,6 +7,7 @@
 - Fixed the FTP deploy mirror tuning to avoid a full remote pre-scan and default to four parallel transfers for shared-host stability.
 - Fixed the FTP deploy connection mode to disable opportunistic TLS when `FTP_PROTOCOL=ftp`.
 - Fixed the FTP deploy mirror to skip remote timestamp probes and transfer the clean package directly.
+- Fixed the FTP deploy path to upload one archive and run a token-protected server-side cleanup/extract step instead of mirroring every folder over FTP.
 - Kept pet profile and QR routes inside the authenticated application middleware stack.
 - Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.

@@ -53,8 +53,8 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Install FTP mirror client
-        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends lftp
+      - name: Install FTP archive client
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends lftp zip
 
       - name: Validate deployment secrets
         env:
@@ -87,7 +87,7 @@ jobs:
       - name: Prepare FTP package
         run: scripts/prepare-ftp-deploy.sh
 
-      - name: Deploy package with lftp mirror
+      - name: Deploy package with FTP archive
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -95,6 +95,5 @@ jobs:
           FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftp' }}
           FTP_PORT: ${{ vars.FTP_PORT || '21' }}
           FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || 'petsocial/' }}
-          FTP_PARALLEL: ${{ vars.FTP_PARALLEL || '4' }}
           FTP_SSL_VERIFY: ${{ vars.FTP_SSL_VERIFY || 'true' }}
-        run: scripts/deploy-ftp-lftp.sh
+        run: scripts/deploy-ftp-archive.sh
