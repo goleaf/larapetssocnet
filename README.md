@@ -5,7 +5,7 @@ PetSocial is a Laravel social network for pet profiles, feeds, groups, adoption 
 Application browsing pages are private by default. Guests can access authentication and system pages such as login, registration, password reset, email verification, and the banned notice; signed-in users must have an active, non-banned, non-suspended, non-deactivated account and verify their email before accessing Explore, search, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, and settings. Public username profile URLs are the controlled exception: they resolve only active profiles and render viewer-aware public or locked states without private sections, private counts, contact details, email search matches, or unavailable accounts. Public profile portfolio URLs at `/@username/portfolio` are also guest-accessible, but only show owner-curated posts that are published, public, and guest-visible. Pending-deletion and deactivated accounts are restricted to password-confirmed recovery screens.
 
 ## Stack
-
+ 
 - PHP 8.4
 - Laravel 13
 - SQLite by default for local and shared-hosting deployments
