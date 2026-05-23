@@ -7,6 +7,10 @@ it('deploys with one ftp archive instead of mirror sync state', function (): voi
 
     expect($workflow)
         ->toContain('sudo apt-get update && sudo apt-get install --yes --no-install-recommends lftp zip')
+        ->toContain('if [ "${INCLUDE_SQLITE}" = "true" ]; then')
+        ->toContain('composer install --optimize-autoloader --no-interaction --prefer-dist')
+        ->toContain('Restore production PHP dependencies')
+        ->toContain('composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist')
         ->toContain('scripts/deploy-ftp-archive.sh')
         ->toContain('uses: actions/setup-node@v6')
         ->not->toContain('uses: actions/setup-node@v4')
