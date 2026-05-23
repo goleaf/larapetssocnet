@@ -4,6 +4,7 @@
 
 ### Fixed
 - Fixed the FTP deploy mirror bootstrap so existing remote subdomain folders do not fail the deployment before upload.
+- Fixed the FTP deploy mirror tuning to avoid a full remote pre-scan and default to four parallel transfers for shared-host stability.
 - Kept pet profile and QR routes inside the authenticated application middleware stack.
 - Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.

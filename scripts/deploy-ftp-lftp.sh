@@ -9,7 +9,7 @@ FTP_USERNAME="${FTP_USERNAME:-}"
 FTP_PASSWORD="${FTP_PASSWORD:-}"
 FTP_PROTOCOL="${FTP_PROTOCOL:-ftp}"
 FTP_PORT="${FTP_PORT:-21}"
-FTP_PARALLEL="${FTP_PARALLEL:-8}"
+FTP_PARALLEL="${FTP_PARALLEL:-4}"
 FTP_SSL_VERIFY="${FTP_SSL_VERIFY:-true}"
 FTP_ALLOW_ROOT_DEPLOY="${FTP_ALLOW_ROOT_DEPLOY:-false}"
 INCLUDE_SQLITE="${INCLUDE_SQLITE:-false}"
@@ -120,7 +120,7 @@ trap 'rm -f "$commands_file"' EXIT
     echo "open --user $(lftp_quote "$FTP_USERNAME") --env-password -p $(lftp_quote "$FTP_PORT") $(lftp_quote "${FTP_PROTOCOL}://${FTP_HOST}")"
     echo "mkdir -f -p $(lftp_quote "$REMOTE_DIR")"
 
-    printf 'mirror --reverse --delete --delete-first --scan-all-first --no-perms --parallel=%s --verbose=1' "$FTP_PARALLEL"
+    printf 'mirror --reverse --delete --delete-first --no-perms --parallel=%s --verbose=1' "$FTP_PARALLEL"
 
     for pattern in "${exclude_globs[@]}"; do
         printf ' --exclude-glob %s' "$(lftp_quote "$pattern")"
