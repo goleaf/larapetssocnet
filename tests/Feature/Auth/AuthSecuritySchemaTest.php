@@ -35,6 +35,7 @@ it('keeps existing identity columns and adds missing auth security columns', fun
 
     $authAuditIndexes = collect(Schema::getIndexes('auth_audit_logs'))->keyBy('name');
     $sessionIndexes = collect(Schema::getIndexes('sessions'))->keyBy('name');
+    $loginAlertIndexes = collect(Schema::getIndexes('login_security_alerts'))->keyBy('name');
 
     expect(Schema::hasColumn('auth_audit_logs', 'additional_data'))->toBeTrue()
         ->and(Schema::hasColumn('auth_audit_logs', 'country'))->toBeTrue()
@@ -43,7 +44,12 @@ it('keeps existing identity columns and adds missing auth security columns', fun
         ->and($authAuditIndexes->has('auth_audit_logs_user_created_at_index'))->toBeTrue()
         ->and($authAuditIndexes->has('auth_audit_logs_created_at_index'))->toBeTrue()
         ->and($authAuditIndexes->has('auth_audit_logs_failure_lookup_index'))->toBeTrue()
-        ->and($sessionIndexes->has('sessions_user_id_last_activity_index'))->toBeTrue();
+        ->and($sessionIndexes->has('sessions_user_id_last_activity_index'))->toBeTrue()
+        ->and(Schema::hasTable('login_security_alerts'))->toBeTrue()
+        ->and(Schema::hasColumn('login_security_alerts', 'token_hash'))->toBeTrue()
+        ->and(Schema::hasColumn('login_security_alerts', 'secured_at'))->toBeTrue()
+        ->and($loginAlertIndexes->has('login_security_alerts_token_hash_unique'))->toBeTrue()
+        ->and($loginAlertIndexes->has('login_security_alerts_user_id_created_at_index'))->toBeTrue();
 });
 
 it('keeps authentication feature database changes in one focused migration', function (): void {

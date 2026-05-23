@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4988a34a6f8d14091e2ceaaf7c1ec117",
+    "content-hash": "acf18a9901e32d239cdc530cdceabfd7",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -2907,6 +2907,75 @@
             "time": "2026-04-11T18:38:28+00:00"
         },
         {
+            "name": "matomo/device-detector",
+            "version": "6.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/matomo-org/device-detector.git",
+                "reference": "e0fff2309dad83eb3cfb2564e524be715cfcf3cf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/matomo-org/device-detector/zipball/e0fff2309dad83eb3cfb2564e524be715cfcf3cf",
+                "reference": "e0fff2309dad83eb3cfb2564e524be715cfcf3cf",
+                "shasum": ""
+            },
+            "require": {
+                "mustangostang/spyc": "*",
+                "php": "^7.2|^8.0"
+            },
+            "replace": {
+                "piwik/device-detector": "self.version"
+            },
+            "require-dev": {
+                "matthiasmullie/scrapbook": "^1.4.7",
+                "mayflower/mo4-coding-standard": "^v9.0.0",
+                "phpstan/phpstan": "^1.10.44",
+                "phpunit/phpunit": "^8.5.2 || ^9 || ^10 || ^11 || ^12",
+                "psr/cache": "^1.0.1 || ^2.0 || ^3.0",
+                "psr/simple-cache": "^1.0.1 || ^2.0 || ^3.0",
+                "slevomat/coding-standard": "<8.16.0",
+                "symfony/yaml": "^5.1.7"
+            },
+            "suggest": {
+                "ext-yaml": "Necessary for using the Pecl YAML parser"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DeviceDetector\\": ""
+                },
+                "exclude-from-classmap": [
+                    "Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "The Matomo Team",
+                    "email": "hello@matomo.org",
+                    "homepage": "https://matomo.org/team/"
+                }
+            ],
+            "description": "The Universal Device Detection library, that parses User Agents and detects devices (desktop, tablet, mobile, tv, cars, console, etc.), clients (browsers, media players, mobile apps, feed readers, libraries, etc), operating systems, devices, brands and models.",
+            "homepage": "https://matomo.org",
+            "keywords": [
+                "devicedetection",
+                "parser",
+                "useragent"
+            ],
+            "support": {
+                "forum": "https://forum.matomo.org/",
+                "issues": "https://github.com/matomo-org/device-detector/issues",
+                "source": "https://github.com/matomo-org/matomo",
+                "wiki": "https://dev.matomo.org/"
+            },
+            "time": "2026-01-21T07:53:39+00:00"
+        },
+        {
             "name": "mews/purifier",
             "version": "3.4.4",
             "source": {
@@ -3156,6 +3225,60 @@
                 }
             ],
             "time": "2026-01-02T08:56:05+00:00"
+        },
+        {
+            "name": "mustangostang/spyc",
+            "version": "0.6.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mustangostang/spyc.git",
+                "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mustangostang/spyc/zipball/4627c838b16550b666d15aeae1e5289dd5b77da0",
+                "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "4.3.*@dev"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "0.5.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "Spyc.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "mustangostang",
+                    "email": "vlad.andersen@gmail.com"
+                }
+            ],
+            "description": "A simple YAML loader/dumper class for PHP",
+            "homepage": "https://github.com/mustangostang/spyc/",
+            "keywords": [
+                "spyc",
+                "yaml",
+                "yml"
+            ],
+            "support": {
+                "issues": "https://github.com/mustangostang/spyc/issues",
+                "source": "https://github.com/mustangostang/spyc/tree/0.6.3"
+            },
+            "time": "2019-09-10T13:16:29+00:00"
         },
         {
             "name": "nesbot/carbon",
@@ -5736,16 +5859,16 @@
         },
         {
             "name": "symfony/http-kernel",
-            "version": "v8.0.11",
+            "version": "v8.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-kernel.git",
-                "reference": "20d3680373f4b791903c09e74b45402b4aeda71c"
+                "reference": "c00291734c59c05c54c5a3abc2ab18e99b070157"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-kernel/zipball/20d3680373f4b791903c09e74b45402b4aeda71c",
-                "reference": "20d3680373f4b791903c09e74b45402b4aeda71c",
+                "url": "https://api.github.com/repos/symfony/http-kernel/zipball/c00291734c59c05c54c5a3abc2ab18e99b070157",
+                "reference": "c00291734c59c05c54c5a3abc2ab18e99b070157",
                 "shasum": ""
             },
             "require": {
@@ -5816,7 +5939,7 @@
             "description": "Provides a structured process for converting a Request into a Response",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/http-kernel/tree/v8.0.11"
+                "source": "https://github.com/symfony/http-kernel/tree/v8.0.12"
             },
             "funding": [
                 {
@@ -5836,20 +5959,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-05-13T18:07:14+00:00"
+            "time": "2026-05-20T09:47:36+00:00"
         },
         {
             "name": "symfony/mailer",
-            "version": "v8.0.8",
+            "version": "v8.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/mailer.git",
-                "reference": "ca5f6edaf8780ece814404b58a4482b22b509c56"
+                "reference": "5266d594e83593dff3492b5655ff6e8f38d67cfc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/mailer/zipball/ca5f6edaf8780ece814404b58a4482b22b509c56",
-                "reference": "ca5f6edaf8780ece814404b58a4482b22b509c56",
+                "url": "https://api.github.com/repos/symfony/mailer/zipball/5266d594e83593dff3492b5655ff6e8f38d67cfc",
+                "reference": "5266d594e83593dff3492b5655ff6e8f38d67cfc",
                 "shasum": ""
             },
             "require": {
@@ -5896,7 +6019,7 @@
             "description": "Helps sending emails",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/mailer/tree/v8.0.8"
+                "source": "https://github.com/symfony/mailer/tree/v8.0.12"
             },
             "funding": [
                 {
@@ -5916,20 +6039,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-30T15:14:47+00:00"
+            "time": "2026-05-20T07:22:03+00:00"
         },
         {
             "name": "symfony/mime",
-            "version": "v8.0.9",
+            "version": "v8.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/mime.git",
-                "reference": "a9fcb293650c054b62a5b406f4e92e7b711ea333"
+                "reference": "7d9a72bbf0a9cb169ed1cbbbbbf709a592207fc1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/mime/zipball/a9fcb293650c054b62a5b406f4e92e7b711ea333",
-                "reference": "a9fcb293650c054b62a5b406f4e92e7b711ea333",
+                "url": "https://api.github.com/repos/symfony/mime/zipball/7d9a72bbf0a9cb169ed1cbbbbbf709a592207fc1",
+                "reference": "7d9a72bbf0a9cb169ed1cbbbbbf709a592207fc1",
                 "shasum": ""
             },
             "require": {
@@ -5982,7 +6105,7 @@
                 "mime-type"
             ],
             "support": {
-                "source": "https://github.com/symfony/mime/tree/v8.0.9"
+                "source": "https://github.com/symfony/mime/tree/v8.0.12"
             },
             "funding": [
                 {
@@ -6002,7 +6125,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-29T15:02:55+00:00"
+            "time": "2026-05-20T07:22:03+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",
@@ -6900,16 +7023,16 @@
         },
         {
             "name": "symfony/routing",
-            "version": "v8.0.9",
+            "version": "v8.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/routing.git",
-                "reference": "75d1bd8e5da3424e4db2fc3ff0222cb4d0c73038"
+                "reference": "c7f22a665faa3e5212b8f042e0c5831a6b85492f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/routing/zipball/75d1bd8e5da3424e4db2fc3ff0222cb4d0c73038",
-                "reference": "75d1bd8e5da3424e4db2fc3ff0222cb4d0c73038",
+                "url": "https://api.github.com/repos/symfony/routing/zipball/c7f22a665faa3e5212b8f042e0c5831a6b85492f",
+                "reference": "c7f22a665faa3e5212b8f042e0c5831a6b85492f",
                 "shasum": ""
             },
             "require": {
@@ -6956,7 +7079,7 @@
                 "url"
             ],
             "support": {
-                "source": "https://github.com/symfony/routing/tree/v8.0.9"
+                "source": "https://github.com/symfony/routing/tree/v8.0.12"
             },
             "funding": [
                 {
@@ -6976,7 +7099,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-29T15:02:55+00:00"
+            "time": "2026-05-20T07:22:03+00:00"
         },
         {
             "name": "symfony/service-contracts",
@@ -11837,16 +11960,16 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v8.0.11",
+            "version": "v8.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "48046fbd5567bd1717f278eaa2cfc3131f489984"
+                "reference": "2a36f4b8405d41fa31799b06874dbd45c1b16c30"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/48046fbd5567bd1717f278eaa2cfc3131f489984",
-                "reference": "48046fbd5567bd1717f278eaa2cfc3131f489984",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/2a36f4b8405d41fa31799b06874dbd45c1b16c30",
+                "reference": "2a36f4b8405d41fa31799b06874dbd45c1b16c30",
                 "shasum": ""
             },
             "require": {
@@ -11888,7 +12011,7 @@
             "description": "Loads and dumps YAML files",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/yaml/tree/v8.0.11"
+                "source": "https://github.com/symfony/yaml/tree/v8.0.12"
             },
             "funding": [
                 {
@@ -11908,7 +12031,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-05-13T12:07:53+00:00"
+            "time": "2026-05-20T07:22:03+00:00"
         },
         {
             "name": "ta-tikoma/phpunit-architecture-test",

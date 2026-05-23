@@ -1,0 +1,56 @@
+[
+  {
+    "cidr": "127.0.0.0/8",
+    "country_code": "LOCAL",
+    "country": "Local network",
+    "city": "Localhost"
+  },
+  {
+    "cidr": "::1/128",
+    "country_code": "LOCAL",
+    "country": "Local network",
+    "city": "Localhost"
+  },
+  {
+    "cidr": "10.0.0.0/8",
+    "country_code": "PRIVATE",
+    "country": "Private network",
+    "city": null
+  },
+  {
+    "cidr": "172.16.0.0/12",
+    "country_code": "PRIVATE",
+    "country": "Private network",
+    "city": null
+  },
+  {
+    "cidr": "192.168.0.0/16",
+    "country_code": "PRIVATE",
+    "country": "Private network",
+    "city": null
+  },
+  {
+    "cidr": "fc00::/7",
+    "country_code": "PRIVATE",
+    "country": "Private network",
+    "city": null
+  },
+  {
+    "cidr": "203.0.113.0/24",
+    "country_code": "US",
+    "country": "United States",
+    "city": "Example City"
+  },
+  {
+    "cidr": "198.51.100.0/24",
+    "country_code": "CA",
+    "country": "Canada",
+    "city": "Example City"
+  },
+  {
+    "cidr": "192.0.2.0/24",
+    "country_code": "GB",
+    "country": "United Kingdom",
+    "city": "Example City"
+  }
+]

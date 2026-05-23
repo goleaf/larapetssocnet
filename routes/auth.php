@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\LoginSecurityAlertController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -58,6 +59,14 @@ Route::middleware('guest')->group(function (): void {
 Route::get('account/security-lock/{action}', PasswordSecurityLockController::class)
     ->middleware('signed')
     ->name('password.security-lock');
+
+Route::get('account/login-alert/{alert}/dismiss', [LoginSecurityAlertController::class, 'dismiss'])
+    ->middleware('signed')
+    ->name('login-security-alert.dismiss');
+
+Route::get('account/login-alert/{alert}/secure', [LoginSecurityAlertController::class, 'secure'])
+    ->middleware('signed')
+    ->name('login-security-alert.secure');
 
 Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['signed', 'throttle:6,1'])

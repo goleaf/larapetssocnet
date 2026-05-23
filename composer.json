@@ -12,6 +12,7 @@
         "laravel/tinker": "^3.0",
         "livewire/blaze": "^1.0",
         "livewire/livewire": "^4.2",
+        "matomo/device-detector": "^6.4",
         "mews/purifier": "^3.4",
         "mischasigtermans/laravel-toon": "^1.1",
         "robsontenorio/mary": "^2.8",

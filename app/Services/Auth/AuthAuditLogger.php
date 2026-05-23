@@ -37,11 +37,13 @@ class AuthAuditLogger
             }
 
             if (isset($columns['country'])) {
-                $payload['country'] = null;
+                $country = $metadata['country'] ?? null;
+                $payload['country'] = is_string($country) && $country !== '' ? $country : null;
             }
 
             if (isset($columns['city'])) {
-                $payload['city'] = null;
+                $city = $metadata['city'] ?? null;
+                $payload['city'] = is_string($city) && $city !== '' ? $city : null;
             }
 
             $encodedMetadata = $metadata === [] ? null : json_encode($metadata, JSON_THROW_ON_ERROR);

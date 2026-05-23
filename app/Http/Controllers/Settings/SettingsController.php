@@ -63,11 +63,9 @@ class SettingsController extends Controller
         return redirect()->route('settings.profile')->with('success', 'Profile updated successfully.');
     }
 
-    public function editPassword(Request $request, DeviceSessionService $sessions): View
+    public function editPassword(): View
     {
-        return view('settings.password', [
-            'sessions' => $sessions->activeSessions($request->user(), $request->session()->getId()),
-        ]);
+        return view('settings.password');
     }
 
     public function updatePassword(UpdatePasswordSettingsRequest $request, DeviceSessionService $sessions, AuthAuditLogger $auditLogger): RedirectResponse

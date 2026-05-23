@@ -3,8 +3,11 @@
 namespace App\Actions\Auth;
 
 use App\Enums\AccountStatus;
+use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\GeoIpLookupService;
+use App\Services\Auth\UserAgentDetailsService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +26,11 @@ class AuthenticateUserAction
 
     private const int MAX_LOCKOUT_SECONDS = 1800;
 
-    public function __construct(private readonly AuthAuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuthAuditLogger $auditLogger,
+        private readonly GeoIpLookupService $geoIp,
+        private readonly UserAgentDetailsService $userAgents,
+    ) {}
 
     public function handle(string $credential, string $password, bool $remember, Request $request): AuthenticationResult
     {
@@ -102,25 +109,37 @@ class AuthenticateUserAction
             session()->forget('auth.two_factor_pending_user_id');
         }
 
+        $loginAt = now();
+
         $updates = [
             'failed_login_attempts' => 0,
             'last_failed_login_at' => null,
-            'last_active_at' => now(),
+            'last_active_at' => $loginAt,
         ];
 
         if (! $requiresTwoFactor) {
-            $updates['last_login_at'] = now();
+            $updates['last_login_at'] = $loginAt;
         }
 
         $user->forceFill($updates)->save();
 
-        $this->auditLogger->record($user, 'login_success', $request, [
+        $metadata = [
             'identifier_type' => $type,
             'identifier_hash' => hash('sha256', $identifier),
             'remember' => $remember,
             'restricted_to_verification' => ! $user->hasVerifiedEmail(),
             'two_factor_required' => $requiresTwoFactor,
-        ]);
+        ];
+
+        if (! $requiresTwoFactor) {
+            $metadata = array_merge($metadata, $this->loginContextMetadata($request));
+        }
+
+        $this->auditLogger->record($user, 'login_success', $request, $metadata);
+
+        if (! $requiresTwoFactor) {
+            DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
+        }
 
         return AuthenticationResult::success($user, $requiresTwoFactor);
     }
@@ -314,6 +333,26 @@ class AuthenticateUserAction
         $lastFailedLoginAt = $user->getAttribute('last_failed_login_at');
 
         return $lastFailedLoginAt instanceof CarbonInterface ? $lastFailedLoginAt : null;
+    }
+
+    /**
+     * @return array{country_code: string|null, country: string, city: string|null, device_type: string, browser_name: string, browser_version: string|null, os_name: string, os_version: string|null}
+     */
+    private function loginContextMetadata(Request $request): array
+    {
+        $location = $this->geoIp->lookup($request->ip());
+        $device = $this->userAgents->parse($request->userAgent());
+
+        return [
+            'country_code' => $location['country_code'],
+            'country' => $location['country'],
+            'city' => $location['city'],
+            'device_type' => $device['device_type'],
+            'browser_name' => $device['browser_name'],
+            'browser_version' => $device['browser_version'],
+            'os_name' => $device['os_name'],
+            'os_version' => $device['os_version'],
+        ];
     }
 
     /**

@@ -17,10 +17,15 @@ class DeviceSessionController extends Controller
 
         $deleted = $sessions->destroyOtherSessions($request->user(), $request->session()->getId());
 
+        $request->user()->forceFill([
+            'remember_token' => null,
+        ])->saveQuietly();
+
         $auditLogger->record($request->user(), 'other_sessions_logged_out', $request, [
             'deleted_sessions' => $deleted,
+            'remember_token_cleared' => true,
         ]);
 
-        return back()->with('success', 'Other active sessions have been logged out.');
+        return back()->with('success', 'You have been logged out of all other devices.');
     }
 }

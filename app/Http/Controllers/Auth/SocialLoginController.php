@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\GeoIpLookupService;
 use App\Services\Auth\SocialLoginService;
+use App\Services\Auth\UserAgentDetailsService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,8 +36,14 @@ class SocialLoginController extends Controller
         return redirect()->away($config['redirect_url'].'?'.$query);
     }
 
-    public function callback(string $provider, Request $request, SocialLoginService $socialLogins, AuthAuditLogger $auditLogger): RedirectResponse
-    {
+    public function callback(
+        string $provider,
+        Request $request,
+        SocialLoginService $socialLogins,
+        AuthAuditLogger $auditLogger,
+        GeoIpLookupService $geoIp,
+        UserAgentDetailsService $userAgents
+    ): RedirectResponse {
         $expectedState = $request->session()->pull("oauth.{$provider}.state");
 
         if (! is_string($expectedState) || ! hash_equals($expectedState, (string) $request->query('state'))) {
@@ -71,25 +80,36 @@ class SocialLoginController extends Controller
             return redirect()->route($restrictedRoute);
         }
 
+        $loginAt = now();
+
         if ($user->two_factor_secret !== null) {
             $request->session()->put('auth.two_factor_pending_user_id', $user->getKey());
         } else {
             $request->session()->forget('auth.two_factor_pending_user_id');
             $user->forceFill([
-                'last_login_at' => now(),
-                'last_active_at' => now(),
+                'last_login_at' => $loginAt,
+                'last_active_at' => $loginAt,
             ])->save();
         }
 
-        $auditLogger->record($user, 'social_login_success', $request, [
+        $metadata = [
             'provider' => $provider,
             'provider_id_hash' => hash('sha256', $profile['provider_id']),
             'email_matched' => $profile['email'] !== null,
-        ]);
+            'two_factor_required' => $user->two_factor_secret !== null,
+        ];
+
+        if ($user->two_factor_secret === null) {
+            $metadata = array_merge($metadata, $this->loginContextMetadata($request, $geoIp, $userAgents));
+        }
+
+        $auditLogger->record($user, 'social_login_success', $request, $metadata);
 
         if ($user->two_factor_secret !== null) {
             return redirect()->route('two-factor.challenge');
         }
+
+        DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
 
         return $user->hasVerifiedEmail()
             ? redirect()->route('dashboard')
@@ -113,5 +133,25 @@ class SocialLoginController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * @return array{country_code: string|null, country: string, city: string|null, device_type: string, browser_name: string, browser_version: string|null, os_name: string, os_version: string|null}
+     */
+    private function loginContextMetadata(Request $request, GeoIpLookupService $geoIp, UserAgentDetailsService $userAgents): array
+    {
+        $location = $geoIp->lookup($request->ip());
+        $device = $userAgents->parse($request->userAgent());
+
+        return [
+            'country_code' => $location['country_code'],
+            'country' => $location['country'],
+            'city' => $location['city'],
+            'device_type' => $device['device_type'],
+            'browser_name' => $device['browser_name'],
+            'browser_version' => $device['browser_version'],
+            'os_name' => $device['os_name'],
+            'os_version' => $device['os_version'],
+        ];
     }
 }

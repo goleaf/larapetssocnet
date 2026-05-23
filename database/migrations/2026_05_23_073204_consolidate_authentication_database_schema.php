@@ -36,6 +36,8 @@ return new class extends Migration
         'account_reactivated',
         'email_verified',
         'login_failure',
+        'login_anomaly_dismissed',
+        'login_anomaly_secured',
         'login_restricted',
         'login_success',
         'logout',

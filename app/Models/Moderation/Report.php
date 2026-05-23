@@ -69,6 +69,8 @@ class Report extends Model
 
     public const REASON_PASSWORD_RESET_EMERGENCY_LOCK = 'password_reset_emergency_lock';
 
+    public const REASON_LOGIN_ANOMALY_SECURITY_ALERT = 'login_anomaly_security_alert';
+
     /**
      * @var list<string>
      */

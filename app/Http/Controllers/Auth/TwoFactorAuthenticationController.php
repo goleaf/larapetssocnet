@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Requests\Auth\TwoFactorEnableRequest;
+use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\GeoIpLookupService;
 use App\Services\Auth\TwoFactorAuthenticator;
+use App\Services\Auth\UserAgentDetailsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\HtmlString;
@@ -23,8 +26,13 @@ class TwoFactorAuthenticationController extends Controller
         return view('auth.two-factor-challenge');
     }
 
-    public function store(TwoFactorChallengeRequest $request, TwoFactorAuthenticator $authenticator, AuthAuditLogger $auditLogger): RedirectResponse
-    {
+    public function store(
+        TwoFactorChallengeRequest $request,
+        TwoFactorAuthenticator $authenticator,
+        AuthAuditLogger $auditLogger,
+        GeoIpLookupService $geoIp,
+        UserAgentDetailsService $userAgents
+    ): RedirectResponse {
         $user = $request->user();
 
         if ($user === null || $user->two_factor_secret === null) {
@@ -46,16 +54,19 @@ class TwoFactorAuthenticationController extends Controller
         }
 
         $request->session()->forget('auth.two_factor_pending_user_id');
-        $request->session()->put('auth.two_factor_confirmed_at', now()->timestamp);
+        $loginAt = now();
+        $request->session()->put('auth.two_factor_confirmed_at', $loginAt->timestamp);
 
         $user->forceFill([
-            'last_login_at' => now(),
-            'last_active_at' => now(),
+            'last_login_at' => $loginAt,
+            'last_active_at' => $loginAt,
         ])->save();
 
-        $auditLogger->record($user, 'two_factor_challenge_passed', $request, [
+        $auditLogger->record($user, 'two_factor_challenge_passed', $request, array_merge([
             'method' => $validRecoveryCode ? 'recovery_code' : 'totp',
-        ]);
+        ], $this->loginContextMetadata($request, $geoIp, $userAgents)));
+
+        DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
 
         return $user->hasVerifiedEmail()
             ? redirect()->intended(route('dashboard'))
@@ -116,5 +127,25 @@ class TwoFactorAuthenticationController extends Controller
         return redirect()
             ->route('settings.two-factor')
             ->with('success', 'Two-factor authentication has been disabled.');
+    }
+
+    /**
+     * @return array{country_code: string|null, country: string, city: string|null, device_type: string, browser_name: string, browser_version: string|null, os_name: string, os_version: string|null}
+     */
+    private function loginContextMetadata(Request $request, GeoIpLookupService $geoIp, UserAgentDetailsService $userAgents): array
+    {
+        $location = $geoIp->lookup($request->ip());
+        $device = $userAgents->parse($request->userAgent());
+
+        return [
+            'country_code' => $location['country_code'],
+            'country' => $location['country'],
+            'city' => $location['city'],
+            'device_type' => $device['device_type'],
+            'browser_name' => $device['browser_name'],
+            'browser_version' => $device['browser_version'],
+            'os_name' => $device['os_name'],
+            'os_version' => $device['os_version'],
+        ];
     }
 }

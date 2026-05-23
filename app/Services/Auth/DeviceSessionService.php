@@ -7,8 +7,13 @@ use Illuminate\Support\Facades\DB;
 
 class DeviceSessionService
 {
+    public function __construct(
+        private readonly UserAgentDetailsService $userAgents,
+        private readonly GeoIpLookupService $geoIp,
+    ) {}
+
     /**
-     * @return list<array{id: string, ip_address: string|null, user_agent: string|null, browser: string, platform: string, is_current: bool, last_activity: int}>
+     * @return list<array{id: string, ip_address: string|null, user_agent: string|null, device_type: string, browser_name: string, browser_version: string|null, os_name: string, os_version: string|null, browser_label: string, os_label: string, summary: string, country_code: string|null, country: string, city: string|null, location_label: string, is_current: bool, last_activity: int}>
      */
     public function activeSessions(User $user, ?string $currentSessionId = null): array
     {
@@ -25,18 +30,31 @@ class DeviceSessionService
     }
 
     /**
-     * @return array{id: string, ip_address: string|null, user_agent: string|null, browser: string, platform: string, is_current: bool, last_activity: int}
+     * @return array{id: string, ip_address: string|null, user_agent: string|null, device_type: string, browser_name: string, browser_version: string|null, os_name: string, os_version: string|null, browser_label: string, os_label: string, summary: string, country_code: string|null, country: string, city: string|null, location_label: string, is_current: bool, last_activity: int}
      */
     private function sessionPayload(object $session, ?string $currentSessionId): array
     {
         $userAgent = is_string($session->user_agent) ? $session->user_agent : null;
+        $ipAddress = is_string($session->ip_address) ? $session->ip_address : null;
+        $device = $this->userAgents->parse($userAgent);
+        $location = $this->geoIp->lookup($ipAddress);
 
         return [
             'id' => (string) $session->id,
-            'ip_address' => is_string($session->ip_address) ? $session->ip_address : null,
+            'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
-            'browser' => $this->browser($userAgent),
-            'platform' => $this->platform($userAgent),
+            'device_type' => $device['device_type'],
+            'browser_name' => $device['browser_name'],
+            'browser_version' => $device['browser_version'],
+            'os_name' => $device['os_name'],
+            'os_version' => $device['os_version'],
+            'browser_label' => $device['browser_label'],
+            'os_label' => $device['os_label'],
+            'summary' => $device['summary'],
+            'country_code' => $location['country_code'],
+            'country' => $location['country'],
+            'city' => $location['city'],
+            'location_label' => $location['label'],
             'is_current' => $currentSessionId !== null && hash_equals((string) $session->id, $currentSessionId),
             'last_activity' => (int) $session->last_activity,
         ];
@@ -50,36 +68,22 @@ class DeviceSessionService
             ->delete();
     }
 
+    public function destroySession(User $user, string $sessionId, string $currentSessionId): int
+    {
+        if (hash_equals($sessionId, $currentSessionId)) {
+            return 0;
+        }
+
+        return DB::table('sessions')
+            ->where('user_id', $user->getKey())
+            ->where('id', $sessionId)
+            ->delete();
+    }
+
     public function destroyAllSessions(User $user): int
     {
         return DB::table('sessions')
             ->where('user_id', $user->getKey())
             ->delete();
-    }
-
-    private function browser(?string $userAgent): string
-    {
-        return match (true) {
-            $userAgent === null || $userAgent === '' => 'Unknown browser',
-            str_contains($userAgent, 'Edg/') => 'Microsoft Edge',
-            str_contains($userAgent, 'Chrome/') => 'Chrome',
-            str_contains($userAgent, 'Safari/') && str_contains($userAgent, 'Version/') => 'Safari',
-            str_contains($userAgent, 'Firefox/') => 'Firefox',
-            default => 'Unknown browser',
-        };
-    }
-
-    private function platform(?string $userAgent): string
-    {
-        return match (true) {
-            $userAgent === null || $userAgent === '' => 'Unknown device',
-            str_contains($userAgent, 'iPhone') => 'iPhone',
-            str_contains($userAgent, 'iPad') => 'iPad',
-            str_contains($userAgent, 'Android') => 'Android',
-            str_contains($userAgent, 'Mac OS X') => 'macOS',
-            str_contains($userAgent, 'Windows') => 'Windows',
-            str_contains($userAgent, 'Linux') => 'Linux',
-            default => 'Unknown device',
-        };
     }
 }

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fixed
+- Fixed Composer audit findings by updating Symfony HTTP kernel, mailer, MIME, routing, and YAML components to 8.0.12.
 - Fixed the FTP deploy mirror bootstrap so existing remote subdomain folders do not fail the deployment before upload.
 - Fixed the FTP deploy mirror tuning to avoid a full remote pre-scan and default to four parallel transfers for shared-host stability.
 - Fixed the FTP deploy connection mode to disable opportunistic TLS when `FTP_PROTOCOL=ftp`.
@@ -18,6 +19,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added device-session and login-anomaly coverage for current-session labeling, scoped session deletion, password-confirmed logout-other-devices, local GeoIP/user-agent enrichment, signed alert dismissal, emergency account securing, remember-token cleanup, moderation reports, and audit events.
 - Added Livewire password reset coverage for non-enumerating reset requests, per-email throttling, hashed reset-token lookup, expired/invalid reset links, session and remember-token invalidation, queued security alerts, and single-use emergency account locks.
 - Added Livewire login coverage for email-or-username authentication, generic credential failures, database-backed progressive lockout, inline password reset requests, remember-token persistence and cleanup, and restricted account statuses.
 - Added email verification flow coverage for queued branded mailables, Livewire resend behavior, per-user resend rate limiting, signed-link verification, expired links, invalid signatures, and protected route middleware grouping.
@@ -27,6 +29,8 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Reworked account security device-session management into a Livewire section backed by indexed database-session queries, parsed device/browser/OS details, local GeoIP location labels, individual session logout popovers, password-confirmed logout-other-devices, remember-token cleanup, and audit logging.
+- Extended successful login handling to dispatch queued country-anomaly detection using local GeoIP and recent auth audit history, with signed single-use security-alert actions for dismissing known logins or securing the account through session invalidation and a high-priority moderation report.
 - Replaced the controller-rendered forgot-password and reset-password pages with full-page Livewire components, backed reset-link delivery with queued branded mailables and deterministic token-hash lookups, and redirected successful resets to the feed after signing the user in with a fresh session.
 - Replaced the controller-rendered login page with a full-page Livewire login component at `/login`, backed by a dedicated authentication action, database progressive lockout countdowns, 30-day remember-me sessions, explicit remember-token cleanup on logout, and an inline password-reset panel.
 - Replaced the email verification pending view with a full-page Livewire component, queued branded verification mail through a Mailable, moved resend throttling to a per-user server-side limiter, and bundled `auth` plus `verified` into the Bootstrap-defined `auth.verified` middleware group for protected application routes.
@@ -67,6 +71,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added a local file-backed GeoIP lookup configuration and seed IP range database for authentication session display and login anomaly checks without per-render remote API calls.
 - Added password-change security alert mail with a signed single-use "This was not me" link that suspends the account, clears sessions and remember tokens, and creates a high-priority moderation report for review.
 - Added static Terms of Service and Privacy Policy documents for the registration modal flow and expanded the common-password blocklist to 500 entries with client-side SHA-256 hash matching.
 - Added queued one-time magic login links with hashed single-use tokens, TOTP two-factor setup/challenge pages with hashed recovery codes, device-session review/logout controls, and Google/Facebook OAuth redirect/callback handling that stores provider identities in `social_accounts`.

@@ -228,7 +228,7 @@ it('shows only the current users device sessions and can delete other sessions',
     $this->actingAs($user)
         ->get(route('settings.password'))
         ->assertOk()
-        ->assertSee('Safari on macOS')
+        ->assertSee('Safari 17.0 on Mac')
         ->assertSee('10.0.0.1')
         ->assertDontSee('10.0.0.99');
 
