@@ -4,6 +4,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Social\Follow;
 use App\Services\ProfileVisibilityService;
+use App\Support\Profiles\SocialLinkNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Str;
@@ -418,23 +419,14 @@ new class extends Component
      */
     private function contactItems(?array $socialLinks): array
     {
-        $items = collect();
-
-        foreach ($socialLinks ?? [] as $label => $url) {
-            $link = $this->externalLink($url);
-
-            if (! is_array($link)) {
-                continue;
-            }
-
-            $items->push([
-                'label' => Str::headline((string) $label),
+        return collect(SocialLinkNormalizer::publicLinks($socialLinks))
+            ->map(fn (array $link): array => [
+                'label' => $link['label'],
                 'url' => $link['url'],
                 'display' => $link['display'],
-            ]);
-        }
-
-        return $items->values()->all();
+            ])
+            ->values()
+            ->all();
     }
 
     private function metadataIcon(string $icon): string

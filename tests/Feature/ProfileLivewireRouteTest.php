@@ -289,6 +289,24 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
         ->assertSee('id="profile_modal_cover"', false)
         ->assertSee('data-ui="profile-edit-modal-section-social"', false)
         ->assertSee('Social Links')
+        ->assertSee('id="profile_modal_website"', false)
+        ->assertSee('Website URL')
+        ->assertSee('wire:model.live.blur="website"', false)
+        ->assertSee('data-ui="profile-social-icon-website"', false)
+        ->assertSee('id="profile_modal_social_x"', false)
+        ->assertSee('Twitter/X username')
+        ->assertSee('placeholder="@username"', false)
+        ->assertSee('data-ui="profile-social-icon-x"', false)
+        ->assertSee('id="profile_modal_social_instagram"', false)
+        ->assertSee('Instagram username')
+        ->assertSee('data-ui="profile-social-icon-instagram"', false)
+        ->assertSee('id="profile_modal_social_facebook"', false)
+        ->assertSee('Facebook profile URL')
+        ->assertSee('data-ui="profile-social-icon-facebook"', false)
+        ->assertSee('id="profile_modal_social_youtube"', false)
+        ->assertSee('YouTube channel URL')
+        ->assertSee('data-ui="profile-social-icon-youtube"', false)
+        ->assertDontSee('profile_modal_social_tiktok', false)
         ->assertSee('data-ui="profile-edit-modal-section-privacy"', false)
         ->assertSee('Privacy')
         ->assertSee('novalidate', false)
@@ -375,6 +393,36 @@ it('dispatches the first invalid field target when nested edit profile validatio
         ->assertDispatched('profile-edit-validation-failed', target: 'profile_modal_name');
 });
 
+it('validates website URLs on blur in the nested edit profile modal', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Website Blur Owner',
+        'username' => 'website_blur_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('website', 'not a url')
+        ->assertHasErrors(['website' => 'url']);
+});
+
+it('normalizes social usernames on blur in the nested edit profile modal', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Social Blur Owner',
+        'username' => 'social_blur_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('social_links.x', 'modalpets')
+        ->assertSet('social_links.x', '@modalpets')
+        ->set('social_links.instagram', 'instagram.com/modalpets')
+        ->assertSet('social_links.instagram', '@modalpets');
+});
+
 it('saves profile edits from the nested modal without redirecting away from the profile page', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Original Modal Name',
@@ -412,6 +460,8 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->set('website', 'modal.example')
         ->set('social_links.x', 'x.com/nestedmodal')
         ->set('social_links.instagram', 'instagram.com/nestedmodal')
+        ->set('social_links.facebook', 'facebook.com/nestedmodal')
+        ->set('social_links.youtube', 'youtube.com/@nestedmodal')
         ->set('birth_day', '1')
         ->set('birth_month', '1')
         ->set('birth_year', '1990')
@@ -445,6 +495,8 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->and($profileOwner->social_links)->toMatchArray([
             'x' => 'https://x.com/nestedmodal',
             'instagram' => 'https://instagram.com/nestedmodal',
+            'facebook' => 'https://facebook.com/nestedmodal',
+            'youtube' => 'https://youtube.com/@nestedmodal',
         ])
         ->and($profileOwner->profile_visibility)->toBe('followers_only')
         ->and($profileOwner->is_private)->toBeTrue()
@@ -741,7 +793,8 @@ it('mounts the lazy about tab component and presents public biographical section
             ->assertSee('training')
             ->assertSee('data-ui="profile-about-contact"', false)
             ->assertSee('Instagram')
-            ->assertSee('instagram.com/bio_pets')
+            ->assertSee('href="https://instagram.com/bio_pets"', false)
+            ->assertSee('@bio_pets')
             ->assertDontSee('mailto:bio-owner@example.test', false);
     } finally {
         Carbon::setTestNow();

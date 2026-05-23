@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Profile;
 
 use App\Models\Identity\User;
+use App\Support\Profiles\SocialLinkNormalizer;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Illuminate\Foundation\Http\FormRequest;
@@ -46,8 +47,11 @@ class UpdateProfileRequest extends FormRequest
             'location' => ['nullable', 'string', 'max:120'],
             'city' => ['nullable', 'string', 'max:120'],
             'country_code' => ['nullable', 'string', 'size:2', 'alpha'],
-            'social_links' => ['nullable', 'array', 'max:6'],
-            'social_links.*' => ['nullable', 'url', 'max:255'],
+            'social_links' => ['nullable', 'array', 'max:4'],
+            'social_links.x' => ['nullable', 'string', 'max:16', 'regex:/^@[A-Za-z0-9_]{1,15}$/'],
+            'social_links.instagram' => ['nullable', 'string', 'max:31', 'regex:/^@[A-Za-z0-9](?:[A-Za-z0-9._]{0,28}[A-Za-z0-9])?$/'],
+            'social_links.facebook' => ['nullable', 'url:http,https', 'max:255'],
+            'social_links.youtube' => ['nullable', 'url:http,https', 'max:255'],
             'locale' => ['nullable', 'string', 'max:20'],
             'timezone' => ['nullable', 'timezone'],
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
@@ -72,6 +76,7 @@ class UpdateProfileRequest extends FormRequest
             'username.unique' => 'That username is already taken.',
             'country_code.alpha' => 'Country code must contain letters only.',
             'country_code.size' => 'Country code must be exactly 2 letters.',
+            'website.url' => 'Enter a valid website URL.',
             'bio_html.prohibited' => 'Bio HTML is generated automatically and cannot be submitted directly.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
@@ -80,6 +85,10 @@ class UpdateProfileRequest extends FormRequest
             'cover.mimes' => 'Cover must be a JPG, PNG, WEBP, or GIF image.',
             'cover.max' => 'Cover must be smaller than 5MB.',
             'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
+            'social_links.x.regex' => 'Enter a valid Twitter/X username.',
+            'social_links.instagram.regex' => 'Enter a valid Instagram username.',
+            'social_links.facebook.url' => 'Enter a valid Facebook profile URL.',
+            'social_links.youtube.url' => 'Enter a valid YouTube channel URL.',
         ];
     }
 
@@ -93,26 +102,7 @@ class UpdateProfileRequest extends FormRequest
         }
 
         $countryCode = strtoupper(trim((string) $this->input('country_code')));
-        $socialLinks = $this->input('social_links', []);
-
-        if (! is_array($socialLinks)) {
-            $socialLinks = [];
-        }
-
-        $normalizedSocialLinks = [];
-        foreach ($socialLinks as $key => $value) {
-            $cleanValue = trim((string) $value);
-
-            if ($cleanValue === '') {
-                continue;
-            }
-
-            if (! preg_match('/^https?:\\/\\//i', $cleanValue)) {
-                $cleanValue = 'https://'.$cleanValue;
-            }
-
-            $normalizedSocialLinks[$key] = $cleanValue;
-        }
+        $normalizedSocialLinks = SocialLinkNormalizer::normalizeInputs($this->input('social_links', []));
 
         $this->merge([
             'username' => $username,

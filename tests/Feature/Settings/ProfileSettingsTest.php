@@ -29,6 +29,8 @@ if (! function_exists('profileSettingsPayload')) {
             'social_links' => [
                 'x' => 'x.com/example',
                 'instagram' => 'https://instagram.com/example',
+                'facebook' => 'facebook.com/example',
+                'youtube' => 'youtube.com/@example',
             ],
             'locale' => 'en',
             'timezone' => 'Europe/Vilnius',
@@ -80,6 +82,8 @@ it('updates profile settings fields', function (): void {
     expect($user->social_links)->toMatchArray([
         'x' => 'https://x.com/example',
         'instagram' => 'https://instagram.com/example',
+        'facebook' => 'https://facebook.com/example',
+        'youtube' => 'https://youtube.com/@example',
     ]);
     expect($user->locale)->toBe('en');
     expect($user->timezone)->toBe('Europe/Vilnius');
@@ -123,7 +127,23 @@ it('saves each editable profile field independently', function (array $override,
     'pronouns' => [['pronouns' => 'she/they'], 'pronouns', 'she/they'],
     'location' => [['location' => 'Kaunas'], 'location', 'Kaunas'],
     'website' => [['website' => 'mira.example'], 'website', 'https://mira.example'],
-    'social links' => [['social_links' => ['instagram' => 'instagram.com/mira']], 'social_links', ['instagram' => 'https://instagram.com/mira']],
+    'social links' => [
+        [
+            'social_links' => [
+                'x' => 'mira_pet',
+                'instagram' => '@mira.pet',
+                'facebook' => 'facebook.com/mira.pet',
+                'youtube' => 'youtube.com/@mira',
+            ],
+        ],
+        'social_links',
+        [
+            'x' => 'https://x.com/mira_pet',
+            'instagram' => 'https://instagram.com/mira.pet',
+            'facebook' => 'https://facebook.com/mira.pet',
+            'youtube' => 'https://youtube.com/@mira',
+        ],
+    ],
     'birth date' => [['birth_date' => '1994-05-20'], 'birth_date', '1994-05-20'],
     'gender' => [['gender' => 'prefer_not_to_say'], 'gender', 'prefer_not_to_say'],
     'locale' => [['locale' => 'lt_LT'], 'locale', 'lt_LT'],

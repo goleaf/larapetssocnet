@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Models\Identity\User;
+use App\Support\Profiles\SocialLinkNormalizer;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Illuminate\Foundation\Http\FormRequest;
@@ -38,8 +39,11 @@ class UpdateSettingsProfileRequest extends FormRequest
             'pronouns' => ['nullable', 'string', 'max:32'],
             'location' => ['nullable', 'string', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
-            'social_links' => ['nullable', 'array', 'max:6'],
-            'social_links.*' => ['nullable', 'url', 'max:255'],
+            'social_links' => ['nullable', 'array', 'max:4'],
+            'social_links.x' => ['nullable', 'string', 'max:16', 'regex:/^@[A-Za-z0-9_]{1,15}$/'],
+            'social_links.instagram' => ['nullable', 'string', 'max:31', 'regex:/^@[A-Za-z0-9](?:[A-Za-z0-9._]{0,28}[A-Za-z0-9])?$/'],
+            'social_links.facebook' => ['nullable', 'url:http,https', 'max:255'],
+            'social_links.youtube' => ['nullable', 'url:http,https', 'max:255'],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
             'locale' => ['nullable', 'string', 'max:20'],
@@ -66,6 +70,7 @@ class UpdateSettingsProfileRequest extends FormRequest
         return [
             'username_confirm.in' => 'You must type your CURRENT username exactly to confirm the change.',
             'username_confirm.required' => 'Confirming your current username is required.',
+            'website.url' => 'Enter a valid website URL.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
             'avatar.max' => 'Avatar must be smaller than 3MB.',
@@ -74,6 +79,10 @@ class UpdateSettingsProfileRequest extends FormRequest
             'cover.max' => 'Cover must be smaller than 5MB.',
             'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
             'bio_html.prohibited' => 'Bio HTML is generated automatically and cannot be submitted directly.',
+            'social_links.x.regex' => 'Enter a valid Twitter/X username.',
+            'social_links.instagram.regex' => 'Enter a valid Instagram username.',
+            'social_links.facebook.url' => 'Enter a valid Facebook profile URL.',
+            'social_links.youtube.url' => 'Enter a valid YouTube channel URL.',
         ];
     }
 
@@ -81,26 +90,7 @@ class UpdateSettingsProfileRequest extends FormRequest
     {
         $username = UsernameNormalizer::normalize((string) $this->input('username'));
         $website = trim((string) $this->input('website'));
-        $socialLinks = $this->input('social_links', []);
-
-        if (! is_array($socialLinks)) {
-            $socialLinks = [];
-        }
-
-        $normalizedSocialLinks = [];
-        foreach ($socialLinks as $key => $value) {
-            $cleanValue = trim((string) $value);
-
-            if ($cleanValue === '') {
-                continue;
-            }
-
-            if (! preg_match('/^https?:\\/\\//i', $cleanValue)) {
-                $cleanValue = 'https://'.$cleanValue;
-            }
-
-            $normalizedSocialLinks[$key] = $cleanValue;
-        }
+        $normalizedSocialLinks = SocialLinkNormalizer::normalizeInputs($this->input('social_links', []));
 
         if ($website !== '' && ! preg_match('/^https?:\\/\\//i', $website)) {
             $website = 'https://'.$website;

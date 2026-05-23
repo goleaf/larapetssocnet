@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated the profile edit Social Links section with icon-prefixed fields for website, Twitter/X, Instagram, Facebook, and YouTube, including blur validation and automatic `@username` normalization for handle-based platforms.
 - Updated the profile edit cover upload with a 3:1 rectangular drop zone, immediate FileReader preview, client-side 1200x400 minimum dimension validation, and inline vertical crop positioning after temporary upload.
 - Updated avatar uploads on profile editing surfaces to use a 3MB maximum, with the profile edit modal showing a circular drag-and-drop avatar picker, immediate FileReader preview, client-side type/size feedback, and Livewire upload progress.
 - Updated the profile edit Profile Media section with distinct avatar and cover upload panels that sit side by side on desktop, stack on mobile, and show current or selected-image previews.

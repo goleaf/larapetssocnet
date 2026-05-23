@@ -8,6 +8,7 @@ use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\LocationAutocompleteService;
 use App\Services\SettingsService;
+use App\Support\Profiles\SocialLinkNormalizer;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Carbon\CarbonImmutable;
@@ -74,7 +75,7 @@ new class extends Component
     public ?string $gender = null;
 
     /**
-     * @var array{x?: string|null, instagram?: string|null, tiktok?: string|null, youtube?: string|null}
+     * @var array{x?: string|null, instagram?: string|null, facebook?: string|null, youtube?: string|null}
      */
     public array $social_links = [];
 
@@ -120,7 +121,7 @@ new class extends Component
         'social_links' => 'profile_modal_social_x',
         'social_links.x' => 'profile_modal_social_x',
         'social_links.instagram' => 'profile_modal_social_instagram',
-        'social_links.tiktok' => 'profile_modal_social_tiktok',
+        'social_links.facebook' => 'profile_modal_social_facebook',
         'social_links.youtube' => 'profile_modal_social_youtube',
         'profile_visibility' => 'profile_modal_profile_visibility',
         'privacy_display_location' => 'profile_modal_privacy_display_location',
@@ -160,7 +161,7 @@ new class extends Component
         $this->birth_date = $user->birth_date?->format('Y-m-d');
         $this->setBirthDateParts($user);
         $this->gender = $user->gender;
-        $this->social_links = is_array($user->social_links) ? $user->social_links : [];
+        $this->social_links = SocialLinkNormalizer::editable($user->social_links);
         $this->profile_visibility = $user->profile_visibility ?: 'public';
         $this->privacy_display_location = (bool) $user->privacy_display_location;
         $this->privacy_display_birthdate = (bool) $user->privacy_display_birthdate;
@@ -269,6 +270,29 @@ new class extends Component
         $this->locationSuggestionsOpen = $this->locationSuggestions !== [];
     }
 
+    public function updatedWebsite(): void
+    {
+        $this->website = SocialLinkNormalizer::normalizeUrl($this->website);
+        $this->validateOnly('website');
+    }
+
+    public function updatedSocialLinks(mixed $value, ?string $key = null): void
+    {
+        if (! is_string($key)) {
+            return;
+        }
+
+        if (in_array($key, ['x', 'instagram'], true)) {
+            $this->social_links[$key] = SocialLinkNormalizer::normalizeHandle($key, $value);
+        } elseif (in_array($key, ['facebook', 'youtube'], true)) {
+            $this->social_links[$key] = SocialLinkNormalizer::normalizeUrl($value);
+        } else {
+            return;
+        }
+
+        $this->validateOnly('social_links.'.$key);
+    }
+
     public function selectLocationSuggestion(int $index): void
     {
         $suggestion = $this->locationSuggestions[$index] ?? null;
@@ -304,11 +328,11 @@ new class extends Component
             'birth_year' => ['nullable', 'integer', 'between:'.(now()->year - 100).','.now()->year],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
-            'social_links' => ['nullable', 'array', 'max:6'],
-            'social_links.x' => ['nullable', 'url', 'max:255'],
-            'social_links.instagram' => ['nullable', 'url', 'max:255'],
-            'social_links.tiktok' => ['nullable', 'url', 'max:255'],
-            'social_links.youtube' => ['nullable', 'url', 'max:255'],
+            'social_links' => ['nullable', 'array', 'max:4'],
+            'social_links.x' => ['nullable', 'string', 'max:16', 'regex:/^@[A-Za-z0-9_]{1,15}$/'],
+            'social_links.instagram' => ['nullable', 'string', 'max:31', 'regex:/^@[A-Za-z0-9](?:[A-Za-z0-9._]{0,28}[A-Za-z0-9])?$/'],
+            'social_links.facebook' => ['nullable', 'url:http,https', 'max:255'],
+            'social_links.youtube' => ['nullable', 'url:http,https', 'max:255'],
             'profile_visibility' => ['required', 'string', 'in:public,followers_only,private'],
             'privacy_display_location' => ['boolean'],
             'privacy_display_birthdate' => ['boolean'],
@@ -334,6 +358,7 @@ new class extends Component
             'username.unique' => 'Username is already taken.',
             'display_name.max' => 'Display name must be 50 characters or fewer.',
             'bio.max' => 'Bio must be 160 characters or fewer.',
+            'website.url' => 'Enter a valid website URL.',
             'location_lat.between' => 'Select a valid location suggestion.',
             'location_lng.between' => 'Select a valid location suggestion.',
             'birth_date.date' => 'Enter a valid date of birth.',
@@ -346,7 +371,10 @@ new class extends Component
             'cover.max' => 'Cover must be smaller than 5MB.',
             'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
             'cover_photo_position.between' => 'Choose a valid cover crop position.',
-            'social_links.*.url' => 'Enter a full social profile URL.',
+            'social_links.x.regex' => 'Enter a valid Twitter/X username.',
+            'social_links.instagram.regex' => 'Enter a valid Instagram username.',
+            'social_links.facebook.url' => 'Enter a valid Facebook profile URL.',
+            'social_links.youtube.url' => 'Enter a valid YouTube channel URL.',
             'profile_visibility.in' => 'Select a valid profile visibility setting.',
         ];
     }
@@ -381,14 +409,8 @@ new class extends Component
         $this->gender = $this->nullableString($this->gender);
         $this->birth_date = $this->composeBirthDate();
 
-        $website = $this->nullableString($this->website);
-
-        if ($website !== null && ! preg_match('/^https?:\/\//i', $website)) {
-            $website = 'https://'.$website;
-        }
-
-        $this->website = $website;
-        $this->social_links = $this->normalizeSocialLinks($this->social_links);
+        $this->website = SocialLinkNormalizer::normalizeUrl($this->website);
+        $this->social_links = SocialLinkNormalizer::normalizeInputs($this->social_links);
         $this->refreshUsernameAvailability();
     }
 
@@ -502,7 +524,7 @@ new class extends Component
             'profile_modal_following',
             'profile_modal_social_x',
             'profile_modal_social_instagram',
-            'profile_modal_social_tiktok',
+            'profile_modal_social_facebook',
             'profile_modal_social_youtube',
             'profile_modal_profile_visibility',
             'profile_modal_privacy_display_location',
@@ -512,31 +534,6 @@ new class extends Component
         ];
 
         return in_array($target, $allowedTargets, true) ? $target : null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $links
-     * @return array<string, string>
-     */
-    private function normalizeSocialLinks(array $links): array
-    {
-        $normalized = [];
-
-        foreach (['x', 'instagram', 'tiktok', 'youtube'] as $key) {
-            $value = $this->nullableString($links[$key] ?? null);
-
-            if ($value === null) {
-                continue;
-            }
-
-            if (! preg_match('/^https?:\/\//i', $value)) {
-                $value = 'https://'.$value;
-            }
-
-            $normalized[$key] = $value;
-        }
-
-        return $normalized;
     }
 
     private function firstInvalidFieldTarget(MessageBag $errors): ?string
@@ -636,8 +633,15 @@ new class extends Component
   8 => 'August',
   9 => 'September',
   10 => 'October',
-  11 => 'November',
-  12 => 'December',
+ 11 => 'November',
+ 12 => 'December',
+ ];
+ $socialInputIcons = [
+  'website' => new \Illuminate\Support\HtmlString('<svg data-ui="profile-social-icon-website" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L11 4.93"/><path d="M14 11a5 5 0 0 0-7.07 0L4.81 13.12a5 5 0 0 0 7.07 7.07L13 19.07"/></svg>'),
+  'x' => new \Illuminate\Support\HtmlString('<span data-ui="profile-social-icon-x" class="text-sm font-black leading-none">X</span>'),
+  'instagram' => new \Illuminate\Support\HtmlString('<svg data-ui="profile-social-icon-instagram" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="4"/><circle cx="12" cy="12" r="3.2"/><path d="M17.5 6.8h.01"/></svg>'),
+  'facebook' => new \Illuminate\Support\HtmlString('<span data-ui="profile-social-icon-facebook" class="font-display text-base font-black leading-none">f</span>'),
+  'youtube' => new \Illuminate\Support\HtmlString('<svg data-ui="profile-social-icon-youtube" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2a3 3 0 0 0-2.1-2.1C17.6 4.6 12 4.6 12 4.6s-5.6 0-7.5.5a3 3 0 0 0-2.1 2.1A31.7 31.7 0 0 0 2 12a31.7 31.7 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 7.5.5 7.5.5s5.6 0 7.5-.5a3 3 0 0 0 2.1-2.1A31.7 31.7 0 0 0 22 12a31.7 31.7 0 0 0-.4-4.8ZM10 15.5v-7l6 3.5-6 3.5Z"/></svg>'),
  ];
 @endphp
 
@@ -909,7 +913,6 @@ new class extends Component
  </ul>
  @endif
  </div>
- <x-ui.input id="profile_modal_website" name="website" type="url" label="Website" :value="$website" :error="$errors->first('website')" wire:model.live.blur="website"/>
  <fieldset id="profile_modal_birth_date" class="sm:col-span-2 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white/70 p-4">
  <legend class="px-1 text-sm font-semibold text-bark">Date of birth</legend>
  <div class="mt-3 grid gap-3 sm:grid-cols-3">
@@ -1345,10 +1348,11 @@ new class extends Component
  </div>
 
  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
- <x-ui.input id="profile_modal_social_x" name="social_links[x]" type="url" label="X / Twitter" :value="$social_links['x'] ?? null" placeholder="https://x.com/username" :error="$errors->first('social_links.x')" wire:model.live.blur="social_links.x"/>
- <x-ui.input id="profile_modal_social_instagram" name="social_links[instagram]" type="url" label="Instagram" :value="$social_links['instagram'] ?? null" placeholder="https://instagram.com/username" :error="$errors->first('social_links.instagram')" wire:model.live.blur="social_links.instagram"/>
- <x-ui.input id="profile_modal_social_tiktok" name="social_links[tiktok]" type="url" label="TikTok" :value="$social_links['tiktok'] ?? null" placeholder="https://tiktok.com/@username" :error="$errors->first('social_links.tiktok')" wire:model.live.blur="social_links.tiktok"/>
- <x-ui.input id="profile_modal_social_youtube" name="social_links[youtube]" type="url" label="YouTube" :value="$social_links['youtube'] ?? null" placeholder="https://youtube.com/@username" :error="$errors->first('social_links.youtube')" wire:model.live.blur="social_links.youtube"/>
+ <x-ui.input id="profile_modal_website" name="website" type="url" label="Website URL" :value="$website" placeholder="https://prus.dev" :prefix="$socialInputIcons['website']" :error="$errors->first('website')" wire:model.live.blur="website"/>
+ <x-ui.input id="profile_modal_social_x" name="social_links[x]" type="text" label="Twitter/X username" :value="$social_links['x'] ?? null" placeholder="@username" :prefix="$socialInputIcons['x']" :error="$errors->first('social_links.x')" wire:model.live.blur="social_links.x"/>
+ <x-ui.input id="profile_modal_social_instagram" name="social_links[instagram]" type="text" label="Instagram username" :value="$social_links['instagram'] ?? null" placeholder="@username" :prefix="$socialInputIcons['instagram']" :error="$errors->first('social_links.instagram')" wire:model.live.blur="social_links.instagram"/>
+ <x-ui.input id="profile_modal_social_facebook" name="social_links[facebook]" type="url" label="Facebook profile URL" :value="$social_links['facebook'] ?? null" placeholder="https://facebook.com/username" :prefix="$socialInputIcons['facebook']" :error="$errors->first('social_links.facebook')" wire:model.live.blur="social_links.facebook"/>
+ <x-ui.input id="profile_modal_social_youtube" name="social_links[youtube]" type="url" label="YouTube channel URL" :value="$social_links['youtube'] ?? null" placeholder="https://youtube.com/@username" :prefix="$socialInputIcons['youtube']" :error="$errors->first('social_links.youtube')" wire:model.live.blur="social_links.youtube"/>
  </div>
  </section>
 

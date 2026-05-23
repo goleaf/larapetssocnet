@@ -21,7 +21,9 @@
  $displayName = $profileUser->display_name ?: $profileUser->name;
  $profileBio = trim((string) ($profileUser->bio ?? ''));
  $location = ($canViewLocation ?? false) ? ($profileUser->location ?? $profileUser->city ?? null) : null;
- $socialLinks = ($canViewContent ?? false) && is_array($profileUser->social_links ?? null) ? $profileUser->social_links : [];
+ $socialLinks = ($canViewContent ?? false)
+ ? \App\Support\Profiles\SocialLinkNormalizer::publicLinks($profileUser->social_links)
+ : [];
 
  $websiteRaw = ($canViewContent ?? false) ? trim((string) ($profileUser->website ??'')) : '';
  $websiteUrl = $websiteRaw !==''
@@ -890,12 +892,12 @@
 
  @if ($socialLinks !== [])
  <div class="space-y-1">
- @foreach ($socialLinks as $label => $url)
+ @foreach ($socialLinks as $link)
  <p>
  🔗
- <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
+ <a href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer"
  class="inline-flex min-h-8 items-center rounded-[var(--radius-soft)] font-medium text-paw hover:text-paw-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- {{ \Illuminate\Support\Str::headline((string) $label) }}
+ {{ $link['label'] }}
  </a>
  </p>
  @endforeach

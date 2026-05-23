@@ -4,6 +4,7 @@ namespace App\Actions\Users;
 
 use App\Models\Identity\User;
 use App\Services\UsernameService;
+use App\Support\Profiles\SocialLinkNormalizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -86,7 +87,7 @@ class UpdateProfileAction
         }
 
         if (array_key_exists('social_links', $data)) {
-            $payload['social_links'] = $data['social_links'] ?? null;
+            $payload['social_links'] = SocialLinkNormalizer::forStorage($data['social_links'] ?? null);
         }
 
         if (array_key_exists('privacy_display_location', $data)) {

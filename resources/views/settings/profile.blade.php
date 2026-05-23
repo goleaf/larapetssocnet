@@ -1,3 +1,7 @@
+@php
+ $editableSocialLinks = \App\Support\Profiles\SocialLinkNormalizer::editable($user->social_links);
+@endphp
+
 <x-settings-layout>
  <div class="space-y-6" data-ui="settings-profile-page">
  <div class="space-y-2" data-ui="settings-page-header">
@@ -118,20 +122,20 @@
  <p class="text-sm font-medium text-bark">Social links</p>
  <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
  <div>
- <x-ui.input id="social_links_x" name="social_links[x]" type="url" label="X / Twitter"
- :value="old('social_links.x', $user->social_links['x'] ?? null)" placeholder="https://x.com/username"/>
+ <x-ui.input id="social_links_x" name="social_links[x]" type="text" label="Twitter/X username"
+ :value="old('social_links.x', $editableSocialLinks['x'] ?? null)" placeholder="@username" prefix="X"/>
  </div>
  <div>
- <x-ui.input id="social_links_instagram" name="social_links[instagram]" type="url" label="Instagram"
- :value="old('social_links.instagram', $user->social_links['instagram'] ?? null)" placeholder="https://instagram.com/username"/>
+ <x-ui.input id="social_links_instagram" name="social_links[instagram]" type="text" label="Instagram username"
+ :value="old('social_links.instagram', $editableSocialLinks['instagram'] ?? null)" placeholder="@username" prefix="IG"/>
  </div>
  <div>
- <x-ui.input id="social_links_tiktok" name="social_links[tiktok]" type="url" label="TikTok"
- :value="old('social_links.tiktok', $user->social_links['tiktok'] ?? null)" placeholder="https://tiktok.com/@username"/>
+ <x-ui.input id="social_links_facebook" name="social_links[facebook]" type="url" label="Facebook profile URL"
+ :value="old('social_links.facebook', $editableSocialLinks['facebook'] ?? null)" placeholder="https://facebook.com/username" prefix="f"/>
  </div>
  <div>
- <x-ui.input id="social_links_youtube" name="social_links[youtube]" type="url" label="YouTube"
- :value="old('social_links.youtube', $user->social_links['youtube'] ?? null)" placeholder="https://youtube.com/@username"/>
+ <x-ui.input id="social_links_youtube" name="social_links[youtube]" type="url" label="YouTube channel URL"
+ :value="old('social_links.youtube', $editableSocialLinks['youtube'] ?? null)" placeholder="https://youtube.com/@username" prefix="YT"/>
  </div>
  </div>
  </div>
