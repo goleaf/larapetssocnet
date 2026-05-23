@@ -196,6 +196,15 @@ function deploy_extract_archive(string $archivePath, string $targetRoot): string
     throw new RuntimeException('No supported archive extractor is available on the server.');
 }
 
+function deploy_reset_opcode_cache(): bool
+{
+    if (! function_exists('opcache_reset')) {
+        return false;
+    }
+
+    return @opcache_reset();
+}
+
 $archiveRelativePath = deploy_normalize_path($archiveRelativePath);
 $archivePath = $targetRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $archiveRelativePath);
 $cleanupArtifacts = false;
@@ -233,12 +242,14 @@ if (! is_file($archivePath)) {
 try {
     $removed = deploy_clean_directory($targetRoot, $targetRoot, $archiveRelativePath, $preserveSqlite);
     $extractor = deploy_extract_archive($archivePath, $targetRoot);
+    $opcacheReset = deploy_reset_opcode_cache();
 
     deploy_json_response(200, [
         'ok' => true,
         'removed' => $removed,
         'extractor' => $extractor,
         'preserved_sqlite' => $preserveSqlite,
+        'opcache_reset' => $opcacheReset,
     ]);
 } catch (Throwable $throwable) {
     deploy_json_response(500, [

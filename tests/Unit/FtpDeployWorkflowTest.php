@@ -35,6 +35,7 @@ it('uploads a single archive and runs a token protected server cleanup', functio
         ->toContain('hash_equals($tokenHash, hash(\'sha256\', $submittedToken))')
         ->toContain('deploy_clean_directory($targetRoot, $targetRoot, $archiveRelativePath, $preserveSqlite)')
         ->toContain('deploy_extract_archive($archivePath, $targetRoot)')
+        ->toContain('deploy_reset_opcode_cache()')
         ->toContain('laravel/storage')
         ->toContain('storage')
         ->toContain('deploy_is_sqlite_database');

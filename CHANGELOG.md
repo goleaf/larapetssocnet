@@ -10,6 +10,7 @@
 - Fixed the FTP deploy path to upload one archive and run a token-protected server-side cleanup/extract step instead of mirroring every folder over FTP.
 - Fixed the FTP deployment workflow's Node setup action to use the Node 24-compatible action runtime.
 - Fixed login failure handling so legacy remote auth audit tables cannot turn invalid sign-in attempts into server errors.
+- Fixed FTP archive deployments to reset OPcache after extraction so shared hosting serves the newly deployed PHP files immediately.
 - Kept pet profile and QR routes inside the authenticated application middleware stack.
 - Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
