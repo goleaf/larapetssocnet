@@ -8,13 +8,14 @@ use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
 use App\Models\Analytics\ProfileView;
+use App\Models\Analytics\ProfileWrappedSummary;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
 use App\Services\ProfileVisibilityService;
+use App\Services\ProfileWrappedService;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class PublicProfileController extends Controller
     public function __construct(
         private readonly PetVisibilityService $petVisibilityService,
         private readonly ProfileVisibilityService $profileVisibilityService,
+        private readonly ProfileWrappedService $profileWrappedService,
     ) {}
 
     public function show(Request $request, User $user): View|RedirectResponse
@@ -213,6 +215,9 @@ class PublicProfileController extends Controller
                 'percentage' => 0,
                 'missing_items' => [],
             ];
+        $profileWrapped = $isOwner
+            ? $this->profileWrappedForOwner($user)
+            : null;
 
         if ($isOwner && $profileCompleteness['percentage'] === 100 && ! $user->profile_completed_at) {
             $user->forceFill(['profile_completed_at' => now()])->saveQuietly();
@@ -272,6 +277,7 @@ class PublicProfileController extends Controller
             'commonGroups' => $commonGroups,
             'activityData' => $activityData,
             'profileViewStats' => $profileViewStats,
+            'profileWrapped' => $profileWrapped,
             'profileCompletenessPercentage' => $profileCompleteness['percentage'],
             'profileCompletenessMissingItems' => $profileCompleteness['missing_items'],
             'followStatus' => $followStatus,
@@ -407,6 +413,41 @@ class PublicProfileController extends Controller
         ];
     }
 
+    private function profileWrappedForOwner(User $user): ?ProfileWrappedSummary
+    {
+        $timezone = $user->timezone ?: config('app.timezone');
+        $now = CarbonImmutable::now($timezone);
+
+        if (! $this->profileWrappedService->isDisplayWindow($now)) {
+            return null;
+        }
+
+        $year = $this->profileWrappedService->reviewYearFor($now);
+
+        return ProfileWrappedSummary::query()
+            ->forUser($user)
+            ->forYear($year)
+            ->with(['mostEngagedPost:id,body,published_at,created_at'])
+            ->first([
+                'id',
+                'user_id',
+                'year',
+                'total_posts_published',
+                'total_reactions_received',
+                'top_reaction_type',
+                'top_reaction_count',
+                'most_active_month',
+                'most_active_month_posts',
+                'new_followers_count',
+                'pets_added_count',
+                'most_engaged_post_id',
+                'most_engaged_post_score',
+                'share_image_path',
+                'generated_at',
+                'share_image_generated_at',
+            ]);
+    }
+
     public function followers(User $user): View
     {
         $followers = $user->followers()
@@ -431,20 +472,5 @@ class PublicProfileController extends Controller
             'profileUser' => $user,
             'following' => $following,
         ]);
-    }
-
-    /**
-     * @param  Builder<User>  $query
-     * @return Builder<User>
-     */
-    private function applyNotBlockedForUserQuery(Builder $query, ?User $viewer): Builder
-    {
-        if (! $viewer instanceof User || ! User::hasBlocksTable()) {
-            return $query;
-        }
-
-        return $query
-            ->whereNotIn('users.id', $viewer->blocking()->select('users.id'))
-            ->whereNotIn('users.id', $viewer->blockedBy()->select('users.id'));
     }
 }

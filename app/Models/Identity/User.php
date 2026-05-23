@@ -7,6 +7,7 @@ use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
 use App\Models\Activities\EventAttendee;
 use App\Models\Analytics\ProfileView;
+use App\Models\Analytics\ProfileWrappedSummary;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
@@ -705,6 +706,14 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function profileViews(): HasMany
     {
         return $this->hasMany(ProfileView::class, 'profile_user_id');
+    }
+
+    /**
+     * @return HasMany<ProfileWrappedSummary, $this>
+     */
+    public function profileWrappedSummaries(): HasMany
+    {
+        return $this->hasMany(ProfileWrappedSummary::class);
     }
 
     public function petsHealthLogs(): HasManyThrough

@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- Updated pet deletion cleanup to soft-delete linked pet posts, pet milestones, and pet adoption marketplace listings while still removing follower rows and counter-cache state.
+- Updated adoption status changes so available pets create or restore an active marketplace adoption listing, and unlisted pets archive and soft-delete that listing.
 - Updated profile Report actions to open a Livewire profile-report modal with profile-specific reasons, optional 500-character context, moderation-team notifications, and no change to profile visibility after reporting.
 - Centralized registration, reset-password, profile password, and settings password validation through the shared Laravel password policy.
 - Updated non-owner profile Block actions to submit through the server-side block transaction, redirect to the feed immediately, and flash "You have blocked this user." after follow cleanup and blocked-content enforcement.
@@ -28,6 +30,8 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added first-class pet profile ownership extensions with scoped co-owner permissions, pet milestones with optional automatic post sharing, authenticated breed autocomplete, server-generated QR SVGs, and daily pet birthday notifications.
+- Added owner-only Profile Wrapped annual summaries, generated during the first week of January with yearly post, reaction, follower, pet, activity-month, and top-post metrics plus queued PNG share-card generation.
 - Added Laravel 13.9 HTML `passwordrules` attributes to new-password inputs so browsers and password managers can generate passwords that match the app policy.
 - Added a configurable server-side geocoding service for profile location suggestions.
 - Added a nested Livewire edit profile modal that mounts from the owner profile page, saves profile fields in place, and renders as a centered desktop overlay or full-screen mobile sheet without navigating away.

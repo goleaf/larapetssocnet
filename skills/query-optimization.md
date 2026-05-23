@@ -18,6 +18,8 @@ Prevent N+1 in social-network pages.
 - Profile followers/following modals should query the accepted relationship selected by the reusable modal mode only after list visibility passes, apply name/username search inside that relationship query, eager-load media, load 20-row batches through modal-scoped infinite scroll, batch viewer follow statuses, compute mutual counts with SQL subqueries, and return the locked state before building the relationship query for unauthorized private-account viewers.
 - Profile completeness should read only the columns/counts/media-exists flags it needs instead of loading full user records.
 - Profile view analytics should use the `profile_views(profile_user_id, viewed_on)` index for current and previous 30-day date-window scans, count distinct signed-in `viewer_user_id` values only for the owner-facing quiet note and trend, and skip the aggregate entirely for visitor renders.
+- Profile Wrapped should be generated once into `profile_wrapped_summaries` per user/year, then profile renders should do only the owner/window summary lookup. Annual generation queries must use the wrapped reactions and comments date indexes instead of recomputing expensive aggregates during profile page loads.
+- Pet profile owner lookups should use `pets(user_id, created_at)`, species discovery should use `pets(species, created_at)`, milestone timelines should use `pet_milestones(pet_id, occurred_on)`, breed autocomplete should use `breeds(species_slug, name)` with prefix matching, and weight chart reads should use `pet_health_logs(pet_id, log_type, logged_at)`.
 - Never access relation properties inside loops unless eager loaded.
 
 ## Correct patterns

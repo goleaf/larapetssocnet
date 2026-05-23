@@ -139,45 +139,51 @@ it('uses the profile owner timezone to determine the daily view boundary', funct
 });
 
 it('shows profile view analytics only to the profile owner', function (): void {
-    $owner = User::factory()->create(['username' => 'analytics_owner']);
-    $viewer = User::factory()->create();
-    $previousViewer = User::factory()->create();
+    Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
 
-    ProfileView::query()->create([
-        'profile_user_id' => $owner->id,
-        'viewer_user_id' => $viewer->id,
-        'viewed_on' => now()->toDateString(),
-    ]);
-    ProfileView::query()->create([
-        'profile_user_id' => $owner->id,
-        'viewer_user_id' => $previousViewer->id,
-        'viewed_on' => now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS)->toDateString(),
-    ]);
+    try {
+        $owner = User::factory()->create(['username' => 'analytics_owner']);
+        $viewer = User::factory()->create();
+        $previousViewer = User::factory()->create();
 
-    expect(ProfileView::uniqueViewerCountForProfile(
-        $owner,
-        now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS - 1)->toDateString(),
-        now()->toDateString(),
-    ))->toBe(1);
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $viewer->id,
+            'viewed_on' => now()->toDateString(),
+        ]);
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $previousViewer->id,
+            'viewed_on' => now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS)->toDateString(),
+        ]);
 
-    $this->actingAs($owner)
-        ->get(route('profile.show', ['user' => $owner]))
-        ->assertOk()
-        ->assertSee('data-ui="profile-view-analytics"', false)
-        ->assertSee('data-ui="profile-view-analytics-note"', false)
-        ->assertSeeText('1 profile visit in the last 30 days')
-        ->assertSee('data-ui="profile-view-analytics-trend"', false)
-        ->assertSeeText('↑ 0% from last month')
-        ->assertSee('text-emerald-700', false)
-        ->assertSeeText('Only you can see this.');
+        expect(ProfileView::uniqueViewerCountForProfile(
+            $owner,
+            now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS - 1)->toDateString(),
+            now()->toDateString(),
+        ))->toBe(1);
 
-    $this->actingAs($viewer)
-        ->get(route('profile.show', ['user' => $owner]))
-        ->assertOk()
-        ->assertDontSee('profile visit in the last 30 days')
-        ->assertDontSee('from last month')
-        ->assertDontSee('Only you can see this.')
-        ->assertDontSee('data-ui="profile-view-analytics"', false);
+        $this->actingAs($owner)
+            ->get(route('profile.show', ['user' => $owner]))
+            ->assertOk()
+            ->assertSee('data-ui="profile-view-analytics"', false)
+            ->assertSee('data-ui="profile-view-analytics-note"', false)
+            ->assertSeeText('1 profile visit in the last 30 days')
+            ->assertSee('data-ui="profile-view-analytics-trend"', false)
+            ->assertSeeText('↑ 0% from last month')
+            ->assertSee('text-emerald-700', false)
+            ->assertSeeText('Only you can see this.');
+
+        $this->actingAs($viewer)
+            ->get(route('profile.show', ['user' => $owner]))
+            ->assertOk()
+            ->assertDontSee('profile visit in the last 30 days')
+            ->assertDontSee('from last month')
+            ->assertDontSee('Only you can see this.')
+            ->assertDontSee('data-ui="profile-view-analytics"', false);
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 it('does not fetch owner profile view analytics for visitor renders', function (): void {

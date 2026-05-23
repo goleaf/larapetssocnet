@@ -724,6 +724,74 @@ wire:key="profile-report-modal-{{ $profileUser->getKey() }}"
 
  @endif
 
+ @if ($isOwner && ($profileWrapped ?? null) instanceof \App\Models\Analytics\ProfileWrappedSummary)
+ @php
+ $wrappedShareImageUrl = $profileWrapped->generatedShareImageUrl();
+ $wrappedPostExcerpt = $profileWrapped->mostEngagedPost
+ ? \Illuminate\Support\Str::limit(strip_tags((string) $profileWrapped->mostEngagedPost->body), 90)
+ : 'No published posts yet.';
+ @endphp
+ <section
+ data-ui="profile-wrapped-card"
+ class="relative overflow-hidden rounded-[var(--radius-card)] border border-whisker/40 {{ $profileUser->profile_default_gradient }} px-5 py-5 shadow-card sm:px-6 lg:px-7"
+ @if ($coverUrl)
+ style="background-image: linear-gradient(135deg, rgba(255, 253, 248, 0.86), rgba(247, 235, 230, 0.72)), url('{{ $coverUrl }}'); background-position: center {{ $coverPosition }}%; background-size: cover;"
+ @endif
+ aria-labelledby="profile-wrapped-title">
+ <div class="absolute inset-0 bg-warm-white/35" aria-hidden="true"></div>
+ <div class="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+ <div class="min-w-0">
+ <p class="text-xs font-bold uppercase text-paw">{{ $profileWrapped->year }} Profile wrapped</p>
+ <h2 id="profile-wrapped-title" class="mt-1 font-display text-2xl font-bold text-bark">Your year with pets</h2>
+ <p class="mt-2 max-w-2xl text-sm leading-6 text-fur">A January snapshot of what your profile shared and received last year.</p>
+ </div>
+ <div class="flex flex-col gap-2 sm:flex-row lg:justify-end">
+ @if ($wrappedShareImageUrl)
+ <x-ui.button :href="$wrappedShareImageUrl" target="_blank" rel="noopener noreferrer" variant="primary" size="sm" class="min-h-11" data-ui="profile-wrapped-share-image">
+ Open share image
+ </x-ui.button>
+ @else
+ <span class="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-whisker/40 bg-warm-white/80 px-4 text-sm font-semibold text-fur" data-ui="profile-wrapped-share-pending">
+ Share image is being prepared
+ </span>
+ @endif
+ </div>
+ </div>
+
+ <div class="relative mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="list" aria-label="Profile wrapped statistics">
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4" role="listitem">
+ <p class="font-display text-3xl font-bold text-bark">{{ number_format($profileWrapped->total_posts_published) }}</p>
+ <p class="mt-1 text-xs font-semibold text-fur">Posts published</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4" role="listitem">
+ <p class="font-display text-3xl font-bold text-bark">{{ number_format($profileWrapped->total_reactions_received) }}</p>
+ <p class="mt-1 text-xs font-semibold text-fur">Reactions received</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4" role="listitem">
+ <p class="truncate font-display text-2xl font-bold text-bark">{{ $profileWrapped->top_reaction_label }}</p>
+ <p class="mt-1 text-xs font-semibold text-fur">{{ number_format($profileWrapped->top_reaction_count) }} top reactions</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4" role="listitem">
+ <p class="truncate font-display text-2xl font-bold text-bark">{{ $profileWrapped->most_active_month_label }}</p>
+ <p class="mt-1 text-xs font-semibold text-fur">{{ number_format($profileWrapped->most_active_month_posts) }} posts</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4" role="listitem">
+ <p class="font-display text-3xl font-bold text-bark">{{ number_format($profileWrapped->new_followers_count) }}</p>
+ <p class="mt-1 text-xs font-semibold text-fur">New followers</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4" role="listitem">
+ <p class="font-display text-3xl font-bold text-bark">{{ number_format($profileWrapped->pets_added_count) }}</p>
+ <p class="mt-1 text-xs font-semibold text-fur">Pets added</p>
+ </div>
+ <div class="rounded-[var(--radius-soft)] border border-warm-white/70 bg-warm-white/75 p-4 sm:col-span-2" role="listitem">
+ <p class="text-xs font-bold uppercase text-paw">Most-engaged post</p>
+ <p class="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-bark">{{ $wrappedPostExcerpt }}</p>
+ <p class="mt-2 text-xs font-semibold text-fur">{{ number_format($profileWrapped->most_engaged_post_score) }} reactions and comments</p>
+ </div>
+ </div>
+ </section>
+ @endif
+
  @if ($isOwner)
  @php
  $profileCompleteness = (int) ($profileCompletenessPercentage ?? $profileUser->profile_completeness_percentage);

@@ -33,6 +33,8 @@ Avatar uploads should use the circular drop-zone interface in the profile edit m
 
 Profile avatar and cover saves must move Livewire temporary uploads into permanent Spatie Media Library collections and leave avatar/cover image resizing plus optimizer work on the configured Media Library conversion queue. Do not mark profile media conversions as non-queued.
 
+Profile Wrapped share images are generated analytics artifacts, not user uploads. Store the queued PNG output on the public disk under `profile-wrapped/{year}/user-{id}.png`, persist only the generated path on `profile_wrapped_summaries`, and do not attach these cards to user media collections.
+
 ## Pet Media
 Pet media uses public disk.
 
