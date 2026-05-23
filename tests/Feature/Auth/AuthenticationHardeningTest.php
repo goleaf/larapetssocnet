@@ -66,6 +66,15 @@ it('records successful and failed login attempts without revealing which credent
         'event_type' => 'login_failure',
     ]);
 
+    $failureLog = AuthAuditLog::query()
+        ->where('user_id', $user->id)
+        ->where('event_type', 'login_failure')
+        ->firstOrFail();
+
+    expect($failureLog->identifier_hash)->toBe(hash('sha256', 'audit_user'))
+        ->and($user->refresh()->failed_login_attempts)->toBe(1)
+        ->and($user->last_failed_login_at)->not->toBeNull();
+
     $this->post('/login', [
         'email' => 'audit_user',
         'password' => 'password',
@@ -73,6 +82,9 @@ it('records successful and failed login attempts without revealing which credent
         ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticatedAs($user);
+    expect($user->refresh()->failed_login_attempts)->toBe(0)
+        ->and($user->last_failed_login_at)->toBeNull();
+
     $this->assertDatabaseHas('auth_audit_logs', [
         'user_id' => $user->id,
         'event_type' => 'login_success',

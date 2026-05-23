@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AttemptLoginAction
@@ -68,10 +69,17 @@ class AttemptLoginAction
         Auth::login($candidateUser, $request->boolean('remember'));
 
         RateLimiter::clear($request->throttleKey());
-        $candidateUser->forceFill([
+        $updates = [
             'last_login_at' => now(),
             'last_seen_at' => now(),
-        ])->save();
+        ];
+
+        if ($this->tracksFailedLogins()) {
+            $updates['failed_login_attempts'] = 0;
+            $updates['last_failed_login_at'] = null;
+        }
+
+        $candidateUser->forceFill($updates)->save();
 
         $this->auditLogger->record($request->user(), 'login_success', $request, [
             'identifier_type' => $this->identifierType($identifier),
@@ -120,6 +128,13 @@ class AttemptLoginAction
 
     private function recordFailure(LoginRequest $request, ?User $candidateUser, string $identifier, string $reason): void
     {
+        if ($candidateUser instanceof User && $this->tracksFailedLogins()) {
+            $candidateUser->forceFill([
+                'failed_login_attempts' => max(0, (int) $candidateUser->failed_login_attempts) + 1,
+                'last_failed_login_at' => now(),
+            ])->saveQuietly();
+        }
+
         $this->auditLogger->record($candidateUser, 'login_failure', $request, [
             'identifier_type' => $this->identifierType($identifier),
             'identifier_hash' => hash('sha256', $identifier),
@@ -138,5 +153,11 @@ class AttemptLoginAction
     private function identifierType(string $identifier): string
     {
         return filter_var($identifier, FILTER_VALIDATE_EMAIL) !== false ? 'email' : 'username';
+    }
+
+    private function tracksFailedLogins(): bool
+    {
+        return Schema::hasColumn('users', 'failed_login_attempts')
+            && Schema::hasColumn('users', 'last_failed_login_at');
     }
 }

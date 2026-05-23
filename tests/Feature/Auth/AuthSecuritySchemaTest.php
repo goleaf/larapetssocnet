@@ -31,6 +31,13 @@ it('keeps existing identity columns and adds missing auth security columns', fun
         ->and($indexes->has('users_account_status_index'))->toBeTrue()
         ->and($indexes->has('users_last_seen_at_index'))->toBeTrue()
         ->and($indexes->has('users_last_failed_login_at_index'))->toBeTrue();
+
+    $authAuditIndexes = collect(Schema::getIndexes('auth_audit_logs'))->keyBy('name');
+    $sessionIndexes = collect(Schema::getIndexes('sessions'))->keyBy('name');
+
+    expect(Schema::hasColumn('auth_audit_logs', 'identifier_hash'))->toBeTrue()
+        ->and($authAuditIndexes->has('auth_audit_logs_failure_lookup_index'))->toBeTrue()
+        ->and($sessionIndexes->has('sessions_user_id_last_activity_index'))->toBeTrue();
 });
 
 it('enforces case-insensitive username uniqueness at the database layer', function (): void {

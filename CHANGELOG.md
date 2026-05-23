@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fixed
+- Added a forward auth schema repair migration so databases that had already recorded the edited auth security migration receive the missing encrypted two-factor fields, pending email column, failed-login counters, social accounts table, and case-insensitive username indexes.
 - Kept pet profile and QR routes inside the authenticated application middleware stack.
 - Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
@@ -11,6 +12,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Updated failed login handling to increment/reset persisted counters and write an indexed hashed identifier on auth audit rows for IP-plus-credential lockout lookups without storing raw email addresses.
 - Updated the authentication user model/factory support for encrypted two-factor fields, pending email changes, account status enums, profile-completeness scores, failed-login counters, and separate social account relationships.
 - Added five accessible, config-backed profile themes stored on `users.profile_theme` and applied as CSS custom property overrides on public or locked profile roots only.
 - Updated the pet profile show page with first-class identity facts, species-aware life-stage labels, personality pills, a milestone story preview, stewardship context, QR sharing, and owner-only care notes.

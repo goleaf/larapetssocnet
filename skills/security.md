@@ -33,6 +33,7 @@
 - Reject banned accounts during login even when the supplied password is correct, redirect valid banned attempts to the restricted notice, and record the blocked attempt in `auth_audit_logs`.
 - Deny soft-deleted accounts and restrict pending-deletion, deactivated, and suspended accounts to their recovery or notice screens before full app access.
 - Rate-limit repeated failed login attempts by normalized email/username plus IP.
+- Persist failed-login counters on the user when identity is known and keep audit lookups indexed by IP plus a hashed normalized identifier, not raw email.
 - Keep auth-only secrets out of public serialization: hide `pending_email`, two-factor secrets, two-factor recovery codes, and social provider tokens; use encrypted casts for stored secrets.
 - Logout must invalidate the session, regenerate the CSRF token, and record a `logout` audit event.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.
