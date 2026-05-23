@@ -30,7 +30,7 @@
  <div class="space-y-3">
  <p class="text-sm font-medium text-bark">Current avatar</p>
  <div class="flex items-center gap-4">
- <x-ui.avatar :src="$avatarUrl" :name="$user->name" size="xl"/>
+ <x-ui.avatar :src="$avatarUrl" :name="$user->name" :user="$user" size="xl"/>
  <span class="text-sm text-fur">Visible across your profile and posts.</span>
  </div>
  @if ($hasAvatar)

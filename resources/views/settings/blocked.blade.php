@@ -30,11 +30,7 @@
  <x-ui.table-row>
  <x-ui.table-cell>
  <div class="flex items-center gap-3">
- <img
- class="h-10 w-10 rounded-full border border-whisker/30 object-cover"
- src="{{ $blockedUser->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($blockedUser->name).'&color=7F9CF5&background=EBF4FF' }}"
- alt="{{ $blockedUser->name }}"
- >
+ <x-ui.avatar :src="$blockedUser->avatar_url" :name="$blockedUser->name" :user="$blockedUser" size="md"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-semibold text-bark">{{ $blockedUser->name }}</p>
  <p class="truncate text-xs text-fur">{{ '@'.$blockedUser->username }}</p>

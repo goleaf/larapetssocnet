@@ -46,6 +46,7 @@ class AccountExportService
                     'groups_visibility' => $user->groups_visibility,
                     'show_in_explore' => $user->show_in_explore,
                     'open_following' => $user->open_following,
+                    'privacy_display_last_seen' => $user->privacy_display_last_seen,
                     'notification_preferences' => $user->notification_preferences,
                 ],
             ],

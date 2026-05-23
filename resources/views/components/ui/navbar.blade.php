@@ -61,7 +61,7 @@
  class="flex min-h-11 items-center gap-2 rounded-[var(--radius-soft)] px-2 text-sm transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  id="user-menu-button">
  <span class="sr-only">Open user menu</span>
- <x-ui.avatar size="sm" :name="$user?->name ?? 'User'" :src="$user?->avatar_url"/>
+ <x-ui.avatar size="sm" :name="$user?->name ?? 'User'" :src="$user?->avatar_url" :user="$user"/>
  <span class="hidden max-w-[8rem] truncate text-sm font-medium text-bark lg:block">{{ $user?->name ?? 'User'}}</span>
  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
  class="h-4 w-4 text-fur" aria-hidden="true">
@@ -143,7 +143,7 @@
  @auth
  <div class="border-t border-whisker/30 pb-3 pt-4">
  <div class="flex items-center px-4">
- <x-ui.avatar size="md" :name="$user?->name ?? 'User'" :src="$user?->avatar_url"/>
+ <x-ui.avatar size="md" :name="$user?->name ?? 'User'" :src="$user?->avatar_url" :user="$user"/>
 
  <div class="ml-3 min-w-0">
  <div class="truncate text-base font-medium text-bark">{{ $user?->name ?? 'User' }}</div>

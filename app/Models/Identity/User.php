@@ -193,6 +193,10 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public const CURRENT_TERMS_VERSION = '2026-05-18';
 
+    public const ACTIVE_STATUS_WINDOW_MINUTES = 5;
+
+    public const ACTIVE_STATUS_WRITE_THROTTLE_SECONDS = 60;
+
     private const PROFILE_DEFAULT_GRADIENTS = [
         'bg-gradient-to-r from-paw-light via-cream to-sky-light',
         'bg-gradient-to-r from-amber-100 via-cream to-paw-light',
@@ -353,7 +357,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'privacy_display_email' => false,
             'privacy_display_location' => false,
             'privacy_display_birthdate' => false,
-            'privacy_display_last_seen' => false,
+            'privacy_display_last_seen' => true,
             'profile_visibility' => ProfileVisibility::Public->value,
             'messaging_permission' => 'followers_only',
             'pets_visibility' => 'followers_only',
@@ -1027,6 +1031,24 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function scopeActiveRecently(Builder $query, int $days = 30): Builder
     {
         return $query->where('last_seen_at', '>=', now()->subDays($days));
+    }
+
+    public function isCurrentlyActive(?CarbonInterface $now = null): bool
+    {
+        if (! $this->last_seen_at instanceof CarbonInterface) {
+            return false;
+        }
+
+        $currentTime = $now ?? now();
+
+        return $this->last_seen_at->greaterThanOrEqualTo(
+            $currentTime->copy()->subMinutes(self::ACTIVE_STATUS_WINDOW_MINUTES)
+        );
+    }
+
+    public function shouldShowActiveStatus(?CarbonInterface $now = null): bool
+    {
+        return (bool) $this->privacy_display_last_seen && $this->isCurrentlyActive($now);
     }
 
     public function scopeNotBlockedFor(Builder $query, ?self $viewer): Builder

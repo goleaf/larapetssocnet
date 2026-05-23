@@ -88,7 +88,7 @@
 
  <div class="ui-subtle-card p-4">
  <div class="flex items-center gap-3">
- <x-ui.avatar :name="$user?->name ?? __('User')" :src="$user?->avatar_url" size="lg"/>
+ <x-ui.avatar :name="$user?->name ?? __('User')" :src="$user?->avatar_url" :user="$user" size="lg"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-semibold text-bark">{{ $user?->name ?? __('User') }}</p>
  <p class="truncate text-xs text-fur">{{ $user?->username ? '@'.$user->username : $user?->email }}</p>

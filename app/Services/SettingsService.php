@@ -62,13 +62,14 @@ class SettingsService
             'groups_visibility',
             'show_in_explore',
             'open_following',
+            'privacy_display_last_seen',
         ]));
 
         if ($privacySettings->isNotEmpty()) {
             $normalizedSettings = $privacySettings->toArray();
             $profileVisibility = null;
 
-            foreach (['show_in_explore', 'open_following'] as $booleanSetting) {
+            foreach (['show_in_explore', 'open_following', 'privacy_display_last_seen'] as $booleanSetting) {
                 if (array_key_exists($booleanSetting, $normalizedSettings)) {
                     $normalizedSettings[$booleanSetting] = (bool) $normalizedSettings[$booleanSetting];
                 }

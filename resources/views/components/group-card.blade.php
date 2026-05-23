@@ -78,7 +78,7 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             @if ($owner)
                 <a href="{{ route('profile.show', ['user' => $owner]) }}" class="flex min-w-0 items-center gap-2 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
-                    <x-avatar :src="$owner->avatar_url" :name="$owner->name" size="xs"/>
+                    <x-avatar :src="$owner->avatar_url" :name="$owner->name" :user="$owner" size="xs"/>
                     <span class="truncate text-xs shell-text-muted">{{ $owner->name }}</span>
                 </a>
             @else

@@ -14,7 +14,7 @@
  <li class="flex items-center justify-between gap-3 rounded-xl border border-[var(--ui-border)] px-4 py-3"
  aria-label="Blocked user {{ $blockedUser->name }}">
  <div class="flex min-w-0 items-center gap-3">
- <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')" :name="$blockedUser->name" size="md"/>
+ <x-avatar :src="$blockedUser->getFirstMediaUrl('avatar')" :name="$blockedUser->name" :user="$blockedUser" size="md"/>
  <div class="min-w-0">
  <p class="truncate font-semibold">{{ $blockedUser->name }}</p>
  <p class="truncate text-xs shell-text-muted">&#64;{{ $blockedUser->username }}</p>

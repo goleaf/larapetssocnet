@@ -11,6 +11,7 @@ it('updates privacy settings to private and disables explore', function (): void
         'is_private' => false,
         'show_in_explore' => true,
         'open_following' => true,
+        'privacy_display_last_seen' => true,
     ]);
 
     $this->actingAs($user)
@@ -21,6 +22,7 @@ it('updates privacy settings to private and disables explore', function (): void
             'groups_visibility' => 'followers_only',
             'show_in_explore' => true,
             'open_following' => true,
+            'privacy_display_last_seen' => false,
         ])
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('settings.privacy'));
@@ -31,6 +33,7 @@ it('updates privacy settings to private and disables explore', function (): void
     expect((bool) $user->is_private)->toBeTrue();
     expect((bool) $user->show_in_explore)->toBeFalse();
     expect((bool) $user->open_following)->toBeFalse();
+    expect((bool) $user->privacy_display_last_seen)->toBeFalse();
 });
 
 it('privacy updates do not overwrite profile fields', function (): void {
@@ -47,6 +50,7 @@ it('privacy updates do not overwrite profile fields', function (): void {
             'groups_visibility' => 'everyone',
             'show_in_explore' => true,
             'open_following' => false,
+            'privacy_display_last_seen' => true,
         ])
         ->assertSessionHasNoErrors();
 

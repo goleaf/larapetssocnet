@@ -183,7 +183,7 @@
 
  <div class="px-8 relative -mt-12">
  <div class="inline-block rounded-full bg-warm-white p-1.5 ring-1 ring-[var(--border-soft)]">
- <x-avatar :src="$listing->seller?->avatar_url" :name="$listing->seller?->name"
+ <x-avatar :src="$listing->seller?->avatar_url" :name="$listing->seller?->name" :user="$listing->seller"
  class="h-20 w-20"/>
  </div>
 

@@ -79,7 +79,7 @@ class UserFactory extends Factory
             'privacy_display_email' => fake()->boolean(10),
             'privacy_display_location' => fake()->boolean(75),
             'privacy_display_birthdate' => fake()->boolean(20),
-            'privacy_display_last_seen' => fake()->boolean(80),
+            'privacy_display_last_seen' => true,
             'profile_visibility' => 'public',
             'profile_theme' => ProfileTheme::default()->value,
             'messaging_permission' => 'everyone',

@@ -4,18 +4,25 @@
 'alt'=> null,
 'size'=>'md',
 'online'=> false,
+'user'=> null,
 ])
 
 @php
+ $avatarUser = $user instanceof \App\Models\Identity\User ? $user : null;
+ $avatarName = $avatarUser?->name ?? $name;
+ $avatarSrc = $src ?? $avatarUser?->avatar_url;
  $avatarLabel = filled(trim((string) $alt))
      ? trim((string) $alt)
-     : (trim((string) $name) !== '' ? (string) $name : 'User');
+     : (trim((string) $avatarName) !== '' ? (string) $avatarName : 'User');
+ $showsActiveStatus = $avatarUser instanceof \App\Models\Identity\User
+     ? $avatarUser->shouldShowActiveStatus()
+     : (bool) $online;
 @endphp
 
 <div {{ $attributes->merge(['class'=>'relative inline-block shrink-0']) }}>
- @if(filled(is_string($src) ? trim($src) : null))
+ @if(filled(is_string($avatarSrc) ? trim($avatarSrc) : null))
  <img
- src="{{ is_string($src) ? trim($src) : null }}"
+ src="{{ is_string($avatarSrc) ? trim($avatarSrc) : null }}"
  alt="{{ $avatarLabel }}"
  loading="lazy"
  class="{{ [
@@ -43,13 +50,13 @@
     'bg-sky-light text-sky',
     'bg-amber-light text-amber',
     'bg-rose-light text-rose',
-  ][abs(crc32(trim((string) $name) !== '' ? (string) $name : 'User')) % 5] }} flex items-center justify-center rounded-pill border border-whisker/30 font-bold font-display uppercase" role="img" aria-label="{{ $avatarLabel }}">
- {{ ($initials = collect(preg_split('/\s+/', trim((string) $name) !== '' ? (string) $name : 'User', -1, PREG_SPLIT_NO_EMPTY) ?: [])->map(static fn (string $segment): string => mb_substr($segment, 0, 1))->take(2)->join('')) !== '' ? $initials : 'U' }}
+  ][abs(crc32(trim((string) $avatarName) !== '' ? (string) $avatarName : 'User')) % 5] }} flex items-center justify-center rounded-pill border border-whisker/30 font-bold font-display uppercase" role="img" aria-label="{{ $avatarLabel }}">
+ {{ ($initials = collect(preg_split('/\s+/', trim((string) $avatarName) !== '' ? (string) $avatarName : 'User', -1, PREG_SPLIT_NO_EMPTY) ?: [])->map(static fn (string $segment): string => mb_substr($segment, 0, 1))->take(2)->join('')) !== '' ? $initials : 'U' }}
  </div>
  @endif
 
- @if($online)
- <span class="absolute block rounded-pill border-warm-white bg-leaf {{ [
+ @if($showsActiveStatus)
+ <span data-ui="active-status-indicator" title="Currently active" aria-hidden="true" class="absolute block rounded-pill border-warm-white bg-leaf {{ [
     'xs'=>'h-1.5 w-1.5 border-[1.5px] bottom-0 right-0',
     'sm'=>'h-2.5 w-2.5 border-2 bottom-0 right-0',
     'md'=>'h-3 w-3 border-2 bottom-0 right-0',
@@ -58,5 +65,6 @@
     'xl'=>'h-5 w-5 border-[3px] bottom-1 right-1',
     '2xl'=>'h-6 w-6 border-[3px] bottom-1 right-1',
   ][(string) $size] ?? 'h-3 w-3 border-2 bottom-0 right-0' }}"></span>
+ <span class="sr-only">Currently active</span>
  @endif
 </div>

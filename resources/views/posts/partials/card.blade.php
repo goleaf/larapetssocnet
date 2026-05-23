@@ -76,7 +76,7 @@ async sharePost() {
  <header class="flex items-start justify-between gap-4">
  <div class="min-w-0 flex items-start gap-3">
  <a href="{{ route('profile.show', ['user' => $post->displayAuthor()]) }}" class="shrink-0">
- <x-avatar :src="$post->displayAuthor()?->avatar_url" :name="$post->displayAuthor()?->name" size="md"/>
+ <x-avatar :src="$post->displayAuthor()?->avatar_url" :name="$post->displayAuthor()?->name" :user="$post->displayAuthor()" size="md"/>
  </a>
 
  <div class="min-w-0">

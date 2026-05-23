@@ -248,6 +248,10 @@
  <span class="font-display text-4xl font-bold uppercase lg:text-5xl" aria-hidden="true">{{ $profileUser->profile_initial }}</span>
  </div>
  @endif
+ @if ($profileUser->shouldShowActiveStatus())
+ <span data-ui="active-status-indicator" title="Currently active" aria-hidden="true" class="absolute bottom-1 right-1 h-5 w-5 rounded-full border-[3px] border-white bg-leaf lg:h-6 lg:w-6"></span>
+ <span class="sr-only">Currently active</span>
+ @endif
  </div>
  </div>
 
@@ -1045,7 +1049,7 @@ wire:key="profile-report-modal-{{ $profileUser->getKey() }}"
  @foreach ($friendsPreview as $friend)
  <a href="{{ route('profile.show', ['user'=> $friend]) }}"
  class="flex min-h-14 items-center gap-2 rounded-lg border border-whisker/30 bg-cream px-2 py-2 transition-colors hover:bg-paw-light/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <x-ui.avatar :src="$friend->avatar_url" :name="$friend->name" size="sm"/>
+ <x-ui.avatar :src="$friend->avatar_url" :name="$friend->name" :user="$friend" size="sm"/>
  <div class="min-w-0">
  <p class="truncate text-sm font-medium text-bark">{{ $friend->name }}</p>
  <p class="truncate text-[11px] text-fur">&#64;{{ $friend->username }}</p>
@@ -1486,7 +1490,7 @@ wire:key="profile-report-modal-{{ $profileUser->getKey() }}"
  @if ($isOwner)
  <x-ui.card>
  <div class="flex items-center gap-3">
- <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" size="md"/>
+ <x-ui.avatar :src="$avatarUrl" :name="$profileUser->name" :user="$profileUser" size="md"/>
  <a href="{{ route('posts.create') }}"
  class="flex min-h-11 w-full items-center rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  What's on your mind, {{ $profileUser->name }}?

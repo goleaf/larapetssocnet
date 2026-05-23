@@ -32,6 +32,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added privacy-gated currently-active avatar indicators backed by `users.last_seen_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.
 - Added public profile portfolio mode at `/@username/portfolio`, backed by an ordered `profile_portfolio_posts` pivot table, a settings management form for up to 12 published public posts, and a responsive magazine-style showcase grid.
 - Added first-class pet profile ownership extensions with scoped co-owner permissions, pet milestones with optional automatic post sharing, authenticated breed autocomplete, server-generated QR SVGs, and daily pet birthday notifications.
 - Added owner-only Profile Wrapped annual summaries, generated during the first week of January with yearly post, reaction, follower, pet, activity-month, and top-post metrics plus queued PNG share-card generation.

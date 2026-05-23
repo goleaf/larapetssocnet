@@ -236,7 +236,7 @@ new class extends Component
  @if ($data['isOwner'])
  <x-ui.card>
  <div class="flex items-center gap-3">
- <x-ui.avatar :src="$data['profileUser']->avatar_url" :name="$data['profileUser']->name" size="md"/>
+ <x-ui.avatar :src="$data['profileUser']->avatar_url" :name="$data['profileUser']->name" :user="$data['profileUser']" size="md"/>
  <a href="{{ route('posts.create') }}"
  class="flex min-h-11 w-full items-center rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  What's on your mind, {{ $data['profileUser']->name }}?

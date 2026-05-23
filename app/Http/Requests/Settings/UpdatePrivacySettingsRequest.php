@@ -28,6 +28,7 @@ class UpdatePrivacySettingsRequest extends FormRequest
             'groups_visibility' => ['required', 'string', 'in:everyone,followers_only'],
             'show_in_explore' => ['boolean'],
             'open_following' => ['boolean'],
+            'privacy_display_last_seen' => ['boolean'],
         ];
     }
 

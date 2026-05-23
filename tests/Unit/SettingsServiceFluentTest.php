@@ -14,6 +14,7 @@ it('skips privacy updates when the settings payload is empty', function (): void
         'groups_visibility' => 'everyone',
         'show_in_explore' => true,
         'open_following' => false,
+        'privacy_display_last_seen' => true,
     ]);
 
     app(SettingsService::class)->savePrivacySettings($user, []);
@@ -26,6 +27,7 @@ it('skips privacy updates when the settings payload is empty', function (): void
     expect($user->groups_visibility)->toBe('everyone');
     expect($user->show_in_explore)->toBeTrue();
     expect($user->open_following)->toBeFalse();
+    expect($user->privacy_display_last_seen)->toBeTrue();
 });
 
 it('updates only whitelisted privacy settings and normalizes boolean flags', function (): void {
@@ -36,6 +38,7 @@ it('updates only whitelisted privacy settings and normalizes boolean flags', fun
         'groups_visibility' => 'everyone',
         'show_in_explore' => true,
         'open_following' => false,
+        'privacy_display_last_seen' => true,
         'name' => 'Original Name',
     ]);
 
@@ -44,6 +47,7 @@ it('updates only whitelisted privacy settings and normalizes boolean flags', fun
         'messaging_permission' => 'followers_only',
         'show_in_explore' => 0,
         'open_following' => '1',
+        'privacy_display_last_seen' => '',
         'name' => 'Should Stay Original',
     ]);
 
@@ -55,6 +59,7 @@ it('updates only whitelisted privacy settings and normalizes boolean flags', fun
     expect($user->groups_visibility)->toBe('everyone');
     expect($user->show_in_explore)->toBeFalse();
     expect($user->open_following)->toBeTrue();
+    expect($user->privacy_display_last_seen)->toBeFalse();
     expect($user->name)->toBe('Original Name');
 });
 

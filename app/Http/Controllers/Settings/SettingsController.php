@@ -93,6 +93,7 @@ class SettingsController extends Controller
         $settings = array_merge([
             'show_in_explore' => false,
             'open_following' => false,
+            'privacy_display_last_seen' => false,
         ], $validated);
 
         $this->settingsService->savePrivacySettings($request->user(), $settings);

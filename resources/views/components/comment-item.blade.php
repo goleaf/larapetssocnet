@@ -4,7 +4,7 @@
  <div class="flex items-start gap-2">
  <!-- Avatar -->
  <a href="{{ route('profile.show', $comment->user->username) }}" class="shrink-0 mt-0.5">
- <x-ui.avatar :src="$comment->user->avatar_url" :name="$comment->user->name" size="sm"/>
+ <x-ui.avatar :src="$comment->user->avatar_url" :name="$comment->user->name" :user="$comment->user" size="sm"/>
  </a>
 
  <div class="flex-1 min-w-0" x-data="{ showReply: false, editing: false, collapsed: false }">
@@ -125,7 +125,7 @@
  @can('reply', $comment)
  @if(! $comment->isReply())
  <div x-show="showReply" x-cloak class="mt-2 w-full max-w-2xl flex items-start gap-2">
- <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" size="xs" class="mt-1"/>
+ <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" :user="auth()->user()" size="xs" class="mt-1"/>
  <div class="flex-1">
  <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="relative">
  @csrf

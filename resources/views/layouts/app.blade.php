@@ -41,7 +41,7 @@
  <div class="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-4 overflow-y-auto overscroll-contain pb-4 pr-1 [scrollbar-gutter:stable]">
  <x-ui.card>
  <div class="flex items-center gap-3">
- <x-ui.avatar :name="$user?->name ??'Guest User'" :src="$user?->avatar_url" size="lg"/>
+ <x-ui.avatar :name="$user?->name ??'Guest User'" :src="$user?->avatar_url" :user="$user" size="lg"/>
  <div class="min-w-0">
  <p class="truncate text-base font-semibold text-bark">{{ $user?->name ??'Guest User'}}</p>
  <p class="truncate text-xs text-fur">{{ $user?->username ?'@'.$user->username : ($user?->email ??'community@larapets.test') }}</p>
@@ -113,9 +113,10 @@
  :name="$suggestedUser->name"
  :subtitle="$suggestedUser->username ?'@'.$suggestedUser->username :'Pet lover'"
  :href="route('profile.show', $suggestedUser)"
+ :user="$suggestedUser"
  >
  <x-slot name="avatar">
- <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" size="sm"/>
+ <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" :user="$suggestedUser" size="sm"/>
  </x-slot>
  </x-ui.user-row>
  @empty
@@ -144,6 +145,7 @@
  :subtitle="$suggested->username ?'@'.$suggested->username :'Pet lover'"
  :avatar="$suggested->avatar_url"
  :href="route('profile.show', ['user'=> $suggested])"
+ :user="$suggested"
  class="px-2"
  >
  <x-slot name="action">

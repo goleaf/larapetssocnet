@@ -71,7 +71,7 @@
 
  <x-ui.card padding="lg">
  <div class="mb-4 flex items-start gap-3 border-b border-whisker/30 pb-4">
- <x-avatar :src="$user->avatar_url" :name="$user->name" size="md"/>
+ <x-avatar :src="$user->avatar_url" :name="$user->name" :user="$user" size="md"/>
  <div>
  <p class="text-sm font-semibold text-bark">{{ __('feed.create_post') }}</p>
  <p class="mt-1 text-xs leading-5 text-fur">{{ __('Share a pet moment, care question, or adoption update.') }}</p>
@@ -198,7 +198,7 @@
  <div class="flex items-center justify-between gap-3">
  <div class="min-w-0 flex items-center gap-3">
  <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="shrink-0 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <x-ui.avatar :src="$suggested->avatar_url" :name="$suggested->name" size="md"/>
+ <x-ui.avatar :src="$suggested->avatar_url" :name="$suggested->name" :user="$suggested" size="md"/>
  </a>
  <div class="min-w-0">
  <a href="{{ route('profile.show', ['user'=> $suggested]) }}" class="block min-h-6 truncate text-sm font-semibold text-bark hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">

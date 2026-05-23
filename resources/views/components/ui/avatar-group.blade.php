@@ -16,6 +16,7 @@
     ?? ((is_object($user) && method_exists($user, 'getFirstMediaUrl')) ? $user->getFirstMediaUrl('avatar') : null)"
  :name="(string) (data_get($user, 'name') ?? data_get($user, 'username') ?? 'User')"
  :size="$size"
+ :user="$user"
  class="{{ $index > 0 ? ([
     'xs'=>'-ml-1.5',
     'sm'=>'-ml-2',

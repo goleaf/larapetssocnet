@@ -46,6 +46,10 @@
  <span class="font-display text-4xl font-bold uppercase lg:text-5xl" aria-hidden="true">{{ $user->profile_initial }}</span>
  </div>
  @endif
+ @if ($user->shouldShowActiveStatus())
+ <span data-ui="active-status-indicator" title="Currently active" aria-hidden="true" class="absolute bottom-1 right-1 h-5 w-5 rounded-full border-[3px] border-white bg-leaf lg:h-6 lg:w-6"></span>
+ <span class="sr-only">Currently active</span>
+ @endif
  </div>
  </div>
 

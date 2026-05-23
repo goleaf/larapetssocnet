@@ -109,7 +109,7 @@
             <div class="flex items-start gap-3">
                 @if ($author)
                     <a href="{{ $profileUrl }}" class="shrink-0 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
-                        <x-ui.avatar :src="$authorAvatar" :name="$author->name" size="md"/>
+                        <x-ui.avatar :src="$authorAvatar" :name="$author->name" :user="$author" size="md"/>
                     </a>
                 @else
                     <x-ui.avatar :name="'Deleted User'" size="md"/>

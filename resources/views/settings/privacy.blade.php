@@ -75,6 +75,9 @@
 
  <x-ui.toggle name="open_following" label="Open Following"
  description="Allow anyone to see who you follow." :checked="old('open_following', $user->open_following)"/>
+
+ <x-ui.toggle name="privacy_display_last_seen" label="Show active status"
+ description="Show a small green dot on your avatar when you were active in the last 5 minutes." :checked="old('privacy_display_last_seen', $user->privacy_display_last_seen)"/>
  </div>
 
  </div>

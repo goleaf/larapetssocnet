@@ -490,7 +490,7 @@ class="flex min-h-24 items-start gap-3 rounded-[var(--radius-soft)] px-3 py-3 tr
 <a href="{{ route('profile.show', ['user'=> $listedUser]) }}"
 class="mt-0.5 shrink-0 rounded-pill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
 aria-label="View {{ $listedDisplayName }} profile">
-<x-ui.avatar :src="$listedUser->avatar_url" :name="$listedDisplayName" :alt="$listedDisplayName.' profile avatar'" size="profile-list"/>
+<x-ui.avatar :src="$listedUser->avatar_url" :name="$listedDisplayName" :alt="$listedDisplayName.' profile avatar'" :user="$listedUser" size="profile-list"/>
 </a>
 <div class="min-w-0 flex-1">
 <div class="flex min-w-0 items-center gap-1.5">

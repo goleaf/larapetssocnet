@@ -27,8 +27,8 @@ new class extends Component
      *     bioDetails: list<array{label: string, value: string, icon: string, iconPath: string, url?: string, datetime?: string|null}>,
      *     activitySummaryItems: list<array{label: string, value: string, datetime?: string|null}>,
      *     petSummaryItems: list<array{name: string, url: string, avatarUrl: string|null}>,
-     *     mutualConnections: array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>},
-     *     alsoFollowedBy: array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>},
+     *     mutualConnections: array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>},
+     *     alsoFollowedBy: array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>},
      *     overviewItems: list<array{label: string, value: string}>,
      *     contactItems: list<array{label: string, url: string, display: string}>,
      *     interests: list<string>
@@ -246,7 +246,7 @@ new class extends Component
     }
 
     /**
-     * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>}
      */
     private function mutualConnections(User $profileUser, ?User $viewer): array
     {
@@ -269,7 +269,7 @@ new class extends Component
     }
 
     /**
-     * @return array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     * @return array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>}
      */
     private function alsoFollowedBy(User $profileUser, ?User $viewer): array
     {
@@ -291,7 +291,7 @@ new class extends Component
 
     /**
      * @param  Builder<User>  $baseQuery
-     * @return list<array{name: string, username: string, url: string, avatarUrl: string|null}>
+     * @return list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>
      */
     private function connectionPreviewItems(Builder $baseQuery, int $limit): array
     {
@@ -303,6 +303,8 @@ new class extends Component
                 'users.username',
                 'users.avatar_path',
                 'users.profile_photo_path',
+                'users.last_seen_at',
+                'users.privacy_display_last_seen',
             ])
             ->with([
                 'media' => fn ($mediaQuery) => $mediaQuery
@@ -316,6 +318,7 @@ new class extends Component
                 'username' => (string) $connection->username,
                 'url' => route('profile.show', ['user' => $connection->username]),
                 'avatarUrl' => $this->mutualConnectionAvatarUrl($connection),
+                'active' => $connection->shouldShowActiveStatus(),
             ])
             ->values()
             ->all();
@@ -374,7 +377,7 @@ new class extends Component
     }
 
     /**
-     * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     * @return array{canShow: bool, count: int, hasMore: bool, seeAllUrl: string|null, items: list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>}
      */
     private function emptyMutualConnections(): array
     {
@@ -388,7 +391,7 @@ new class extends Component
     }
 
     /**
-     * @return array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null}>}
+     * @return array{canShow: bool, items: list<array{name: string, username: string, url: string, avatarUrl: string|null, active: bool}>}
      */
     private function emptyAlsoFollowedBy(): array
     {
@@ -620,7 +623,7 @@ new class extends Component
 	 <a href="{{ $connection['url'] }}"
 	 class="group flex w-20 flex-col items-center gap-2 rounded-[var(--radius-soft)] p-2 text-center transition-colors hover:bg-cream/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
 	 aria-label="View {{ $connection['name'] }} profile">
-	 <x-ui.avatar :src="$connection['avatarUrl']" :name="$connection['name']" :alt="$connection['name'].' profile photo'" size="lg" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
+	 <x-ui.avatar :src="$connection['avatarUrl']" :name="$connection['name']" :alt="$connection['name'].' profile photo'" :online="$connection['active'] ?? false" size="lg" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
 	 <span class="block w-full truncate text-xs font-semibold leading-tight text-bark group-hover:text-paw">{{ $connection['name'] }}</span>
 	 </a>
 	 </li>
@@ -655,7 +658,7 @@ new class extends Component
 	 <a href="{{ $connection['url'] }}"
 	 class="group flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/50 p-3 text-center transition-colors hover:border-paw/30 hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
 	 aria-label="View {{ $connection['name'] }} profile">
-	 <x-ui.avatar :src="$connection['avatarUrl']" :name="$connection['name']" :alt="$connection['name'].' profile photo'" size="md" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
+	 <x-ui.avatar :src="$connection['avatarUrl']" :name="$connection['name']" :alt="$connection['name'].' profile photo'" :online="$connection['active'] ?? false" size="md" class="transition-[scale] duration-200 group-hover:scale-[1.04]"/>
 	 <span class="block w-full truncate text-xs font-semibold leading-tight text-bark group-hover:text-paw">{{ $connection['name'] }}</span>
 	 </a>
 	 </li>

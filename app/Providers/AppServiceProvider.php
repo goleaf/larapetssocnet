@@ -28,6 +28,7 @@ use App\Policies\MessagePolicy;
 use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\UserPolicy;
+use App\Services\ActiveStatusService;
 use App\Services\UsernameRedirectResolver;
 use App\Support\Auth\PasswordPolicy;
 use App\Support\Models\LegacyModelMorphMap;
@@ -45,6 +46,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Livewire\Livewire;
 use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
@@ -65,6 +67,14 @@ class AppServiceProvider extends ServiceProvider
         Password::defaults(fn (): Password => PasswordPolicy::rule());
 
         LegacyModelMorphMap::register();
+
+        Livewire::listen('mount', function (): void {
+            $user = auth()->user();
+
+            if ($user instanceof User) {
+                app(ActiveStatusService::class)->touch($user);
+            }
+        });
 
         if ($this->app->environment('local')) {
             DB::listen(function (QueryExecuted $query): void {

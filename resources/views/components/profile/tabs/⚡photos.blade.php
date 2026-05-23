@@ -543,7 +543,7 @@ new class extends Component
  <div class="flex flex-col gap-4 px-4 py-4">
  <header class="flex items-start gap-3">
  <a href="{{ route('profile.show', $selectedAuthorUsername) }}" class="shrink-0 rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <x-ui.avatar :src="$selectedAuthorAvatar" :name="$selectedAuthorName" size="md"/>
+ <x-ui.avatar :src="$selectedAuthorAvatar" :name="$selectedAuthorName" :user="$selectedAuthor" size="md"/>
  </a>
  <div class="min-w-0">
  <a href="{{ route('profile.show', $selectedAuthorUsername) }}" class="block truncate text-sm font-semibold text-bark hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
