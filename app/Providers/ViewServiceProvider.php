@@ -281,6 +281,7 @@ class ViewServiceProvider extends ServiceProvider
     {
         return $this->routeIsActive($currentRoute, [
             'profile.show',
+            'profile.portfolio',
             'profile.followers',
             'profile.following',
             'profile.edit',

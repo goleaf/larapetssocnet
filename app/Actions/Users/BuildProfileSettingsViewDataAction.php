@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Actions\Users;
 
 use App\Models\Identity\User;
+use App\Services\ProfilePortfolioService;
 
 class BuildProfileSettingsViewDataAction
 {
+    public function __construct(private readonly ProfilePortfolioService $portfolioService) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -19,6 +22,8 @@ class BuildProfileSettingsViewDataAction
         $avatarUrl = is_string($avatarUrl) ? $avatarUrl : null;
         $hasAvatar = ! in_array($avatarUrl, [null, '', '/images/default-avatar.png'], true);
         $coverUrl = $user->coverImageUrl();
+        $portfolioPosts = $this->portfolioService->manageablePosts($user);
+        $portfolioPostIds = $this->portfolioService->selectedPostIds($user);
 
         return [
             'user' => $user,
@@ -26,6 +31,10 @@ class BuildProfileSettingsViewDataAction
             'hasAvatar' => $hasAvatar,
             'coverUrl' => $coverUrl,
             'hasCover' => $coverUrl !== null && $coverUrl !== '',
+            'portfolioPosts' => $portfolioPosts,
+            'portfolioPostIds' => $portfolioPostIds,
+            'portfolioPositions' => $this->portfolioService->selectedPositions($user),
+            'portfolioUrl' => route('profile.portfolio', ['user' => $user->username]),
         ];
     }
 }

@@ -45,6 +45,7 @@ use App\Http\Controllers\Posts\SavedPostController;
 use App\Http\Controllers\Posts\ShareController;
 use App\Http\Controllers\Privacy\PrivacyController;
 use App\Http\Controllers\Profile\ProfileController;
+use App\Http\Controllers\Profile\ProfilePortfolioController;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Social\BlockController;
@@ -287,6 +288,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
 
         Route::get('/profile', [SettingsController::class, 'editProfile'])->name('profile');
         Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/profile/portfolio', [ProfilePortfolioController::class, 'update'])->name('profile.portfolio.update');
 
         Route::get('/password', [SettingsController::class, 'editPassword'])->name('password');
         Route::put('/password', [SettingsController::class, 'updatePassword'])->name('password.update');
@@ -387,6 +389,10 @@ require __DIR__.'/auth.php';
 
 Route::post('/@{user:username}/follow', [PublicProfileController::class, 'guestFollowPrompt'])
     ->name('profile.guest-follow')
+    ->where('user', '[a-zA-Z0-9_]+');
+
+Route::get('/@{user:username}/portfolio', ProfilePortfolioController::class)
+    ->name('profile.portfolio')
     ->where('user', '[a-zA-Z0-9_]+');
 
 Route::livewire('/@{user:username}', 'pages.profile.show')

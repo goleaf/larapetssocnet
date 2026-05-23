@@ -175,5 +175,101 @@
  <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-36">Save Profile</x-ui.button>
  </div>
  </form>
+
+ @php
+ $selectedPortfolioPostIds = collect(old('portfolio_posts', $portfolioPostIds ?? []))
+ ->filter(fn ($postId): bool => is_numeric($postId))
+ ->map(fn ($postId): int => (int) $postId)
+ ->values()
+ ->all();
+ $selectedPortfolioPositions = collect($portfolioPositions ?? [])
+ ->mapWithKeys(fn ($position, $postId): array => [(int) $postId => (int) $position])
+ ->all();
+ @endphp
+
+ <section class="space-y-5 border-t border-whisker/30 pt-6" data-ui="settings-profile-portfolio">
+ <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+ <div class="space-y-2">
+ <p class="chip min-h-8">Portfolio mode</p>
+ <h3 class="shell-title text-xl">Curate your public portfolio</h3>
+ <p class="max-w-2xl text-sm leading-6 text-fur">
+ Choose up to 12 published public posts for a magazine-style page at your shareable portfolio link.
+ </p>
+ </div>
+ <x-ui.button :href="$portfolioUrl" target="_blank" rel="noopener noreferrer" variant="default" class="min-h-11">
+ View Portfolio
+ </x-ui.button>
+ </div>
+
+ @error('portfolio_posts')
+ <x-ui.alert type="error" title="Portfolio could not be saved">
+ {{ $message }}
+ </x-ui.alert>
+ @enderror
+
+ <form action="{{ route('settings.profile.portfolio.update') }}" method="POST" class="space-y-4" data-ui="settings-profile-portfolio-form">
+ @csrf
+ @method('PUT')
+
+ @if (($portfolioPosts ?? collect())->isEmpty())
+ <div class="rounded-[var(--radius-card)] border border-dashed border-whisker/60 bg-cream/30 px-5 py-6 text-sm leading-6 text-fur" data-ui="settings-profile-portfolio-empty">
+ Portfolio posts must be published, public, and visible to guests. Publish a public post to start building your showcase.
+ </div>
+ @else
+ <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+ @foreach ($portfolioPosts as $post)
+ @php
+ $postId = (int) $post->getKey();
+ $isSelected = in_array($postId, $selectedPortfolioPostIds, true);
+ $mediaItem = $post->mediaItemsForDisplay()->first();
+ $mediaUrl = $mediaItem ? \App\Models\Content\Post::mediaItemUrl($mediaItem) : '';
+ $position = old('portfolio_positions.'.$postId, $selectedPortfolioPositions[$postId] ?? min($loop->iteration, 12));
+ @endphp
+ <article class="rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-3" data-ui="settings-profile-portfolio-option">
+ <div class="grid grid-cols-[5rem_minmax(0,1fr)] gap-3">
+ <div class="aspect-square overflow-hidden rounded-[var(--radius-soft)] bg-cream">
+ @if ($mediaUrl !== '')
+ <img src="{{ $mediaUrl }}" alt="{{ $user->name }} portfolio post media" class="h-full w-full object-cover" loading="lazy">
+ @else
+ <div class="flex h-full w-full items-center justify-center {{ $user->profile_default_gradient }}">
+ <span class="px-2 text-center text-xs font-bold uppercase text-fur">Text</span>
+ </div>
+ @endif
+ </div>
+
+ <div class="min-w-0">
+ <x-ui.checkbox
+ name="portfolio_posts[]"
+ id="portfolio_post_{{ $postId }}"
+ :value="$postId"
+ :checked="$isSelected"
+ :label="\Illuminate\Support\Str::limit(strip_tags((string) ($post->body_html ?: $post->body)), 64)"
+ />
+ <div class="mt-3 grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-2">
+ <label for="portfolio_position_{{ $postId }}" class="text-xs font-semibold text-fur">Position</label>
+ <input
+ id="portfolio_position_{{ $postId }}"
+ name="portfolio_positions[{{ $postId }}]"
+ type="number"
+ min="1"
+ max="12"
+ value="{{ $position }}"
+ class="form-input h-9 w-full text-sm"
+ aria-label="Portfolio position for post {{ $loop->iteration }}">
+ </div>
+ <p class="mt-2 text-xs text-fur">{{ number_format((int) $post->reactions_count) }} reactions · {{ number_format((int) $post->comments_count) }} comments</p>
+ </div>
+ </div>
+ </article>
+ @endforeach
+ </div>
+
+ <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
+ <p class="text-sm text-fur">The first slot becomes the large feature; slots 2-4 are secondary features; the rest render as accent tiles.</p>
+ <x-ui.button type="submit" variant="primary" class="min-h-11 sm:min-w-40">Save Portfolio</x-ui.button>
+ </div>
+ @endif
+ </form>
+ </section>
  </div>
 </x-settings-layout>

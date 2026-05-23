@@ -482,6 +482,25 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return $this->hasMany(Post::class);
     }
 
+    /**
+     * @return HasMany<ProfilePortfolioPost, $this>
+     */
+    public function profilePortfolioPosts(): HasMany
+    {
+        return $this->hasMany(ProfilePortfolioPost::class);
+    }
+
+    /**
+     * @return BelongsToMany<Post, $this>
+     */
+    public function portfolioPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'profile_portfolio_posts')
+            ->withPivot(['display_order'])
+            ->orderBy('profile_portfolio_posts.display_order')
+            ->withTimestamps();
+    }
+
     public function savedPosts(): BelongsToMany
     {
         return $this->belongsToMany(Post::class, 'saved_posts', 'user_id', 'post_id')
