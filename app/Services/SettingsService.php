@@ -8,6 +8,7 @@ use App\Models\Identity\User;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Fluent;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class SettingsService
@@ -42,6 +43,7 @@ class SettingsService
         $user->update([
             'password' => Hash::make($newPassword),
             'password_changed_at' => now(),
+            'remember_token' => Str::random(60),
         ]);
 
         return $user;

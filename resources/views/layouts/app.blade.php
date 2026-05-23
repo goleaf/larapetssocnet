@@ -12,6 +12,7 @@
 
  <title>{{ trim((string) ($title ?? $__env->yieldContent('title'))) !== '' ? trim((string) ($title ?? $__env->yieldContent('title'))).' · '.($appName ?? config('app.name', 'LaraPets')) : ($appName ?? config('app.name', 'LaraPets')) }}</title>
 
+ {!! \Livewire\Mechanisms\FrontendAssets\FrontendAssets::styles() !!}
  @vite(['resources/scss/app.scss', 'resources/js/app.js'])
  </head>
  <body class="min-h-screen bg-cream font-body text-bark antialiased" x-data="appShell()">
@@ -270,5 +271,6 @@
  </main>
  </div>
  </div>
+ {!! \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scriptConfig() !!}
  </body>
 </html>

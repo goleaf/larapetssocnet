@@ -9,9 +9,12 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added lifecycle coverage for magic login links, password reset non-enumeration and session invalidation, Google OAuth account creation/returning/merge flows, device-session scoping, and TOTP/recovery-code challenges.
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Updated protected app routes with a two-factor challenge gate, added password-reset/password-change database session invalidation, and made reset-link requests return the same user-facing response for existing and missing emails.
+- Updated Livewire/Alpine bootstrapping to use Livewire 4's ESM bundle once through `resources/js/app.js`, removing duplicate Alpine runtime warnings while preserving existing Alpine components.
 - Updated failed login handling to increment/reset persisted counters and write an indexed hashed identifier on auth audit rows for IP-plus-credential lockout lookups without storing raw email addresses.
 - Updated the authentication user model/factory support for encrypted two-factor fields, pending email changes, account status enums, profile-completeness scores, failed-login counters, and separate social account relationships.
 - Added five accessible, config-backed profile themes stored on `users.profile_theme` and applied as CSS custom property overrides on public or locked profile roots only.
@@ -43,6 +46,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added queued one-time magic login links with hashed single-use tokens, TOTP two-factor setup/challenge pages with hashed recovery codes, device-session review/logout controls, and Google/Facebook OAuth redirect/callback handling that stores provider identities in `social_accounts`.
 - Added the authentication security schema foundation with encrypted two-factor columns, pending email change storage, profile completeness tracking, account status and failed-login tracking columns, case-insensitive username and reserved-username unique indexes, and a separate encrypted `social_accounts` table for OAuth provider identities.
 - Added privacy-gated currently-active avatar indicators backed by `users.last_seen_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.
 - Added public profile portfolio mode at `/@username/portfolio`, backed by an ordered `profile_portfolio_posts` pivot table, a settings management form for up to 12 published public posts, and a responsive magazine-style showcase grid.

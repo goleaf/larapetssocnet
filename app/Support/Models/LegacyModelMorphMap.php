@@ -52,6 +52,7 @@ use App\Models\Pets\PetTag;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Pets\Species;
 use App\Models\Security\AuthAuditLog;
+use App\Models\Security\MagicLoginToken;
 use App\Models\Social\Block;
 use App\Models\Social\Follow;
 use App\Models\Social\UserBlock;
@@ -89,6 +90,7 @@ final class LegacyModelMorphMap
             'App\Models\ListingImage' => ListingImage::class,
             'App\Models\MarketplaceListing' => MarketplaceListing::class,
             'App\Models\Message' => Message::class,
+            'App\Models\MagicLoginToken' => MagicLoginToken::class,
             'App\Models\Notification' => Notification::class,
             'App\Models\Pet' => Pet::class,
             'App\Models\PetCareTip' => PetCareTip::class,

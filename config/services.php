@@ -37,6 +37,24 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect_url' => env('GOOGLE_REDIRECT_URL', 'https://accounts.google.com/o/oauth2/v2/auth'),
+        'token_url' => env('GOOGLE_TOKEN_URL', 'https://oauth2.googleapis.com/token'),
+        'user_url' => env('GOOGLE_USER_URL', 'https://www.googleapis.com/oauth2/v3/userinfo'),
+        'scopes' => ['openid', 'profile', 'email'],
+    ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect_url' => env('FACEBOOK_REDIRECT_URL', 'https://www.facebook.com/v20.0/dialog/oauth'),
+        'token_url' => env('FACEBOOK_TOKEN_URL', 'https://graph.facebook.com/v20.0/oauth/access_token'),
+        'user_url' => env('FACEBOOK_USER_URL', 'https://graph.facebook.com/me?fields=id,name,email,picture'),
+        'scopes' => ['email', 'public_profile'],
+    ],
+
     'geocoding' => [
         'endpoint' => env('GEOCODING_ENDPOINT'),
         'key' => env('GEOCODING_KEY'),

@@ -1,6 +1,6 @@
 import'./bootstrap';
 
-import Alpine from'alpinejs';
+import { Livewire, Alpine } from'../../vendor/livewire/livewire/dist/livewire.esm';
 
 const DEFAULT_FLASH_TIMEOUT = 5000;
 
@@ -1170,4 +1170,4 @@ Alpine.data('profileActions', (config = {}) => ({
  }));
 });
 
-Alpine.start();
+Livewire.start();

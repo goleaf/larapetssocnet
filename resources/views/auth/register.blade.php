@@ -69,11 +69,27 @@
    }
 
    this.usernameChecking = true;
-   const res = await fetch('{{ route('api.username.available') }}?username=' + encodeURIComponent(this.username));
-   const data = await res.json();
-   this.usernameStatus = data.available ? 'ok' : 'taken';
-   this.usernameMessage = data.message || '';
-   this.usernameChecking = false;
+
+   try {
+    const res = await fetch('{{ route('api.username.available') }}?username=' + encodeURIComponent(this.username), {
+     headers: {
+      'Accept': 'application/json',
+     },
+    });
+
+    if (! res.ok) {
+     throw new Error('Username check failed.');
+    }
+
+    const data = await res.json();
+    this.usernameStatus = data.available ? 'ok' : 'taken';
+    this.usernameMessage = data.message || '';
+   } catch (error) {
+    this.usernameStatus = null;
+    this.usernameMessage = 'Unable to check availability right now.';
+   } finally {
+    this.usernameChecking = false;
+   }
   },
   passwordScore() {
    if (! this.password) {
@@ -141,11 +157,12 @@
  @blur="checkUsername()"
  x-bind:class="{'!border-success !focus:ring-success': usernameStatus === 'ok', '!border-danger !focus:ring-danger': usernameStatus === 'taken'}"
  />
- <div class="mt-1 flex items-center justify-between gap-3 text-xs">
+ <div class="mt-1 flex items-center justify-between gap-3 text-xs" data-ui="username-availability">
  <span class="text-fur">{{ __('3-30 chars. Letters, numbers, and underscores.') }}</span>
- <span x-show="usernameChecking" class="text-fur">Checking...</span>
- <span x-show="usernameStatus === 'ok'" class="font-medium text-success">Available</span>
- <span x-show="usernameStatus === 'taken'" class="font-medium text-danger" x-text="usernameMessage"></span>
+ <span x-show="usernameChecking" x-transition.opacity class="text-fur">Checking...</span>
+ <span x-show="usernameStatus === 'ok'" x-transition.opacity class="font-medium text-success">Available</span>
+ <span x-show="usernameStatus === 'taken'" x-transition.opacity class="font-medium text-danger" x-text="usernameMessage"></span>
+ <span x-show="usernameStatus === null && usernameMessage" x-transition.opacity class="font-medium text-amber" x-text="usernameMessage"></span>
  </div>
  </div>
 
@@ -163,12 +180,12 @@
  autocomplete="new-password"
  x-model="password"
  />
- <div x-show="password.length > 0" x-cloak class="mt-2 space-y-1">
+ <div x-show="password.length > 0" x-cloak x-transition class="mt-2 space-y-1" data-ui="password-strength-meter">
  <div class="grid grid-cols-4 gap-1" aria-hidden="true">
- <span class="h-1.5 rounded-full" x-bind:class="segmentClass(1)"></span>
- <span class="h-1.5 rounded-full" x-bind:class="segmentClass(2)"></span>
- <span class="h-1.5 rounded-full" x-bind:class="segmentClass(3)"></span>
- <span class="h-1.5 rounded-full" x-bind:class="segmentClass(4)"></span>
+ <span class="h-1.5 rounded-full transition-colors duration-200" x-bind:class="segmentClass(1)"></span>
+ <span class="h-1.5 rounded-full transition-colors duration-200" x-bind:class="segmentClass(2)"></span>
+ <span class="h-1.5 rounded-full transition-colors duration-200" x-bind:class="segmentClass(3)"></span>
+ <span class="h-1.5 rounded-full transition-colors duration-200" x-bind:class="segmentClass(4)"></span>
  </div>
  <p class="text-xs text-fur">Strength: <span class="font-semibold text-bark" x-text="passwordLabel()"></span></p>
  </div>
@@ -184,7 +201,7 @@
  autocomplete="new-password"
  x-model="passwordConfirmation"
  />
- <p x-show="passwordConfirmation.length > 0" x-cloak class="mt-1 text-xs" x-bind:class="passwordsMatch() ? 'text-success' : 'text-danger'">
+ <p x-show="passwordConfirmation.length > 0" x-cloak x-transition.opacity class="mt-1 text-xs" data-ui="password-confirmation-indicator" x-bind:class="passwordsMatch() ? 'text-success' : 'text-danger'">
  <span x-text="passwordsMatch() ? 'Passwords match.' : 'Passwords do not match.'"></span>
  </p>
  </div>

@@ -7,6 +7,7 @@
 
  <title>{{ config('app.name','LaraPets') }}</title>
 
+ {!! \Livewire\Mechanisms\FrontendAssets\FrontendAssets::styles() !!}
  @vite(['resources/scss/app.scss', 'resources/js/app.js'])
  </head>
  <body class="antialiased">
@@ -85,5 +86,6 @@
  </div>
  </section>
  </div>
+ {!! \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scriptConfig() !!}
  </body>
 </html>

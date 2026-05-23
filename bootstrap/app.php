@@ -7,6 +7,7 @@ use App\Exceptions\UserBannedException;
 use App\Exceptions\UserBlockedException;
 use App\Http\Middleware\BannedUserMiddleware;
 use App\Http\Middleware\EnsureAccountCanAccessApplication;
+use App\Http\Middleware\EnsureTwoFactorChallengeSatisfied;
 use App\Http\Middleware\RunRealtimeMaintenance;
 use App\Http\Middleware\TrackLastSeen;
 use Illuminate\Foundation\Application;
@@ -32,6 +33,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'banned' => BannedUserMiddleware::class,
             'active_account' => EnsureAccountCanAccessApplication::class,
+            'two_factor' => EnsureTwoFactorChallengeSatisfied::class,
             'track_last_seen' => TrackLastSeen::class,
         ]);
 

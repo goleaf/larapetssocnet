@@ -29,7 +29,9 @@ class AuthenticatedSessionController extends Controller
     {
         $restrictedResponse = $attemptLogin->handle($request);
 
-        if ($request->user() !== null) {
+        $user = $request->user();
+
+        if ($user !== null) {
             $request->session()->regenerate();
         }
 
@@ -37,7 +39,15 @@ class AuthenticatedSessionController extends Controller
             return $restrictedResponse;
         }
 
-        if (! $request->user()?->hasVerifiedEmail()) {
+        if (
+            $user !== null
+            && $user->two_factor_secret !== null
+            && (string) $request->session()->get('auth.two_factor_pending_user_id') === (string) $user->getKey()
+        ) {
+            return redirect()->route('two-factor.challenge');
+        }
+
+        if (! $user?->hasVerifiedEmail()) {
             return redirect()->route('verification.notice');
         }
 

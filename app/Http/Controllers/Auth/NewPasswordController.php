@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\StoreNewPasswordRequest;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\DeviceSessionService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,21 +31,26 @@ class NewPasswordController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(StoreNewPasswordRequest $request, AuthAuditLogger $auditLogger): RedirectResponse
+    public function store(StoreNewPasswordRequest $request, AuthAuditLogger $auditLogger, DeviceSessionService $sessions): RedirectResponse
     {
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request, $auditLogger): void {
+            function (User $user) use ($request, $auditLogger, $sessions): void {
                 $user->forceFill([
                     'password' => Hash::make($request->password),
+                    'password_changed_at' => now(),
                     'remember_token' => Str::random(60),
                 ])->save();
 
+                $deletedSessions = $sessions->destroyAllSessions($user);
+
                 event(new PasswordReset($user));
-                $auditLogger->record($user, 'password_reset', $request);
+                $auditLogger->record($user, 'password_reset', $request, [
+                    'deleted_sessions' => $deletedSessions,
+                ]);
             }
         );
 

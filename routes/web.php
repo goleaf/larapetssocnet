@@ -9,6 +9,8 @@ use App\Http\Controllers\Activities\EventController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MaintenanceController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\DeviceSessionController;
+use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Discovery\ExploreController;
 use App\Http\Controllers\Discovery\HashtagController;
 use App\Http\Controllers\Discovery\SearchController;
@@ -73,7 +75,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function (): Factory|View {
     return view('dashboard.index');
-})->middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])->name('dashboard');
+})->middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', 'track_last_seen'])->name('dashboard');
 
 Route::get('/dev/components', function (): Factory|View {
     abort_unless(app()->isLocal(), 404);
@@ -105,7 +107,7 @@ Route::get('/api/username-available', [ProfileController::class, 'usernameAvaila
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
-Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])
+Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', 'track_last_seen'])
     ->prefix('pets')
     ->name('pets.')
     ->group(function (): void {
@@ -116,7 +118,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
         Route::get('/{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
     });
 
-Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])->group(function (): void {
+Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)->name('search.index');
     Route::get('/api/breeds', BreedAutocompleteController::class)
         ->middleware('throttle:60,1')
@@ -323,6 +325,10 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
 
         Route::get('/password', [SettingsController::class, 'editPassword'])->name('password');
         Route::put('/password', [SettingsController::class, 'updatePassword'])->name('password.update');
+        Route::get('/two-factor', [TwoFactorAuthenticationController::class, 'create'])->name('two-factor');
+        Route::post('/two-factor', [TwoFactorAuthenticationController::class, 'enable'])->name('two-factor.enable');
+        Route::delete('/two-factor', [TwoFactorAuthenticationController::class, 'disable'])->name('two-factor.disable');
+        Route::delete('/sessions/others', [DeviceSessionController::class, 'destroyOther'])->name('sessions.destroy-other');
 
         Route::get('/privacy', [SettingsController::class, 'editPrivacy'])->name('privacy');
         Route::put('/privacy', [SettingsController::class, 'updatePrivacy'])->name('privacy.update');
@@ -398,7 +404,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
 });
 
 // Admin area
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_account', 'verified', AdminMiddleware::class])->group(function (): void {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', AdminMiddleware::class])->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');

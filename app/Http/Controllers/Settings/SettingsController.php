@@ -17,6 +17,8 @@ use App\Http\Requests\Social\BlockUserByUsernameRequest;
 use App\Http\Requests\Social\BlockUserRequest;
 use App\Models\Identity\User;
 use App\Services\AccountExportService;
+use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\DeviceSessionService;
 use App\Services\BlockService;
 use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
@@ -61,12 +63,14 @@ class SettingsController extends Controller
         return redirect()->route('settings.profile')->with('success', 'Profile updated successfully.');
     }
 
-    public function editPassword(): View
+    public function editPassword(Request $request, DeviceSessionService $sessions): View
     {
-        return view('settings.password');
+        return view('settings.password', [
+            'sessions' => $sessions->activeSessions($request->user(), $request->session()->getId()),
+        ]);
     }
 
-    public function updatePassword(UpdatePasswordSettingsRequest $request): RedirectResponse
+    public function updatePassword(UpdatePasswordSettingsRequest $request, DeviceSessionService $sessions, AuthAuditLogger $auditLogger): RedirectResponse
     {
         $validated = $request->validated();
 
@@ -75,6 +79,12 @@ class SettingsController extends Controller
             $validated['current_password'],
             $validated['password']
         );
+
+        $deletedSessions = $sessions->destroyOtherSessions($request->user(), $request->session()->getId());
+
+        $auditLogger->record($request->user(), 'password_change', $request, [
+            'deleted_sessions' => $deletedSessions,
+        ]);
 
         return redirect()->route('settings.password')->with('success', 'Password updated successfully.');
     }

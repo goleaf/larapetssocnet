@@ -2,6 +2,7 @@
 
 - Use Alpine for local interaction state and network-driven UI updates.
 - Keep each component state minimal and deterministic.
+- Livewire 4 bundles Alpine; register project Alpine stores/components in `resources/js/app.js` through Livewire's ESM `Livewire, Alpine` import and start Livewire once. Do not add a second `alpinejs` import or call `Alpine.start()`.
 
 ## Optimistic UI updates
 - Update local state immediately on user action.

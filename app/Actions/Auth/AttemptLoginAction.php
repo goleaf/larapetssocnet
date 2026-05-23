@@ -69,10 +69,21 @@ class AttemptLoginAction
         Auth::login($candidateUser, $request->boolean('remember'));
 
         RateLimiter::clear($request->throttleKey());
+        $requiresTwoFactorChallenge = $candidateUser->two_factor_secret !== null;
+
+        if ($requiresTwoFactorChallenge) {
+            $request->session()->put('auth.two_factor_pending_user_id', $candidateUser->getKey());
+        } else {
+            $request->session()->forget('auth.two_factor_pending_user_id');
+        }
+
         $updates = [
-            'last_login_at' => now(),
             'last_seen_at' => now(),
         ];
+
+        if (! $requiresTwoFactorChallenge) {
+            $updates['last_login_at'] = now();
+        }
 
         if ($this->tracksFailedLogins()) {
             $updates['failed_login_attempts'] = 0;
@@ -85,6 +96,7 @@ class AttemptLoginAction
             'identifier_type' => $this->identifierType($identifier),
             'remember' => $request->boolean('remember'),
             'restricted_to_verification' => ! $candidateUser->hasVerifiedEmail(),
+            'two_factor_required' => $requiresTwoFactorChallenge,
         ]);
 
         return null;
