@@ -321,6 +321,17 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return UsernameNormalizer::normalize($username);
     }
 
+    public function hasAccountStatus(AccountStatus $status): bool
+    {
+        $currentStatus = $this->getAttribute('account_status');
+
+        if ($currentStatus instanceof AccountStatus) {
+            return $currentStatus === $status;
+        }
+
+        return $currentStatus === $status->value;
+    }
+
     public static function generateUniqueUsername(string $seed): string
     {
         $base = UsernameNormalizer::generateBase($seed);

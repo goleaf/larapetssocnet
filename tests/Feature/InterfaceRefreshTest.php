@@ -208,8 +208,8 @@ it('renders guest auth pages with clearer headers and touch-sized actions', func
 
     $this->get(route('login'))
         ->assertSuccessful()
-        ->assertSee('data-ui="guest-shell"', false)
-        ->assertSee('data-ui="guest-auth-panel"', false)
+        ->assertSee('data-ui="login-page"', false)
+        ->assertSee('data-ui="login-card"', false)
         ->assertSee('data-ui="login-form"', false)
         ->assertSee('Log in to your pet community')
         ->assertSee('data-ui="inline-password-reset-form"', false)

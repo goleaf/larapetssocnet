@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\ReactivateAccountRequest;
 use App\Services\Auth\AuthAuditLogger;
@@ -15,7 +16,7 @@ class AccountReactivationController extends Controller
     {
         $user = $request->user();
 
-        if ($user->deactivated_at === null) {
+        if ($user->deactivated_at === null && ! $user->hasAccountStatus(AccountStatus::Deactivated)) {
             return $user->hasVerifiedEmail()
                 ? redirect()->route('dashboard')
                 : redirect()->route('verification.notice');
@@ -33,6 +34,7 @@ class AccountReactivationController extends Controller
         $user->forceFill([
             'deactivated_at' => null,
             'deactivation_reason' => null,
+            'account_status' => AccountStatus::Active,
         ])->save();
 
         $auditLogger->record($user, 'account_reactivated', $request);

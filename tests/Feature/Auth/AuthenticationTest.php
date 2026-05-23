@@ -6,6 +6,7 @@ use App\Models\Groups\Group;
 use App\Models\Groups\GroupMember;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -14,8 +15,10 @@ class AuthenticationTest extends TestCase
 
     public function test_login_screen_can_be_rendered(): void
     {
+        $route = Route::getRoutes()->getByName('login');
         $response = $this->get('/login');
 
+        $this->assertSame('pages.auth.login', $route?->getAction('livewire_component'));
         $response->assertOk();
     }
 

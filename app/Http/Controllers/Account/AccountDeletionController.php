@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\CancelPendingDeletionRequest;
 use App\Services\Auth\AuthAuditLogger;
@@ -43,7 +44,7 @@ class AccountDeletionController extends Controller
     {
         $user = $request->user();
 
-        if ($user->scheduled_deletion_at === null) {
+        if ($user->scheduled_deletion_at === null && ! $user->hasAccountStatus(AccountStatus::PendingDeletion)) {
             return $user->hasVerifiedEmail()
                 ? redirect()->route('dashboard')
                 : redirect()->route('verification.notice');
@@ -58,7 +59,7 @@ class AccountDeletionController extends Controller
     {
         $user = $request->user();
 
-        if ($user->scheduled_deletion_at) {
+        if ($user->scheduled_deletion_at || $user->hasAccountStatus(AccountStatus::PendingDeletion)) {
             $this->settingsService->cancelDeletion($user);
             $auditLogger->record($user, 'account_deletion_cancelled', $request);
 

@@ -18,7 +18,7 @@ Route::middleware('guest')->group(function (): void {
     Route::livewire('register', 'pages.auth.register')
         ->name('register');
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+    Route::livewire('login', 'pages.auth.login')
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);

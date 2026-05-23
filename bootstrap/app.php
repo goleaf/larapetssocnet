@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\AccountStatus;
 use App\Exceptions\CannotFollowSelfException;
 use App\Exceptions\UserBannedException;
 use App\Exceptions\UserBlockedException;
@@ -10,6 +11,7 @@ use App\Http\Middleware\EnsureAccountCanAccessApplication;
 use App\Http\Middleware\EnsureTwoFactorChallengeSatisfied;
 use App\Http\Middleware\RunRealtimeMaintenance;
 use App\Http\Middleware\TrackLastSeen;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -46,7 +48,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(function (Request $request): string {
             $user = $request->user();
 
-            if ($request->routeIs('register')) {
+            if ($request->routeIs('register', 'login')) {
                 return route('feed.index');
             }
 
@@ -58,15 +60,17 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 return route('banned');
             }
 
-            if ($user->scheduled_deletion_at !== null) {
+            if ($user->scheduled_deletion_at !== null || $user->hasAccountStatus(AccountStatus::PendingDeletion)) {
                 return route('account.deletion-pending');
             }
 
-            if ($user->deactivated_at !== null) {
+            if ($user->deactivated_at !== null || $user->hasAccountStatus(AccountStatus::Deactivated)) {
                 return route('account.reactivation');
             }
 
-            if ($user->suspended_until !== null && $user->suspended_until->isFuture()) {
+            $suspendedUntil = $user->getAttribute('suspended_until');
+
+            if ($user->hasAccountStatus(AccountStatus::Suspended) || ($suspendedUntil instanceof CarbonInterface && $suspendedUntil->isFuture())) {
                 return route('account.suspended');
             }
 

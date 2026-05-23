@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\AccountStatus;
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Http\Request;
@@ -35,11 +36,11 @@ class EnsureAccountCanAccessApplication
             return redirect()->route('banned');
         }
 
-        if ($user->scheduled_deletion_at !== null && ! $request->routeIs('account.deletion-pending', 'account.cancel-deletion', 'settings.cancel-deletion', 'logout')) {
+        if ($this->userHasPendingDeletion($request) && ! $request->routeIs('account.deletion-pending', 'account.cancel-deletion', 'settings.cancel-deletion', 'logout')) {
             return redirect()->route('account.deletion-pending');
         }
 
-        if ($user->deactivated_at !== null && ! $request->routeIs('account.reactivation', 'account.reactivate', 'logout')) {
+        if ($this->userIsDeactivated($request) && ! $request->routeIs('account.reactivation', 'account.reactivate', 'logout')) {
             return redirect()->route('account.reactivation');
         }
 
@@ -50,10 +51,28 @@ class EnsureAccountCanAccessApplication
         return $next($request);
     }
 
+    private function userHasPendingDeletion(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user?->scheduled_deletion_at !== null
+            || (bool) $user?->hasAccountStatus(AccountStatus::PendingDeletion);
+    }
+
+    private function userIsDeactivated(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user?->deactivated_at !== null
+            || (bool) $user?->hasAccountStatus(AccountStatus::Deactivated);
+    }
+
     private function userIsSuspended(Request $request): bool
     {
-        $suspendedUntil = $request->user()?->getAttribute('suspended_until');
+        $user = $request->user();
+        $suspendedUntil = $user?->getAttribute('suspended_until');
 
-        return $suspendedUntil instanceof CarbonInterface && $suspendedUntil->isFuture();
+        return (bool) $user?->hasAccountStatus(AccountStatus::Suspended)
+            || ($suspendedUntil instanceof CarbonInterface && $suspendedUntil->isFuture());
     }
 }

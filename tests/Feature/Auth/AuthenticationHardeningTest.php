@@ -1,10 +1,9 @@
 <?php
 
+use App\Enums\AccountStatus;
 use App\Models\Identity\User;
 use App\Models\Security\AuthAuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -292,27 +291,34 @@ it('drops unsafe external intended URLs after successful login', function (): vo
     $this->assertAuthenticatedAs($user);
 });
 
-it('rate limits repeated failed login attempts', function (): void {
+it('progressively locks known accounts after repeated failed login attempts', function (): void {
     $user = User::factory()->create([
         'email' => 'limited-login@example.com',
     ]);
-    $throttleKey = Str::transliterate('login|'.Str::lower($user->email).'|127.0.0.1');
 
-    RateLimiter::clear($throttleKey);
-
-    for ($attempt = 0; $attempt < 5; $attempt++) {
+    for ($attempt = 0; $attempt < 4; $attempt++) {
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
         ])->assertSessionHasErrors(['email' => trans('auth.failed')]);
     }
 
-    expect(RateLimiter::tooManyAttempts($throttleKey, 5))->toBeTrue();
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ])->assertSessionHasErrors([
+        'email' => 'Too many failed login attempts. Please wait 1 minute before trying again.',
+    ]);
+
+    expect($user->refresh()->failed_login_attempts)->toBe(5)
+        ->and($user->last_failed_login_at)->not->toBeNull();
 
     $this->post('/login', [
         'email' => $user->email,
         'password' => 'password',
-    ])->assertSessionHasErrors(['email']);
+    ])->assertSessionHasErrors([
+        'email' => 'Too many failed login attempts. Please wait 1 minute before trying again.',
+    ]);
 
     $this->assertGuest();
 });
@@ -343,4 +349,15 @@ it('redirects unverified users away from application pages', function (): void {
     $this->actingAs($user)
         ->get(route('feed.index'))
         ->assertRedirect(route('verification.notice'));
+});
+
+it('keeps enum-suspended authenticated users away from application pages', function (): void {
+    $user = User::factory()->create([
+        'account_status' => AccountStatus::Suspended,
+        'suspended_until' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('feed.index'))
+        ->assertRedirect(route('account.suspended'));
 });

@@ -2,56 +2,52 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Actions\Auth\AttemptLoginAction;
+use App\Actions\Auth\AuthenticateUserAction;
+use App\Actions\Auth\AuthenticationResult;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
 use App\Services\Auth\AuthAuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Illuminate\Validation\ValidationException;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
-     */
-    public function create(): View
-    {
-        return view('auth.login');
-    }
-
-    /**
      * Handle an incoming authentication request.
+     *
+     * @throws ValidationException
      */
-    public function store(LoginRequest $request, AttemptLoginAction $attemptLogin): RedirectResponse
+    public function store(Request $request, AuthenticateUserAction $authenticate): RedirectResponse
     {
-        $restrictedResponse = $attemptLogin->handle($request);
+        $validated = $request->validate([
+            'credential' => ['nullable', 'string', 'max:255', 'required_without:email'],
+            'email' => ['nullable', 'string', 'max:255', 'required_without:credential'],
+            'password' => ['required', 'string', 'max:1024'],
+            'remember' => ['sometimes', 'boolean'],
+        ]);
 
-        $user = $request->user();
+        $field = array_key_exists('credential', $validated) ? 'credential' : 'email';
+        $credential = (string) ($validated['credential'] ?? $validated['email'] ?? '');
 
-        if ($user !== null) {
-            $request->session()->regenerate();
+        $result = $authenticate->handle(
+            credential: $credential,
+            password: (string) $validated['password'],
+            remember: $request->boolean('remember'),
+            request: $request,
+        );
+
+        if ($result->failed()) {
+            throw ValidationException::withMessages([
+                $field => $result->message,
+            ]);
         }
 
-        if ($restrictedResponse instanceof RedirectResponse) {
-            return $restrictedResponse;
-        }
+        $request->session()->regenerate();
 
-        if (
-            $user !== null
-            && $user->two_factor_secret !== null
-            && (string) $request->session()->get('auth.two_factor_pending_user_id') === (string) $user->getKey()
-        ) {
-            return redirect()->route('two-factor.challenge');
-        }
-
-        if (! $user?->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice');
-        }
-
-        return $this->redirectToSafeIntendedUrl($request);
+        return $this->redirectAfterAuthentication($request, $result);
     }
 
     /**
@@ -59,13 +55,25 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request, AuthAuditLogger $auditLogger): RedirectResponse
     {
-        if ($request->user() !== null) {
-            $auditLogger->record($request->user(), 'logout', $request, [
+        $user = $request->user();
+        $guard = Auth::guard('web');
+        $rememberCookie = method_exists($guard, 'getRecallerName') ? $guard->getRecallerName() : null;
+
+        if ($user !== null) {
+            $auditLogger->record($user, 'logout', $request, [
                 'logout_type' => 'manual',
             ]);
+
+            $user->forceFill([
+                'remember_token' => null,
+            ])->saveQuietly();
         }
 
-        Auth::guard('web')->logout();
+        $guard->logout();
+
+        if (is_string($rememberCookie)) {
+            Cookie::queue(Cookie::forget($rememberCookie));
+        }
 
         $request->session()->invalidate();
 
@@ -74,7 +82,24 @@ class AuthenticatedSessionController extends Controller
         return redirect('/');
     }
 
-    private function redirectToSafeIntendedUrl(LoginRequest $request): RedirectResponse
+    private function redirectAfterAuthentication(Request $request, AuthenticationResult $result): RedirectResponse
+    {
+        if ($result->redirectRoute !== null) {
+            return redirect()->route($result->redirectRoute);
+        }
+
+        if ($result->requiresTwoFactor) {
+            return redirect()->route('two-factor.challenge');
+        }
+
+        if (! $result->user?->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        return $this->redirectToSafeIntendedUrl($request);
+    }
+
+    private function redirectToSafeIntendedUrl(Request $request): RedirectResponse
     {
         $fallback = route('dashboard', absolute: false);
         $intended = $request->session()->pull('url.intended');

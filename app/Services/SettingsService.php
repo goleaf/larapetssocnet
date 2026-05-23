@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AccountStatus;
 use App\Enums\ProfileVisibility;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
@@ -124,6 +125,7 @@ class SettingsService
         $user->update([
             'scheduled_deletion_at' => now()->addDays(30),
             'deletion_reason' => $reason,
+            'account_status' => AccountStatus::PendingDeletion,
         ]);
 
         $this->handleGroupOwnershipTransfers($user);
@@ -155,6 +157,7 @@ class SettingsService
         $user->update([
             'scheduled_deletion_at' => null,
             'deletion_reason' => null,
+            'account_status' => AccountStatus::Active,
         ]);
 
         return $user;

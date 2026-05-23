@@ -30,14 +30,15 @@
 
 ## Authentication security
 - Keep app browsing routes behind the Bootstrap-defined `auth.verified` middleware group plus `banned`, `active_account`, `two_factor`, and `track_last_seen` unless a route is intentionally public or part of the login, registration, password reset, or email verification exception flow.
+- Login is handled by the full-page Livewire `pages.auth.login` component and the `AuthenticateUserAction`; keep credential resolution, password checks, account-state checks, session creation, and audit events in that action instead of duplicating them in UI code.
 - Reject banned accounts during login even when the supplied password is correct, redirect valid banned attempts to the restricted notice, and record the blocked attempt in `auth_audit_logs`.
 - Deny soft-deleted accounts and restrict pending-deletion, deactivated, and suspended accounts to their recovery or notice screens before full app access.
-- Rate-limit repeated failed login attempts by normalized email/username plus IP.
-- Persist failed-login counters on the user when identity is known and keep audit lookups indexed by IP plus a hashed normalized identifier, not raw email.
+- Failed credential responses must stay generic and must not reveal whether the email, username, or password was incorrect.
+- Rate-limit repeated failed login attempts with the persisted `users.failed_login_attempts` and `users.last_failed_login_at` columns when identity is known; keep audit lookups indexed by IP plus a hashed normalized identifier, not raw email.
 - Keep auth-only secrets out of public serialization: hide `pending_email`, two-factor secrets, two-factor recovery code hashes, magic link token hashes, and social provider tokens; use encrypted casts for stored secrets.
 - Magic login and password reset request flows must not reveal whether an email exists. Consume one-time login tokens atomically and invalidate old sessions after password reset.
 - OAuth provider data belongs in `social_accounts`; merge by provider ID first, then by verified email only.
-- Logout must invalidate the session, regenerate the CSRF token, and record a `logout` audit event. Password changes and password resets should invalidate other database-backed sessions.
+- Logout must clear the remember token, expire the remember-me cookie, invalidate the session, regenerate the CSRF token, and record a `logout` audit event. Password changes and password resets should invalidate other database-backed sessions.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.
 - Record security-significant auth events in `auth_audit_logs` through `AuthAuditLogger`.
 - Email verification uses the `MustVerifyEmail` user contract, queued branded `VerifyEmailAddressMail` mailables, 60-minute signed URLs, hard 403 responses for tampered signatures or mismatched hashes, and a Livewire pending page with per-user resend throttling.
