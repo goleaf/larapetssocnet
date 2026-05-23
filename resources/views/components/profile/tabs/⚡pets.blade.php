@@ -294,8 +294,8 @@ new class extends Component
  size="lg"
  class="min-h-12 px-6"
  aria-haspopup="dialog"
- aria-controls="profile-pet-create-modal"
- @click="window.toggleModal('profile-pet-create-modal')"
+ aria-controls="pet-create-wizard"
+ @click="window.openPetCreateWizard('profile-pets-empty')"
  >
  Add your first pet
  </x-ui.button>
@@ -309,8 +309,8 @@ new class extends Component
  data-ui="profile-add-pet-card"
  class="shell-card ui-card-interactive flex min-h-72 flex-col items-center justify-center border-2 border-dashed border-whisker/60 bg-cream/45 p-6 text-center transition-all hover:-translate-y-0.5 hover:border-paw hover:bg-paw-light/30 hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  aria-haspopup="dialog"
- aria-controls="profile-pet-create-modal"
- @click="window.toggleModal('profile-pet-create-modal')"
+ aria-controls="pet-create-wizard"
+ @click="window.openPetCreateWizard('profile-pets-card')"
  >
  <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-paw/60 bg-warm-white text-5xl font-light leading-none text-paw" aria-hidden="true">+</span>
  <span class="mt-4 font-display text-lg font-bold text-bark">Add a pet</span>
@@ -392,71 +392,6 @@ new class extends Component
  </div>
  @endif
 
- @if ($isOwner)
- <x-ui.modal id="profile-pet-create-modal" name="profile-pet-create-modal" title="Add a pet" description="Create a pet profile without leaving your profile page." size="2xl">
- <form wire:submit="createPet" class="space-y-5">
- <div class="grid gap-4 sm:grid-cols-2">
- <x-ui.input id="profile_pet_name" name="name" label="Pet name" required wire:model.blur="name"/>
-
- <x-ui.select id="profile_pet_species" name="species" label="Species" :options="$speciesOptions" required wire:model="species"/>
-
- <x-ui.input id="profile_pet_breed" name="breed" label="Breed" wire:model.blur="breed"/>
-
- <x-ui.select id="profile_pet_sex" name="sex" label="Sex" :options="$genderOptions" wire:model="sex"/>
-
- <x-ui.input id="profile_pet_birth_date" name="birth_date" type="date" label="Birth date" wire:model.blur="birth_date"/>
-
- <x-ui.input id="profile_pet_age_text" name="age_text" label="Approx age" placeholder="~2 years" wire:model.blur="age_text"/>
-
- <x-ui.select id="profile_pet_size" name="size" label="Size" :options="$sizeOptions" placeholder="Choose size" wire:model="size"/>
-
- <x-ui.input id="profile_pet_personality_tags" name="personality_tags" label="Personality tags" placeholder="playful, gentle, loyal" wire:model.blur="personality_tags"/>
- </div>
-
- <x-ui.textarea id="profile_pet_bio" name="bio" rows="4" maxlength="500" label="Bio" wire:model.blur="bio"/>
-
- <div class="grid gap-4 sm:grid-cols-2">
- <x-ui.file-upload
- id="profile_pet_avatar"
- name="avatar"
- label="Avatar"
- accept="image/jpeg,image/png,image/webp,image/gif"
- maxSize="5MB"
- preview
- wire:model="avatar"
- />
-
- <x-ui.file-upload
- id="profile_pet_gallery_photos"
- name="gallery_photos"
- label="Photo Gallery"
- accept="image/jpeg,image/png,image/webp,image/gif"
- multiple
- maxSize="5MB"
- wire:model="gallery_photos"
- />
- </div>
-
- <div class="space-y-3">
- <x-ui.checkbox name="is_public" label="Public profile" :checked="$this->is_public" wire:model="is_public"/>
- <x-ui.checkbox name="is_adoptable" label="Available for adoption" :checked="$this->is_adoptable" wire:model="is_adoptable"/>
- <x-ui.checkbox name="is_deceased" label="Mark as deceased (Rainbow Bridge)" :checked="$this->is_deceased" wire:model="is_deceased"/>
- </div>
-
- <div wire:loading wire:target="avatar,gallery_photos" class="text-xs font-semibold text-paw">
- Uploading photos...
- </div>
-
- <div class="flex flex-col-reverse gap-2 border-t border-whisker/40 pt-4 sm:flex-row sm:justify-end">
- <x-ui.button type="button" variant="outline" size="sm" class="min-h-11" @click="window.toggleModal('profile-pet-create-modal', false)">Cancel</x-ui.button>
- <x-ui.button type="submit" variant="primary" size="sm" class="min-h-11" wire:loading.attr="disabled" wire:target="createPet,avatar,gallery_photos">
- <span wire:loading.remove wire:target="createPet">Create pet</span>
- <span wire:loading wire:target="createPet">Creating...</span>
- </x-ui.button>
- </div>
- </form>
- </x-ui.modal>
- @endif
  @else
  <x-ui.card>
  <x-ui.empty-state icon="🔒" title="Pets are private"

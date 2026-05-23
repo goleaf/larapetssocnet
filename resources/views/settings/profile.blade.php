@@ -1,5 +1,7 @@
 @php
  $editableSocialLinks = \App\Support\Profiles\SocialLinkNormalizer::editable($user->social_links);
+ $profileThemeOptions = $profileThemeOptions ?? [];
+ $selectedProfileTheme = old('profile_theme', $selectedProfileTheme ?? \App\Enums\ProfileTheme::default()->value);
 @endphp
 
 <x-settings-layout>
@@ -138,6 +140,48 @@
  :value="old('social_links.youtube', $editableSocialLinks['youtube'] ?? null)" placeholder="https://youtube.com/@username" prefix="YT"/>
  </div>
  </div>
+ </div>
+
+ <div class="space-y-4 rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4 sm:col-span-6" data-ui="profile-theme-section">
+ <div class="space-y-1">
+ <p class="text-sm font-medium text-bark">Profile theme</p>
+ <p class="text-sm text-fur">Choose the visual tone visitors see on your profile page.</p>
+ </div>
+
+ <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+ @foreach ($profileThemeOptions as $themeValue => $theme)
+ @php
+ $isThemeSelected = $selectedProfileTheme === $themeValue;
+ @endphp
+ <label
+ class="group relative h-full"
+ style="--profile-option-background: {{ $theme['background'] }}; --profile-option-surface: {{ $theme['surface'] }}; --profile-option-accent: {{ $theme['accent'] }}; --profile-option-soft: {{ $theme['accent_soft'] }};"
+ >
+ <input
+ type="radio"
+ name="profile_theme"
+ value="{{ $themeValue }}"
+ class="peer sr-only"
+ @checked($isThemeSelected)
+ >
+ <span class="flex h-full min-h-36 cursor-pointer flex-col rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-3 transition hover:-translate-y-0.5 hover:border-paw/60 hover:shadow-sm peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-paw peer-checked:border-paw peer-checked:bg-paw-light/35 peer-checked:ring-2 peer-checked:ring-paw/20">
+ <span class="block overflow-hidden rounded-[var(--radius-soft)] border border-whisker/30 bg-[var(--profile-option-background)] p-2">
+ <span class="block h-10 rounded-[var(--radius-soft)] bg-[var(--profile-option-surface)] shadow-sm"></span>
+ <span class="mt-2 flex gap-1.5">
+ <span class="h-3 flex-1 rounded-full bg-[var(--profile-option-accent)]"></span>
+ <span class="h-3 w-8 rounded-full bg-[var(--profile-option-soft)]"></span>
+ </span>
+ </span>
+ <span class="mt-3 block text-sm font-semibold text-bark">{{ $theme['label'] }}</span>
+ <span class="mt-1 block text-xs leading-5 text-fur">{{ $theme['description'] }}</span>
+ </span>
+ </label>
+ @endforeach
+ </div>
+
+ @error('profile_theme')
+ <p class="text-sm text-rose-600">{{ $message }}</p>
+ @enderror
  </div>
 
  <div class="sm:col-span-3">

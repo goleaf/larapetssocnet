@@ -4,6 +4,8 @@
  $privateFollowStatus = $followStatus ?? 'none';
  $privateProfileUrl = $user->profile_url;
  $privateMessageUrl = (($canMessage ?? false) && Route::has('messages.conversation')) ? route('messages.conversation', ['peer'=> $user]) : false;
+ $privateProfileTheme = $user->profileTheme();
+ $privateProfileThemeStyle = \App\Support\Profiles\ProfileThemeCss::inlineStyle($privateProfileTheme);
 @endphp
 
 @section('title','@'.$user->username.'— Private Profile')
@@ -13,7 +15,12 @@
 @endpush
 
 <x-app-layout>
- <div class="w-full min-w-0 space-y-5" data-ui="private-profile-shell" x-data="profileActions({
+ <div
+ class="w-full min-w-0 space-y-5 rounded-[var(--radius-card)] bg-[var(--profile-theme-background)] p-2 [background-image:var(--profile-theme-texture)] sm:p-3"
+ data-ui="private-profile-shell"
+ data-profile-theme="{{ $privateProfileTheme->value }}"
+ style="{{ $privateProfileThemeStyle }}"
+ x-data="profileActions({
  followStatus: @js($privateFollowStatus),
  isFollowing: @js($privateFollowStatus === 'following'),
  isBlocked: false,

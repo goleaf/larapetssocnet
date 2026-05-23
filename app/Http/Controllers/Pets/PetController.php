@@ -11,14 +11,17 @@ use App\Http\Requests\Pets\UpdatePetRequest;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Pets\PetHealthLog;
+use App\Models\Pets\PetMilestone;
 use App\Services\ChartService;
 use App\Services\PersonalityTagService;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -49,8 +52,17 @@ class PetController extends Controller
         $pet->loadMissing(['user', 'species', 'breed', 'media', 'tags']);
 
         $isOwner = $pet->isOwnedBy($request->user());
+        $canViewTimelineContent = Gate::allows('viewPosts', $pet);
 
-        $tabs = ['posts', 'gallery', 'about'];
+        $tabs = $canViewTimelineContent ? ['posts', 'gallery', 'milestones'] : ['about'];
+
+        if (($pet->adoption_status ?? 'not_listed') !== 'not_listed' || (bool) $pet->is_adoptable) {
+            $tabs[] = 'adopt';
+        }
+
+        if (! in_array('about', $tabs, true)) {
+            $tabs[] = 'about';
+        }
 
         if ($isOwner) {
             $tabs[] = 'health';
@@ -62,11 +74,18 @@ class PetController extends Controller
             $activeTab = 'posts';
         }
 
-        $posts = $this->postsForShow($pet, $request->user());
+        $posts = $canViewTimelineContent ? $this->postsForShow($pet, $request->user()) : collect();
         $gallery = $activeTab === 'gallery'
             ? $pet->galleryForShow()
                 ->map(fn (mixed $item): array => $this->mapGalleryItem($item))
                 ->values()
+            : collect();
+        $milestones = $activeTab === 'milestones'
+            ? PetMilestone::query()
+                ->forPet($pet)
+                ->with('user:id,name,username')
+                ->chronological()
+                ->get()
             : collect();
 
         $healthLogs = collect();
@@ -85,11 +104,22 @@ class PetController extends Controller
         $personalityTags = $this->normalizePersonalityTags($pet->personality_tags);
         $birthdateLabel = $this->resolveBirthdateLabel($pet);
         $ageLabel = $pet->age_formatted;
+        $lifeStageLabel = $this->resolveLifeStageLabel($pet);
         $speciesLabel = $this->resolveSpeciesLabel($pet);
         $breedLabel = $this->resolveBreedLabel($pet);
         $sexLabel = $this->resolveSexLabel($pet);
         $postsCount = (int) ($pet->posts_count ?? 0);
         $followersCount = (int) ($pet->followers_count ?? 0);
+        $featuredMilestones = $this->featuredMilestonesForShow($pet);
+        $identityFacts = $this->identityFactsForShow(
+            pet: $pet,
+            speciesLabel: $speciesLabel,
+            breedLabel: $breedLabel,
+            sexLabel: $sexLabel,
+            ageLabel: $ageLabel,
+            lifeStageLabel: $lifeStageLabel,
+        );
+        $careSnapshot = $this->careSnapshotForShow($pet, $isOwner);
 
         return view('pets.show', [
             'pet' => $pet,
@@ -97,20 +127,28 @@ class PetController extends Controller
             'activeTab' => $activeTab,
             'isOwner' => $isOwner,
             'isFollowing' => $isFollowing,
+            'canViewTimelineContent' => $canViewTimelineContent,
             'posts' => $posts,
             'gallery' => $gallery,
+            'milestones' => $milestones,
             'healthLogs' => $healthLogs,
             'weightChartSvg' => $weightChartSvg,
+            'qrCodeUrl' => route('pets.qr.show', $pet),
+            'qrDownloadUrl' => route('pets.qr.download', $pet),
             'petSlug' => $petSlug,
             'avatarUrl' => $avatarUrl,
             'personalityTags' => $personalityTags,
             'birthdateLabel' => $birthdateLabel,
             'ageLabel' => $ageLabel,
+            'lifeStageLabel' => $lifeStageLabel,
             'speciesLabel' => $speciesLabel,
             'breedLabel' => $breedLabel,
             'sexLabel' => $sexLabel,
             'postsCount' => $postsCount,
             'followersCount' => $followersCount,
+            'featuredMilestones' => $featuredMilestones,
+            'identityFacts' => $identityFacts,
+            'careSnapshot' => $careSnapshot,
         ]);
     }
 
@@ -411,6 +449,188 @@ class PetController extends Controller
         }
 
         return null;
+    }
+
+    private function resolveLifeStageLabel(Pet $pet): ?string
+    {
+        $birthdate = $pet->birth_date ?? $pet->date_of_birth;
+
+        if (! $birthdate instanceof CarbonInterface) {
+            if (is_string($birthdate) && $birthdate !== '') {
+                try {
+                    $birthdate = Carbon::parse($birthdate);
+                } catch (Throwable) {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        $months = $this->completedMonthsSince($birthdate);
+        $species = strtolower((string) ($pet->species ?? ''));
+
+        return match ($species) {
+            'dog' => $months < 12 ? 'Puppy' : ($months >= 84 ? 'Senior dog' : 'Adult dog'),
+            'cat' => $months < 12 ? 'Kitten' : ($months >= 120 ? 'Senior cat' : 'Adult cat'),
+            'bird' => $months < 12 ? 'Young bird' : ($months >= 96 ? 'Senior bird' : 'Adult bird'),
+            'rabbit', 'hamster' => $months < 6 ? 'Young '.Str::headline($species) : ($months >= 48 ? 'Senior '.Str::headline($species) : 'Adult '.Str::headline($species)),
+            'fish', 'reptile' => $months < 12 ? 'Young '.Str::headline($species) : 'Adult '.Str::headline($species),
+            default => $months < 12 ? 'Young companion' : ($months >= 96 ? 'Senior companion' : 'Adult companion'),
+        };
+    }
+
+    private function completedMonthsSince(CarbonInterface $date): int
+    {
+        $today = now();
+        $months = (((int) $today->format('Y') - (int) $date->format('Y')) * 12)
+            + ((int) $today->format('n') - (int) $date->format('n'));
+
+        if ((int) $today->format('j') < (int) $date->format('j')) {
+            $months--;
+        }
+
+        return max(0, $months);
+    }
+
+    /**
+     * @return Collection<int, PetMilestone>
+     */
+    private function featuredMilestonesForShow(Pet $pet): Collection
+    {
+        return PetMilestone::query()
+            ->forPet($pet)
+            ->latest('occurred_on')
+            ->latest('id')
+            ->limit(3)
+            ->get();
+    }
+
+    /**
+     * @return array<int, array{label: string, value: string, tone: string}>
+     */
+    private function identityFactsForShow(
+        Pet $pet,
+        string $speciesLabel,
+        ?string $breedLabel,
+        ?string $sexLabel,
+        ?string $ageLabel,
+        ?string $lifeStageLabel,
+    ): array {
+        $facts = [
+            [
+                'label' => 'Life stage',
+                'value' => $lifeStageLabel ?? ($ageLabel ? 'Age known' : 'Not set yet'),
+                'tone' => 'warm',
+            ],
+            [
+                'label' => 'Species',
+                'value' => $breedLabel ? "{$speciesLabel} · {$breedLabel}" : $speciesLabel,
+                'tone' => 'forest',
+            ],
+        ];
+
+        if ($sexLabel) {
+            $facts[] = [
+                'label' => 'Sex',
+                'value' => $sexLabel,
+                'tone' => 'default',
+            ];
+        }
+
+        if ($pet->size) {
+            $facts[] = [
+                'label' => 'Size',
+                'value' => Str::headline((string) $pet->size),
+                'tone' => 'default',
+            ];
+        }
+
+        if ($ageLabel) {
+            $facts[] = [
+                'label' => 'Dynamic age',
+                'value' => $ageLabel,
+                'tone' => 'default',
+            ];
+        }
+
+        if ($pet->is_deceased) {
+            $facts[] = [
+                'label' => 'Memorial',
+                'value' => 'Rainbow Bridge',
+                'tone' => 'warm',
+            ];
+        }
+
+        return $facts;
+    }
+
+    /**
+     * @return array<int, array{label: string, value: string, meta: ?string}>
+     */
+    private function careSnapshotForShow(Pet $pet, bool $isOwner): array
+    {
+        $snapshot = [];
+
+        if (($pet->adoption_status ?? 'not_listed') !== 'not_listed' || (bool) $pet->is_adoptable) {
+            $snapshot[] = [
+                'label' => 'Adoption',
+                'value' => Str::headline((string) ($pet->adoption_status ?: 'available')),
+                'meta' => $pet->adoption_listed_at instanceof CarbonInterface
+                    ? 'Listed '.$pet->adoption_listed_at->diffForHumans()
+                    : null,
+            ];
+        }
+
+        if (! $isOwner) {
+            return $snapshot;
+        }
+
+        $latestWeight = PetHealthLog::query()
+            ->forPet($pet)
+            ->where('log_type', PetHealthLog::TYPE_WEIGHT)
+            ->whereNotNull('weight_kg')
+            ->latest('logged_at')
+            ->first();
+
+        if ($latestWeight instanceof PetHealthLog) {
+            $snapshot[] = [
+                'label' => 'Latest weight',
+                'value' => number_format((float) $latestWeight->weight_kg, 2).' kg',
+                'meta' => $latestWeight->logged_at?->diffForHumans(),
+            ];
+        }
+
+        $latestVaccination = PetHealthLog::query()
+            ->forPet($pet)
+            ->whereIn('log_type', [PetHealthLog::TYPE_VACCINATION, PetHealthLog::TYPE_VACCINE_LEGACY])
+            ->latest('logged_at')
+            ->first();
+
+        if ($latestVaccination instanceof PetHealthLog) {
+            $snapshot[] = [
+                'label' => 'Vaccination',
+                'value' => $latestVaccination->title ?: 'Recorded',
+                'meta' => $latestVaccination->logged_at?->diffForHumans(),
+            ];
+        }
+
+        $nextCare = PetHealthLog::query()
+            ->forPet($pet)
+            ->whereNotNull('next_due_at')
+            ->where('next_due_at', '>=', now()->startOfDay())
+            ->orderBy('next_due_at')
+            ->first();
+
+        if ($nextCare instanceof PetHealthLog) {
+            $snapshot[] = [
+                'label' => 'Next care',
+                'value' => $nextCare->title ?: $nextCare->type_label,
+                'meta' => $nextCare->next_due_at?->toFormattedDateString(),
+            ];
+        }
+
+        return $snapshot;
     }
 
     /**

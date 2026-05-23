@@ -72,3 +72,21 @@ it('accepts visibility input and maps to private pets', function (): void {
 
     expect((bool) $pet->is_public)->toBeFalse();
 });
+
+it('redirects guests away from pet creation', function (): void {
+    $this->post(route('pets.store'), [
+        'name' => 'Guest Buddy',
+        'species' => 'dog',
+        'sex' => 'male',
+    ])->assertRedirect(route('login'));
+});
+
+it('rejects invalid species and missing required name', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)
+        ->post(route('pets.store'), [
+            'species' => 'dragon',
+        ])
+        ->assertSessionHasErrors(['name', 'species']);
+});

@@ -79,6 +79,8 @@
 
  $profileTabValues = collect($tabItems)->pluck('value')->values()->all();
  $profileTabsLazy = ! app()->environment('testing');
+ $profileTheme = $profileUser->profileTheme();
+ $profileThemeStyle = \App\Support\Profiles\ProfileThemeCss::inlineStyle($profileTheme);
 @endphp
 
 @section('title','@'. $profileUser->username .'— PetSocial')
@@ -101,7 +103,12 @@
 @endpush
 
 <x-app-layout>
- <div class="w-full min-w-0 space-y-5" data-ui="profile-shell" x-data="profileActions({
+ <div
+ class="w-full min-w-0 space-y-5 rounded-[var(--radius-card)] bg-[var(--profile-theme-background)] p-2 [background-image:var(--profile-theme-texture)] sm:p-3"
+ data-ui="profile-shell"
+ data-profile-theme="{{ $profileTheme->value }}"
+ style="{{ $profileThemeStyle }}"
+ x-data="profileActions({
  followStatus: @js($profileFollowStatus),
  isFollowing: @js($profileFollowStatus === 'following'),
  isBlocked: @js($isBlocked),
@@ -887,22 +894,28 @@ wire:key="profile-report-modal-{{ $profileUser->getKey() }}"
  <x-ui.pet-card :pet="$pet" :owner="$profileUser->name" size="md"/>
  @endforeach
  @if ($isOwner)
- <a href="{{ route('pets.create') }}"
+ <button type="button"
+ aria-haspopup="dialog"
+ aria-controls="pet-create-wizard"
+ @click="window.openPetCreateWizard('profile-showcase')"
  class="flex min-h-44 w-[160px] flex-shrink-0 snap-start flex-col items-center justify-center rounded-xl border-2 border-dashed border-whisker/40 bg-cream/50 p-3 text-center transition-colors hover:border-paw hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="text-2xl">🐾</span>
  <span class="mt-1 text-xs font-semibold text-paw">Add Pet</span>
- </a>
+ </button>
  @endif
  </div>
  </x-ui.card>
  @elseif ($canViewContent && $isOwner)
  <x-ui.card>
  <div class="flex items-center justify-center gap-3 py-4">
- <a href="{{ route('pets.create') }}"
+ <button type="button"
+ aria-haspopup="dialog"
+ aria-controls="pet-create-wizard"
+ @click="window.openPetCreateWizard('profile-empty')"
  class="inline-flex min-h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-whisker/40 bg-cream/50 px-6 py-4 text-center transition-colors hover:border-paw hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
  <span class="text-2xl">🐾</span>
  <p class="mt-1 text-sm font-semibold text-paw">Add your first pet</p>
- </a>
+ </button>
  </div>
  </x-ui.card>
  @endif

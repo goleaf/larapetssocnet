@@ -39,7 +39,7 @@ class AdoptionController extends Controller
      */
     public function update(Request $request, Pet $pet): JsonResponse
     {
-        $this->authorize('update', $pet);
+        $this->authorize('manageAdoption', $pet);
 
         $request->validate([
             'status' => ['required', Rule::in(array_keys(AdoptionService::TRANSITIONS))],

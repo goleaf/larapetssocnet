@@ -24,7 +24,7 @@ Use this guide for project memory in `/Users/andrejprus/Herd/larapetssocnet`.
 
 ## Durable Project Rules
 
-- Do not reintroduce dark/light theme switching, runtime visual style switchers, `data-theme` controls, profile theme fields, or theme preference storage.
+- Do not reintroduce dark/light theme switching, runtime application visual style switchers, or `data-theme` controls. Profile theming is allowed only through the five accessible enum/config choices on the public profile root.
 - Application browsing pages stay private by default unless product policy explicitly changes.
 - Tailwind v4 must run after Sass through PostCSS.
 - Shared-hosting root web-surface rules stay active: keep the root front controller and root `.htaccess` protections aligned.

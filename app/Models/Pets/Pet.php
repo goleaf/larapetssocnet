@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
@@ -44,6 +45,7 @@ use Throwable;
     'name',
     'slug',
     'species',
+    'species_other',
     'breed',
     'sex',
     'gender',
@@ -58,8 +60,13 @@ use Throwable;
     'color',
     'weight_kg',
     'is_public',
+    'visibility',
     'is_lost',
     'is_deceased',
+    'spayed_neutered_status',
+    'vaccination_status',
+    'last_vaccinated_on',
+    'microchipped_status',
     'is_adoptable',
     'adoption_status',
     'adoption_fee',
@@ -68,6 +75,7 @@ use Throwable;
     'adoption_listed_at',
     'avatar_path',
     'cover_photo_path',
+    'cover_photo_position',
     'followers_count',
     'posts_count',
     'health_logs_count',
@@ -79,7 +87,7 @@ class Pet extends Model implements HasMedia
     use InteractsWithMedia;
     use SoftDeletes;
 
-    public const SPECIES = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'hamster', 'reptile', 'other'];
+    public const SPECIES = ['dog', 'cat', 'rabbit', 'bird', 'reptile', 'fish', 'guinea_pig', 'hamster', 'ferret', 'horse', 'other'];
 
     public const GENDERS = ['male', 'female', 'unknown'];
 
@@ -87,7 +95,13 @@ class Pet extends Model implements HasMedia
 
     public const ADOPTION_STATUSES = ['not_listed', 'available', 'pending', 'adopted'];
 
-    public const VISIBILITY = ['public', 'private'];
+    public const VISIBILITY = ['public', 'followers_only', 'private'];
+
+    public const HEALTH_STATUSES = ['yes', 'no', 'unknown'];
+
+    public const BREED_MIXED = 'mixed_breed';
+
+    public const BREED_UNKNOWN = 'unknown_breed';
 
     public const MEDIA_COLLECTION_AVATAR = 'avatar';
 
@@ -101,6 +115,8 @@ class Pet extends Model implements HasMedia
 
     public const MEDIA_CONVERSION_AVATAR_MEDIUM = 'avatar_medium';
 
+    public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
+
     public const MEDIA_CONVERSION_GALLERY_THUMB = 'gallery_thumb';
 
     public const MEDIA_CONVERSION_GALLERY_MEDIUM = 'gallery_medium';
@@ -112,6 +128,9 @@ class Pet extends Model implements HasMedia
         'fish' => '🐠',
         'rabbit' => '🐰',
         'hamster' => '🐹',
+        'guinea_pig' => '🐹',
+        'ferret' => '🐾',
+        'horse' => '🐴',
         'reptile' => '🦎',
         'other' => '🐾',
     ];
@@ -148,12 +167,14 @@ class Pet extends Model implements HasMedia
             'birthdate' => 'date',
             'adopted_at' => 'date',
             'adoption_listed_at' => 'datetime',
+            'last_vaccinated_on' => 'date',
             'personality_tags' => 'array',
             'is_public' => 'boolean',
             'is_lost' => 'boolean',
             'is_deceased' => 'boolean',
             'is_adoptable' => 'boolean',
             'weight_kg' => 'decimal:2',
+            'cover_photo_position' => 'decimal:2',
             'followers_count' => 'integer',
             'posts_count' => 'integer',
             'health_logs_count' => 'integer',
@@ -216,22 +237,25 @@ class Pet extends Model implements HasMedia
             ->fit(Fit::Crop, 80, 80)
             ->format('webp')
             ->quality(80)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
-            ->nonQueued();
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_SMALL)
             ->fit(Fit::Crop, 150, 150)
             ->format('webp')
             ->quality(80)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
-            ->nonQueued();
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_MEDIUM)
             ->fit(Fit::Crop, 400, 400)
             ->format('webp')
             ->quality(85)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
-            ->nonQueued();
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER_BANNER)
+            ->width(1200)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_GALLERY_THUMB)
             ->fit(Fit::Crop, 150, 150)
@@ -271,9 +295,44 @@ class Pet extends Model implements HasMedia
             ->withTimestamps();
     }
 
+    /**
+     * @return HasMany<PetOwner, $this>
+     */
+    public function ownerships(): HasMany
+    {
+        return $this->hasMany(PetOwner::class);
+    }
+
+    /**
+     * @return BelongsToMany<User, $this>
+     */
+    public function coOwners(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'pet_owners', 'pet_id', 'user_id')
+            ->withPivot([
+                'role',
+                'can_post',
+                'can_edit',
+                'can_manage_health',
+                'can_manage_gallery',
+                'can_manage_adoption',
+                'can_delete',
+                'accepted_at',
+            ])
+            ->withTimestamps();
+    }
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    /**
+     * @return HasMany<PetMilestone, $this>
+     */
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(PetMilestone::class);
     }
 
     public function healthLogs(): HasMany
@@ -284,6 +343,16 @@ class Pet extends Model implements HasMedia
     public function marketplaceListings(): HasMany
     {
         return $this->hasMany(MarketplaceListing::class);
+    }
+
+    /**
+     * @return HasOne<MarketplaceListing, $this>
+     */
+    public function adoptionListing(): HasOne
+    {
+        return $this->hasOne(MarketplaceListing::class)
+            ->where('listing_type', 'adoption')
+            ->latestOfMany();
     }
 
     public function species(): BelongsTo
@@ -458,7 +527,15 @@ class Pet extends Model implements HasMedia
     {
         return $query
             ->select(['pets.*'])
-            ->where(fn (Builder $subQuery) => $subQuery->whereNull('is_public')->orWhere('is_public', true));
+            ->where(function (Builder $subQuery): void {
+                $subQuery
+                    ->where('visibility', 'public')
+                    ->orWhere(function (Builder $legacyQuery): void {
+                        $legacyQuery
+                            ->whereNull('visibility')
+                            ->where(fn (Builder $isPublicQuery) => $isPublicQuery->whereNull('is_public')->orWhere('is_public', true));
+                    });
+            });
     }
 
     public function scopeVisibleTo(Builder $query, ?User $viewer): Builder
@@ -580,6 +657,38 @@ class Pet extends Model implements HasMedia
         return (int) $ownerId === (int) $user->getAuthIdentifier();
     }
 
+    public function isCoOwnedBy(User $user): bool
+    {
+        return $this->ownerships()
+            ->where('user_id', $user->getKey())
+            ->whereNotNull('accepted_at')
+            ->exists();
+    }
+
+    public function coOwnerCan(User $user, string $permission): bool
+    {
+        $allowedPermissions = [
+            'post' => 'can_post',
+            'edit' => 'can_edit',
+            'health' => 'can_manage_health',
+            'gallery' => 'can_manage_gallery',
+            'adoption' => 'can_manage_adoption',
+            'delete' => 'can_delete',
+        ];
+
+        $column = $allowedPermissions[$permission] ?? null;
+
+        if (! $column) {
+            return false;
+        }
+
+        return $this->ownerships()
+            ->where('user_id', $user->getKey())
+            ->whereNotNull('accepted_at')
+            ->where($column, true)
+            ->exists();
+    }
+
     /**
      * @return Collection<int, Post>
      */
@@ -689,18 +798,34 @@ class Pet extends Model implements HasMedia
     {
         return Attribute::make(
             get: function (): string {
+                $rawVisibility = $this->getRawOriginal('visibility');
+
+                if (is_string($rawVisibility) && in_array($rawVisibility, self::VISIBILITY, true)) {
+                    return $rawVisibility;
+                }
+
                 $raw = $this->getRawOriginal('is_public');
 
                 return in_array($raw, [0, '0', false], true) ? 'private' : 'public';
             },
             set: function (mixed $value): array {
                 if (is_bool($value)) {
-                    return ['is_public' => $value];
+                    return [
+                        'visibility' => $value ? 'public' : 'private',
+                        'is_public' => $value,
+                    ];
                 }
 
                 $normalized = strtolower(trim((string) $value));
 
-                return ['is_public' => $normalized === 'public'];
+                if (! in_array($normalized, self::VISIBILITY, true)) {
+                    $normalized = 'public';
+                }
+
+                return [
+                    'visibility' => $normalized,
+                    'is_public' => $normalized === 'public',
+                ];
             }
         );
     }

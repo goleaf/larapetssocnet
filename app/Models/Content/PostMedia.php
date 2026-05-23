@@ -22,7 +22,9 @@ use Illuminate\Support\Facades\Storage;
 #[Table(name: 'post_media')]
 class PostMedia extends Model
 {
+    /** @use HasFactory<PostMediaFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected function casts(): array
@@ -35,6 +37,9 @@ class PostMedia extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Post, $this>
+     */
     public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);

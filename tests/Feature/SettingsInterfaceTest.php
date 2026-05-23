@@ -17,8 +17,8 @@ it('renders the settings workspace and profile form with submit controls', funct
         ->assertSee('data-ui="settings-profile-form"', false)
         ->assertSee('data-ui="profile-avatar-section"', false)
         ->assertSee('data-ui="profile-cover-section"', false)
-        ->assertDontSee('Profile theme')
-        ->assertDontSee('name="profile_theme"', false)
+        ->assertSee('data-ui="profile-theme-section"', false)
+        ->assertSee('name="profile_theme"', false)
         ->assertSee('type="submit"', false)
         ->assertSee('min-h-11', false)
         ->assertSee('focus-visible:outline-paw', false);

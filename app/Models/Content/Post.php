@@ -805,7 +805,7 @@ class Post extends Model implements HasMedia
     }
 
     /**
-     * @return CursorPaginator<int, Model>
+     * @return CursorPaginator<int, self>
      */
     public static function paginateProfileTimeline(User $profileOwner, ?User $viewer, int $perPage = 15, ?string $cursor = null, bool $mediaOnly = false): CursorPaginator
     {
@@ -893,10 +893,15 @@ class Post extends Model implements HasMedia
     private static function profilePhotoMediaQuery(User $profileOwner, ?User $viewer): Builder
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
+        $visiblePostIds = self::applyProfileTimelineVisibility(
+            self::query()->select('posts.id'),
+            $profileOwner,
+            $viewer,
+        );
 
         return PostMedia::query()
             ->where('post_media.media_type', 'image')
-            ->whereHas('post', fn (Builder $postQuery): Builder => self::applyProfileTimelineVisibility($postQuery, $profileOwner, $viewer))
+            ->whereIn('post_media.post_id', $visiblePostIds)
             ->with([
                 'post' => function ($postQuery) use ($viewer, $viewerId): void {
                     $postQuery

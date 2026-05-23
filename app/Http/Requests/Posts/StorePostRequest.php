@@ -46,16 +46,12 @@ class StorePostRequest extends FormRequest
             'pet_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('pets', 'id')->where(
-                    fn ($query) => $query->where('user_id', (int) $this->user()?->id)
-                ),
+                $this->petPostPermissionRule(),
             ],
             'tagged_pets' => ['nullable', 'array'],
             'tagged_pets.*' => [
                 'integer',
-                Rule::exists('pets', 'id')->where(
-                    fn ($query) => $query->where('user_id', (int) $this->user()?->id)
-                ),
+                $this->petPostPermissionRule(),
             ],
             'visibility' => ['nullable', 'string', Rule::in(Post::visibilityValues())],
             'location' => ['nullable', 'string', 'max:100'],
@@ -179,6 +175,24 @@ class StorePostRequest extends FormRequest
         $normalized = trim((string) $value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function petPostPermissionRule(): mixed
+    {
+        $userId = (int) $this->user()?->id;
+
+        return Rule::exists('pets', 'id')->where(function ($query) use ($userId): void {
+            $query
+                ->where('user_id', $userId)
+                ->orWhereIn('id', function ($subQuery) use ($userId): void {
+                    $subQuery
+                        ->select('pet_id')
+                        ->from('pet_owners')
+                        ->where('user_id', $userId)
+                        ->where('can_post', true)
+                        ->whereNotNull('accepted_at');
+                });
+        });
     }
 
     /**

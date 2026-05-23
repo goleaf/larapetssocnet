@@ -20,7 +20,7 @@ class PetHealthLogController extends Controller
 {
     public function index(Request $request, Pet $pet): View
     {
-        $this->authorize('update', $pet);
+        $this->authorize('manageHealth', $pet);
 
         $logs = PetHealthLog::paginateForPet($pet);
         $upcomingLogs = PetHealthLog::upcomingForPet($pet);
@@ -36,7 +36,7 @@ class PetHealthLogController extends Controller
 
     public function create(Request $request, Pet $pet): View
     {
-        $this->authorize('update', $pet);
+        $this->authorize('manageHealth', $pet);
 
         return view('pets.health.create', [
             'pet' => $pet,
@@ -67,7 +67,7 @@ class PetHealthLogController extends Controller
 
     public function edit(Request $request, Pet $pet, string $healthLog): View
     {
-        $this->authorize('update', $pet);
+        $this->authorize('manageHealth', $pet);
 
         $log = $this->resolveHealthLog($pet, $healthLog);
 
@@ -102,7 +102,7 @@ class PetHealthLogController extends Controller
 
     public function destroy(Request $request, Pet $pet, string $healthLog): RedirectResponse
     {
-        $this->authorize('update', $pet);
+        $this->authorize('manageHealth', $pet);
 
         $log = $this->resolveHealthLog($pet, $healthLog);
         $log->delete();

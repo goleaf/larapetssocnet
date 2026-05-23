@@ -30,3 +30,8 @@ Allowed (see `AdoptionService::TRANSITIONS`):
 - `adopted -> not_listed`
 
 `AdoptionService::setStatus()` validates and persists transitions.
+
+## Marketplace Sync
+- Setting a pet to `available` creates, restores, or updates one active marketplace listing with `listing_type=adoption`.
+- Moving a pet out of adoption archives the marketplace listing; moving to `not_listed` also soft-deletes it.
+- Pet delete cleanup soft-deletes pet adoption listings together with the pet so historical marketplace records are not hard-deleted.

@@ -27,6 +27,9 @@
  </div>
  <x-ui.toast-container />
  <x-ui.confirm-modal />
+ @auth
+ <livewire:pets.create-wizard />
+ @endauth
 
  <div @class([
 'relative z-10 mx-auto grid w-full max-w-[var(--container-max)] grid-cols-1 gap-5 px-4 pb-8 pt-2 sm:px-6 lg:gap-6 lg:px-6',

@@ -27,6 +27,7 @@ use App\Http\Controllers\Messaging\NotificationController;
 use App\Http\Controllers\Moderation\ReportController;
 use App\Http\Controllers\Onboarding\OnboardingController;
 use App\Http\Controllers\Pets\AdoptionController;
+use App\Http\Controllers\Pets\BreedAutocompleteController;
 use App\Http\Controllers\Pets\PetAvatarController;
 use App\Http\Controllers\Pets\PetCareTipController;
 use App\Http\Controllers\Pets\PetController;
@@ -34,7 +35,10 @@ use App\Http\Controllers\Pets\PetFollowController;
 use App\Http\Controllers\Pets\PetFollowersController;
 use App\Http\Controllers\Pets\PetGalleryController;
 use App\Http\Controllers\Pets\PetHealthLogController;
+use App\Http\Controllers\Pets\PetMilestoneController;
+use App\Http\Controllers\Pets\PetOwnerController;
 use App\Http\Controllers\Pets\PetPostController;
+use App\Http\Controllers\Pets\PetQrCodeController;
 use App\Http\Controllers\Posts\CommentController;
 use App\Http\Controllers\Posts\CommentReactionController;
 use App\Http\Controllers\Posts\LikeController;
@@ -99,8 +103,19 @@ Route::get('/api/username-available', [ProfileController::class, 'usernameAvaila
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
+Route::prefix('pets')->name('pets.')->group(function (): void {
+    Route::get('/{pet:slug}', [PetController::class, 'show'])
+        ->where('pet', '^(?!create$)[^/]+')
+        ->name('show');
+    Route::get('/{pet:slug}/qr.svg', [PetQrCodeController::class, 'show'])->name('qr.show');
+    Route::get('/{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
+});
+
 Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)->name('search.index');
+    Route::get('/api/breeds', BreedAutocompleteController::class)
+        ->middleware('throttle:60,1')
+        ->name('api.breeds.index');
     Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
     Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
     Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
@@ -119,9 +134,6 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
     Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
     Route::prefix('pets')->name('pets.')->group(function (): void {
         Route::get('/', [PetController::class, 'index'])->name('index');
-        Route::get('/{pet:slug}', [PetController::class, 'show'])
-            ->where('pet', '^(?!create$)[^/]+')
-            ->name('show');
     });
     Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
     Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
@@ -205,6 +217,14 @@ Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_s
             ->name('posts.detach');
 
         Route::patch('/{pet:slug}/adoption', [AdoptionController::class, 'update'])->name('adoption.update');
+        Route::post('/{pet:slug}/owners', [PetOwnerController::class, 'store'])->name('owners.store');
+        Route::post('/{pet:slug}/milestones', [PetMilestoneController::class, 'store'])->name('milestones.store');
+        Route::patch('/{pet:slug}/milestones/{milestone}', [PetMilestoneController::class, 'update'])
+            ->whereNumber('milestone')
+            ->name('milestones.update');
+        Route::delete('/{pet:slug}/milestones/{milestone}', [PetMilestoneController::class, 'destroy'])
+            ->whereNumber('milestone')
+            ->name('milestones.destroy');
 
         Route::prefix('{pet:slug}/health')->name('health.')->group(function (): void {
             Route::get('/', [PetHealthLogController::class, 'index'])->name('index');

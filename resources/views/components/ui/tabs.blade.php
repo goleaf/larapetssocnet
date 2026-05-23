@@ -91,6 +91,7 @@
  <span
  data-ui="tabs-active-indicator"
  aria-hidden="true"
+ style="background-color: var(--profile-theme-tab-underline, var(--color-paw));"
  class="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-paw transition-[left,width] duration-200 ease-in-out motion-reduce:transition-none [left:var(--profile-tab-indicator-left)] [width:var(--profile-tab-indicator-width)]"></span>
  @endif
  </nav>

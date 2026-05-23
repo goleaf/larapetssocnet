@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Users;
 
+use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
 use App\Services\ProfilePortfolioService;
 
@@ -35,6 +36,8 @@ class BuildProfileSettingsViewDataAction
             'portfolioPostIds' => $portfolioPostIds,
             'portfolioPositions' => $this->portfolioService->selectedPositions($user),
             'portfolioUrl' => route('profile.portfolio', ['user' => $user->username]),
+            'profileThemeOptions' => ProfileTheme::settingsOptions(),
+            'selectedProfileTheme' => $user->profileTheme()->value,
         ];
     }
 }

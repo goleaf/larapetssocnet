@@ -2,7 +2,9 @@
 
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 use App\Models\Pets\Pet;
+use App\Models\Pets\PetMilestone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -18,6 +20,11 @@ it('cleans up followers and post links when deleting a pet', function (): void {
         'pet_id' => $pet->id,
         'tagged_pets' => [$pet->id],
     ]);
+    $milestone = PetMilestone::factory()->for($pet)->for($owner, 'user')->create();
+    $listing = MarketplaceListing::factory()->for($owner, 'seller')->for($pet)->create([
+        'listing_type' => 'adoption',
+        'status' => MarketplaceListing::STATUS_ACTIVE,
+    ]);
 
     $this->actingAs($owner)
         ->delete(route('pets.destroy', $pet))
@@ -30,6 +37,8 @@ it('cleans up followers and post links when deleting a pet', function (): void {
     ]);
 
     expect($follower->fresh()->following_pets_count)->toBe(0);
-    expect($post->fresh()->pet_id)->toBeNull()
-        ->and($post->fresh()->tagged_pets ?? [])->not()->toContain($pet->id);
+
+    $this->assertSoftDeleted('posts', ['id' => $post->getKey()]);
+    $this->assertSoftDeleted('pet_milestones', ['id' => $milestone->getKey()]);
+    $this->assertSoftDeleted('marketplace_listings', ['id' => $listing->getKey()]);
 });

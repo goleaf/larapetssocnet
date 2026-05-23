@@ -50,10 +50,21 @@ window.uiHelpers = {
  }),
  );
  },
+
+ openPetCreateWizard(source ='default') {
+ window.dispatchEvent(
+ new CustomEvent('pet-create-wizard-open', {
+ detail: {
+ source,
+ },
+ }),
+ );
+ },
 };
 
 window.toggleModal = window.uiHelpers.toggleModal;
 window.dispatchFlash = window.uiHelpers.dispatchFlash;
+window.openPetCreateWizard = window.uiHelpers.openPetCreateWizard;
 
 window.Alpine = Alpine;
 
@@ -320,6 +331,60 @@ document.addEventListener('alpine:init', () => {
  } finally {
  this.busy = false;
  }
+ },
+ }));
+
+ Alpine.data('petBreedAutocomplete', (config = {}) => ({
+ species: toStringValue(config.species, 'dog'),
+ breed: toStringValue(config.breed),
+ endpoint: toStringValue(config.endpoint),
+ suggestions: [],
+ open: false,
+ busy: false,
+
+ async search() {
+ if (!this.endpoint || !this.species) {
+ this.suggestions = [];
+ this.open = false;
+
+ return;
+ }
+
+ const query = new URLSearchParams({
+ species: this.species,
+ q: this.breed || '',
+ });
+
+ this.busy = true;
+
+ try {
+ const response = await fetch(`${this.endpoint}?${query.toString()}`, {
+ headers: { Accept:'application/json' },
+ });
+
+ if (!response.ok) {
+ throw new Error('breed_search_failed');
+ }
+
+ const payload = await response.json();
+ this.suggestions = Array.isArray(payload.data) ? payload.data : [];
+ this.open = this.suggestions.length > 0;
+ } catch {
+ this.suggestions = [];
+ this.open = false;
+ } finally {
+ this.busy = false;
+ }
+ },
+
+ resetForSpecies() {
+ this.breed = '';
+ this.search();
+ },
+
+ selectBreed(name) {
+ this.breed = toStringValue(name);
+ this.open = false;
  },
  }));
 

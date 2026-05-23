@@ -12,6 +12,11 @@ class PetVisibilityService
 {
     public function canView(?User $viewer, Pet $pet): bool
     {
+        return $this->canViewPetShell($viewer, $pet);
+    }
+
+    public function canViewPetShell(?User $viewer, Pet $pet): bool
+    {
         $pet->loadMissing('owner');
 
         $owner = $pet->owner;
@@ -35,32 +40,27 @@ class PetVisibilityService
             return true;
         }
 
-        $rawIsPublic = $pet->getRawOriginal('is_public');
+        if ($viewer instanceof User && $pet->isCoOwnedBy($viewer)) {
+            return true;
+        }
 
-        if (in_array($rawIsPublic, [0, '0', false], true)) {
+        $visibility = $this->petVisibility($pet);
+
+        if ($visibility === 'private') {
             return false;
         }
 
-        if (! $owner->canViewProfile($viewer)) {
-            return false;
-        }
-
-        return $this->petsVisibilityAllows($viewer, $owner);
-    }
-
-    public function canViewPetShell(?User $viewer, Pet $pet): bool
-    {
-        return $this->canView($viewer, $pet);
+        return true;
     }
 
     public function canViewPetPosts(?User $viewer, Pet $pet): bool
     {
-        return $this->canView($viewer, $pet);
+        return $this->canViewFullProfile($viewer, $pet);
     }
 
     public function canViewPetGallery(?User $viewer, Pet $pet): bool
     {
-        return $this->canView($viewer, $pet);
+        return $this->canViewFullProfile($viewer, $pet);
     }
 
     public function canViewPetFollowers(?User $viewer, Pet $pet): bool
@@ -70,7 +70,7 @@ class PetVisibilityService
 
     public function canViewFollowers(?User $viewer, Pet $pet): bool
     {
-        if (! $this->canView($viewer, $pet)) {
+        if (! $this->canViewPetShell($viewer, $pet)) {
             return false;
         }
 
@@ -191,13 +191,21 @@ class PetVisibilityService
                 $petQuery
                     ->where('pets.user_id', $viewerId)
                     ->orWhere(function (Builder $visibleQuery): void {
-                        $visibleQuery->whereNull('pets.is_public')->orWhere('pets.is_public', true);
+                        $visibleQuery
+                            ->whereNull('pets.visibility')
+                            ->orWhereIn('pets.visibility', ['public', 'followers_only'])
+                            ->orWhereNull('pets.is_public')
+                            ->orWhere('pets.is_public', true);
                     });
             });
         }
 
         return $query->where(function (Builder $visibleQuery): void {
-            $visibleQuery->whereNull('pets.is_public')->orWhere('pets.is_public', true);
+            $visibleQuery
+                ->whereNull('pets.visibility')
+                ->orWhereIn('pets.visibility', ['public', 'followers_only'])
+                ->orWhereNull('pets.is_public')
+                ->orWhere('pets.is_public', true);
         });
     }
 
@@ -210,5 +218,41 @@ class PetVisibilityService
         }
 
         return true;
+    }
+
+    private function canViewFullProfile(?User $viewer, Pet $pet): bool
+    {
+        if (! $this->canViewPetShell($viewer, $pet)) {
+            return false;
+        }
+
+        $owner = $pet->owner;
+
+        if (! $owner instanceof User) {
+            return false;
+        }
+
+        if ($viewer instanceof User && ($viewer->is($owner) || $viewer->hasAnyRole(['admin', 'moderator']) || $pet->isCoOwnedBy($viewer))) {
+            return true;
+        }
+
+        return match ($this->petVisibility($pet)) {
+            'public' => true,
+            'followers_only' => $viewer instanceof User && $pet->isFollowedBy($viewer),
+            default => false,
+        };
+    }
+
+    private function petVisibility(Pet $pet): string
+    {
+        $visibility = (string) ($pet->getRawOriginal('visibility') ?: $pet->visibility);
+
+        if (in_array($visibility, Pet::VISIBILITY, true)) {
+            return $visibility;
+        }
+
+        $rawIsPublic = $pet->getRawOriginal('is_public');
+
+        return in_array($rawIsPublic, [0, '0', false], true) ? 'private' : 'public';
     }
 }

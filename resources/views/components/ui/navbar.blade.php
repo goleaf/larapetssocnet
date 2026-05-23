@@ -77,6 +77,14 @@
  @if ($user && Route::has('profile.show'))
  <x-ui.dropdown-item :href="route('profile.show', $user)">My Profile</x-ui.dropdown-item>
  @endif
+ <x-ui.dropdown-item
+ type="button"
+ aria-haspopup="dialog"
+ aria-controls="pet-create-wizard"
+ @click="window.openPetCreateWizard('nav')"
+ >
+ Add Pet
+ </x-ui.dropdown-item>
  @if (Route::has('settings.profile'))
  <x-ui.dropdown-item :href="route('settings.profile')">Settings</x-ui.dropdown-item>
  @endif
@@ -148,6 +156,14 @@
  <a href="{{ route('profile.show', $user) }}"
  class="block min-h-11 px-4 py-2.5 text-base font-medium text-fur hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">My Profile</a>
  @endif
+ <button
+ type="button"
+ class="block min-h-11 w-full px-4 py-2.5 text-left text-base font-medium text-fur hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-haspopup="dialog"
+ aria-controls="pet-create-wizard"
+ @click="mobileMenuOpen = false; window.openPetCreateWizard('nav-mobile')">
+ Add Pet
+ </button>
  @if (Route::has('settings.profile'))
  <a href="{{ route('settings.profile') }}"
  class="block min-h-11 px-4 py-2.5 text-base font-medium text-fur hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Settings</a>

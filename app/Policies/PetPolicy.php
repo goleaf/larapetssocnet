@@ -41,7 +41,7 @@ class PetPolicy
 
     public function update(User $user, Pet $pet): bool
     {
-        return (int) $pet->user_id === (int) $user->getKey() || $user->hasAnyRole(['admin', 'moderator']);
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'edit');
     }
 
     public function manageAvatar(User $user, Pet $pet): bool
@@ -51,12 +51,32 @@ class PetPolicy
 
     public function manageGallery(User $user, Pet $pet): bool
     {
-        return $this->update($user, $pet);
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'gallery');
+    }
+
+    public function manageHealth(User $user, Pet $pet): bool
+    {
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'health');
+    }
+
+    public function manageAdoption(User $user, Pet $pet): bool
+    {
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'adoption');
+    }
+
+    public function manageMilestones(User $user, Pet $pet): bool
+    {
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'post');
+    }
+
+    public function manageOwners(User $user, Pet $pet): bool
+    {
+        return $this->ownsOrModerates($user, $pet);
     }
 
     public function delete(User $user, Pet $pet): bool
     {
-        return $this->update($user, $pet);
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'delete');
     }
 
     public function restore(User $user, Pet $pet): bool
@@ -76,7 +96,7 @@ class PetPolicy
 
     public function createPostForPet(User $user, Pet $pet): bool
     {
-        return (int) $pet->user_id === (int) $user->getKey();
+        return $this->ownsOrModerates($user, $pet) || $pet->coOwnerCan($user, 'post');
     }
 
     public function attachPost(User $user, Pet $pet, Post $post): bool
@@ -119,5 +139,10 @@ class PetPolicy
     public function unfollow(User $user, Pet $pet): bool
     {
         return ! $user->is($pet->owner);
+    }
+
+    private function ownsOrModerates(User $user, Pet $pet): bool
+    {
+        return (int) $pet->user_id === (int) $user->getKey() || $user->hasAnyRole(['admin', 'moderator']);
     }
 }

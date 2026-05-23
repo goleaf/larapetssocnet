@@ -2,6 +2,7 @@
 
 namespace App\Actions\Users;
 
+use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
 use App\Services\UsernameService;
 use App\Support\Profiles\SocialLinkNormalizer;
@@ -88,6 +89,14 @@ class UpdateProfileAction
 
         if (array_key_exists('social_links', $data)) {
             $payload['social_links'] = SocialLinkNormalizer::forStorage($data['social_links'] ?? null);
+        }
+
+        if (array_key_exists('profile_theme', $data)) {
+            $incomingTheme = $data['profile_theme'];
+
+            $payload['profile_theme'] = $incomingTheme instanceof ProfileTheme
+                ? $incomingTheme->value
+                : (ProfileTheme::fromValue(is_string($incomingTheme) ? $incomingTheme : null) ?? ProfileTheme::default())->value;
         }
 
         if (array_key_exists('privacy_display_location', $data)) {

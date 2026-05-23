@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- Added five accessible, config-backed profile themes stored on `users.profile_theme` and applied as CSS custom property overrides on public or locked profile roots only.
+- Updated the pet profile show page with first-class identity facts, species-aware life-stage labels, personality pills, a milestone story preview, stewardship context, QR sharing, and owner-only care notes.
 - Updated pet deletion cleanup to soft-delete linked pet posts, pet milestones, and pet adoption marketplace listings while still removing follower rows and counter-cache state.
 - Updated adoption status changes so available pets create or restore an active marketplace adoption listing, and unlisted pets archive and soft-delete that listing.
 - Updated profile Report actions to open a Livewire profile-report modal with profile-specific reasons, optional 500-character context, moderation-team notifications, and no change to profile visibility after reporting.

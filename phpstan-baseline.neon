@@ -1831,18 +1831,6 @@ parameters:
 			path: app/Models/Content/Post.php
 
 		-
-			message: '#^Class App\\Models\\Content\\PostMedia uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Content/PostMedia.php
-
-		-
-			message: '#^Method App\\Models\\Content\\PostMedia\:\:post\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Content/PostMedia.php
-
-		-
 			message: '#^Class App\\Models\\Content\\PostReaction uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
 			identifier: missingType.generics
 			count: 1
@@ -4873,18 +4861,6 @@ parameters:
 			path: app/Services/PetService.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:posts\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Services/PinService.php
-
-		-
-			message: '#^Expression on left side of \?\? is not nullable\.$#'
-			identifier: nullCoalesce.expr
-			count: 2
-			path: app/Services/PinService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Content\\Post\:\:\$metadata\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4937,18 +4913,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Services/PrivacyService.php
-
-		-
-			message: '#^Method App\\Services\\ProfilePostOrderingService\:\:apply\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Services/ProfilePostOrderingService.php
-
-		-
-			message: '#^Method App\\Services\\ProfilePostOrderingService\:\:apply\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Services/ProfilePostOrderingService.php
 
 		-
 			message: '#^Strict comparison using \!\=\= between App\\Enums\\ProfileVisibility and App\\Enums\\ProfileVisibility\:\:Private will always evaluate to true\.$#'

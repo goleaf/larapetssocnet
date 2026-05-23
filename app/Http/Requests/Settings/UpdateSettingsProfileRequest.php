@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
 use App\Support\Profiles\SocialLinkNormalizer;
 use App\Support\Usernames\UsernameNormalizer;
@@ -39,6 +40,7 @@ class UpdateSettingsProfileRequest extends FormRequest
             'pronouns' => ['nullable', 'string', 'max:32'],
             'location' => ['nullable', 'string', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
+            'profile_theme' => ['nullable', Rule::enum(ProfileTheme::class)],
             'social_links' => ['nullable', 'array', 'max:4'],
             'social_links.x' => ['nullable', 'string', 'max:16', 'regex:/^@[A-Za-z0-9_]{1,15}$/'],
             'social_links.instagram' => ['nullable', 'string', 'max:31', 'regex:/^@[A-Za-z0-9](?:[A-Za-z0-9._]{0,28}[A-Za-z0-9])?$/'],
@@ -71,6 +73,7 @@ class UpdateSettingsProfileRequest extends FormRequest
             'username_confirm.in' => 'You must type your CURRENT username exactly to confirm the change.',
             'username_confirm.required' => 'Confirming your current username is required.',
             'website.url' => 'Enter a valid website URL.',
+            'profile_theme.enum' => 'Choose one of the available profile themes.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
             'avatar.max' => 'Avatar must be smaller than 3MB.',
@@ -90,16 +93,23 @@ class UpdateSettingsProfileRequest extends FormRequest
     {
         $username = UsernameNormalizer::normalize((string) $this->input('username'));
         $website = trim((string) $this->input('website'));
+        $profileTheme = trim((string) $this->input('profile_theme'));
         $normalizedSocialLinks = SocialLinkNormalizer::normalizeInputs($this->input('social_links', []));
 
         if ($website !== '' && ! preg_match('/^https?:\\/\\//i', $website)) {
             $website = 'https://'.$website;
         }
 
-        $this->merge([
+        $payload = [
             'username' => $username,
             'website' => $website !== '' ? $website : null,
             'social_links' => $normalizedSocialLinks !== [] ? $normalizedSocialLinks : null,
-        ]);
+        ];
+
+        if ($this->has('profile_theme')) {
+            $payload['profile_theme'] = $profileTheme !== '' ? $profileTheme : null;
+        }
+
+        $this->merge($payload);
     }
 }

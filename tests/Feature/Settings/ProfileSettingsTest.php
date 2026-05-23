@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
 use App\Notifications\UsernameChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,7 @@ if (! function_exists('profileSettingsPayload')) {
             'pronouns' => 'they/them',
             'location' => 'Vilnius',
             'website' => 'example.test',
+            'profile_theme' => $user->profileTheme()->value,
             'social_links' => [
                 'x' => 'x.com/example',
                 'instagram' => 'https://instagram.com/example',
@@ -55,6 +57,7 @@ if (! function_exists('profileSettingsCurrentPayload')) {
             'pronouns' => $user->pronouns,
             'location' => $user->location,
             'website' => $user->website,
+            'profile_theme' => $user->profileTheme()->value,
             'social_links' => $user->social_links,
             'birth_date' => $user->birth_date?->toDateString(),
             'gender' => $user->gender,
@@ -87,7 +90,8 @@ it('updates profile settings fields', function (): void {
     ]);
     expect($user->locale)->toBe('en');
     expect($user->timezone)->toBe('Europe/Vilnius');
-    expect(Schema::hasColumn('users', 'profile_theme'))->toBeFalse();
+    expect(Schema::hasColumn('users', 'profile_theme'))->toBeTrue();
+    expect($user->profile_theme)->toBe(ProfileTheme::WarmEditorial);
 });
 
 it('saves each editable profile field independently', function (array $override, string $column, mixed $expected): void {
@@ -127,6 +131,7 @@ it('saves each editable profile field independently', function (array $override,
     'pronouns' => [['pronouns' => 'she/they'], 'pronouns', 'she/they'],
     'location' => [['location' => 'Kaunas'], 'location', 'Kaunas'],
     'website' => [['website' => 'mira.example'], 'website', 'https://mira.example'],
+    'profile theme' => [['profile_theme' => ProfileTheme::Meadow->value], 'profile_theme', ProfileTheme::Meadow],
     'social links' => [
         [
             'social_links' => [
@@ -150,14 +155,15 @@ it('saves each editable profile field independently', function (array $override,
     'timezone' => [['timezone' => 'Europe/Vilnius'], 'timezone', 'Europe/Vilnius'],
 ]);
 
-it('does not render profile theme controls in settings', function (): void {
+it('renders profile theme controls in settings', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('settings.profile'))
         ->assertOk()
-        ->assertDontSee('Profile theme')
-        ->assertDontSee('name="profile_theme"', false);
+        ->assertSee('Profile theme')
+        ->assertSee('name="profile_theme"', false)
+        ->assertSee(ProfileTheme::Berry->label());
 });
 
 it('rejects reserved usernames during profile updates', function (string $username): void {

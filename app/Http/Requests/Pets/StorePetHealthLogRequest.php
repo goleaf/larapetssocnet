@@ -16,7 +16,7 @@ class StorePetHealthLogRequest extends FormRequest
             return false;
         }
 
-        return $this->user()?->can('update', $pet) ?? false;
+        return $this->user()?->can('manageHealth', $pet) ?? false;
     }
 
     public function rules(): array

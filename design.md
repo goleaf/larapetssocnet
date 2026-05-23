@@ -1,6 +1,6 @@
 # Design System
 
-PetSocial uses one design system: Open Design Warm Editorial. It is a warm, editorial, work-focused interface for repeated social-network workflows, not a collection of page-local themes.
+PetSocial uses one design system: Open Design Warm Editorial. It is a warm, editorial, work-focused interface for repeated social-network workflows, not a collection of page-local application themes. The only profile-scoped personalization exception is the five-option `ProfileTheme` system, which applies accessible CSS custom property overrides to a public profile root without changing the platform shell.
 
 ## Source Of Truth
 
@@ -14,7 +14,8 @@ PetSocial uses one design system: Open Design Warm Editorial. It is a warm, edit
 
 ## Non-Negotiable Rules
 
-- Do not add dark/light switching, runtime theme toggles, alternate palette controls, `data-theme` behavior, profile theme fields, or theme preference storage.
+- Do not add dark/light switching, runtime application theme toggles, alternate platform palette controls, or `data-theme` behavior.
+- Keep profile theming constrained to the five accessible enum/config choices in `config/profile_themes.php`; do not let users define arbitrary colors.
 - Keep page layouts fluid inside the shared portal container. Do not center operational pages on narrow `max-w-*` wrappers unless the page is intentionally a reading surface.
 - Use shared primitives for repeated blocks: `x-ui.page-stack`, `shell-card`, `ui-card`, `ui-panel`, `ui-list-item`, `ui-token`, `ui-media-frame`, `ui-card-interactive`, `ui-container`, `ui-section`, and `btn-*`.
 - Avoid new page-local recipes such as one-off gradients, glass panels, arbitrary shadows, `bg-white rounded-xl shadow-sm` card stacks, or competing border palettes.

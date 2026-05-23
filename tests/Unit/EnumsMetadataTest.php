@@ -5,6 +5,7 @@ use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
 use App\Enums\MessageStatus;
 use App\Enums\PostStatus;
+use App\Enums\ProfileTheme;
 use App\Enums\ProfileVisibility;
 
 it('exposes labels and option maps for backed enums', function (string $enumClass): void {
@@ -22,6 +23,7 @@ it('exposes labels and option maps for backed enums', function (string $enumClas
     GroupMemberStatus::class,
     MessageStatus::class,
     PostStatus::class,
+    ProfileTheme::class,
     ProfileVisibility::class,
 ]);
 

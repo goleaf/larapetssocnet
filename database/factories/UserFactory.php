@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -80,6 +81,7 @@ class UserFactory extends Factory
             'privacy_display_birthdate' => fake()->boolean(20),
             'privacy_display_last_seen' => fake()->boolean(80),
             'profile_visibility' => 'public',
+            'profile_theme' => ProfileTheme::default()->value,
             'messaging_permission' => 'everyone',
             'pets_visibility' => 'everyone',
             'groups_visibility' => 'everyone',

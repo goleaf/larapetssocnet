@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Identity\User;
+use App\Models\Marketplace\MarketplaceListing;
 use App\Models\Pets\Pet;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,10 @@ class AdoptionService
         }
 
         DB::transaction(function () use ($pet, $status, $data): void {
-            $updates = ['adoption_status' => $status];
+            $updates = [
+                'adoption_status' => $status,
+                'is_adoptable' => in_array($status, ['available', 'pending'], true),
+            ];
 
             if ($status === 'available') {
                 $updates['adoption_listed_at'] = now();
@@ -39,7 +43,70 @@ class AdoptionService
             }
 
             $pet->update($updates);
+            $this->syncMarketplaceListing($pet->fresh(), $status, $data);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function syncMarketplaceListing(Pet $pet, string $status, array $data): void
+    {
+        $location = User::query()
+            ->whereKey($pet->user_id)
+            ->value('location');
+
+        $listing = MarketplaceListing::query()
+            ->withTrashed()
+            ->where('pet_id', $pet->getKey())
+            ->where('listing_type', 'adoption')
+            ->latest('id')
+            ->first();
+
+        if ($status === 'available') {
+            $attributes = [
+                'user_id' => $pet->user_id,
+                'pet_id' => $pet->getKey(),
+                'title' => $pet->name.' is available for adoption',
+                'description' => (string) ($data['notes'] ?? $pet->adoption_notes ?? $pet->bio ?? 'Contact the owner for adoption details.'),
+                'price' => $data['fee'] ?? $pet->adoption_fee,
+                'currency' => 'USD',
+                'listing_type' => 'adoption',
+                'status' => MarketplaceListing::STATUS_ACTIVE,
+                'location_text' => is_string($location) && $location !== '' ? $location : null,
+                'contact_email' => filter_var($data['contact'] ?? $pet->adoption_contact, FILTER_VALIDATE_EMAIL)
+                    ? (string) ($data['contact'] ?? $pet->adoption_contact)
+                    : null,
+            ];
+
+            if ($listing instanceof MarketplaceListing) {
+                if ($listing->trashed()) {
+                    $listing->restore();
+                }
+
+                $listing->update($attributes);
+
+                return;
+            }
+
+            MarketplaceListing::query()->create($attributes);
+
+            return;
+        }
+
+        if (! $listing instanceof MarketplaceListing) {
+            return;
+        }
+
+        $listing->update([
+            'status' => $status === 'adopted'
+                ? MarketplaceListing::STATUS_SOLD
+                : MarketplaceListing::STATUS_ARCHIVED,
+        ]);
+
+        if ($status === 'not_listed' && ! $listing->trashed()) {
+            $listing->delete();
+        }
     }
 
     public function getListings(array $filters = [], ?User $viewer = null, int $perPage = 20): LengthAwarePaginator

@@ -147,8 +147,8 @@ it('uses the warm editorial system without competing app theme toggles', functio
         ->not->toContain('matchMedia')
         ->not->toContain('themeController')
         ->and($settingsProfile)
-        ->not->toContain('profile_theme')
-        ->not->toContain('Profile theme')
+        ->toContain('profile_theme')
+        ->toContain('Profile theme')
         ->and($debugbar)
         ->toContain("'theme' => env('DEBUGBAR_THEME', 'light')")
         ->not->toContain("'theme' => env('DEBUGBAR_THEME', 'auto')");

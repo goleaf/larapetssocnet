@@ -2,6 +2,7 @@
 
 namespace App\Models\Identity;
 
+use App\Enums\ProfileTheme;
 use App\Enums\ProfileVisibility;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
@@ -24,6 +25,7 @@ use App\Models\Messaging\Message;
 use App\Models\Moderation\Report;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetHealthLog;
+use App\Models\Pets\PetOwner;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Social\Block;
 use App\Models\Social\Follow;
@@ -114,6 +116,7 @@ use Spatie\Permission\Traits\HasRoles;
     'privacy_display_birthdate',
     'privacy_display_last_seen',
     'profile_visibility',
+    'profile_theme',
     'messaging_permission',
     'pets_visibility',
     'groups_visibility',
@@ -225,6 +228,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'location_lat' => 'float',
             'location_lng' => 'float',
             'profile_visibility' => 'string',
+            'profile_theme' => ProfileTheme::class,
             'messaging_permission' => 'string',
             'pets_visibility' => 'string',
             'groups_visibility' => 'string',
@@ -326,6 +330,17 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         }
 
         return UsernameRules::isAvailable($username, $ignore?->getKey());
+    }
+
+    public function profileTheme(): ProfileTheme
+    {
+        $theme = $this->profile_theme;
+
+        if ($theme instanceof ProfileTheme) {
+            return $theme;
+        }
+
+        return ProfileTheme::fromValue(is_string($theme) ? $theme : null) ?? ProfileTheme::default();
     }
 
     /**
@@ -459,6 +474,33 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function pets(): HasMany
     {
         return $this->hasMany(Pet::class);
+    }
+
+    /**
+     * @return HasMany<PetOwner, $this>
+     */
+    public function petOwnerships(): HasMany
+    {
+        return $this->hasMany(PetOwner::class);
+    }
+
+    /**
+     * @return BelongsToMany<Pet, $this>
+     */
+    public function coOwnedPets(): BelongsToMany
+    {
+        return $this->belongsToMany(Pet::class, 'pet_owners', 'user_id', 'pet_id')
+            ->withPivot([
+                'role',
+                'can_post',
+                'can_edit',
+                'can_manage_health',
+                'can_manage_gallery',
+                'can_manage_adoption',
+                'can_delete',
+                'accepted_at',
+            ])
+            ->withTimestamps();
     }
 
     public function photoGalleries(): HasMany

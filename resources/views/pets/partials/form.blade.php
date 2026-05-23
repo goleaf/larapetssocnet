@@ -7,10 +7,21 @@
  $speciesOptions = $speciesOptions ?? [];
  $genderOptions = $genderOptions ?? [];
  $sizeOptions = $sizeOptions ?? [];
+ $wizard = (bool) ($wizard ?? false);
 @endphp
 
 <div class="space-y-6">
- <div class="grid gap-6 sm:grid-cols-2">
+ @if ($wizard)
+ <section x-show="step === 1" x-transition data-ui="pet-create-wizard-step-basics" class="space-y-6">
+ @endif
+ <div
+ class="grid gap-6 sm:grid-cols-2"
+ x-data="petBreedAutocomplete({
+ species: @js(old('species', $pet?->species ?? 'dog')),
+ breed: @js(old('breed', $pet?->breed)),
+ endpoint: @js(route('api.breeds.index'))
+ })"
+ >
  <div>
  <x-ui.input id="name" name="name" type="text" label="Pet name" :value="old('name', $pet?->name)" required/>
  </div>
@@ -23,11 +34,33 @@
  :options="$speciesOptions"
  :selected="old('species', $pet?->species)"
  required
+ x-model="species"
+ @change="resetForSpecies"
  />
  </div>
 
- <div>
- <x-ui.input id="breed" name="breed" type="text" label="Breed" :value="old('breed', $pet?->breed)"/>
+ <div class="relative">
+ <x-ui.input
+ id="breed"
+ name="breed"
+ type="text"
+ label="Breed"
+ :value="old('breed', $pet?->breed)"
+ x-model="breed"
+ @input.debounce.300ms="search"
+ @focus="search"
+ autocomplete="off"
+ />
+ <div
+ x-cloak
+ x-show="open"
+ @click.outside="open = false"
+ class="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white shadow-card"
+ data-ui="pet-breed-autocomplete">
+ <template x-for="breedOption in suggestions" :key="breedOption.id">
+ <button type="button" class="block w-full px-3 py-2 text-left text-sm text-bark hover:bg-cream focus-visible:bg-cream focus-visible:outline-none" @click="selectBreed(breedOption.name)" x-text="breedOption.name"></button>
+ </template>
+ </div>
  </div>
 
  <div>
@@ -59,22 +92,14 @@
  </div>
  </div>
 
+ @if ($wizard)
+ </section>
+ <section x-show="step === 2" x-transition data-ui="pet-create-wizard-step-story" class="space-y-6">
+ @endif
+
  <div>
  <x-ui.textarea id="bio" name="bio" rows="5" label="Bio" :value="old('bio', $pet?->bio)"/>
  </div>
-
- @if (empty($pet))
- <div>
- <x-ui.file-upload
- id="avatar"
- name="avatar"
- label="Avatar"
- accept="image/jpeg,image/png,image/webp,image/gif"
- help="Upload a profile photo (max 5MB)."
- />
- <x-ui.hint :error="$errors->first('avatar')" />
- </div>
- @endif
 
  <div
  x-data="{
@@ -177,6 +202,24 @@
  </template>
  </div>
 
+ @if ($wizard)
+ </section>
+ <section x-show="step === 3" x-transition data-ui="pet-create-wizard-step-photos" class="space-y-6">
+ @endif
+
+ @if (empty($pet))
+ <div>
+ <x-ui.file-upload
+ id="avatar"
+ name="avatar"
+ label="Avatar"
+ accept="image/jpeg,image/png,image/webp,image/gif"
+ help="Upload a profile photo (max 5MB)."
+ />
+ <x-ui.hint :error="$errors->first('avatar')" />
+ </div>
+ @endif
+
  @if (empty($pet))
  <div>
  <x-ui.file-upload
@@ -198,4 +241,7 @@
 
  <x-ui.checkbox name="is_deceased" label="Mark as deceased (Rainbow Bridge)" :checked="old('is_deceased', $pet?->is_deceased ?? false)"/>
  </div>
+ @if ($wizard)
+ </section>
+ @endif
 </div>
