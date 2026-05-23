@@ -95,7 +95,7 @@ class MagicLinkController extends Controller
 
         $user->forceFill([
             'last_login_at' => now(),
-            'last_seen_at' => now(),
+            'last_active_at' => now(),
         ])->save();
 
         return $user->hasVerifiedEmail()

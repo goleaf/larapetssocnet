@@ -77,7 +77,7 @@ class SocialLoginController extends Controller
             $request->session()->forget('auth.two_factor_pending_user_id');
             $user->forceFill([
                 'last_login_at' => now(),
-                'last_seen_at' => now(),
+                'last_active_at' => now(),
             ])->save();
         }
 

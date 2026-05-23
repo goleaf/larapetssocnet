@@ -7,6 +7,7 @@ use App\Models\Identity\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
@@ -14,30 +15,49 @@ uses(RefreshDatabase::class);
 it('keeps existing identity columns and adds missing auth security columns', function (): void {
     expect(Schema::hasColumn('users', 'username'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'birth_date'))->toBeTrue()
-        ->and(Schema::hasColumn('users', 'last_seen_at'))->toBeTrue()
+        ->and(Schema::hasColumn('users', 'last_active_at'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'pending_email'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'two_factor_secret'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'two_factor_recovery_codes'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'profile_completeness_score'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'account_status'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'failed_login_attempts'))->toBeTrue()
-        ->and(Schema::hasColumn('users', 'last_failed_login_at'))->toBeTrue();
+        ->and(Schema::hasColumn('users', 'last_failed_login_at'))->toBeTrue()
+        ->and(Schema::hasColumn('users', 'username_change_allowed_at'))->toBeTrue();
 
     $indexes = collect(Schema::getIndexes('users'))->keyBy('name');
 
-    expect($indexes->has('users_username_unique'))->toBeTrue()
-        ->and($indexes->has('users_username_lower_unique'))->toBeTrue()
+    expect($indexes->has('users_username_case_insensitive_unique'))->toBeTrue()
         ->and($indexes->has('users_pending_email_unique'))->toBeTrue()
         ->and($indexes->has('users_account_status_index'))->toBeTrue()
-        ->and($indexes->has('users_last_seen_at_index'))->toBeTrue()
+        ->and($indexes->has('users_last_active_at_index'))->toBeTrue()
         ->and($indexes->has('users_last_failed_login_at_index'))->toBeTrue();
 
     $authAuditIndexes = collect(Schema::getIndexes('auth_audit_logs'))->keyBy('name');
     $sessionIndexes = collect(Schema::getIndexes('sessions'))->keyBy('name');
 
-    expect(Schema::hasColumn('auth_audit_logs', 'identifier_hash'))->toBeTrue()
+    expect(Schema::hasColumn('auth_audit_logs', 'additional_data'))->toBeTrue()
+        ->and(Schema::hasColumn('auth_audit_logs', 'country'))->toBeTrue()
+        ->and(Schema::hasColumn('auth_audit_logs', 'city'))->toBeTrue()
+        ->and(Schema::hasColumn('auth_audit_logs', 'updated_at'))->toBeFalse()
+        ->and($authAuditIndexes->has('auth_audit_logs_user_created_at_index'))->toBeTrue()
+        ->and($authAuditIndexes->has('auth_audit_logs_created_at_index'))->toBeTrue()
         ->and($authAuditIndexes->has('auth_audit_logs_failure_lookup_index'))->toBeTrue()
         ->and($sessionIndexes->has('sessions_user_id_last_activity_index'))->toBeTrue();
+});
+
+it('keeps authentication feature database changes in one focused migration', function (): void {
+    $authMigrations = collect(File::files(database_path('migrations')))
+        ->map(fn ($file): string => $file->getFilename())
+        ->filter(fn (string $filename): bool => str_contains($filename, 'auth')
+            || str_contains($filename, 'social_accounts')
+            || str_contains($filename, 'magic_login')
+            || str_contains($filename, 'magic_link'))
+        ->values();
+
+    expect($authMigrations->all())->toBe([
+        '2026_05_23_073204_consolidate_authentication_database_schema.php',
+    ]);
 });
 
 it('enforces case-insensitive username uniqueness at the database layer', function (): void {
@@ -67,21 +87,17 @@ it('stores social login provider data separately with encrypted token casts', fu
         ->for($user)
         ->create([
             'provider' => 'google',
-            'provider_id' => 'google-oauth-user-id',
-            'token' => 'plain-provider-token',
-            'refresh_token' => 'plain-provider-refresh-token',
-            'provider_payload' => ['avatar_original' => 'https://example.com/avatar.png'],
+            'provider_user_id' => 'google-oauth-user-id',
+            'provider_token' => 'plain-provider-token',
+            'provider_token_expires_at' => now()->addHour(),
         ]);
 
     $raw = DB::table('social_accounts')->where('id', $socialAccount->id)->first();
 
     expect(Schema::hasTable('social_accounts'))->toBeTrue()
         ->and($socialAccount->user->is($user))->toBeTrue()
-        ->and($socialAccount->token)->toBe('plain-provider-token')
-        ->and($socialAccount->refresh_token)->toBe('plain-provider-refresh-token')
-        ->and($socialAccount->provider_payload)->toBe(['avatar_original' => 'https://example.com/avatar.png'])
-        ->and($raw->token)->not->toBe('plain-provider-token')
-        ->and($raw->refresh_token)->not->toBe('plain-provider-refresh-token');
+        ->and($socialAccount->provider_token)->toBe('plain-provider-token')
+        ->and($raw->provider_token)->not->toBe('plain-provider-token');
 });
 
 it('casts account status and two-factor recovery codes safely', function (): void {

@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 class SocialLoginService
 {
     /**
-     * @return array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}
+     * @return array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}
      */
     public function fetchProviderUser(string $provider, string $code): array
     {
@@ -48,14 +48,14 @@ class SocialLoginService
     }
 
     /**
-     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
+     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
      */
     public function loginOrCreateUser(string $provider, array $profile, Request $request): User
     {
         return DB::transaction(function () use ($provider, $profile, $request): User {
             $socialAccount = SocialAccount::query()
                 ->where('provider', $provider)
-                ->where('provider_id', $profile['provider_id'])
+                ->where('provider_user_id', $profile['provider_id'])
                 ->first();
 
             if ($socialAccount instanceof SocialAccount) {
@@ -102,7 +102,7 @@ class SocialLoginService
     /**
      * @param  array<string, mixed>  $profile
      * @param  array<string, mixed>  $tokenResponse
-     * @return array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}
+     * @return array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}
      */
     private function normalizeProviderProfile(string $provider, array $profile, array $tokenResponse): array
     {
@@ -128,14 +128,13 @@ class SocialLoginService
             'nickname' => is_string($profile['login'] ?? $profile['username'] ?? null) ? ($profile['login'] ?? $profile['username']) : null,
             'avatar' => is_string($profile['picture'] ?? $profile['avatar_url'] ?? null) ? ($profile['picture'] ?? $profile['avatar_url']) : null,
             'token' => is_string($tokenResponse['access_token'] ?? null) ? $tokenResponse['access_token'] : null,
-            'refresh_token' => is_string($tokenResponse['refresh_token'] ?? null) ? $tokenResponse['refresh_token'] : null,
             'expires_at' => $expiresIn,
             'raw' => $profile,
         ];
     }
 
     /**
-     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
+     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
      */
     private function matchingUser(array $profile): ?User
     {
@@ -147,7 +146,7 @@ class SocialLoginService
     }
 
     /**
-     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
+     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
      */
     private function createUser(array $profile, Request $request): User
     {
@@ -189,39 +188,27 @@ class SocialLoginService
     }
 
     /**
-     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
+     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
      */
     private function createSocialAccount(User $user, string $provider, array $profile): void
     {
         SocialAccount::query()->create([
             'user_id' => $user->getKey(),
             'provider' => $provider,
-            'provider_id' => $profile['provider_id'],
-            'provider_email' => $profile['email'],
-            'provider_nickname' => $profile['nickname'],
-            'provider_name' => $profile['name'],
-            'avatar_url' => $profile['avatar'],
-            'token' => $profile['token'],
-            'refresh_token' => $profile['refresh_token'],
-            'expires_at' => $profile['expires_at'],
-            'provider_payload' => $profile['raw'],
+            'provider_user_id' => $profile['provider_id'],
+            'provider_token' => $profile['token'],
+            'provider_token_expires_at' => $profile['expires_at'],
         ]);
     }
 
     /**
-     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, refresh_token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
+     * @param  array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}  $profile
      */
     private function updateSocialAccount(SocialAccount $socialAccount, array $profile): void
     {
         $socialAccount->update([
-            'provider_email' => $profile['email'],
-            'provider_nickname' => $profile['nickname'],
-            'provider_name' => $profile['name'],
-            'avatar_url' => $profile['avatar'],
-            'token' => $profile['token'],
-            'refresh_token' => $profile['refresh_token'],
-            'expires_at' => $profile['expires_at'],
-            'provider_payload' => $profile['raw'],
+            'provider_token' => $profile['token'],
+            'provider_token_expires_at' => $profile['expires_at'],
         ]);
     }
 }

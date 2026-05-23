@@ -24,7 +24,7 @@ class SettingsService
                     'username_confirm' => 'The confirmation username does not match your current username.',
                 ]);
             }
-            $data['username_changed_at'] = now();
+            $data['username_change_allowed_at'] = now();
         }
 
         $user->update($data);

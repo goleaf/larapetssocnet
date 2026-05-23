@@ -3,16 +3,17 @@
 ## Unreleased
 
 ### Fixed
-- Added a forward auth schema repair migration so databases that had already recorded the edited auth security migration receive the missing encrypted two-factor fields, pending email column, failed-login counters, social accounts table, and case-insensitive username indexes.
 - Kept pet profile and QR routes inside the authenticated application middleware stack.
 - Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added schema coverage proving the authentication database changes remain in one focused migration and that the requested auth indexes exist.
 - Added lifecycle coverage for magic login links, password reset non-enumeration and session invalidation, Google OAuth account creation/returning/merge flows, device-session scoping, and TOTP/recovery-code challenges.
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Consolidated authentication database changes into one focused migration, renamed online presence tracking to `users.last_active_at`, renamed username cooldown tracking to `users.username_change_allowed_at`, rebuilt OAuth provider columns around `provider_user_id` / encrypted `provider_token`, and moved one-time login storage to `magic_link_tokens`.
 - Updated the GitHub Actions FTP deployment to use a single parallel `lftp mirror` upload that cleans stale remote files before transfer and keeps normal deploys from overwriting remote SQLite/runtime data.
 - Updated local authentication foundation defaults to use database sessions, database queues, and Mailpit SMTP instead of file sessions, sync queues, or log-only mail.
 - Updated protected app routes with a two-factor challenge gate, added password-reset/password-change database session invalidation, and made reset-link requests return the same user-facing response for existing and missing emails.
@@ -50,7 +51,7 @@
 ### Added
 - Added queued one-time magic login links with hashed single-use tokens, TOTP two-factor setup/challenge pages with hashed recovery codes, device-session review/logout controls, and Google/Facebook OAuth redirect/callback handling that stores provider identities in `social_accounts`.
 - Added the authentication security schema foundation with encrypted two-factor columns, pending email change storage, profile completeness tracking, account status and failed-login tracking columns, case-insensitive username and reserved-username unique indexes, and a separate encrypted `social_accounts` table for OAuth provider identities.
-- Added privacy-gated currently-active avatar indicators backed by `users.last_seen_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.
+- Added privacy-gated currently-active avatar indicators backed by `users.last_active_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.
 - Added public profile portfolio mode at `/@username/portfolio`, backed by an ordered `profile_portfolio_posts` pivot table, a settings management form for up to 12 published public posts, and a responsive magazine-style showcase grid.
 - Added first-class pet profile ownership extensions with scoped co-owner permissions, pet milestones with optional automatic post sharing, authenticated breed autocomplete, server-generated QR SVGs, and daily pet birthday notifications.
 - Added owner-only Profile Wrapped annual summaries, generated during the first week of January with yearly post, reaction, follower, pet, activity-month, and top-post metrics plus queued PNG share-card generation.

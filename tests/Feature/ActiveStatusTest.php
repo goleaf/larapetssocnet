@@ -35,7 +35,7 @@ afterEach(function (): void {
 
 it('updates the authenticated users last active timestamp when a livewire component mounts', function (): void {
     $viewer = User::factory()->create([
-        'last_seen_at' => null,
+        'last_active_at' => null,
         'privacy_display_last_seen' => true,
     ]);
 
@@ -43,40 +43,40 @@ it('updates the authenticated users last active timestamp when a livewire compon
         ->test(ActiveStatusProbe::class)
         ->assertSee('active status probe');
 
-    expect($viewer->refresh()->last_seen_at?->toDateTimeString())->toBe('2026-05-23 12:00:00');
+    expect($viewer->refresh()->last_active_at?->toDateTimeString())->toBe('2026-05-23 12:00:00');
 });
 
 it('does not rewrite the last active timestamp when it is less than sixty seconds old', function (): void {
     $viewer = User::factory()->create([
-        'last_seen_at' => now()->subSeconds(30),
+        'last_active_at' => now()->subSeconds(30),
     ]);
 
     app(ActiveStatusService::class)->touch($viewer);
 
-    expect($viewer->refresh()->last_seen_at?->toDateTimeString())->toBe('2026-05-23 11:59:30');
+    expect($viewer->refresh()->last_active_at?->toDateTimeString())->toBe('2026-05-23 11:59:30');
 });
 
 it('refreshes the last active timestamp when it is more than sixty seconds old', function (): void {
     $viewer = User::factory()->create([
-        'last_seen_at' => now()->subSeconds(61),
+        'last_active_at' => now()->subSeconds(61),
     ]);
 
     app(ActiveStatusService::class)->touch($viewer);
 
-    expect($viewer->refresh()->last_seen_at?->toDateTimeString())->toBe('2026-05-23 12:00:00');
+    expect($viewer->refresh()->last_active_at?->toDateTimeString())->toBe('2026-05-23 12:00:00');
 });
 
 it('shows active status dots only for users who are active and allow the indicator', function (): void {
     $activeUser = User::factory()->create([
-        'last_seen_at' => now()->subMinutes(4),
+        'last_active_at' => now()->subMinutes(4),
         'privacy_display_last_seen' => true,
     ]);
     $inactiveUser = User::factory()->create([
-        'last_seen_at' => now()->subMinutes(6),
+        'last_active_at' => now()->subMinutes(6),
         'privacy_display_last_seen' => true,
     ]);
     $privateUser = User::factory()->create([
-        'last_seen_at' => now(),
+        'last_active_at' => now(),
         'privacy_display_last_seen' => false,
     ]);
 

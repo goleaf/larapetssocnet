@@ -88,6 +88,7 @@ use Spatie\Permission\Traits\HasRoles;
     'name',
     'display_name',
     'username',
+    'username_change_allowed_at',
     'username_changed_at',
     'email',
     'pending_email',
@@ -130,6 +131,7 @@ use Spatie\Permission\Traits\HasRoles;
     'is_private',
     'onboarding_step',
     'onboarding_completed_at',
+    'last_active_at',
     'last_seen_at',
     'last_login_at',
     'avatar_path',
@@ -236,6 +238,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'pending_email' => 'string',
+            'username_change_allowed_at' => 'datetime',
             'username_changed_at' => 'datetime',
             'password_changed_at' => 'datetime',
             'two_factor_secret' => 'encrypted',
@@ -260,6 +263,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'social_links' => 'array',
             'is_private' => 'boolean',
             'onboarding_completed_at' => 'datetime',
+            'last_active_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'last_login_at' => 'datetime',
             'cover_photo_position' => 'float',
@@ -419,13 +423,13 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function canChangeUsername(): bool
     {
-        if (! $this->username_changed_at) {
+        if (! $this->username_change_allowed_at) {
             return true;
         }
 
         $cooldownDays = (int) config('usernames.cooldown_days', 30);
 
-        return $this->username_changed_at->copy()->addDays($cooldownDays)->isPast();
+        return $this->username_change_allowed_at->copy()->addDays($cooldownDays)->isPast();
     }
 
     public function daysUntilUsernameChange(): int
@@ -436,7 +440,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
         $cooldownDays = (int) config('usernames.cooldown_days', 30);
 
-        return (int) now()->diffInDays($this->username_changed_at->copy()->addDays($cooldownDays), false);
+        return (int) now()->diffInDays($this->username_change_allowed_at->copy()->addDays($cooldownDays), false);
     }
 
     public function hasPendingDeletion(): bool
@@ -1056,18 +1060,18 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function scopeActiveRecently(Builder $query, int $days = 30): Builder
     {
-        return $query->where('last_seen_at', '>=', now()->subDays($days));
+        return $query->where('last_active_at', '>=', now()->subDays($days));
     }
 
     public function isCurrentlyActive(?CarbonInterface $now = null): bool
     {
-        if (! $this->last_seen_at instanceof CarbonInterface) {
+        if (! $this->last_active_at instanceof CarbonInterface) {
             return false;
         }
 
         $currentTime = $now ?? now();
 
-        return $this->last_seen_at->greaterThanOrEqualTo(
+        return $this->last_active_at->greaterThanOrEqualTo(
             $currentTime->copy()->subMinutes(self::ACTIVE_STATUS_WINDOW_MINUTES)
         );
     }

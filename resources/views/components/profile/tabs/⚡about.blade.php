@@ -303,7 +303,7 @@ new class extends Component
                 'users.username',
                 'users.avatar_path',
                 'users.profile_photo_path',
-                'users.last_seen_at',
+                'users.last_active_at',
                 'users.privacy_display_last_seen',
             ])
             ->with([

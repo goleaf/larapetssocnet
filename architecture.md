@@ -24,7 +24,7 @@ Application pages are private by default. Keep Explore, search, profiles, posts,
 
 ## Domain Map
 
-- Auth and account: Breeze controllers, auth audit logging, verified-email gating, encrypted two-factor fields, pending email changes, account status tracking, failed-login counters, and separate OAuth social account identities.
+- Auth and account: Breeze controllers, one focused auth schema migration, auth audit logging, verified-email gating, encrypted two-factor fields, pending email changes, account status tracking, failed-login counters, `users.last_active_at` online presence, and separate OAuth social account identities.
 - Feed and posts: feed controller, cursor pagination, post cards, reactions, comments, saves, shares, reports.
 - Social graph: follows, pet follows, blocks, requests, counters, notifications.
 - Pets and adoption: pet profiles, galleries, health logs, adoption browse/listing flows.

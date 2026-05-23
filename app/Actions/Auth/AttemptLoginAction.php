@@ -78,7 +78,7 @@ class AttemptLoginAction
         }
 
         $updates = [
-            'last_seen_at' => now(),
+            'last_active_at' => now(),
         ];
 
         if (! $requiresTwoFactorChallenge) {

@@ -93,7 +93,7 @@ class UsernameService
 
             $user->update([
                 'username' => $normalized,
-                'username_changed_at' => now(),
+                'username_change_allowed_at' => now(),
             ]);
 
             if ($oldUsername !== '' && (bool) config('usernames.reserve_old_usernames', true)) {

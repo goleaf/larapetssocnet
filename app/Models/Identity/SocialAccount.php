@@ -14,19 +14,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'provider',
-    'provider_id',
-    'provider_email',
-    'provider_nickname',
-    'provider_name',
-    'avatar_url',
-    'token',
-    'refresh_token',
-    'expires_at',
-    'provider_payload',
+    'provider_user_id',
+    'provider_token',
+    'provider_token_expires_at',
 ])]
 #[Hidden([
-    'token',
-    'refresh_token',
+    'provider_token',
 ])]
 class SocialAccount extends Model
 {
@@ -36,10 +29,8 @@ class SocialAccount extends Model
     protected function casts(): array
     {
         return [
-            'token' => 'encrypted',
-            'refresh_token' => 'encrypted',
-            'expires_at' => 'datetime',
-            'provider_payload' => 'array',
+            'provider_token' => 'encrypted',
+            'provider_token_expires_at' => 'datetime',
         ];
     }
 

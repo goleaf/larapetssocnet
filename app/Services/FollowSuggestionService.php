@@ -37,7 +37,7 @@ class FollowSuggestionService
             ->orderByDesc('mutual_followers_count')
             ->orderByDesc('shared_groups_count')
             ->orderByDesc('followers_count')
-            ->orderByDesc('last_seen_at')
+            ->orderByDesc('last_active_at')
             ->limit($limit)
             ->with('media')
             ->select([
@@ -47,7 +47,7 @@ class FollowSuggestionService
                 'users.avatar_path',
                 'users.profile_photo_path',
                 'users.followers_count',
-                'users.last_seen_at',
+                'users.last_active_at',
                 'users.is_private',
             ])
             ->get();

@@ -97,7 +97,7 @@ it('creates and consumes magic login links exactly once', function (): void {
         ->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
-    expect($magicToken->refresh()->consumed_at)->not->toBeNull();
+    expect($magicToken->refresh()->used_at)->not->toBeNull();
 
     auth()->logout();
 
@@ -117,7 +117,7 @@ it('rejects expired magic login tokens', function (): void {
         ]);
 
     $url = URL::temporarySignedRoute('magic-login.consume', now()->addMinute(), [
-        'token' => $magicToken->public_id,
+        'token' => $magicToken->token,
         'secret' => $plainToken,
     ]);
 
@@ -144,7 +144,7 @@ it('creates a new account from a verified social login profile', function (): vo
     $this->assertDatabaseHas('social_accounts', [
         'user_id' => $user->id,
         'provider' => 'google',
-        'provider_id' => 'provider-new',
+        'provider_user_id' => 'provider-new',
     ]);
 });
 
@@ -159,7 +159,7 @@ it('logs in a returning social account without creating a duplicate user', funct
         ->for($user)
         ->create([
             'provider' => 'google',
-            'provider_id' => 'provider-returning',
+            'provider_user_id' => 'provider-returning',
         ]);
 
     fakeGoogleProvider('provider-returning', 'changed-returning@example.com');
@@ -190,7 +190,7 @@ it('merges a verified social login profile with an existing email account', func
     $this->assertDatabaseHas('social_accounts', [
         'user_id' => $user->id,
         'provider' => 'google',
-        'provider_id' => 'provider-merge',
+        'provider_user_id' => 'provider-merge',
     ]);
 });
 
@@ -251,7 +251,6 @@ function fakeGoogleProvider(string $providerId, string $email): void
     Http::fake([
         'https://oauth2.googleapis.com/token' => Http::response([
             'access_token' => 'provider-access-token',
-            'refresh_token' => 'provider-refresh-token',
             'expires_in' => 3600,
         ]),
         'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([

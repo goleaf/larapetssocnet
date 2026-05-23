@@ -18,19 +18,17 @@ class MagicLinkService
     {
         $expiresAt = now()->addMinutes(self::EXPIRY_MINUTES);
 
-        [$magicToken, $plainToken] = DB::transaction(function () use ($user, $request, $expiresAt): array {
+        [$magicToken, $plainToken] = DB::transaction(function () use ($user, $expiresAt): array {
             MagicLoginToken::query()
                 ->where('user_id', $user->getKey())
-                ->whereNull('consumed_at')
+                ->whereNull('used_at')
                 ->delete();
 
             $plainToken = Str::random(64);
             $magicToken = MagicLoginToken::query()->create([
-                'public_id' => (string) Str::uuid(),
                 'user_id' => $user->getKey(),
+                'token' => Str::random(40),
                 'token_hash' => hash('sha256', $plainToken),
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
                 'expires_at' => $expiresAt,
             ]);
 
@@ -41,7 +39,7 @@ class MagicLinkService
             'magic-login.consume',
             $expiresAt,
             [
-                'token' => $magicToken->public_id,
+                'token' => $magicToken->token,
                 'secret' => $plainToken,
             ]
         );
@@ -51,25 +49,28 @@ class MagicLinkService
         return $magicToken;
     }
 
-    public function consume(string $publicId, string $plainToken): ?MagicLoginToken
+    public function consume(string $publicToken, string $plainToken): ?MagicLoginToken
     {
+        $tokenHash = hash('sha256', $plainToken);
+
         $magicToken = MagicLoginToken::query()
             ->with('user')
-            ->where('public_id', $publicId)
+            ->where('token_hash', $tokenHash)
+            ->where('token', $publicToken)
             ->first();
 
         if (! $magicToken instanceof MagicLoginToken || ! $magicToken->isConsumable()) {
             return null;
         }
 
-        if (! hash_equals((string) $magicToken->token_hash, hash('sha256', $plainToken))) {
+        if (! hash_equals((string) $magicToken->token_hash, $tokenHash)) {
             return null;
         }
 
         $updated = MagicLoginToken::query()
             ->whereKey($magicToken->getKey())
-            ->whereNull('consumed_at')
-            ->update(['consumed_at' => now()]);
+            ->whereNull('used_at')
+            ->update(['used_at' => now()]);
 
         return $updated === 1 ? $magicToken->refresh() : null;
     }

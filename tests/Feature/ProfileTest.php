@@ -1426,7 +1426,7 @@ test('legacy badges and flags do not render the verified profile badge', functio
 
 test('authenticated profile requests refresh online indicator timestamp', function (): void {
     $user = User::factory()->create([
-        'last_seen_at' => null,
+        'last_active_at' => null,
     ]);
 
     $now = Carbon::parse('2026-02-21 12:34:56');
@@ -1442,7 +1442,7 @@ test('authenticated profile requests refresh online indicator timestamp', functi
 
     $user->refresh();
 
-    expect($user->last_seen_at?->toDateTimeString())->toBe('2026-02-21 12:34:56');
+    expect($user->last_active_at?->toDateTimeString())->toBe('2026-02-21 12:34:56');
 
     Carbon::setTestNow($now);
 

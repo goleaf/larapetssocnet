@@ -50,7 +50,7 @@ class TwoFactorAuthenticationController extends Controller
 
         $user->forceFill([
             'last_login_at' => now(),
-            'last_seen_at' => now(),
+            'last_active_at' => now(),
         ])->save();
 
         $auditLogger->record($user, 'two_factor_challenge_passed', $request, [

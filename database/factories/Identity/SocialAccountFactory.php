@@ -24,18 +24,9 @@ class SocialAccountFactory extends Factory
         return [
             'user_id' => User::factory(),
             'provider' => $provider,
-            'provider_id' => $provider.'_'.fake()->unique()->uuid(),
-            'provider_email' => fake()->safeEmail(),
-            'provider_nickname' => fake()->optional(0.5)->userName(),
-            'provider_name' => fake()->name(),
-            'avatar_url' => fake()->optional(0.6)->imageUrl(256, 256, 'people', true),
-            'token' => Str::random(48),
-            'refresh_token' => Str::random(64),
-            'expires_at' => now()->addHour(),
-            'provider_payload' => [
-                'locale' => fake()->locale(),
-                'verified_email' => fake()->boolean(80),
-            ],
+            'provider_user_id' => $provider.'_'.fake()->unique()->uuid(),
+            'provider_token' => Str::random(48),
+            'provider_token_expires_at' => now()->addHour(),
         ];
     }
 }

@@ -10,11 +10,11 @@ use Throwable;
 
 class ActiveStatusService
 {
-    private static ?bool $hasLastSeenColumn = null;
+    private static ?bool $hasLastActiveColumn = null;
 
     public function touch(User $user, ?CarbonInterface $now = null): bool
     {
-        if (! $user->getKey() || ! $this->hasLastSeenColumn()) {
+        if (! $user->getKey() || ! $this->hasLastActiveColumn()) {
             return false;
         }
 
@@ -29,13 +29,13 @@ class ActiveStatusService
             : CarbonImmutable::instance(now());
 
         try {
-            $storedLastSeen = User::query()
+            $storedLastActive = User::query()
                 ->whereKey($user->getKey())
-                ->value('last_seen_at');
+                ->value('last_active_at');
 
             if (
-                $storedLastSeen !== null
-                && CarbonImmutable::parse($storedLastSeen)->greaterThanOrEqualTo(
+                $storedLastActive !== null
+                && CarbonImmutable::parse($storedLastActive)->greaterThanOrEqualTo(
                     $currentTime->subSeconds(User::ACTIVE_STATUS_WRITE_THROTTLE_SECONDS)
                 )
             ) {
@@ -53,15 +53,15 @@ class ActiveStatusService
                         'password' => $user->password,
                         'created_at' => $user->created_at,
                         'updated_at' => $user->updated_at,
-                        'last_seen_at' => $currentTime,
+                        'last_active_at' => $currentTime,
                     ],
                 ],
                 uniqueBy: ['id'],
-                update: ['last_seen_at']
+                update: ['last_active_at']
             ));
 
             $user->forceFill([
-                'last_seen_at' => $currentTime,
+                'last_active_at' => $currentTime,
             ]);
 
             request()->attributes->set($requestKey, true);
@@ -72,8 +72,8 @@ class ActiveStatusService
         }
     }
 
-    private function hasLastSeenColumn(): bool
+    private function hasLastActiveColumn(): bool
     {
-        return self::$hasLastSeenColumn ??= Schema::hasColumn('users', 'last_seen_at');
+        return self::$hasLastActiveColumn ??= Schema::hasColumn('users', 'last_active_at');
     }
 }

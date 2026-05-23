@@ -548,7 +548,7 @@ it('saves profile edits from the nested modal without redirecting away from the 
         'name' => 'Original Modal Name',
         'display_name' => null,
         'username' => 'nested_modal_saver',
-        'username_changed_at' => null,
+        'username_change_allowed_at' => null,
         'bio' => null,
         'headline' => null,
         'pronouns' => null,
@@ -597,7 +597,7 @@ it('saves profile edits from the nested modal without redirecting away from the 
 
     expect($profileOwner->name)->toBe('Updated Modal Name')
         ->and($profileOwner->username)->toBe('updated_nested_saver')
-        ->and($profileOwner->username_changed_at)->not->toBeNull()
+        ->and($profileOwner->username_change_allowed_at)->not->toBeNull()
         ->and($profileOwner->display_name)->toBe('Updated Modal Display')
         ->and($profileOwner->bio)->toBe('A modal bio with enough detail to describe this profile.')
         ->and($profileOwner->headline)->toBe('Nested editor')
@@ -631,7 +631,7 @@ it('checks username availability and reports the cooldown state in the edit prof
     $profileOwner = User::factory()->create([
         'name' => 'Cooldown Modal Owner',
         'username' => 'cooldown_modal_owner',
-        'username_changed_at' => now()->subDays(5),
+        'username_change_allowed_at' => now()->subDays(5),
         'gender' => 'prefer_not_to_say',
         'is_private' => false,
         'profile_visibility' => 'public',
@@ -657,7 +657,7 @@ it('checks username availability for available and taken names when cooldown is 
 
     $profileOwner = User::factory()->create([
         'username' => 'available_modal_owner',
-        'username_changed_at' => null,
+        'username_change_allowed_at' => null,
         'is_private' => false,
         'profile_visibility' => 'public',
     ]);
@@ -728,7 +728,7 @@ it('enforces username cooldown inside the profile update action', function (): v
     $profileOwner = User::factory()->create([
         'name' => 'Action Cooldown Owner',
         'username' => 'action_cooldown_owner',
-        'username_changed_at' => now()->subDays(5),
+        'username_change_allowed_at' => now()->subDays(5),
     ]);
 
     expect(fn () => app(UpdateProfileAction::class)->handle($profileOwner, [
@@ -854,7 +854,7 @@ it('mounts the lazy about tab component and presents public biographical section
             ],
             'interests_text' => 'rescue, senior pets, training',
             'birth_date' => '1998-05-20',
-            'last_seen_at' => Carbon::parse('2026-05-22 12:00:00'),
+            'last_active_at' => Carbon::parse('2026-05-22 12:00:00'),
             'created_at' => Carbon::parse('2024-04-14 12:00:00'),
             'posts_count' => 12,
             'pets_count' => 3,
@@ -1370,7 +1370,7 @@ it('keeps privacy-gated about fields hidden from visitors and never reveals the 
             'social_links' => null,
             'interests_text' => null,
             'birth_date' => '1994-05-20',
-            'last_seen_at' => Carbon::parse('2026-05-22 12:00:00'),
+            'last_active_at' => Carbon::parse('2026-05-22 12:00:00'),
             'privacy_display_email' => false,
             'privacy_display_location' => false,
             'privacy_display_birthdate' => false,

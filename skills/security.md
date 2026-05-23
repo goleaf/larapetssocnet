@@ -34,7 +34,7 @@
 - Deny soft-deleted accounts and restrict pending-deletion, deactivated, and suspended accounts to their recovery or notice screens before full app access.
 - Rate-limit repeated failed login attempts by normalized email/username plus IP.
 - Persist failed-login counters on the user when identity is known and keep audit lookups indexed by IP plus a hashed normalized identifier, not raw email.
-- Keep auth-only secrets out of public serialization: hide `pending_email`, two-factor secrets, two-factor recovery code hashes, magic login token hashes, and social provider tokens; use encrypted casts for stored secrets.
+- Keep auth-only secrets out of public serialization: hide `pending_email`, two-factor secrets, two-factor recovery code hashes, magic link token hashes, and social provider tokens; use encrypted casts for stored secrets.
 - Magic login and password reset request flows must not reveal whether an email exists. Consume one-time login tokens atomically and invalidate old sessions after password reset.
 - OAuth provider data belongs in `social_accounts`; merge by provider ID first, then by verified email only.
 - Logout must invalidate the session, regenerate the CSRF token, and record a `logout` audit event. Password changes and password resets should invalidate other database-backed sessions.

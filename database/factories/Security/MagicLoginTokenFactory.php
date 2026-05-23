@@ -22,13 +22,11 @@ class MagicLoginTokenFactory extends Factory
         $token = Str::random(64);
 
         return [
-            'public_id' => (string) Str::uuid(),
             'user_id' => User::factory(),
+            'token' => Str::random(40),
             'token_hash' => hash('sha256', $token),
-            'ip_address' => fake()->ipv4(),
-            'user_agent' => fake()->userAgent(),
             'expires_at' => now()->addMinutes(15),
-            'consumed_at' => null,
+            'used_at' => null,
         ];
     }
 
@@ -42,7 +40,7 @@ class MagicLoginTokenFactory extends Factory
     public function consumed(): static
     {
         return $this->state(fn (): array => [
-            'consumed_at' => now()->subMinute(),
+            'used_at' => now()->subMinute(),
         ]);
     }
 }

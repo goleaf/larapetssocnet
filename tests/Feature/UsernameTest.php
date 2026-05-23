@@ -92,7 +92,7 @@ it('reserved username cannot be used during registration', function (): void {
 it('username change is blocked during cooldown', function (): void {
     $user = User::factory()->create([
         'username' => 'first_name',
-        'username_changed_at' => now()->subDays(5),
+        'username_change_allowed_at' => now()->subDays(5),
     ]);
 
     expect(fn () => app(UsernameService::class)->change($user, 'second_name'))

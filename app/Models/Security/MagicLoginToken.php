@@ -11,13 +11,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'public_id',
     'user_id',
+    'token',
     'token_hash',
-    'ip_address',
-    'user_agent',
     'expires_at',
-    'consumed_at',
+    'used_at',
 ])]
 #[Hidden([
     'token_hash',
@@ -27,11 +25,15 @@ class MagicLoginToken extends Model
     /** @use HasFactory<MagicLoginTokenFactory> */
     use HasFactory;
 
+    protected $table = 'magic_link_tokens';
+
+    public $timestamps = false;
+
     protected function casts(): array
     {
         return [
             'expires_at' => 'datetime',
-            'consumed_at' => 'datetime',
+            'used_at' => 'datetime',
         ];
     }
 
@@ -45,6 +47,6 @@ class MagicLoginToken extends Model
 
     public function isConsumable(): bool
     {
-        return $this->consumed_at === null && now()->lessThan($this->expires_at);
+        return $this->used_at === null && now()->lessThan($this->expires_at);
     }
 }
