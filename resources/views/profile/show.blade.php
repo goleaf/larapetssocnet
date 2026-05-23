@@ -506,28 +506,36 @@
  </div>
  @endif
 
- @if ($isOwner && is_array($profileViewStats ?? null))
- <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-fur" data-ui="profile-view-analytics">
- <span class="relative inline-flex items-center gap-1" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" @click="open = !open">
- <span aria-hidden="true">👁</span>
- <span>{{ number_format((int) $profileViewStats['current']) }} unique profile {{ Str::plural('viewer', (int) $profileViewStats['current']) }} in the last 30 days</span>
- <span x-show="open" x-cloak x-transition
- class="absolute left-0 top-7 z-20 w-56 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card">
- Counts distinct signed-in visitors. Only you can see this.
- </span>
- </span>
- @if (($profileViewStats['trend_percent'] ?? null) !== null)
- <span @class([
- 'font-semibold',
- 'text-emerald-700'=> ($profileViewStats['trend_direction'] ?? 'up') === 'up',
- 'text-amber-700'=> ($profileViewStats['trend_direction'] ?? 'up') === 'down',
- ])>
- {{ ($profileViewStats['trend_direction'] ?? 'up') === 'up' ? '↑' : '↓' }}
- {{ abs((int) $profileViewStats['trend_percent']) }}% from last month
- </span>
- @endif
- </div>
- @endif
+@if ($isOwner && is_array($profileViewStats ?? null))
+<div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-fur" data-ui="profile-view-analytics">
+<button
+type="button"
+class="relative inline-flex items-center gap-1.5 rounded-[var(--radius-soft)] bg-transparent px-1 py-0.5 text-left text-xs font-medium text-fur transition-colors hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:text-sm"
+x-data="{ open: false }"
+@mouseenter="open = true"
+@mouseleave="open = false"
+@focus="open = true"
+@blur="open = false"
+@click="open = true"
+@click.outside="open = false"
+aria-describedby="profile-view-analytics-tooltip"
+data-ui="profile-view-analytics-note"
+>
+<span aria-hidden="true">👁</span>
+<span>{{ number_format((int) $profileViewStats['current']) }} profile {{ Str::plural('visit', (int) $profileViewStats['current']) }} in the last 30 days</span>
+<span
+id="profile-view-analytics-tooltip"
+role="tooltip"
+x-show="open"
+x-cloak
+x-transition
+class="absolute left-0 top-full z-20 mt-2 w-44 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white px-3 py-2 text-xs font-medium text-bark shadow-card"
+>
+Only you can see this.
+</span>
+</button>
+</div>
+@endif
 
  <p class="mt-3 text-sm text-fur" role="status" aria-live="polite" x-show="notice" x-text="notice"></p>
 

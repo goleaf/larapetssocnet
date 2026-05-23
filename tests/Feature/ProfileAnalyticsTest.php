@@ -158,13 +158,57 @@ it('shows profile view analytics only to the profile owner', function (): void {
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
         ->assertSee('data-ui="profile-view-analytics"', false)
-        ->assertSeeText('unique profile viewer in the last 30 days');
+        ->assertSee('data-ui="profile-view-analytics-note"', false)
+        ->assertSeeText('1 profile visit in the last 30 days')
+        ->assertSeeText('Only you can see this.');
 
     $this->actingAs($viewer)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
-        ->assertDontSee('unique profile viewer in the last 30 days')
+        ->assertDontSee('profile visit in the last 30 days')
+        ->assertDontSee('Only you can see this.')
         ->assertDontSee('data-ui="profile-view-analytics"', false);
+});
+
+it('does not fetch owner profile view analytics for visitor renders', function (): void {
+    Queue::fake([RecordProfileView::class]);
+
+    $owner = User::factory()->create(['username' => 'visitor_analytics_owner']);
+    $viewer = User::factory()->create();
+
+    ProfileView::query()->create([
+        'profile_user_id' => $owner->id,
+        'viewer_user_id' => $viewer->id,
+        'viewed_on' => now()->toDateString(),
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $response = $this->actingAs($viewer)
+            ->get(route('profile.show', ['user' => $owner]));
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $response
+        ->assertOk()
+        ->assertDontSee('profile visit in the last 30 days')
+        ->assertDontSee('data-ui="profile-view-analytics"', false);
+
+    $profileViewAggregateQueries = collect($queries)
+        ->pluck('query')
+        ->map(fn (string $query): string => strtolower($query))
+        ->filter(fn (string $query): bool => str_contains($query, 'from "profile_views"') && str_contains($query, 'count('))
+        ->values();
+
+    expect($profileViewAggregateQueries)->toBeEmpty();
+
+    Queue::assertPushed(RecordProfileView::class, fn (RecordProfileView $job): bool => $job->profileUserId === $owner->id
+        && $job->viewerUserId === $viewer->id);
 });
 
 it('counts unique profile viewers across the owner local last 30 days', function (): void {
@@ -211,11 +255,30 @@ it('counts unique profile viewers across the owner local last 30 days', function
             now()->toDateString(),
         ))->toBe(2);
 
-        $this->actingAs($owner)
-            ->get(route('profile.show', ['user' => $owner]))
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $response = $this->actingAs($owner)
+                ->get(route('profile.show', ['user' => $owner]));
+
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        $response
             ->assertOk()
-            ->assertSee('2 unique profile viewers in the last 30 days')
-            ->assertDontSee('3 unique profile viewers in the last 30 days');
+            ->assertSee('2 profile visits in the last 30 days')
+            ->assertDontSee('3 profile visits in the last 30 days');
+
+        $profileViewAggregateQueries = collect($queries)
+            ->pluck('query')
+            ->map(fn (string $query): string => strtolower($query))
+            ->filter(fn (string $query): bool => str_contains($query, 'from "profile_views"') && str_contains($query, 'count('))
+            ->values();
+
+        expect($profileViewAggregateQueries)->toHaveCount(1);
     } finally {
         Carbon::setTestNow();
     }

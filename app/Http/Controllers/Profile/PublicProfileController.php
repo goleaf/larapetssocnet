@@ -429,28 +429,16 @@ class PublicProfileController extends Controller
     }
 
     /**
-     * @return array{current: int, previous: int, trend_percent: int|null, trend_direction: string}
+     * @return array{current: int}
      */
     private function profileViewStats(User $user): array
     {
         $timezone = $user->timezone ?: config('app.timezone');
         $today = CarbonImmutable::now($timezone);
         $currentStart = $today->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS - 1)->toDateString();
-        $previousStart = $today->subDays((ProfileView::RECENT_UNIQUE_VIEWER_DAYS * 2) - 1)->toDateString();
-        $previousEnd = $today->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS)->toDateString();
-
-        $current = ProfileView::uniqueViewerCountForProfile($user, $currentStart, $today->toDateString());
-        $previous = ProfileView::uniqueViewerCountForProfile($user, $previousStart, $previousEnd);
-
-        $trendPercent = $previous > 0
-            ? (int) round((($current - $previous) / $previous) * 100)
-            : ($current > 0 ? 100 : null);
 
         return [
-            'current' => $current,
-            'previous' => $previous,
-            'trend_percent' => $trendPercent,
-            'trend_direction' => ($trendPercent ?? 0) >= 0 ? 'up' : 'down',
+            'current' => ProfileView::uniqueViewerCountForProfile($user, $currentStart, $today->toDateString()),
         ];
     }
 
