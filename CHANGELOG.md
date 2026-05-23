@@ -35,6 +35,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
 - Reworked magic-link login into a login-page inline panel with non-enumerating responses, queued branded mailables, 64-character raw email tokens, SHA-256 database lookup hashes, and atomic single-use token consumption before redirecting accepted users to the feed.
 - Reworked account security device-session management into a Livewire section backed by indexed database-session queries, parsed device/browser/OS details, local GeoIP location labels, individual session logout popovers, password-confirmed logout-other-devices, remember-token cleanup, and audit logging.
 - Extended successful login handling to dispatch queued country-anomaly detection using local GeoIP and recent auth audit history, with signed single-use security-alert actions for dismissing known logins or securing the account through session invalidation and a high-priority moderation report.

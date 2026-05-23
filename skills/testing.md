@@ -5,6 +5,7 @@
 - Use `UploadedFile::fake()->image(...)` and `->create(...)`
 - Assert media collection counts and public disk files
 - Keep shared-hosting path tests current when public assets, Vite output, or `.htaccess` protections change.
+- For deploy or production auth fixes, verify both the user-facing subdomain flow and the remote Laravel log tail; compare timestamps so stale transport errors are not mistaken for new failures.
 
 ## Observers
 - Use `withoutEvents()`/`Event::fake()` for isolated unit tests where needed.

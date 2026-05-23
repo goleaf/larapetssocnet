@@ -5,6 +5,7 @@
 - Exception: login is intentionally handled by the full-page Livewire `pages.auth.login` component backed by `AuthenticateUserAction`; keep the single credential field, lockout countdown, remember-me checkbox, and inline reset panel colocated with that page.
 - Exception: password reset request and confirmation are intentionally handled by full-page Livewire components (`pages.auth.forgot-password`, `pages.auth.reset-password`) backed by shared auth actions; keep reset request status copy non-enumerating and keep reset password strength/match feedback aligned with registration.
 - Email verification pending is intentionally handled by the full-page Livewire `pages.auth.verify-email` component so resend state, success/error feedback, and Alpine countdown behavior stay colocated with the page.
+- Auth forms that trigger mail delivery should keep user-facing success or non-enumerating copy separate from transport success; mailer exceptions belong in reporting/logs, not in registration, verification resend, reset, or magic-link form errors.
 - Normalize values in `prepareForValidation()`.
 - Return user-friendly validation messages.
 - New password fields should use `x-ui.input` with `autocomplete="new-password"` so the shared `PasswordPolicy` and Laravel-generated `passwordrules` attribute stay aligned with server validation.

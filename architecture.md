@@ -9,6 +9,8 @@ PetSocial is a Laravel 13 application with feature-oriented domain folders and a
 - Tailwind 4 runs after Sass through PostCSS.
 - Vite builds public assets into root `build/`.
 - The repository root is the deployed document surface; root `.htaccess` keeps Laravel internals private.
+- Shared-hosting deployment uploads one archive over FTP, then runs a token-protected server-side cleanup/extract step that preserves remote SQLite/runtime state on normal deploys.
+- Production auth mail defaults to the app's `phpmail` transport so registration, verification, password reset, magic-link, and security emails can use PHP `mail()` on hosts where `proc_open()` is disabled.
 
 ## Layers
 
@@ -25,6 +27,7 @@ Application pages are private by default. Keep Explore, search, profiles, posts,
 ## Domain Map
 
 - Auth and account: Breeze controllers, one focused auth schema migration, auth audit logging, verified-email gating, encrypted two-factor fields, pending email changes, account status tracking, failed-login counters, `users.last_active_at` online presence, and separate OAuth social account identities.
+- Auth mail delivery: `AuthMailDispatcher` centralizes queued auth mail handoff and reports transport failures without turning registration, reset, verification, or magic-link requests into user-facing server errors.
 - Feed and posts: feed controller, cursor pagination, post cards, reactions, comments, saves, shares, reports.
 - Social graph: follows, pet follows, blocks, requests, counters, notifications.
 - Pets and adoption: pet profiles, galleries, health logs, adoption browse/listing flows.
