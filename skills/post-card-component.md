@@ -26,6 +26,11 @@
 - Avoid new per-card database queries for reaction or save state.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
 
+## Owner Profile Menu
+- In profile context, render the owner-only three-dot menu from inside `x-post-card`.
+- Keep profile pinning actions in that menu as `Pin to profile` / `Unpin from profile`; do not add separate inline pin buttons below profile posts.
+- Non-owners and non-profile contexts must not render owner post actions.
+
 ## Time Display
 - Use `diffForHumans()` for recent posts (< 7 days).
 - Use `format('M j, Y')` for older posts.

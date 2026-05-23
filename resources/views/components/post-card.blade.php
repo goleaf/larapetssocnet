@@ -27,6 +27,7 @@
     $hiddenMediaCount = max(0, $mediaItems->count() - $shownMedia->count());
 
     $isOwner = (int) auth()->id() === (int) $post->user_id;
+    $showOwnerProfileMenu = $context === 'profile' && $isOwner;
     $statusValue = $post->status?->value ?? (string) $post->status;
     $isScheduledProfilePost = $context === 'profile' && $isOwner && $statusValue === 'scheduled';
     $likeCount = (int) ($post->likes_count ?? $post->reactions_count ?? 0);
@@ -154,7 +155,48 @@
                 <x-follow-button :user="$author" :follow-status="$followStatus ?? 'none'" size="sm"/>
             @endif
 
-            @if ($isOwner)
+            @if ($showOwnerProfileMenu)
+                <x-ui.dropdown align="right" width="56" content-classes="py-2">
+                    <x-slot name="trigger">
+                        <button
+                            type="button"
+                            data-ui="post-card-owner-menu-trigger"
+                            class="icon-button btn-ghost h-[var(--control-height-sm)] w-[var(--control-height-sm)] rounded-none text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+                            aria-label="Post actions"
+                            aria-haspopup="menu"
+                        >
+                            <span aria-hidden="true">•••</span>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        @if ($post->is_pinned)
+                            <form method="POST" action="{{ route('posts.unpin', $post) }}">
+                                @csrf
+                                @method('DELETE')
+                                <x-ui.dropdown-item type="submit" data-ui="post-card-menu-unpin">
+                                    Unpin from profile
+                                </x-ui.dropdown-item>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('posts.pin', $post) }}">
+                                @csrf
+                                <x-ui.dropdown-item type="submit" data-ui="post-card-menu-pin">
+                                    Pin to profile
+                                </x-ui.dropdown-item>
+                            </form>
+                        @endif
+
+                        <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Delete this post?');">
+                            @csrf
+                            @method('DELETE')
+                            <x-ui.dropdown-item type="submit" variant="danger" data-ui="post-card-menu-delete">
+                                Delete post
+                            </x-ui.dropdown-item>
+                        </form>
+                    </x-slot>
+                </x-ui.dropdown>
+            @elseif ($isOwner)
                 <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Delete this post?');">
                     @csrf
                     @method('DELETE')

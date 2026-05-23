@@ -264,23 +264,6 @@ new class extends Component
 
  @forelse ($data['posts'] as $post)
  <x-post-card :post="$post" context="profile"/>
-
- @if ($data['isOwner'])
- <div class="-mt-2 flex items-center justify-end gap-2">
- @if ($post->is_pinned)
- <form method="POST" action="{{ route('posts.unpin', $post) }}">
- @csrf
- @method('DELETE')
- <x-ui.button type="submit" variant="ghost" size="xs" class="min-h-9">Unpin</x-ui.button>
- </form>
- @else
- <form method="POST" action="{{ route('posts.pin', $post) }}">
- @csrf
- <x-ui.button type="submit" variant="secondary" size="xs" class="min-h-9">Pin to Profile</x-ui.button>
- </form>
- @endif
- </div>
- @endif
  @empty
  <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet."/>
  @endforelse

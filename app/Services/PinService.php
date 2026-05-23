@@ -17,15 +17,19 @@ class PinService
         $this->assertOwner($actor, $post);
 
         return DB::transaction(function () use ($post): Post {
-            Post::withoutEvents(function () use ($post): void {
-                $post->author->posts()
-                    ->where('is_pinned', true)
-                    ->update(['is_pinned' => false, 'pinned_at' => null]);
-            });
+            User::query()
+                ->whereKey($post->user_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            Post::query()
+                ->where('user_id', $post->user_id)
+                ->where('is_pinned', true)
+                ->update(['is_pinned' => false, 'pinned_at' => null]);
 
             $post->updateQuietly(['is_pinned' => true, 'pinned_at' => now()]);
 
-            return $post->refresh() ?? $post;
+            return $post->refresh();
         });
     }
 
@@ -38,7 +42,7 @@ class PinService
 
         $post->updateQuietly(['is_pinned' => false, 'pinned_at' => null]);
 
-        return $post->refresh() ?? $post;
+        return $post->refresh();
     }
 
     /**

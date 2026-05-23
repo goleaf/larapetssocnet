@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated profile post cards to expose owner-only "Pin to profile" and "Unpin from profile" actions in the three-dot menu, backed by a serialized pin transaction that keeps one pinned post per owner.
 - Restricted private-account followers/following list visibility so followers lists are owner-or-accepted-follower only, following lists are owner-only, and locked Livewire modal states avoid querying hidden rows.
 - Updated the reusable profile followers/following modal to load entries in 20-row batches with an Intersection Observer sentinel scoped to the modal scroll container.
 - Updated the reusable profile followers/following modal rows with 48px avatars, display names, verified badges, usernames, one-line bio snippets, mutual counts, and inline Livewire follow/unfollow actions.

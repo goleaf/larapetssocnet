@@ -21,8 +21,9 @@ Only one pinned post per user.
 Implementation notes:
 - enforce ownership (`user_id === post.user_id`)
 - use `DB::transaction()` for pinning
-- clear prior pinned via `updateQuietly()`
-- set new pinned via `updateQuietly()`
+- lock the profile owner row before writes so concurrent pin requests serialize per owner
+- clear prior pinned posts for that owner before setting the new pinned post
+- set the new pinned post via `updateQuietly()`
 
 ## Policy
 `PostPolicy::pin(User $user, Post $post): bool` restricts to owner.
@@ -36,3 +37,4 @@ Implementation notes:
 On profile posts tab:
 - show the viewer-visible pinned post in a dedicated top section with a small `Pinned` label and pin icon badge on the post card
 - keep same post in natural chronological position below
+- expose `Pin to profile` / `Unpin from profile` only in the owner-visible post-card three-dot menu

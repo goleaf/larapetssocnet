@@ -719,6 +719,45 @@ test('users cannot pin posts they do not own', function (): void {
         ->assertForbidden();
 });
 
+test('profile owner can access pin actions from the post card menu', function (): void {
+    $owner = User::factory()->create();
+    $visitor = User::factory()->create();
+
+    Post::factory()->for($owner)->create([
+        'body' => 'profile menu unpinned post',
+        'body_html' => '<p>profile menu unpinned post</p>',
+        'is_pinned' => false,
+        'created_at' => now(),
+    ]);
+    Post::factory()->for($owner)->create([
+        'body' => 'profile menu pinned post',
+        'body_html' => '<p>profile menu pinned post</p>',
+        'is_pinned' => true,
+        'pinned_at' => now(),
+        'created_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('profile.show', ['user' => $owner, 'tab' => 'posts']))
+        ->assertOk()
+        ->assertSee('data-ui="post-card-owner-menu-trigger"', false)
+        ->assertSee('data-ui="post-card-menu-pin"', false)
+        ->assertSee('Pin to profile')
+        ->assertSee('data-ui="post-card-menu-unpin"', false)
+        ->assertSee('Unpin from profile')
+        ->assertSee('data-ui="post-card-menu-delete"', false)
+        ->assertDontSee('Pin to Profile');
+
+    $this->actingAs($visitor)
+        ->get(route('profile.show', ['user' => $owner, 'tab' => 'posts']))
+        ->assertOk()
+        ->assertDontSee('data-ui="post-card-owner-menu-trigger"', false)
+        ->assertDontSee('data-ui="post-card-menu-pin"', false)
+        ->assertDontSee('data-ui="post-card-menu-unpin"', false)
+        ->assertDontSee('Pin to profile')
+        ->assertDontSee('Unpin from profile');
+});
+
 test('profile posts tab shows pinned post highlight and keeps chronological feed', function (): void {
     $user = User::factory()->create();
     $olderRegular = Post::factory()->for($user)->create([
