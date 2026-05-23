@@ -60,6 +60,36 @@ it('does not alert when the current login country was seen in the last ninety da
     Mail::assertNothingQueued();
 });
 
+it('treats accepted magic links as recent login history for anomaly detection', function (): void {
+    Mail::fake();
+
+    $user = User::factory()->create();
+    $loginAt = now();
+
+    DB::table('auth_audit_logs')->insert([
+        'user_id' => $user->id,
+        'event_type' => 'magic_link_accepted',
+        'ip_address' => '203.0.113.9',
+        'user_agent' => anomalySafariUserAgent(),
+        'country' => 'United States',
+        'city' => 'Example City',
+        'additional_data' => json_encode([
+            'country_code' => 'US',
+        ], JSON_THROW_ON_ERROR),
+        'created_at' => $loginAt->copy()->subDay(),
+    ]);
+
+    (new DetectLoginAnomaly(
+        userId: $user->id,
+        ipAddress: '203.0.113.10',
+        userAgent: anomalySafariUserAgent(),
+        loginAt: $loginAt->toIso8601String(),
+    ))->handle(app(GeoIpLookupService::class), app(UserAgentDetailsService::class));
+
+    expect(LoginSecurityAlert::query()->count())->toBe(0);
+    Mail::assertNothingQueued();
+});
+
 it('queues a security alert when the login country is new to recent history', function (): void {
     Mail::fake();
 

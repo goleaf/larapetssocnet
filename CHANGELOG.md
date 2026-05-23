@@ -20,6 +20,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added magic-link login coverage for the inline Livewire request panel, queued Mailable delivery, hashed token storage, one-time acceptance, and expired/invalid/used-link responses.
 - Added device-session and login-anomaly coverage for current-session labeling, scoped session deletion, password-confirmed logout-other-devices, local GeoIP/user-agent enrichment, signed alert dismissal, emergency account securing, remember-token cleanup, moderation reports, and audit events.
 - Added Livewire password reset coverage for non-enumerating reset requests, per-email throttling, hashed reset-token lookup, expired/invalid reset links, session and remember-token invalidation, queued security alerts, and single-use emergency account locks.
 - Added Livewire login coverage for email-or-username authentication, generic credential failures, database-backed progressive lockout, inline password reset requests, remember-token persistence and cleanup, and restricted account statuses.
@@ -30,6 +31,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Reworked magic-link login into a login-page inline panel with non-enumerating responses, queued branded mailables, 64-character raw email tokens, SHA-256 database lookup hashes, and atomic single-use token consumption before redirecting accepted users to the feed.
 - Reworked account security device-session management into a Livewire section backed by indexed database-session queries, parsed device/browser/OS details, local GeoIP location labels, individual session logout popovers, password-confirmed logout-other-devices, remember-token cleanup, and audit logging.
 - Extended successful login handling to dispatch queued country-anomaly detection using local GeoIP and recent auth audit history, with signed single-use security-alert actions for dismissing known logins or securing the account through session invalidation and a high-priority moderation report.
 - Replaced the controller-rendered forgot-password and reset-password pages with full-page Livewire components, backed reset-link delivery with queued branded mailables and deterministic token-hash lookups, and redirected successful resets to the feed after signing the user in with a fresh session.

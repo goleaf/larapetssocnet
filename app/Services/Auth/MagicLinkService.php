@@ -4,21 +4,22 @@ namespace App\Services\Auth;
 
 use App\Models\Identity\User;
 use App\Models\Security\MagicLoginToken;
-use App\Notifications\MagicLoginLink;
-use Illuminate\Http\Request;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class MagicLinkService
 {
     public const int EXPIRY_MINUTES = 15;
 
-    public function createAndSend(User $user, Request $request): MagicLoginToken
+    /**
+     * @return array{0: MagicLoginToken, 1: string}
+     */
+    public function create(User $user): array
     {
         $expiresAt = now()->addMinutes(self::EXPIRY_MINUTES);
 
-        [$magicToken, $plainToken] = DB::transaction(function () use ($user, $expiresAt): array {
+        return DB::transaction(function () use ($user, $expiresAt): array {
             MagicLoginToken::query()
                 ->where('user_id', $user->getKey())
                 ->whereNull('used_at')
@@ -27,51 +28,74 @@ class MagicLinkService
             $plainToken = Str::random(64);
             $magicToken = MagicLoginToken::query()->create([
                 'user_id' => $user->getKey(),
-                'token' => Str::random(40),
+                'token' => Str::random(64),
                 'token_hash' => hash('sha256', $plainToken),
                 'expires_at' => $expiresAt,
             ]);
 
             return [$magicToken, $plainToken];
         });
-
-        $url = URL::temporarySignedRoute(
-            'magic-login.consume',
-            $expiresAt,
-            [
-                'token' => $magicToken->token,
-                'secret' => $plainToken,
-            ]
-        );
-
-        $user->notify(new MagicLoginLink($url));
-
-        return $magicToken;
     }
 
-    public function consume(string $publicToken, string $plainToken): ?MagicLoginToken
+    public function consume(string $plainToken): MagicLinkConsumptionResult
     {
+        $plainToken = trim($plainToken);
+
+        if ($plainToken === '') {
+            return MagicLinkConsumptionResult::invalid();
+        }
+
         $tokenHash = hash('sha256', $plainToken);
+        $now = now();
 
         $magicToken = MagicLoginToken::query()
             ->with('user')
             ->where('token_hash', $tokenHash)
-            ->where('token', $publicToken)
             ->first();
 
-        if (! $magicToken instanceof MagicLoginToken || ! $magicToken->isConsumable()) {
-            return null;
+        if (! $magicToken instanceof MagicLoginToken) {
+            return MagicLinkConsumptionResult::invalid();
         }
 
-        if (! hash_equals((string) $magicToken->token_hash, $tokenHash)) {
-            return null;
+        if ($magicToken->used_at !== null) {
+            return MagicLinkConsumptionResult::used($magicToken);
+        }
+
+        if ($this->hasExpired($magicToken, $now)) {
+            return MagicLinkConsumptionResult::expired($magicToken);
         }
 
         $updated = MagicLoginToken::query()
             ->whereKey($magicToken->getKey())
             ->whereNull('used_at')
-            ->update(['used_at' => now()]);
+            ->where('expires_at', '>', $now)
+            ->update(['used_at' => $now]);
 
-        return $updated === 1 ? $magicToken->refresh() : null;
+        if ($updated === 1) {
+            return MagicLinkConsumptionResult::consumed($magicToken->refresh()->load('user'));
+        }
+
+        $magicToken->refresh()->load('user');
+
+        if ($magicToken->used_at !== null) {
+            return MagicLinkConsumptionResult::used($magicToken);
+        }
+
+        if ($this->hasExpired($magicToken, now())) {
+            return MagicLinkConsumptionResult::expired($magicToken);
+        }
+
+        return MagicLinkConsumptionResult::invalid();
+    }
+
+    private function hasExpired(MagicLoginToken $magicToken, CarbonInterface $now): bool
+    {
+        $expiresAt = $magicToken->getAttribute('expires_at');
+
+        if (! $expiresAt instanceof CarbonInterface) {
+            return true;
+        }
+
+        return $expiresAt->lessThanOrEqualTo($now);
     }
 }

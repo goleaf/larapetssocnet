@@ -2,6 +2,7 @@
 
 use App\Actions\Auth\AuthenticateUserAction;
 use App\Actions\Auth\AuthenticationResult;
+use App\Actions\Auth\RequestMagicLoginLinkAction;
 use App\Actions\Auth\RequestPasswordResetLinkAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -23,6 +24,10 @@ class extends Component
     public string $resetEmail = '';
 
     public ?string $resetStatusMessage = null;
+
+    public string $magicEmail = '';
+
+    public ?string $magicStatusMessage = null;
 
     public ?string $lockoutMessage = null;
 
@@ -88,6 +93,28 @@ class extends Component
         $this->dispatch('password-reset-link-sent');
     }
 
+    public function sendMagicLoginLink(RequestMagicLoginLinkAction $action): void
+    {
+        $this->resetErrorBag('magicEmail');
+        $this->magicStatusMessage = null;
+
+        $validated = $this->validate([
+            'magicEmail' => ['required', 'email'],
+        ], [
+            'magicEmail.required' => 'Email is required.',
+            'magicEmail.email' => 'Enter a valid email address.',
+        ]);
+
+        $this->magicEmail = Str::lower(trim((string) $validated['magicEmail']));
+        $this->magicStatusMessage = $action->handle(
+            email: $this->magicEmail,
+            request: request(),
+            source: 'inline_login_panel',
+        );
+
+        $this->dispatch('magic-login-link-sent');
+    }
+
     /**
      * @return array<string, string>
      */
@@ -147,8 +174,10 @@ class extends Component
  class="flex min-h-screen w-full flex-col bg-[color:var(--surface-panel)] px-5 py-6 sm:min-h-0 sm:max-w-[33rem] sm:bg-transparent sm:px-0 sm:py-0"
  data-ui="login-page"
  x-data="{
-  resetOpen: false,
-  resetPanelHeight: '0px',
+ resetOpen: false,
+ resetPanelHeight: '0px',
+  magicOpen: false,
+  magicPanelHeight: '0px',
   lockoutRemaining: @js($lockoutSeconds),
   lockoutTimer: null,
   get locked() {
@@ -162,7 +191,17 @@ class extends Component
   },
   toggleReset() {
    this.resetOpen = ! this.resetOpen;
-   this.$nextTick(() => this.refreshResetPanel());
+   if (this.resetOpen) {
+    this.magicOpen = false;
+   }
+   this.$nextTick(() => this.refreshPanels());
+  },
+  toggleMagic() {
+   this.magicOpen = ! this.magicOpen;
+   if (this.magicOpen) {
+    this.resetOpen = false;
+   }
+   this.$nextTick(() => this.refreshPanels());
   },
   refreshResetPanel() {
    if (! this.$refs.resetPanel) {
@@ -170,6 +209,17 @@ class extends Component
    }
 
    this.resetPanelHeight = this.resetOpen ? `${this.$refs.resetPanel.scrollHeight}px` : '0px';
+  },
+  refreshMagicPanel() {
+   if (! this.$refs.magicPanel) {
+    return;
+   }
+
+   this.magicPanelHeight = this.magicOpen ? `${this.$refs.magicPanel.scrollHeight}px` : '0px';
+  },
+  refreshPanels() {
+   this.refreshResetPanel();
+   this.refreshMagicPanel();
   },
   startLockout(seconds) {
    this.lockoutRemaining = Number(seconds || 0);
@@ -188,10 +238,11 @@ class extends Component
    }, 1000);
   },
  }"
- x-init="$nextTick(() => refreshResetPanel()); if (lockoutRemaining > 0) startLockout(lockoutRemaining)"
- x-on:resize.window="refreshResetPanel()"
+ x-init="$nextTick(() => refreshPanels()); if (lockoutRemaining > 0) startLockout(lockoutRemaining)"
+ x-on:resize.window="refreshPanels()"
  x-on:login-lockout-started.window="startLockout($event.detail.seconds)"
- x-on:password-reset-link-sent.window="$nextTick(() => refreshResetPanel())"
+ x-on:password-reset-link-sent.window="$nextTick(() => refreshPanels())"
+ x-on:magic-login-link-sent.window="$nextTick(() => refreshPanels())"
 >
  <header class="mx-auto w-full max-w-md pb-5 text-center sm:pb-6" data-ui="auth-form-header">
  <a href="/" class="inline-flex min-h-11 items-center justify-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
@@ -220,12 +271,68 @@ class extends Component
  </x-ui.button>
  @endforeach
  </div>
+ @endif
+
+ <div class="mb-4 text-center" data-ui="magic-login-option">
+ <a
+  href="#inline-magic-login-panel"
+  class="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-paw hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+  x-on:click.prevent="toggleMagic()"
+  x-bind:aria-expanded="magicOpen.toString()"
+  aria-controls="inline-magic-login-panel"
+ >
+ <span x-text="magicOpen ? 'Cancel login link' : 'Send me a login link'">Send me a login link</span>
+ </a>
+ </div>
+
+ <div
+  id="inline-magic-login-panel"
+  x-ref="magicPanel"
+  x-bind:style="{ height: magicPanelHeight }"
+  class="mb-4 overflow-hidden transition-[height] duration-300 ease-out motion-reduce:transition-none"
+  data-ui="inline-magic-login-form"
+ >
+ <form wire:submit="sendMagicLoginLink" class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/50 p-4">
+ <div class="space-y-3">
+ <p class="text-sm leading-6 shell-text-muted">
+ Enter your email and we'll send a link that signs you in once.
+ </p>
+
+ <x-ui.input
+  id="magicEmail"
+  name="magicEmail"
+  type="email"
+  label="Email address"
+  required
+  autocomplete="email"
+  wire:model="magicEmail"
+ />
+
+ <x-ui.button type="submit" variant="secondary" class="min-h-11 sm:min-w-40" wire:loading.attr="disabled" wire:target="sendMagicLoginLink">
+ <span wire:loading.remove wire:target="sendMagicLoginLink">Send login link</span>
+ <span wire:loading.flex wire:target="sendMagicLoginLink" class="items-center gap-2">
+ <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+ <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+ <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+ </svg>
+ Sending...
+ </span>
+ </x-ui.button>
+
+ @if ($magicStatusMessage)
+ <x-ui.alert type="success" data-ui="magic-login-inline-status">
+ {{ $magicStatusMessage }}
+ </x-ui.alert>
+ @endif
+ </div>
+ </form>
+ </div>
+
  <div class="mb-4 flex items-center gap-3 text-xs uppercase tracking-[0.08em] text-fur">
  <span class="h-px flex-1 bg-whisker/40"></span>
  <span>or</span>
  <span class="h-px flex-1 bg-whisker/40"></span>
  </div>
- @endif
 
  <form wire:submit="authenticate" data-ui="login-form" class="space-y-5">
  <x-ui.input

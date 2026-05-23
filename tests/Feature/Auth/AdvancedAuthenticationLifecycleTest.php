@@ -1,18 +1,16 @@
 <?php
 
+use App\Mail\Auth\MagicLoginLinkMail;
 use App\Mail\Auth\PasswordChangedSecurityAlertMail;
 use App\Models\Identity\SocialAccount;
 use App\Models\Identity\User;
 use App\Models\Security\MagicLoginToken;
-use App\Notifications\MagicLoginLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 uses(RefreshDatabase::class);
@@ -78,7 +76,7 @@ it('invalidates existing database sessions after a successful password reset', f
 });
 
 it('creates and consumes magic login links exactly once', function (): void {
-    Notification::fake();
+    Mail::fake();
 
     $user = User::factory()->create([
         'email' => 'magic@example.com',
@@ -88,21 +86,24 @@ it('creates and consumes magic login links exactly once', function (): void {
         'email' => 'magic@example.com',
     ])
         ->assertSessionHasNoErrors()
-        ->assertSessionHas('status');
+        ->assertSessionHas('status', 'If an account with that email exists, you will receive a login link shortly.');
 
     $magicToken = MagicLoginToken::query()->firstOrFail();
     $url = null;
 
-    Notification::assertSentTo($user, MagicLoginLink::class, function (MagicLoginLink $notification) use ($user, &$url): bool {
-        $url = $notification->toArray($user)['url'];
+    Mail::assertQueued(MagicLoginLinkMail::class, function (MagicLoginLinkMail $mail) use ($user, &$url): bool {
+        $url = $mail->loginUrl;
 
-        return is_string($url) && str_contains($url, '/magic-login/');
+        return $mail->hasTo($user->email)
+            && $mail->user->is($user)
+            && str_contains($url, '/magic-login/')
+            && ! str_contains($url, 'token_hash');
     });
 
     expect($magicToken->token_hash)->toHaveLength(64);
 
     $this->get((string) $url)
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('feed.index'));
 
     $this->assertAuthenticatedAs($user);
     expect($magicToken->refresh()->used_at)->not->toBeNull();
@@ -111,27 +112,38 @@ it('creates and consumes magic login links exactly once', function (): void {
 
     $this->get((string) $url)
         ->assertRedirect(route('login'))
-        ->assertSessionHasErrors(['email']);
+        ->assertSessionHasErrors([
+            'email' => 'This login link has already been used. Request a new login link to continue.',
+        ]);
 });
 
 it('rejects expired magic login tokens', function (): void {
     $user = User::factory()->create();
     $plainToken = 'expired-magic-token';
-    $magicToken = MagicLoginToken::factory()
+    MagicLoginToken::factory()
         ->for($user)
         ->expired()
         ->create([
             'token_hash' => hash('sha256', $plainToken),
         ]);
 
-    $url = URL::temporarySignedRoute('magic-login.consume', now()->addMinute(), [
-        'token' => $magicToken->token,
-        'secret' => $plainToken,
-    ]);
+    $url = route('magic-login.consume', ['token' => $plainToken]);
 
     $this->get($url)
         ->assertRedirect(route('login'))
-        ->assertSessionHasErrors(['email']);
+        ->assertSessionHasErrors([
+            'email' => 'This login link has expired. Request a new login link to continue.',
+        ]);
+
+    $this->assertGuest();
+});
+
+it('rejects invalid magic login tokens', function (): void {
+    $this->get(route('magic-login.consume', ['token' => 'missing-magic-token']))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'email' => 'This login link is invalid. Request a new login link to continue.',
+        ]);
 
     $this->assertGuest();
 });

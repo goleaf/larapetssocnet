@@ -23,6 +23,7 @@ class DetectLoginAnomaly implements ShouldQueue
 
     private const array HISTORY_EVENTS = [
         'login_success',
+        'magic_link_accepted',
         'social_login_success',
         'two_factor_challenge_passed',
     ];

@@ -30,7 +30,7 @@ Route::middleware('guest')->group(function (): void {
         ->name('magic-login.store');
 
     Route::get('magic-login/{token}', [MagicLinkController::class, 'consume'])
-        ->middleware(['signed', 'throttle:10,1'])
+        ->middleware('throttle:10,1')
         ->name('magic-login.consume');
 
     Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])

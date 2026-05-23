@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AccountStatus;
+use App\Mail\Auth\MagicLoginLinkMail;
 use App\Mail\Auth\PasswordResetLinkMail;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,6 +26,8 @@ it('routes the login page to the full page Livewire component', function (): voi
         ->assertSee('data-ui="login-form"', false)
         ->assertSee('Email or username')
         ->assertSee('placeholder="Email or username"', false)
+        ->assertSee('Send me a login link')
+        ->assertSee('data-ui="inline-magic-login-form"', false)
         ->assertSee('data-ui="inline-password-reset-form"', false);
 });
 
@@ -149,6 +152,39 @@ it('requests password reset links from the inline login panel without account en
         ->call('sendPasswordResetLink')
         ->assertSet('resetStatusMessage', 'If an account with that email exists, you will receive a password reset link shortly.')
         ->assertDispatched('password-reset-link-sent');
+});
+
+it('requests magic login links from the inline login panel without account enumeration', function (): void {
+    Mail::fake();
+
+    $user = User::factory()->create([
+        'email' => 'inline-magic@example.com',
+    ]);
+
+    Livewire::test('pages.auth.login')
+        ->set('magicEmail', 'INLINE-MAGIC@EXAMPLE.COM')
+        ->call('sendMagicLoginLink')
+        ->assertSet('magicEmail', 'inline-magic@example.com')
+        ->assertSet('magicStatusMessage', 'If an account with that email exists, you will receive a login link shortly.')
+        ->assertDispatched('magic-login-link-sent');
+
+    Mail::assertQueued(MagicLoginLinkMail::class, function (MagicLoginLinkMail $mail) use ($user): bool {
+        return $mail->hasTo($user->email)
+            && $mail->user->is($user)
+            && str_contains($mail->loginUrl, '/magic-login/');
+    });
+
+    expect(DB::table('magic_link_tokens')->where('user_id', $user->id)->value('token_hash'))
+        ->toBeString()
+        ->toHaveLength(64);
+
+    Livewire::test('pages.auth.login')
+        ->set('magicEmail', 'missing-magic@example.com')
+        ->call('sendMagicLoginLink')
+        ->assertSet('magicStatusMessage', 'If an account with that email exists, you will receive a login link shortly.')
+        ->assertDispatched('magic-login-link-sent');
+
+    Mail::assertQueued(MagicLoginLinkMail::class, 1);
 });
 
 it('rejects enum-only deactivated and suspended accounts with specific messages', function (AccountStatus $status, string $message): void {
