@@ -11,12 +11,14 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added email verification flow coverage for queued branded mailables, Livewire resend behavior, per-user resend rate limiting, signed-link verification, expired links, invalid signatures, and protected route middleware grouping.
 - Added Livewire registration coverage for route wiring, authenticated redirects, successful account creation, username suggestions, username/email validation, underage DOB rejection, common-password rejection, and honeypot false success.
 - Added schema coverage proving the authentication database changes remain in one focused migration and that the requested auth indexes exist.
 - Added lifecycle coverage for magic login links, password reset non-enumeration and session invalidation, Google OAuth account creation/returning/merge flows, device-session scoping, and TOTP/recovery-code challenges.
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Replaced the email verification pending view with a full-page Livewire component, queued branded verification mail through a Mailable, moved resend throttling to a per-user server-side limiter, and bundled `auth` plus `verified` into the Bootstrap-defined `auth.verified` middleware group for protected application routes.
 - Replaced the registration POST controller flow with a full-page Livewire registration component at `/register`, including debounced username/email validation, DNS email checks, hyphenated usernames, Alpine password strength feedback, date-of-birth selects, legal document modals, and a honeypot path that creates no account or audit rows.
 - Consolidated authentication database changes into one focused migration, renamed online presence tracking to `users.last_active_at`, renamed username cooldown tracking to `users.username_change_allowed_at`, rebuilt OAuth provider columns around `provider_user_id` / encrypted `provider_token`, and moved one-time login storage to `magic_link_tokens`.
 - Updated the GitHub Actions FTP deployment to use a single parallel `lftp mirror` upload that cleans stale remote files before transfer and keeps normal deploys from overwriting remote SQLite/runtime data.

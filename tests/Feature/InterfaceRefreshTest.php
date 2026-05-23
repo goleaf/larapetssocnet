@@ -233,6 +233,7 @@ it('renders guest auth pages with clearer headers and touch-sized actions', func
 
 it('renders password and email verification pages with consistent secure panels', function (): void {
     $user = User::factory()->unverified()->create();
+    $verifiedUser = User::factory()->create();
 
     $this->get(route('password.reset', ['token' => 'interface-token']))
         ->assertSuccessful()
@@ -245,11 +246,11 @@ it('renders password and email verification pages with consistent secure panels'
         ->get(route('verification.notice'))
         ->assertSuccessful()
         ->assertSee('data-ui="email-verification-panel"', false)
-        ->assertSee('Check your inbox')
-        ->assertSee('Resend email')
+        ->assertSee('Check your email')
+        ->assertSee('Resend verification email')
         ->assertSee('min-h-11', false);
 
-    $this->actingAs($user)
+    $this->actingAs($verifiedUser)
         ->get(route('password.confirm'))
         ->assertSuccessful()
         ->assertSee('data-ui="password-confirm-form"', false)

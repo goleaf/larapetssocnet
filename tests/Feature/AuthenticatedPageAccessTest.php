@@ -26,8 +26,9 @@ it('keeps application page routes behind authentication middleware', function (s
     $route = Route::getRoutes()->getByName($routeName);
 
     expect($route)->not->toBeNull()
-        ->and($route->gatherMiddleware())->toContain('auth')
-        ->and($route->gatherMiddleware())->toContain('verified')
+        ->and($route->gatherMiddleware())->toContain('auth.verified')
+        ->and($route->gatherMiddleware())->not->toContain('auth')
+        ->and($route->gatherMiddleware())->not->toContain('verified')
         ->and($route->gatherMiddleware())->toContain('banned')
         ->and($route->gatherMiddleware())->toContain('track_last_seen');
 })->with([
@@ -59,6 +60,7 @@ it('keeps public username profile route outside the auth middleware', function (
     $route = Route::getRoutes()->getByName('profile.show');
 
     expect($route)->not->toBeNull()
+        ->and($route->gatherMiddleware())->not->toContain('auth.verified')
         ->and($route->gatherMiddleware())->not->toContain('auth')
         ->and($route->gatherMiddleware())->not->toContain('verified');
 });

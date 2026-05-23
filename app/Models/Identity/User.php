@@ -5,6 +5,7 @@ namespace App\Models\Identity;
 use App\Enums\AccountStatus;
 use App\Enums\ProfileTheme;
 use App\Enums\ProfileVisibility;
+use App\Mail\Auth\VerifyEmailAddressMail;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
 use App\Models\Activities\EventAttendee;
@@ -63,7 +64,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -441,6 +444,21 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         $cooldownDays = (int) config('usernames.cooldown_days', 30);
 
         return (int) now()->diffInDays($this->username_change_allowed_at->copy()->addDays($cooldownDays), false);
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        Mail::to($this)->queue(new VerifyEmailAddressMail(
+            user: $this,
+            verificationUrl: URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes(60),
+                [
+                    'id' => $this->getKey(),
+                    'hash' => sha1($this->getEmailForVerification()),
+                ],
+            ),
+        ));
     }
 
     public function hasPendingDeletion(): bool

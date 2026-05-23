@@ -14,6 +14,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
@@ -26,6 +27,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             RunRealtimeMaintenance::class,
+        ]);
+
+        $middleware->group('auth.verified', [
+            'auth',
+            'verified',
         ]);
 
         $middleware->alias([
@@ -70,6 +76,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (InvalidSignatureException $e, Request $request) {
+            $expires = $request->query('expires');
+
+            if ($request->routeIs('verification.verify') && is_numeric($expires) && (int) $expires < time()) {
+                return redirect()->route('verification.notice')->with('status', 'verification-link-expired');
+            }
+        });
+
         $exceptions->render(function (CannotFollowSelfException $e) {
             return response()->json([
                 'success' => false,

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\Auth\VerifyEmailAddressMail;
 use App\Models\Identity\ReservedUsername;
 use App\Models\Identity\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -45,7 +45,7 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register_through_livewire(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $birthDate = now()->subYears(20);
 
@@ -74,7 +74,11 @@ class RegistrationTest extends TestCase
         ]);
         $this->assertSame($birthDate->toDateString(), $user->birth_date->toDateString());
 
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Mail::assertQueued(VerifyEmailAddressMail::class, function (VerifyEmailAddressMail $mail) use ($user): bool {
+            return $mail->hasTo($user->email)
+                && $mail->user->is($user)
+                && str_contains($mail->verificationUrl, 'verify-email');
+        });
     }
 
     public function test_name_generates_hyphenated_username_suggestion_until_username_is_manually_edited(): void

@@ -18,6 +18,7 @@ it('keeps page views grouped by domain folders', function (): void {
         'dashboard',
         'dev',
         'discovery',
+        'emails',
         'errors',
         'feed',
         'gamification',

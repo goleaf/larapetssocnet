@@ -75,7 +75,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function (): Factory|View {
     return view('dashboard.index');
-})->middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', 'track_last_seen'])->name('dashboard');
+})->middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])->name('dashboard');
 
 Route::get('/dev/components', function (): Factory|View {
     abort_unless(app()->isLocal(), 404);
@@ -107,7 +107,7 @@ Route::get('/api/username-available', [ProfileController::class, 'usernameAvaila
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
-Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', 'track_last_seen'])
+Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])
     ->prefix('pets')
     ->name('pets.')
     ->group(function (): void {
@@ -118,7 +118,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified',
         Route::get('/{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
     });
 
-Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', 'track_last_seen'])->group(function (): void {
+Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)->name('search.index');
     Route::get('/api/breeds', BreedAutocompleteController::class)
         ->middleware('throttle:60,1')
@@ -404,7 +404,7 @@ Route::middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified',
 });
 
 // Admin area
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'banned', 'active_account', 'two_factor', 'verified', AdminMiddleware::class])->group(function (): void {
+Route::prefix('admin')->name('admin.')->middleware(['auth.verified', 'banned', 'active_account', 'two_factor', AdminMiddleware::class])->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');

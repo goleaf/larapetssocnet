@@ -29,7 +29,7 @@
 - Profile edit privacy toggles must re-authorize the owner on every Livewire action and may store the email-discovery preference, but must not expose raw email values or add public email search without a dedicated visibility policy.
 
 ## Authentication security
-- Keep app browsing routes behind `auth`, `banned`, `active_account`, `two_factor`, `verified`, and `track_last_seen` unless a route is intentionally public.
+- Keep app browsing routes behind the Bootstrap-defined `auth.verified` middleware group plus `banned`, `active_account`, `two_factor`, and `track_last_seen` unless a route is intentionally public or part of the login, registration, password reset, or email verification exception flow.
 - Reject banned accounts during login even when the supplied password is correct, redirect valid banned attempts to the restricted notice, and record the blocked attempt in `auth_audit_logs`.
 - Deny soft-deleted accounts and restrict pending-deletion, deactivated, and suspended accounts to their recovery or notice screens before full app access.
 - Rate-limit repeated failed login attempts by normalized email/username plus IP.
@@ -40,6 +40,7 @@
 - Logout must invalidate the session, regenerate the CSRF token, and record a `logout` audit event. Password changes and password resets should invalidate other database-backed sessions.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.
 - Record security-significant auth events in `auth_audit_logs` through `AuthAuditLogger`.
+- Email verification uses the `MustVerifyEmail` user contract, queued branded `VerifyEmailAddressMail` mailables, 60-minute signed URLs, hard 403 responses for tampered signatures or mismatched hashes, and a Livewire pending page with per-user resend throttling.
 - Registration must validate DOB, terms acceptance, password strength, and the off-screen honeypot before account creation.
 - Registration is a deliberate Livewire exception to the normal controller/Form Request pattern: `/register` is handled by the full-page `pages.auth.register` component, which owns form state, validation, and submission directly.
 - Registration honeypot submissions must return the same verification-pending redirect shape without creating users, audit logs, or any other database rows.

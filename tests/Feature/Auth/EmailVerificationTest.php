@@ -15,7 +15,10 @@ class EmailVerificationTest extends TestCase
 
     public function test_email_verification_screen_can_be_rendered(): void
     {
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create([
+            'onboarding_step' => '1',
+            'onboarding_completed_at' => null,
+        ]);
 
         $response = $this->actingAs($user)->get('/verify-email');
 
@@ -24,7 +27,10 @@ class EmailVerificationTest extends TestCase
 
     public function test_email_can_be_verified(): void
     {
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create([
+            'onboarding_step' => '1',
+            'onboarding_completed_at' => null,
+        ]);
 
         Event::fake();
 
