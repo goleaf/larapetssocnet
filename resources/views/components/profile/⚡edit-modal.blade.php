@@ -309,7 +309,7 @@ new class extends Component
             'privacy_display_birthdate' => ['boolean'],
             'show_in_explore' => ['boolean'],
             'open_following' => ['boolean'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'remove_avatar' => ['boolean'],
             'remove_cover' => ['boolean'],
@@ -334,7 +334,7 @@ new class extends Component
             'birth_date.before' => 'Date of birth must be before today.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
-            'avatar.max' => 'Avatar must be smaller than 10MB.',
+            'avatar.max' => 'Avatar must be smaller than 3MB.',
             'cover.image' => 'Cover must be an image file.',
             'cover.mimes' => 'Cover must be a JPG, PNG, WEBP, or GIF image.',
             'cover.max' => 'Cover must be smaller than 5MB.',
@@ -922,7 +922,98 @@ new class extends Component
  </div>
 
  <div class="grid grid-cols-1 gap-4 md:grid-cols-2" data-ui="profile-media-upload-grid">
- <div id="profile_modal_avatar_field" class="flex min-w-0 flex-col gap-4 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4" data-ui="profile-avatar-upload-panel">
+ <div
+ id="profile_modal_avatar_field"
+ class="flex min-w-0 flex-col gap-4 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4"
+ data-ui="profile-avatar-upload-panel"
+ x-data="{
+ previewUrl: @js($avatarPreviewUrl),
+ currentPreviewUrl: @js($avatarPreviewUrl),
+ errorMessage: @js((string) $errors->first('avatar')),
+ uploading: false,
+ progress: 0,
+ dragOver: false,
+ selected: @js($avatarTemporaryUrl !== null),
+ allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+ maxBytes: 3145728,
+ maxSizeLabel: '3MB',
+ openPicker() {
+ if (this.uploading) {
+ return;
+ }
+
+ this.$refs.avatarInput.click();
+ },
+ handleInput(event) {
+ const file = event.target.files?.[0];
+
+ if (file) {
+ this.handleFile(file);
+ }
+ },
+ handleDrop(event) {
+ this.dragOver = false;
+ const file = event.dataTransfer?.files?.[0];
+
+ if (file) {
+ this.handleFile(file);
+ }
+ },
+ handleFile(file) {
+ this.errorMessage = '';
+
+ if (! this.allowedTypes.includes(file.type)) {
+ this.clearSelection('Avatar must be a JPG, PNG, or WEBP image.');
+ return;
+ }
+
+ if (file.size > this.maxBytes) {
+ this.clearSelection(`Avatar must be smaller than ${this.maxSizeLabel}.`);
+ return;
+ }
+
+ const reader = new FileReader();
+
+ reader.onload = () => {
+ this.previewUrl = reader.result;
+ this.selected = true;
+ this.progress = 0;
+ this.$nextTick(() => this.startUpload(file));
+ };
+
+ reader.onerror = () => {
+ this.clearSelection('We could not preview this image. Try another file.');
+ };
+
+ reader.readAsDataURL(file);
+ },
+ startUpload(file) {
+ this.uploading = true;
+ this.progress = 1;
+
+ $wire.upload('avatar', file, () => {
+ this.progress = 100;
+ this.uploading = false;
+ this.errorMessage = '';
+ }, () => {
+ this.clearSelection('Avatar upload failed. Try another image.');
+ }, (event) => {
+ this.progress = event.detail.progress;
+ }, () => {
+ this.clearSelection('Avatar upload was cancelled.');
+ });
+ },
+ clearSelection(message) {
+ this.uploading = false;
+ this.progress = 0;
+ this.selected = false;
+ this.errorMessage = message;
+ this.previewUrl = this.currentPreviewUrl;
+ this.$refs.avatarInput.value = '';
+ $wire.$set('avatar', null, false);
+ },
+ }"
+ >
  <div class="flex items-start justify-between gap-3">
  <div class="min-w-0">
  <h4 class="text-sm font-bold text-bark">Avatar</h4>
@@ -931,38 +1022,59 @@ new class extends Component
  <span class="ui-token shrink-0">Square</span>
  </div>
 
- <div class="flex items-center gap-4">
- <div class="relative h-24 w-24 shrink-0 overflow-hidden rounded-pill border-4 border-warm-white bg-cream shadow-sm ring-1 ring-whisker/50" data-ui="profile-avatar-preview">
- @if ($avatarPreviewUrl)
- <img src="{{ $avatarPreviewUrl }}" alt="{{ $user->name }} avatar preview" class="h-full w-full object-cover">
- @else
- <div class="{{ $user->profile_default_avatar_color }} flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase" aria-label="{{ $user->name }} avatar initial" role="img">
- {{ $user->profile_initial }}
- </div>
- @endif
- <div wire:loading.flex wire:target="avatar" class="absolute inset-0 items-center justify-center bg-warm-white/75 text-xs font-semibold text-bark">
- Previewing
- </div>
- </div>
- <div class="min-w-0 text-xs leading-5 text-fur">
- <p>Use a clear face or pet portrait. The crop is circular across the app.</p>
- @if ($avatarTemporaryUrl)
- <p class="mt-1 font-semibold text-success" role="status">New avatar selected.</p>
- @endif
- </div>
- </div>
-
- <x-ui.file-upload
+ <div class="flex flex-col items-center gap-3 text-center">
+ <input
+ x-ref="avatarInput"
  id="profile_modal_avatar"
  name="avatar"
- label="Upload avatar"
+ type="file"
  accept="image/jpeg,image/png,image/webp"
- maxSize="10MB"
- preview
- help="JPG, PNG, or WEBP. Square image recommended."
- :error="$errors->first('avatar')"
- wire:model="avatar"
- />
+ class="sr-only"
+ x-on:change="handleInput($event)"
+ aria-describedby="profile_modal_avatar_help profile_modal_avatar_error"
+ >
+ <div
+ role="button"
+ tabindex="0"
+ class="group relative h-32 w-32 cursor-pointer overflow-hidden rounded-pill border-4 border-warm-white bg-cream shadow-sm ring-1 ring-whisker/60 transition-all duration-150 hover:ring-2 hover:ring-paw focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paw"
+ data-ui="profile-avatar-drop-zone"
+ :class="{ 'ring-2 ring-paw bg-paw-light/50': dragOver, 'cursor-wait opacity-90': uploading }"
+ x-on:click="openPicker()"
+ x-on:keydown.enter.prevent="openPicker()"
+ x-on:keydown.space.prevent="openPicker()"
+ x-on:dragover.prevent="if (! uploading) dragOver = true"
+ x-on:dragleave.prevent="dragOver = false"
+ x-on:drop.prevent="handleDrop($event)"
+ :aria-busy="uploading.toString()"
+ aria-label="Change profile avatar"
+ >
+ <img x-show="previewUrl" x-cloak :src="previewUrl || ''" alt="{{ $user->name }} avatar preview" class="h-full w-full object-cover" data-ui="profile-avatar-file-reader-preview">
+ <div x-show="! previewUrl" class="{{ $user->profile_default_avatar_color }} flex h-full w-full items-center justify-center font-display text-4xl font-bold uppercase" aria-label="{{ $user->name }} avatar initial" role="img">
+ {{ $user->profile_initial }}
+ </div>
+ <div
+ class="absolute inset-x-0 bottom-0 bg-bark/70 px-3 py-2 text-xs font-bold text-warm-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100"
+ :class="{ 'opacity-100': dragOver }"
+ data-ui="profile-avatar-change-photo-label"
+ >
+ Change photo
+ </div>
+ <div x-show="uploading" x-cloak class="absolute inset-0 flex items-center justify-center bg-bark/45" data-ui="profile-avatar-upload-progress">
+ <div class="relative h-16 w-16 text-warm-white">
+ <svg class="h-16 w-16 -rotate-90" viewBox="0 0 44 44" aria-hidden="true">
+ <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+ <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="4" pathLength="100" stroke-dasharray="100" :stroke-dashoffset="100 - progress" stroke-linecap="round"></circle>
+ </svg>
+ <span class="absolute inset-0 flex items-center justify-center text-xs font-bold" x-text="`${progress}%`"></span>
+ </div>
+ </div>
+ </div>
+ <p id="profile_modal_avatar_help" class="max-w-56 text-xs leading-5 text-fur">
+ Click or drop a JPG, PNG, or WEBP image. Max 3MB.
+ </p>
+ <p id="profile_modal_avatar_error" x-show="errorMessage" x-cloak class="max-w-56 text-xs font-semibold leading-5 text-danger" role="alert" x-text="errorMessage"></p>
+ <p x-show="selected && ! errorMessage && ! uploading" x-cloak class="text-xs font-semibold text-success" role="status">New avatar selected.</p>
+ </div>
  @if ($user->avatar_url)
  <div class="rounded-[var(--radius-soft)] border border-whisker/40 bg-cream/35 p-3">
  <x-ui.checkbox id="profile_modal_remove_avatar" name="remove_avatar" label="Remove current avatar" wire:model="remove_avatar"/>

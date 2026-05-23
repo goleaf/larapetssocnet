@@ -16,9 +16,9 @@
  name="avatar"
  label="Avatar"
  accept="image/jpeg,image/png,image/webp"
- maxSize="10MB"
+ maxSize="3MB"
  preview
- help="JPG, PNG, or WEBP. Square image recommended."
+ help="JPG, PNG, or WEBP. Max 3MB. Square image recommended."
  />
 
  <div class="space-y-3">

@@ -266,9 +266,15 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
         ->assertSee('grid-cols-1 gap-4 md:grid-cols-2', false)
         ->assertSee('data-ui="profile-avatar-upload-panel"', false)
         ->assertSee('data-ui="profile-cover-upload-panel"', false)
-        ->assertSee('data-ui="profile-avatar-preview"', false)
+        ->assertSee('data-ui="profile-avatar-drop-zone"', false)
+        ->assertSee('data-ui="profile-avatar-change-photo-label"', false)
+        ->assertSee('Change photo')
+        ->assertSee('new FileReader()', false)
+        ->assertSee('$wire.upload(\'avatar\'', false)
+        ->assertSee('data-ui="profile-avatar-upload-progress"', false)
+        ->assertSee('maxBytes: 3145728', false)
+        ->assertSee('Max 3MB.')
         ->assertSee('data-ui="profile-cover-preview"', false)
-        ->assertSee('Upload avatar')
         ->assertSee('Upload cover photo')
         ->assertSee('id="profile_modal_avatar"', false)
         ->assertSee('id="profile_modal_cover"', false)
@@ -281,6 +287,25 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
         ->assertSee('scrollIntoView({ behavior: \'smooth\', block: \'center\' })', false)
         ->assertSee('@profile-edit-validation-failed.window="scrollToTarget($event.detail.target)"', false);
 });
+
+it('enforces the nested modal avatar upload type and size limits server side', function (Closure $avatarFactory, string $message): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Avatar Validation Owner',
+        'username' => 'avatar_validation_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('avatar', $avatarFactory())
+        ->call('save')
+        ->assertHasErrors(['avatar'])
+        ->assertSee($message);
+})->with([
+    'avatar gif type' => [fn (): UploadedFile => UploadedFile::fake()->image('avatar.gif', 300, 300), 'Avatar must be a JPG, PNG, or WEBP image.'],
+    'avatar over three megabytes' => [fn (): UploadedFile => UploadedFile::fake()->image('avatar.jpg', 640, 640)->size(3073), 'Avatar must be smaller than 3MB.'],
+]);
 
 it('dispatches the first invalid field target when nested edit profile validation fails', function (): void {
     $profileOwner = User::factory()->create([

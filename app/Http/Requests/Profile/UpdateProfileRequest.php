@@ -52,7 +52,7 @@ class UpdateProfileRequest extends FormRequest
             'timezone' => ['nullable', 'timezone'],
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
             'is_private' => ['nullable', 'boolean'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'remove_avatar' => ['nullable', 'boolean'],
             'remove_cover' => ['nullable', 'boolean'],
@@ -74,6 +74,8 @@ class UpdateProfileRequest extends FormRequest
             'country_code.size' => 'Country code must be exactly 2 letters.',
             'bio_html.prohibited' => 'Bio HTML is generated automatically and cannot be submitted directly.',
             'avatar.image' => 'Avatar must be an image file.',
+            'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
+            'avatar.max' => 'Avatar must be smaller than 3MB.',
             'cover.image' => 'Cover must be an image file.',
         ];
     }

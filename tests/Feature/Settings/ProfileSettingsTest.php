@@ -208,7 +208,7 @@ it('rejects invalid profile image uploads', function (string $field, string $cas
     $user = User::factory()->create();
     $file = match ([$field, $case]) {
         ['avatar', 'type'] => UploadedFile::fake()->create('avatar.pdf', 12, 'application/pdf'),
-        ['avatar', 'size'] => UploadedFile::fake()->image('avatar.jpg')->size(10241),
+        ['avatar', 'size'] => UploadedFile::fake()->image('avatar.jpg')->size(3073),
         ['cover', 'type'] => UploadedFile::fake()->create('cover.pdf', 12, 'application/pdf'),
         ['cover', 'size'] => UploadedFile::fake()->image('cover.jpg', 1600, 480)->size(5121),
     };

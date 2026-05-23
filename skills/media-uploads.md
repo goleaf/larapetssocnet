@@ -29,7 +29,7 @@ Profile Posts media-only mode reads media through `Post::mediaItemsForDisplay()`
 ## Profile Media
 The profile edit modal uses two distinct Livewire upload panels for owner media: avatar and cover photo. Keep them in one responsive grid that stacks on mobile and uses two columns from desktop widths, with separate previews, validation errors, and removal controls for each media collection.
 
-Avatar uploads should preview as a circular crop because the same image is rendered in profile headers, lists, comments, and messages. Cover uploads should preview in a wide banner frame and continue to reset the stored cover focal point to the default center position after a new file is saved.
+Avatar uploads should use the circular drop-zone interface in the profile edit modal: clicking or dropping onto the circle opens/selects the file, FileReader renders the circular preview before the Livewire temporary upload starts, and Alpine validates JPEG/PNG/WEBP plus a 3MB maximum before upload. The server-side profile validators must keep the same 3MB avatar limit. Cover uploads should preview in a wide banner frame and continue to reset the stored cover focal point to the default center position after a new file is saved.
 
 ## Pet Media
 Pet media uses public disk.

@@ -159,6 +159,22 @@ test('avatar and cover images can be uploaded', function (): void {
     Storage::disk($coverMedia->disk)->assertExists($coverMedia->getPathRelativeToRoot());
 });
 
+test('avatar uploads over three megabytes are rejected', function (): void {
+    Storage::fake('public');
+
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->from(route('profile.edit'))
+        ->patch(route('profile.update'), profileTestPayload($user, [
+            'avatar' => UploadedFile::fake()->image('avatar.jpg', 640, 640)->size(3073),
+        ]))
+        ->assertSessionHasErrors(['avatar'])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->getFirstMedia(User::MEDIA_COLLECTION_AVATAR))->toBeNull();
+});
+
 test('avatar and cover images can be removed', function (): void {
     Storage::fake('public');
 
