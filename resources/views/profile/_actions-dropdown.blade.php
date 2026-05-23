@@ -14,7 +14,6 @@
 
 <div class="relative" x-data="{
  open: false,
- confirmBlock: false,
  copied: false,
  copyTimer: null,
  profileUrl: @js($resolvedProfileUrl),
@@ -78,27 +77,18 @@
 
  <button type="button" data-ui="profile-actions-menu-suggest" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="open = false; window.dispatchFlash?.('Suggestion tools are coming soon.', 'info')">Suggest to Friends</button>
 
- <template x-if="!isBlocked">
- <div>
- <button type="button" data-ui="profile-actions-menu-block" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="confirmBlock = true">
+ @if (! $isBlocked)
+ <form method="POST" action="{{ route('users.block', ['user'=> $user]) }}" data-ui="profile-actions-menu-block-form">
+ @csrf
+ <button type="submit" data-ui="profile-actions-menu-block" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem">
  Block
  </button>
-
- <div x-show="confirmBlock" x-transition class="mt-2 rounded-lg border border-rose-400/40 bg-rose-500/5 p-3">
- <p class="text-xs">Block &#64;{{ $user->username }}?</p>
- <div class="mt-2 flex gap-2">
- <button type="button" class="btn-base btn-ghost min-h-9 px-2 py-1 text-xs" @click="confirmBlock = false">Cancel</button>
- <button type="button" class="btn-base btn-primary min-h-9 px-2 py-1 text-xs" @click="confirmBlock = false; toggleBlock(); open = false;">Confirm</button>
- </div>
- </div>
- </div>
- </template>
-
- <template x-if="isBlocked">
+ </form>
+ @else
  <button type="button" class="flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-emerald-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" role="menuitem" @click="toggleBlock(); open = false;">
  Unblock
  </button>
- </template>
+ @endif
 
  <form method="POST" action="{{ route('users.report', ['user'=> $user]) }}">
  @csrf

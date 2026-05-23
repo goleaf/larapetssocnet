@@ -16,6 +16,7 @@
 ## Block checks before social actions
 - Enforce block relationship checks before follow/message/react/comment actions.
 - Enforce the mutual-follow messaging rule in authorization and service/action layers, not only by hiding profile buttons or menu links.
+- Profile Block actions must submit to the server and reuse `BlockService` so follow cleanup, block creation, redirects, and blocked-content visibility enforcement happen atomically instead of through view-only state.
 
 ## Profile security
 - Treat every profile section as private until `ProfileVisibilityService` or the matching visibility service proves the viewer can see it.

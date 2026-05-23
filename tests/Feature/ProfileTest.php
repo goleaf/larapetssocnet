@@ -680,6 +680,75 @@ test('blocked users cannot view each others profile', function (): void {
         ->assertNotFound();
 });
 
+test('profile block menu action blocks immediately and redirects to feed', function (): void {
+    $actor = User::factory()->create();
+    $other = User::factory()->create([
+        'name' => 'Profile Block Target',
+        'username' => 'profile_block_target',
+    ]);
+    $profileUrl = route('profile.show', ['user' => $other]);
+
+    $actor->follow($other);
+    $other->follow($actor);
+
+    $post = Post::factory()->for($other)->create([
+        'body' => 'blocked user feed post should disappear',
+        'body_html' => '<p>blocked user feed post should disappear</p>',
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($actor)
+        ->get($profileUrl)
+        ->assertOk()
+        ->assertSee('data-ui="profile-actions-menu-trigger"', false)
+        ->assertSee('data-ui="profile-actions-menu-block-form"', false)
+        ->assertSee('data-ui="profile-actions-menu-block"', false)
+        ->assertSee('action="'.route('users.block', ['user' => $other]).'"', false)
+        ->assertSee('Block')
+        ->assertDontSee('toggleBlock(); open = false;', false);
+
+    $this->actingAs($other)
+        ->get(route('profile.show', ['user' => $other]))
+        ->assertOk()
+        ->assertDontSee('data-ui="profile-actions-menu-block-form"', false)
+        ->assertDontSee('data-ui="profile-actions-menu-block"', false);
+
+    $this->actingAs($actor)
+        ->get(route('feed.index'))
+        ->assertOk()
+        ->assertSee($post->body);
+
+    $this->actingAs($actor)
+        ->from($profileUrl)
+        ->post(route('users.block', ['user' => $other]))
+        ->assertRedirect(route('feed.index'))
+        ->assertSessionHas('success', 'You have blocked this user.');
+
+    $this->assertDatabaseHas('blocks', [
+        'blocker_id' => $actor->id,
+        'blocked_id' => $other->id,
+    ]);
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $actor->id,
+        'following_id' => $other->id,
+    ]);
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $other->id,
+        'following_id' => $actor->id,
+    ]);
+
+    $this->actingAs($actor)
+        ->get(route('feed.index'))
+        ->assertOk()
+        ->assertDontSee($post->body);
+
+    $this->actingAs($actor)
+        ->get($profileUrl)
+        ->assertNotFound();
+});
+
 test('users can pin and unpin posts and only one post remains pinned', function (): void {
     $user = User::factory()->create();
     $first = Post::factory()->for($user)->create(['is_pinned' => false]);

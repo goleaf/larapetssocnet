@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated non-owner profile Block actions to submit through the server-side block transaction, redirect to the feed immediately, and flash "You have blocked this user." after follow cleanup and blocked-content enforcement.
 - Updated the profile pinned-post highlight to use an edge-to-edge "Pinned post" banner with a secondary-color pin icon while leaving the post card content, reactions, comments, and media layout unchanged.
 - Updated profile post cards to expose owner-only "Pin to profile" and "Unpin from profile" actions in the three-dot menu, backed by a serialized pin transaction that keeps one pinned post per owner.
 - Restricted private-account followers/following list visibility so followers lists are owner-or-accepted-follower only, following lists are owner-only, and locked Livewire modal states avoid querying hidden rows.

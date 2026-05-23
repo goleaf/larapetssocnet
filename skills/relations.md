@@ -12,4 +12,5 @@ Best practices for Eloquent many-to-many self-referencing relationships (`User` 
 - Update `followers_count` / `following_count` in a transaction.
 - Treat messaging as a mutual-follow capability for normal users; profile buttons, message policies, and contact flows must all agree on the same bidirectional relationship check.
 - Resolve profile mutual connections and "Also followed by" social-proof recommendations as accepted-status database intersections between the viewer's following rows and the profile owner's follower rows; do not load both follower lists and compare them in PHP.
+- User blocks must run through the central block transaction, delete any existing follows in both directions, and rely on relationship visibility scopes so the blocked user's content disappears from feeds and profiles immediately.
 - SQLite-safe: keep pivot state as plain strings; avoid JSON pivot columns.
