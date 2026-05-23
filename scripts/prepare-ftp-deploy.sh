@@ -69,7 +69,7 @@ if [[ -z "$APP_KEY" ]]; then
     exit 2
 fi
 
-MAIL_MAILER="$(env_var_or_default MAIL_MAILER sendmail)"
+MAIL_MAILER="$(env_var_or_default MAIL_MAILER phpmail)"
 MAIL_SCHEME="$(env_var_or_default MAIL_SCHEME null)"
 MAIL_HOST="$(env_var_or_default MAIL_HOST obojus.serveriai.lt)"
 MAIL_PORT="$(env_var_or_default MAIL_PORT 465)"

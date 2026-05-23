@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 uses(RefreshDatabase::class);
 
@@ -185,6 +186,32 @@ it('requests magic login links from the inline login panel without account enume
         ->assertDispatched('magic-login-link-sent');
 
     Mail::assertQueued(MagicLoginLinkMail::class, 1);
+});
+
+it('keeps magic login link requests generic when mail delivery fails', function (): void {
+    Mail::shouldReceive('to')
+        ->once()
+        ->andThrow(new TransportException('Native mail failed'));
+
+    $user = User::factory()->create([
+        'email' => 'inline-magic-failure@example.com',
+    ]);
+
+    Livewire::test('pages.auth.login')
+        ->set('magicEmail', 'INLINE-MAGIC-FAILURE@EXAMPLE.COM')
+        ->call('sendMagicLoginLink')
+        ->assertSet('magicEmail', 'inline-magic-failure@example.com')
+        ->assertSet('magicStatusMessage', 'If an account with that email exists, you will receive a login link shortly.')
+        ->assertDispatched('magic-login-link-sent');
+
+    expect(DB::table('magic_link_tokens')->where('user_id', $user->id)->value('token_hash'))
+        ->toBeString()
+        ->toHaveLength(64);
+
+    $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->getKey(),
+        'event_type' => 'magic_link_requested',
+    ]);
 });
 
 it('rejects enum-only deactivated and suspended accounts with specific messages', function (AccountStatus $status, string $message): void {

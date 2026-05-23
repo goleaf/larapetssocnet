@@ -2,12 +2,11 @@
 
 namespace App\Actions\Auth;
 
-use App\Mail\Auth\MagicLoginLinkMail;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\Auth\AuthMailDispatcher;
 use App\Services\Auth\MagicLinkService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -22,6 +21,7 @@ class RequestMagicLoginLinkAction
     public function __construct(
         private readonly AuthAuditLogger $auditLogger,
         private readonly MagicLinkService $magicLinks,
+        private readonly AuthMailDispatcher $mailDispatcher,
     ) {}
 
     public function handle(string $email, Request $request, string $source = 'magic_login_request'): string
@@ -51,15 +51,16 @@ class RequestMagicLoginLinkAction
         if ($user instanceof User) {
             [$magicToken, $plainToken] = $this->magicLinks->create($user);
 
-            Mail::to($user->email)->queue(new MagicLoginLinkMail(
+            $mailQueued = $this->mailDispatcher->queueMagicLoginLink(
                 user: $user,
                 loginUrl: route('magic-login.consume', ['token' => $plainToken]),
-            ));
+            );
         }
 
         $this->auditLogger->record($user, 'magic_link_requested', $request, [
             'identifier_hash' => $identifierHash,
             'matched_user' => $user instanceof User,
+            'mail_queued' => $mailQueued ?? null,
             'rate_limited' => false,
             'source' => $source,
             'token_id' => isset($magicToken) ? $magicToken->getKey() : null,

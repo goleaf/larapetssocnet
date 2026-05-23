@@ -6,6 +6,7 @@ use App\Enums\FollowAbility;
 use App\Events\UserBlocked;
 use App\Listeners\CancelPendingRequestsOnBlock;
 use App\Listeners\RemoveFollowOnBlock;
+use App\Mail\Transport\PhpMailTransport;
 use App\Models\Activities\Event;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
@@ -41,6 +42,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +66,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('phpmail', fn (): PhpMailTransport => new PhpMailTransport);
+
         Password::defaults(fn (): Password => PasswordPolicy::rule());
 
         LegacyModelMorphMap::register();

@@ -27,7 +27,7 @@ jobs:
       APP_URL: ${{ vars.APP_URL || 'https://petsocial.prus.dev' }}
       REMOTE_BASE: ${{ vars.REMOTE_BASE || '/home/anjdiiaev/domains/prus.dev/public_html/petsocial' }}
       INCLUDE_SQLITE: ${{ github.event_name == 'workflow_dispatch' && inputs.include_sqlite && 'true' || 'false' }}
-      MAIL_MAILER: ${{ vars.MAIL_MAILER || 'sendmail' }}
+      MAIL_MAILER: ${{ vars.MAIL_MAILER || 'phpmail' }}
       MAIL_SCHEME: ${{ vars.MAIL_SCHEME || 'null' }}
       MAIL_HOST: ${{ vars.MAIL_HOST || 'obojus.serveriai.lt' }}
       MAIL_PORT: ${{ vars.MAIL_PORT || '465' }}

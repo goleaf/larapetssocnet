@@ -15,8 +15,10 @@
 - Fixed first-install SQLite FTP deployments to temporarily install seeder-only development dependencies before restoring production-only dependencies for the uploaded archive.
 - Fixed the production login smoke workflow to parse the Livewire CSRF token and only install FTP diagnostics tooling after smoke failures.
 - Added an on-demand production log fetch input to the smoke workflow for deployed auth diagnostics.
-- Fixed shared-hosting auth mail delivery to default FTP deployments to local sendmail unless SMTP is explicitly configured.
+- Fixed shared-hosting auth mail delivery to default FTP deployments to local PHP mail unless SMTP is explicitly configured.
 - Fixed auth mail transport failures so verification, reset, and security emails cannot crash registration or password flows.
+- Fixed shared-hosting email delivery on hosts that disable `proc_open()` by adding a PHP `mail()` transport and making it the default FTP mailer.
+- Fixed magic-link email failures so login-link requests keep the same non-enumerating response instead of crashing.
 - Kept pet profile and QR routes inside the authenticated application middleware stack.
 - Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.

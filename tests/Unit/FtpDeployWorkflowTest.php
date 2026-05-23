@@ -11,7 +11,7 @@ it('deploys with one ftp archive instead of mirror sync state', function (): voi
         ->toContain('composer install --optimize-autoloader --no-interaction --prefer-dist')
         ->toContain('Restore production PHP dependencies')
         ->toContain('composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist')
-        ->toContain("MAIL_MAILER: \${{ vars.MAIL_MAILER || 'sendmail' }}")
+        ->toContain("MAIL_MAILER: \${{ vars.MAIL_MAILER || 'phpmail' }}")
         ->toContain('if [ "${MAIL_MAILER}" = "smtp" ]; then')
         ->toContain('scripts/deploy-ftp-archive.sh')
         ->toContain('uses: actions/setup-node@v6')
@@ -19,6 +19,8 @@ it('deploys with one ftp archive instead of mirror sync state', function (): voi
         ->not->toContain('SamKirkland/FTP-Deploy-Action')
         ->not->toContain('state-name: .ftp-deploy-sync-state.json')
         ->not->toContain('FTP_PARALLEL');
+
+    expect(config('mail.mailers.phpmail.transport'))->toBe('phpmail');
 });
 
 it('uploads a single archive and runs a token protected server cleanup', function (): void {

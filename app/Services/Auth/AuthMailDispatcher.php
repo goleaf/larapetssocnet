@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Mail\Auth\LoginAnomalySecurityAlertMail;
+use App\Mail\Auth\MagicLoginLinkMail;
 use App\Mail\Auth\PasswordChangedSecurityAlertMail;
 use App\Mail\Auth\PasswordResetLinkMail;
 use App\Mail\Auth\VerifyEmailAddressMail;
@@ -36,6 +37,14 @@ class AuthMailDispatcher
         return $this->queueSafely(fn (): mixed => Mail::to($user->email)->queue(new PasswordResetLinkMail(
             user: $user,
             resetUrl: $resetUrl,
+        )));
+    }
+
+    public function queueMagicLoginLink(User $user, string $loginUrl): bool
+    {
+        return $this->queueSafely(fn (): mixed => Mail::to($user->email)->queue(new MagicLoginLinkMail(
+            user: $user,
+            loginUrl: $loginUrl,
         )));
     }
 
