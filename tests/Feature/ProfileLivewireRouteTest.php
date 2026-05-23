@@ -1,11 +1,14 @@
 <?php
 
+use App\Actions\Users\UpdateProfileAction;
+use App\Exceptions\UsernameChangeCooldownException;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\CounterCacheService;
+use App\Services\LocationAutocompleteService;
 use App\Services\ReactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -247,6 +250,16 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
         ->assertSee('overflow-y-auto scroll-smooth', false)
         ->assertSee('data-ui="profile-edit-modal-section-basic"', false)
         ->assertSee('Basic Information')
+        ->assertSee('id="profile_modal_username"', false)
+        ->assertSee('id="profile_modal_display_name_counter"', false)
+        ->assertSee('maxlength="50"', false)
+        ->assertSee('id="profile_modal_bio_counter"', false)
+        ->assertSee('maxlength="160"', false)
+        ->assertSee('wire:model.live.debounce.400ms="location"', false)
+        ->assertSee('aria-autocomplete="list"', false)
+        ->assertSee('id="profile_modal_birth_day"', false)
+        ->assertSee('id="profile_modal_birth_month"', false)
+        ->assertSee('id="profile_modal_birth_year"', false)
         ->assertSee('data-ui="profile-edit-modal-section-media"', false)
         ->assertSee('Profile Media')
         ->assertSee('data-ui="profile-edit-modal-section-social"', false)
@@ -280,10 +293,13 @@ it('saves profile edits from the nested modal without redirecting away from the 
         'name' => 'Original Modal Name',
         'display_name' => null,
         'username' => 'nested_modal_saver',
+        'username_changed_at' => null,
         'bio' => null,
         'headline' => null,
         'pronouns' => null,
         'location' => null,
+        'location_lat' => null,
+        'location_lng' => null,
         'website' => null,
         'social_links' => null,
         'privacy_display_location' => false,
@@ -298,15 +314,20 @@ it('saves profile edits from the nested modal without redirecting away from the 
     Livewire::actingAs($profileOwner)
         ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
         ->set('name', 'Updated Modal Name')
+        ->set('username', 'updated_nested_saver')
         ->set('display_name', 'Updated Modal Display')
         ->set('bio', 'A modal bio with enough detail to describe this profile.')
         ->set('headline', 'Nested editor')
         ->set('pronouns', 'they/them')
         ->set('location', 'Kaunas')
+        ->set('location_lat', '54.8985')
+        ->set('location_lng', '23.9036')
         ->set('website', 'modal.example')
         ->set('social_links.x', 'x.com/nestedmodal')
         ->set('social_links.instagram', 'instagram.com/nestedmodal')
-        ->set('birth_date', '1990-01-01')
+        ->set('birth_day', '1')
+        ->set('birth_month', '1')
+        ->set('birth_year', '1990')
         ->set('gender', 'prefer_not_to_say')
         ->set('profile_visibility', 'followers_only')
         ->set('privacy_display_location', true)
@@ -321,11 +342,15 @@ it('saves profile edits from the nested modal without redirecting away from the 
     $profileOwner->refresh();
 
     expect($profileOwner->name)->toBe('Updated Modal Name')
+        ->and($profileOwner->username)->toBe('updated_nested_saver')
+        ->and($profileOwner->username_changed_at)->not->toBeNull()
         ->and($profileOwner->display_name)->toBe('Updated Modal Display')
         ->and($profileOwner->bio)->toBe('A modal bio with enough detail to describe this profile.')
         ->and($profileOwner->headline)->toBe('Nested editor')
         ->and($profileOwner->pronouns)->toBe('they/them')
         ->and($profileOwner->location)->toBe('Kaunas')
+        ->and($profileOwner->location_lat)->toBe(54.8985)
+        ->and($profileOwner->location_lng)->toBe(23.9036)
         ->and($profileOwner->city)->toBe('Kaunas')
         ->and($profileOwner->website)->toBe('https://modal.example')
         ->and($profileOwner->birth_date?->toDateString())->toBe('1990-01-01')
@@ -340,6 +365,122 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->and($profileOwner->privacy_display_birthdate)->toBeTrue()
         ->and($profileOwner->show_in_explore)->toBeFalse()
         ->and($profileOwner->open_following)->toBeTrue();
+});
+
+it('checks username availability and reports the cooldown state in the edit profile modal', function (): void {
+    User::factory()->create([
+        'username' => 'taken_modal_name',
+    ]);
+
+    $profileOwner = User::factory()->create([
+        'name' => 'Cooldown Modal Owner',
+        'username' => 'cooldown_modal_owner',
+        'username_changed_at' => now()->subDays(5),
+        'gender' => 'prefer_not_to_say',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->assertSet('usernameStatus', 'ok')
+        ->assertSee('You can only change your username once every 30 days. Your next change is available in', false)
+        ->set('username', 'taken_modal_name')
+        ->assertSet('usernameStatus', 'locked')
+        ->call('save')
+        ->assertHasErrors(['username'])
+        ->assertDispatched('profile-edit-validation-failed', target: 'profile_modal_username');
+
+    expect($profileOwner->fresh()->username)->toBe('cooldown_modal_owner');
+});
+
+it('checks username availability for available and taken names when cooldown is clear', function (): void {
+    User::factory()->create([
+        'username' => 'already_used_modal',
+    ]);
+
+    $profileOwner = User::factory()->create([
+        'username' => 'available_modal_owner',
+        'username_changed_at' => null,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('username', 'fresh_modal_name')
+        ->assertSet('usernameStatus', 'ok')
+        ->assertSet('usernameMessage', 'Username is available!')
+        ->set('username', 'already_used_modal')
+        ->assertSet('usernameStatus', 'taken');
+});
+
+it('loads location suggestions server side and stores selected coordinates', function (): void {
+    $this->instance(LocationAutocompleteService::class, new class extends LocationAutocompleteService
+    {
+        public function suggest(string $query, int $limit = 5): array
+        {
+            expect($query)->toBe('Viln')
+                ->and($limit)->toBe((int) config('services.geocoding.limit', 5));
+
+            return [[
+                'label' => 'Vilnius, Lithuania',
+                'latitude' => 54.6872,
+                'longitude' => 25.2797,
+            ]];
+        }
+    });
+
+    $profileOwner = User::factory()->create([
+        'username' => 'location_modal_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('location', 'Viln')
+        ->assertSet('locationSuggestionsOpen', true)
+        ->assertSee('Vilnius, Lithuania')
+        ->call('selectLocationSuggestion', 0)
+        ->assertSet('location', 'Vilnius, Lithuania')
+        ->assertSet('location_lat', '54.6872')
+        ->assertSet('location_lng', '25.2797')
+        ->assertSet('locationSuggestionsOpen', false);
+});
+
+it('validates basic information length limits in the nested edit profile modal', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'length_modal_owner',
+        'gender' => 'prefer_not_to_say',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('display_name', str_repeat('a', 51))
+        ->set('bio', str_repeat('b', 161))
+        ->call('save')
+        ->assertHasErrors([
+            'display_name',
+            'bio',
+        ]);
+});
+
+it('enforces username cooldown inside the profile update action', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Action Cooldown Owner',
+        'username' => 'action_cooldown_owner',
+        'username_changed_at' => now()->subDays(5),
+    ]);
+
+    expect(fn () => app(UpdateProfileAction::class)->handle($profileOwner, [
+        'name' => 'Action Cooldown Owner',
+        'username' => 'action_blocked_name',
+    ]))->toThrow(UsernameChangeCooldownException::class, 'You can only change your username once every 30 days.');
+
+    expect($profileOwner->fresh()->username)->toBe('action_cooldown_owner');
 });
 
 it('restores the last profile tab from the browser session', function (): void {

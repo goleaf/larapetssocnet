@@ -1,9 +1,16 @@
 <?php
 
 use App\Actions\Users\UpdateProfileAction;
+use App\Exceptions\UsernameChangeCooldownException;
+use App\Exceptions\UsernameNotAvailableException;
+use App\Exceptions\UsernameReservedException;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
+use App\Services\LocationAutocompleteService;
 use App\Services\SettingsService;
+use App\Support\Usernames\UsernameNormalizer;
+use App\Support\Usernames\UsernameRules;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Facades\Gate;
@@ -21,6 +28,18 @@ new class extends Component
 
     public string $name = '';
 
+    public string $username = '';
+
+    public string $currentUsername = '';
+
+    public ?string $usernameStatus = null;
+
+    public string $usernameMessage = '';
+
+    public bool $usernameChangeLocked = false;
+
+    public int $usernameChangeDaysRemaining = 0;
+
     public ?string $display_name = null;
 
     public ?string $bio = null;
@@ -31,9 +50,26 @@ new class extends Component
 
     public ?string $location = null;
 
+    public ?string $location_lat = null;
+
+    public ?string $location_lng = null;
+
+    /**
+     * @var list<array{label: string, latitude: float, longitude: float}>
+     */
+    public array $locationSuggestions = [];
+
+    public bool $locationSuggestionsOpen = false;
+
     public ?string $website = null;
 
     public ?string $birth_date = null;
+
+    public string $birth_day = '';
+
+    public string $birth_month = '';
+
+    public string $birth_year = '';
 
     public ?string $gender = null;
 
@@ -62,13 +98,19 @@ new class extends Component
 
     private const FIELD_TARGETS = [
         'name' => 'profile_modal_name',
+        'username' => 'profile_modal_username',
         'display_name' => 'profile_modal_display_name',
         'bio' => 'profile_modal_bio',
         'headline' => 'profile_modal_headline',
         'pronouns' => 'profile_modal_pronouns',
         'location' => 'profile_modal_location',
+        'location_lat' => 'profile_modal_location',
+        'location_lng' => 'profile_modal_location',
         'website' => 'profile_modal_website',
         'birth_date' => 'profile_modal_birth_date',
+        'birth_day' => 'profile_modal_birth_date',
+        'birth_month' => 'profile_modal_birth_date',
+        'birth_year' => 'profile_modal_birth_date',
         'gender' => 'profile_modal_gender',
         'avatar' => 'profile_modal_avatar_field',
         'cover' => 'profile_modal_cover_field',
@@ -99,13 +141,21 @@ new class extends Component
         Gate::forUser($viewer)->authorize('update', $user);
 
         $this->name = (string) $user->name;
+        $this->username = (string) $user->username;
+        $this->currentUsername = (string) $user->username;
+        $this->usernameChangeLocked = ! $user->canChangeUsername();
+        $this->usernameChangeDaysRemaining = $user->daysUntilUsernameChange();
+        $this->refreshUsernameAvailability();
         $this->display_name = $user->display_name;
         $this->bio = $user->bio;
         $this->headline = $user->headline;
         $this->pronouns = $user->pronouns;
         $this->location = $user->location;
+        $this->location_lat = $user->location_lat !== null ? (string) $user->location_lat : null;
+        $this->location_lng = $user->location_lng !== null ? (string) $user->location_lng : null;
         $this->website = $user->website;
         $this->birth_date = $user->birth_date?->format('Y-m-d');
+        $this->setBirthDateParts($user);
         $this->gender = $user->gender;
         $this->social_links = is_array($user->social_links) ? $user->social_links : [];
         $this->profile_visibility = $user->profile_visibility ?: 'public';
@@ -135,24 +185,34 @@ new class extends Component
             return;
         }
 
-        $updateProfile->handle($user, [
-            'name' => $validated['name'],
-            'display_name' => $validated['display_name'] ?? null,
-            'bio' => $validated['bio'] ?? null,
-            'headline' => $validated['headline'] ?? null,
-            'pronouns' => $validated['pronouns'] ?? null,
-            'location' => $validated['location'] ?? null,
-            'website' => $validated['website'] ?? null,
-            'birth_date' => $validated['birth_date'] ?? null,
-            'gender' => $validated['gender'] ?? null,
-            'social_links' => ($validated['social_links'] ?? []) !== [] ? $validated['social_links'] : null,
-            'privacy_display_location' => (bool) ($validated['privacy_display_location'] ?? false),
-            'privacy_display_birthdate' => (bool) ($validated['privacy_display_birthdate'] ?? false),
-            'avatar' => $this->avatar instanceof UploadedFile ? $this->avatar : null,
-            'cover' => $this->cover instanceof UploadedFile ? $this->cover : null,
-            'remove_avatar' => (bool) ($validated['remove_avatar'] ?? false),
-            'remove_cover' => (bool) ($validated['remove_cover'] ?? false),
-        ]);
+        try {
+            $updateProfile->handle($user, [
+                'name' => $validated['name'],
+                'username' => $validated['username'],
+                'display_name' => $validated['display_name'] ?? null,
+                'bio' => $validated['bio'] ?? null,
+                'headline' => $validated['headline'] ?? null,
+                'pronouns' => $validated['pronouns'] ?? null,
+                'location' => $validated['location'] ?? null,
+                'location_lat' => $validated['location_lat'] ?? null,
+                'location_lng' => $validated['location_lng'] ?? null,
+                'website' => $validated['website'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'gender' => $validated['gender'] ?? null,
+                'social_links' => ($validated['social_links'] ?? []) !== [] ? $validated['social_links'] : null,
+                'privacy_display_location' => (bool) ($validated['privacy_display_location'] ?? false),
+                'privacy_display_birthdate' => (bool) ($validated['privacy_display_birthdate'] ?? false),
+                'avatar' => $this->avatar instanceof UploadedFile ? $this->avatar : null,
+                'cover' => $this->cover instanceof UploadedFile ? $this->cover : null,
+                'remove_avatar' => (bool) ($validated['remove_avatar'] ?? false),
+                'remove_cover' => (bool) ($validated['remove_cover'] ?? false),
+            ]);
+        } catch (UsernameChangeCooldownException|UsernameNotAvailableException|UsernameReservedException $exception) {
+            $this->addError('username', $exception->getMessage());
+            $this->dispatch('profile-edit-validation-failed', target: self::FIELD_TARGETS['username']);
+
+            return;
+        }
 
         $settingsService->savePrivacySettings($user, [
             'profile_visibility' => $validated['profile_visibility'],
@@ -180,6 +240,44 @@ new class extends Component
         $this->dispatch('profile-edit-closed');
     }
 
+    public function updatedUsername(): void
+    {
+        $this->username = UsernameNormalizer::normalize($this->username);
+        $this->refreshUsernameAvailability();
+    }
+
+    public function updatedLocation(): void
+    {
+        $this->location = $this->nullableString($this->location);
+        $this->location_lat = null;
+        $this->location_lng = null;
+
+        if ($this->location === null || mb_strlen($this->location) < 2) {
+            $this->locationSuggestions = [];
+            $this->locationSuggestionsOpen = false;
+
+            return;
+        }
+
+        $this->locationSuggestions = app(LocationAutocompleteService::class)
+            ->suggest($this->location, (int) config('services.geocoding.limit', 5));
+        $this->locationSuggestionsOpen = $this->locationSuggestions !== [];
+    }
+
+    public function selectLocationSuggestion(int $index): void
+    {
+        $suggestion = $this->locationSuggestions[$index] ?? null;
+
+        if (! is_array($suggestion)) {
+            return;
+        }
+
+        $this->location = (string) $suggestion['label'];
+        $this->location_lat = (string) $suggestion['latitude'];
+        $this->location_lng = (string) $suggestion['longitude'];
+        $this->locationSuggestionsOpen = false;
+    }
+
     /**
      * @return array<string, list<mixed>>
      */
@@ -187,12 +285,18 @@ new class extends Component
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'display_name' => ['nullable', 'string', 'max:120'],
-            'bio' => ['nullable', 'string', 'max:1000'],
+            'username' => UsernameRules::requiredRules($this->userId),
+            'display_name' => ['nullable', 'string', 'max:50'],
+            'bio' => ['nullable', 'string', 'max:160'],
             'headline' => ['nullable', 'string', 'max:120'],
             'pronouns' => ['nullable', 'string', 'max:32'],
             'location' => ['nullable', 'string', 'max:255'],
+            'location_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'location_lng' => ['nullable', 'numeric', 'between:-180,180'],
             'website' => ['nullable', 'url', 'max:255'],
+            'birth_day' => ['nullable', 'integer', 'between:1,31'],
+            'birth_month' => ['nullable', 'integer', 'between:1,12'],
+            'birth_year' => ['nullable', 'integer', 'between:'.(now()->year - 100).','.now()->year],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
             'social_links' => ['nullable', 'array', 'max:6'],
@@ -218,6 +322,16 @@ new class extends Component
     protected function messages(): array
     {
         return [
+            'username.min' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
+            'username.max' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
+            'username.regex' => 'Only letters, numbers and underscores allowed.',
+            'username.unique' => 'Username is already taken.',
+            'display_name.max' => 'Display name must be 50 characters or fewer.',
+            'bio.max' => 'Bio must be 160 characters or fewer.',
+            'location_lat.between' => 'Select a valid location suggestion.',
+            'location_lng.between' => 'Select a valid location suggestion.',
+            'birth_date.date' => 'Enter a valid date of birth.',
+            'birth_date.before' => 'Date of birth must be before today.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
             'avatar.max' => 'Avatar must be smaller than 10MB.',
@@ -247,13 +361,17 @@ new class extends Component
     private function normalizeForValidation(): void
     {
         $this->name = trim($this->name);
+        $this->username = UsernameNormalizer::normalize($this->username);
         $this->display_name = $this->nullableString($this->display_name);
         $this->bio = $this->nullableString($this->bio);
         $this->headline = $this->nullableString($this->headline);
         $this->pronouns = $this->nullableString($this->pronouns);
         $this->location = $this->nullableString($this->location);
+        $this->location_lat = $this->location !== null ? $this->nullableString($this->location_lat) : null;
+        $this->location_lng = $this->location !== null ? $this->nullableString($this->location_lng) : null;
         $this->birth_date = $this->nullableString($this->birth_date);
         $this->gender = $this->nullableString($this->gender);
+        $this->birth_date = $this->composeBirthDate();
 
         $website = $this->nullableString($this->website);
 
@@ -263,6 +381,7 @@ new class extends Component
 
         $this->website = $website;
         $this->social_links = $this->normalizeSocialLinks($this->social_links);
+        $this->refreshUsernameAvailability();
     }
 
     private function nullableString(mixed $value): ?string
@@ -270,6 +389,85 @@ new class extends Component
         $value = trim((string) $value);
 
         return $value !== '' ? $value : null;
+    }
+
+    private function setBirthDateParts(User $user): void
+    {
+        if ($user->birth_date === null) {
+            $this->birth_day = '';
+            $this->birth_month = '';
+            $this->birth_year = '';
+
+            return;
+        }
+
+        $this->birth_day = (string) $user->birth_date->day;
+        $this->birth_month = (string) $user->birth_date->month;
+        $this->birth_year = (string) $user->birth_date->year;
+    }
+
+    private function composeBirthDate(): ?string
+    {
+        $birthDay = $this->nullableString($this->birth_day);
+        $birthMonth = $this->nullableString($this->birth_month);
+        $birthYear = $this->nullableString($this->birth_year);
+
+        if ($birthDay === null && $birthMonth === null && $birthYear === null) {
+            return null;
+        }
+
+        if ($birthDay === null || $birthMonth === null || $birthYear === null) {
+            return 'invalid-date';
+        }
+
+        $day = (int) $birthDay;
+        $month = (int) $birthMonth;
+        $year = (int) $birthYear;
+
+        if (! checkdate($month, $day, $year)) {
+            return 'invalid-date';
+        }
+
+        return CarbonImmutable::create($year, $month, $day)->toDateString();
+    }
+
+    private function refreshUsernameAvailability(): void
+    {
+        $normalizedUsername = UsernameNormalizer::normalize($this->username);
+        $normalizedCurrentUsername = UsernameNormalizer::normalize($this->currentUsername);
+
+        if ($normalizedUsername === '') {
+            $this->usernameStatus = null;
+            $this->usernameMessage = '';
+
+            return;
+        }
+
+        if ($normalizedUsername === $normalizedCurrentUsername) {
+            $this->usernameStatus = 'ok';
+            $this->usernameMessage = 'Current username.';
+
+            return;
+        }
+
+        if ($this->usernameChangeLocked) {
+            $this->usernameStatus = 'locked';
+            $this->usernameMessage = $this->usernameCooldownMessage();
+
+            return;
+        }
+
+        $firstError = UsernameRules::firstError($normalizedUsername, $this->userId);
+
+        $this->usernameStatus = $firstError === null ? 'ok' : 'taken';
+        $this->usernameMessage = $firstError ?? 'Username is available!';
+    }
+
+    public function usernameCooldownMessage(): string
+    {
+        $cooldownDays = (int) config('usernames.cooldown_days', 30);
+
+        return "You can only change your username once every {$cooldownDays} days. Your next change is available in {$this->usernameChangeDaysRemaining} days.";
     }
 
     private function sanitizeFocusTarget(?string $target): ?string
@@ -280,6 +478,7 @@ new class extends Component
             'profile_modal_avatar_field',
             'profile_modal_cover_field',
             'profile_modal_name',
+            'profile_modal_username',
             'profile_modal_display_name',
             'profile_modal_bio',
             'profile_modal_headline',
@@ -287,6 +486,9 @@ new class extends Component
             'profile_modal_location',
             'profile_modal_website',
             'profile_modal_birth_date',
+            'profile_modal_birth_day',
+            'profile_modal_birth_month',
+            'profile_modal_birth_year',
             'profile_modal_gender',
             'profile_modal_pets',
             'profile_modal_following',
@@ -348,11 +550,14 @@ new class extends Component
     {
         $fields = [
             'name',
+            'username',
             'display_name',
             'bio',
             'headline',
             'pronouns',
             'location',
+            'location_lat',
+            'location_lng',
             'website',
             'birth_date',
             'gender',
@@ -389,6 +594,21 @@ new class extends Component
  $user = $this->profileUser();
  $displayName = $user->display_name ?: $user->name;
  $coverUrl = $user->coverImageUrl();
+ $currentYear = now()->year;
+ $monthOptions = [
+  1 => 'January',
+  2 => 'February',
+  3 => 'March',
+  4 => 'April',
+  5 => 'May',
+  6 => 'June',
+  7 => 'July',
+  8 => 'August',
+  9 => 'September',
+  10 => 'October',
+  11 => 'November',
+  12 => 'December',
+ ];
 @endphp
 
 <div
@@ -396,6 +616,12 @@ new class extends Component
  class="fixed inset-0 z-50"
  x-data="{
  focusTarget: @js($focusTarget),
+ displayNameCount: @js(mb_strlen((string) ($display_name ?? ''))),
+ bioRemaining: @js(160 - mb_strlen((string) ($bio ?? ''))),
+ autoGrow(target) {
+ target.style.height = 'auto';
+ target.style.height = `${target.scrollHeight}px`;
+ },
  focusInitial() {
  const target = this.focusTarget ? document.getElementById(this.focusTarget) : null;
  const focusableTarget = target?.matches('input, textarea, select, button, a')
@@ -501,9 +727,97 @@ new class extends Component
 
  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
  <x-ui.input id="profile_modal_name" name="name" label="Name" :value="$name" required autocomplete="name" :error="$errors->first('name')" wire:model.live.blur="name"/>
- <x-ui.input id="profile_modal_display_name" name="display_name" label="Display name" :value="$display_name" autocomplete="nickname" :error="$errors->first('display_name')" wire:model.live.blur="display_name"/>
+ <div>
+ <x-ui.input
+ id="profile_modal_display_name"
+ name="display_name"
+ label="Display name"
+ :value="$display_name"
+ autocomplete="nickname"
+ maxlength="50"
+ :error="$errors->first('display_name')"
+ wire:model.live.debounce.300ms="display_name"
+ x-on:input="displayNameCount = $event.target.value.length"
+ />
+ <p class="mt-1 text-right text-xs text-fur" id="profile_modal_display_name_counter">
+ <span x-text="displayNameCount"></span>/50
+ </p>
+ </div>
  <div class="sm:col-span-2">
- <x-ui.textarea id="profile_modal_bio" name="bio" rows="4" label="Bio" :value="$bio" maxlength="1000" hint="Brief description for your profile." :error="$errors->first('bio')" wire:model.live.blur="bio"/>
+ <label for="profile_modal_username" class="text-sm font-semibold text-bark">Username <span class="text-danger" aria-hidden="true">*</span></label>
+ <div class="relative mt-1">
+ <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-fur" aria-hidden="true">@</span>
+ <input
+ id="profile_modal_username"
+ name="username"
+ type="text"
+ autocomplete="username"
+ required
+ maxlength="30"
+ value="{{ $username }}"
+ wire:model.live.debounce.600ms="username"
+ class="form-input h-[var(--control-height-md)] w-full pl-10 pr-12 text-sm focus:border-paw @error('username') border-rose text-rose focus:border-rose @enderror"
+ @error('username') aria-invalid="true" @enderror
+ aria-describedby="profile_modal_username_hint"
+ >
+ <span class="absolute inset-y-0 right-0 flex items-center pr-3">
+ <span wire:loading wire:target="username" class="text-fur" aria-label="Checking username">
+ <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+ <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"></circle>
+ <path class="opacity-75" fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-3a6 6 0 0 0-6-6V3Z"></path>
+ </svg>
+ </span>
+ <span wire:loading.remove wire:target="username">
+ @if ($usernameStatus === 'ok')
+ <svg class="h-5 w-5 text-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Username available">
+ <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/>
+ </svg>
+ @elseif (in_array($usernameStatus, ['taken', 'locked'], true))
+ <svg class="h-5 w-5 text-danger" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Username unavailable">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+ </svg>
+ @endif
+ </span>
+ </span>
+ </div>
+ <div id="profile_modal_username_hint" class="mt-1 flex flex-col gap-1 text-xs" aria-live="polite">
+ <p class="text-fur">3-30 chars. Letters, numbers, and underscores.</p>
+ @if ($usernameChangeLocked)
+ <p class="font-medium text-amber">{{ $this->usernameCooldownMessage() }}</p>
+ @endif
+ @if ($errors->has('username'))
+ <p class="font-medium text-danger">{{ $errors->first('username') }}</p>
+ @elseif ($usernameMessage !== '')
+ <p class="font-medium @if ($usernameStatus === 'ok') text-success @elseif ($usernameStatus === 'locked') text-amber @else text-danger @endif">{{ $usernameMessage }}</p>
+ @endif
+ </div>
+ </div>
+ <div class="sm:col-span-2">
+ <label for="profile_modal_bio" class="text-sm font-semibold text-bark">Bio</label>
+ <textarea
+ id="profile_modal_bio"
+ name="bio"
+ rows="3"
+ maxlength="160"
+ wire:model.live.debounce.300ms="bio"
+ x-init="$nextTick(() => autoGrow($el))"
+ x-on:input="bioRemaining = 160 - $event.target.value.length; autoGrow($event.target)"
+ class="form-textarea mt-1 min-h-24 w-full resize-none overflow-hidden text-sm focus:border-paw @error('bio') border-rose text-rose focus:border-rose @enderror"
+ @error('bio') aria-invalid="true" @enderror
+ aria-describedby="profile_modal_bio_hint profile_modal_bio_counter"
+ >{{ $bio }}</textarea>
+ <div class="mt-1 flex items-start justify-between gap-3 text-xs">
+ <div id="profile_modal_bio_hint">
+ @error('bio')
+ <p class="font-medium text-danger">{{ $message }}</p>
+ @else
+ <p class="text-fur">Brief description for your profile.</p>
+ @enderror
+ </div>
+ <p id="profile_modal_bio_counter" class="shrink-0 text-fur">
+ <span x-text="bioRemaining"></span> left
+ </p>
+ </div>
  </div>
  <div class="sm:col-span-2">
  <x-ui.input id="profile_modal_headline" name="headline" label="Headline" :value="$headline" hint="Short status or tagline shown near your name." :error="$errors->first('headline')" wire:model.live.blur="headline"/>
@@ -524,9 +838,59 @@ new class extends Component
  :error="$errors->first('gender')"
  wire:model.live.blur="gender"
  />
- <x-ui.input id="profile_modal_location" name="location" label="Location" :value="$location" :error="$errors->first('location')" wire:model.live.blur="location"/>
+ <div class="relative">
+ <label for="profile_modal_location" class="text-sm font-semibold text-bark">Location</label>
+ <input
+ id="profile_modal_location"
+ name="location"
+ type="text"
+ value="{{ $location }}"
+ autocomplete="off"
+ wire:model.live.debounce.400ms="location"
+ class="form-input mt-1 h-[var(--control-height-md)] w-full text-sm focus:border-paw @error('location') border-rose text-rose focus:border-rose @enderror"
+ aria-autocomplete="list"
+ aria-expanded="{{ $locationSuggestionsOpen ? 'true' : 'false' }}"
+ aria-controls="profile_modal_location_suggestions"
+ aria-describedby="profile_modal_location_hint"
+ @error('location') aria-invalid="true" @enderror
+ >
+ <input type="hidden" name="location_lat" wire:model="location_lat">
+ <input type="hidden" name="location_lng" wire:model="location_lng">
+ <div class="mt-1 min-h-5 text-xs" id="profile_modal_location_hint" aria-live="polite">
+ <span wire:loading wire:target="location" class="text-fur">Searching locations...</span>
+ @error('location')
+ <span wire:loading.remove wire:target="location" class="font-medium text-danger">{{ $message }}</span>
+ @else
+ @if ($errors->has('location_lat') || $errors->has('location_lng'))
+ <span wire:loading.remove wire:target="location" class="font-medium text-danger">Select a valid location suggestion.</span>
+ @endif
+ @enderror
+ </div>
+ @if ($locationSuggestionsOpen && $locationSuggestions !== [])
+ <ul id="profile_modal_location_suggestions" class="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-[var(--radius-control)] border border-whisker/50 bg-warm-white py-1 shadow-card" role="listbox">
+ @foreach ($locationSuggestions as $index => $suggestion)
+ <li role="option" wire:key="profile-location-suggestion-{{ $index }}">
+ <button type="button" class="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm text-bark transition-colors hover:bg-cream focus-visible:bg-cream focus-visible:outline-none" wire:click="selectLocationSuggestion({{ $index }})">
+ <span class="font-medium">{{ $suggestion['label'] }}</span>
+ <span class="text-xs text-fur">{{ number_format($suggestion['latitude'], 4) }}, {{ number_format($suggestion['longitude'], 4) }}</span>
+ </button>
+ </li>
+ @endforeach
+ </ul>
+ @endif
+ </div>
  <x-ui.input id="profile_modal_website" name="website" type="url" label="Website" :value="$website" :error="$errors->first('website')" wire:model.live.blur="website"/>
- <x-ui.input id="profile_modal_birth_date" name="birth_date" type="date" label="Birth Date" :value="$birth_date" :error="$errors->first('birth_date')" wire:model.live.blur="birth_date"/>
+ <fieldset id="profile_modal_birth_date" class="sm:col-span-2 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white/70 p-4">
+ <legend class="px-1 text-sm font-semibold text-bark">Date of birth</legend>
+ <div class="mt-3 grid gap-3 sm:grid-cols-3">
+ <x-ui.select id="profile_modal_birth_day" name="birth_day" label="Day" :options="range(1, 31)" :selected="$birth_day" placeholder="Day" :error="$errors->first('birth_day')" wire:model.live.blur="birth_day"/>
+ <x-ui.select id="profile_modal_birth_month" name="birth_month" label="Month" :options="$monthOptions" :selected="$birth_month" placeholder="Month" :error="$errors->first('birth_month')" wire:model.live.blur="birth_month"/>
+ <x-ui.select id="profile_modal_birth_year" name="birth_year" label="Year" :options="range($currentYear, $currentYear - 100)" :selected="$birth_year" placeholder="Year" :error="$errors->first('birth_year')" wire:model.live.blur="birth_year"/>
+ </div>
+ @error('birth_date')
+ <p class="mt-2 text-sm font-medium text-danger">{{ $message }}</p>
+ @enderror
+ </fieldset>
  </div>
  </section>
 

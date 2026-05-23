@@ -37,4 +37,11 @@ return [
         ],
     ],
 
+    'geocoding' => [
+        'endpoint' => env('GEOCODING_ENDPOINT'),
+        'key' => env('GEOCODING_KEY'),
+        'timeout' => env('GEOCODING_TIMEOUT', 2),
+        'limit' => env('GEOCODING_LIMIT', 5),
+    ],
+
 ];

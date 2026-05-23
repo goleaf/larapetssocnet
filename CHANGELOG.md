@@ -3,12 +3,14 @@
 ## Unreleased
 
 ### Changed
+- Updated the profile edit Basic Information section with live display-name and bio counters, cooldown-aware username availability checks, server-side location autocomplete, coordinate persistence, and registration-matched date-of-birth selects.
 - Updated the nested profile edit modal into a scrollable sectioned Livewire form with Basic Information, Profile Media, Social Links, and Privacy sections plus smooth first-error scrolling.
 - Updated the profile About tab to start with the complete untruncated bio, "Member since" metadata, privacy-safe location, website, and public age while never exposing the raw birth date.
 - Updated the profile Photos tab to use 30-photo `post_media.id` cursor batches with a 600px Livewire intersection sentinel and skeleton loading state instead of loading the full visible photo history at once.
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added a configurable server-side geocoding service for profile location suggestions.
 - Added a nested Livewire edit profile modal that mounts from the owner profile page, saves profile fields in place, and renders as a centered desktop overlay or full-screen mobile sheet without navigating away.
 - Added an authenticated non-follower "Also followed by" recommendation section to the profile About tab, using the mutual connection SQL intersection capped to five people for social proof.
 - Added an authenticated visitor-only mutual connections section to the profile About tab, showing up to 8 shared followers with avatar links and a see-all mutual followers link backed by SQL intersections.
@@ -199,6 +201,10 @@
 
 ### Tests
 - Verified passing suites:
+  - `php artisan test --compact tests/Feature/ProfileLivewireRouteTest.php`
+  - `php artisan test --compact tests/Feature/ProfilePageDesignTest.php`
+  - `php artisan test --compact tests/Feature/ProfileTest.php`
+  - `php artisan test --compact tests/Feature/UsernameTest.php tests/Unit/UsernameRulesTest.php tests/Feature/Settings/ProfileSettingsTest.php`
   - `php artisan test --compact tests/Feature/ProfileTest.php --filter='profile posts tab appends cursor-paginated batches'`
   - `php artisan test --compact tests/Feature/ProfileTest.php --filter='pin|pinned|cursor-paginated|profile posts tab shows pinned post highlight|profile pinned post highlight'`
   - `vendor/bin/pint --dirty --format agent`

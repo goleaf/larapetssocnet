@@ -101,6 +101,19 @@ class UpdateProfileAction
             $location = $data['location'] ?? $data['city'] ?? null;
             $payload['location'] = $location;
             $payload['city'] = $data['city'] ?? $location;
+
+            if ($location === null) {
+                $payload['location_lat'] = null;
+                $payload['location_lng'] = null;
+            }
+        }
+
+        if (array_key_exists('location_lat', $data)) {
+            $payload['location_lat'] = $data['location_lat'] ?? null;
+        }
+
+        if (array_key_exists('location_lng', $data)) {
+            $payload['location_lng'] = $data['location_lng'] ?? null;
         }
 
         if (array_key_exists('country_code', $data)) {

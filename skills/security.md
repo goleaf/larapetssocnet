@@ -23,6 +23,7 @@
 - Never search public profiles by email address or expose private contact/security fields through profile search, stats, tabs, locked states, or sidebar previews.
 - Username redirects must not resolve reserved names and must not point to banned, suspended, deactivated, deleted, or pending-deletion users.
 - Profile audit events should record changed field names and safe metadata only; never log raw bio contents, private contact values, media secrets, or security state.
+- Username changes from the profile edit modal must go through `UpdateProfileAction` and `UsernameService` so reserved names, uniqueness, redirects, and the 30-day cooldown are enforced server-side, not only through Livewire availability UI.
 
 ## Authentication security
 - Keep app browsing routes behind `auth`, `banned`, `active_account`, `verified`, and `track_last_seen` unless a route is intentionally public.

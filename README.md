@@ -27,6 +27,8 @@ npm run build
 
 This project is structured for shared hosting where the repository root is the web-served directory. The Laravel front controller, `.htaccess`, `build/`, `images/`, `favicon.ico`, and `robots.txt` live at the root; private Laravel folders are blocked by `.htaccess`. For active frontend work, run `npm run dev`; for production-like asset checks, run `npm run build`, which writes Vite assets to `build/`.
 
+Profile location autocomplete is configured through `GEOCODING_ENDPOINT`, with optional `GEOCODING_KEY`, `GEOCODING_TIMEOUT`, and `GEOCODING_LIMIT` values. When no endpoint is configured, the profile edit modal simply skips server-side suggestions.
+
 ## Local Debugging
 
 Laravel Debugbar is installed as a dev dependency and configured through `config/debugbar.php`. Keep committed env defaults disabled; for local Herd debugging use `APP_DEBUG=true` and `DEBUGBAR_ENABLED=true` in `.env`. Do not enable Debugbar or open Debugbar storage in production.

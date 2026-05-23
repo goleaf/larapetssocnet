@@ -10,6 +10,8 @@ class UsernameChangeCooldownException extends RuntimeException
 {
     public function __construct(public readonly int $daysRemaining)
     {
-        parent::__construct("You can change your username again in {$daysRemaining} day(s).");
+        $cooldownDays = (int) config('usernames.cooldown_days', 30);
+
+        parent::__construct("You can only change your username once every {$cooldownDays} days. Your next change is available in {$daysRemaining} days.");
     }
 }
