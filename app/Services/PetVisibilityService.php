@@ -50,6 +50,14 @@ class PetVisibilityService
             return false;
         }
 
+        if (! $owner->canViewProfile($viewer)) {
+            return false;
+        }
+
+        if (! $this->petsVisibilityAllows($viewer, $owner)) {
+            return false;
+        }
+
         return true;
     }
 

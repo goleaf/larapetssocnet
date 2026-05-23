@@ -43,7 +43,7 @@ it('enforces max 10 tags', function (): void {
 
     $result = $this->service->sync($pet, $tags);
 
-    expect($result)->toHaveCount(10);
+    expect($result)->toHaveCount((int) config('pets.personality_tags.max'));
 });
 
 it('stores tags as lowercase', function (): void {
@@ -77,7 +77,7 @@ it('returns correct suggestions list', function (): void {
 
     expect($suggestions)->toBeArray();
     expect($suggestions)->toContain('playful', 'calm', 'adventurous');
-    expect($suggestions)->toHaveCount(16);
+    expect($suggestions)->toHaveCount(count((array) config('pets.personality_tags.suggestions')));
 });
 
 it('syncs personality tag records for search', function (): void {

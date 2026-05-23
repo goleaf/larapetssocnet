@@ -381,7 +381,7 @@ test('profile owner with no pets sees first pet onboarding state', function (): 
         ->assertSee('Add your first pet profile')
         ->assertSee('Pet profiles give each pet a dedicated place')
         ->assertSee('Add your first pet')
-        ->assertSee('profile-pet-create-modal', false)
+        ->assertSee('pet-create-wizard', false)
         ->assertDontSee('data-ui="profile-pet-card-grid"', false)
         ->assertDontSee('data-ui="profile-add-pet-card"', false)
         ->assertDontSee('This user has not added pets to their profile.');
@@ -397,7 +397,7 @@ test('visitor sees simple no pets message without owner call to action', functio
         ->assertSee('This user has not added pets to their profile.')
         ->assertDontSee('data-ui="profile-pet-owner-empty"', false)
         ->assertDontSee('Add your first pet')
-        ->assertDontSee('profile-pet-create-modal', false);
+        ->assertDontSee('pet-create-wizard', false);
 
     auth()->logout();
 
@@ -406,7 +406,7 @@ test('visitor sees simple no pets message without owner call to action', functio
         ->assertSee('This user has not added pets to their profile.')
         ->assertDontSee('data-ui="profile-pet-owner-empty"', false)
         ->assertDontSee('Add your first pet')
-        ->assertDontSee('profile-pet-create-modal', false);
+        ->assertDontSee('pet-create-wizard', false);
 });
 
 test('profile owner can create a pet from the pets tab modal', function (): void {
@@ -419,7 +419,7 @@ test('profile owner can create a pet from the pets tab modal', function (): void
         ->test('profile.tabs.pets', ['profileUserId' => $owner->getKey()])
         ->assertSee('data-ui="profile-pet-owner-empty"', false)
         ->assertSee('Add your first pet')
-        ->assertSee('profile-pet-create-modal', false)
+        ->assertSee('pet-create-wizard', false)
         ->set('name', 'Modal Pet')
         ->set('species', 'dog')
         ->set('breed', 'Retriever')

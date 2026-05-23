@@ -183,6 +183,16 @@ class Pet extends Model implements HasMedia
 
     protected static function booted(): void
     {
+        static::saving(function (self $pet): void {
+            if (! self::hasPetsColumn('visibility') || ! self::hasPetsColumn('is_public')) {
+                return;
+            }
+
+            if ($pet->isDirty('is_public') && ! $pet->isDirty('visibility')) {
+                $pet->setAttribute('visibility', (bool) $pet->getAttribute('is_public') ? 'public' : 'private');
+            }
+        });
+
         static::creating(function (self $pet): void {
             if (! self::hasPetsColumn('slug')) {
                 return;

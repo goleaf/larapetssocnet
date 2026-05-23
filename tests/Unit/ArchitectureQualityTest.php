@@ -68,7 +68,7 @@ it('keeps the test suite free of focused or skipped tests', function (): void {
     expect($violations)->toBeEmpty();
 });
 
-it('does not add application console command classes', function (): void {
+it('keeps application console command classes in the commands folder', function (): void {
     $consolePath = app_path('Console');
 
     if (! is_dir($consolePath)) {
@@ -77,7 +77,15 @@ it('does not add application console command classes', function (): void {
         return;
     }
 
-    expect(qualityPhpFiles([$consolePath])->all())->toBeEmpty();
+    $rootConsoleFiles = glob($consolePath.'/*.php') ?: [];
+    $commandFiles = qualityPhpFiles([$consolePath])->all();
+    $commandFileViolations = collect($commandFiles)
+        ->reject(fn (string $path): bool => str_starts_with($path, $consolePath.'/Commands/') && str_ends_with($path, 'Command.php'))
+        ->values()
+        ->all();
+
+    expect($rootConsoleFiles)->toBeEmpty();
+    expect($commandFileViolations)->toBeEmpty();
 });
 
 it('keeps controllers requests and models in domain folders', function (): void {

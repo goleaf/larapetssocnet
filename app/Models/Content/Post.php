@@ -894,10 +894,10 @@ class Post extends Model implements HasMedia
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
         $visiblePostIds = self::applyProfileTimelineVisibility(
-            self::query()->select('posts.id'),
+            self::query(),
             $profileOwner,
             $viewer,
-        );
+        )->select('posts.id');
 
         return PostMedia::query()
             ->where('post_media.media_type', 'image')

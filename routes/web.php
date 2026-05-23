@@ -105,13 +105,16 @@ Route::get('/api/username-available', [ProfileController::class, 'usernameAvaila
     ->middleware('throttle:30,1')
     ->name('api.username.available');
 
-Route::prefix('pets')->name('pets.')->group(function (): void {
-    Route::get('/{pet:slug}', [PetController::class, 'show'])
-        ->where('pet', '^(?!create$)[^/]+')
-        ->name('show');
-    Route::get('/{pet:slug}/qr.svg', [PetQrCodeController::class, 'show'])->name('qr.show');
-    Route::get('/{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
-});
+Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])
+    ->prefix('pets')
+    ->name('pets.')
+    ->group(function (): void {
+        Route::get('/{pet:slug}', [PetController::class, 'show'])
+            ->where('pet', '^(?!create$)[^/]+')
+            ->name('show');
+        Route::get('/{pet:slug}/qr.svg', [PetQrCodeController::class, 'show'])->name('qr.show');
+        Route::get('/{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
+    });
 
 Route::middleware(['auth', 'banned', 'active_account', 'verified', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)->name('search.index');

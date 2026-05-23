@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+- Kept pet profile and QR routes inside the authenticated application middleware stack.
+- Synced legacy `is_public` pet writes to the canonical visibility field and fixed SQLite profile photo pagination subqueries to select only post IDs.
+- Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
+
+### Tests
+- Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
+
 ### Changed
 - Updated the authentication user model/factory support for encrypted two-factor fields, pending email changes, account status enums, profile-completeness scores, failed-login counters, and separate social account relationships.
 - Added five accessible, config-backed profile themes stored on `users.profile_theme` and applied as CSS custom property overrides on public or locked profile roots only.

@@ -1,7 +1,11 @@
 <?php
 
-test('example', function () {
-    $response = $this->get('/');
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-    $response->assertStatus(200);
+uses(RefreshDatabase::class);
+
+test('guests are redirected from the pet create wizard page', function (): void {
+    $response = $this->get(route('pets.create'));
+
+    $response->assertRedirect(route('login'));
 });

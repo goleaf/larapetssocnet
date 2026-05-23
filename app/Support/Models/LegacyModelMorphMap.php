@@ -10,6 +10,7 @@ use App\Models\Activities\ContestVote;
 use App\Models\Activities\Event;
 use App\Models\Activities\EventAttendee;
 use App\Models\Analytics\ProfileView;
+use App\Models\Analytics\ProfileWrappedSummary;
 use App\Models\Content\Comment;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Like;
@@ -24,9 +25,12 @@ use App\Models\Gamification\Badge;
 use App\Models\Gamification\UserBadge;
 use App\Models\Groups\Group;
 use App\Models\Groups\GroupBan;
+use App\Models\Groups\GroupInvitation;
 use App\Models\Groups\GroupJoinRequest;
 use App\Models\Groups\GroupMember;
+use App\Models\Identity\ProfilePortfolioPost;
 use App\Models\Identity\ReservedUsername;
+use App\Models\Identity\SocialAccount;
 use App\Models\Identity\User;
 use App\Models\Identity\UsernameChange;
 use App\Models\Identity\UsernameRedirect;
@@ -42,6 +46,8 @@ use App\Models\Pets\Pet;
 use App\Models\Pets\PetCareTip;
 use App\Models\Pets\PetFollow;
 use App\Models\Pets\PetHealthLog;
+use App\Models\Pets\PetMilestone;
+use App\Models\Pets\PetOwner;
 use App\Models\Pets\PetTag;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Pets\Species;
@@ -74,6 +80,7 @@ final class LegacyModelMorphMap
             'App\Models\Follow' => Follow::class,
             'App\Models\Group' => Group::class,
             'App\Models\GroupBan' => GroupBan::class,
+            'App\Models\GroupInvitation' => GroupInvitation::class,
             'App\Models\GroupJoinRequest' => GroupJoinRequest::class,
             'App\Models\GroupMember' => GroupMember::class,
             'App\Models\Hashtag' => Hashtag::class,
@@ -87,18 +94,23 @@ final class LegacyModelMorphMap
             'App\Models\PetCareTip' => PetCareTip::class,
             'App\Models\PetFollow' => PetFollow::class,
             'App\Models\PetHealthLog' => PetHealthLog::class,
+            'App\Models\PetMilestone' => PetMilestone::class,
+            'App\Models\PetOwner' => PetOwner::class,
             'App\Models\PetTag' => PetTag::class,
             'App\Models\PhotoGallery' => PhotoGallery::class,
             'App\Models\Post' => Post::class,
             'App\Models\PostMedia' => PostMedia::class,
             'App\Models\PostReaction' => PostReaction::class,
             'App\Models\PostReport' => PostReport::class,
+            'App\Models\ProfilePortfolioPost' => ProfilePortfolioPost::class,
             'App\Models\ProfileView' => ProfileView::class,
+            'App\Models\ProfileWrappedSummary' => ProfileWrappedSummary::class,
             'App\Models\Reaction' => Reaction::class,
             'App\Models\Report' => Report::class,
             'App\Models\ReservedUsername' => ReservedUsername::class,
             'App\Models\SavedPost' => SavedPost::class,
             'App\Models\Share' => Share::class,
+            'App\Models\SocialAccount' => SocialAccount::class,
             'App\Models\Species' => Species::class,
             'App\Models\User' => User::class,
             'App\Models\UserBadge' => UserBadge::class,
