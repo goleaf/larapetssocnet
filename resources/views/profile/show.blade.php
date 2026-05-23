@@ -40,8 +40,6 @@
  $profileScheduledCount = (int) ($profileTabCounts['scheduled'] ?? $scheduledCount ?? $profileUser->scheduled_posts_count ?? 0);
  $profileFollowersCount = (int) ($profileStats['followers'] ?? $profileUser->followers_count ?? 0);
  $profileFollowingCount = (int) ($profileStats['following'] ?? $profileUser->following_count ?? 0);
- $followersModalPreview = $followersModalPreview ?? collect();
- $followingModalPreview = $followingModalPreview ?? collect();
  $hasProfileStats = ($canViewFollowers ?? false) || ($canViewFollowing ?? false) || ($canViewPets ?? false);
  $hasProfileActions = $isOwner || $canInteract || (! auth()->check() && Route::has('login'));
  $profileUrl = $profileUser->profile_url;
@@ -604,63 +602,23 @@ Only you can see this.
  </div>
  </section>
 
- @if ($canViewFollowers ?? false)
- <x-ui.modal id="profile-followers-modal" name="profile-followers-modal" title="Followers"
- :description="number_format($profileFollowersCount).' '.Str::plural('follower', $profileFollowersCount)"
- size="lg"
- data-ui="profile-followers-modal">
- <div class="max-h-[28rem] overflow-y-auto pr-1" data-ui="profile-followers-modal-list">
- @forelse ($followersModalPreview as $follower)
- <a href="{{ route('profile.show', ['user'=> $follower]) }}"
- data-ui="profile-followers-modal-user"
- class="flex min-h-16 items-center gap-3 rounded-[var(--radius-soft)] px-3 py-2 transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <x-ui.avatar :src="$follower->avatar_url" :name="$follower->name" size="md"/>
- <span class="min-w-0">
- <span class="block truncate text-sm font-semibold text-bark">{{ $follower->name }}</span>
- <span class="block truncate text-xs text-fur">&#64;{{ $follower->username }}</span>
- </span>
- </a>
- @empty
- <x-ui.empty-state icon="" title="No followers yet" description="Followers will appear here." class="py-10"/>
- @endforelse
- </div>
+@if ($canViewFollowers ?? false)
+<livewire:profile.follow-list-modal
+:profile-user-id="$profileUser->getKey()"
+mode="followers"
+:total="$profileFollowersCount"
+wire:key="profile-follow-list-modal-followers-{{ $profileUser->getKey() }}"
+/>
+@endif
 
- <x-slot name="footer">
- <x-ui.button :href="route('profile.followers', ['user'=> $profileUser])" variant="outline" size="sm" class="min-h-11">
- View all followers
- </x-ui.button>
- </x-slot>
- </x-ui.modal>
- @endif
-
- @if ($canViewFollowing ?? false)
- <x-ui.modal id="profile-following-modal" name="profile-following-modal" title="Following"
- :description="number_format($profileFollowingCount).' following'"
- size="lg"
- data-ui="profile-following-modal">
- <div class="max-h-[28rem] overflow-y-auto pr-1" data-ui="profile-following-modal-list">
- @forelse ($followingModalPreview as $followedUser)
- <a href="{{ route('profile.show', ['user'=> $followedUser]) }}"
- data-ui="profile-following-modal-user"
- class="flex min-h-16 items-center gap-3 rounded-[var(--radius-soft)] px-3 py-2 transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
- <x-ui.avatar :src="$followedUser->avatar_url" :name="$followedUser->name" size="md"/>
- <span class="min-w-0">
- <span class="block truncate text-sm font-semibold text-bark">{{ $followedUser->name }}</span>
- <span class="block truncate text-xs text-fur">&#64;{{ $followedUser->username }}</span>
- </span>
- </a>
- @empty
- <x-ui.empty-state icon="" title="Not following anyone yet" description="Profiles followed by this user will appear here." class="py-10"/>
- @endforelse
- </div>
-
- <x-slot name="footer">
- <x-ui.button :href="route('profile.following', ['user'=> $profileUser])" variant="outline" size="sm" class="min-h-11">
- View all following
- </x-ui.button>
- </x-slot>
- </x-ui.modal>
- @endif
+@if ($canViewFollowing ?? false)
+<livewire:profile.follow-list-modal
+:profile-user-id="$profileUser->getKey()"
+mode="following"
+:total="$profileFollowingCount"
+wire:key="profile-follow-list-modal-following-{{ $profileUser->getKey() }}"
+/>
+@endif
 
  @if ($isOwner && ($showEditProfileModal ?? false))
  <livewire:profile.edit-modal

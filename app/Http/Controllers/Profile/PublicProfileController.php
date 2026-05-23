@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class PublicProfileController extends Controller
@@ -232,13 +231,6 @@ class PublicProfileController extends Controller
             'scheduled' => $isOwner ? $scheduledCount : 0,
         ];
 
-        $followersModalPreview = $canViewFollowers
-            ? $this->followersModalPreview($user, $viewer)
-            : collect();
-        $followingModalPreview = $canViewFollowing
-            ? $this->followingModalPreview($user, $viewer)
-            : collect();
-
         return view('profile.show', [
             'profileUser' => $user,
             'tab' => $tab,
@@ -253,8 +245,6 @@ class PublicProfileController extends Controller
             'canMessage' => $canMessage,
             'profileStats' => $profileStats,
             'profileTabCounts' => $profileTabCounts,
-            'followersModalPreview' => $followersModalPreview,
-            'followingModalPreview' => $followingModalPreview,
             'profileVisibility' => $profileVisibility->value,
             'profileVisibilityLabel' => $profileVisibility->label(),
             'profileVisibilityIcon' => $profileVisibility->icon(),
@@ -390,42 +380,6 @@ class PublicProfileController extends Controller
     {
         return $viewer instanceof User
             && ($viewer->is($profileOwner) || $viewer->hasAnyRole(['admin', 'moderator']));
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function followersModalPreview(User $user, ?User $viewer): Collection
-    {
-        $query = User::query()
-            ->whereIn('users.id', $user->acceptedFollowers()->select('users.id'));
-
-        User::applyAvailableForProfiles($query);
-        $this->applyNotBlockedForUserQuery($query, $viewer);
-
-        return $query
-            ->with('media')
-            ->orderBy('users.name')
-            ->limit(12)
-            ->get();
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function followingModalPreview(User $user, ?User $viewer): Collection
-    {
-        $query = User::query()
-            ->whereIn('users.id', $user->acceptedFollowing()->select('users.id'));
-
-        User::applyAvailableForProfiles($query);
-        $this->applyNotBlockedForUserQuery($query, $viewer);
-
-        return $query
-            ->with('media')
-            ->orderBy('users.name')
-            ->limit(12)
-            ->get();
     }
 
     /**
