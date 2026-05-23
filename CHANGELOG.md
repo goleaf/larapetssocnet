@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated profile view recording to dispatch a queued recorder for authenticated non-owner profile loads and insert-or-ignore daily owner/viewer rows without touching existing records.
 - Updated owner-only profile view analytics to display unique signed-in profile viewers from the last 30 days, using the profile owner's local date window and keeping the count hidden from visitors.
 - Updated the profile edit save flow to validate through a modal-specific Form Request, dispatch success toast and browser URL replacement events after username changes, and queue profile media conversions for uploaded avatar and cover images.
 - Updated the profile edit Privacy section to show only Account Visibility, Show age, and email-discovery toggles, each saved immediately through its own authorized Livewire action without submitting the full profile form.
@@ -109,7 +110,7 @@
 - Updated profile Livewire mounting to resolve active usernames before block/private/header queries, return 404 for old or unavailable profile usernames without consulting redirect history, and load header data only for visible profiles.
 - Updated profile empty, guest, high-volume, followers-only, and blocked states so each renders intentional copy, actions, counters, or access denial instead of falling through to generic profile surfaces.
 - Updated the public profile hero with a privacy-aware identity panel that surfaces profile headline, pronouns, pet count, and post count in the Warm Editorial visual system.
-- Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, use profile-view upserts against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
+- Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, record profile views with insert-or-ignore writes against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.
 - Updated all project-installed Laravel Superpowers skills with the Laravel 13.9 / PHP 8.4 baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.

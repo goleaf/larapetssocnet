@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Profile\PublicProfileController;
+use App\Jobs\RecordProfileView;
 use App\Models\Analytics\ProfileView;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
@@ -8,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\View\View;
 
 uses(RefreshDatabase::class);
@@ -35,6 +37,101 @@ it('records one authenticated profile view per viewer per day', function (): voi
             'profile_user_id' => $owner->id,
             'viewer_user_id' => $viewer->id,
             'viewed_on' => '2026-05-17',
+        ]);
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('dispatches a queued profile view recorder for authenticated visitors only', function (): void {
+    Queue::fake();
+
+    $owner = User::factory()->create([
+        'username' => 'queued_view_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $viewer = User::factory()->create();
+
+    $this->get(route('profile.show', ['user' => $owner]))
+        ->assertOk();
+
+    Queue::assertNotPushed(RecordProfileView::class);
+
+    Queue::fake();
+
+    $this->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $owner]))
+        ->assertOk();
+
+    Queue::assertPushed(RecordProfileView::class, fn (RecordProfileView $job): bool => $job->profileUserId === $owner->id
+        && $job->viewerUserId === $viewer->id);
+
+    Queue::fake();
+
+    $this->actingAs($owner)
+        ->get(route('profile.show', ['user' => $owner]))
+        ->assertOk();
+
+    Queue::assertNotPushed(RecordProfileView::class);
+});
+
+it('does not touch an existing daily profile view when the same viewer returns', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'same_day_view_owner',
+        'timezone' => 'Europe/Vilnius',
+    ]);
+    $viewer = User::factory()->create();
+
+    Carbon::setTestNow(Carbon::parse('2026-05-17 09:00:00'));
+
+    try {
+        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+
+        /** @var ProfileView $firstView */
+        $firstView = ProfileView::query()->firstOrFail();
+        $originalUpdatedAt = $firstView->updated_at?->toDateTimeString();
+
+        Carbon::setTestNow(Carbon::parse('2026-05-17 18:00:00'));
+
+        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+
+        $this->assertDatabaseCount('profile_views', 1);
+
+        /** @var ProfileView $sameView */
+        $sameView = ProfileView::query()->firstOrFail();
+
+        expect($sameView->updated_at?->toDateTimeString())->toBe($originalUpdatedAt)
+            ->and($sameView->viewed_on?->toDateString())->toBe('2026-05-17');
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('uses the profile owner timezone to determine the daily view boundary', function (): void {
+    $owner = User::factory()->create([
+        'username' => 'timezone_view_owner',
+        'timezone' => 'America/Los_Angeles',
+    ]);
+    $viewer = User::factory()->create();
+
+    try {
+        Carbon::setTestNow(Carbon::parse('2026-05-18 06:30:00', 'UTC'));
+        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+
+        Carbon::setTestNow(Carbon::parse('2026-05-18 08:30:00', 'UTC'));
+        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+
+        $this->assertDatabaseCount('profile_views', 2);
+        $this->assertDatabaseHas('profile_views', [
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $viewer->id,
+            'viewed_on' => '2026-05-17',
+        ]);
+        $this->assertDatabaseHas('profile_views', [
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $viewer->id,
+            'viewed_on' => '2026-05-18',
         ]);
     } finally {
         Carbon::setTestNow();
