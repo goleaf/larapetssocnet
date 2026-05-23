@@ -10,6 +10,7 @@ use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\UpdatePasswordSettingsRequest;
 use App\Http\Requests\Settings\UpdatePrivacySettingsRequest;
 use App\Http\Requests\Settings\UpdateSettingsProfileRequest;
 use App\Http\Requests\Social\BlockUserByUsernameRequest;
@@ -20,7 +21,6 @@ use App\Services\BlockService;
 use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -66,12 +66,9 @@ class SettingsController extends Controller
         return view('settings.password');
     }
 
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(UpdatePasswordSettingsRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
+        $validated = $request->validated();
 
         $this->settingsService->changePassword(
             $request->user(),

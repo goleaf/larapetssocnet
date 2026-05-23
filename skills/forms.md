@@ -3,6 +3,7 @@
 - Use dedicated Form Request per action.
 - Normalize values in `prepareForValidation()`.
 - Return user-friendly validation messages.
+- New password fields should use `x-ui.input` with `autocomplete="new-password"` so the shared `PasswordPolicy` and Laravel-generated `passwordrules` attribute stay aligned with server validation.
 - Long Livewire modal forms should dispatch or otherwise expose the first invalid field target so Alpine can scroll and focus it after validation.
 - Profile edit Basic Information keeps identity changes in the nested Livewire modal: display name is capped at 50 characters, bio at 160 characters, username availability is checked debounced with cooldown messaging, and DOB uses the same day/month/year select pattern as registration.
 - Profile edit modal saves must validate through `UpdateProfileModalRequest` before calling `UpdateProfileAction`; keep blur-only Livewire validation proxied to the same request rules where possible.

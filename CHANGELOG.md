@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- Updated profile Report actions to open a Livewire profile-report modal with profile-specific reasons, optional 500-character context, moderation-team notifications, and no change to profile visibility after reporting.
+- Centralized registration, reset-password, profile password, and settings password validation through the shared Laravel password policy.
 - Updated non-owner profile Block actions to submit through the server-side block transaction, redirect to the feed immediately, and flash "You have blocked this user." after follow cleanup and blocked-content enforcement.
 - Updated the profile pinned-post highlight to use an edge-to-edge "Pinned post" banner with a secondary-color pin icon while leaving the post card content, reactions, comments, and media layout unchanged.
 - Updated profile post cards to expose owner-only "Pin to profile" and "Unpin from profile" actions in the three-dot menu, backed by a serialized pin transaction that keeps one pinned post per owner.
@@ -26,6 +28,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added Laravel 13.9 HTML `passwordrules` attributes to new-password inputs so browsers and password managers can generate passwords that match the app policy.
 - Added a configurable server-side geocoding service for profile location suggestions.
 - Added a nested Livewire edit profile modal that mounts from the owner profile page, saves profile fields in place, and renders as a centered desktop overlay or full-screen mobile sheet without navigating away.
 - Added an authenticated non-follower "Also followed by" recommendation section to the profile About tab, using the mutual connection SQL intersection capped to five people for social proof.

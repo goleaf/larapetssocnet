@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\Identity\User;
-use App\Rules\PasswordStrength;
+use App\Support\Auth\PasswordPolicy;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Carbon\CarbonImmutable;
@@ -11,7 +11,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 
@@ -58,7 +57,7 @@ class StoreRegisteredUserRequest extends FormRequest
             'name' => ['required', 'string', 'min:2', 'max:120', 'regex:/^[\pL\pM\pN\s\'.-]+$/u'],
             'username' => UsernameRules::requiredRules(),
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'string', 'max:128', 'not_regex:/^\s+$/', 'confirmed', Password::defaults(), new PasswordStrength],
+            'password' => PasswordPolicy::validationRules(),
             'birth_day' => ['required', 'integer', 'between:1,31'],
             'birth_month' => ['required', 'integer', 'between:1,12'],
             'birth_year' => ['required', 'integer', 'between:'.($currentYear - 100).','.$currentYear],
@@ -78,7 +77,7 @@ class StoreRegisteredUserRequest extends FormRequest
             'birth_date.before_or_equal' => 'You must be at least 13 years old to create an account.',
             'terms.accepted' => 'You must accept the terms and privacy policy to create an account.',
             'name.regex' => 'Use only letters, numbers, spaces, apostrophes, periods, and hyphens for your display name.',
-            'password.not_regex' => 'Password cannot be only spaces.',
+            ...PasswordPolicy::validationMessages(),
         ];
     }
 

@@ -29,6 +29,7 @@ use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\UserPolicy;
 use App\Services\UsernameRedirectResolver;
+use App\Support\Auth\PasswordPolicy;
 use App\Support\Models\LegacyModelMorphMap;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -43,6 +44,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
@@ -60,6 +62,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Password::defaults(fn (): Password => PasswordPolicy::rule());
+
         LegacyModelMorphMap::register();
 
         if ($this->app->environment('local')) {

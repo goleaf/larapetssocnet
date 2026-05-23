@@ -53,6 +53,16 @@
  ]);
 
  $controlAttributes = $attributes->except(['class','name','id','value']);
+
+ if (
+ strtolower((string) $type) === 'password'
+ && strtolower((string) $attributes->get('autocomplete')) === 'new-password'
+ && ! array_key_exists('passwordrules', $controlAttributes->all())
+ ) {
+ $controlAttributes = $controlAttributes->merge([
+ 'passwordrules' => \App\Support\Auth\PasswordPolicy::htmlRules(),
+ ]);
+ }
 @endphp
 
 <div {{ $attributes->only('class')->merge(['class'=>'flex flex-col gap-1']) }}>

@@ -115,6 +115,29 @@ class SettingsTest extends TestCase
         $this->assertNotNull($user->password_changed_at);
     }
 
+    public function test_rejects_weak_settings_password_changes(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('password123'),
+            'password_changed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->from('/settings/password')
+            ->put('/settings/password', [
+                'current_password' => 'password123',
+                'password' => 'password',
+                'password_confirmation' => 'password',
+            ])
+            ->assertRedirect('/settings/password')
+            ->assertSessionHasErrors(['password']);
+
+        $user->refresh();
+
+        $this->assertTrue(Hash::check('password123', $user->password));
+        $this->assertNull($user->password_changed_at);
+    }
+
     public function test_updates_privacy_settings(): void
     {
         $user = User::factory()->create();
