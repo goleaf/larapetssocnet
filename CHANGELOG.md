@@ -4,7 +4,7 @@
 
 ### Changed
 - Updated profile view recording to dispatch a queued recorder for authenticated non-owner profile loads and insert-or-ignore daily owner/viewer rows without touching existing records.
-- Updated owner-only profile view analytics to display as a quiet profile visits note below the stats bar with an "Only you can see this" hover/tap tooltip, while visitor profile renders skip the analytics aggregate entirely.
+- Updated owner-only profile view analytics to display as a quiet profile visits note below the stats bar with an "Only you can see this" hover/tap tooltip and a green/amber current-vs-previous 30-day trend, while visitor profile renders skip the analytics aggregate entirely.
 - Updated the profile edit save flow to validate through a modal-specific Form Request, dispatch success toast and browser URL replacement events after username changes, and queue profile media conversions for uploaded avatar and cover images.
 - Updated the profile edit Privacy section to show only Account Visibility, Show age, and email-discovery toggles, each saved immediately through its own authorized Livewire action without submitting the full profile form.
 - Updated the profile edit Social Links section with icon-prefixed fields for website, Twitter/X, Instagram, Facebook, and YouTube, including blur validation and automatic `@username` normalization for handle-based platforms.

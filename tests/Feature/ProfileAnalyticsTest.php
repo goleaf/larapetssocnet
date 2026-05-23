@@ -141,11 +141,17 @@ it('uses the profile owner timezone to determine the daily view boundary', funct
 it('shows profile view analytics only to the profile owner', function (): void {
     $owner = User::factory()->create(['username' => 'analytics_owner']);
     $viewer = User::factory()->create();
+    $previousViewer = User::factory()->create();
 
     ProfileView::query()->create([
         'profile_user_id' => $owner->id,
         'viewer_user_id' => $viewer->id,
         'viewed_on' => now()->toDateString(),
+    ]);
+    ProfileView::query()->create([
+        'profile_user_id' => $owner->id,
+        'viewer_user_id' => $previousViewer->id,
+        'viewed_on' => now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS)->toDateString(),
     ]);
 
     expect(ProfileView::uniqueViewerCountForProfile(
@@ -160,12 +166,16 @@ it('shows profile view analytics only to the profile owner', function (): void {
         ->assertSee('data-ui="profile-view-analytics"', false)
         ->assertSee('data-ui="profile-view-analytics-note"', false)
         ->assertSeeText('1 profile visit in the last 30 days')
+        ->assertSee('data-ui="profile-view-analytics-trend"', false)
+        ->assertSeeText('↑ 0% from last month')
+        ->assertSee('text-emerald-700', false)
         ->assertSeeText('Only you can see this.');
 
     $this->actingAs($viewer)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk()
         ->assertDontSee('profile visit in the last 30 days')
+        ->assertDontSee('from last month')
         ->assertDontSee('Only you can see this.')
         ->assertDontSee('data-ui="profile-view-analytics"', false);
 });
@@ -197,6 +207,7 @@ it('does not fetch owner profile view analytics for visitor renders', function (
     $response
         ->assertOk()
         ->assertDontSee('profile visit in the last 30 days')
+        ->assertDontSee('from last month')
         ->assertDontSee('data-ui="profile-view-analytics"', false);
 
     $profileViewAggregateQueries = collect($queries)
@@ -270,7 +281,8 @@ it('counts unique profile viewers across the owner local last 30 days', function
         $response
             ->assertOk()
             ->assertSee('2 profile visits in the last 30 days')
-            ->assertDontSee('3 profile visits in the last 30 days');
+            ->assertDontSee('3 profile visits in the last 30 days')
+            ->assertSeeText('↑ 100% from last month');
 
         $profileViewAggregateQueries = collect($queries)
             ->pluck('query')
@@ -278,7 +290,44 @@ it('counts unique profile viewers across the owner local last 30 days', function
             ->filter(fn (string $query): bool => str_contains($query, 'from "profile_views"') && str_contains($query, 'count('))
             ->values();
 
-        expect($profileViewAggregateQueries)->toHaveCount(1);
+        expect($profileViewAggregateQueries)->toHaveCount(2);
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('shows a down profile view trend in amber without using red', function (): void {
+    Carbon::setTestNow(Carbon::parse('2026-05-23 12:00:00'));
+
+    try {
+        $owner = User::factory()->create([
+            'username' => 'down_trend_owner',
+            'timezone' => 'Europe/Vilnius',
+        ]);
+        $currentViewer = User::factory()->create();
+        $previousViewers = User::factory()->count(5)->create();
+
+        ProfileView::query()->create([
+            'profile_user_id' => $owner->id,
+            'viewer_user_id' => $currentViewer->id,
+            'viewed_on' => now()->toDateString(),
+        ]);
+
+        $previousViewers->each(function (User $viewer, int $index) use ($owner): void {
+            ProfileView::query()->create([
+                'profile_user_id' => $owner->id,
+                'viewer_user_id' => $viewer->id,
+                'viewed_on' => now()->subDays(ProfileView::RECENT_UNIQUE_VIEWER_DAYS + $index)->toDateString(),
+            ]);
+        });
+
+        $this->actingAs($owner)
+            ->get(route('profile.show', ['user' => $owner]))
+            ->assertOk()
+            ->assertSeeText('1 profile visit in the last 30 days')
+            ->assertSeeText('↓ 80% from last month')
+            ->assertSee('text-amber-700', false)
+            ->assertDontSee('text-red', false);
     } finally {
         Carbon::setTestNow();
     }

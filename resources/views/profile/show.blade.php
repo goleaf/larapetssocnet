@@ -523,6 +523,19 @@ data-ui="profile-view-analytics-note"
 >
 <span aria-hidden="true">👁</span>
 <span>{{ number_format((int) $profileViewStats['current']) }} profile {{ Str::plural('visit', (int) $profileViewStats['current']) }} in the last 30 days</span>
+@if (($profileViewStats['trend_percent'] ?? null) !== null)
+<span
+@class([
+'inline-flex items-center gap-1 font-semibold',
+'text-emerald-700'=> ($profileViewStats['trend_direction'] ?? 'up') === 'up',
+'text-amber-700'=> ($profileViewStats['trend_direction'] ?? 'up') === 'down',
+])
+data-ui="profile-view-analytics-trend"
+>
+{{ ($profileViewStats['trend_direction'] ?? 'up') === 'up' ? '↑' : '↓' }}
+{{ abs((int) $profileViewStats['trend_percent']) }}% from last month
+</span>
+@endif
 <span
 id="profile-view-analytics-tooltip"
 role="tooltip"
