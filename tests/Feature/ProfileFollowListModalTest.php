@@ -80,6 +80,59 @@ it('enforces profile following visibility inside the reusable modal component', 
         ->assertForbidden();
 });
 
+it('renders detailed follower rows with mutual counts and toggles follows through livewire', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'detailed_modal_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $listedUser = User::factory()->create([
+        'name' => 'Legal Profile Name',
+        'display_name' => 'Verified Display Pup',
+        'username' => 'verified_display_pup',
+        'bio' => 'A thoughtful pet community bio that should fit on one row.',
+        'is_verified' => true,
+    ]);
+    $mutualFollower = User::factory()->create([
+        'name' => 'Mutual Friend',
+        'username' => 'mutual_friend',
+    ]);
+    $viewer = User::factory()->create();
+
+    $listedUser->follow($profileOwner);
+    $mutualFollower->follow($listedUser);
+    $viewer->follow($mutualFollower);
+
+    $component = Livewire::actingAs($viewer)
+        ->test('profile.follow-list-modal', [
+            'profileUserId' => $profileOwner->getKey(),
+            'mode' => 'followers',
+        ])
+        ->assertSee('Verified Display Pup')
+        ->assertSee('data-ui="profile-verified-badge"', false)
+        ->assertSee('@verified_display_pup')
+        ->assertSee('A thoughtful pet community bio that should fit on one row.')
+        ->assertSee('1 mutual')
+        ->assertSee('h-12 w-12', false)
+        ->assertSee('data-ui="profile-followers-modal-follow-toggle"', false)
+        ->assertSee('Follow');
+
+    $component->call('toggleFollow', $listedUser->getKey());
+
+    $this->assertDatabaseHas('follows', [
+        'follower_id' => $viewer->getKey(),
+        'following_id' => $listedUser->getKey(),
+        'status' => 'accepted',
+    ]);
+
+    $component->call('toggleFollow', $listedUser->getKey());
+
+    $this->assertDatabaseMissing('follows', [
+        'follower_id' => $viewer->getKey(),
+        'following_id' => $listedUser->getKey(),
+    ]);
+});
+
 it('filters followers by name or username without searching outside the profile follower list', function (): void {
     $profileOwner = User::factory()->create([
         'username' => 'searchable_followers_owner',
