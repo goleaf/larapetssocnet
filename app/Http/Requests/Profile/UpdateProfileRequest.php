@@ -53,7 +53,7 @@ class UpdateProfileRequest extends FormRequest
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
             'is_private' => ['nullable', 'boolean'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120', 'dimensions:min_width=1200,min_height=400'],
             'remove_avatar' => ['nullable', 'boolean'],
             'remove_cover' => ['nullable', 'boolean'],
             'bio_html' => ['prohibited'],
@@ -77,6 +77,9 @@ class UpdateProfileRequest extends FormRequest
             'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
             'avatar.max' => 'Avatar must be smaller than 3MB.',
             'cover.image' => 'Cover must be an image file.',
+            'cover.mimes' => 'Cover must be a JPG, PNG, WEBP, or GIF image.',
+            'cover.max' => 'Cover must be smaller than 5MB.',
+            'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
         ];
     }
 

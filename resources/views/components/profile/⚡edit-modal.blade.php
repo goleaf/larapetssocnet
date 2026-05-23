@@ -92,6 +92,8 @@ new class extends Component
 
     public mixed $cover = null;
 
+    public float $cover_photo_position = User::DEFAULT_COVER_PHOTO_POSITION;
+
     public bool $remove_avatar = false;
 
     public bool $remove_cover = false;
@@ -114,6 +116,7 @@ new class extends Component
         'gender' => 'profile_modal_gender',
         'avatar' => 'profile_modal_avatar_field',
         'cover' => 'profile_modal_cover_field',
+        'cover_photo_position' => 'profile_modal_cover_field',
         'social_links' => 'profile_modal_social_x',
         'social_links.x' => 'profile_modal_social_x',
         'social_links.instagram' => 'profile_modal_social_instagram',
@@ -163,6 +166,7 @@ new class extends Component
         $this->privacy_display_birthdate = (bool) $user->privacy_display_birthdate;
         $this->show_in_explore = (bool) $user->show_in_explore;
         $this->open_following = (bool) $user->open_following;
+        $this->cover_photo_position = $user->coverPhotoPositionPercentage();
     }
 
     public function save(UpdateProfileAction $updateProfile, SettingsService $settingsService, AuthAuditLogger $auditLogger): void
@@ -204,6 +208,7 @@ new class extends Component
                 'privacy_display_birthdate' => (bool) ($validated['privacy_display_birthdate'] ?? false),
                 'avatar' => $this->avatar instanceof UploadedFile ? $this->avatar : null,
                 'cover' => $this->cover instanceof UploadedFile ? $this->cover : null,
+                'cover_photo_position' => (float) ($validated['cover_photo_position'] ?? User::DEFAULT_COVER_PHOTO_POSITION),
                 'remove_avatar' => (bool) ($validated['remove_avatar'] ?? false),
                 'remove_cover' => (bool) ($validated['remove_cover'] ?? false),
             ]);
@@ -310,7 +315,8 @@ new class extends Component
             'show_in_explore' => ['boolean'],
             'open_following' => ['boolean'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120', 'dimensions:min_width=1200,min_height=400'],
+            'cover_photo_position' => ['nullable', 'numeric', 'between:0,100'],
             'remove_avatar' => ['boolean'],
             'remove_cover' => ['boolean'],
         ];
@@ -338,6 +344,8 @@ new class extends Component
             'cover.image' => 'Cover must be an image file.',
             'cover.mimes' => 'Cover must be a JPG, PNG, WEBP, or GIF image.',
             'cover.max' => 'Cover must be smaller than 5MB.',
+            'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
+            'cover_photo_position.between' => 'Choose a valid cover crop position.',
             'social_links.*.url' => 'Enter a full social profile URL.',
             'profile_visibility.in' => 'Select a valid profile visibility setting.',
         ];
@@ -575,6 +583,7 @@ new class extends Component
 
         if (($validated['cover'] ?? null) instanceof UploadedFile) {
             $fields[] = 'cover';
+            $fields[] = 'cover_photo_position';
         }
 
         if ((bool) ($validated['remove_avatar'] ?? false)) {
@@ -1082,7 +1091,163 @@ new class extends Component
  @endif
  </div>
 
- <div id="profile_modal_cover_field" class="flex min-w-0 flex-col gap-4 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4" data-ui="profile-cover-upload-panel">
+ <div
+ id="profile_modal_cover_field"
+ class="flex min-w-0 flex-col gap-4 rounded-[var(--radius-card)] border border-whisker/40 bg-warm-white p-4"
+ data-ui="profile-cover-upload-panel"
+ x-data="{
+ previewUrl: @js($coverPreviewUrl),
+ currentPreviewUrl: @js($coverPreviewUrl),
+ errorMessage: @js((string) $errors->first('cover')),
+ uploading: false,
+ progress: 0,
+ dragOver: false,
+ selected: @js($coverTemporaryUrl !== null),
+ repositioning: @js($coverTemporaryUrl !== null),
+ draggingCrop: false,
+ position: @js((float) $cover_photo_position),
+ currentPosition: @js((float) $cover_photo_position),
+ dragStartY: 0,
+ dragStartPosition: @js((float) $cover_photo_position),
+ allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+ maxBytes: 5242880,
+ minWidth: 1200,
+ minHeight: 400,
+ openPicker() {
+ if (this.uploading) {
+ return;
+ }
+
+ this.$refs.coverInput.click();
+ },
+ handleInput(event) {
+ const file = event.target.files?.[0];
+
+ if (file) {
+ this.handleFile(file);
+ }
+ },
+ handleDrop(event) {
+ this.dragOver = false;
+ const file = event.dataTransfer?.files?.[0];
+
+ if (file) {
+ this.handleFile(file);
+ }
+ },
+ handleFile(file) {
+ this.errorMessage = '';
+
+ if (! this.allowedTypes.includes(file.type)) {
+ this.clearSelection('Cover must be a JPG, PNG, WEBP, or GIF image.');
+ return;
+ }
+
+ if (file.size > this.maxBytes) {
+ this.clearSelection('Cover must be smaller than 5MB.');
+ return;
+ }
+
+ const dimensionsUrl = URL.createObjectURL(file);
+ const image = new Image();
+
+ image.onload = () => {
+ URL.revokeObjectURL(dimensionsUrl);
+
+ if (image.naturalWidth < this.minWidth || image.naturalHeight < this.minHeight) {
+ this.clearSelection('Cover photo must be at least 1200 by 400 pixels.');
+ return;
+ }
+
+ this.previewFile(file);
+ };
+
+ image.onerror = () => {
+ URL.revokeObjectURL(dimensionsUrl);
+ this.clearSelection('We could not read this cover image. Try another file.');
+ };
+
+ image.src = dimensionsUrl;
+ },
+ previewFile(file) {
+ const reader = new FileReader();
+
+ reader.onload = () => {
+ this.previewUrl = reader.result;
+ this.selected = true;
+ this.repositioning = false;
+ this.position = 50;
+ this.updateCoverPosition(50);
+ this.progress = 0;
+ this.$nextTick(() => this.startUpload(file));
+ };
+
+ reader.onerror = () => {
+ this.clearSelection('We could not preview this cover image. Try another file.');
+ };
+
+ reader.readAsDataURL(file);
+ },
+ startUpload(file) {
+ this.uploading = true;
+ this.progress = 1;
+
+ $wire.upload('cover', file, () => {
+ this.progress = 100;
+ this.uploading = false;
+ this.repositioning = true;
+ this.errorMessage = '';
+ }, () => {
+ this.clearSelection('Cover upload failed. Try another image.');
+ }, (event) => {
+ this.progress = event.detail.progress;
+ }, () => {
+ this.clearSelection('Cover upload was cancelled.');
+ });
+ },
+ startCropDrag(event) {
+ if (! this.repositioning || ! this.previewUrl) {
+ return;
+ }
+
+ this.draggingCrop = true;
+ this.dragStartY = this.pointerY(event);
+ this.dragStartPosition = this.position;
+ },
+ dragCrop(event) {
+ if (! this.draggingCrop) {
+ return;
+ }
+
+ event.preventDefault();
+ const height = Math.max(this.$refs.coverDropZone.getBoundingClientRect().height, 1);
+ const delta = ((this.pointerY(event) - this.dragStartY) / height) * 100;
+ this.updateCoverPosition(this.dragStartPosition - delta);
+ },
+ stopCropDrag() {
+ this.draggingCrop = false;
+ },
+ pointerY(event) {
+ return event.touches?.[0]?.clientY ?? event.changedTouches?.[0]?.clientY ?? event.clientY;
+ },
+ updateCoverPosition(value) {
+ this.position = Math.round(Math.min(100, Math.max(0, value)) * 100) / 100;
+ $wire.$set('cover_photo_position', this.position, false);
+ },
+ clearSelection(message) {
+ this.uploading = false;
+ this.progress = 0;
+ this.selected = false;
+ this.repositioning = false;
+ this.draggingCrop = false;
+ this.errorMessage = message;
+ this.previewUrl = this.currentPreviewUrl;
+ this.updateCoverPosition(this.currentPosition);
+ this.$refs.coverInput.value = '';
+ $wire.$set('cover', null, false);
+ },
+ }"
+ >
  <div class="flex items-start justify-between gap-3">
  <div class="min-w-0">
  <h4 class="text-sm font-bold text-bark">Cover Photo</h4>
@@ -1091,31 +1256,79 @@ new class extends Component
  <span class="ui-token shrink-0">Wide</span>
  </div>
 
- <div class="relative aspect-[16/7] w-full overflow-hidden rounded-[var(--radius-soft)] border border-whisker/50 bg-cream" data-ui="profile-cover-preview">
- @if ($coverPreviewUrl)
- <img src="{{ $coverPreviewUrl }}" alt="{{ $user->name }} cover photo preview" class="h-full w-full object-cover">
- @else
- <div class="{{ $user->profile_default_gradient }} h-full w-full"></div>
- @endif
- <div class="absolute inset-x-0 bottom-0 bg-bark/45 px-3 py-2 text-xs font-semibold text-warm-white">
- {{ $coverTemporaryUrl ? 'New cover selected' : 'Current cover preview' }}
- </div>
- <div wire:loading.flex wire:target="cover" class="absolute inset-0 items-center justify-center bg-warm-white/75 text-xs font-semibold text-bark">
- Previewing
- </div>
- </div>
-
- <x-ui.file-upload
+ <div class="space-y-3">
+ <input
+ x-ref="coverInput"
  id="profile_modal_cover"
  name="cover"
- label="Upload cover photo"
+ type="file"
  accept="image/jpeg,image/png,image/webp,image/gif"
- maxSize="5MB"
- preview
- help="JPG, PNG, WEBP, or GIF. Recommended 1600x480."
- :error="$errors->first('cover')"
- wire:model="cover"
- />
+ class="sr-only"
+ x-on:change="handleInput($event)"
+ aria-describedby="profile_modal_cover_help profile_modal_cover_error"
+ >
+ <input id="profile_modal_cover_position" type="hidden" name="cover_photo_position" :value="position" wire:model="cover_photo_position">
+ <div
+ x-ref="coverDropZone"
+ role="button"
+ tabindex="0"
+ class="group relative aspect-3/1 w-full cursor-pointer overflow-hidden rounded-[var(--radius-soft)] border border-whisker/50 bg-cream shadow-sm ring-1 ring-transparent transition-all duration-150 hover:ring-2 hover:ring-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ data-ui="profile-cover-drop-zone"
+ :class="{ 'ring-2 ring-paw bg-paw-light/50': dragOver, 'cursor-grab': repositioning && ! draggingCrop, 'cursor-grabbing': draggingCrop, 'cursor-wait opacity-90': uploading }"
+ x-on:click="if (! repositioning) openPicker()"
+ x-on:keydown.enter.prevent="if (! repositioning) openPicker()"
+ x-on:keydown.space.prevent="if (! repositioning) openPicker()"
+ x-on:dragover.prevent="if (! uploading) dragOver = true"
+ x-on:dragleave.prevent="dragOver = false"
+ x-on:drop.prevent="handleDrop($event)"
+ x-on:mousedown.prevent="startCropDrag($event)"
+ x-on:mousemove.window="dragCrop($event)"
+ x-on:mouseup.window="stopCropDrag()"
+ x-on:touchstart.passive="startCropDrag($event)"
+ x-on:touchmove.window="dragCrop($event)"
+ x-on:touchend.window="stopCropDrag()"
+ :aria-busy="uploading.toString()"
+ aria-label="Change cover photo"
+ >
+ <img x-show="previewUrl" x-cloak :src="previewUrl || ''" alt="{{ $user->name }} cover photo preview" class="h-full w-full select-none object-cover" data-ui="profile-cover-file-reader-preview" :style="`object-position: center ${position}%`" draggable="false">
+ <div x-show="! previewUrl" class="{{ $user->profile_default_gradient }} h-full w-full" data-ui="profile-cover-gradient-preview"></div>
+ <div
+ x-show="! repositioning"
+ class="absolute inset-x-0 bottom-0 bg-bark/55 px-3 py-2 text-xs font-semibold text-warm-white opacity-100 transition-opacity duration-150 group-hover:opacity-100"
+ :class="{ 'opacity-100': dragOver }"
+ data-ui="profile-cover-change-photo-label"
+ >
+ Click or drop cover photo
+ </div>
+ <div x-show="uploading" x-cloak class="absolute inset-0 flex items-center justify-center bg-bark/45" data-ui="profile-cover-upload-progress">
+ <div class="rounded-[var(--radius-control)] bg-bark/70 px-3 py-2 text-xs font-bold text-warm-white">
+ Uploading <span x-text="`${progress}%`"></span>
+ </div>
+ </div>
+ </div>
+ <div x-show="repositioning" x-cloak class="rounded-[var(--radius-soft)] border border-paw/25 bg-paw-light/35 p-3" data-ui="profile-cover-reposition-inline">
+ <p class="text-xs font-semibold text-bark">Drag the image up or down to choose the best crop.</p>
+ <div class="mt-2 flex items-center gap-3">
+ <span class="text-xs text-fur">Top</span>
+ <input
+ type="range"
+ min="0"
+ max="100"
+ step="0.01"
+ x-model.number="position"
+ x-on:input="updateCoverPosition(position)"
+ class="h-2 w-full accent-paw"
+ aria-label="Cover vertical focal point"
+ >
+ <span class="text-xs text-fur">Bottom</span>
+ </div>
+ </div>
+ <p id="profile_modal_cover_help" class="text-xs leading-5 text-fur">
+ JPG, PNG, WEBP, or GIF. Minimum 1200x400. Max 5MB.
+ </p>
+ <p id="profile_modal_cover_error" x-show="errorMessage" x-cloak class="text-xs font-semibold leading-5 text-danger" role="alert" x-text="errorMessage"></p>
+ <p x-show="selected && ! errorMessage && ! uploading" x-cloak class="text-xs font-semibold text-success" role="status">New cover selected.</p>
+ </div>
  @if ($coverUrl)
  <div class="rounded-[var(--radius-soft)] border border-whisker/40 bg-cream/35 p-3">
  <x-ui.checkbox id="profile_modal_remove_cover" name="remove_cover" label="Remove current cover photo" wire:model="remove_cover"/>

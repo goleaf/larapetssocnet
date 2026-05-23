@@ -46,7 +46,7 @@ class UpdateSettingsProfileRequest extends FormRequest
             'timezone' => ['nullable', 'timezone'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'remove_avatar' => ['nullable', 'boolean'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120', 'dimensions:min_width=1200,min_height=400'],
             'remove_cover' => ['nullable', 'boolean'],
             'bio_html' => ['prohibited'],
             'username_confirm' => [
@@ -72,6 +72,7 @@ class UpdateSettingsProfileRequest extends FormRequest
             'cover.image' => 'Cover must be an image file.',
             'cover.mimes' => 'Cover must be a JPG, PNG, WEBP, or GIF image.',
             'cover.max' => 'Cover must be smaller than 5MB.',
+            'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
             'bio_html.prohibited' => 'Bio HTML is generated automatically and cannot be submitted directly.',
         ];
     }

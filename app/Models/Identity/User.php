@@ -1420,13 +1420,15 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         ])->saveQuietly();
     }
 
-    public function updateCover(UploadedFile $file): void
+    public function updateCover(UploadedFile $file, mixed $position = null): void
     {
         $this->storeProfileMedia($file, self::MEDIA_COLLECTION_COVER);
 
         $this->forceFill([
             'cover_photo_path' => null,
-            'cover_photo_position' => self::DEFAULT_COVER_PHOTO_POSITION,
+            'cover_photo_position' => $position === null
+                ? self::DEFAULT_COVER_PHOTO_POSITION
+                : self::normalizeCoverPhotoPosition($position),
         ])->saveQuietly();
     }
 

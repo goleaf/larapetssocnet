@@ -175,6 +175,22 @@ test('avatar uploads over three megabytes are rejected', function (): void {
     expect($user->refresh()->getFirstMedia(User::MEDIA_COLLECTION_AVATAR))->toBeNull();
 });
 
+test('cover uploads below the minimum banner dimensions are rejected', function (): void {
+    Storage::fake('public');
+
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->from(route('profile.edit'))
+        ->patch(route('profile.update'), profileTestPayload($user, [
+            'cover' => UploadedFile::fake()->image('cover.jpg', 1199, 400),
+        ]))
+        ->assertSessionHasErrors(['cover'])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->getFirstMedia(User::MEDIA_COLLECTION_COVER))->toBeNull();
+});
+
 test('avatar and cover images can be removed', function (): void {
     Storage::fake('public');
 

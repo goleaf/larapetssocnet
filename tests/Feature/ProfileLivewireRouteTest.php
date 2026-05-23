@@ -274,8 +274,17 @@ it('renders the nested edit profile modal as a scrollable sectioned form', funct
         ->assertSee('data-ui="profile-avatar-upload-progress"', false)
         ->assertSee('maxBytes: 3145728', false)
         ->assertSee('Max 3MB.')
-        ->assertSee('data-ui="profile-cover-preview"', false)
-        ->assertSee('Upload cover photo')
+        ->assertSee('data-ui="profile-cover-drop-zone"', false)
+        ->assertSee('data-ui="profile-cover-change-photo-label"', false)
+        ->assertSee('data-ui="profile-cover-file-reader-preview"', false)
+        ->assertSee('data-ui="profile-cover-upload-progress"', false)
+        ->assertSee('data-ui="profile-cover-reposition-inline"', false)
+        ->assertSee('Drag the image up or down to choose the best crop.')
+        ->assertSee('minWidth: 1200', false)
+        ->assertSee('minHeight: 400', false)
+        ->assertSee('$wire.upload(\'cover\'', false)
+        ->assertSee('profile_modal_cover_position', false)
+        ->assertSee('Minimum 1200x400. Max 5MB.')
         ->assertSee('id="profile_modal_avatar"', false)
         ->assertSee('id="profile_modal_cover"', false)
         ->assertSee('data-ui="profile-edit-modal-section-social"', false)
@@ -306,6 +315,49 @@ it('enforces the nested modal avatar upload type and size limits server side', f
     'avatar gif type' => [fn (): UploadedFile => UploadedFile::fake()->image('avatar.gif', 300, 300), 'Avatar must be a JPG, PNG, or WEBP image.'],
     'avatar over three megabytes' => [fn (): UploadedFile => UploadedFile::fake()->image('avatar.jpg', 640, 640)->size(3073), 'Avatar must be smaller than 3MB.'],
 ]);
+
+it('enforces the nested modal cover upload size and dimensions server side', function (Closure $coverFactory, string $message): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Cover Validation Owner',
+        'username' => 'cover_validation_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('cover', $coverFactory())
+        ->call('save')
+        ->assertHasErrors(['cover'])
+        ->assertSee($message);
+})->with([
+    'cover over five megabytes' => [fn (): UploadedFile => UploadedFile::fake()->image('cover.jpg', 1600, 480)->size(5121), 'Cover must be smaller than 5MB.'],
+    'cover below minimum dimensions' => [fn (): UploadedFile => UploadedFile::fake()->image('cover.jpg', 1199, 400), 'Cover photo must be at least 1200 by 400 pixels.'],
+]);
+
+it('saves uploaded cover focal point from the nested edit modal', function (): void {
+    Storage::fake('public');
+
+    $profileOwner = User::factory()->create([
+        'username' => 'cover_modal_position_owner',
+        'cover_photo_position' => 50,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('cover', UploadedFile::fake()->image('cover.jpg', 1600, 600)->size(3000))
+        ->set('cover_photo_position', 73.42)
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertDispatched('profile-edit-saved');
+
+    $profileOwner->refresh();
+
+    expect($profileOwner->getFirstMedia(User::MEDIA_COLLECTION_COVER))->not->toBeNull()
+        ->and((float) $profileOwner->cover_photo_position)->toBe(73.42);
+});
 
 it('dispatches the first invalid field target when nested edit profile validation fails', function (): void {
     $profileOwner = User::factory()->create([

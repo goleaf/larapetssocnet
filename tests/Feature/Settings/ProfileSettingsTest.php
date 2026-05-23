@@ -211,6 +211,7 @@ it('rejects invalid profile image uploads', function (string $field, string $cas
         ['avatar', 'size'] => UploadedFile::fake()->image('avatar.jpg')->size(3073),
         ['cover', 'type'] => UploadedFile::fake()->create('cover.pdf', 12, 'application/pdf'),
         ['cover', 'size'] => UploadedFile::fake()->image('cover.jpg', 1600, 480)->size(5121),
+        ['cover', 'dimensions'] => UploadedFile::fake()->image('cover.jpg', 1199, 400),
     };
 
     $this->actingAs($user)
@@ -231,4 +232,5 @@ it('rejects invalid profile image uploads', function (string $field, string $cas
     'avatar file size' => ['avatar', 'size'],
     'cover file type' => ['cover', 'type'],
     'cover file size' => ['cover', 'size'],
+    'cover dimensions' => ['cover', 'dimensions'],
 ]);

@@ -40,7 +40,7 @@
  accept="image/jpeg,image/png,image/webp,image/gif"
  maxSize="5MB"
  preview
- help="JPG, PNG, WEBP, or GIF. Recommended 1600×480."
+ help="JPG, PNG, WEBP, or GIF. Minimum 1200×400, recommended 1600×480."
  />
 
  @if ($hasCover)

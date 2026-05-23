@@ -153,7 +153,7 @@ class UpdateProfileAction
         }
 
         if (($data['cover'] ?? null) instanceof UploadedFile) {
-            $user->updateCover($data['cover']);
+            $user->updateCover($data['cover'], $data['cover_photo_position'] ?? null);
         }
 
         if (array_key_exists('remove_avatar', $data) && (bool) $data['remove_avatar']) {
