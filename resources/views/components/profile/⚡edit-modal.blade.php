@@ -5,6 +5,7 @@ use App\Enums\ProfileVisibility;
 use App\Exceptions\UsernameChangeCooldownException;
 use App\Exceptions\UsernameNotAvailableException;
 use App\Exceptions\UsernameReservedException;
+use App\Http\Requests\Profile\UpdateProfileModalRequest;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\LocationAutocompleteService;
@@ -171,10 +172,8 @@ new class extends Component
     {
         [$user, $viewer] = $this->authorizeProfileOwnerUpdate();
 
-        $this->normalizeForValidation();
-
         try {
-            $validated = $this->validate();
+            $validated = UpdateProfileModalRequest::validateForLivewire($user, $viewer, $this->profileInput());
         } catch (ValidationException $exception) {
             $this->setErrorBag($exception->validator->errors());
             $this->dispatch('profile-edit-validation-failed', target: $this->firstInvalidFieldTarget($exception->validator->errors()));
@@ -182,8 +181,11 @@ new class extends Component
             return;
         }
 
+        $oldUsername = (string) $user->username;
+        $this->syncValidatedProfileState($validated);
+
         try {
-            $updateProfile->handle($user, [
+            $updatedUser = $updateProfile->handle($user, [
                 'name' => $validated['name'],
                 'username' => $validated['username'],
                 'display_name' => $validated['display_name'] ?? null,
@@ -222,6 +224,15 @@ new class extends Component
 
         $this->js("document.body.classList.remove('overflow-hidden')");
         $this->dispatch('profile-edit-saved');
+        $this->dispatch('profile-toast', message: 'Profile updated successfully.', type: 'success');
+
+        if ($oldUsername !== (string) $updatedUser->username) {
+            $this->dispatch(
+                'profile-browser-url-replace-requested',
+                url: route('profile.show', ['user' => $updatedUser->username], false),
+                username: (string) $updatedUser->username,
+            );
+        }
     }
 
     public function updateAccountVisibility(mixed $private, SettingsService $settingsService, AuthAuditLogger $auditLogger): void
@@ -359,33 +370,10 @@ new class extends Component
      */
     protected function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'username' => UsernameRules::requiredRules($this->userId),
-            'display_name' => ['nullable', 'string', 'max:50'],
-            'bio' => ['nullable', 'string', 'max:160'],
-            'headline' => ['nullable', 'string', 'max:120'],
-            'pronouns' => ['nullable', 'string', 'max:32'],
-            'location' => ['nullable', 'string', 'max:255'],
-            'location_lat' => ['nullable', 'numeric', 'between:-90,90'],
-            'location_lng' => ['nullable', 'numeric', 'between:-180,180'],
-            'website' => ['nullable', 'url', 'max:255'],
-            'birth_day' => ['nullable', 'integer', 'between:1,31'],
-            'birth_month' => ['nullable', 'integer', 'between:1,12'],
-            'birth_year' => ['nullable', 'integer', 'between:'.(now()->year - 100).','.now()->year],
-            'birth_date' => ['nullable', 'date', 'before:today'],
-            'gender' => ['nullable', 'string', 'in:male,female,other,prefer_not_to_say'],
-            'social_links' => ['nullable', 'array', 'max:4'],
-            'social_links.x' => ['nullable', 'string', 'max:16', 'regex:/^@[A-Za-z0-9_]{1,15}$/'],
-            'social_links.instagram' => ['nullable', 'string', 'max:31', 'regex:/^@[A-Za-z0-9](?:[A-Za-z0-9._]{0,28}[A-Za-z0-9])?$/'],
-            'social_links.facebook' => ['nullable', 'url:http,https', 'max:255'],
-            'social_links.youtube' => ['nullable', 'url:http,https', 'max:255'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120', 'dimensions:min_width=1200,min_height=400'],
-            'cover_photo_position' => ['nullable', 'numeric', 'between:0,100'],
-            'remove_avatar' => ['boolean'],
-            'remove_cover' => ['boolean'],
-        ];
+        $rules = UpdateProfileModalRequest::rulesFor($this->profileUser());
+        unset($rules['bio_html']);
+
+        return $rules;
     }
 
     /**
@@ -393,31 +381,7 @@ new class extends Component
      */
     protected function messages(): array
     {
-        return [
-            'username.min' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
-            'username.max' => 'Username must be '.UsernameRules::minLength().'-'.UsernameRules::maxLength().' characters.',
-            'username.regex' => 'Only letters, numbers and underscores allowed.',
-            'username.unique' => 'Username is already taken.',
-            'display_name.max' => 'Display name must be 50 characters or fewer.',
-            'bio.max' => 'Bio must be 160 characters or fewer.',
-            'website.url' => 'Enter a valid website URL.',
-            'location_lat.between' => 'Select a valid location suggestion.',
-            'location_lng.between' => 'Select a valid location suggestion.',
-            'birth_date.date' => 'Enter a valid date of birth.',
-            'birth_date.before' => 'Date of birth must be before today.',
-            'avatar.image' => 'Avatar must be an image file.',
-            'avatar.mimes' => 'Avatar must be a JPG, PNG, or WEBP image.',
-            'avatar.max' => 'Avatar must be smaller than 3MB.',
-            'cover.image' => 'Cover must be an image file.',
-            'cover.mimes' => 'Cover must be a JPG, PNG, WEBP, or GIF image.',
-            'cover.max' => 'Cover must be smaller than 5MB.',
-            'cover.dimensions' => 'Cover photo must be at least 1200 by 400 pixels.',
-            'cover_photo_position.between' => 'Choose a valid cover crop position.',
-            'social_links.x.regex' => 'Enter a valid Twitter/X username.',
-            'social_links.instagram.regex' => 'Enter a valid Instagram username.',
-            'social_links.facebook.url' => 'Enter a valid Facebook profile URL.',
-            'social_links.youtube.url' => 'Enter a valid YouTube channel URL.',
-        ];
+        return UpdateProfileModalRequest::messagesForValidation();
     }
 
     /**
@@ -468,23 +432,54 @@ new class extends Component
         return $viewer instanceof User ? $viewer : null;
     }
 
-    private function normalizeForValidation(): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function profileInput(): array
     {
-        $this->name = trim($this->name);
-        $this->username = UsernameNormalizer::normalize($this->username);
-        $this->display_name = $this->nullableString($this->display_name);
-        $this->bio = $this->nullableString($this->bio);
-        $this->headline = $this->nullableString($this->headline);
-        $this->pronouns = $this->nullableString($this->pronouns);
-        $this->location = $this->nullableString($this->location);
-        $this->location_lat = $this->location !== null ? $this->nullableString($this->location_lat) : null;
-        $this->location_lng = $this->location !== null ? $this->nullableString($this->location_lng) : null;
-        $this->birth_date = $this->nullableString($this->birth_date);
-        $this->gender = $this->nullableString($this->gender);
-        $this->birth_date = $this->composeBirthDate();
+        return [
+            'name' => $this->name,
+            'username' => $this->username,
+            'display_name' => $this->display_name,
+            'bio' => $this->bio,
+            'headline' => $this->headline,
+            'pronouns' => $this->pronouns,
+            'location' => $this->location,
+            'location_lat' => $this->location_lat,
+            'location_lng' => $this->location_lng,
+            'website' => $this->website,
+            'birth_date' => $this->composeBirthDate(),
+            'gender' => $this->gender,
+            'social_links' => $this->social_links,
+            'avatar' => $this->avatar instanceof UploadedFile ? $this->avatar : null,
+            'cover' => $this->cover instanceof UploadedFile ? $this->cover : null,
+            'cover_photo_position' => $this->cover_photo_position,
+            'remove_avatar' => $this->remove_avatar,
+            'remove_cover' => $this->remove_cover,
+        ];
+    }
 
-        $this->website = SocialLinkNormalizer::normalizeUrl($this->website);
-        $this->social_links = SocialLinkNormalizer::normalizeInputs($this->social_links);
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncValidatedProfileState(array $validated): void
+    {
+        $this->name = (string) $validated['name'];
+        $this->username = (string) $validated['username'];
+        $this->display_name = $validated['display_name'] ?? null;
+        $this->bio = $validated['bio'] ?? null;
+        $this->headline = $validated['headline'] ?? null;
+        $this->pronouns = $validated['pronouns'] ?? null;
+        $this->location = $validated['location'] ?? null;
+        $this->location_lat = isset($validated['location_lat']) ? (string) $validated['location_lat'] : null;
+        $this->location_lng = isset($validated['location_lng']) ? (string) $validated['location_lng'] : null;
+        $this->website = $validated['website'] ?? null;
+        $this->birth_date = $validated['birth_date'] ?? null;
+        $this->gender = $validated['gender'] ?? null;
+        $this->social_links = SocialLinkNormalizer::editable($validated['social_links'] ?? []);
+        $this->cover_photo_position = (float) ($validated['cover_photo_position'] ?? User::DEFAULT_COVER_PHOTO_POSITION);
+        $this->remove_avatar = (bool) ($validated['remove_avatar'] ?? false);
+        $this->remove_cover = (bool) ($validated['remove_cover'] ?? false);
         $this->refreshUsernameAvailability();
     }
 

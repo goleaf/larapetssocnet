@@ -86,6 +86,30 @@ document.addEventListener('alpine:init', () => {
  },
  });
 
+ window.addEventListener('profile-toast', (event) => {
+ const detail = event.detail || {};
+ const message = toStringValue(detail.message);
+
+ if (!message) {
+ return;
+ }
+
+ Alpine.store('toast').add(message, toStringValue(detail.type, 'success'));
+ });
+
+ window.addEventListener('profile-browser-url-replace-requested', (event) => {
+ const detail = event.detail || {};
+ const requestedUrl = toStringValue(detail.url);
+ const username = toStringValue(detail.username);
+ const nextPath = requestedUrl || (username ? `/@${encodeURIComponent(username)}` : '');
+
+ if (!nextPath) {
+ return;
+ }
+
+ window.history.replaceState(window.history.state, '', `${nextPath}${window.location.hash || ''}`);
+ });
+
  Alpine.store('confirm', {
  open: false,
  message:'',

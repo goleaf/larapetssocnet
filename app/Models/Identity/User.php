@@ -444,18 +444,15 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     {
         $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_THUMB)
             ->fit(Fit::Crop, 96, 96)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
-            ->nonQueued();
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_CARD)
             ->fit(Fit::Crop, 256, 256)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
-            ->nonQueued();
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_COVER_BANNER)
             ->fit(Fit::Crop, 1600, 480)
-            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
-            ->nonQueued();
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
     }
 
     public function pets(): HasMany

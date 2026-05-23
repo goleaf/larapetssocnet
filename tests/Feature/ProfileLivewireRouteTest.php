@@ -14,10 +14,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
+use Spatie\MediaLibrary\Conversions\Jobs\PerformConversionsJob;
 
 uses(RefreshDatabase::class);
 
@@ -465,6 +467,36 @@ it('saves uploaded cover focal point from the nested edit modal', function (): v
         ->and((float) $profileOwner->cover_photo_position)->toBe(73.42);
 });
 
+it('moves nested modal media uploads into permanent media storage and queues conversions', function (): void {
+    Queue::fake();
+    Storage::fake((string) config('media-library.disk_name'));
+
+    $profileOwner = User::factory()->create([
+        'name' => 'Queued Media Owner',
+        'username' => 'queued_media_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($profileOwner)
+        ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->set('avatar', UploadedFile::fake()->image('avatar.jpg', 640, 640)->size(600))
+        ->set('cover', UploadedFile::fake()->image('cover.jpg', 1600, 480)->size(1000))
+        ->set('cover_photo_position', 64.5)
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertDispatched('profile-edit-saved')
+        ->assertDispatched('profile-toast', message: 'Profile updated successfully.', type: 'success');
+
+    $profileOwner->refresh();
+
+    expect($profileOwner->getMedia(User::MEDIA_COLLECTION_AVATAR))->toHaveCount(1)
+        ->and($profileOwner->getMedia(User::MEDIA_COLLECTION_COVER))->toHaveCount(1)
+        ->and((float) $profileOwner->cover_photo_position)->toBe(64.5);
+
+    Queue::assertPushed(PerformConversionsJob::class);
+});
+
 it('dispatches the first invalid field target when nested edit profile validation fails', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Invalid Modal Owner',
@@ -557,7 +589,9 @@ it('saves profile edits from the nested modal without redirecting away from the 
         ->call('save')
         ->assertHasNoErrors()
         ->assertNoRedirect()
-        ->assertDispatched('profile-edit-saved');
+        ->assertDispatched('profile-edit-saved')
+        ->assertDispatched('profile-toast', message: 'Profile updated successfully.', type: 'success')
+        ->assertDispatched('profile-browser-url-replace-requested', url: '/@updated_nested_saver', username: 'updated_nested_saver');
 
     $profileOwner->refresh();
 

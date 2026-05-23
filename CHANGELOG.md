@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Updated the profile edit save flow to validate through a modal-specific Form Request, dispatch success toast and browser URL replacement events after username changes, and queue profile media conversions for uploaded avatar and cover images.
 - Updated the profile edit Privacy section to show only Account Visibility, Show age, and email-discovery toggles, each saved immediately through its own authorized Livewire action without submitting the full profile form.
 - Updated the profile edit Social Links section with icon-prefixed fields for website, Twitter/X, Instagram, Facebook, and YouTube, including blur validation and automatic `@username` normalization for handle-based platforms.
 - Updated the profile edit cover upload with a 3:1 rectangular drop zone, immediate FileReader preview, client-side 1200x400 minimum dimension validation, and inline vertical crop positioning after temporary upload.

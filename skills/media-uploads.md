@@ -31,6 +31,8 @@ The profile edit modal uses two distinct Livewire upload panels for owner media:
 
 Avatar uploads should use the circular drop-zone interface in the profile edit modal: clicking or dropping onto the circle opens/selects the file, FileReader renders the circular preview before the Livewire temporary upload starts, and Alpine validates JPEG/PNG/WEBP plus a 3MB maximum before upload. The server-side profile validators must keep the same 3MB avatar limit. Cover uploads should use the 3:1 rectangular drop-zone interface, render the current cover or username gradient fallback, validate at least 1200x400 pixels and 5MB before upload, then show the inline vertical drag crop control after the Livewire temporary upload finishes so `cover_photo_position` is saved with the cover.
 
+Profile avatar and cover saves must move Livewire temporary uploads into permanent Spatie Media Library collections and leave avatar/cover image resizing plus optimizer work on the configured Media Library conversion queue. Do not mark profile media conversions as non-queued.
+
 ## Pet Media
 Pet media uses public disk.
 
