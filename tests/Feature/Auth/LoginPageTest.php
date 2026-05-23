@@ -1,11 +1,12 @@
 <?php
 
 use App\Enums\AccountStatus;
+use App\Mail\Auth\PasswordResetLinkMail;
 use App\Models\Identity\User;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 
@@ -120,7 +121,7 @@ it('starts a progressive lockout countdown after repeated failed attempts', func
 });
 
 it('requests password reset links from the inline login panel without account enumeration', function (): void {
-    Notification::fake();
+    Mail::fake();
 
     $user = User::factory()->create([
         'email' => 'inline-reset@example.com',
@@ -130,15 +131,23 @@ it('requests password reset links from the inline login panel without account en
         ->set('resetEmail', 'INLINE-RESET@EXAMPLE.COM')
         ->call('sendPasswordResetLink')
         ->assertSet('resetEmail', 'inline-reset@example.com')
-        ->assertSet('resetStatusMessage', 'If an account exists, we sent a password reset link.')
+        ->assertSet('resetStatusMessage', 'If an account with that email exists, you will receive a password reset link shortly.')
         ->assertDispatched('password-reset-link-sent');
 
-    Notification::assertSentTo($user, ResetPassword::class);
+    Mail::assertQueued(PasswordResetLinkMail::class, function (PasswordResetLinkMail $mail) use ($user): bool {
+        return $mail->hasTo($user->email)
+            && $mail->user->is($user)
+            && str_contains($mail->resetUrl, '/reset-password/');
+    });
+
+    expect(DB::table('password_reset_tokens')->where('email', $user->email)->value('token_hash'))
+        ->toBeString()
+        ->toHaveLength(64);
 
     Livewire::test('pages.auth.login')
         ->set('resetEmail', 'missing-reset@example.com')
         ->call('sendPasswordResetLink')
-        ->assertSet('resetStatusMessage', 'If an account exists, we sent a password reset link.')
+        ->assertSet('resetStatusMessage', 'If an account with that email exists, you will receive a password reset link shortly.')
         ->assertDispatched('password-reset-link-sent');
 });
 

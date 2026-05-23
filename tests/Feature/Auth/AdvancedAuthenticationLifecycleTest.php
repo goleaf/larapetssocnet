@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\Auth\PasswordChangedSecurityAlertMail;
 use App\Models\Identity\SocialAccount;
 use App\Models\Identity\User;
 use App\Models\Security\MagicLoginToken;
@@ -8,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
@@ -16,15 +18,15 @@ use Tests\TestCase;
 uses(RefreshDatabase::class);
 
 it('does not reveal whether a password reset email belongs to an account', function (): void {
-    Notification::fake();
+    Mail::fake();
 
     $this->post(route('password.email'), [
         'email' => 'missing@example.com',
     ])
         ->assertSessionHasNoErrors()
-        ->assertSessionHas('status', __(Password::RESET_LINK_SENT));
+        ->assertSessionHas('status', 'If an account with that email exists, you will receive a password reset link shortly.');
 
-    Notification::assertNothingSent();
+    Mail::assertNothingQueued();
     $this->assertDatabaseHas('auth_audit_logs', [
         'event_type' => 'password_reset_requested',
         'user_id' => null,
@@ -32,6 +34,8 @@ it('does not reveal whether a password reset email belongs to an account', funct
 });
 
 it('invalidates existing database sessions after a successful password reset', function (): void {
+    Mail::fake();
+
     $user = User::factory()->create([
         'email' => 'reset-session@example.com',
     ]);
@@ -62,11 +66,15 @@ it('invalidates existing database sessions after a successful password reset', f
         'email' => $user->email,
         'password' => 'PetSocial2027!',
         'password_confirmation' => 'PetSocial2027!',
-    ])->assertRedirect(route('login'));
+    ])->assertRedirect(route('feed.index'));
 
     expect(Hash::check('PetSocial2027!', $user->refresh()->password))->toBeTrue()
         ->and($user->password_changed_at)->not->toBeNull()
+        ->and($user->remember_token)->toBeNull()
         ->and(DB::table('sessions')->where('user_id', $user->id)->exists())->toBeFalse();
+
+    $this->assertAuthenticatedAs($user);
+    Mail::assertQueued(PasswordChangedSecurityAlertMail::class);
 });
 
 it('creates and consumes magic login links exactly once', function (): void {

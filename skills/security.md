@@ -36,7 +36,9 @@
 - Failed credential responses must stay generic and must not reveal whether the email, username, or password was incorrect.
 - Rate-limit repeated failed login attempts with the persisted `users.failed_login_attempts` and `users.last_failed_login_at` columns when identity is known; keep audit lookups indexed by IP plus a hashed normalized identifier, not raw email.
 - Keep auth-only secrets out of public serialization: hide `pending_email`, two-factor secrets, two-factor recovery code hashes, magic link token hashes, and social provider tokens; use encrypted casts for stored secrets.
-- Magic login and password reset request flows must not reveal whether an email exists. Consume one-time login tokens atomically and invalidate old sessions after password reset.
+- Magic login and password reset request flows must not reveal whether an email exists. Password reset requests must share one action across the login inline panel and `/forgot-password`, rate-limit by normalized email before account lookup, queue branded reset mailables only for matched users, and store a SHA-256 token lookup hash alongside Laravel's broker hash.
+- Password reset confirmation must resolve `/reset-password/{token}` through the token hash before rendering, keep the email read-only, invalidate database sessions and remember tokens after a successful reset, queue the password-change security alert, and redirect the freshly signed-in user to the feed.
+- Password-change emergency links must be signed and single-use; consuming one suspends the account, clears sessions and remember tokens, creates a high-priority moderation report, records an auth audit event with safe metadata, and shows the already-taken state on repeat visits.
 - OAuth provider data belongs in `social_accounts`; merge by provider ID first, then by verified email only.
 - Logout must clear the remember token, expire the remember-me cookie, invalidate the session, regenerate the CSRF token, and record a `logout` audit event. Password changes and password resets should invalidate other database-backed sessions.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.

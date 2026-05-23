@@ -3,6 +3,8 @@
 use App\Models\Identity\User;
 use App\Support\Auth\PasswordPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Validation\Rules\Password;
 
 uses(RefreshDatabase::class);
@@ -25,13 +27,18 @@ it('renders browser password rules on new password forms', function (): void {
         ->assertOk()
         ->assertSee($expectedAttribute, false);
 
-    $this->get('/reset-password/example-token')
+    $resetUser = User::factory()->create();
+    $token = PasswordBroker::broker()->createToken($resetUser);
+
+    DB::table('password_reset_tokens')
+        ->where('email', $resetUser->email)
+        ->update(['token_hash' => hash('sha256', $token)]);
+
+    $this->get(route('password.reset', ['token' => $token]))
         ->assertOk()
         ->assertSee($expectedAttribute, false);
 
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
+    $this->actingAs(User::factory()->create())
         ->get(route('settings.password', absolute: false))
         ->assertOk()
         ->assertSee($expectedAttribute, false);

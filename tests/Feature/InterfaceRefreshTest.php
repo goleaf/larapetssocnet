@@ -7,6 +7,8 @@ use App\Models\Identity\User;
 use App\Models\Marketplace\MarketplaceListing;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 
 uses(RefreshDatabase::class);
 
@@ -234,9 +236,16 @@ it('renders guest auth pages with clearer headers and touch-sized actions', func
 it('renders password and email verification pages with consistent secure panels', function (): void {
     $user = User::factory()->unverified()->create();
     $verifiedUser = User::factory()->create();
+    $resetUser = User::factory()->create();
+    $resetToken = Password::broker()->createToken($resetUser);
 
-    $this->get(route('password.reset', ['token' => 'interface-token']))
+    DB::table('password_reset_tokens')
+        ->where('email', $resetUser->email)
+        ->update(['token_hash' => hash('sha256', $resetToken)]);
+
+    $this->get(route('password.reset', ['token' => $resetToken]))
         ->assertSuccessful()
+        ->assertSee('data-ui="reset-password-page"', false)
         ->assertSee('data-ui="password-reset-form"', false)
         ->assertSee('Create a new password')
         ->assertSee('Back to login')

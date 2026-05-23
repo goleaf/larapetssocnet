@@ -2,10 +2,8 @@
 
 use App\Actions\Auth\AuthenticateUserAction;
 use App\Actions\Auth\AuthenticationResult;
-use App\Models\Identity\User;
-use App\Services\Auth\AuthAuditLogger;
+use App\Actions\Auth\RequestPasswordResetLinkAction;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -68,7 +66,7 @@ class extends Component
         $this->redirect($this->redirectPathFor($result, request()), navigate: false);
     }
 
-    public function sendPasswordResetLink(AuthAuditLogger $auditLogger): void
+    public function sendPasswordResetLink(RequestPasswordResetLinkAction $action): void
     {
         $this->resetErrorBag('resetEmail');
         $this->resetStatusMessage = null;
@@ -80,19 +78,13 @@ class extends Component
             'resetEmail.email' => 'Enter a valid email address.',
         ]);
 
-        $email = Str::lower(trim((string) $validated['resetEmail']));
-        $user = User::query()->where('email', $email)->first();
-        $status = Password::sendResetLink(['email' => $email]);
+        $this->resetEmail = Str::lower(trim((string) $validated['resetEmail']));
+        $this->resetStatusMessage = $action->handle(
+            email: $this->resetEmail,
+            request: request(),
+            source: 'inline_login_panel',
+        );
 
-        $auditLogger->record($user, 'password_reset_requested', request(), [
-            'identifier_hash' => hash('sha256', $email),
-            'matched_user' => $user instanceof User,
-            'broker_status' => $status,
-            'source' => 'inline_login_panel',
-        ]);
-
-        $this->resetEmail = $email;
-        $this->resetStatusMessage = 'If an account exists, we sent a password reset link.';
         $this->dispatch('password-reset-link-sent');
     }
 

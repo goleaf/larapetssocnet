@@ -51,6 +51,7 @@ use App\Models\Pets\PetOwner;
 use App\Models\Pets\PetTag;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Pets\Species;
+use App\Models\Security\AccountSecurityAction;
 use App\Models\Security\AuthAuditLog;
 use App\Models\Security\MagicLoginToken;
 use App\Models\Social\Block;
@@ -67,6 +68,7 @@ final class LegacyModelMorphMap
     public static function aliases(): array
     {
         return [
+            'App\Models\AccountSecurityAction' => AccountSecurityAction::class,
             'App\Models\AuthAuditLog' => AuthAuditLog::class,
             'App\Models\Badge' => Badge::class,
             'App\Models\Block' => Block::class,

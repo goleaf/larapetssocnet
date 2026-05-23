@@ -457,6 +457,153 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('passwordCredentialForm', (config = {}) => ({
+ password:'',
+ passwordConfirmation:'',
+ passwordScore: 0,
+ passwordLevel:'Weak',
+ passwordCommon: false,
+ passwordCheckVersion: 0,
+ commonPasswordHashes: new Set(Array.isArray(config.commonPasswordHashes) ? config.commonPasswordHashes : []),
+
+ init() {
+ this.updatePasswordStrength();
+ },
+
+ get passwordSegmentCount() {
+ if (this.passwordLevel ==='Very Strong') {
+ return 4;
+ }
+
+ if (this.passwordLevel ==='Strong') {
+ return 3;
+ }
+
+ if (this.passwordLevel ==='Fair') {
+ return 2;
+ }
+
+ return this.password.length > 0 ? 1 : 0;
+ },
+
+ get passwordColorClass() {
+ if (this.passwordLevel ==='Very Strong') {
+ return 'bg-leaf';
+ }
+
+ if (this.passwordLevel ==='Strong') {
+ return 'bg-success';
+ }
+
+ if (this.passwordLevel ==='Fair') {
+ return 'bg-amber';
+ }
+
+ return 'bg-rose';
+ },
+
+ get passwordsMatch() {
+ return this.password !=='' && this.passwordConfirmation !=='' && this.password === this.passwordConfirmation;
+ },
+
+ get passwordMismatch() {
+ return this.passwordConfirmation !=='' && this.password !== this.passwordConfirmation;
+ },
+
+ get formInvalid() {
+ return this.password ==='' || this.passwordConfirmation ==='' || !this.passwordsMatch || this.passwordScore < 3;
+ },
+
+ segmentClass(index) {
+ if (index > this.passwordSegmentCount) {
+ return 'bg-whisker/30';
+ }
+
+ return this.passwordColorClass;
+ },
+
+ async updatePasswordStrength() {
+ const version = ++this.passwordCheckVersion;
+ const password = this.password;
+ let score = this.calculatePasswordScore(password, false);
+ let isCommon = false;
+
+ if (password !=='' && window.crypto?.subtle) {
+ const hash = await this.sha256Hex(password.toLowerCase());
+
+ if (version !== this.passwordCheckVersion) {
+ return;
+ }
+
+ isCommon = this.commonPasswordHashes.has(hash);
+ score = this.calculatePasswordScore(password, isCommon);
+ }
+
+ this.passwordCommon = isCommon;
+ this.passwordScore = score;
+ this.passwordLevel = this.levelForScore(score);
+ },
+
+ calculatePasswordScore(password, isCommon) {
+ if (password ==='') {
+ return 0;
+ }
+
+ let score = 0;
+
+ if (password.length >= 8) {
+ score += 1;
+ }
+
+ if (password.length >= 12) {
+ score += 2;
+ }
+
+ if (/[A-Z]/.test(password)) {
+ score += 1;
+ }
+
+ if (/\d/.test(password)) {
+ score += 1;
+ }
+
+ if (/[!@#$%^&*()_\-+=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+ score += 1;
+ }
+
+ if (isCommon) {
+ score -= 2;
+ }
+
+ return Math.max(score, 0);
+ },
+
+ levelForScore(score) {
+ if (score >= 5) {
+ return 'Very Strong';
+ }
+
+ if (score === 4) {
+ return 'Strong';
+ }
+
+ if (score === 3) {
+ return 'Fair';
+ }
+
+ return 'Weak';
+ },
+
+ async sha256Hex(value) {
+ const bytes = new TextEncoder().encode(value);
+ const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+
+ return Array.from(new Uint8Array(digest))
+ .map((byte) => byte.toString(16).padStart(2, '0'))
+ .join('');
+ },
+ }));
+
  Alpine.data('dropdownState', (defaultOpen = false) => ({
  open: Boolean(defaultOpen),
 

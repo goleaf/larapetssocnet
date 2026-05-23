@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'reason',
     'details',
     'status',
+    'priority',
     'reviewed_by_user_id',
     'reviewed_at',
 ])]
@@ -35,6 +36,10 @@ class Report extends Model
     public const STATUS_ACTIONED = 'actioned';
 
     public const STATUS_RESOLVED = 'resolved';
+
+    public const PRIORITY_NORMAL = 'normal';
+
+    public const PRIORITY_HIGH = 'high';
 
     public const REASON_SPAM = 'spam';
 
@@ -61,6 +66,8 @@ class Report extends Model
     public const PROFILE_REASON_SPAM_ACCOUNT = 'profile_spam_account';
 
     public const PROFILE_REASON_HARMFUL_CONTENT = 'profile_harmful_content';
+
+    public const REASON_PASSWORD_RESET_EMERGENCY_LOCK = 'password_reset_emergency_lock';
 
     /**
      * @var list<string>

@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\PasswordSecurityLockController;
 use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Auth\VerifyEmailController;
@@ -41,18 +42,22 @@ Route::middleware('guest')->group(function (): void {
         ->middleware('throttle:10,1')
         ->name('social.callback');
 
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    Route::livewire('forgot-password', 'pages.auth.forgot-password')
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    Route::livewire('reset-password/{token}', 'pages.auth.reset-password')
         ->name('password.reset');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
 });
+
+Route::get('account/security-lock/{action}', PasswordSecurityLockController::class)
+    ->middleware('signed')
+    ->name('password.security-lock');
 
 Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['signed', 'throttle:6,1'])
