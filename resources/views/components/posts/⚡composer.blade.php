@@ -232,6 +232,56 @@ new class extends Component
         return in_array($petId, $this->selectedPetIds, true);
     }
 
+    public function selectVisibility(string $visibility): void
+    {
+        $normalizedVisibility = $this->normalizeVisibility($visibility);
+
+        if ($normalizedVisibility === null) {
+            return;
+        }
+
+        $this->selectedVisibility = $normalizedVisibility;
+    }
+
+    /**
+     * @return list<array{value: string, label: string, description: string}>
+     */
+    public function visibilityOptions(): array
+    {
+        return [
+            [
+                'value' => Post::VISIBILITY_PUBLIC,
+                'label' => 'Public',
+                'description' => 'Anyone on PetSocial can see this post.',
+            ],
+            [
+                'value' => Post::VISIBILITY_FOLLOWERS,
+                'label' => 'Followers',
+                'description' => 'People who follow you can see this post.',
+            ],
+            [
+                'value' => Post::VISIBILITY_FRIENDS,
+                'label' => 'Friends',
+                'description' => 'Mutual followers can see this post.',
+            ],
+            [
+                'value' => Post::VISIBILITY_PRIVATE,
+                'label' => 'Only me',
+                'description' => 'Only you can see this post.',
+            ],
+        ];
+    }
+
+    /**
+     * @return array{value: string, label: string, description: string}
+     */
+    public function selectedVisibilityOption(): array
+    {
+        return collect($this->visibilityOptions())
+            ->firstWhere('value', $this->selectedVisibility)
+            ?? $this->visibilityOptions()[0];
+    }
+
     public function petSpeciesLabel(Pet $pet): string
     {
         $species = $pet->getRelationValue('species');
@@ -720,6 +770,18 @@ new class extends Component
  $taggedPets = $availablePetsForTagging
      ->filter(fn (Pet $pet): bool => in_array((int) $pet->getKey(), $selectedPetIds, true))
      ->values();
+ $visibilityOptions = $this->visibilityOptions();
+ $selectedVisibilityOption = $this->selectedVisibilityOption();
+ $visibilityIcon = static function (string $visibility, string $classes = 'h-4 w-4'): string {
+     $baseAttributes = 'class="'.$classes.'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+
+     return match ($visibility) {
+         Post::VISIBILITY_FOLLOWERS => '<svg '.$baseAttributes.'><path d="M7.5 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M2.5 17c.5-3 2.3-5 5-5s4.5 2 5 5"/><path d="M14 9.5a2.5 2.5 0 0 0 0-5"/><path d="M13.5 12.5c2 .4 3.3 2 3.7 4.5"/></svg>',
+         Post::VISIBILITY_FRIENDS => '<svg '.$baseAttributes.'><path d="M7 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M2 17c.5-3 2.3-5 5-5s4.5 2 5 5"/><path d="M13 9a3 3 0 1 0 0-6"/><path d="M12.5 12c2.7 0 4.5 2 5 5"/></svg>',
+         Post::VISIBILITY_PRIVATE => '<svg '.$baseAttributes.'><path d="M5.5 8.5h9v7h-9z"/><path d="M7.5 8.5V6a2.5 2.5 0 0 1 5 0v2.5"/><path d="M10 11.5v1.5"/></svg>',
+         default => '<svg '.$baseAttributes.'><circle cx="10" cy="10" r="7"/><path d="M3.5 10h13"/><path d="M10 3c2 2 3 4.3 3 7s-1 5-3 7"/><path d="M10 3c-2 2-3 4.3-3 7s1 5 3 7"/></svg>',
+     };
+ };
 @endphp
 
 <div
@@ -1085,13 +1147,6 @@ new class extends Component
  </div>
 
  <div class="grid gap-4 md:grid-cols-2">
- <x-ui.select id="{{ $composerId }}-visibility" label="Visibility" wire:model="selectedVisibility">
- <option value="public">Public</option>
- <option value="followers">Followers</option>
- <option value="friends">Friends</option>
- <option value="private">Only me</option>
- </x-ui.select>
-
  <x-ui.select id="{{ $composerId }}-mood" label="Mood" wire:model="selectedMood">
  <option value="">No mood</option>
  @foreach (PostMood::DISPLAY as $moodValue => $moodDisplay)
@@ -1128,6 +1183,75 @@ new class extends Component
  <x-ui.button type="button" variant="ghost" wire:click="autosaveDraft" wire:loading.attr="disabled" wire:target="autosaveDraft">
  Save draft
  </x-ui.button>
+ <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+ <button
+ type="button"
+ class="inline-flex h-[var(--control-height-md)] w-full items-center justify-center gap-2 rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm font-semibold text-bark transition hover:border-paw hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:w-auto"
+ x-on:click="open = !open"
+ aria-label="Post visibility"
+ aria-haspopup="true"
+ x-bind:aria-expanded="open.toString()"
+ >
+ <span class="sr-only">Visibility</span>
+ <span class="inline-flex h-5 w-5 items-center justify-center text-paw" aria-hidden="true">
+ {!! $visibilityIcon($selectedVisibilityOption['value'], 'h-4 w-4') !!}
+ </span>
+ <span>{{ $selectedVisibilityOption['label'] }}</span>
+ <svg class="h-4 w-4 text-fur transition" x-bind:class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+ <path fill-rule="evenodd" d="M5.22 7.72a.75.75 0 0 1 1.06 0L10 11.44l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.78a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
+ </svg>
+ </button>
+
+ <div
+ x-cloak
+ x-show="open"
+ x-transition.origin.bottom.right
+ x-on:click.outside="open = false"
+ class="absolute bottom-full right-0 z-30 mb-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-card)] border border-whisker/30 bg-warm-white shadow-card"
+ role="radiogroup"
+ aria-label="Post visibility"
+ >
+ <div class="border-b border-whisker/20 px-4 py-3">
+ <p class="text-sm font-semibold text-bark">Visibility</p>
+ <p class="mt-0.5 text-xs text-fur">Choose who can see this post.</p>
+ </div>
+
+ <div class="space-y-2 p-2">
+ @foreach ($visibilityOptions as $visibilityOption)
+ @php
+     $isSelectedVisibility = $selectedVisibility === $visibilityOption['value'];
+ @endphp
+ <button
+ type="button"
+ wire:click="selectVisibility('{{ $visibilityOption['value'] }}')"
+ x-on:click="open = false"
+ class="flex w-full items-start gap-3 rounded-[var(--radius-soft)] border px-3 py-2.5 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $isSelectedVisibility ? 'border-paw bg-paw/10 text-bark' : 'border-transparent text-bark hover:border-whisker/40 hover:bg-cream' }}"
+ role="radio"
+ aria-checked="{{ $isSelectedVisibility ? 'true' : 'false' }}"
+ >
+ <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full {{ $isSelectedVisibility ? 'bg-paw text-white' : 'bg-cream text-fur' }}" aria-hidden="true">
+ {!! $visibilityIcon($visibilityOption['value'], 'h-4 w-4') !!}
+ </span>
+ <span class="min-w-0 flex-1">
+ <span class="flex items-center gap-2">
+ <span class="text-sm font-bold">{{ $visibilityOption['label'] }}</span>
+ <span class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border {{ $isSelectedVisibility ? 'border-paw bg-paw text-white' : 'border-whisker/60 text-transparent' }}" aria-hidden="true">
+ <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="m5 10 3 3 7-7"/>
+ </svg>
+ </span>
+ </span>
+ <span class="mt-1 block text-xs leading-5 text-fur">{{ $visibilityOption['description'] }}</span>
+ </span>
+ </button>
+ @endforeach
+ </div>
+ </div>
+
+ @if ($selectedVisibility === Post::VISIBILITY_PRIVATE)
+ <p class="mt-1 text-xs font-medium text-fur" role="status">Only you will see this post</p>
+ @endif
+ </div>
  <x-ui.button
  type="submit"
  variant="primary"

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added the Livewire post composer's toolbar visibility dropdown with radio-card options and an explicit Only me warning.
 - Added pet tagging in the Livewire post composer as a toolbar dropdown with avatar/species rows, selected pet chips, and locked pet-profile context tags.
 - Added the post composer's attachment strip with click and drag-drop selection, client-side media validation, instant image/video previews, per-attachment Livewire upload progress, alt text controls, removal, and Sortable-backed drag ordering.
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
@@ -36,6 +37,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire post composer coverage for toolbar visibility selection, private-post warning copy, and preserving the user's stored visibility preference.
 - Updated ChartService unit coverage for the current `WeightHistorySvg` dependency and smooth-path chart rendering.
 - Added post media coverage for 10-image posts, mixed image/video posts, multiple videos, 10 MB image limits, 100 MB video limits, and ordered temporary media dispatch from the Livewire composer.
 - Added Livewire post composer coverage for inline and modal rendering, contenteditable state, character count feedback, draft restore/autosave, duplicate warnings, and action-backed post creation with pet tags, mood, location, and feed fan-out.

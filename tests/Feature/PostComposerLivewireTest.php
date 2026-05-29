@@ -61,6 +61,45 @@ it('renders the media attachment strip controls and upload behaviours', function
         ->assertSeeHtml('uploadProgressOffset');
 });
 
+it('renders the visibility selector as a toolbar dropdown', function (): void {
+    $user = User::factory()->create([
+        'profile_visibility' => 'followers_only',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSet('selectedVisibility', Post::VISIBILITY_FOLLOWERS)
+        ->assertSee('Visibility')
+        ->assertSee('Choose who can see this post.')
+        ->assertSee('Public')
+        ->assertSee('Anyone on PetSocial can see this post.')
+        ->assertSee('Followers')
+        ->assertSee('People who follow you can see this post.')
+        ->assertSee('Friends')
+        ->assertSee('Mutual followers can see this post.')
+        ->assertSee('Only me')
+        ->assertSee('Only you can see this post.')
+        ->assertSeeHtml('wire:click="selectVisibility(\'private\')"')
+        ->assertDontSee('Only you will see this post');
+});
+
+it('updates current post visibility without changing the stored account preference', function (): void {
+    $user = User::factory()->create([
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSet('selectedVisibility', Post::VISIBILITY_PUBLIC)
+        ->call('selectVisibility', Post::VISIBILITY_PRIVATE)
+        ->assertSet('selectedVisibility', Post::VISIBILITY_PRIVATE)
+        ->assertSee('Only you will see this post')
+        ->call('selectVisibility', 'team')
+        ->assertSet('selectedVisibility', Post::VISIBILITY_PRIVATE);
+
+    expect($user->fresh()->profile_visibility)->toBe('public');
+});
+
 it('renders pet tagging as a toolbar dropdown and selected chips', function (): void {
     $user = User::factory()->create();
     $zuzu = Pet::factory()->for($user)->create([
