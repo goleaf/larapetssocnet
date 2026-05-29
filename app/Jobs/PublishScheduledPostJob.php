@@ -51,7 +51,7 @@ class PublishScheduledPostJob implements ShouldQueue
 
             $published = $publish->handle($author, $post, $post->scheduled_publish_at);
 
-            $mentions->sync($published, $author);
+            $mentions->sync($published, $author, notifyExistingMentions: true);
 
             FeedFanOutJob::dispatch((int) $published->getKey())->afterCommit();
         } finally {

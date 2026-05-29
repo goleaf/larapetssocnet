@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added modal post editing through the shared Livewire composer, including stored post hydration, edit success events, and owner post-card menu access.
 - Added polished post-composer submission feedback with whole-composer loading states, duplicate confirmation modal actions, success toasts, and optimistic feed prepending for newly published posts.
 - Added background post-composer draft autosave with one serialized draft per user, resume/discard banners, and confirmed cancellation cleanup.
 - Added async Open Graph link previews for pasted post-composer URLs, with queued Guzzle fetching, composer skeleton/polling state, dismissible preview cards, and image rendering on shared post cards.
@@ -43,6 +44,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire and action coverage for edit-mode composer hydration, post updates, edit-window errors, post-card edit menu states, edited labels, and newly added mention notifications.
 - Added Livewire post composer coverage for success toasts, duplicate confirmation, validation-error preservation, and feed listener rendering for optimistic post prepending.
 - Added Livewire and service coverage for one-user post drafts, non-automatic draft restore, resume/discard actions, and cancellation cleanup.
 - Added link preview coverage for Open Graph parsing, local-network URL rejection, queued post updates, composer polling/dismissal, and action-level async fetch dispatch.
@@ -72,6 +74,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Changed post editing to enforce the 24-hour window in the post-card UI, post policy, and `UpdatePostAction`, while re-syncing hashtags, mentions, pet tags, location, mood, visibility, and link preview state.
 - Changed post-created browser events to include composer identity, status, author, body, and toast metadata so page-level listeners can react without guessing at component state.
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
 - Changed scheduled post publication to dispatch one queued `PublishScheduledPostJob` per due post from the lock-protected every-minute command, with per-post job locks plus feed fan-out and mention notifications delayed until the post actually publishes.

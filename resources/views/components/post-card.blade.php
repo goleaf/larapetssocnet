@@ -27,7 +27,10 @@
     $hiddenMediaCount = max(0, $mediaItems->count() - $shownMedia->count());
 
     $isOwner = (int) auth()->id() === (int) $post->user_id;
-    $showOwnerProfileMenu = $context === 'profile' && $isOwner;
+    $showOwnerMenu = $isOwner;
+    $editWindowOpen = $post->created_at === null || $post->created_at->greaterThanOrEqualTo(now()->subDay());
+    $canEditPost = $isOwner && $editWindowOpen && auth()->user()?->can('update', $post);
+    $editedAtTitle = $post->edited_at?->format('M j, Y g:i A');
     $showPinnedProfileBanner = $context === 'profile' && $post->is_pinned && $instance === 'pinned-highlight';
     $statusValue = $post->status?->value ?? (string) $post->status;
     $isScheduledProfilePost = $context === 'profile' && $isOwner && $statusValue === 'scheduled';
@@ -48,6 +51,7 @@
         'saveUrl' => route('posts.save', $post),
         'shareUrl' => route('posts.share', $post),
         'showUrl' => route('posts.show', $post),
+        'postId' => (int) $post->getKey(),
     ];
     $pinIcon = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 17v5" /><path stroke-linecap="round" stroke-linejoin="round" d="M5 17h14l-3.5-4V5.5L17 4V2H7v2l1.5 1.5V13L5 17Z" />';
 
@@ -103,6 +107,7 @@
         'border-amber-300 bg-amber-50/80 ring-2 ring-amber-100' => $isScheduledProfilePost,
     ])
     x-data="postCard({{ \Illuminate\Support\Js::from($postCardState) }})"
+    x-bind:class="{ 'ring-2 ring-paw/20': recentlyUpdated }"
 >
     @if ($showPinnedProfileBanner)
         <div
@@ -164,7 +169,11 @@
 
                         @if ($post->edited_at)
                             <span aria-hidden="true">•</span>
-                            <span class="inline-flex min-h-5 items-center text-xs shell-text-muted">
+                            <span
+                                class="inline-flex min-h-5 items-center text-xs shell-text-muted"
+                                title="{{ $editedAtTitle ? 'Edited '.$editedAtTitle : 'Edited' }}"
+                                tabindex="0"
+                            >
                                 Edited
                             </span>
                         @endif
@@ -178,7 +187,7 @@
                 <x-follow-button :user="$author" :follow-status="$followStatus ?? 'none'" size="sm"/>
             @endif
 
-            @if ($showOwnerProfileMenu)
+            @if ($showOwnerMenu)
                 <x-ui.dropdown align="right" width="56" content-classes="py-2">
                     <x-slot name="trigger">
                         <button
@@ -193,21 +202,31 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        @if ($post->is_pinned)
-                            <form method="POST" action="{{ route('posts.unpin', $post) }}">
-                                @csrf
-                                @method('DELETE')
-                                <x-ui.dropdown-item type="submit" data-ui="post-card-menu-unpin">
-                                    Unpin from profile
-                                </x-ui.dropdown-item>
-                            </form>
+                        @if ($canEditPost)
+                            <livewire:posts.edit-trigger :post="$post" :key="'post-edit-trigger-'.$post->getKey().'-'.$postDomId" />
                         @else
-                            <form method="POST" action="{{ route('posts.pin', $post) }}">
-                                @csrf
-                                <x-ui.dropdown-item type="submit" data-ui="post-card-menu-pin">
-                                    Pin to profile
-                                </x-ui.dropdown-item>
-                            </form>
+                            <x-ui.dropdown-item type="button" disabled data-ui="post-card-menu-edit-disabled">
+                                Cannot edit — posts can only be edited within 24 hours of creation
+                            </x-ui.dropdown-item>
+                        @endif
+
+                        @if ($context === 'profile')
+                            @if ($post->is_pinned)
+                                <form method="POST" action="{{ route('posts.unpin', $post) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-ui.dropdown-item type="submit" data-ui="post-card-menu-unpin">
+                                        Unpin from profile
+                                    </x-ui.dropdown-item>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('posts.pin', $post) }}">
+                                    @csrf
+                                    <x-ui.dropdown-item type="submit" data-ui="post-card-menu-pin">
+                                        Pin to profile
+                                    </x-ui.dropdown-item>
+                                </form>
+                            @endif
                         @endif
 
                         <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Delete this post?');">
@@ -219,12 +238,6 @@
                         </form>
                     </x-slot>
                 </x-ui.dropdown>
-            @elseif ($isOwner)
-                <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Delete this post?');">
-                    @csrf
-                    @method('DELETE')
-                    <x-ui.button type="submit" variant="danger" size="xs">Delete</x-ui.button>
-                </form>
             @endif
         </div>
     </header>

@@ -1005,12 +1005,33 @@ document.addEventListener('alpine:init', () => {
  text: toStringValue(config.text),
  mode: toStringValue(config.mode, 'inline'),
  componentId: toStringValue(config.componentId),
+ isEditMode: Boolean(config.isEditMode),
+ draftAutosaveEnabled: config.draftAutosaveEnabled !== false,
  maxCharacters: toNumber(config.maxCharacters, 1000),
  maxAttachments: Math.max(1, toNumber(config.maxAttachments, 10)),
  uploadSlots: Array.isArray(config.uploadSlots) ? config.uploadSlots : [],
  circumference: 75.398,
  uploadCircumference: 100.53,
- attachments: [],
+ attachments: Array.isArray(config.attachments)
+ ? config.attachments.map((attachment, index) => ({
+ client_id: toStringValue(attachment.client_id || `attachment-${index}`),
+ slot: attachment.slot === null || attachment.slot === undefined ? null : toStringValue(attachment.slot),
+ file_name: toStringValue(attachment.file_name || 'attachment'),
+ media_type: toStringValue(attachment.media_type || 'image'),
+ mime_type: attachment.mime_type === null || attachment.mime_type === undefined ? null : toStringValue(attachment.mime_type),
+ file_size: toNumber(attachment.file_size),
+ preview_data_url: toStringValue(attachment.preview_data_url),
+ alt_text: toStringValue(attachment.alt_text),
+ showAltText: Boolean(attachment.alt_text),
+ upload_state: 'complete',
+ progress: 100,
+ temporary_path: toStringValue(attachment.temporary_path),
+ livewire_upload_name: toStringValue(attachment.temporary_path),
+ removing: false,
+ order: toNumber(attachment.order, index),
+ is_existing: Boolean(attachment.is_existing),
+ }))
+ : [],
  mediaErrors: [],
  isDragging: false,
  draggingAttachmentId: null,
@@ -1033,9 +1054,11 @@ document.addEventListener('alpine:init', () => {
  this.renderHighlighted(false);
  }
 
+ if (this.draftAutosaveEnabled) {
  this.autosaveInterval = window.setInterval(() => {
  this.maybeAutosaveDraft();
  }, 10000);
+ }
 
  this.$nextTick(() => {
  this.initializeSortable();
@@ -1129,6 +1152,10 @@ document.addEventListener('alpine:init', () => {
  },
 
  markDraftDirty() {
+ if (!this.draftAutosaveEnabled) {
+ return;
+ }
+
  this.hasLocalUnsavedChanges = true;
 
  if (this.$wire?.set) {
@@ -1137,6 +1164,10 @@ document.addEventListener('alpine:init', () => {
  },
 
  async maybeAutosaveDraft() {
+ if (!this.draftAutosaveEnabled) {
+ return;
+ }
+
  const serverDirty = Boolean(this.$wire?.hasUnsavedChanges);
 
  if (!this.hasLocalUnsavedChanges && !serverDirty) {
@@ -1183,6 +1214,15 @@ document.addEventListener('alpine:init', () => {
  }
  },
 
+ handlePostUpdated(event) {
+ if (!this.eventBelongsToComposer(event)) {
+ return;
+ }
+
+ this.hasLocalUnsavedChanges = false;
+ this.draftSavedVisible = false;
+ },
+
  scrollToFirstError(event) {
  if (!this.eventBelongsToComposer(event)) {
  return;
@@ -1224,6 +1264,7 @@ document.addEventListener('alpine:init', () => {
  livewire_upload_name: toStringValue(attachment.temporary_path),
  removing: false,
  order: toNumber(attachment.order, index),
+ is_existing: Boolean(attachment.is_existing),
  }))
  : [];
  this.mediaErrors = [];
@@ -1342,6 +1383,10 @@ document.addEventListener('alpine:init', () => {
  },
 
  handleDragOver(event) {
+ if (this.isEditMode) {
+ return;
+ }
+
  if (!Array.from(event.dataTransfer?.types || []).includes('Files')) {
  return;
  }
@@ -1358,11 +1403,19 @@ document.addEventListener('alpine:init', () => {
  },
 
  handleDrop(event) {
+ if (this.isEditMode) {
+ return;
+ }
+
  this.isDragging = false;
  this.handleFileSelection(event.dataTransfer?.files || []);
  },
 
  handleFileSelection(fileList) {
+ if (this.isEditMode) {
+ return;
+ }
+
  const files = Array.from(fileList || []);
 
  if (files.length === 0) {
@@ -1437,6 +1490,7 @@ document.addEventListener('alpine:init', () => {
  temporary_path:'',
  livewire_upload_name:'',
  removing: false,
+ is_existing: false,
  };
 
  this.attachments.push(attachment);
@@ -1470,6 +1524,10 @@ document.addEventListener('alpine:init', () => {
  },
 
  initializeSortable() {
+ if (this.isEditMode) {
+ return;
+ }
+
  if (!this.$refs.attachmentStrip || this.sortableInstance) {
  return;
  }
@@ -1618,6 +1676,10 @@ document.addEventListener('alpine:init', () => {
  }
 
  const attachment = this.attachments[index];
+ if (attachment.is_existing) {
+ return;
+ }
+
  attachment.removing = true;
  this.markDraftDirty();
 
@@ -1687,6 +1749,10 @@ document.addEventListener('alpine:init', () => {
  },
 
  syncAttachmentOrder() {
+ if (this.isEditMode) {
+ return;
+ }
+
  this.attachments.forEach((attachment, index) => {
  attachment.order = index;
 
@@ -1788,7 +1854,11 @@ document.addEventListener('alpine:init', () => {
  );
  },
 
- resetLocalAttachments() {
+ resetLocalAttachments(event = null) {
+ if (event && !this.eventBelongsToComposer(event)) {
+ return;
+ }
+
  window.clearTimeout(this.linkPreviewTimer);
  window.clearTimeout(this.draftSavedTimer);
 
@@ -1863,10 +1933,35 @@ document.addEventListener('alpine:init', () => {
  shares: toNumber(config.shares),
  shareBusy: false,
  shareCopied: false,
+ postId: toNumber(config.postId),
+ recentlyUpdated: false,
  likeUrl: toStringValue(config.likeUrl),
  saveUrl: toStringValue(config.saveUrl),
  shareUrl: toStringValue(config.shareUrl),
  showUrl: toStringValue(config.showUrl),
+
+ init() {
+ this.postUpdatedHandler = (event) => {
+ const updatedPostId = toNumber(event.detail?.postId);
+
+ if (updatedPostId <= 0 || updatedPostId !== this.postId) {
+ return;
+ }
+
+ this.recentlyUpdated = true;
+ window.setTimeout(() => {
+ this.recentlyUpdated = false;
+ }, 1800);
+ };
+
+ window.addEventListener('post-updated', this.postUpdatedHandler);
+ },
+
+ destroy() {
+ if (this.postUpdatedHandler) {
+ window.removeEventListener('post-updated', this.postUpdatedHandler);
+ }
+ },
 
  get csrfToken() {
  return document.querySelector('meta[name=csrf-token]')?.content ||'';

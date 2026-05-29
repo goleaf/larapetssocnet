@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Posts\CreatePostAction;
+use App\Actions\Posts\UpdatePostAction;
 use App\Enums\PostStatus;
 use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Models\Content\Post;
@@ -176,6 +177,12 @@ new class extends Component
 
     public bool $petTaggingLocked = false;
 
+    public ?int $editPostId = null;
+
+    public bool $isEditMode = false;
+
+    public ?string $editingPostCreatedAt = null;
+
     /**
      * @param  list<int>|null  $selectedPetIds
      */
@@ -187,11 +194,25 @@ new class extends Component
         int $contextId = 0,
         ?int $fixedPetId = null,
         bool $lockPetTags = false,
+        ?int $editPostId = null,
     ): void {
         $this->mode = in_array($mode, [self::MODE_INLINE, self::MODE_MODAL], true) ? $mode : self::MODE_INLINE;
         $this->contextType = filled($contextType) ? (string) $contextType : 'default';
         $this->contextId = max(0, $contextId);
         $this->selectedVisibility = $this->normalizeVisibility($visibility) ?? $this->defaultVisibility();
+
+        if ($editPostId !== null && $editPostId > 0) {
+            $this->editPostId = $editPostId;
+            $this->isEditMode = true;
+            $this->mode = self::MODE_MODAL;
+            $this->modalOpen = true;
+            $this->contextType = 'post-edit';
+            $this->contextId = $editPostId;
+            $this->hydratePostForEditing($editPostId);
+
+            return;
+        }
+
         $initialPetIds = $this->normalizePetIds($selectedPetIds ?? []);
         $contextFixedPetId = in_array($this->contextType, ['pet', 'pet-profile', 'pet_profile'], true) && $this->contextId > 0
             ? $this->contextId
@@ -215,6 +236,10 @@ new class extends Component
 
     public function updated(string $property): void
     {
+        if ($this->isEditMode) {
+            return;
+        }
+
         if ($this->shouldTrackDraftChange($property)) {
             $this->markDraftDirty();
         }
@@ -650,6 +675,10 @@ new class extends Component
 
     public function autosaveDraft(PostDraftService $drafts): void
     {
+        if ($this->isEditMode) {
+            return;
+        }
+
         $user = $this->viewer();
 
         if (! $user instanceof User || ! $this->hasUnsavedChanges || ! $this->hasDraftableContent()) {
@@ -671,8 +700,14 @@ new class extends Component
         }
     }
 
-    public function submit(CreatePostAction $posts, PostDraftService $drafts): void
+    public function submit(CreatePostAction $posts, PostDraftService $drafts, UpdatePostAction $updates): void
     {
+        if ($this->isEditMode) {
+            $this->submitUpdate($updates);
+
+            return;
+        }
+
         $user = $this->viewer();
 
         abort_unless($user instanceof User, 403);
@@ -709,7 +744,7 @@ new class extends Component
                 $this->modalOpen = false;
             }
 
-            $this->dispatch('post-composer-reset');
+            $this->dispatch('post-composer-reset', composerId: (string) $this->getId());
             $this->dispatch('post-created', ...$createdPayload);
             $this->dispatch('toast-message', message: $createdPayload['toastMessage'], type: 'success');
         } catch (ValidationException $exception) {
@@ -722,11 +757,44 @@ new class extends Component
         }
     }
 
-    public function confirmDuplicateAndSubmit(CreatePostAction $posts, PostDraftService $drafts): void
+    private function submitUpdate(UpdatePostAction $updates): void
+    {
+        $user = $this->viewer();
+
+        abort_unless($user instanceof User && $this->editPostId !== null, 403);
+
+        $this->isSubmitting = true;
+
+        try {
+            $post = Post::query()
+                ->whereKey($this->editPostId)
+                ->firstOrFail();
+
+            $updatedPost = $updates->handle($user, $post, $this->updatePayload());
+            $updatedPayload = $this->postUpdatedPayload($updatedPost);
+
+            $this->hasUnsavedChanges = false;
+            $this->modalOpen = false;
+
+            $this->dispatch('post-updated', ...$updatedPayload);
+            $this->dispatch('post-updated.'.$updatedPost->getKey(), ...$updatedPayload);
+            $this->dispatch('toast-message', message: 'Post updated.', type: 'success');
+            $this->dispatch('post-edit-closed', postId: (int) $updatedPost->getKey());
+        } catch (ValidationException $exception) {
+            $this->setErrorBag($exception->validator->errors());
+            $this->dispatch('post-submission-failed', composerId: (string) $this->getId());
+
+            return;
+        } finally {
+            $this->isSubmitting = false;
+        }
+    }
+
+    public function confirmDuplicateAndSubmit(CreatePostAction $posts, PostDraftService $drafts, UpdatePostAction $updates): void
     {
         $this->confirmedDuplicate = true;
         $this->duplicateDetected = false;
-        $this->submit($posts, $drafts);
+        $this->submit($posts, $drafts, $updates);
     }
 
     public function goBackFromDuplicate(): void
@@ -740,10 +808,22 @@ new class extends Component
     {
         $this->modalOpen = false;
         $this->dispatch('post-composer-closed');
+
+        if ($this->isEditMode && $this->editPostId !== null) {
+            $this->dispatch('post-edit-closed', postId: $this->editPostId);
+        }
     }
 
     public function requestCancel(): void
     {
+        if ($this->isEditMode) {
+            if ($this->mode === self::MODE_MODAL) {
+                $this->closeModal();
+            }
+
+            return;
+        }
+
         if ($this->hasDraftableContent() || $this->draftId !== null || $this->pendingDraftAvailable) {
             $this->discardConfirmOpen = true;
 
@@ -771,7 +851,7 @@ new class extends Component
         $this->resetComposerState();
         $this->discardConfirmOpen = false;
         $this->hasUnsavedChanges = false;
-        $this->dispatch('post-composer-reset');
+        $this->dispatch('post-composer-reset', composerId: (string) $this->getId());
 
         if ($this->mode === self::MODE_MODAL) {
             $this->closeModal();
@@ -841,6 +921,80 @@ new class extends Component
         $this->enforceFixedPetTag();
     }
 
+    private function hydratePostForEditing(int $postId): void
+    {
+        $post = Post::query()
+            ->with(['pets.media', 'pet', 'postMedia', 'media'])
+            ->whereKey($postId)
+            ->firstOrFail();
+
+        $this->authorize('update', $post);
+
+        $this->textContent = (string) $post->body;
+        $this->selectedVisibility = $this->normalizeVisibility((string) $post->visibility) ?? Post::VISIBILITY_PUBLIC;
+        $this->selectedMood = PostMood::normalize($post->mood);
+        $this->locationDisplayText = $this->normalizeNullableString($post->location_display_text ?? $post->location);
+        $this->locationSearch = $this->locationDisplayText;
+        $this->locationLat = filled($post->location_lat) ? (string) $post->location_lat : null;
+        $this->locationLng = filled($post->location_lng) ? (string) $post->location_lng : null;
+        $this->selectedPetIds = $this->postPetIds($post);
+        $this->linkPreviewData = is_array($post->link_preview) ? $post->link_preview : [];
+        $this->detectedLinkPreviewUrl = $this->normalizeNullableString($this->linkPreviewData['url'] ?? null);
+        $this->attachmentMetadata = $this->existingAttachmentMetadata($post);
+        $this->editingPostCreatedAt = $post->created_at?->toIso8601String();
+        $this->hasUnsavedChanges = false;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function postPetIds(Post $post): array
+    {
+        $relationshipPetIds = $post->relationLoaded('pets')
+            ? $post->pets->pluck('id')
+            : $post->pets()->pluck('pets.id');
+
+        return $relationshipPetIds
+            ->merge([$post->pet_id])
+            ->merge(is_array($post->tagged_pets) ? $post->tagged_pets : [])
+            ->map(static fn (mixed $petId): int => (int) $petId)
+            ->filter(static fn (int $petId): bool => $petId > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function existingAttachmentMetadata(Post $post): array
+    {
+        return $post->mediaItemsForDisplay()
+            ->map(function (mixed $item, int $index): array {
+                $mediaType = Post::mediaItemIsVideo($item) ? 'video' : 'image';
+                $filePath = is_object($item) ? (string) ($item->file_path ?? $item->file_name ?? $item->name ?? '') : '';
+                $mediaId = is_object($item) && method_exists($item, 'getKey') ? (int) $item->getKey() : $index;
+                $fileName = basename($filePath) ?: 'attachment';
+
+                return [
+                    'client_id' => 'existing-'.$mediaId,
+                    'slot' => null,
+                    'temporary_path' => '',
+                    'preview_data_url' => Post::mediaItemUrl($item),
+                    'file_name' => $fileName,
+                    'media_type' => $mediaType,
+                    'mime_type' => is_object($item) ? ($item->mime_type ?? null) : null,
+                    'file_size' => is_object($item) ? (int) ($item->size ?? 0) : 0,
+                    'alt_text' => is_object($item) ? ($item->alt_text ?? null) : null,
+                    'order' => is_object($item) ? (int) ($item->order ?? $index) : $index,
+                    'is_existing' => true,
+                    'permanent_id' => $mediaId,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     /**
      * @param  array<string, mixed>  $state
      */
@@ -900,6 +1054,25 @@ new class extends Component
             'link_preview_url' => $this->detectedLinkPreviewUrl,
             'media_attachments' => $this->mediaAttachmentPayload(),
             'confirmed_duplicate' => $this->confirmedDuplicate,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function updatePayload(): array
+    {
+        return [
+            'body' => $this->textContent,
+            'pet_id' => $this->selectedPetIds[0] ?? null,
+            'tagged_pets' => $this->selectedPetIds,
+            'visibility' => $this->selectedVisibility,
+            'mood' => $this->selectedMood,
+            'location' => $this->locationDisplayText,
+            'location_display_text' => $this->locationDisplayText,
+            'location_lat' => $this->locationLat,
+            'location_lng' => $this->locationLng,
+            'link_preview' => $this->linkPreviewData ?: null,
         ];
     }
 
@@ -978,6 +1151,21 @@ new class extends Component
                 ? 'Post scheduled for '.$displayText.' ✓'
                 : 'Your post is live! 🐾',
             'scheduledDisplayText' => $displayText,
+        ];
+    }
+
+    /**
+     * @return array{postId: int, composerId: string, mode: string, body: string, editedAt: string, editedAtIso: ?string}
+     */
+    private function postUpdatedPayload(Post $post): array
+    {
+        return [
+            'postId' => (int) $post->getKey(),
+            'composerId' => (string) $this->getId(),
+            'mode' => $this->mode,
+            'body' => (string) $post->body,
+            'editedAt' => $post->edited_at?->diffForHumans() ?? 'Just now',
+            'editedAtIso' => $post->edited_at?->toIso8601String(),
         ];
     }
 
@@ -1247,6 +1435,10 @@ new class extends Component
 
     private function markDraftDirty(): void
     {
+        if ($this->isEditMode) {
+            return;
+        }
+
         $this->hasUnsavedChanges = true;
         $this->dispatch('post-draft-dirty');
     }
@@ -1265,6 +1457,8 @@ new class extends Component
  $editorId = $composerId.'-editor';
  $titleId = $composerId.'-title';
  $isModal = $mode === 'modal';
+ $composerTitle = $isEditMode ? 'Edit post' : 'Create a post';
+ $composerSubtitle = $isEditMode ? 'Update the text, tags, mood, location, and visibility for this post.' : 'Share a pet moment, care question, or update.';
  $surfaceClasses = $isModal ? 'w-full max-w-2xl rounded-[var(--radius-card)] bg-[color:var(--surface-modal)] shadow-card' : 'shell-card';
  $surfacePadding = $isModal ? 'p-5 sm:p-6' : 'p-6';
  $uploadSlots = [
@@ -1295,6 +1489,22 @@ new class extends Component
      ? (string) $linkPreviewData['domain']
      : ($linkPreviewUrl ? parse_url($linkPreviewUrl, PHP_URL_HOST) : null);
  $minuteOptions = ['00', '15', '30', '45'];
+ $initialAttachments = collect($attachmentMetadata)
+     ->map(fn (array $attachment, int $index): array => [
+         'client_id' => (string) ($attachment['client_id'] ?? 'attachment-'.$index),
+         'slot' => $attachment['slot'] ?? null,
+         'file_name' => (string) ($attachment['file_name'] ?? 'attachment'),
+         'media_type' => (string) ($attachment['media_type'] ?? 'image'),
+         'mime_type' => $attachment['mime_type'] ?? null,
+         'file_size' => (int) ($attachment['file_size'] ?? 0),
+         'preview_data_url' => (string) ($attachment['preview_data_url'] ?? ''),
+         'alt_text' => $attachment['alt_text'] ?? null,
+         'temporary_path' => (string) ($attachment['temporary_path'] ?? ''),
+         'order' => (int) ($attachment['order'] ?? $index),
+         'is_existing' => (bool) ($attachment['is_existing'] ?? false),
+     ])
+     ->values()
+     ->all();
  $visibilityIcon = static function (string $visibility, string $classes = 'h-4 w-4'): string {
      $baseAttributes = 'class="'.$classes.'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
 
@@ -1312,12 +1522,16 @@ new class extends Component
  text: @js($textContent),
  mode: @js($mode),
  componentId: @js((string) $this->getId()),
+ isEditMode: @js($isEditMode),
+ draftAutosaveEnabled: @js(! $isEditMode),
  maxCharacters: 1000,
  maxAttachments: 10,
  uploadSlots: @js($uploadSlots),
+ attachments: @js($initialAttachments),
  })"
- x-on:post-composer-reset.window="resetLocalAttachments"
+ x-on:post-composer-reset.window="resetLocalAttachments($event)"
  x-on:post-created.window="handlePostCreated($event)"
+ x-on:post-updated.window="handlePostUpdated($event)"
  x-on:post-submission-failed.window="scrollToFirstError($event)"
  x-on:post-draft-dirty.window="hasLocalUnsavedChanges = true"
  x-on:post-draft-autosaved.window="showDraftSaved()"
@@ -1369,8 +1583,8 @@ new class extends Component
  </div>
  <div class="flex items-start justify-between gap-4">
  <div class="min-w-0">
- <p id="{{ $titleId }}" class="font-display text-lg font-bold text-bark">Create a post</p>
- <p class="mt-1 text-sm leading-6 text-fur">Share a pet moment, care question, or update.</p>
+ <p id="{{ $titleId }}" class="font-display text-lg font-bold text-bark">{{ $composerTitle }}</p>
+ <p class="mt-1 text-sm leading-6 text-fur">{{ $composerSubtitle }}</p>
  </div>
 
  @if ($isModal)
@@ -1387,7 +1601,13 @@ new class extends Component
  @endif
  </div>
 
- @if ($pendingDraftAvailable)
+ @if ($isEditMode)
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/45 p-3" role="status">
+ <p class="text-sm font-semibold text-fur">Editing post</p>
+ </div>
+ @endif
+
+ @if (! $isEditMode && $pendingDraftAvailable)
  <div class="rounded-[var(--radius-soft)] border border-paw/20 bg-paw/5 p-4" role="status">
  <p class="text-sm font-semibold text-bark">You have an unsaved draft from {{ $pendingDraftRelativeTime ?? 'recently' }}.</p>
  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -1399,7 +1619,7 @@ new class extends Component
  </div>
  @endif
 
- @if ($discardConfirmOpen)
+ @if (! $isEditMode && $discardConfirmOpen)
  <div class="rounded-[var(--radius-soft)] border border-rose/25 bg-rose/5 p-4" role="alert">
  <p class="text-sm font-semibold text-bark">Discard this post? Your unsaved draft will be lost.</p>
  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -1411,7 +1631,7 @@ new class extends Component
  </div>
  @endif
 
- @if ($duplicateDetected)
+ @if (! $isEditMode && $duplicateDetected)
  <div class="fixed inset-0 z-[60] flex items-end justify-center bg-bark/45 p-0 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="{{ $composerId }}-duplicate-title">
  <button type="button" class="absolute inset-0 cursor-default" aria-label="Go back to composer" wire:click="goBackFromDuplicate"></button>
  <div class="relative w-full max-w-md rounded-t-[var(--radius-card)] border border-amber/25 bg-warm-white p-5 shadow-card sm:rounded-[var(--radius-card)]">
@@ -1446,6 +1666,12 @@ new class extends Component
  </div>
  </div>
  @endif
+
+ @error('edit')
+ <div class="rounded-[var(--radius-soft)] border border-rose/25 bg-rose/5 p-4 text-sm font-medium text-rose" role="alert" data-composer-error>
+ {{ $message }}
+ </div>
+ @enderror
 
  <div class="space-y-2">
  <label for="{{ $editorId }}" class="text-sm font-semibold text-bark">What would you like to share?</label>
@@ -1514,7 +1740,7 @@ new class extends Component
  </p>
  @endif
 
- @if (filled($scheduledPublishAt) && filled($scheduledDisplayText))
+ @if (! $isEditMode && filled($scheduledPublishAt) && filled($scheduledDisplayText))
  <p class="inline-flex max-w-full items-center gap-1.5 text-sm font-semibold text-amber-dark" aria-live="polite">
  <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
  <path d="M5 3v3"/>
@@ -1579,7 +1805,7 @@ new class extends Component
  </div>
  @endif
 
- @if ($schedulePickerOpen)
+ @if (! $isEditMode && $schedulePickerOpen)
  <div
  class="rounded-[var(--radius-soft)] border border-amber/25 bg-amber-light/25 p-4"
  x-data="postSchedulePicker({
@@ -1819,6 +2045,7 @@ new class extends Component
  <div class="space-y-3">
  <div class="flex flex-wrap items-center justify-between gap-3 border-y border-whisker/25 py-3">
  <div class="flex items-center gap-2">
+ @unless ($isEditMode)
  <button
  type="button"
  class="inline-flex h-10 w-10 items-center justify-center rounded-full text-fur transition hover:bg-paw/10 hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
@@ -1831,6 +2058,7 @@ new class extends Component
  <circle cx="13" cy="7" r="1.25"/>
  </svg>
  </button>
+ @endunless
  <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
  <button
  type="button"
@@ -1886,6 +2114,7 @@ new class extends Component
  </div>
  </div>
  </div>
+ @unless ($isEditMode)
  <button
  type="button"
  class="{{ $schedulePickerOpen || filled($scheduledPublishAt) ? 'bg-amber/10 text-amber-dark' : 'text-fur hover:bg-amber/10 hover:text-amber-dark' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
@@ -1898,6 +2127,7 @@ new class extends Component
  <path d="M10 6v4l2.5 1.5"/>
  </svg>
  </button>
+ @endunless
  <button
  type="button"
  class="{{ $locationPickerOpen || filled($locationDisplayText) ? 'bg-leaf/10 text-leaf' : 'text-fur hover:bg-leaf/10 hover:text-leaf' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
@@ -1979,6 +2209,7 @@ new class extends Component
  </div>
  </div>
  @endunless
+ @unless ($isEditMode)
  <input
  x-ref="mediaInput"
  type="file"
@@ -1988,6 +2219,9 @@ new class extends Component
  x-on:change="handleFileSelection($event.target.files); $event.target.value = ''"
  >
  <p class="text-xs leading-5 text-fur">Up to 10 images or videos. Images 10 MB, videos 100 MB.</p>
+ @else
+ <p class="text-xs leading-5 text-fur">Existing media is shown for context during edits.</p>
+ @endunless
  </div>
 
  <p class="text-xs font-semibold text-fur" aria-live="polite">
@@ -2038,6 +2272,7 @@ new class extends Component
  type="button"
  class="absolute right-1 top-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-bark/75 text-white transition hover:bg-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  x-on:click="removeAttachment(attachment.client_id)"
+ x-show="!attachment.is_existing"
  x-bind:aria-label="`Remove ${attachment.file_name}`"
  >
  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -2079,11 +2314,13 @@ new class extends Component
 
  <div class="mt-2 min-w-0">
  <p class="truncate text-xs font-semibold text-bark" x-text="attachment.file_name"></p>
+ <p class="mt-1 text-xs font-semibold text-fur" x-show="attachment.is_existing">Existing media</p>
  <button
  type="button"
  class="mt-1 text-xs font-semibold text-fur transition hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  x-on:click="attachment.showAltText = !attachment.showAltText"
  x-text="attachment.showAltText ? 'Hide alt text' : 'Add alt text'"
+ x-show="!attachment.is_existing"
  ></button>
  <div x-show="attachment.showAltText" x-transition class="mt-2">
  <input
@@ -2104,6 +2341,9 @@ new class extends Component
 
 	 <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
 	 <div class="min-h-5 text-xs text-fur" role="status">
+	 @if ($isEditMode)
+	 <span>Ready to save.</span>
+	 @else
 	 <span x-cloak x-show="draftSavedVisible" x-transition.opacity>Draft saved</span>
 	 <span x-show="!draftSavedVisible">
 	 @if ($isLinkPreviewLoading)
@@ -2112,6 +2352,7 @@ new class extends Component
 	 Ready to post.
 	 @endif
 	 </span>
+	 @endif
 	 </div>
 
 	 <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -2195,13 +2436,13 @@ new class extends Component
  wire:target="submit,confirmDuplicateAndSubmit"
  x-bind:disabled="characterCount > maxCharacters || hasActiveUploads"
  >
- <span wire:loading.remove wire:target="submit,confirmDuplicateAndSubmit">{{ filled($scheduledPublishAt) ? 'Schedule' : 'Post' }}</span>
+ <span wire:loading.remove wire:target="submit,confirmDuplicateAndSubmit">{{ $isEditMode ? 'Save changes' : (filled($scheduledPublishAt) ? 'Schedule' : 'Post') }}</span>
  <span wire:loading.flex wire:target="submit,confirmDuplicateAndSubmit" class="items-center gap-2">
  <svg class="h-4 w-4 animate-spin" viewBox="0 0 20 20" fill="none" aria-hidden="true">
  <circle class="stroke-current opacity-25" cx="10" cy="10" r="7" stroke-width="2"></circle>
  <path class="fill-current" d="M17 10a7 7 0 0 0-7-7V1a9 9 0 0 1 9 9h-2Z"></path>
  </svg>
- {{ filled($scheduledPublishAt) ? 'Scheduling...' : 'Posting...' }}
+ {{ $isEditMode ? 'Saving...' : (filled($scheduledPublishAt) ? 'Scheduling...' : 'Posting...') }}
  </span>
  </x-ui.button>
  </div>

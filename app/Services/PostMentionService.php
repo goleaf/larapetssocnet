@@ -23,8 +23,12 @@ class PostMentionService
         )));
     }
 
-    public function sync(Post $post, User $author, bool $dispatchNotifications = true): void
+    public function sync(Post $post, User $author, bool $dispatchNotifications = true, bool $notifyExistingMentions = false): void
     {
+        $existingMentionedUserIds = $post->mentionedUsers()
+            ->pluck('users.id')
+            ->map(static fn (mixed $userId): int => (int) $userId);
+
         $usernames = $this->extractUsernames((string) $post->getAttribute('body'));
 
         if ($usernames === []) {
@@ -46,8 +50,18 @@ class PostMentionService
             return;
         }
 
-        DB::afterCommit(function () use ($post, $author, $mentionedUsers): void {
-            foreach ($mentionedUsers as $mentionedUser) {
+        $newlyMentionedUsers = $notifyExistingMentions
+            ? $mentionedUsers->values()
+            : $mentionedUsers
+                ->reject(fn (User $mentionedUser): bool => $existingMentionedUserIds->contains((int) $mentionedUser->getKey()))
+                ->values();
+
+        if ($newlyMentionedUsers->isEmpty()) {
+            return;
+        }
+
+        DB::afterCommit(function () use ($post, $author, $newlyMentionedUsers): void {
+            foreach ($newlyMentionedUsers as $mentionedUser) {
                 if ((int) $mentionedUser->getKey() === (int) $author->getKey()) {
                     continue;
                 }

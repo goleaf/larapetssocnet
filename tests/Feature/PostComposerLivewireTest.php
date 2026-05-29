@@ -1,16 +1,21 @@
 <?php
 
+use App\Actions\Posts\ProcessTagsAction;
 use App\Enums\PostStatus;
 use App\Jobs\FeedFanOutJob;
 use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Jobs\MediaProcessingJob;
+use App\Jobs\MentionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
+use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\LocationAutocompleteService;
+use App\Services\PostMentionService;
 use App\Support\Posts\PostContentHasher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
@@ -38,6 +43,53 @@ it('renders the reusable composer in inline and modal modes', function (): void 
         ->assertSet('mode', 'modal')
         ->assertSeeHtml('role="dialog"')
         ->assertSee('Close post composer');
+});
+
+it('loads the composer in edit mode with existing post state', function (): void {
+    $user = User::factory()->create();
+    $pet = Pet::factory()->for($user)->create(['name' => 'Miso']);
+    $post = Post::factory()->for($user)->create([
+        'body' => 'Original park update',
+        'visibility' => Post::VISIBILITY_PRIVATE,
+        'mood' => 'happy',
+        'location' => 'Vilnius',
+        'location_display_text' => 'Vilnius, Lithuania',
+        'location_lat' => 54.6872,
+        'location_lng' => 25.2797,
+        'link_preview' => [
+            'url' => 'https://example.com/miso',
+            'title' => 'Miso update',
+            'domain' => 'example.com',
+        ],
+        'pet_id' => $pet->id,
+        'tagged_pets' => [$pet->id],
+    ]);
+    $post->pets()->attach($pet->id, ['is_primary' => true]);
+    PostMedia::factory()->for($post, 'post')->create([
+        'file_path' => 'posts/miso.jpg',
+        'media_type' => 'image',
+        'alt_text' => 'Miso in the grass',
+        'order' => 0,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer', ['mode' => 'modal', 'editPostId' => $post->id])
+        ->assertSet('isEditMode', true)
+        ->assertSet('modalOpen', true)
+        ->assertSet('textContent', 'Original park update')
+        ->assertSet('selectedVisibility', Post::VISIBILITY_PRIVATE)
+        ->assertSet('selectedMood', 'happy')
+        ->assertSet('locationDisplayText', 'Vilnius, Lithuania')
+        ->assertSet('locationLat', '54.6872')
+        ->assertSet('locationLng', '25.2797')
+        ->assertSet('selectedPetIds', [$pet->id])
+        ->assertSet('attachmentMetadata.0.is_existing', true)
+        ->assertSee('Edit post')
+        ->assertSee('Editing post')
+        ->assertSee('Save changes')
+        ->assertSee('Miso')
+        ->assertSee('Miso update')
+        ->assertDontSee('Schedule post');
 });
 
 it('keeps text state and exposes the computed character count', function (): void {
@@ -434,6 +486,76 @@ it('creates a post through the action pipeline', function (): void {
     Queue::assertPushed(FeedFanOutJob::class);
 });
 
+it('updates an existing post through the edit composer and notifies only new mentions', function (): void {
+    $user = User::factory()->create();
+    $previousMention = User::factory()->create(['username' => 'old_friend']);
+    $newMention = User::factory()->create(['username' => 'new_friend']);
+    $oldPet = Pet::factory()->for($user)->create(['name' => 'Old Pet', 'posts_count' => 1]);
+    $newPet = Pet::factory()->for($user)->create(['name' => 'New Pet', 'posts_count' => 0]);
+    $post = Post::factory()->for($user)->create([
+        'body' => 'Original update for @old_friend #OldTag',
+        'body_html' => 'Original update for @old_friend #OldTag',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'mood' => 'happy',
+        'location' => 'Old park',
+        'location_display_text' => 'Old park',
+        'pet_id' => $oldPet->id,
+        'tagged_pets' => [$oldPet->id],
+        'created_at' => now()->subHour(),
+    ]);
+    $post->pets()->attach($oldPet->id, ['is_primary' => true]);
+    app(ProcessTagsAction::class)->handle($post);
+    app(PostMentionService::class)->sync($post, $user, false);
+
+    Queue::fake([MentionNotificationJob::class]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer', ['mode' => 'modal', 'editPostId' => $post->id])
+        ->set('textContent', 'Updated update for @new_friend #NewTag')
+        ->set('selectedVisibility', Post::VISIBILITY_FOLLOWERS)
+        ->set('selectedMood', 'playful')
+        ->set('locationDisplayText', 'New park')
+        ->set('locationLat', '51.5074')
+        ->set('locationLng', '-0.1278')
+        ->set('selectedPetIds', [$newPet->id])
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertSet('modalOpen', false)
+        ->assertDispatched('post-updated', postId: $post->id)
+        ->assertDispatched('toast-message', message: 'Post updated.', type: 'success');
+
+    $post->refresh();
+
+    expect($post->body)->toBe('Updated update for @new_friend #NewTag')
+        ->and($post->visibility)->toBe(Post::VISIBILITY_FOLLOWERS)
+        ->and($post->mood)->toBe('playful')
+        ->and($post->location_display_text)->toBe('New park')
+        ->and((string) $post->location_lat)->toStartWith('51.5074')
+        ->and((string) $post->location_lng)->toStartWith('-0.1278')
+        ->and($post->edited_at)->not->toBeNull()
+        ->and($post->edit_count)->toBe(1)
+        ->and($post->pets()->whereKey($oldPet->id)->exists())->toBeFalse()
+        ->and($post->pets()->whereKey($newPet->id)->exists())->toBeTrue()
+        ->and($oldPet->fresh()->posts_count)->toBe(0)
+        ->and($newPet->fresh()->posts_count)->toBe(1);
+
+    $this->assertDatabaseMissing('post_mentions', [
+        'post_id' => $post->id,
+        'mentioned_user_id' => $previousMention->id,
+    ]);
+    $this->assertDatabaseHas('post_mentions', [
+        'post_id' => $post->id,
+        'mentioned_user_id' => $newMention->id,
+        'mentioned_username' => 'new_friend',
+    ]);
+    $this->assertDatabaseHas('hashtags', ['normalized_name' => 'newtag']);
+    $this->assertDatabaseHas('hashtags', ['normalized_name' => 'oldtag', 'posts_count' => 0]);
+
+    Queue::assertPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->mentionedUserId === $newMention->id
+        && $job->postId === $post->id);
+    Queue::assertNotPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->mentionedUserId === $previousMention->id);
+});
+
 it('creates scheduled posts without immediate feed fanout', function (): void {
     Queue::fake([FeedFanOutJob::class]);
 
@@ -596,6 +718,53 @@ it('renders feed listeners for optimistic published post prepending', function (
         ->assertSeeHtml('x-data="feedPostList()"')
         ->assertSeeHtml('x-on:post-created.window="prependPost($event)"')
         ->assertSee('New');
+});
+
+it('renders post card editing actions only during the edit window', function (): void {
+    $user = User::factory()->create();
+    $recentPost = Post::factory()->for($user)->create([
+        'created_at' => now()->subHours(2),
+    ]);
+    $expiredPost = Post::factory()->for($user)->create([
+        'created_at' => now()->subHours(25),
+    ]);
+    $editedPost = Post::factory()->for($user)->create([
+        'created_at' => now()->subHours(2),
+        'edited_at' => now()->subMinutes(10),
+    ]);
+
+    $this->actingAs($user);
+
+    $recentHtml = Blade::render('<x-post-card :post="$post" />', ['post' => $recentPost]);
+    $expiredHtml = Blade::render('<x-post-card :post="$post" />', ['post' => $expiredPost]);
+    $editedHtml = Blade::render('<x-post-card :post="$post" />', ['post' => $editedPost]);
+
+    expect($recentHtml)
+        ->toContain('data-ui="post-card-menu-edit"')
+        ->toContain('Edit post')
+        ->and($expiredHtml)
+        ->toContain('data-ui="post-card-menu-edit-disabled"')
+        ->toContain('Cannot edit — posts can only be edited within 24 hours of creation')
+        ->and($editedHtml)
+        ->toContain('Edited')
+        ->toContain('title="Edited ');
+});
+
+it('opens the edit composer from the post card edit trigger', function (): void {
+    $user = User::factory()->create();
+    $post = Post::factory()->for($user)->create([
+        'body' => 'Editable from the card',
+        'created_at' => now()->subHour(),
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.edit-trigger', ['post' => $post])
+        ->assertSet('open', false)
+        ->assertSee('Edit post')
+        ->call('open')
+        ->assertSet('open', true)
+        ->assertSee('Editable from the card')
+        ->assertSee('Editing post');
 });
 
 it('shows a resumable draft banner without restoring the draft automatically', function (): void {

@@ -2,6 +2,7 @@
 
 use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\PublishPostAction;
+use App\Actions\Posts\UpdatePostAction;
 use App\Enums\PostStatus;
 use App\Jobs\FeedFanOutJob;
 use App\Jobs\FetchLinkPreviewMetadataJob;
@@ -285,6 +286,22 @@ it('blocks editing published posts after the twenty four hour edit window', func
             'visibility' => Post::VISIBILITY_PUBLIC,
         ])
         ->assertForbidden();
+});
+
+it('returns a specific action error when editing after the twenty four hour edit window', function (): void {
+    $author = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'body' => 'Original',
+        'created_at' => now()->subHours(25),
+        'status' => PostStatus::Published->value,
+    ]);
+
+    expect(fn () => app(UpdatePostAction::class)->handle($author, $post, [
+        'body' => 'Too late to edit',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]))->toThrow(ValidationException::class, 'Posts can only be edited within 24 hours of creation.');
+
+    expect($post->fresh()->body)->toBe('Original');
 });
 
 it('stores repost and quote references as new post records', function (): void {

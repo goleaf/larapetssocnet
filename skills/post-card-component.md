@@ -26,10 +26,11 @@
 - Avoid new per-card database queries for reaction or save state.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
 
-## Owner Profile Menu
-- In profile context, render the owner-only three-dot menu from inside `x-post-card`.
-- Keep profile pinning actions in that menu as `Pin to profile` / `Unpin from profile`; do not add separate inline pin buttons below profile posts.
-- Non-owners and non-profile contexts must not render owner post actions.
+## Owner Menu
+- Render owner-only post actions from inside the `x-post-card` three-dot menu for every post-card context.
+- Keep `Edit post` as the first menu item while the post is inside the 24-hour edit window; after the window, render the disabled explanatory item instead of an edit action.
+- Keep profile pinning actions in that menu as `Pin to profile` / `Unpin from profile` only for profile-context cards; do not add separate inline pin buttons below profile posts.
+- Non-owners must not render owner post actions.
 
 ## Pinned Highlight
 - The top profile pinned post uses the same post card content as regular posts, with only an edge-to-edge `Pinned post` banner prepended above the card body.
@@ -39,6 +40,7 @@
 - Use `diffForHumans()` for recent posts (< 7 days).
 - Use `format('M j, Y')` for older posts.
 - Provide full datetime in `title` attribute.
+- When `edited_at` is set, display `Edited` after the original timestamp with a separator and include the exact edit timestamp in the title tooltip.
 
 ## Explore Card Variants
 `x-post-card` with `context="explore"`:
