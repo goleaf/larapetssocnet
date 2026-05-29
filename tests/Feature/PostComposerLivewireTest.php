@@ -6,6 +6,7 @@ use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Services\LocationAutocompleteService;
 use App\Support\Posts\PostContentHasher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -81,6 +82,95 @@ it('renders the visibility selector as a toolbar dropdown', function (): void {
         ->assertSee('Only you can see this post.')
         ->assertSeeHtml('wire:click="selectVisibility(\'private\')"')
         ->assertDontSee('Only you will see this post');
+});
+
+it('renders the location tag picker controls', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSeeHtml('aria-label="Add location"')
+        ->set('locationPickerOpen', true)
+        ->assertSeeHtml('useCurrentLocation()')
+        ->assertSeeHtml('placeholder="Add a location."')
+        ->assertSeeHtml('wire:model.live.debounce.400ms="locationSearch"')
+        ->assertSee('Searching locations...');
+});
+
+it('loads post composer location suggestions and stores selected coordinates', function (): void {
+    $this->instance(LocationAutocompleteService::class, new class extends LocationAutocompleteService
+    {
+        /**
+         * @return list<array{label: string, name: string, region: ?string, latitude: float, longitude: float}>
+         */
+        public function suggest(string $query, int $limit = 5): array
+        {
+            return [
+                [
+                    'label' => 'Vilnius, Lithuania',
+                    'name' => 'Vilnius',
+                    'region' => 'Lithuania',
+                    'latitude' => 54.6872,
+                    'longitude' => 25.2797,
+                ],
+            ];
+        }
+    });
+
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->set('locationPickerOpen', true)
+        ->set('locationSearch', 'Viln')
+        ->assertSet('locationSuggestionsOpen', true)
+        ->assertSee('Vilnius')
+        ->assertSee('Lithuania')
+        ->call('selectLocationSuggestion', 0)
+        ->assertSet('locationDisplayText', 'Vilnius, Lithuania')
+        ->assertSet('locationSearch', 'Vilnius, Lithuania')
+        ->assertSet('locationLat', '54.6872')
+        ->assertSet('locationLng', '25.2797')
+        ->assertSet('locationSuggestionsOpen', false)
+        ->assertSeeHtml('aria-label="Remove location tag"')
+        ->call('removeLocationTag')
+        ->assertSet('locationDisplayText', null)
+        ->assertSet('locationSearch', null)
+        ->assertSet('locationLat', null)
+        ->assertSet('locationLng', null);
+});
+
+it('reverse geocodes browser coordinates through the server service', function (): void {
+    $this->instance(LocationAutocompleteService::class, new class extends LocationAutocompleteService
+    {
+        /**
+         * @return array{label: string, name: string, region: ?string, latitude: float, longitude: float}|null
+         */
+        public function reverse(float $latitude, float $longitude): ?array
+        {
+            expect($latitude)->toBe(51.5074)
+                ->and($longitude)->toBe(-0.1278);
+
+            return [
+                'label' => 'London, United Kingdom',
+                'name' => 'London',
+                'region' => 'United Kingdom',
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ];
+        }
+    });
+
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->set('locationPickerOpen', true)
+        ->call('reverseGeocodeCoordinates', 51.5074, -0.1278)
+        ->assertSet('locationDisplayText', 'London, United Kingdom')
+        ->assertSet('locationLat', '51.5074')
+        ->assertSet('locationLng', '-0.1278')
+        ->assertSee('London, United Kingdom');
 });
 
 it('updates current post visibility without changing the stored account preference', function (): void {

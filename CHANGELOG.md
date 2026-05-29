@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added toolbar-driven Livewire post composer location tagging with debounced server-side geocoding suggestions, browser coordinate reverse geocoding, and removable location chips.
 - Added the Livewire post composer's toolbar visibility dropdown with radio-card options and an explicit Only me warning.
 - Added pet tagging in the Livewire post composer as a toolbar dropdown with avatar/species rows, selected pet chips, and locked pet-profile context tags.
 - Added the post composer's attachment strip with click and drag-drop selection, client-side media validation, instant image/video previews, per-attachment Livewire upload progress, alt text controls, removal, and Sortable-backed drag ordering.
@@ -37,6 +38,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire post composer coverage for location picker rendering, server-side autocomplete selection, coordinate persistence, and browser-coordinate reverse geocoding.
 - Added Livewire post composer coverage for toolbar visibility selection, private-post warning copy, and preserving the user's stored visibility preference.
 - Updated ChartService unit coverage for the current `WeightHistorySvg` dependency and smooth-path chart rendering.
 - Added post media coverage for 10-image posts, mixed image/video posts, multiple videos, 10 MB image limits, 100 MB video limits, and ordered temporary media dispatch from the Livewire composer.

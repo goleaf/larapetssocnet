@@ -768,6 +768,8 @@ document.addEventListener('alpine:init', () => {
  allowedMimeTypes: ['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime'],
  imageMaxBytes: 10 * 1024 * 1024,
  videoMaxBytes: 100 * 1024 * 1024,
+ reverseGeocoding: false,
+ locationError: '',
 
  init() {
  if (this.$refs.editor) {
@@ -805,6 +807,10 @@ document.addEventListener('alpine:init', () => {
 
  get hasActiveUploads() {
  return this.attachments.some((attachment) => attachment.upload_state ==='queued' || attachment.upload_state ==='uploading');
+ },
+
+ get geolocationAvailable() {
+ return typeof navigator !=='undefined' && Boolean(navigator.geolocation);
  },
 
  syncFromEditor() {
@@ -1308,6 +1314,52 @@ document.addEventListener('alpine:init', () => {
  this.attachments.splice(targetIndex, 0, movedAttachment);
  this.draggingAttachmentId = null;
  this.syncAttachmentOrder();
+ },
+
+ useCurrentLocation() {
+ this.locationError = '';
+
+ if (!this.geolocationAvailable) {
+ this.locationError = 'Browser location is not available.';
+
+ return;
+ }
+
+ if (this.reverseGeocoding) {
+ return;
+ }
+
+ this.reverseGeocoding = true;
+
+ navigator.geolocation.getCurrentPosition(
+ async (position) => {
+ try {
+ const latitude = position.coords?.latitude;
+ const longitude = position.coords?.longitude;
+
+ if (typeof this.$wire?.reverseGeocodeCoordinates ==='function') {
+ const matched = await this.$wire.reverseGeocodeCoordinates(latitude, longitude);
+
+ if (!matched) {
+ this.locationError = 'Could not detect a place for your location.';
+ }
+ }
+ } catch {
+ this.locationError = 'Could not detect a place for your location.';
+ } finally {
+ this.reverseGeocoding = false;
+ }
+ },
+ () => {
+ this.locationError = 'Location access was not granted.';
+ this.reverseGeocoding = false;
+ },
+ {
+ enableHighAccuracy: false,
+ timeout: 10000,
+ maximumAge: 300000,
+ },
+ );
  },
 
  resetLocalAttachments() {

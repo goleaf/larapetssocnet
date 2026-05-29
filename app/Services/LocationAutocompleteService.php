@@ -9,7 +9,7 @@ use Throwable;
 class LocationAutocompleteService
 {
     /**
-     * @return list<array{label: string, latitude: float, longitude: float}>
+     * @return list<array{label: string, name: string, region: ?string, latitude: float, longitude: float}>
      */
     public function suggest(string $query, int $limit = 5): array
     {
@@ -46,7 +46,44 @@ class LocationAutocompleteService
     }
 
     /**
-     * @return list<array{label: string, latitude: float, longitude: float}>
+     * @return array{label: string, name: string, region: ?string, latitude: float, longitude: float}|null
+     */
+    public function reverse(float $latitude, float $longitude): ?array
+    {
+        if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+            return null;
+        }
+
+        $endpoint = trim((string) config('services.geocoding.reverse_endpoint', config('services.geocoding.endpoint', '')));
+
+        if ($endpoint === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->timeout((float) config('services.geocoding.timeout', 2))
+                ->get($endpoint, array_filter([
+                    'lat' => $latitude,
+                    'latitude' => $latitude,
+                    'lon' => $longitude,
+                    'lng' => $longitude,
+                    'longitude' => $longitude,
+                    'key' => config('services.geocoding.key'),
+                ], static fn (mixed $value): bool => $value !== null && $value !== ''));
+
+            if (! $response->ok()) {
+                return null;
+            }
+
+            return $this->normalizeResponse($response->json(), 1)[0] ?? null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @return list<array{label: string, name: string, region: ?string, latitude: float, longitude: float}>
      */
     private function normalizeResponse(mixed $payload, int $limit): array
     {
@@ -94,7 +131,7 @@ class LocationAutocompleteService
     }
 
     /**
-     * @return array{label: string, latitude: float, longitude: float}|null
+     * @return array{label: string, name: string, region: ?string, latitude: float, longitude: float}|null
      */
     private function normalizeItem(mixed $item): ?array
     {
@@ -117,6 +154,21 @@ class LocationAutocompleteService
             ?? $properties['place_name']
             ?? '');
 
+        $name = (string) ($item['name']
+            ?? $properties['name']
+            ?? $properties['city']
+            ?? $properties['town']
+            ?? $properties['village']
+            ?? $properties['county']
+            ?? '');
+
+        $region = (string) ($item['region']
+            ?? $item['country']
+            ?? $properties['region']
+            ?? $properties['state']
+            ?? $properties['country']
+            ?? '');
+
         $latitude = $item['latitude']
             ?? $item['lat']
             ?? $properties['latitude']
@@ -137,8 +189,20 @@ class LocationAutocompleteService
             return null;
         }
 
+        $label = Str::squish($label);
+
+        if (trim($name) === '') {
+            $name = Str::before($label, ',');
+        }
+
+        if (trim($region) === '' && str_contains($label, ',')) {
+            $region = Str::of($label)->after(',')->squish()->toString();
+        }
+
         return [
-            'label' => Str::squish($label),
+            'label' => $label,
+            'name' => Str::squish($name),
+            'region' => trim($region) === '' ? null : Str::squish($region),
             'latitude' => (float) $latitude,
             'longitude' => (float) $longitude,
         ];

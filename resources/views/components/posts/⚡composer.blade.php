@@ -7,6 +7,7 @@ use App\Models\Content\PostDraft;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\Species;
+use App\Services\LocationAutocompleteService;
 use App\Services\PostDraftService;
 use App\Support\Posts\PostMood;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -94,9 +95,20 @@ new class extends Component
 
     public ?string $locationDisplayText = null;
 
+    public ?string $locationSearch = null;
+
     public ?string $locationLat = null;
 
     public ?string $locationLng = null;
+
+    /**
+     * @var list<array{label: string, name?: string, region?: string|null, latitude: float, longitude: float}>
+     */
+    public array $locationSuggestions = [];
+
+    public bool $locationPickerOpen = false;
+
+    public bool $locationSuggestionsOpen = false;
 
     public ?string $selectedMood = null;
 
@@ -230,6 +242,62 @@ new class extends Component
     public function isPetTagged(int $petId): bool
     {
         return in_array($petId, $this->selectedPetIds, true);
+    }
+
+    public function updatedLocationSearch(): void
+    {
+        $this->locationSearch = $this->normalizeNullableString($this->locationSearch);
+        $this->locationDisplayText = null;
+        $this->locationLat = null;
+        $this->locationLng = null;
+
+        if ($this->locationSearch === null || mb_strlen($this->locationSearch) < 2) {
+            $this->locationSuggestions = [];
+            $this->locationSuggestionsOpen = false;
+
+            return;
+        }
+
+        $this->locationSuggestions = app(LocationAutocompleteService::class)
+            ->suggest($this->locationSearch, (int) config('services.geocoding.limit', 5));
+        $this->locationSuggestionsOpen = $this->locationSuggestions !== [];
+    }
+
+    public function selectLocationSuggestion(int $index): void
+    {
+        $suggestion = $this->locationSuggestions[$index] ?? null;
+
+        if (! is_array($suggestion)) {
+            return;
+        }
+
+        $this->storeLocationSuggestion($suggestion);
+    }
+
+    public function removeLocationTag(): void
+    {
+        $this->locationDisplayText = null;
+        $this->locationSearch = null;
+        $this->locationLat = null;
+        $this->locationLng = null;
+        $this->locationSuggestions = [];
+        $this->locationSuggestionsOpen = false;
+    }
+
+    public function reverseGeocodeCoordinates(float|string $latitude, float|string $longitude): bool
+    {
+        if (! is_numeric($latitude) || ! is_numeric($longitude)) {
+            return false;
+        }
+
+        $suggestion = app(LocationAutocompleteService::class)
+            ->reverse((float) $latitude, (float) $longitude);
+
+        if ($suggestion === null) {
+            return false;
+        }
+
+        return $this->storeLocationSuggestion($suggestion);
     }
 
     public function selectVisibility(string $visibility): void
@@ -480,6 +548,7 @@ new class extends Component
         $this->selectedVisibility = $this->normalizeVisibility($draft->visibility) ?? $this->selectedVisibility;
         $this->selectedMood = PostMood::normalize($draft->mood);
         $this->locationDisplayText = $draft->location;
+        $this->locationSearch = $draft->location;
         $this->locationLat = $draft->location_lat === null ? null : (string) $draft->location_lat;
         $this->locationLng = $draft->location_lng === null ? null : (string) $draft->location_lng;
         if (! $this->petTaggingLocked) {
@@ -718,8 +787,12 @@ new class extends Component
         }
         $this->selectedPetIds = $this->fixedPetId !== null ? [$this->fixedPetId] : [];
         $this->locationDisplayText = null;
+        $this->locationSearch = null;
         $this->locationLat = null;
         $this->locationLng = null;
+        $this->locationSuggestions = [];
+        $this->locationPickerOpen = false;
+        $this->locationSuggestionsOpen = false;
         $this->selectedMood = null;
         $this->scheduledPublishAt = null;
         $this->linkPreviewData = [];
@@ -727,6 +800,31 @@ new class extends Component
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
         $this->confirmedDuplicate = false;
+    }
+
+    /**
+     * @param  array{label?: mixed, latitude?: mixed, longitude?: mixed}  $suggestion
+     */
+    private function storeLocationSuggestion(array $suggestion): bool
+    {
+        if (! is_numeric($suggestion['latitude'] ?? null) || ! is_numeric($suggestion['longitude'] ?? null)) {
+            return false;
+        }
+
+        $label = $this->normalizeNullableString($suggestion['label'] ?? null);
+
+        if ($label === null) {
+            return false;
+        }
+
+        $this->locationDisplayText = $label;
+        $this->locationSearch = $label;
+        $this->locationLat = (string) $suggestion['latitude'];
+        $this->locationLng = (string) $suggestion['longitude'];
+        $this->locationSuggestions = [];
+        $this->locationSuggestionsOpen = false;
+
+        return true;
     }
 
     private function enforceFixedPetTag(): void
@@ -916,8 +1014,28 @@ new class extends Component
  </div>
  </div>
 
- @if ($taggedPets->isNotEmpty())
- <div class="flex flex-wrap gap-2" aria-label="Tagged pets">
+ @if ($taggedPets->isNotEmpty() || filled($locationDisplayText))
+ <div class="flex flex-wrap gap-2" aria-label="Post tags">
+ @if (filled($locationDisplayText))
+ <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-leaf/15 bg-leaf/10 py-1 ps-2 pe-1 text-xs font-semibold text-leaf-dark">
+ <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M10 18s6-5.4 6-10A6 6 0 1 0 4 8c0 4.6 6 10 6 10Z"/>
+ <circle cx="10" cy="8" r="2"/>
+ </svg>
+ <span class="truncate">{{ $locationDisplayText }}</span>
+ <button
+ type="button"
+ wire:click="removeLocationTag"
+ class="inline-flex h-5 w-5 items-center justify-center rounded-full text-leaf transition hover:bg-leaf/15 hover:text-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-label="Remove location tag"
+ >
+ <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+ </span>
+ @endif
+
  @foreach ($taggedPets as $taggedPet)
  <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-paw/15 bg-paw/10 py-1 ps-1 pe-2 text-xs font-semibold text-paw-dark">
  <img src="{{ $taggedPet->avatar_url }}" alt="" class="h-5 w-5 rounded-full border border-warm-white object-cover" loading="lazy">
@@ -939,6 +1057,82 @@ new class extends Component
  </div>
  @endif
 
+ @if ($locationPickerOpen)
+ <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/40 p-3" wire:transition>
+ <div class="relative">
+ <label for="{{ $composerId }}-location-search" class="sr-only">Add a location</label>
+ <div class="flex gap-2">
+ <input
+ id="{{ $composerId }}-location-search"
+ type="text"
+ class="h-[var(--control-height-md)] min-w-0 flex-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm text-bark placeholder:text-whisker transition focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
+ placeholder="Add a location."
+ autocomplete="off"
+ wire:model.live.debounce.400ms="locationSearch"
+ aria-autocomplete="list"
+ aria-expanded="{{ $locationSuggestionsOpen ? 'true' : 'false' }}"
+ aria-controls="{{ $composerId }}-location-suggestions"
+ >
+ <button
+ type="button"
+ class="inline-flex h-[var(--control-height-md)] w-[var(--control-height-md)] shrink-0 items-center justify-center rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] text-fur transition hover:border-leaf hover:bg-leaf/10 hover:text-leaf focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-50"
+ x-on:click="useCurrentLocation()"
+ x-bind:disabled="reverseGeocoding || !geolocationAvailable"
+ x-bind:aria-busy="reverseGeocoding.toString()"
+ aria-label="Use current location"
+ >
+ <svg x-show="!reverseGeocoding" class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <circle cx="10" cy="10" r="6"/>
+ <path d="M10 2v2"/>
+ <path d="M10 16v2"/>
+ <path d="M2 10h2"/>
+ <path d="M16 10h2"/>
+ <circle cx="10" cy="10" r="1.5"/>
+ </svg>
+ <svg x-cloak x-show="reverseGeocoding" class="h-5 w-5 animate-spin" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+ <circle class="stroke-current opacity-25" cx="10" cy="10" r="7" stroke-width="2"></circle>
+ <path class="fill-current" d="M17 10a7 7 0 0 0-7-7V1a9 9 0 0 1 9 9h-2Z"></path>
+ </svg>
+ </button>
+ </div>
+
+ <div class="mt-1 min-h-5 text-xs" aria-live="polite">
+ <span wire:loading wire:target="locationSearch" class="text-fur">Searching locations...</span>
+ <span x-cloak x-show="locationError" x-text="locationError" class="font-medium text-rose"></span>
+ </div>
+
+ @if ($locationSuggestionsOpen && $locationSuggestions !== [])
+ <ul
+ id="{{ $composerId }}-location-suggestions"
+ class="absolute left-0 top-full z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-[var(--radius-card)] border border-whisker/30 bg-warm-white p-1 shadow-card"
+ role="listbox"
+ aria-label="Location suggestions"
+ >
+ @foreach ($locationSuggestions as $index => $suggestion)
+ @php
+     $suggestionLabel = (string) ($suggestion['label'] ?? '');
+     $suggestionName = trim((string) ($suggestion['name'] ?? Str::before($suggestionLabel, ',')));
+     $suggestionRegion = trim((string) ($suggestion['region'] ?? (str_contains($suggestionLabel, ',') ? Str::of($suggestionLabel)->after(',')->squish()->toString() : '')));
+ @endphp
+ <li wire:key="post-location-suggestion-{{ $index }}" role="option">
+ <button
+ type="button"
+ class="flex w-full flex-col rounded-[var(--radius-soft)] px-3 py-2 text-left transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="selectLocationSuggestion({{ $index }})"
+ >
+ <span class="text-sm font-semibold text-bark">{{ $suggestionName !== '' ? $suggestionName : $suggestionLabel }}</span>
+ @if ($suggestionRegion !== '')
+ <span class="text-xs text-fur">{{ $suggestionRegion }}</span>
+ @endif
+ </button>
+ </li>
+ @endforeach
+ </ul>
+ @endif
+ </div>
+ </div>
+ @endif
+
  <div class="space-y-3">
  <div class="flex flex-wrap items-center justify-between gap-3 border-y border-whisker/25 py-3">
  <div class="flex items-center gap-2">
@@ -952,6 +1146,18 @@ new class extends Component
  <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h7A2.5 2.5 0 0 1 16 5.5v9A2.5 2.5 0 0 1 13.5 17h-7A2.5 2.5 0 0 1 4 14.5z"/>
  <path d="m5 14 3.5-3.5 2.5 2.5 1.5-1.5L16 15"/>
  <circle cx="13" cy="7" r="1.25"/>
+ </svg>
+ </button>
+ <button
+ type="button"
+ class="{{ $locationPickerOpen || filled($locationDisplayText) ? 'bg-leaf/10 text-leaf' : 'text-fur hover:bg-leaf/10 hover:text-leaf' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="$toggle('locationPickerOpen')"
+ aria-label="Add location"
+ aria-expanded="{{ $locationPickerOpen ? 'true' : 'false' }}"
+ >
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M10 18s6-5.4 6-10A6 6 0 1 0 4 8c0 4.6 6 10 6 10Z"/>
+ <circle cx="10" cy="8" r="2"/>
  </svg>
  </button>
  @unless ($petTaggingLocked)
@@ -1155,13 +1361,7 @@ new class extends Component
  </x-ui.select>
  </div>
 
- <div class="grid gap-4 md:grid-cols-2">
- <x-ui.input id="{{ $composerId }}-location" label="Location" wire:model.blur="locationDisplayText" maxlength="100" />
- </div>
-
  <div class="grid gap-4 md:grid-cols-3">
- <x-ui.input id="{{ $composerId }}-lat" label="Latitude" wire:model.blur="locationLat" inputmode="decimal" />
- <x-ui.input id="{{ $composerId }}-lng" label="Longitude" wire:model.blur="locationLng" inputmode="decimal" />
  <x-ui.input id="{{ $composerId }}-scheduled" label="Schedule" type="datetime-local" wire:model.blur="scheduledPublishAt" />
  </div>
 
