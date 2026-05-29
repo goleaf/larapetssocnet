@@ -26,8 +26,6 @@ class PostObserver
     {
         $author = $this->postAuthor($post);
 
-        $this->hashtags->syncHashtags($post);
-
         PostCreated::dispatch($post);
 
         $this->bustFeedCache($post);
@@ -40,7 +38,7 @@ class PostObserver
             $author->incrementCounter('scheduled_posts_count');
         }
 
-        if ($post->pet_id) {
+        if ($post->pet_id && blank($post->tagged_pets)) {
             $post->pet->increment('posts_count');
         }
 

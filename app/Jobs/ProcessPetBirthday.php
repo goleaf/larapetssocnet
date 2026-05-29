@@ -50,6 +50,7 @@ class ProcessPetBirthday implements ShouldQueue
             'status' => PostStatus::Published,
             'visibility' => Post::VISIBILITY_PUBLIC,
             'is_system_generated' => true,
+            'confirmed_duplicate' => true,
             'system_source' => 'pet_birthday',
             'metadata' => [
                 'source' => 'pet_birthday',

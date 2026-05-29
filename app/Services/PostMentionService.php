@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\MentionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
-use App\Notifications\MentionedInPost;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -47,26 +47,16 @@ class PostMentionService
         }
 
         DB::afterCommit(function () use ($post, $author, $mentionedUsers): void {
-            $post->loadMissing('author');
-
             foreach ($mentionedUsers as $mentionedUser) {
                 if ((int) $mentionedUser->getKey() === (int) $author->getKey()) {
                     continue;
                 }
 
-                if (! $mentionedUser->notificationEnabled('mentions')) {
-                    continue;
-                }
-
-                if ($mentionedUser->hasBlockingRelationshipWith($author)) {
-                    continue;
-                }
-
-                if (! app(VisibilityService::class)->canView($mentionedUser, $post)) {
-                    continue;
-                }
-
-                $mentionedUser->notify(new MentionedInPost($author, $post));
+                MentionNotificationJob::dispatch(
+                    postId: (int) $post->getKey(),
+                    mentionedUserId: (int) $mentionedUser->getKey(),
+                    authorId: (int) $author->getKey(),
+                )->afterCommit();
             }
         });
     }

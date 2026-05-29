@@ -122,13 +122,20 @@ class PostController extends Controller
 
     public function store(CreatePostRequest $request): RedirectResponse
     {
-        $this->createPostAction->handle(
+        $result = $this->createPostAction->handle(
             user: $request->user(),
             data: [
                 ...$request->safe()->except(['media', 'photos', 'video']),
                 'media_files' => $request->mediaFiles(),
             ],
         );
+
+        if ($result->duplicateDetected) {
+            return back()
+                ->withInput()
+                ->with('warning', 'You already posted this recently.')
+                ->with('duplicate_post_id', $result->duplicatePostId);
+        }
 
         return back()->with('success', __('feed.flash_post_created'));
     }

@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Support\Posts\PostContentHasher;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class PostDuplicateSubmissionGuard
 {
+    public function __construct(private readonly PostContentHasher $hasher) {}
+
     /**
      * @template TResult
      *
@@ -17,7 +20,7 @@ class PostDuplicateSubmissionGuard
      */
     public function run(User $user, ?string $body, callable $callback): mixed
     {
-        $normalized = $this->normalize($body);
+        $normalized = $this->hasher->normalized($body);
 
         if ($normalized === '') {
             return $callback();
@@ -42,7 +45,7 @@ class PostDuplicateSubmissionGuard
 
     public function ensureAllowed(User $user, ?string $body): void
     {
-        $normalized = $this->normalize($body);
+        $normalized = $this->hasher->normalized($body);
 
         if ($normalized === '') {
             return;
@@ -51,9 +54,27 @@ class PostDuplicateSubmissionGuard
         $this->ensureNoRecentDuplicate($user, $normalized);
     }
 
-    private function normalize(?string $body): string
+    public function hash(?string $body): ?string
     {
-        return trim((string) $body);
+        return $this->hasher->hash($body);
+    }
+
+    public function recentDuplicate(User $user, ?string $body): ?Post
+    {
+        $hash = $this->hash($body);
+
+        if ($hash === null) {
+            return null;
+        }
+
+        return Post::query()
+            ->where('author_type', $user::class)
+            ->where('author_id', $user->getKey())
+            ->where('content_hash', $hash)
+            ->whereNull('deleted_at')
+            ->where('created_at', '>=', now()->subDay())
+            ->latest('created_at')
+            ->first();
     }
 
     private function lockKey(User $user, string $body): string
@@ -64,8 +85,9 @@ class PostDuplicateSubmissionGuard
     private function ensureNoRecentDuplicate(User $user, string $body): void
     {
         $exists = Post::query()
-            ->where('user_id', $user->getKey())
-            ->where('body', $body)
+            ->where('author_type', $user::class)
+            ->where('author_id', $user->getKey())
+            ->where('content_hash', hash('sha256', $body))
             ->whereNull('deleted_at')
             ->where('created_at', '>=', now()->subDay())
             ->exists();

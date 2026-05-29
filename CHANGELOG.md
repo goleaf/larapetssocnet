@@ -28,6 +28,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added post creation action coverage for structured duplicate-detection results, confirmed duplicate submission, invalid link preview validation, queued temporary media processing, content hashes, pet tag counter increments, queued mentions, and after-commit feed fan-out.
 - Added post creation coverage for rich posts with pet tags, hashtags, mentions, mood, location, link previews, duplicate-submission blocking, scheduled publication, edit-window authorization, quote/repost references, private visibility filtering, and draft autosave restore/clear behavior.
 - Added pet family relationship and health reminder coverage for bidirectional links, private-pet link blocking, due notifications, invalid custom reminders, and archived-pet skips.
 - Added pet co-owner invitation and ownership transfer coverage for acceptance, decline, expiry, role storage, and owner capability preservation before transfer acceptance.
@@ -98,6 +99,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added the post creation action pipeline with `PostCreationRequest` validation, `PostCreationResult` duplicate warnings, SHA-256 normalized content hashes, queued temporary media processing, queued mention notifications, and after-commit feed fan-out dispatch.
 - Added post system schema support for UUID public identifiers, FQCN polymorphic authorship, mention records, autosaved drafts, per-type reaction counters, view counts, JSON link previews, and quote/repost references.
 - Added two-phase pet co-owner invitations and ownership transfers with database notifications, route handlers, form requests, services, policy-backed authorization, and daily expiry commands.
 - Added pet family relationship linking with transactional inverse relationship creation and visibility checks that prevent private pet disclosure.

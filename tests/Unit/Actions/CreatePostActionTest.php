@@ -15,18 +15,21 @@ it('creates a post and dispatches the post created event', function (): void {
 
     $user = User::factory()->create();
 
-    $post = app(CreatePostAction::class)->handle($user, [
+    $result = app(CreatePostAction::class)->handle($user, [
         'body' => 'New post from action #action',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'media_files' => [],
     ]);
+    $post = $result->createdPost();
 
-    expect($post->exists)->toBeTrue();
-    expect($post->user_id)->toBe($user->getKey());
-    expect($post->body)->toBe('New post from action #action');
-    expect($post->tags()->where('slug', 'action')->exists())->toBeTrue();
-    expect($post->status->value ?? $post->status)->toBe(PostStatus::Published->value);
-    expect($post->published_at)->not->toBeNull();
+    expect($result->duplicateDetected)->toBeFalse();
+    expect($post->exists)->toBeTrue()
+        ->and($post->user_id)->toBe($user->getKey())
+        ->and($post->body)->toBe('New post from action #action')
+        ->and($post->content_hash)->toBe(hash('sha256', 'new post from action #action'))
+        ->and($post->tags()->where('slug', 'action')->exists())->toBeTrue()
+        ->and($post->status->value ?? $post->status)->toBe(PostStatus::Published->value)
+        ->and($post->published_at)->not->toBeNull();
 
     Event::assertDispatched(PostCreated::class);
 });

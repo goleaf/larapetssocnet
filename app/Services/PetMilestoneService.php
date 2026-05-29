@@ -80,13 +80,14 @@ class PetMilestoneService
             'status' => PostStatus::Published,
             'visibility' => $pet->is_public ? Post::VISIBILITY_PUBLIC : Post::VISIBILITY_PRIVATE,
             'is_system_generated' => true,
+            'confirmed_duplicate' => true,
             'system_source' => 'pet_milestone',
             'metadata' => [
                 'source' => 'pet_milestone',
                 'milestone_type' => $milestone->milestone_type,
                 'milestone_id' => $milestone->getKey(),
             ],
-        ]);
+        ])->createdPost();
     }
 
     private function nullableString(mixed $value): ?string

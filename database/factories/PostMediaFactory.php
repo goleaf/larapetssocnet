@@ -26,6 +26,8 @@ class PostMediaFactory extends Factory
             'post_id' => Post::factory(),
             'file_path' => 'posts/'.$this->faker->uuid().'.jpg',
             'media_type' => $this->faker->randomElement(['image', 'video']),
+            'alt_text' => null,
+            'processing_status' => 'processed',
             'order' => $this->faker->numberBetween(0, 5),
         ];
     }

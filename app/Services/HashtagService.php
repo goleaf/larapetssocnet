@@ -192,14 +192,14 @@ class HashtagService
             ->orWhere('name', $normalized)
             ->first();
 
-        if (! $hashtag) {
-            $hashtag = Hashtag::query()->create([
-                'name' => $normalized,
-                'slug' => $normalized,
-                'normalized_name' => $normalized,
-            ]);
-
-            return (int) $hashtag->getKey();
+        if (! $hashtag instanceof Hashtag) {
+            $hashtag = Hashtag::query()->firstOrCreate(
+                ['normalized_name' => $normalized],
+                [
+                    'name' => $normalized,
+                    'slug' => $normalized,
+                ],
+            );
         }
 
         if ($hashtag->normalized_name !== $normalized || $hashtag->slug !== $normalized || $hashtag->name !== $normalized) {

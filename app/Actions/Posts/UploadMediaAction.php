@@ -26,6 +26,7 @@ class UploadMediaAction
                 $post->postMedia()->create([
                     'file_path' => $storedMedia->getPathRelativeToRoot(),
                     'media_type' => $mediaType,
+                    'processing_status' => 'processed',
                     'order' => $index,
                 ]);
             });

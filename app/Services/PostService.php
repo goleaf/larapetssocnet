@@ -39,6 +39,7 @@ class PostService
                 $mediaFiles = $this->normalizeMediaFiles($mediaFiles);
 
                 $bodyHtml = $body ? $this->content->process($body) : null;
+                $contentHash = $this->duplicates->hash($body);
                 $type = $this->resolveType($mediaFiles);
                 $publishedAt = $this->resolvePublishedAt($status, $data['published_at'] ?? null);
                 $scheduledPublishAt = $this->resolveScheduledPublishAt($status, $data['scheduled_publish_at'] ?? $data['published_at'] ?? null);
@@ -51,6 +52,7 @@ class PostService
                     'author_id' => $author->getKey(),
                     'pet_id' => $data['pet_id'] ?? ($data['tagged_pets'][0] ?? null),
                     'body' => $body,
+                    'content_hash' => $contentHash,
                     'body_html' => $bodyHtml,
                     'type' => $type,
                     'status' => $status->value,
@@ -77,6 +79,7 @@ class PostService
                     $post->postMedia()->create([
                         'file_path' => $storedMedia->getPathRelativeToRoot(),
                         'media_type' => $isVideo ? 'video' : 'image',
+                        'processing_status' => 'processed',
                         'order' => $index,
                     ]);
                 }
@@ -99,6 +102,7 @@ class PostService
                 ? $this->content->plainText($data['body'])
                 : $post->body;
             $bodyHtml = $body ? $this->content->process($body) : null;
+            $contentHash = $this->duplicates->hash($body);
             $metadata = array_key_exists('metadata', $data)
                 ? $this->metadata->normalize(is_array($data['metadata']) ? $data['metadata'] : null)
                 : $post->metadata;
@@ -123,6 +127,7 @@ class PostService
 
             $post->update([
                 'body' => $body,
+                'content_hash' => $contentHash,
                 'body_html' => $bodyHtml,
                 'visibility' => $data['visibility'] ?? $post->visibility,
                 'mood' => PostMood::normalize($data['mood'] ?? $metadata['mood'] ?? $post->mood),

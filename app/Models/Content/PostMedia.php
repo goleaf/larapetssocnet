@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
     'post_id',
     'file_path',
     'media_type',
+    'alt_text',
+    'processing_status',
     'order',
 ])]
 #[Table(name: 'post_media')]

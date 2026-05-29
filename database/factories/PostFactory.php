@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\PostStatus;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Support\Posts\PostContentHasher;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -60,6 +61,7 @@ class PostFactory extends Factory
             'author_id' => null,
             'pet_id' => null,
             'body' => $body,
+            'content_hash' => app(PostContentHasher::class)->hash($body),
             'body_html' => '<p>'.e($body).'</p>',
             'type' => 'text',
             'status' => 'published',

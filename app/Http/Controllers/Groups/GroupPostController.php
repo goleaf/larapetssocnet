@@ -42,7 +42,16 @@ class GroupPostController extends Controller
             'group_id' => $group->getKey(),
         ];
 
-        $post = $action->handle($request->user(), $data);
+        $result = $action->handle($request->user(), $data);
+
+        if ($result->duplicateDetected) {
+            return back()
+                ->withInput()
+                ->with('warning', 'You already posted this recently.')
+                ->with('duplicate_post_id', $result->duplicatePostId);
+        }
+
+        $post = $result->createdPost();
 
         $group->attachSharedPost($post, (int) $request->user()->getKey());
 

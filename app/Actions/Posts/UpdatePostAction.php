@@ -11,6 +11,7 @@ use App\Models\Pets\Pet;
 use App\Services\ContentService;
 use App\Services\PostMentionService;
 use App\Services\PostMetadataService;
+use App\Support\Posts\PostContentHasher;
 use App\Support\Posts\PostMood;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -25,6 +26,7 @@ class UpdatePostAction
         private readonly DetachPetFromPostAction $detachPetFromPostAction,
         private readonly PostMetadataService $metadata,
         private readonly PostMentionService $mentions,
+        private readonly PostContentHasher $hasher,
     ) {}
 
     /**
@@ -71,6 +73,7 @@ class UpdatePostAction
 
             $post->update([
                 'body' => $nextBody,
+                'content_hash' => $this->hasher->hash($nextBody),
                 'body_html' => $nextBody ? $this->content->process($nextBody) : null,
                 'visibility' => $data['visibility'] ?? $currentVisibility,
                 'mood' => PostMood::normalize($data['mood'] ?? $nextMetadata['mood'] ?? $post->getAttribute('mood')),

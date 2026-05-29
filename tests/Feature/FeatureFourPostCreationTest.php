@@ -2,27 +2,33 @@
 
 use App\Actions\Posts\CreatePostAction;
 use App\Enums\PostStatus;
+use App\Jobs\FeedFanOutJob;
+use App\Jobs\MediaProcessingJob;
+use App\Jobs\MentionNotificationJob;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use App\Notifications\MentionedInPost;
 use App\Services\CanonicalContentUrlService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
 it('creates a rich post with pet tags hashtags mentions mood location and link preview', function (): void {
-    Notification::fake();
+    Queue::fake([
+        FeedFanOutJob::class,
+        MentionNotificationJob::class,
+        MediaProcessingJob::class,
+    ]);
 
     $author = User::factory()->create();
     $mentioned = User::factory()->create(['username' => 'luna_friend']);
     $pet = Pet::factory()->for($author)->create(['name' => 'Luna']);
 
-    $post = app(CreatePostAction::class)->handle($author, [
+    $result = app(CreatePostAction::class)->handle($author, [
         'body' => '<strong>A park update</strong> &amp; picnic for @luna_friend #ParkDay https://example.com/luna',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'mood' => 'playful',
@@ -37,19 +43,23 @@ it('creates a rich post with pet tags hashtags mentions mood location and link p
             ],
         ],
     ]);
+    $post = $result->createdPost();
 
     $fresh = $post->fresh();
 
-    expect($fresh->uuid)->not->toBeNull()
+    expect($result->duplicateDetected)->toBeFalse()
+        ->and($fresh->uuid)->not->toBeNull()
         ->and(Str::isUuid($fresh->uuid))->toBeTrue()
         ->and($fresh->author_type)->toBe(User::class)
         ->and($fresh->author_id)->toBe($author->getKey())
         ->and($fresh->body)->toBe('A park update & picnic for @luna_friend #ParkDay https://example.com/luna')
+        ->and($fresh->content_hash)->toBe(hash('sha256', 'a park update & picnic for @luna_friend #parkday https://example.com/luna'))
         ->and($fresh->mood)->toBe('playful')
         ->and($fresh->location_display_text)->toBe('Vilnius Park')
         ->and($fresh->link_preview)->toMatchArray(['url' => 'https://example.com/luna'])
         ->and($fresh->contentAuthor?->is($author))->toBeTrue()
-        ->and($post->pets()->whereKey($pet->id)->exists())->toBeTrue();
+        ->and($post->pets()->whereKey($pet->id)->exists())->toBeTrue()
+        ->and($pet->fresh()->posts_count)->toBe(1);
 
     $hashtag = Hashtag::query()->where('normalized_name', 'parkday')->firstOrFail();
 
@@ -63,7 +73,51 @@ it('creates a rich post with pet tags hashtags mentions mood location and link p
         'mentioned_username' => 'luna_friend',
     ]);
 
-    Notification::assertSentTo($mentioned, MentionedInPost::class);
+    Queue::assertPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->postId === $post->id
+        && $job->mentionedUserId === $mentioned->id
+        && $job->authorId === $author->id);
+    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $post->id);
+});
+
+it('validates post creation input before writing records', function (): void {
+    $author = User::factory()->create();
+
+    expect(fn () => app(CreatePostAction::class)->handle($author, [
+        'body' => 'Broken preview',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'link_preview' => ['url' => 'not a url'],
+    ]))->toThrow(ValidationException::class);
+
+    expect(Post::query()->count())->toBe(0);
+});
+
+it('queues temporary media processing jobs after creating the post placeholder state', function (): void {
+    Queue::fake([
+        FeedFanOutJob::class,
+        MentionNotificationJob::class,
+        MediaProcessingJob::class,
+    ]);
+
+    $author = User::factory()->create();
+
+    $post = app(CreatePostAction::class)->handle($author, [
+        'body' => 'Photo from the composer',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'media_attachments' => [
+            [
+                'temporary_path' => 'livewire-tmp/photo.webp',
+                'media_type' => 'image',
+                'alt_text' => 'A dog waiting at the park gate',
+            ],
+        ],
+    ])->createdPost();
+
+    expect($post->type)->toBe(Post::TYPE_PHOTO);
+
+    Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->postId === $post->id
+        && $job->temporaryPath === 'livewire-tmp/photo.webp'
+        && $job->mediaType === 'image'
+        && $job->altText === 'A dog waiting at the park gate');
 });
 
 it('uses uuid post URLs for sharing while still resolving legacy integer post routes', function (): void {
@@ -87,10 +141,22 @@ it('prevents duplicate non-draft submissions with identical text inside twenty f
         'visibility' => Post::VISIBILITY_PUBLIC,
     ]);
 
-    expect(fn () => app(CreatePostAction::class)->handle($author, [
+    $duplicate = app(CreatePostAction::class)->handle($author, [
+        'body' => '  SAME   exact update  ',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    expect($duplicate->duplicateDetected)->toBeTrue()
+        ->and($duplicate->duplicatePostId)->toBe(Post::query()->firstOrFail()->id);
+
+    $confirmed = app(CreatePostAction::class)->handle($author, [
         'body' => 'Same exact update',
         'visibility' => Post::VISIBILITY_PUBLIC,
-    ]))->toThrow(ValidationException::class);
+        'confirmed_duplicate' => true,
+    ]);
+
+    expect($confirmed->duplicateDetected)->toBeFalse()
+        ->and(Post::query()->count())->toBe(2);
 });
 
 it('publishes due scheduled posts through the artisan command and leaves future posts scheduled', function (): void {
@@ -136,13 +202,13 @@ it('stores repost and quote references as new post records', function (): void {
         'body' => null,
         'visibility' => Post::VISIBILITY_PUBLIC,
         'original_post_id' => $original->id,
-    ]);
+    ])->createdPost();
 
     $quote = app(CreatePostAction::class)->handle($author, [
         'body' => 'Adding my take',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'quote_post_id' => $original->id,
-    ]);
+    ])->createdPost();
 
     expect($repost->original_post_id)->toBe($original->id)
         ->and($quote->quote_post_id)->toBe($original->id)
