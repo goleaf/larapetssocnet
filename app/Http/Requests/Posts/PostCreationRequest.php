@@ -21,6 +21,12 @@ use Throwable;
 
 class PostCreationRequest extends FormRequest
 {
+    private const MAX_ATTACHMENTS = 10;
+
+    private const MAX_IMAGE_KILOBYTES = 10240;
+
+    private const MAX_VIDEO_KILOBYTES = 102400;
+
     public function authorize(): bool
     {
         return $this->user()?->can('create', Post::class) ?? false;
@@ -121,31 +127,35 @@ class PostCreationRequest extends FormRequest
             'link_preview.domain' => ['nullable', 'string', 'max:120'],
             'confirmed_duplicate' => ['sometimes', 'boolean'],
             'skip_duplicate_check' => ['sometimes', 'boolean'],
-            'media' => ['nullable', 'array', 'max:5'],
+            'media' => ['nullable', 'array', 'max:'.self::MAX_ATTACHMENTS],
             'media.*' => [
                 'file',
-                File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'])->max('20mb'),
+                File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'])->max('100mb'),
             ],
-            'media_files' => ['nullable', 'array', 'max:5'],
+            'media_files' => ['nullable', 'array', 'max:'.self::MAX_ATTACHMENTS],
             'media_files.*' => [
                 'file',
-                File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'])->max('20mb'),
+                File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov'])->max('100mb'),
             ],
-            'photos' => ['nullable', 'array', 'max:5'],
+            'photos' => ['nullable', 'array', 'max:'.self::MAX_ATTACHMENTS],
             'photos.*' => [
                 'file',
-                File::image()->max('20mb'),
+                File::image()->max('10mb'),
             ],
             'video' => [
                 'nullable',
                 'file',
-                File::types(['mp4', 'mov'])->max('20mb'),
+                File::types(['mp4', 'mov'])->max('100mb'),
             ],
-            'media_attachments' => ['nullable', 'array', 'max:5'],
+            'media_attachments' => ['nullable', 'array', 'max:'.self::MAX_ATTACHMENTS],
             'media_attachments.*.temporary_path' => ['required_with:media_attachments', 'string', 'max:500'],
             'media_attachments.*.media_type' => ['required_with:media_attachments', 'string', Rule::in(['image', 'video'])],
             'media_attachments.*.alt_text' => ['nullable', 'string', 'max:160'],
-            'temporary_media' => ['nullable', 'array', 'max:5'],
+            'media_attachments.*.file_name' => ['nullable', 'string', 'max:255'],
+            'media_attachments.*.mime_type' => ['nullable', 'string', 'max:100'],
+            'media_attachments.*.file_size' => ['nullable', 'integer', 'min:0', 'max:'.(self::MAX_VIDEO_KILOBYTES * 1024)],
+            'media_attachments.*.order' => ['nullable', 'integer', 'min:0', 'max:9'],
+            'temporary_media' => ['nullable', 'array', 'max:'.self::MAX_ATTACHMENTS],
             'temporary_media.*' => ['string', 'max:500'],
         ];
     }
@@ -187,23 +197,40 @@ class PostCreationRequest extends FormRequest
                 }
             }
 
-            $videoFiles = $mediaFiles->filter(
-                fn ($file): bool => str_starts_with((string) $file->getMimeType(), 'video/')
-            );
-            $imageFiles = $mediaFiles->filter(
-                fn ($file): bool => str_starts_with((string) $file->getMimeType(), 'image/')
-            );
-            $temporaryVideos = $temporaryMedia->filter(fn (array $media): bool => $media['media_type'] === 'video');
-            $temporaryImages = $temporaryMedia->filter(fn (array $media): bool => $media['media_type'] === 'image');
             $errorKey = ($this->hasFile('photos') || $this->hasFile('video')) ? 'video' : 'media';
 
-            if (($videoFiles->count() + $temporaryVideos->count()) > 1) {
-                $validator->errors()->add($errorKey, 'Only one video can be uploaded.');
+            if (($mediaFiles->count() + $temporaryMedia->count()) > self::MAX_ATTACHMENTS) {
+                $validator->errors()->add($errorKey, 'Maximum 10 attachments per post.');
             }
 
-            if (($videoFiles->isNotEmpty() || $temporaryVideos->isNotEmpty()) && ($imageFiles->isNotEmpty() || $temporaryImages->isNotEmpty())) {
-                $validator->errors()->add($errorKey, 'Video cannot be uploaded together with photos.');
-            }
+            $mediaFiles->values()->each(function (UploadedFile $file, int $index) use ($validator): void {
+                $mimeType = (string) $file->getMimeType();
+                $sizeKilobytes = (int) ceil(((int) $file->getSize()) / 1024);
+
+                if (str_starts_with($mimeType, 'image/') && $sizeKilobytes > self::MAX_IMAGE_KILOBYTES) {
+                    $validator->errors()->add("media.{$index}", 'Maximum size for images is 10 MB.');
+                }
+
+                if (str_starts_with($mimeType, 'video/') && $sizeKilobytes > self::MAX_VIDEO_KILOBYTES) {
+                    $validator->errors()->add("media.{$index}", 'Maximum size for videos is 100 MB.');
+                }
+            });
+
+            $temporaryMedia->values()->each(function (array $media, int $index) use ($validator): void {
+                $sizeKilobytes = (int) ceil(((int) ($media['file_size'] ?? 0)) / 1024);
+
+                if ($sizeKilobytes <= 0) {
+                    return;
+                }
+
+                if ($media['media_type'] === 'image' && $sizeKilobytes > self::MAX_IMAGE_KILOBYTES) {
+                    $validator->errors()->add("media_attachments.{$index}.file_size", 'Maximum size for images is 10 MB.');
+                }
+
+                if ($media['media_type'] === 'video' && $sizeKilobytes > self::MAX_VIDEO_KILOBYTES) {
+                    $validator->errors()->add("media_attachments.{$index}.file_size", 'Maximum size for videos is 100 MB.');
+                }
+            });
 
             if ($status === PostStatus::Draft && $publishedAt) {
                 $validator->errors()->add('published_at', 'Draft posts cannot have a publish date.');
@@ -259,7 +286,7 @@ class PostCreationRequest extends FormRequest
     }
 
     /**
-     * @return list<array{temporary_path: string, media_type: string, alt_text: ?string, order: int}>
+     * @return list<array{temporary_path: string, media_type: string, alt_text: ?string, order: int, file_name: ?string, mime_type: ?string, file_size: int}>
      */
     public function temporaryMediaAttachments(): array
     {
@@ -269,7 +296,10 @@ class PostCreationRequest extends FormRequest
                 'temporary_path' => (string) ($media['temporary_path'] ?? ''),
                 'media_type' => (string) ($media['media_type'] ?? 'image'),
                 'alt_text' => $this->normalizeNullableString($media['alt_text'] ?? null),
-                'order' => $index,
+                'order' => (int) ($media['order'] ?? $index),
+                'file_name' => $this->normalizeNullableString($media['file_name'] ?? null),
+                'mime_type' => $this->normalizeNullableString($media['mime_type'] ?? null),
+                'file_size' => (int) ($media['file_size'] ?? 0),
             ]);
 
         $temporaryPaths = collect($this->input('temporary_media', []))
@@ -279,6 +309,9 @@ class PostCreationRequest extends FormRequest
                 'media_type' => 'image',
                 'alt_text' => null,
                 'order' => $attachments->count() + $index,
+                'file_name' => null,
+                'mime_type' => null,
+                'file_size' => 0,
             ]);
 
         return $attachments

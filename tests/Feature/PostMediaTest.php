@@ -84,7 +84,7 @@ class PostMediaTest extends TestCase
         $this->assertSame(0, Post::query()->count());
     }
 
-    public function test_rejects_video_over_20mb(): void
+    public function test_rejects_video_over_100mb(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
@@ -94,7 +94,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'media' => [UploadedFile::fake()->create('clip.mp4', 20481, 'video/mp4')],
+                'media' => [UploadedFile::fake()->create('clip.mp4', 102401, 'video/mp4')],
             ]);
 
         $response->assertRedirect(route('posts.create'));
@@ -120,13 +120,12 @@ class PostMediaTest extends TestCase
         $this->assertSame(0, Post::query()->count());
     }
 
-    public function test_rejects_uploading_photos_and_video_together(): void
+    public function test_can_upload_photos_and_videos_together(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)
-            ->from(route('posts.create'))
+        $this->actingAs($user)
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
@@ -134,20 +133,21 @@ class PostMediaTest extends TestCase
                     UploadedFile::fake()->image('photo.jpg', 800, 600),
                     UploadedFile::fake()->create('clip.mp4', 1024, 'video/mp4'),
                 ],
-            ]);
+            ])->assertRedirect();
 
-        $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['media']);
-        $this->assertSame(0, Post::query()->count());
+        $post = Post::query()->latest('id')->firstOrFail();
+
+        $this->assertSame(Post::TYPE_VIDEO, $post->type);
+        $this->assertCount(1, $post->getMedia('photos'));
+        $this->assertCount(1, $post->getMedia('videos'));
     }
 
-    public function test_rejects_more_than_one_video_in_media_array(): void
+    public function test_can_upload_multiple_videos_to_post(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)
-            ->from(route('posts.create'))
+        $this->actingAs($user)
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
@@ -155,25 +155,23 @@ class PostMediaTest extends TestCase
                     UploadedFile::fake()->create('clip-1.mp4', 1024, 'video/mp4'),
                     UploadedFile::fake()->create('clip-2.mov', 1024, 'video/quicktime'),
                 ],
-            ]);
+            ])->assertRedirect();
 
-        $response->assertRedirect(route('posts.create'));
-        $response->assertSessionHasErrors(['media']);
-        $this->assertSame(0, Post::query()->count());
+        $post = Post::query()->latest('id')->firstOrFail();
+
+        $this->assertSame(Post::TYPE_VIDEO, $post->type);
+        $this->assertCount(2, $post->getMedia('videos'));
     }
 
-    public function test_can_upload_five_images_to_post(): void
+    public function test_can_upload_ten_images_to_post(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
 
-        $photos = [
-            UploadedFile::fake()->image('photo-1.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-2.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-3.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-4.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-5.jpg', 800, 600),
-        ];
+        $photos = array_map(
+            fn (int $index): UploadedFile => UploadedFile::fake()->image("photo-{$index}.jpg", 800, 600),
+            range(1, 10),
+        );
 
         $this->actingAs($user)
             ->post(route('posts.store'), [
@@ -185,22 +183,18 @@ class PostMediaTest extends TestCase
         $post = Post::query()->latest('id')->firstOrFail();
 
         $this->assertSame(Post::TYPE_PHOTO, $post->type);
-        $this->assertCount(5, $post->getMedia('photos'));
+        $this->assertCount(10, $post->getMedia('photos'));
     }
 
-    public function test_rejects_more_than_five_images(): void
+    public function test_rejects_more_than_ten_attachments(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
 
-        $photos = [
-            UploadedFile::fake()->image('photo-1.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-2.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-3.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-4.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-5.jpg', 800, 600),
-            UploadedFile::fake()->image('photo-6.jpg', 800, 600),
-        ];
+        $photos = array_map(
+            fn (int $index): UploadedFile => UploadedFile::fake()->image("photo-{$index}.jpg", 800, 600),
+            range(1, 11),
+        );
 
         $response = $this->actingAs($user)
             ->from(route('posts.create'))
@@ -215,7 +209,7 @@ class PostMediaTest extends TestCase
         $this->assertSame(0, Post::query()->count());
     }
 
-    public function test_rejects_photo_over_20mb(): void
+    public function test_rejects_photo_over_10mb(): void
     {
         Storage::fake('public');
         $user = User::factory()->create();
@@ -225,7 +219,7 @@ class PostMediaTest extends TestCase
             ->post(route('posts.store'), [
                 'body' => null,
                 'visibility' => 'public',
-                'media' => [UploadedFile::fake()->image('large-photo.jpg')->size(20481)],
+                'media' => [UploadedFile::fake()->image('large-photo.jpg')->size(10241)],
             ]);
 
         $response->assertRedirect(route('posts.create'));

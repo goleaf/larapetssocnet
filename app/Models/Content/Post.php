@@ -156,7 +156,6 @@ class Post extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
         $this->addMediaCollection('videos')
-            ->singleFile()
             ->acceptsMimeTypes(['video/mp4', 'video/quicktime', 'video/webm', 'application/octet-stream', 'application/x-empty']);
     }
 

@@ -24,6 +24,21 @@ new class extends Component
 
     private const MODE_MODAL = 'modal';
 
+    private const MAX_ATTACHMENTS = 10;
+
+    private const MEDIA_UPLOAD_SLOTS = [
+        'mediaUploadSlot0',
+        'mediaUploadSlot1',
+        'mediaUploadSlot2',
+        'mediaUploadSlot3',
+        'mediaUploadSlot4',
+        'mediaUploadSlot5',
+        'mediaUploadSlot6',
+        'mediaUploadSlot7',
+        'mediaUploadSlot8',
+        'mediaUploadSlot9',
+    ];
+
     public string $mode = self::MODE_INLINE;
 
     public bool $modalOpen = true;
@@ -41,9 +56,34 @@ new class extends Component
     public array $temporaryFilePaths = [];
 
     /**
-     * @var list<array{temporary_path: string, preview_data_url: ?string, file_name: string, media_type: string, alt_text: ?string}>
+     * @var list<array{client_id: string, slot: ?string, temporary_path: string, preview_data_url: ?string, file_name: string, media_type: string, mime_type: ?string, file_size: int, alt_text: ?string, order: int}>
      */
     public array $attachmentMetadata = [];
+
+    public mixed $mediaUploadSlot0 = null;
+
+    public mixed $mediaUploadSlot1 = null;
+
+    public mixed $mediaUploadSlot2 = null;
+
+    public mixed $mediaUploadSlot3 = null;
+
+    public mixed $mediaUploadSlot4 = null;
+
+    public mixed $mediaUploadSlot5 = null;
+
+    public mixed $mediaUploadSlot6 = null;
+
+    public mixed $mediaUploadSlot7 = null;
+
+    public mixed $mediaUploadSlot8 = null;
+
+    public mixed $mediaUploadSlot9 = null;
+
+    /**
+     * @var list<string>
+     */
+    public array $mediaErrors = [];
 
     /**
      * @var list<int>
@@ -145,24 +185,96 @@ new class extends Component
         $this->syncAttachmentMetadata();
     }
 
-    public function updateAttachmentAltText(int $index, string $altText): void
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    public function registerUploadedAttachment(string $clientId, string $slot, string $temporaryPath, array $metadata = []): void
     {
-        if (! array_key_exists($index, $this->attachmentMetadata)) {
+        if (! in_array($slot, self::MEDIA_UPLOAD_SLOTS, true)) {
+            return;
+        }
+
+        $file = $this->uploadedFileForSlot($slot);
+        $mimeType = $this->normalizeNullableString($metadata['mime_type'] ?? $file?->getMimeType());
+        $mediaType = str_starts_with((string) $mimeType, 'video/') ? 'video' : 'image';
+        $existingIndex = $this->attachmentIndex($clientId);
+        $existing = $existingIndex === null ? [] : $this->attachmentMetadata[$existingIndex];
+        $attachment = [
+            'client_id' => $clientId,
+            'slot' => $slot,
+            'temporary_path' => $this->temporaryPathForFile($file) ?? $temporaryPath,
+            'preview_data_url' => null,
+            'file_name' => $this->normalizeNullableString($metadata['file_name'] ?? $file?->getClientOriginalName()) ?? 'attachment',
+            'media_type' => $mediaType,
+            'mime_type' => $mimeType,
+            'file_size' => (int) ($metadata['file_size'] ?? ($file?->getSize() ?? 0)),
+            'alt_text' => $this->normalizeNullableString($existing['alt_text'] ?? $metadata['alt_text'] ?? null),
+            'order' => (int) ($existing['order'] ?? $metadata['order'] ?? count($this->attachmentMetadata)),
+        ];
+
+        if ($existingIndex === null) {
+            $this->attachmentMetadata[] = $attachment;
+        } else {
+            $this->attachmentMetadata[$existingIndex] = $attachment;
+        }
+
+        $this->normalizeAttachmentOrder();
+        $this->refreshTemporaryFilePaths();
+    }
+
+    public function updateAttachmentAltText(int|string $identifier, string $altText): void
+    {
+        $index = $this->attachmentIndex($identifier);
+
+        if ($index === null) {
             return;
         }
 
         $this->attachmentMetadata[$index]['alt_text'] = trim(mb_substr($altText, 0, 160)) ?: null;
     }
 
-    public function removeAttachment(int $index): void
+    /**
+     * @param  list<string>  $clientIds
+     */
+    public function reorderAttachments(array $clientIds): void
     {
-        if (! array_key_exists($index, $this->attachmentMetadata)) {
+        $clientIds = collect($clientIds)
+            ->filter(fn (mixed $clientId): bool => is_string($clientId) && $clientId !== '')
+            ->values();
+
+        if ($clientIds->isEmpty()) {
             return;
         }
 
+        foreach ($clientIds as $order => $clientId) {
+            $index = $this->attachmentIndex($clientId);
+
+            if ($index !== null) {
+                $this->attachmentMetadata[$index]['order'] = $order;
+            }
+        }
+
+        $this->normalizeAttachmentOrder();
+        $this->refreshTemporaryFilePaths();
+    }
+
+    public function removeAttachment(int|string $identifier): void
+    {
+        $index = $this->attachmentIndex($identifier);
+
+        if ($index === null) {
+            return;
+        }
+
+        $slot = $this->attachmentMetadata[$index]['slot'] ?? null;
+
+        if (is_string($slot) && in_array($slot, self::MEDIA_UPLOAD_SLOTS, true)) {
+            $this->{$slot} = null;
+        }
+
         array_splice($this->attachmentMetadata, $index, 1);
-        array_splice($this->temporaryFilePaths, $index, 1);
-        array_splice($this->mediaUploads, $index, 1);
+        $this->normalizeAttachmentOrder();
+        $this->refreshTemporaryFilePaths();
     }
 
     public function autosaveDraft(PostDraftService $drafts): void
@@ -214,6 +326,7 @@ new class extends Component
                 $this->modalOpen = false;
             }
 
+            $this->dispatch('post-composer-reset');
             $this->dispatch('post-created', postId: (int) $post->getKey(), mode: $this->mode);
             session()->flash('success', __('feed.flash_post_created'));
         } finally {
@@ -302,16 +415,21 @@ new class extends Component
     }
 
     /**
-     * @return list<array{temporary_path: string, media_type: string, alt_text: ?string}>
+     * @return list<array{temporary_path: string, media_type: string, alt_text: ?string, order: int, file_name: string, mime_type: ?string, file_size: int}>
      */
     private function mediaAttachmentPayload(): array
     {
         return collect($this->attachmentMetadata)
             ->filter(fn (array $attachment): bool => filled($attachment['temporary_path'] ?? null))
+            ->sortBy(fn (array $attachment): int => (int) ($attachment['order'] ?? 0))
             ->map(fn (array $attachment): array => [
                 'temporary_path' => (string) $attachment['temporary_path'],
                 'media_type' => (string) ($attachment['media_type'] ?? 'image'),
                 'alt_text' => filled($attachment['alt_text'] ?? null) ? (string) $attachment['alt_text'] : null,
+                'order' => (int) ($attachment['order'] ?? 0),
+                'file_name' => (string) ($attachment['file_name'] ?? 'attachment'),
+                'mime_type' => filled($attachment['mime_type'] ?? null) ? (string) $attachment['mime_type'] : null,
+                'file_size' => (int) ($attachment['file_size'] ?? 0),
             ])
             ->values()
             ->all();
@@ -321,27 +439,29 @@ new class extends Component
     {
         $attachments = collect($this->mediaUploads)
             ->filter(fn (mixed $file): bool => $file instanceof TemporaryUploadedFile)
-            ->map(function (TemporaryUploadedFile $file): array {
+            ->map(function (TemporaryUploadedFile $file, int $index): array {
                 $temporaryPath = $file->getRealPath() ?: $file->getPathname();
                 $mediaType = str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'image';
 
                 return [
+                    'client_id' => 'legacy-'.$index.'-'.md5($temporaryPath),
+                    'slot' => null,
                     'temporary_path' => $temporaryPath,
                     'preview_data_url' => $this->temporaryPreviewUrl($file, $mediaType),
                     'file_name' => $file->getClientOriginalName(),
                     'media_type' => $mediaType,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => (int) ($file->getSize() ?: 0),
                     'alt_text' => null,
+                    'order' => $index,
                 ];
             })
+            ->take(self::MAX_ATTACHMENTS)
             ->values()
             ->all();
 
         $this->attachmentMetadata = $attachments;
-        $this->temporaryFilePaths = collect($attachments)
-            ->pluck('temporary_path')
-            ->filter()
-            ->values()
-            ->all();
+        $this->refreshTemporaryFilePaths();
     }
 
     private function temporaryPreviewUrl(TemporaryUploadedFile $file, string $mediaType): ?string
@@ -355,6 +475,74 @@ new class extends Component
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function uploadedFileForSlot(string $slot): ?TemporaryUploadedFile
+    {
+        if (! in_array($slot, self::MEDIA_UPLOAD_SLOTS, true)) {
+            return null;
+        }
+
+        $file = $this->{$slot};
+
+        return $file instanceof TemporaryUploadedFile ? $file : null;
+    }
+
+    private function temporaryPathForFile(?TemporaryUploadedFile $file): ?string
+    {
+        if (! $file instanceof TemporaryUploadedFile) {
+            return null;
+        }
+
+        return $file->getRealPath() ?: $file->getPathname();
+    }
+
+    private function attachmentIndex(int|string $identifier): ?int
+    {
+        if (is_int($identifier) || ctype_digit((string) $identifier)) {
+            $index = (int) $identifier;
+
+            if (array_key_exists($index, $this->attachmentMetadata)) {
+                return $index;
+            }
+        }
+
+        foreach ($this->attachmentMetadata as $index => $attachment) {
+            if (($attachment['client_id'] ?? null) === $identifier) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeAttachmentOrder(): void
+    {
+        $this->attachmentMetadata = collect($this->attachmentMetadata)
+            ->sortBy(fn (array $attachment): int => (int) ($attachment['order'] ?? 0))
+            ->values()
+            ->map(function (array $attachment, int $index): array {
+                $attachment['order'] = $index;
+
+                return $attachment;
+            })
+            ->all();
+    }
+
+    private function refreshTemporaryFilePaths(): void
+    {
+        $this->temporaryFilePaths = collect($this->attachmentMetadata)
+            ->pluck('temporary_path')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function normalizeNullableString(mixed $value): ?string
+    {
+        $normalized = trim((string) $value);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     /**
@@ -406,6 +594,10 @@ new class extends Component
         $this->mediaUploads = [];
         $this->temporaryFilePaths = [];
         $this->attachmentMetadata = [];
+        $this->mediaErrors = [];
+        foreach (self::MEDIA_UPLOAD_SLOTS as $slot) {
+            $this->{$slot} = null;
+        }
         $this->selectedPetIds = [];
         $this->locationDisplayText = null;
         $this->locationLat = null;
@@ -435,14 +627,28 @@ new class extends Component
  $isModal = $mode === 'modal';
  $surfaceClasses = $isModal ? 'w-full max-w-2xl rounded-[var(--radius-card)] bg-[color:var(--surface-modal)] shadow-card' : 'shell-card';
  $surfacePadding = $isModal ? 'p-5 sm:p-6' : 'p-6';
+ $uploadSlots = [
+     'mediaUploadSlot0',
+     'mediaUploadSlot1',
+     'mediaUploadSlot2',
+     'mediaUploadSlot3',
+     'mediaUploadSlot4',
+     'mediaUploadSlot5',
+     'mediaUploadSlot6',
+     'mediaUploadSlot7',
+     'mediaUploadSlot8',
+     'mediaUploadSlot9',
+ ];
 @endphp
 
 <div
- x-data="postComposer({ text: @js($textContent), maxCharacters: 1000 })"
- x-on:livewire-upload-start="$wire.isUploading = true"
- x-on:livewire-upload-finish="$wire.isUploading = false"
- x-on:livewire-upload-cancel="$wire.isUploading = false"
- x-on:livewire-upload-error="$wire.isUploading = false"
+ x-data="postComposer({
+ text: @js($textContent),
+ maxCharacters: 1000,
+ maxAttachments: 10,
+ uploadSlots: @js($uploadSlots),
+ })"
+ x-on:post-composer-reset.window="resetLocalAttachments"
 >
  @if ($isModal)
  <div
@@ -460,7 +666,30 @@ new class extends Component
  <section class="{{ $surfaceClasses }}">
  @endif
  <div class="{{ $surfacePadding }}">
- <form wire:submit="submit" class="space-y-5">
+ <form
+ wire:submit="submit"
+ class="relative space-y-5 rounded-[var(--radius-card)] border border-transparent transition"
+ x-bind:class="{ 'border-dashed border-paw bg-paw/5 ring-2 ring-paw/15': isDragging }"
+ x-on:dragover.prevent="handleDragOver"
+ x-on:dragleave="handleDragLeave"
+ x-on:drop.prevent="handleDrop"
+ >
+ <div
+ x-cloak
+ x-show="isDragging"
+ x-transition.opacity
+ class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[var(--radius-card)] bg-warm-white/75 backdrop-blur-[1px]"
+ aria-hidden="true"
+ >
+ <div class="inline-flex items-center gap-2 rounded-full border border-paw/30 bg-warm-white px-4 py-2 text-sm font-semibold text-paw shadow-sm">
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M10 3v10"/>
+ <path d="m6 9 4 4 4-4"/>
+ <path d="M4 17h12"/>
+ </svg>
+ Drop to attach
+ </div>
+ </div>
  <div class="flex items-start justify-between gap-4">
  <div class="min-w-0">
  <p id="{{ $titleId }}" class="font-display text-lg font-bold text-bark">Create a post</p>
@@ -544,6 +773,144 @@ new class extends Component
  </div>
  </div>
 
+ <div class="space-y-3">
+ <div class="flex flex-wrap items-center justify-between gap-3 border-y border-whisker/25 py-3">
+ <div class="flex items-center gap-2">
+ <button
+ type="button"
+ class="inline-flex h-10 w-10 items-center justify-center rounded-full text-fur transition hover:bg-paw/10 hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="$refs.mediaInput.click()"
+ aria-label="Attach photo or video"
+ >
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h7A2.5 2.5 0 0 1 16 5.5v9A2.5 2.5 0 0 1 13.5 17h-7A2.5 2.5 0 0 1 4 14.5z"/>
+ <path d="m5 14 3.5-3.5 2.5 2.5 1.5-1.5L16 15"/>
+ <circle cx="13" cy="7" r="1.25"/>
+ </svg>
+ </button>
+ <input
+ x-ref="mediaInput"
+ type="file"
+ multiple
+ accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime"
+ class="sr-only"
+ x-on:change="handleFileSelection($event.target.files); $event.target.value = ''"
+ >
+ <p class="text-xs leading-5 text-fur">Up to 10 images or videos. Images 10 MB, videos 100 MB.</p>
+ </div>
+
+ <p class="text-xs font-semibold text-fur" aria-live="polite">
+ <span x-text="attachments.length"></span>/10 attachments
+ </p>
+ </div>
+
+ <div
+ x-cloak
+ x-show="mediaErrors.length > 0"
+ class="space-y-1 rounded-[var(--radius-soft)] border border-rose/25 bg-rose/5 p-3"
+ role="alert"
+ >
+ <template x-for="error in mediaErrors" :key="error">
+ <p class="text-sm font-medium text-rose" x-text="error"></p>
+ </template>
+ </div>
+
+ @error('media_attachments')
+ <p class="text-sm font-medium text-rose">{{ $message }}</p>
+ @enderror
+ @error('media')
+ <p class="text-sm font-medium text-rose">{{ $message }}</p>
+ @enderror
+
+ <div x-cloak x-show="attachments.length > 0" x-transition class="min-w-0">
+ <ul x-ref="attachmentStrip" class="flex gap-3 overflow-x-auto pb-2" aria-label="Selected attachments">
+ <template x-for="attachment in attachments" :key="attachment.client_id">
+ <li
+ draggable="true"
+ class="w-36 shrink-0 cursor-grab rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white p-2 transition active:cursor-grabbing"
+ x-bind:data-client-id="attachment.client_id"
+ x-bind:class="{ 'scale-95 opacity-0': attachment.removing }"
+ x-on:dragstart="startAttachmentDrag(attachment.client_id)"
+ x-on:dragover.prevent
+ x-on:drop.prevent="dropAttachmentOn(attachment.client_id)"
+ x-on:dragend="draggingAttachmentId = null"
+ >
+ <div class="relative aspect-square overflow-hidden rounded-[var(--radius-soft)] bg-cream">
+ <template x-if="attachment.media_type === 'image'">
+ <img x-bind:src="attachment.preview_data_url" alt="" class="h-full w-full object-cover">
+ </template>
+ <template x-if="attachment.media_type === 'video'">
+ <video x-bind:src="attachment.preview_data_url" class="h-full w-full object-cover" muted playsinline preload="metadata"></video>
+ </template>
+
+ <button
+ type="button"
+ class="absolute right-1 top-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-bark/75 text-white transition hover:bg-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="removeAttachment(attachment.client_id)"
+ x-bind:aria-label="`Remove ${attachment.file_name}`"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+
+ <div
+ x-show="attachment.upload_state === 'uploading'"
+ class="absolute inset-0 flex items-center justify-center bg-bark/45"
+ aria-hidden="true"
+ >
+ <svg class="h-10 w-10 -rotate-90 text-warm-white" viewBox="0 0 40 40">
+ <circle cx="20" cy="20" r="16" fill="none" class="stroke-warm-white/30" stroke-width="4"></circle>
+ <circle
+ cx="20"
+ cy="20"
+ r="16"
+ fill="none"
+ class="stroke-current transition-[stroke-dashoffset] duration-150"
+ stroke-width="4"
+ stroke-linecap="round"
+ stroke-dasharray="100.53"
+ x-bind:stroke-dashoffset="uploadProgressOffset(attachment)"
+ ></circle>
+ </svg>
+ </div>
+
+ <div
+ x-show="attachment.upload_state === 'complete'"
+ class="absolute bottom-1 right-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-leaf text-white"
+ aria-hidden="true"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="m5 10 3 3 7-7"/>
+ </svg>
+ </div>
+ </div>
+
+ <div class="mt-2 min-w-0">
+ <p class="truncate text-xs font-semibold text-bark" x-text="attachment.file_name"></p>
+ <button
+ type="button"
+ class="mt-1 text-xs font-semibold text-fur transition hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="attachment.showAltText = !attachment.showAltText"
+ x-text="attachment.showAltText ? 'Hide alt text' : 'Add alt text'"
+ ></button>
+ <div x-show="attachment.showAltText" x-transition class="mt-2">
+ <input
+ type="text"
+ class="h-9 w-full rounded-[var(--radius-soft)] border border-whisker/40 bg-transparent px-3 text-xs text-bark placeholder:text-whisker focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
+ placeholder="Describe this image for screen readers."
+ x-model.debounce.300ms="attachment.alt_text"
+ x-on:input.debounce.350ms="updateAltText(attachment)"
+ x-bind:aria-label="`Alt text for ${attachment.file_name}`"
+ >
+ </div>
+ </div>
+ </li>
+ </template>
+ </ul>
+ </div>
+ </div>
+
  <div class="grid gap-4 md:grid-cols-2">
  <x-ui.select id="{{ $composerId }}-visibility" label="Visibility" wire:model="selectedVisibility">
  <option value="public">Public</option>
@@ -578,65 +945,6 @@ new class extends Component
  <x-ui.input id="{{ $composerId }}-scheduled" label="Schedule" type="datetime-local" wire:model.blur="scheduledPublishAt" />
  </div>
 
- <div class="rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/45 p-4">
- <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
- <div>
- <label for="{{ $composerId }}-media" class="text-sm font-semibold text-bark">Media</label>
- <p class="mt-1 text-xs leading-5 text-fur">Attach up to 5 images or one video.</p>
- </div>
- <input
- id="{{ $composerId }}-media"
- type="file"
- wire:model="mediaUploads"
- multiple
- accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
- class="block w-full cursor-pointer text-sm text-fur file:mr-4 file:min-h-10 file:rounded-[var(--radius-soft)] file:border-0 file:bg-paw/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paw hover:file:bg-paw/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:max-w-xs"
- x-on:change="previewSelectedFiles"
- />
- </div>
-
- <div wire:loading wire:target="mediaUploads" class="mt-3 text-xs font-semibold text-paw" role="status">
- Uploading media...
- </div>
-
- @error('media_attachments')
- <p class="mt-2 text-sm font-medium text-rose">{{ $message }}</p>
- @enderror
- @error('media')
- <p class="mt-2 text-sm font-medium text-rose">{{ $message }}</p>
- @enderror
-
- @if ($attachmentMetadata !== [])
- <ul class="mt-4 grid gap-3 sm:grid-cols-2" aria-label="Selected attachments">
- @foreach ($attachmentMetadata as $index => $attachment)
- <li wire:key="composer-attachment-{{ $index }}-{{ md5((string) $attachment['temporary_path']) }}" class="rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white p-3">
- <div class="flex items-start gap-3">
- <div class="h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-soft)] bg-cream">
- @if (($attachment['media_type'] ?? 'image') === 'image' && filled($attachment['preview_data_url'] ?? null))
- <img src="{{ $attachment['preview_data_url'] }}" alt="" class="h-full w-full object-cover">
- @else
- <div class="flex h-full w-full items-center justify-center text-xs font-semibold uppercase text-fur">Video</div>
- @endif
- </div>
- <div class="min-w-0 flex-1">
- <p class="truncate text-sm font-semibold text-bark">{{ $attachment['file_name'] }}</p>
- <input
- type="text"
- value="{{ $attachment['alt_text'] ?? '' }}"
- wire:change="updateAttachmentAltText({{ $index }}, $event.target.value)"
- class="mt-2 h-9 w-full rounded-[var(--radius-soft)] border border-whisker/40 bg-transparent px-3 text-xs text-bark placeholder:text-whisker focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
- placeholder="Alt text"
- aria-label="Alt text for {{ $attachment['file_name'] }}"
- >
- </div>
- <button type="button" class="text-xs font-semibold text-rose hover:text-red-700" wire:click="removeAttachment({{ $index }})">Remove</button>
- </div>
- </li>
- @endforeach
- </ul>
- @endif
- </div>
-
  <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
  <div class="min-h-5 text-xs text-fur" role="status">
  <span wire:loading.remove wire:target="autosaveDraft">
@@ -659,8 +967,8 @@ new class extends Component
  type="submit"
  variant="primary"
  wire:loading.attr="disabled"
- wire:target="submit,confirmDuplicateAndSubmit,mediaUploads"
- x-bind:disabled="characterCount > maxCharacters"
+ wire:target="submit,confirmDuplicateAndSubmit"
+ x-bind:disabled="characterCount > maxCharacters || hasActiveUploads"
  >
  <span wire:loading.remove wire:target="submit,confirmDuplicateAndSubmit">Post</span>
  <span wire:loading wire:target="submit,confirmDuplicateAndSubmit">Posting...</span>

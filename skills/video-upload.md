@@ -1,18 +1,18 @@
 # Video Upload Rules
 
-- Max one video per post.
+- Multiple videos can be attached to one post as part of the 10-attachment post media limit.
 - Accepted extensions (validation): `mp4`, `mov`.
-- Max size: 20MB per file.
+- Max size: 100MB per file.
 - No server-side transcoding.
 - Always store using Spatie MediaLibrary in `videos` collection.
-- `videos` collection is `singleFile()`.
+- `videos` collection allows multiple files.
 - Do not register video conversions.
 - Do not use `Storage::put()` for videos.
 
 ## Validation
 - `StorePostRequest` allows video uploads via `media` or `video` input.
-- Mutual exclusivity (video vs photos) is enforced in `withValidator()`.
-- Only one video allowed.
+- Mixed image/video posts are allowed.
+- Total post attachments are capped at 10.
 
 ## Post Type
 - If a video is uploaded, post `type` is `video` (resolved in `PostService`).

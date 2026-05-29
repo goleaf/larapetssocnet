@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\FeedFanOutJob;
+use App\Jobs\MediaProcessingJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
 use App\Models\Identity\User;
@@ -45,6 +46,50 @@ it('keeps text state and exposes the computed character count', function (): voi
         ->assertSeeHtml('x-show="showCharacterCounter"');
 });
 
+it('renders the media attachment strip controls and upload behaviours', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSee('Attach photo or video')
+        ->assertSee('Drop to attach')
+        ->assertSee('Add alt text')
+        ->assertSee('Up to 10 images or videos. Images 10 MB, videos 100 MB.')
+        ->assertSeeHtml('accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime"')
+        ->assertSeeHtml('handleFileSelection')
+        ->assertSeeHtml('x-ref="attachmentStrip"')
+        ->assertSeeHtml('uploadProgressOffset');
+});
+
+it('tracks uploaded attachment metadata, alt text, removal, and ordering by client id', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->call('registerUploadedAttachment', 'client-a', 'mediaUploadSlot0', 'livewire-tmp/a', [
+            'file_name' => 'first.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 1024,
+            'order' => 0,
+        ])
+        ->call('registerUploadedAttachment', 'client-b', 'mediaUploadSlot1', 'livewire-tmp/b', [
+            'file_name' => 'second.mp4',
+            'mime_type' => 'video/mp4',
+            'file_size' => 2048,
+            'order' => 1,
+        ])
+        ->call('updateAttachmentAltText', 'client-a', 'A terrier at the park')
+        ->call('reorderAttachments', ['client-b', 'client-a'])
+        ->assertSet('attachmentMetadata.0.client_id', 'client-b')
+        ->assertSet('attachmentMetadata.0.media_type', 'video')
+        ->assertSet('attachmentMetadata.0.order', 0)
+        ->assertSet('attachmentMetadata.1.client_id', 'client-a')
+        ->assertSet('attachmentMetadata.1.alt_text', 'A terrier at the park')
+        ->call('removeAttachment', 'client-b')
+        ->assertSet('attachmentMetadata.0.client_id', 'client-a')
+        ->assertSet('temporaryFilePaths.0', 'livewire-tmp/a');
+});
+
 it('creates a post through the action pipeline', function (): void {
     Queue::fake();
 
@@ -69,6 +114,52 @@ it('creates a post through the action pipeline', function (): void {
         ->and($post->pets()->whereKey($pet->getKey())->exists())->toBeTrue();
 
     Queue::assertPushed(FeedFanOutJob::class);
+});
+
+it('passes ordered temporary media attachments to the creation pipeline', function (): void {
+    Queue::fake();
+
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->set('textContent', 'Mixed media day')
+        ->set('attachmentMetadata', [
+            [
+                'client_id' => 'client-image',
+                'slot' => 'mediaUploadSlot0',
+                'temporary_path' => 'livewire-tmp/image',
+                'preview_data_url' => null,
+                'file_name' => 'image.jpg',
+                'media_type' => 'image',
+                'mime_type' => 'image/jpeg',
+                'file_size' => 1024,
+                'alt_text' => 'A good image',
+                'order' => 1,
+            ],
+            [
+                'client_id' => 'client-video',
+                'slot' => 'mediaUploadSlot1',
+                'temporary_path' => 'livewire-tmp/video',
+                'preview_data_url' => null,
+                'file_name' => 'video.mp4',
+                'media_type' => 'video',
+                'mime_type' => 'video/mp4',
+                'file_size' => 2048,
+                'alt_text' => null,
+                'order' => 0,
+            ],
+        ])
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertDispatched('post-created');
+
+    $post = Post::query()->firstOrFail();
+
+    expect($post->type)->toBe(Post::TYPE_VIDEO);
+
+    Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->temporaryPath === 'livewire-tmp/video' && $job->order === 0);
+    Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->temporaryPath === 'livewire-tmp/image' && $job->altText === 'A good image' && $job->order === 1);
 });
 
 it('returns a duplicate warning without creating another post', function (): void {

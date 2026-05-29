@@ -60,7 +60,7 @@ it('creates a post from the create form', function (): void {
         ->and($post->getMedia('photos'))->toHaveCount(1);
 });
 
-it('rejects mixing photos and video in the create form', function (): void {
+it('creates a post with mixed images and video in the create form', function (): void {
     Storage::fake('public');
     $user = User::factory()->create();
 
@@ -74,9 +74,11 @@ it('rejects mixing photos and video in the create form', function (): void {
             ],
         ]);
 
-    $response
-        ->assertRedirect(route('posts.create'))
-        ->assertSessionHasErrors(['media']);
+    $response->assertRedirect(route('posts.create'));
 
-    expect(Post::query()->count())->toBe(0);
+    $post = Post::query()->latest('id')->firstOrFail();
+
+    expect($post->type)->toBe(Post::TYPE_VIDEO)
+        ->and($post->getMedia('photos'))->toHaveCount(1)
+        ->and($post->getMedia('videos'))->toHaveCount(1);
 });

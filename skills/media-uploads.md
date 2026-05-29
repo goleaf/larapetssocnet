@@ -9,15 +9,16 @@ All uploads go through Spatie MediaLibrary.
 - Define conversions in `registerMediaConversions()`.
 
 ## Post Media (StorePostRequest)
-- Max files: 5 images or 1 video.
-- Max file size: 20MB per file.
+- Max files: 10 attachments per post.
+- Images and videos may be mixed in one post.
+- Max image size: 10MB per file.
+- Max video size: 100MB per file.
 - Image types: `jpg`, `jpeg`, `png`, `gif`, `webp`.
 - Video types: `mp4`, `mov`.
-- Videos cannot be uploaded together with photos.
 
 Post collections:
 - `photos` (multiple)
-- `videos` (singleFile)
+- `videos` (multiple)
 
 Post image conversions:
 - `thumb` 150x150 crop webp q80

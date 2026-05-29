@@ -755,13 +755,23 @@ document.addEventListener('alpine:init', () => {
  Alpine.data('postComposer', (config = {}) => ({
  text: toStringValue(config.text),
  maxCharacters: toNumber(config.maxCharacters, 1000),
+ maxAttachments: Math.max(1, toNumber(config.maxAttachments, 10)),
+ uploadSlots: Array.isArray(config.uploadSlots) ? config.uploadSlots : [],
  circumference: 75.398,
- localAttachments: [],
+ uploadCircumference: 100.53,
+ attachments: [],
+ mediaErrors: [],
+ isDragging: false,
+ draggingAttachmentId: null,
+ allowedMimeTypes: ['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime'],
+ imageMaxBytes: 10 * 1024 * 1024,
+ videoMaxBytes: 100 * 1024 * 1024,
 
  init() {
  if (this.$refs.editor) {
  this.renderHighlighted(false);
  }
+
  },
 
  get characterCount() {
@@ -786,6 +796,10 @@ document.addEventListener('alpine:init', () => {
 
  get isCounterDanger() {
  return this.characterCount >= 951;
+ },
+
+ get hasActiveUploads() {
+ return this.attachments.some((attachment) => attachment.upload_state ==='queued' || attachment.upload_state ==='uploading');
  },
 
  syncFromEditor() {
@@ -897,25 +911,332 @@ document.addEventListener('alpine:init', () => {
  selection.addRange(range);
  },
 
- previewSelectedFiles(event) {
- const files = Array.from(event.target.files || []);
- this.localAttachments = [];
+ handleDragOver(event) {
+ if (!Array.from(event.dataTransfer?.types || []).includes('Files')) {
+ return;
+ }
+
+ this.isDragging = true;
+ },
+
+ handleDragLeave(event) {
+ if (event.currentTarget && event.relatedTarget && event.currentTarget.contains(event.relatedTarget)) {
+ return;
+ }
+
+ this.isDragging = false;
+ },
+
+ handleDrop(event) {
+ this.isDragging = false;
+ this.handleFileSelection(event.dataTransfer?.files || []);
+ },
+
+ handleFileSelection(fileList) {
+ const files = Array.from(fileList || []);
+
+ if (files.length === 0) {
+ return;
+ }
+
+ this.mediaErrors = [];
+ const remainingSlots = this.maxAttachments - this.attachments.length;
+
+ if (remainingSlots <= 0) {
+ this.mediaErrors.push('Maximum 10 attachments per post; only 0 more can be added.');
+
+ return;
+ }
 
  files.forEach((file, index) => {
+ if (index >= remainingSlots) {
+ this.mediaErrors.push(`Maximum 10 attachments per post; only ${remainingSlots} more can be added.`);
+
+ return;
+ }
+
+ const error = this.validateFile(file);
+
+ if (error) {
+ this.mediaErrors.push(error);
+
+ return;
+ }
+
+ this.previewAndUpload(file);
+ });
+ },
+
+ validateFile(file) {
+ if (!this.allowedMimeTypes.includes(file.type)) {
+ return `${file.name} is not a supported file type.`;
+ }
+
+ if (file.type.startsWith('image/') && file.size > this.imageMaxBytes) {
+ return `${file.name} is too large; maximum size for images is 10 MB.`;
+ }
+
+ if (file.type.startsWith('video/') && file.size > this.videoMaxBytes) {
+ return `${file.name} is too large; maximum size for videos is 100 MB.`;
+ }
+
+ return null;
+ },
+
+ previewAndUpload(file) {
+ const slot = this.nextAvailableSlot();
+
+ if (!slot) {
+ this.mediaErrors.push('Maximum 10 attachments per post; only 0 more can be added.');
+
+ return;
+ }
+
+ const attachment = {
+ client_id: this.createClientId(),
+ slot,
+ file_name: file.name,
+ media_type: file.type.startsWith('video/') ?'video':'image',
+ mime_type: file.type,
+ file_size: file.size,
+ preview_data_url:'',
+ alt_text:'',
+ showAltText: false,
+ upload_state:'queued',
+ progress: 0,
+ temporary_path:'',
+ livewire_upload_name:'',
+ removing: false,
+ };
+
+ this.attachments.push(attachment);
+ this.syncUploadingFlag();
+
+ if (attachment.media_type ==='video') {
+ attachment.preview_data_url = URL.createObjectURL(file);
+ this.startUpload(attachment, file);
+
+ return;
+ }
+
  const reader = new FileReader();
- const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
  reader.onload = () => {
- this.localAttachments[index] = {
- file_name: file.name,
- media_type: mediaType,
- preview_data_url: toStringValue(reader.result),
- alt_text: '',
+ attachment.preview_data_url = toStringValue(reader.result);
+ this.startUpload(attachment, file);
  };
+
+ reader.onerror = () => {
+ attachment.upload_state ='error';
+ this.mediaErrors.push(`${file.name} could not be previewed.`);
+ this.syncUploadingFlag();
  };
 
  reader.readAsDataURL(file);
+ },
+
+ startUpload(attachment, file) {
+ const upload = this.$wire?.upload || this.$wire?.$upload;
+
+ if (typeof upload !=='function') {
+ attachment.upload_state ='error';
+ this.mediaErrors.push(`${file.name} could not be uploaded.`);
+ this.syncUploadingFlag();
+
+ return;
+ }
+
+ attachment.upload_state ='uploading';
+ attachment.progress = 1;
+ this.syncUploadingFlag();
+
+ upload.call(
+ this.$wire,
+ attachment.slot,
+ file,
+ (uploadedFilename) => {
+ attachment.livewire_upload_name = toStringValue(uploadedFilename);
+ attachment.temporary_path = attachment.livewire_upload_name;
+ attachment.progress = 100;
+ attachment.upload_state ='complete';
+ this.syncUploadingFlag();
+ this.registerServerAttachment(attachment);
+ },
+ () => {
+ attachment.upload_state ='error';
+ this.mediaErrors.push(`${attachment.file_name} failed to upload.`);
+ this.syncUploadingFlag();
+ },
+ (event) => {
+ attachment.progress = toNumber(event?.detail?.progress ?? event?.progress, attachment.progress);
+ },
+ () => {
+ attachment.upload_state ='cancelled';
+ this.syncUploadingFlag();
+ },
+ );
+ },
+
+ registerServerAttachment(attachment) {
+ if (typeof this.$wire?.registerUploadedAttachment !=='function') {
+ return;
+ }
+
+ this.$wire.registerUploadedAttachment(
+ attachment.client_id,
+ attachment.slot,
+ attachment.temporary_path,
+ this.serverAttachmentMetadata(attachment),
+ );
+ },
+
+ serverAttachmentMetadata(attachment) {
+ return {
+ file_name: attachment.file_name,
+ media_type: attachment.media_type,
+ mime_type: attachment.mime_type,
+ file_size: attachment.file_size,
+ alt_text: attachment.alt_text,
+ order: this.attachments.findIndex((item) => item.client_id === attachment.client_id),
+ };
+ },
+
+ updateAltText(attachment) {
+ if (typeof this.$wire?.updateAttachmentAltText ==='function' && attachment.upload_state ==='complete') {
+ this.$wire.updateAttachmentAltText(attachment.client_id, attachment.alt_text ||'');
+ }
+ },
+
+ removeAttachment(clientId) {
+ const index = this.attachments.findIndex((attachment) => attachment.client_id === clientId);
+
+ if (index === -1) {
+ return;
+ }
+
+ const attachment = this.attachments[index];
+ attachment.removing = true;
+
+ window.setTimeout(() => {
+ if (attachment.upload_state ==='uploading') {
+ this.cancelUpload(attachment);
+ }
+
+ if (attachment.upload_state ==='complete' && attachment.livewire_upload_name) {
+ this.removeUpload(attachment);
+ }
+
+ if (attachment.preview_data_url.startsWith('blob:')) {
+ URL.revokeObjectURL(attachment.preview_data_url);
+ }
+
+ this.attachments.splice(index, 1);
+ this.syncAttachmentOrder();
+ this.syncUploadingFlag();
+
+ if (typeof this.$wire?.removeAttachment ==='function') {
+ this.$wire.removeAttachment(clientId);
+ }
+ }, 160);
+ },
+
+ cancelUpload(attachment) {
+ const cancel = this.$wire?.cancelUpload || this.$wire?.$cancelUpload;
+
+ if (typeof cancel ==='function') {
+ cancel.call(this.$wire, attachment.slot);
+ }
+ },
+
+ removeUpload(attachment) {
+ const remove = this.$wire?.removeUpload || this.$wire?.$removeUpload;
+
+ if (typeof remove ==='function') {
+ remove.call(this.$wire, attachment.slot, attachment.livewire_upload_name, () => {}, () => {});
+ }
+ },
+
+ uploadProgressOffset(attachment) {
+ const progress = Math.min(Math.max(toNumber(attachment.progress), 0), 100) / 100;
+
+ return this.uploadCircumference * (1 - progress);
+ },
+
+ nextAvailableSlot() {
+ const usedSlots = this.attachments.map((attachment) => attachment.slot);
+
+ return this.uploadSlots.find((slot) => !usedSlots.includes(slot));
+ },
+
+ createClientId() {
+ if (window.crypto?.randomUUID) {
+ return window.crypto.randomUUID();
+ }
+
+ return `attachment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+ },
+
+ syncUploadingFlag() {
+ if (this.$wire?.set) {
+ this.$wire.set('isUploading', this.hasActiveUploads, false);
+ }
+ },
+
+ syncAttachmentOrder() {
+ this.attachments.forEach((attachment, index) => {
+ attachment.order = index;
+
+ if (attachment.upload_state ==='complete') {
+ this.registerServerAttachment(attachment);
+ }
  });
+
+ if (typeof this.$wire?.reorderAttachments ==='function') {
+ this.$wire.reorderAttachments(this.attachments.map((attachment) => attachment.client_id));
+ }
+ },
+
+ startAttachmentDrag(clientId) {
+ this.draggingAttachmentId = clientId;
+ },
+
+ dropAttachmentOn(targetClientId) {
+ if (!this.draggingAttachmentId || this.draggingAttachmentId === targetClientId) {
+ this.draggingAttachmentId = null;
+
+ return;
+ }
+
+ const sourceIndex = this.attachments.findIndex((attachment) => attachment.client_id === this.draggingAttachmentId);
+ const targetIndex = this.attachments.findIndex((attachment) => attachment.client_id === targetClientId);
+
+ if (sourceIndex === -1 || targetIndex === -1) {
+ this.draggingAttachmentId = null;
+
+ return;
+ }
+
+ const [movedAttachment] = this.attachments.splice(sourceIndex, 1);
+ this.attachments.splice(targetIndex, 0, movedAttachment);
+ this.draggingAttachmentId = null;
+ this.syncAttachmentOrder();
+ },
+
+ resetLocalAttachments() {
+ this.attachments.forEach((attachment) => {
+ if (attachment.preview_data_url?.startsWith('blob:')) {
+ URL.revokeObjectURL(attachment.preview_data_url);
+ }
+ });
+
+ this.attachments = [];
+ this.mediaErrors = [];
+
+ if (this.$refs.mediaInput) {
+ this.$refs.mediaInput.value = '';
+ }
+
+ this.syncUploadingFlag();
  },
  }));
 
