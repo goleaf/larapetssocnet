@@ -6,6 +6,7 @@ use App\Models\Identity\User;
 use Database\Factories\Security\MagicLoginTokenFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,12 +21,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Hidden([
     'token_hash',
 ])]
+#[Table(name: 'magic_link_tokens')]
 class MagicLoginToken extends Model
 {
     /** @use HasFactory<MagicLoginTokenFactory> */
     use HasFactory;
-
-    protected $table = 'magic_link_tokens';
 
     public $timestamps = false;
 

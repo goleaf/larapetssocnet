@@ -73,7 +73,7 @@ class DeletePetAction
     private function softDeletePosts(Pet $pet): void
     {
         /** @var EloquentBuilder<Post> $postsQuery */
-        $postsQuery = Post::query()->where('pet_id', $pet->getKey());
+        $postsQuery = Post::query()->byPet((int) $pet->getKey());
 
         $postsQuery->chunkById(100, function (Collection $posts): void {
             foreach ($posts as $post) {

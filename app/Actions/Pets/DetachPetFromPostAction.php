@@ -7,6 +7,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class DetachPetFromPostAction
 {
@@ -33,6 +34,10 @@ class DetachPetFromPostAction
 
             if ($post->isDirty()) {
                 $post->save();
+            }
+
+            if (Schema::hasTable('pet_post')) {
+                $post->pets()->detach($petId);
             }
 
             return $post->refresh();

@@ -21,8 +21,10 @@ class extends Component
 
     public function mount(): void
     {
-        if ($this->currentUser()->hasVerifiedEmail()) {
-            $this->redirectRoute('feed.index', navigate: false);
+        $user = $this->currentUser();
+
+        if ($user->hasVerifiedEmail()) {
+            $this->redirectRoute($user->hasCompletedOnboarding() ? 'feed.index' : 'onboarding.show', navigate: false);
         }
     }
 
@@ -31,7 +33,7 @@ class extends Component
         $user = $this->currentUser();
 
         if ($user->hasVerifiedEmail()) {
-            $this->redirectRoute('feed.index', navigate: false);
+            $this->redirectRoute($user->hasCompletedOnboarding() ? 'feed.index' : 'onboarding.show', navigate: false);
 
             return;
         }

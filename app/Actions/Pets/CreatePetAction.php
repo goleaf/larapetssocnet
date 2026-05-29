@@ -3,8 +3,10 @@
 namespace App\Actions\Pets;
 
 use App\Models\Identity\User;
+use App\Models\Pets\Breed;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwner;
+use App\Models\Pets\Species;
 use App\Services\AdoptionService;
 use App\Services\ContentService;
 use App\Services\PersonalityTagService;
@@ -32,8 +34,12 @@ class CreatePetAction
         return DB::transaction(function () use ($owner, $attributes, $avatar, $galleryPhotos, $cover): Pet {
             $bio = isset($attributes['bio']) ? (string) $attributes['bio'] : null;
             $birthdate = $attributes['birthdate'] ?? $attributes['date_of_birth'] ?? $attributes['birth_date'] ?? null;
+            $birthYear = $attributes['birth_year'] ?? ($birthdate ? (int) date('Y', strtotime((string) $birthdate)) : null);
             $tags = $this->personalityTags->normalize($attributes['personality_tags'] ?? []);
             $visibility = (string) ($attributes['visibility'] ?? (((bool) ($attributes['is_public'] ?? true)) ? 'public' : 'private'));
+            $species = $this->resolveSpecies($attributes);
+            $breed = $this->resolveBreed($attributes, $species);
+            $breedDescription = $attributes['breed_description'] ?? $attributes['breed_label'] ?? null;
 
             if (! in_array($visibility, Pet::VISIBILITY, true)) {
                 $visibility = 'public';
@@ -52,14 +58,18 @@ class CreatePetAction
                 'user_id' => $owner->getKey(),
                 'name' => (string) $attributes['name'],
                 'slug' => $slug,
-                'species' => (string) $attributes['species'],
+                'species' => (string) ($species?->slug ?? $attributes['species']),
+                'species_id' => $species?->getKey(),
                 'species_other' => $attributes['species_other'] ?? null,
-                'breed' => $attributes['breed'] ?? null,
+                'breed' => $breed?->name ?? $attributes['breed'] ?? null,
+                'breed_id' => $breed?->getKey(),
+                'breed_description' => $breed ? null : $this->nullableString($breedDescription),
                 'sex' => $attributes['sex'] ?? ($attributes['gender'] ?? 'unknown'),
                 'gender' => $attributes['gender'] ?? ($attributes['sex'] ?? 'unknown'),
                 'size' => $attributes['size'] ?? null,
                 'birth_date' => $birthdate,
                 'date_of_birth' => $birthdate,
+                'birth_year' => $birthYear,
                 'age_text' => $attributes['age_text'] ?? null,
                 'bio' => $bio,
                 'bio_html' => $bio ? $this->contentService->process($bio) : null,
@@ -71,7 +81,10 @@ class CreatePetAction
                 'vaccination_status' => $attributes['vaccination_status'] ?? 'unknown',
                 'last_vaccinated_on' => $attributes['last_vaccinated_on'] ?? null,
                 'microchipped_status' => $attributes['microchipped_status'] ?? 'unknown',
+                'microchip_number' => $attributes['microchip_number'] ?? null,
                 'is_adoptable' => (bool) ($attributes['is_adoptable'] ?? false),
+                'is_archived' => false,
+                'weight_unit' => $attributes['weight_unit'] ?? 'kg',
                 'cover_photo_position' => (float) ($attributes['cover_photo_position'] ?? 50),
             ]);
 
@@ -94,6 +107,7 @@ class CreatePetAction
                 'user_id' => $owner->getKey(),
             ], [
                 'role' => PetOwner::ROLE_OWNER,
+                'is_primary_owner' => true,
                 'can_post' => true,
                 'can_edit' => true,
                 'can_manage_health' => true,
@@ -114,5 +128,64 @@ class CreatePetAction
 
             return $pet->refresh();
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function resolveSpecies(array $attributes): ?Species
+    {
+        if (! Schema::hasTable('species')) {
+            return null;
+        }
+
+        if (isset($attributes['species_id']) && (int) $attributes['species_id'] > 0) {
+            return Species::query()->whereKey((int) $attributes['species_id'])->first();
+        }
+
+        $slug = (string) ($attributes['species'] ?? '');
+
+        if ($slug === '') {
+            return null;
+        }
+
+        return Species::query()->where('slug', $slug)->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function resolveBreed(array $attributes, ?Species $species): ?Breed
+    {
+        if (! Schema::hasTable('breeds')) {
+            return null;
+        }
+
+        if (isset($attributes['breed_id']) && (int) $attributes['breed_id'] > 0) {
+            return Breed::query()->whereKey((int) $attributes['breed_id'])->first();
+        }
+
+        $breed = $this->nullableString($attributes['breed'] ?? null);
+
+        if ($breed === null) {
+            return null;
+        }
+
+        $query = Breed::query()->where('name', $breed);
+
+        if ($species instanceof Species && Schema::hasColumn('breeds', 'species_id')) {
+            $query->where('species_id', $species->getKey());
+        } elseif ($species instanceof Species) {
+            $query->where('species_slug', $species->slug);
+        }
+
+        return $query->first();
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

@@ -55,12 +55,6 @@ parameters:
 			path: app/Http/Controllers/Discovery/SearchController.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$role\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Groups/GroupController.php
-
-		-
 			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
 			identifier: method.notFound
 			count: 2
@@ -193,24 +187,6 @@ parameters:
 			path: app/Http/Controllers/Moderation/ReportController.php
 
 		-
-			message: '#^Call to function method_exists\(\) with App\\Models\\Groups\\Group and ''addMember'' will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: app/Http/Controllers/Onboarding/OnboardingController.php
-
-		-
-			message: '#^Unable to resolve the template type TKey in call to function collect$#'
-			identifier: argument.templateType
-			count: 3
-			path: app/Http/Controllers/Onboarding/OnboardingController.php
-
-		-
-			message: '#^Unable to resolve the template type TValue in call to function collect$#'
-			identifier: argument.templateType
-			count: 3
-			path: app/Http/Controllers/Onboarding/OnboardingController.php
-
-		-
 			message: '#^Method App\\Http\\Controllers\\Pets\\PetCareTipController\:\:filterToExistingColumns\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -237,24 +213,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Pets\\Pet\:\:\$avatar_url\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Pets/PetController.php
-
-		-
-			message: '#^Call to method toDateString\(\) on an unknown class Illuminate\\Support\\CarbonInterface\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Http/Controllers/Pets/PetController.php
-
-		-
-			message: '#^Class Illuminate\\Support\\CarbonInterface not found\.$#'
-			identifier: class.notFound
-			count: 2
-			path: app/Http/Controllers/Pets/PetController.php
-
-		-
-			message: '#^Instanceof between string\|null and Illuminate\\Support\\CarbonInterface will always evaluate to false\.$#'
-			identifier: instanceof.alwaysFalse
 			count: 1
 			path: app/Http/Controllers/Pets/PetController.php
 
@@ -461,12 +419,6 @@ parameters:
 			identifier: method.notFound
 			count: 2
 			path: app/Http/Controllers/Social/FollowController.php
-
-		-
-			message: '#^Cannot call method lt\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Http/Middleware/TrackLastSeen.php
 
 		-
 			message: '#^Method App\\Http\\Requests\\Account\\UpdateAccountRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
@@ -2005,12 +1957,6 @@ parameters:
 			path: app/Models/Groups/Group.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Models/Groups/Group.php
-
-		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:forUser\(\)\.$#'
 			identifier: method.notFound
 			count: 3
@@ -2151,12 +2097,6 @@ parameters:
 		-
 			message: '#^Method App\\Models\\Groups\\Group\:\:sharedPosts\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany does not specify its types\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \(2\-4 required\)$#'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/Groups/Group.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Models/Groups/Group.php
 
@@ -2367,12 +2307,6 @@ parameters:
 		-
 			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
 			identifier: function.impossibleType
-			count: 1
-			path: app/Models/Identity/User.php
-
-		-
-			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Models/Identity/User.php
 
@@ -3465,7 +3399,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:performOnCollections\(\)\.$#'
 			identifier: method.notFound
-			count: 5
+			count: 6
 			path: app/Models/Pets/Pet.php
 
 		-
@@ -4363,18 +4297,6 @@ parameters:
 			path: app/Policies/CommentPolicy.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$role\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Policies/GroupPolicy.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Policies/GroupPolicy.php
-
-		-
 			message: '#^Method App\\Policies\\GroupPolicy\:\:membership\(\) should return App\\Models\\Groups\\GroupMember\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
 			identifier: return.type
 			count: 1
@@ -4723,42 +4645,6 @@ parameters:
 			path: app/Services/FeedService.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Support\\Collection\<int, App\\Models\\Identity\\User\>\:\:modelKeys\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Services/FollowService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$group_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/GroupService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$joined_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/GroupService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$role\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/GroupService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/GroupService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 6
-			path: app/Services/GroupService.php
-
-		-
 			message: '#^Method App\\Services\\GroupService\:\:resolveUserAndGroup\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -4769,12 +4655,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 23
 			path: app/Services/GroupService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Groups\\GroupMember\:\:\$role\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/GroupVisibilityService.php
 
 		-
 			message: '#^Parameter \#1 \$user of method App\\Models\\Identity\\User\:\:hasBlockingRelationshipWith\(\) expects App\\Models\\Identity\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'

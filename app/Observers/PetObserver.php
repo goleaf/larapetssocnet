@@ -4,7 +4,7 @@ namespace App\Observers;
 
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use Illuminate\Support\Str;
+use App\Services\PetSlugService;
 
 class PetObserver
 {
@@ -24,17 +24,9 @@ class PetObserver
                 ->value('username');
         }
 
-        $seed = trim($pet->name.' '.$ownerUsername);
-        $baseSlug = Str::slug($seed);
-        $baseSlug = $baseSlug !== '' ? $baseSlug : 'pet';
-        $slug = $baseSlug;
-        $suffix = 2;
-
-        while (Pet::query()->withTrashed()->where('slug', $slug)->exists()) {
-            $slug = "{$baseSlug}-{$suffix}";
-            $suffix++;
-        }
-
-        $pet->slug = $slug;
+        $pet->slug = app(PetSlugService::class)->generateUnique(
+            (string) $pet->name,
+            (string) ($ownerUsername ?? 'pet')
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Pets\PetOwnerRole;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwner;
@@ -25,8 +26,9 @@ class PetOwnershipService
                 'user_id' => $coOwner->getKey(),
             ], [
                 'invited_by_user_id' => $inviter->getKey(),
-                'role' => PetOwner::ROLE_CO_OWNER,
-                ...$this->normalizePermissions($permissions),
+                'role' => $this->resolveRole($permissions)->value,
+                'is_primary_owner' => false,
+                ...$this->permissionsForRole($this->resolveRole($permissions)),
                 'accepted_at' => now(),
             ]);
 
@@ -35,26 +37,63 @@ class PetOwnershipService
     }
 
     /**
-     * @param  array<string, bool>  $permissions
-     * @return array<string, bool>
+     * @param  array<string, bool|string>  $permissions
      */
-    private function normalizePermissions(array $permissions): array
+    private function resolveRole(array $permissions): PetOwnerRole
     {
-        $columns = [
-            'can_post',
-            'can_edit',
-            'can_manage_health',
-            'can_manage_gallery',
-            'can_manage_adoption',
-            'can_delete',
-        ];
+        $role = is_string($permissions['role'] ?? null)
+            ? PetOwnerRole::tryFrom((string) $permissions['role'])
+            : null;
 
-        $normalized = [];
-
-        foreach ($columns as $column) {
-            $normalized[$column] = (bool) ($permissions[$column] ?? false);
+        if ($role instanceof PetOwnerRole && $role !== PetOwnerRole::Owner) {
+            return $role;
         }
 
-        return $normalized;
+        if ((bool) ($permissions['can_edit'] ?? false)
+            || (bool) ($permissions['can_manage_health'] ?? false)
+            || (bool) ($permissions['can_manage_gallery'] ?? false)
+            || (bool) ($permissions['can_manage_adoption'] ?? false)
+            || (bool) ($permissions['can_delete'] ?? false)) {
+            return PetOwnerRole::Admin;
+        }
+
+        if ((bool) ($permissions['can_post'] ?? false)) {
+            return PetOwnerRole::Poster;
+        }
+
+        return PetOwnerRole::Viewer;
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function permissionsForRole(PetOwnerRole $role): array
+    {
+        return match ($role) {
+            PetOwnerRole::Admin => [
+                'can_post' => true,
+                'can_edit' => true,
+                'can_manage_health' => true,
+                'can_manage_gallery' => true,
+                'can_manage_adoption' => true,
+                'can_delete' => false,
+            ],
+            PetOwnerRole::Poster => [
+                'can_post' => true,
+                'can_edit' => false,
+                'can_manage_health' => false,
+                'can_manage_gallery' => false,
+                'can_manage_adoption' => false,
+                'can_delete' => false,
+            ],
+            default => [
+                'can_post' => false,
+                'can_edit' => false,
+                'can_manage_health' => false,
+                'can_manage_gallery' => false,
+                'can_manage_adoption' => false,
+                'can_delete' => false,
+            ],
+        };
     }
 }

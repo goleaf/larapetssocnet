@@ -104,8 +104,8 @@ class AdoptionService
                 : MarketplaceListing::STATUS_ARCHIVED,
         ]);
 
-        if ($status === 'not_listed' && ! $listing->trashed()) {
-            $listing->delete();
+        if ($listing->trashed()) {
+            $listing->restore();
         }
     }
 

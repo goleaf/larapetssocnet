@@ -79,7 +79,7 @@ it('allows transition from adopted back to not_listed', function (): void {
     expect($pet->fresh()->adoption_status)->toBe('not_listed');
 });
 
-it('archives and soft deletes the adoption listing when a pet is unlisted', function (): void {
+it('archives and preserves the adoption listing when a pet is unlisted', function (): void {
     $pet = Pet::factory()->create([
         'user_id' => $this->user->id,
         'adoption_status' => 'available',
@@ -95,8 +95,9 @@ it('archives and soft deletes the adoption listing when a pet is unlisted', func
 
     expect((bool) $pet->fresh()->is_adoptable)->toBeFalse();
 
-    $this->assertSoftDeleted('marketplace_listings', [
+    $this->assertDatabaseHas('marketplace_listings', [
         'id' => $listing->getKey(),
         'status' => MarketplaceListing::STATUS_ARCHIVED,
+        'deleted_at' => null,
     ]);
 });

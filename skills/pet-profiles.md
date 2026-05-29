@@ -3,16 +3,18 @@
 Pet profiles are user-owned sub-entities.
 
 - One user can own multiple pets.
-- Pet profile page: `/pets/{slug}` (route model binding prefers slug) and requires authentication.
-- Slug is generated on create from pet name + owner username and is not updated on edit.
+- Pet profile page: `/pets/@{slug}` (route model binding resolves slug only and strips the `@` prefix) and requires authentication. Legacy `/pets/{slug}` links redirect to the canonical route.
+- Slug is generated on create from pet name + a six-character random suffix and is not updated on edit.
 
 ## Core Fields
-- `name`
-- `species`: `dog|cat|bird|fish|rabbit|hamster|reptile|other`
-- `breed`: nullable free text
+- `name`: normalized with `Str::squish` before validation; whitespace-only names must fail as required.
+- `species_id`: nullable normalized lookup reference while legacy `species` remains synchronized for compatibility.
+- `breed_id`: nullable normalized lookup reference.
+- `breed_description`: nullable display fallback for Mixed/Unknown/free-text breed labels.
 - `gender`: `male|female|unknown`
 - `size`: `small|medium|large|xlarge` (optional)
 - `date_of_birth`: date nullable
+- `birth_year`: approximate year when exact DOB is unknown
 - `age_text`: free text fallback when DOB unknown
 - `bio`: max 500, sanitized via `ContentService`
 - `personality_tags`: array (normalized by `PersonalityTagService`)
@@ -21,14 +23,23 @@ Pet profiles are user-owned sub-entities.
 - `is_adoptable`: boolean (drives adoption listing eligibility)
 
 ## Privacy
-- Pet visibility is controlled by `is_public` and enforced via `PetVisibilityService` and `Pet::visibleTo()` after the viewer is authenticated.
+- Pet visibility is controlled by canonical `visibility` (`public`, `followers_only`, `private`) with legacy `is_public` synchronized for compatibility. Pet privacy is independent from the owner's account privacy.
+- Visibility is enforced via `PetVisibilityService`, `PetPolicy`, and `Pet::visibleTo()` after the viewer is authenticated.
+- Follower-only pet profiles expose the identity shell but keep posts, gallery, and milestones locked until the viewer follows that pet.
+- Blocked viewers should receive a not-found pet profile response through policy denial so the pet URL does not confirm profile existence.
 - Profile Pets tab queries must keep visibility in `Pet::visibleTo($viewer)`, eager-load pet media, and annotate `viewer_is_following` in SQL before rendering cards.
 
 ## Ownership
 - Primary ownership stays on `pets.user_id`.
-- Co-ownership lives in `pet_owners` with one row per pet/user, `role=co_owner`, `accepted_at`, and scoped booleans for posting, editing, health, gallery, adoption, and deletion.
-- Policies must authorize co-owner abilities through the scoped booleans; do not treat every co-owner as a full owner.
-- Pet post attachment validation must allow only the primary owner or an accepted co-owner with `can_post`.
+- Co-ownership lives in `pet_owners` with one row per pet/user, canonical `role` values of `owner`, `admin`, `poster`, or `viewer`, `is_primary_owner`, `accepted_at`, and legacy scoped booleans kept synchronized for compatibility.
+- Policies must authorize co-owner abilities through `PetPolicy::ROLE_CAPABILITIES`; do not duplicate role checks in controllers, Blade, or Livewire components.
+- Pet post attachment validation must allow only the primary owner or an accepted co-owner with the Owner/Admin/Poster capability.
+- Co-owner invitations are two-phase records in `pet_owner_invitations`; accept creates the scoped `pet_owners` row, decline leaves no ownership, and stale pending invitations expire through `pets:expire-owner-invitations`.
+- Ownership transfers are two-phase records in `pet_ownership_transfers`; the current owner keeps owner capabilities until acceptance, acceptance atomically promotes the proposed owner and demotes the previous owner to Admin, and stale transfers expire through `pets:expire-ownership-transfers`.
+
+## Family and Care
+- Explicit pet family links live in `pet_relationships`; creation must write the inverse relationship in the same transaction and must not reveal private pets the actor cannot view.
+- Pet health reminders live in `pet_health_reminders`, are managed through `PetPolicy::manageHealth`, and are sent by `pets:send-health-reminders` to the primary owner plus accepted co-owners.
 
 ## Milestones
 - Pet milestones live in `pet_milestones` and belong to a pet, optional actor user, and optional shared post.
@@ -44,11 +55,13 @@ Pet profiles are user-owned sub-entities.
 
 ## Sharing and Notifications
 - Pet profile QR codes are generated server-side as SVGs through the pet QR routes. Do not add a QR package unless the in-house SVG service stops meeting requirements.
-- Pet birthday reminders are sent by `pets:send-birthday-notifications`, scheduled daily at 08:00, and notify the primary owner for pets whose `birth_date` or `date_of_birth` matches today.
+- Pet birthday reminders are sent by `pets:send-birthday-notifications`, scheduled daily at `config('pets.birthday.notification_time')`, and dispatch one `ProcessPetBirthday` queued job per pet whose indexed `birthday_month_day` key, derived from `birth_date` or `date_of_birth`, matches today.
+- Birthday jobs create a system-generated post tagged to the pet, notify eligible pet followers in batches, and send co-owner-specific notifications to co-owners who follow the pet.
+- Pet health reminders are scheduled daily at `config('pets.health_reminders.notification_time')` and advance each reminder's next due date after notifications are queued.
 
 ## Creation UI
 - The pet creation surface uses a three-step Alpine wizard for basics, story, and photos/adoption flags.
-- Species-to-breed autocomplete is authenticated, debounced, and scoped by `species_slug`; keep lookups prefix-based so `breeds(species_slug, name)` remains useful.
+- Species-to-breed autocomplete is authenticated, debounced, prepends Mixed/Unknown pseudo-options, and prefers `species_id` plus `normalized_name` prefix matching so `breeds(species_id, normalized_name, name)` remains useful.
 
 ## Profile Tab Cards
 - The profile Pets tab is a lazy nested Livewire component mounted only when the Pets tab is active.

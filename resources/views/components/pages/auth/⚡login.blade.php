@@ -142,6 +142,10 @@ class extends Component
             return route('verification.notice', absolute: false);
         }
 
+        if (! $result->user->hasCompletedOnboarding()) {
+            return route('onboarding.show', absolute: false);
+        }
+
         return $this->safeIntendedPath($request);
     }
 

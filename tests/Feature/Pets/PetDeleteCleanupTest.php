@@ -20,6 +20,11 @@ it('cleans up followers and post links when deleting a pet', function (): void {
         'pet_id' => $pet->id,
         'tagged_pets' => [$pet->id],
     ]);
+    $taggedPost = Post::factory()->for($owner)->create([
+        'pet_id' => null,
+        'tagged_pets' => [$pet->id],
+    ]);
+    $taggedPost->pets()->attach($pet->id);
     $milestone = PetMilestone::factory()->for($pet)->for($owner, 'user')->create();
     $listing = MarketplaceListing::factory()->for($owner, 'seller')->for($pet)->create([
         'listing_type' => 'adoption',
@@ -39,6 +44,7 @@ it('cleans up followers and post links when deleting a pet', function (): void {
     expect($follower->fresh()->following_pets_count)->toBe(0);
 
     $this->assertSoftDeleted('posts', ['id' => $post->getKey()]);
+    $this->assertSoftDeleted('posts', ['id' => $taggedPost->getKey()]);
     $this->assertSoftDeleted('pet_milestones', ['id' => $milestone->getKey()]);
     $this->assertSoftDeleted('marketplace_listings', ['id' => $listing->getKey()]);
 });

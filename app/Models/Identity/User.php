@@ -131,7 +131,10 @@ use Spatie\Permission\Traits\HasRoles;
     'notification_preferences',
     'is_private',
     'onboarding_step',
+    'onboarding_completed',
     'onboarding_completed_at',
+    'onboarding_pet_reminder_pending',
+    'onboarding_pet_reminder_shown_at',
     'last_active_at',
     'last_seen_at',
     'last_login_at',
@@ -263,7 +266,10 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'notification_preferences' => 'array',
             'social_links' => 'array',
             'is_private' => 'boolean',
+            'onboarding_completed' => 'boolean',
             'onboarding_completed_at' => 'datetime',
+            'onboarding_pet_reminder_pending' => 'boolean',
+            'onboarding_pet_reminder_shown_at' => 'datetime',
             'last_active_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'last_login_at' => 'datetime',
@@ -372,7 +378,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function profileTheme(): ProfileTheme
     {
-        $theme = $this->profile_theme;
+        $theme = $this->getAttribute('profile_theme');
 
         if ($theme instanceof ProfileTheme) {
             return $theme;
@@ -458,6 +464,24 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function sendEmailVerificationNotification(): void
     {
         app(AuthMailDispatcher::class)->queueVerificationEmail($this);
+    }
+
+    public function hasCompletedOnboarding(): bool
+    {
+        return (bool) $this->onboarding_completed
+            || $this->onboarding_completed_at !== null
+            || in_array((string) $this->onboarding_step, ['completed', 'complete', 'done', '4'], true);
+    }
+
+    public function markOnboardingComplete(bool $petReminderPending = false): void
+    {
+        $this->forceFill([
+            'onboarding_completed' => true,
+            'onboarding_completed_at' => $this->onboarding_completed_at ?? now(),
+            'onboarding_step' => 'completed',
+            'onboarding_pet_reminder_pending' => $petReminderPending,
+            'onboarding_pet_reminder_shown_at' => $petReminderPending ? null : $this->onboarding_pet_reminder_shown_at,
+        ])->save();
     }
 
     public function hasPendingDeletion(): bool
@@ -1082,13 +1106,15 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function isCurrentlyActive(?CarbonInterface $now = null): bool
     {
-        if (! $this->last_active_at instanceof CarbonInterface) {
+        $lastActiveAt = $this->getAttribute('last_active_at');
+
+        if (! $lastActiveAt instanceof CarbonInterface) {
             return false;
         }
 
         $currentTime = $now ?? now();
 
-        return $this->last_active_at->greaterThanOrEqualTo(
+        return $lastActiveAt->greaterThanOrEqualTo(
             $currentTime->copy()->subMinutes(self::ACTIVE_STATUS_WINDOW_MINUTES)
         );
     }
@@ -1606,7 +1632,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             $value = self::normalizeCoverPhotoPosition($value);
         }
 
-        if (is_string($key) && $this->shouldIgnoreMissingColumn($key)) {
+        if ($this->shouldIgnoreMissingColumn($key)) {
             return $this;
         }
 

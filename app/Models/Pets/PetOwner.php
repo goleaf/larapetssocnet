@@ -2,6 +2,7 @@
 
 namespace App\Models\Pets;
 
+use App\Enums\Pets\PetOwnerRole;
 use App\Models\Identity\User;
 use Database\Factories\Pets\PetOwnerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id',
     'invited_by_user_id',
     'role',
+    'is_primary_owner',
     'can_post',
     'can_edit',
     'can_manage_health',
@@ -29,13 +31,20 @@ class PetOwner extends Model
     /** @use HasFactory<PetOwnerFactory> */
     use HasFactory;
 
-    public const ROLE_OWNER = 'owner';
+    public const ROLE_OWNER = PetOwnerRole::Owner->value;
+
+    public const ROLE_ADMIN = PetOwnerRole::Admin->value;
+
+    public const ROLE_POSTER = PetOwnerRole::Poster->value;
+
+    public const ROLE_VIEWER = PetOwnerRole::Viewer->value;
 
     public const ROLE_CO_OWNER = 'co_owner';
 
     protected function casts(): array
     {
         return [
+            'is_primary_owner' => 'boolean',
             'can_post' => 'boolean',
             'can_edit' => 'boolean',
             'can_manage_health' => 'boolean',

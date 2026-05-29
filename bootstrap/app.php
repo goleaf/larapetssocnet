@@ -9,8 +9,10 @@ use App\Exceptions\UserBlockedException;
 use App\Http\Middleware\BannedUserMiddleware;
 use App\Http\Middleware\EnsureAccountCanAccessApplication;
 use App\Http\Middleware\EnsureTwoFactorChallengeSatisfied;
+use App\Http\Middleware\RedirectIfOnboardingComplete;
 use App\Http\Middleware\RunRealtimeMaintenance;
 use App\Http\Middleware\TrackLastSeen;
+use App\Models\Identity\User;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -43,13 +45,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'active_account' => EnsureAccountCanAccessApplication::class,
             'two_factor' => EnsureTwoFactorChallengeSatisfied::class,
             'track_last_seen' => TrackLastSeen::class,
+            'onboarding.incomplete' => RedirectIfOnboardingComplete::class,
         ]);
 
         $middleware->redirectUsersTo(function (Request $request): string {
             $user = $request->user();
 
             if ($request->routeIs('register', 'login')) {
-                return route('feed.index');
+                return $user instanceof User && ! $user->hasCompletedOnboarding()
+                    ? route('onboarding.show')
+                    : route('feed.index');
             }
 
             if ($user === null) {

@@ -29,6 +29,7 @@ it('creates a pet with correct attributes', function (): void {
     expect($pet->is_public)->toBeTrue();
     expect($pet->is_adoptable)->toBeTrue();
     expect($pet->slug)->toStartWith('biscuit');
+    expect($pet->slug)->toMatch('/^biscuit-[a-z0-9]{6}$/');
 
     $this->assertDatabaseHas('pets', [
         'id' => $pet->getKey(),

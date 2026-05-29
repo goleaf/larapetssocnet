@@ -188,6 +188,7 @@ class AuthenticateUserAction
                 'last_active_at',
                 'last_login_at',
                 'onboarding_step',
+                'onboarding_completed',
                 'onboarding_completed_at',
                 'deleted_at',
             ]);

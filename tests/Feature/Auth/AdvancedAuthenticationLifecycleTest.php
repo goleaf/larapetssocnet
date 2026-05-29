@@ -155,7 +155,7 @@ it('creates a new account from a verified social login profile', function (): vo
     $state = socialLoginState($this, 'google');
 
     $this->get(route('social.callback', ['provider' => 'google', 'code' => 'valid-code', 'state' => $state]))
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.show'));
 
     $user = User::query()->where('email', 'social-new@example.com')->firstOrFail();
 
@@ -165,6 +165,7 @@ it('creates a new account from a verified social login profile', function (): vo
         'user_id' => $user->id,
         'provider' => 'google',
         'provider_user_id' => 'provider-new',
+        'provider_avatar_url' => 'https://example.com/avatar.jpg',
     ]);
 });
 

@@ -27,7 +27,6 @@ it('keeps page views grouped by domain folders', function (): void {
         'marketplace',
         'media',
         'messaging',
-        'onboarding',
         'pages',
         'pets',
         'posts',

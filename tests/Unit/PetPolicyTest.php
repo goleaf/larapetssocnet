@@ -3,6 +3,7 @@
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Policies\PetPolicy;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
@@ -31,16 +32,21 @@ it('denies strangers from updating or deleting pet', function (): void {
 });
 
 it('respects pets visibility followers only', function (): void {
-    $owner = User::factory()->create(['pets_visibility' => 'followers_only', 'is_private' => false]);
+    $owner = User::factory()->create(['pets_visibility' => 'everyone', 'is_private' => false]);
     $follower = User::factory()->create();
     $stranger = User::factory()->create();
-    $pet = Pet::factory()->for($owner)->create(['is_public' => true]);
+    $pet = Pet::factory()->for($owner)->create([
+        'is_public' => true,
+        'visibility' => 'followers_only',
+    ]);
     $policy = app(PetPolicy::class);
 
-    $follower->follow($owner);
+    $follower->followPet($pet);
 
     expect($policy->view($follower, $pet))->toBeTrue()
-        ->and($policy->view($stranger, $pet))->toBeFalse();
+        ->and($policy->viewPosts($follower, $pet))->toBeTrue()
+        ->and($policy->view($stranger, $pet))->toBeTrue()
+        ->and($policy->viewPosts($stranger, $pet))->toBeFalse();
 });
 
 it('denies blocked viewers', function (): void {
@@ -51,7 +57,11 @@ it('denies blocked viewers', function (): void {
 
     $viewer->block($owner);
 
-    expect($policy->view($viewer, $pet))->toBeFalse();
+    $response = $policy->view($viewer, $pet);
+
+    expect($response)->toBeInstanceOf(Response::class)
+        ->and($response->denied())->toBeTrue()
+        ->and($response->status())->toBe(404);
 });
 
 it('allows admin to view and update pets unless blocked', function (): void {

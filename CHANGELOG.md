@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Fixed
+- Fixed pet profile validation so whitespace-only names are rejected after normalization.
+- Fixed blocked pet profile requests to return not found instead of exposing a normal authorization denial.
+- Fixed pet birthday notifications to use an indexed birthday lookup key instead of month/day function scans.
+- Fixed pet deletion cleanup so posts tagged through the normalized `pet_post` table are soft-deleted with legacy pet-owned posts.
 - Fixed Composer audit findings by updating Symfony HTTP kernel, mailer, MIME, routing, and YAML components to 8.0.12.
 - Fixed the FTP deploy mirror bootstrap so existing remote subdomain folders do not fail the deployment before upload.
 - Fixed the FTP deploy mirror tuning to avoid a full remote pre-scan and default to four parallel transfers for shared-host stability.
@@ -24,6 +28,12 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added pet family relationship and health reminder coverage for bidirectional links, private-pet link blocking, due notifications, invalid custom reminders, and archived-pet skips.
+- Added pet co-owner invitation and ownership transfer coverage for acceptance, decline, expiry, role storage, and owner capability preservation before transfer acceptance.
+- Added pet profile coverage for avatar upload validation, guest follow redirects, follower-only timeline access, blocked-viewer not-found responses, milestone edits preserving shared posts, and chronological weight trend data.
+- Added pet coverage for randomized slug format and the indexed birthday notification query plan.
+- Added pet lifecycle coverage for role-based co-ownership, follower counters, tagged feed lookup, milestone sharing, adoption listing preservation, tagged-post deletion cleanup, and birthday job behavior.
+- Added Livewire onboarding coverage for route middleware, profile data retention, social avatar suggestions, first-pet creation, immediate follow persistence, batched follow-all, completion flags, welcome banner dismissal, and one-time skipped-pet reminders.
 - Added magic-link login coverage for the inline Livewire request panel, queued Mailable delivery, hashed token storage, one-time acceptance, and expired/invalid/used-link responses.
 - Added device-session and login-anomaly coverage for current-session labeling, scoped session deletion, password-confirmed logout-other-devices, local GeoIP/user-agent enrichment, signed alert dismissal, emergency account securing, remember-token cleanup, moderation reports, and audit events.
 - Added Livewire password reset coverage for non-enumerating reset requests, per-email throttling, hashed reset-token lookup, expired/invalid reset links, session and remember-token invalidation, queued security alerts, and single-use emergency account locks.
@@ -36,6 +46,12 @@
 
 ### Changed
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
+- Changed new pet profile slugs to use the pet name plus a six-character random suffix while preserving existing slug route binding.
+- Changed pet profile routing to use canonical authenticated `/pets/@{pet:slug}` URLs while keeping legacy slug URLs as redirects.
+- Changed pet ownership to store canonical Owner/Admin/Poster/Viewer roles with a policy capability matrix while keeping legacy scoped booleans synchronized.
+- Changed breed autocomplete to use normalized `species_id` / `normalized_name` prefix lookups and always prepend Mixed/Unknown pseudo-options.
+- Changed pet birthday processing to dispatch one queued job per birthday pet, create a system-generated tagged post, and notify eligible pet followers and co-owners.
+- Replaced the old controller-based onboarding steps with a full-page Livewire `/onboarding` flow that keeps multi-step state in public properties, saves optional profile details, creates the first pet through the existing action, redirects completed users away through middleware, and routes newly verified/social users into onboarding before the feed.
 - Reworked magic-link login into a login-page inline panel with non-enumerating responses, queued branded mailables, 64-character raw email tokens, SHA-256 database lookup hashes, and atomic single-use token consumption before redirecting accepted users to the feed.
 - Reworked account security device-session management into a Livewire section backed by indexed database-session queries, parsed device/browser/OS details, local GeoIP location labels, individual session logout popovers, password-confirmed logout-other-devices, remember-token cleanup, and audit logging.
 - Extended successful login handling to dispatch queued country-anomaly detection using local GeoIP and recent auth audit history, with signed single-use security-alert actions for dismissing known logins or securing the account through session invalidation and a high-priority moderation report.
@@ -53,7 +69,7 @@
 - Added five accessible, config-backed profile themes stored on `users.profile_theme` and applied as CSS custom property overrides on public or locked profile roots only.
 - Updated the pet profile show page with first-class identity facts, species-aware life-stage labels, personality pills, a milestone story preview, stewardship context, QR sharing, and owner-only care notes.
 - Updated pet deletion cleanup to soft-delete linked pet posts, pet milestones, and pet adoption marketplace listings while still removing follower rows and counter-cache state.
-- Updated adoption status changes so available pets create or restore an active marketplace adoption listing, and unlisted pets archive and soft-delete that listing.
+- Updated adoption status changes so available pets create or restore an active marketplace adoption listing, and unlisted pets archive that listing without soft-deleting preserved content.
 - Updated profile Report actions to open a Livewire profile-report modal with profile-specific reasons, optional 500-character context, moderation-team notifications, and no change to profile visibility after reporting.
 - Centralized registration, reset-password, profile password, and settings password validation through the shared Laravel password policy.
 - Updated non-owner profile Block actions to submit through the server-side block transaction, redirect to the feed immediately, and flash "You have blocked this user." after follow cleanup and blocked-content enforcement.
@@ -79,6 +95,10 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added two-phase pet co-owner invitations and ownership transfers with database notifications, route handlers, form requests, services, policy-backed authorization, and daily expiry commands.
+- Added pet family relationship linking with transactional inverse relationship creation and visibility checks that prevent private pet disclosure.
+- Added daily pet health reminders with configurable schedule time, database notifications for primary owners and accepted co-owners, and due-date advancement after dispatch.
+- Added onboarding completion state, skipped-pet reminder tracking, OAuth provider avatar suggestions, indexed onboarding follow suggestions, and a dismissible 24-hour welcome banner on the feed.
 - Added a local file-backed GeoIP lookup configuration and seed IP range database for authentication session display and login anomaly checks without per-render remote API calls.
 - Added password-change security alert mail with a signed single-use "This was not me" link that suspends the account, clears sessions and remember tokens, and creates a high-priority moderation report for review.
 - Added static Terms of Service and Privacy Policy documents for the registration modal flow and expanded the common-password blocklist to 500 entries with client-side SHA-256 hash matching.
@@ -87,6 +107,7 @@
 - Added privacy-gated currently-active avatar indicators backed by `users.last_active_at`, Livewire mount tracking, and a 60-second throttled upsert so active dots render only for users active in the last 5 minutes.
 - Added public profile portfolio mode at `/@username/portfolio`, backed by an ordered `profile_portfolio_posts` pivot table, a settings management form for up to 12 published public posts, and a responsive magazine-style showcase grid.
 - Added first-class pet profile ownership extensions with scoped co-owner permissions, pet milestones with optional automatic post sharing, authenticated breed autocomplete, server-generated QR SVGs, and daily pet birthday notifications.
+- Added normalized pet profile schema extensions for species/breed references, pet-post tags, weight entries, co-owner invitations, ownership transfers, pet relationships, health reminders, adoption inquiries, and spotlight history.
 - Added owner-only Profile Wrapped annual summaries, generated during the first week of January with yearly post, reaction, follower, pet, activity-month, and top-post metrics plus queued PNG share-card generation.
 - Added Laravel 13.9 HTML `passwordrules` attributes to new-password inputs so browsers and password managers can generate passwords that match the app policy.
 - Added a configurable server-side geocoding service for profile location suggestions.

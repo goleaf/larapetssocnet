@@ -26,7 +26,7 @@ Application pages are private by default. Keep Explore, search, profiles, posts,
 
 ## Domain Map
 
-- Auth and account: Breeze controllers, one focused auth schema migration, auth audit logging, verified-email gating, encrypted two-factor fields, pending email changes, account status tracking, failed-login counters, `users.last_active_at` online presence, and separate OAuth social account identities.
+- Auth and account: Breeze controllers, full-page Livewire auth/onboarding pages, one focused auth schema migration, auth audit logging, verified-email gating, onboarding completion tracking, encrypted two-factor fields, pending email changes, account status tracking, failed-login counters, `users.last_active_at` online presence, and separate OAuth social account identities.
 - Auth mail delivery: `AuthMailDispatcher` centralizes queued auth mail handoff and reports transport failures without turning registration, reset, verification, or magic-link requests into user-facing server errors.
 - Feed and posts: feed controller, cursor pagination, post cards, reactions, comments, saves, shares, reports.
 - Social graph: follows, pet follows, blocks, requests, counters, notifications.

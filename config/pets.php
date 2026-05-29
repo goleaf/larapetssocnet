@@ -104,4 +104,17 @@ return [
         'caption_max' => 200,
         'alt_text_max' => 140,
     ],
+
+    'birthday' => [
+        'notification_time' => env('PET_BIRTHDAY_NOTIFICATION_TIME', '08:00'),
+        'post_templates' => [
+            '{pet} turns {age} today!',
+            'It is {pet} birthday. They turn {age} today!',
+            'A big PetSocial birthday cheer for {pet}, who turns {age} today!',
+        ],
+    ],
+
+    'health_reminders' => [
+        'notification_time' => env('PET_HEALTH_REMINDER_NOTIFICATION_TIME', '09:00'),
+    ],
 ];

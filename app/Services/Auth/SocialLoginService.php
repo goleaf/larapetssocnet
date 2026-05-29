@@ -44,7 +44,7 @@ class SocialLoginService
             ]);
         }
 
-        return $this->normalizeProviderProfile($provider, $profile, $tokenResponse);
+        return $this->normalizeProviderProfile($profile, $tokenResponse);
     }
 
     /**
@@ -104,7 +104,7 @@ class SocialLoginService
      * @param  array<string, mixed>  $tokenResponse
      * @return array{provider_id: string, email: ?string, email_verified: bool, name: ?string, nickname: ?string, avatar: ?string, token: ?string, expires_at: mixed, raw: array<string, mixed>}
      */
-    private function normalizeProviderProfile(string $provider, array $profile, array $tokenResponse): array
+    private function normalizeProviderProfile(array $profile, array $tokenResponse): array
     {
         $providerId = (string) ($profile['id'] ?? $profile['sub'] ?? '');
 
@@ -196,6 +196,7 @@ class SocialLoginService
             'user_id' => $user->getKey(),
             'provider' => $provider,
             'provider_user_id' => $profile['provider_id'],
+            'provider_avatar_url' => $profile['avatar'],
             'provider_token' => $profile['token'],
             'provider_token_expires_at' => $profile['expires_at'],
         ]);
@@ -207,6 +208,7 @@ class SocialLoginService
     private function updateSocialAccount(SocialAccount $socialAccount, array $profile): void
     {
         $socialAccount->update([
+            'provider_avatar_url' => $profile['avatar'],
             'provider_token' => $profile['token'],
             'provider_token_expires_at' => $profile['expires_at'],
         ]);

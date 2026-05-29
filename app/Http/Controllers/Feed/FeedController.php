@@ -8,6 +8,7 @@ use App\Models\Content\Post;
 use App\Services\FeedService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class FeedController extends Controller
@@ -17,6 +18,18 @@ class FeedController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+        $onboardingCompletedAt = $user->onboarding_completed_at;
+        $showWelcomeBanner = $onboardingCompletedAt !== null
+            && Carbon::parse((string) $onboardingCompletedAt)->greaterThanOrEqualTo(now()->subDay())
+            && ! $request->session()->has('onboarding_welcome_banner_dismissed');
+        $showOnboardingPetReminder = (bool) $user->onboarding_pet_reminder_pending
+            && $user->onboarding_pet_reminder_shown_at === null;
+
+        if ($showOnboardingPetReminder) {
+            $user->forceFill([
+                'onboarding_pet_reminder_shown_at' => now(),
+            ])->saveQuietly();
+        }
 
         $ownedPets = $user->pets()
             ->without(['user', 'species', 'breed', 'media', 'tags'])
@@ -49,7 +62,13 @@ class FeedController extends Controller
         return view('feed.index', array_merge(
             ['posts' => $posts, 'yourGroups' => $yourGroups, 'ownedPets' => $ownedPets],
             $sidebarData,
-            ['user' => $user, 'type' => $type, 'source' => $source],
+            [
+                'user' => $user,
+                'type' => $type,
+                'source' => $source,
+                'showWelcomeBanner' => $showWelcomeBanner,
+                'showOnboardingPetReminder' => $showOnboardingPetReminder,
+            ],
         ));
     }
 }

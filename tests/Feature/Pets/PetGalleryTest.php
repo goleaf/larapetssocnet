@@ -200,7 +200,7 @@ it('enforces max upload counts for gallery uploads', function (): void {
         ->assertSessionHasErrors(['photos']);
 });
 
-it('blocks viewers with a blocking relationship from seeing pet galleries', function (): void {
+it('returns not found for blocked viewers trying to see pet galleries', function (): void {
     $owner = User::factory()->create();
     $viewer = User::factory()->create();
     $pet = Pet::factory()->for($owner)->create([
@@ -211,7 +211,7 @@ it('blocks viewers with a blocking relationship from seeing pet galleries', func
 
     $this->actingAs($viewer)
         ->get(route('pets.show', ['pet' => $pet, 'tab' => 'gallery']))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('shows public gallery photos to authenticated viewers', function (): void {

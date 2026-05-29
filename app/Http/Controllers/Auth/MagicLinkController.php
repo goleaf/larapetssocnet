@@ -149,7 +149,9 @@ class MagicLinkController extends Controller
 
         DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
 
-        return redirect()->route('feed.index');
+        return $user->hasCompletedOnboarding()
+            ? redirect()->route('feed.index')
+            : redirect()->route('onboarding.show');
     }
 
     private function failureMessageFor(string $status): string

@@ -28,8 +28,16 @@
 - Username changes from the profile edit modal must go through `UpdateProfileAction` and `UsernameService` so reserved names, uniqueness, redirects, and the 30-day cooldown are enforced server-side, not only through Livewire availability UI.
 - Profile edit privacy toggles must re-authorize the owner on every Livewire action and may store the email-discovery preference, but must not expose raw email values or add public email search without a dedicated visibility policy.
 
+## Pet profile security
+- Pet profile shell and timeline access must go through `PetPolicy` and `PetVisibilityService`; do not duplicate co-owner or visibility checks in Blade or controller conditionals.
+- Pet profile privacy is independent from owner account privacy. Use the pet `visibility` value and pet follow/co-owner relationships when deciding profile content access.
+- Co-owner authorization must go through the Pet Policy role capability matrix for Owner/Admin/Poster/Viewer; do not compare `pet_owners.role` inline in UI or action code.
+- Blocked pet profile viewers must be denied as not found so `/pets/{slug}` does not confirm the pet exists.
+- Follower-only pet timeline content is visible only to users who follow that pet, while non-followers may see only the allowed identity preview.
+
 ## Authentication security
 - Keep app browsing routes behind the Bootstrap-defined `auth.verified` middleware group plus `banned`, `active_account`, `two_factor`, and `track_last_seen` unless a route is intentionally public or part of the login, registration, password reset, or email verification exception flow.
+- Verified users who have not completed onboarding may access `/onboarding`; completed users must be redirected away by the `onboarding.incomplete` middleware. New verified, social, magic-link, and password-login users should reach onboarding before feed access when `users.onboarding_completed` is false.
 - Login is handled by the full-page Livewire `pages.auth.login` component and the `AuthenticateUserAction`; keep credential resolution, password checks, account-state checks, session creation, and audit events in that action instead of duplicating them in UI code.
 - Reject banned accounts during login even when the supplied password is correct, redirect valid banned attempts to the restricted notice, and record the blocked attempt in `auth_audit_logs`.
 - Deny soft-deleted accounts and restrict pending-deletion, deactivated, and suspended accounts to their recovery or notice screens before full app access.

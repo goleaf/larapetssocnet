@@ -301,7 +301,7 @@ class PetController extends Controller
                 'posts.published_at',
                 'posts.created_at',
             ])
-            ->where('posts.pet_id', $pet->getKey())
+            ->byPet($pet->getKey())
             ->published()
             ->visibleTo($viewer)
             ->latest('posts.created_at')
@@ -434,37 +434,15 @@ class PetController extends Controller
 
     private function resolveBirthdateLabel(Pet $pet): ?string
     {
-        $birthdate = $pet->birth_date ?? $pet->date_of_birth;
-
-        if ($birthdate instanceof CarbonInterface) {
-            return $birthdate->toFormattedDateString();
-        }
-
-        if (is_string($birthdate) && $birthdate !== '') {
-            try {
-                return Carbon::parse($birthdate)->toFormattedDateString();
-            } catch (Throwable) {
-                return null;
-            }
-        }
-
-        return null;
+        return $this->parseDateValue($pet->birth_date ?? $pet->date_of_birth)?->toFormattedDateString();
     }
 
     private function resolveLifeStageLabel(Pet $pet): ?string
     {
-        $birthdate = $pet->birth_date ?? $pet->date_of_birth;
+        $birthdate = $this->parseDateValue($pet->birth_date ?? $pet->date_of_birth);
 
         if (! $birthdate instanceof CarbonInterface) {
-            if (is_string($birthdate) && $birthdate !== '') {
-                try {
-                    $birthdate = Carbon::parse($birthdate);
-                } catch (Throwable) {
-                    return null;
-                }
-            } else {
-                return null;
-            }
+            return null;
         }
 
         $months = $this->completedMonthsSince($birthdate);
@@ -573,11 +551,13 @@ class PetController extends Controller
         $snapshot = [];
 
         if (($pet->adoption_status ?? 'not_listed') !== 'not_listed' || (bool) $pet->is_adoptable) {
+            $adoptionListedAt = $this->parseDateValue($pet->adoption_listed_at);
+
             $snapshot[] = [
                 'label' => 'Adoption',
                 'value' => Str::headline((string) ($pet->adoption_status ?: 'available')),
-                'meta' => $pet->adoption_listed_at instanceof CarbonInterface
-                    ? 'Listed '.$pet->adoption_listed_at->diffForHumans()
+                'meta' => $adoptionListedAt instanceof CarbonInterface
+                    ? 'Listed '.$adoptionListedAt->diffForHumans()
                     : null,
             ];
         }
@@ -597,7 +577,7 @@ class PetController extends Controller
             $snapshot[] = [
                 'label' => 'Latest weight',
                 'value' => number_format((float) $latestWeight->weight_kg, 2).' kg',
-                'meta' => $latestWeight->logged_at?->diffForHumans(),
+                'meta' => $this->parseDateValue($latestWeight->logged_at)?->diffForHumans(),
             ];
         }
 
@@ -611,7 +591,7 @@ class PetController extends Controller
             $snapshot[] = [
                 'label' => 'Vaccination',
                 'value' => $latestVaccination->title ?: 'Recorded',
-                'meta' => $latestVaccination->logged_at?->diffForHumans(),
+                'meta' => $this->parseDateValue($latestVaccination->logged_at)?->diffForHumans(),
             ];
         }
 
@@ -626,11 +606,28 @@ class PetController extends Controller
             $snapshot[] = [
                 'label' => 'Next care',
                 'value' => $nextCare->title ?: $nextCare->type_label,
-                'meta' => $nextCare->next_due_at?->toFormattedDateString(),
+                'meta' => $this->parseDateValue($nextCare->next_due_at)?->toFormattedDateString(),
             ];
         }
 
         return $snapshot;
+    }
+
+    private function parseDateValue(mixed $value): ?CarbonInterface
+    {
+        if ($value instanceof CarbonInterface) {
+            return $value;
+        }
+
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetHealthLog;
@@ -51,6 +52,55 @@ it('returns 403 for a private pet profile when viewer is not authorized', functi
     $this->actingAs(User::factory()->create())
         ->get(route('pets.show', $pet))
         ->assertForbidden();
+});
+
+it('shows only the profile preview for follower-only pets before following', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $pet = Pet::factory()
+        ->for($owner)
+        ->create([
+            'is_public' => true,
+            'visibility' => 'followers_only',
+        ]);
+
+    Post::factory()->create([
+        'user_id' => $owner->getKey(),
+        'pet_id' => $pet->getKey(),
+        'body' => 'Follower-only field note',
+        'body_html' => '<p>Follower-only field note</p>',
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('pets.show', $pet))
+        ->assertSuccessful()
+        ->assertSee('data-ui="pet-profile-content-locked"', false)
+        ->assertDontSeeText('Follower-only field note');
+});
+
+it('shows full follower-only pet content to pet followers', function (): void {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $pet = Pet::factory()
+        ->for($owner)
+        ->create([
+            'is_public' => true,
+            'visibility' => 'followers_only',
+        ]);
+
+    Post::factory()->create([
+        'user_id' => $owner->getKey(),
+        'pet_id' => $pet->getKey(),
+        'body' => 'Follower-only field note',
+        'body_html' => '<p>Follower-only field note</p>',
+    ]);
+    $viewer->followPet($pet);
+
+    $this->actingAs($viewer)
+        ->get(route('pets.show', $pet))
+        ->assertSuccessful()
+        ->assertDontSee('data-ui="pet-profile-content-locked"', false)
+        ->assertSeeText('Follower-only field note');
 });
 
 it('shows qr and milestone surfaces on the pet profile', function (): void {
@@ -182,7 +232,7 @@ it('shows the adopt tab for listed pets and hides it for unlisted pets', functio
         ->assertDontSee('data-ui="pet-profile-adopt"', false);
 });
 
-it('denies access when viewer is blocked by owner', function (): void {
+it('returns 404 when viewer is blocked by owner', function (): void {
     $owner = User::factory()->create();
     $viewer = User::factory()->create();
     $pet = Pet::factory()->for($owner)->create(['is_public' => true]);
@@ -191,5 +241,5 @@ it('denies access when viewer is blocked by owner', function (): void {
 
     $this->actingAs($viewer)
         ->get(route('pets.show', $pet))
-        ->assertForbidden();
+        ->assertNotFound();
 });

@@ -222,4 +222,31 @@ class PetHealthLogFeatureTest extends TestCase
             ->all();
         $this->assertSame(['Soon reminder', 'Later reminder'], $titles);
     }
+
+    public function test_weight_trend_data_is_sorted_chronologically(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+
+        foreach ([
+            ['title' => 'Third weigh-in', 'weight_kg' => 12.9, 'logged_at' => '2026-05-20 09:00:00'],
+            ['title' => 'First weigh-in', 'weight_kg' => 12.1, 'logged_at' => '2026-05-01 09:00:00'],
+            ['title' => 'Second weigh-in', 'weight_kg' => 12.5, 'logged_at' => '2026-05-10 09:00:00'],
+        ] as $entry) {
+            PetHealthLog::query()->create([
+                'pet_id' => $pet->id,
+                'logged_by_user_id' => $owner->id,
+                'log_type' => PetHealthLog::TYPE_WEIGHT,
+                'notes' => null,
+                ...$entry,
+            ]);
+        }
+
+        $trendTitles = PetHealthLog::weightTrendForPet($pet)
+            ->pluck('title')
+            ->values()
+            ->all();
+
+        $this->assertSame(['First weigh-in', 'Second weigh-in', 'Third weigh-in'], $trendTitles);
+    }
 }

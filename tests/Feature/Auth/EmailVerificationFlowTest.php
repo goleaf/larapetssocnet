@@ -109,6 +109,7 @@ it('renders the branded verification mailable with a button and fallback URL', f
 it('verifies a signed email link for the authenticated user and records an audit event', function (): void {
     $user = User::factory()->unverified()->create([
         'onboarding_step' => '1',
+        'onboarding_completed' => false,
         'onboarding_completed_at' => null,
     ]);
 
@@ -118,7 +119,7 @@ it('verifies a signed email link for the authenticated user and records an audit
 
     Event::assertDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
-    $response->assertRedirect(route('onboarding.show', ['step' => 1], absolute: false).'?verified=1');
+    $response->assertRedirect(route('onboarding.show', absolute: false).'?verified=1');
     $this->assertDatabaseHas('auth_audit_logs', [
         'user_id' => $user->getKey(),
         'event_type' => 'email_verified',
@@ -128,6 +129,7 @@ it('verifies a signed email link for the authenticated user and records an audit
 it('verifies a signed email link opened from another browser session', function (): void {
     $user = User::factory()->unverified()->create([
         'onboarding_step' => '1',
+        'onboarding_completed' => false,
         'onboarding_completed_at' => null,
     ]);
 
@@ -135,7 +137,7 @@ it('verifies a signed email link opened from another browser session', function 
 
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     $this->assertAuthenticatedAs($user);
-    $response->assertRedirect(route('onboarding.show', ['step' => 1], absolute: false).'?verified=1');
+    $response->assertRedirect(route('onboarding.show', absolute: false).'?verified=1');
 });
 
 it('redirects expired verification links back to the pending page with a flash message', function (): void {

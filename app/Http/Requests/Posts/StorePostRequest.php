@@ -189,7 +189,11 @@ class StorePostRequest extends FormRequest
                         ->select('pet_id')
                         ->from('pet_owners')
                         ->where('user_id', $userId)
-                        ->where('can_post', true)
+                        ->where(function ($permissionQuery): void {
+                            $permissionQuery
+                                ->where('can_post', true)
+                                ->orWhereIn('role', ['owner', 'admin', 'poster']);
+                        })
                         ->whereNotNull('accepted_at');
                 });
         });

@@ -34,6 +34,35 @@
  ];
  @endphp
 
+ @if ($showWelcomeBanner ?? false)
+ <x-ui.card padding="base">
+ <div class="flex items-start gap-3">
+ <x-ui.avatar :src="$user->avatar_url" :name="$user->name" :user="$user" size="lg"/>
+ <div class="min-w-0 flex-1">
+ <p class="text-sm font-bold text-bark">Welcome to PetSocial, {{ \Illuminate\Support\Str::before((string) $user->name, ' ') }}! 🐾</p>
+ <p class="mt-1 text-sm leading-6 text-fur">Start exploring by reacting to posts, following more pets, or creating your first post.</p>
+ </div>
+ <form method="POST" action="{{ route('onboarding.welcome-banner.dismiss') }}">
+ @csrf
+ <button type="submit" class="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-soft)] text-fur transition hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" aria-label="Dismiss welcome banner">
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+ </form>
+ </div>
+ </x-ui.card>
+ @endif
+
+ @if ($showOnboardingPetReminder ?? false)
+ <x-ui.card padding="base">
+ <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <p class="text-sm leading-6 text-fur">Your profile is ready. Add your first pet when you have a moment so your feed can surface better pet matches.</p>
+ <x-ui.button href="#" x-on:click.prevent="window.openPetCreateWizard('onboarding-reminder')" variant="secondary" size="sm">Add a pet</x-ui.button>
+ </div>
+ </x-ui.card>
+ @endif
+
  <x-ui.card padding="base">
  <div class="grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-center">
  <div>

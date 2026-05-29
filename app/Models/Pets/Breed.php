@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'slug',
     'species_slug',
+    'species_id',
+    'normalized_name',
 ])]
 class Breed extends Model
 {
@@ -19,11 +21,11 @@ class Breed extends Model
 
     public function species(): BelongsTo
     {
-        return $this->belongsTo(Species::class, 'species_slug', 'slug');
+        return $this->belongsTo(Species::class);
     }
 
     public function pets(): HasMany
     {
-        return $this->hasMany(Pet::class, 'breed', 'name');
+        return $this->hasMany(Pet::class);
     }
 }

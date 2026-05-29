@@ -1,25 +1,31 @@
 <?php
 
+use App\Jobs\ProcessPetBirthday;
+use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use App\Notifications\PetBirthdayToday;
+use App\Models\Pets\PetOwner;
+use App\Notifications\PetBirthdayCoOwnerNotification;
+use App\Notifications\PetBirthdayFollowerNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
-it('sends birthday notifications for pets with todays birthday', function (): void {
-    Notification::fake();
+it('dispatches birthday jobs for pets with todays birthday', function (): void {
+    Queue::fake();
     Carbon::setTestNow(Carbon::parse('2026-05-23 08:00:00'));
 
     $birthdayOwner = User::factory()->create();
     $otherOwner = User::factory()->create();
 
-    Pet::factory()->for($birthdayOwner)->create([
+    $birthdayPet = Pet::factory()->for($birthdayOwner)->create([
         'name' => 'Birthday Buddy',
-        'birth_date' => '2020-05-23',
-        'date_of_birth' => null,
+        'birth_date' => null,
+        'date_of_birth' => '2020-05-23',
     ]);
 
     Pet::factory()->for($otherOwner)->create([
@@ -31,8 +37,67 @@ it('sends birthday notifications for pets with todays birthday', function (): vo
     $this->artisan('pets:send-birthday-notifications')
         ->assertSuccessful();
 
-    Notification::assertSentTo($birthdayOwner, PetBirthdayToday::class);
-    Notification::assertNotSentTo($otherOwner, PetBirthdayToday::class);
+    Queue::assertPushed(ProcessPetBirthday::class, fn (ProcessPetBirthday $job): bool => $job->petId === $birthdayPet->id);
+    Queue::assertPushed(ProcessPetBirthday::class, 1);
 
     Carbon::setTestNow();
+});
+
+it('creates the birthday post and notifies followers and co owners', function (): void {
+    Notification::fake();
+    Carbon::setTestNow(Carbon::parse('2026-05-23 08:00:00'));
+
+    $owner = User::factory()->create();
+    $follower = User::factory()->create();
+    $mutedFollower = User::factory()->create([
+        'notification_preferences' => ['pet_birthdays' => false],
+    ]);
+    $coOwner = User::factory()->create();
+    $pet = Pet::factory()->for($owner)->create([
+        'name' => 'Birthday Buddy',
+        'birth_date' => null,
+        'date_of_birth' => '2020-05-23',
+    ]);
+
+    $follower->followPet($pet);
+    $mutedFollower->followPet($pet);
+    $coOwner->followPet($pet);
+
+    PetOwner::factory()->for($pet)->for($coOwner, 'user')->create([
+        'invited_by_user_id' => $owner->id,
+        'role' => PetOwner::ROLE_POSTER,
+        'accepted_at' => now(),
+    ]);
+
+    app()->call([new ProcessPetBirthday($pet->id), 'handle']);
+
+    expect(Post::query()
+        ->where('user_id', $owner->id)
+        ->where('pet_id', $pet->id)
+        ->where('is_system_generated', true)
+        ->where('system_source', 'pet_birthday')
+        ->exists())->toBeTrue();
+
+    Notification::assertSentTo($follower, PetBirthdayFollowerNotification::class);
+    Notification::assertSentTo($coOwner, PetBirthdayCoOwnerNotification::class);
+    Notification::assertNotSentTo($mutedFollower, PetBirthdayFollowerNotification::class);
+    Notification::assertNothingSentTo($owner);
+
+    Carbon::setTestNow();
+});
+
+it('stores and uses an indexed birthday lookup key', function (): void {
+    $pet = Pet::factory()->create([
+        'birth_date' => '2020-05-23',
+        'date_of_birth' => null,
+    ]);
+
+    expect($pet->fresh()->birthday_month_day)->toBe('05-23');
+
+    $plan = collect(DB::select(
+        'EXPLAIN QUERY PLAN SELECT * FROM pets WHERE birthday_month_day = ? AND is_archived = 0 AND deleted_at IS NULL',
+        ['05-23'],
+    ))->pluck('detail')->implode(' ');
+
+    expect($plan)->toContain('pets_birthday_archived_lookup_index');
 });

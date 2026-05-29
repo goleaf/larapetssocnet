@@ -3,6 +3,7 @@
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 
 uses(RefreshDatabase::class);
 
@@ -89,4 +90,42 @@ it('rejects invalid species and missing required name', function (): void {
             'species' => 'dragon',
         ])
         ->assertSessionHasErrors(['name', 'species']);
+});
+
+it('rejects a pet name that only contains whitespace', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)
+        ->post(route('pets.store'), [
+            'name' => '    ',
+            'species' => 'dog',
+            'sex' => 'male',
+        ])
+        ->assertSessionHasErrors(['name']);
+});
+
+it('rejects avatar uploads that exceed the pet photo size limit', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)
+        ->post(route('pets.store'), [
+            'name' => 'Large Avatar',
+            'species' => 'dog',
+            'sex' => 'male',
+            'avatar' => UploadedFile::fake()->image('avatar.jpg', 640, 640)->size(5121),
+        ])
+        ->assertSessionHasErrors(['avatar']);
+});
+
+it('rejects avatar uploads with unsupported formats', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)
+        ->post(route('pets.store'), [
+            'name' => 'Unsupported Avatar',
+            'species' => 'cat',
+            'sex' => 'female',
+            'avatar' => UploadedFile::fake()->create('avatar.pdf', 12, 'application/pdf'),
+        ])
+        ->assertSessionHasErrors(['avatar']);
 });

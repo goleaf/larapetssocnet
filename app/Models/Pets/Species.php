@@ -10,18 +10,32 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'name',
     'slug',
+    'icon_identifier',
+    'color_identifier',
+    'gradient_from',
+    'gradient_to',
+    'display_order',
+    'life_stage_config',
 ])]
 class Species extends Model
 {
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return [
+            'display_order' => 'integer',
+            'life_stage_config' => 'array',
+        ];
+    }
+
     public function pets(): HasMany
     {
-        return $this->hasMany(Pet::class, 'species', 'slug');
+        return $this->hasMany(Pet::class, 'species_id');
     }
 
     public function breeds(): HasMany
     {
-        return $this->hasMany(Breed::class, 'species_slug', 'slug');
+        return $this->hasMany(Breed::class);
     }
 }

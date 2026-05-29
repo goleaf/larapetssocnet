@@ -4,7 +4,6 @@ namespace App\Models\Security;
 
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -28,18 +27,64 @@ class AuthAuditLog extends Model
         ];
     }
 
-    protected function metadata(): Attribute
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getMetadataAttribute(mixed $value): ?array
     {
-        return Attribute::get(fn (): ?array => $this->additional_data);
+        if (is_array($value)) {
+            return $this->normalizeMetadata($value);
+        }
+
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+
+            return is_array($decoded) ? $this->normalizeMetadata($decoded) : null;
+        }
+
+        return $this->additionalData();
     }
 
-    protected function identifierHash(): Attribute
+    public function getIdentifierHashAttribute(mixed $value): ?string
     {
-        return Attribute::get(function (): ?string {
-            $identifierHash = $this->additional_data['identifier_hash'] ?? null;
+        return is_string($value) ? $value : $this->identifierHashValue();
+    }
 
-            return is_string($identifierHash) ? $identifierHash : null;
-        });
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function additionalData(): ?array
+    {
+        $metadata = $this->getAttribute('additional_data');
+
+        if (! is_array($metadata)) {
+            return null;
+        }
+
+        return $this->normalizeMetadata($metadata);
+    }
+
+    private function identifierHashValue(): ?string
+    {
+        $metadata = $this->additionalData();
+        $identifierHash = $metadata['identifier_hash'] ?? null;
+
+        return is_string($identifierHash) ? $identifierHash : null;
+    }
+
+    /**
+     * @param  array<mixed, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function normalizeMetadata(array $metadata): array
+    {
+        $normalized = [];
+
+        foreach ($metadata as $key => $value) {
+            $normalized[(string) $key] = $value;
+        }
+
+        return $normalized;
     }
 
     /**

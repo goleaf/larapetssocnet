@@ -79,6 +79,8 @@ class PetMilestoneService
             'tagged_pets' => [$pet->getKey()],
             'status' => PostStatus::Published,
             'visibility' => $pet->is_public ? Post::VISIBILITY_PUBLIC : Post::VISIBILITY_PRIVATE,
+            'is_system_generated' => true,
+            'system_source' => 'pet_milestone',
             'metadata' => [
                 'source' => 'pet_milestone',
                 'milestone_type' => $milestone->milestone_type,

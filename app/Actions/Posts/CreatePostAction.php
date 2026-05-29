@@ -50,8 +50,12 @@ class CreatePostAction
                 'published_at' => $publishedAt,
                 'visibility' => $data['visibility'] ?? Post::VISIBILITY_PUBLIC,
                 'location' => $this->normalizeNullableString($data['location'] ?? null),
+                'location_lat' => $data['location_lat'] ?? null,
+                'location_lng' => $data['location_lng'] ?? null,
                 'tagged_pets' => $data['tagged_pets'] ?? null,
                 'metadata' => $metadata,
+                'is_system_generated' => (bool) ($data['is_system_generated'] ?? false),
+                'system_source' => $this->normalizeNullableString($data['system_source'] ?? null),
             ]);
 
             $this->processTags->handle($post);
@@ -60,12 +64,37 @@ class CreatePostAction
                 $this->uploadMedia->handle($post, $mediaFiles);
             }
 
+            $this->syncTaggedPets($post, $data);
+
             DB::afterCommit(static function () use ($post): void {
                 PostCreated::dispatch($post);
             });
 
             return $post;
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function syncTaggedPets(Post $post, array $data): void
+    {
+        $petIds = collect([$data['pet_id'] ?? null])
+            ->merge($data['tagged_pets'] ?? [])
+            ->filter()
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($petIds->isEmpty() || ! method_exists($post, 'pets')) {
+            return;
+        }
+
+        $primaryPetId = (int) ($data['pet_id'] ?? $petIds->first());
+        $post->pets()->sync($petIds->mapWithKeys(
+            fn (int $petId): array => [$petId => ['is_primary' => $petId === $primaryPetId]]
+        )->all());
     }
 
     /**

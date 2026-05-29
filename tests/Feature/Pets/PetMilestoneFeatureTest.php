@@ -77,3 +77,40 @@ it('allows milestone edits through the owner workflow', function (): void {
 
     expect($milestone->fresh()->title)->toBe('Vet checkup');
 });
+
+it('edits a shared milestone without mutating the associated post', function (): void {
+    $owner = User::factory()->create();
+    $pet = Pet::factory()->for($owner)->create();
+    $post = Post::factory()->create([
+        'user_id' => $owner->getKey(),
+        'pet_id' => $pet->getKey(),
+        'body' => 'Milestone: First beach walk',
+        'tagged_pets' => [$pet->getKey()],
+        'created_at' => '2026-05-01 08:00:00',
+        'updated_at' => '2026-05-01 08:00:00',
+    ]);
+    $milestone = PetMilestone::factory()->for($pet)->for($owner, 'user')->create([
+        'post_id' => $post->getKey(),
+        'title' => 'First beach walk',
+        'body' => 'Original story',
+        'occurred_on' => '2026-05-19',
+        'share_as_post' => true,
+    ]);
+
+    $this->actingAs($owner)
+        ->patch(route('pets.milestones.update', [$pet, $milestone]), [
+            'milestone_type' => PetMilestone::TYPE_LIFE_EVENT,
+            'title' => 'First lake walk',
+            'body' => 'Updated milestone story.',
+            'occurred_on' => '2026-05-22',
+            'share_as_post' => '0',
+        ])
+        ->assertRedirect(route('pets.show', [$pet, 'tab' => 'milestones']));
+
+    $post->refresh();
+
+    expect($milestone->fresh()->title)->toBe('First lake walk')
+        ->and($post->body)->toBe('Milestone: First beach walk')
+        ->and($post->tagged_pets)->toBe([$pet->getKey()])
+        ->and($post->updated_at?->toDateTimeString())->toBe('2026-05-01 08:00:00');
+});

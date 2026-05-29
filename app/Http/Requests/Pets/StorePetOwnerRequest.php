@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Pets;
 
+use App\Enums\Pets\PetOwnerRole;
 use App\Models\Pets\Pet;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -39,6 +40,11 @@ class StorePetOwnerRequest extends FormRequest
                 Rule::exists('users', 'id'),
                 Rule::notIn([$ownerId]),
             ],
+            'role' => ['nullable', 'string', Rule::in([
+                PetOwnerRole::Admin->value,
+                PetOwnerRole::Poster->value,
+                PetOwnerRole::Viewer->value,
+            ])],
             'can_post' => ['nullable', 'boolean'],
             'can_edit' => ['nullable', 'boolean'],
             'can_manage_health' => ['nullable', 'boolean'],

@@ -7,6 +7,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class AttachPetToPostAction
 {
@@ -43,6 +44,12 @@ class AttachPetToPostAction
 
             $post->setAttribute('tagged_pets', $taggedPets->values()->all());
             $post->save();
+
+            if (Schema::hasTable('pet_post')) {
+                $post->pets()->syncWithoutDetaching([
+                    $nextPetId => ['is_primary' => (int) $post->getAttribute('pet_id') === $nextPetId],
+                ]);
+            }
 
             if ($currentPetId !== $nextPetId) {
                 $pet->incrementCounter('posts_count');

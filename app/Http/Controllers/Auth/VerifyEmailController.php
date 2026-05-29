@@ -53,12 +53,10 @@ class VerifyEmailController extends Controller
 
     private function postVerificationPath(User $user): string
     {
-        if ($user->onboarding_completed_at !== null) {
+        if ($user->hasCompletedOnboarding()) {
             return route('feed.index', absolute: false);
         }
 
-        $step = is_numeric($user->onboarding_step) ? (int) $user->onboarding_step : 1;
-
-        return route('onboarding.show', ['step' => $step], absolute: false).'?verified=1';
+        return route('onboarding.show', absolute: false).'?verified=1';
     }
 }

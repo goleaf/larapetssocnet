@@ -17,6 +17,7 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create([
             'onboarding_step' => '1',
+            'onboarding_completed' => false,
             'onboarding_completed_at' => null,
         ]);
 
@@ -29,6 +30,7 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create([
             'onboarding_step' => '1',
+            'onboarding_completed' => false,
             'onboarding_completed_at' => null,
         ]);
 
@@ -44,7 +46,7 @@ class EmailVerificationTest extends TestCase
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('onboarding.show', ['step' => 1], absolute: false).'?verified=1');
+        $response->assertRedirect(route('onboarding.show', absolute: false).'?verified=1');
     }
 
     public function test_email_is_not_verified_with_invalid_hash(): void

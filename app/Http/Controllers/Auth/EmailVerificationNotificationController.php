@@ -19,7 +19,7 @@ class EmailVerificationNotificationController extends Controller
         abort_unless($user instanceof User, 403);
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(route('feed.index', absolute: false));
+            return redirect()->intended(route($user->hasCompletedOnboarding() ? 'feed.index' : 'onboarding.show', absolute: false));
         }
 
         $key = 'verification-email-resend:user:'.$user->getKey();

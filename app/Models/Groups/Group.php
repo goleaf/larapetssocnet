@@ -178,6 +178,9 @@ class Group extends Model implements HasMedia
         return $this->hasMany(GroupJoinRequest::class);
     }
 
+    /**
+     * @return HasMany<GroupInvitation, $this>
+     */
     public function invitations(): HasMany
     {
         return $this->hasMany(GroupInvitation::class);
@@ -616,8 +619,11 @@ class Group extends Model implements HasMedia
             return false;
         }
 
-        return $membership->status === null
-            || in_array((string) ($membership->status?->value ?? ''), GroupMemberStatus::activeValues(), true);
+        $status = $membership->status;
+        $statusValue = $status instanceof GroupMemberStatus ? $status->value : (string) $status;
+
+        return $statusValue === ''
+            || in_array($statusValue, GroupMemberStatus::activeValues(), true);
     }
 
     public function activeMembersCount(): int

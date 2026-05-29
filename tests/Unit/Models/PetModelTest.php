@@ -107,6 +107,7 @@ it('generates slug on create via observer', function (): void {
     ]);
 
     expect($pet->slug)->toStartWith('captain-whiskers');
+    expect($pet->slug)->toMatch('/^captain-whiskers-[a-z0-9]{6}$/');
 });
 
 it('defines required relationships and route key configuration', function (): void {

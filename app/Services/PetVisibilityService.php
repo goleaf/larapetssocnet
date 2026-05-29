@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Pets\PetOwner;
 use App\Models\Social\Block;
 use App\Models\Social\Follow;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,7 +33,7 @@ class PetVisibilityService
             return false;
         }
 
-        if ($viewer && $viewer->hasBlockingRelationshipWith($owner)) {
+        if ($this->hasBlockedRelationship($viewer, $pet)) {
             return false;
         }
 
@@ -44,17 +45,13 @@ class PetVisibilityService
             return true;
         }
 
+        if (! $this->petsVisibilityAllows($viewer, $owner)) {
+            return false;
+        }
+
         $visibility = $this->petVisibility($pet);
 
         if ($visibility === 'private') {
-            return false;
-        }
-
-        if (! $owner->canViewProfile($viewer)) {
-            return false;
-        }
-
-        if (! $this->petsVisibilityAllows($viewer, $owner)) {
             return false;
         }
 
@@ -64,6 +61,17 @@ class PetVisibilityService
     public function canViewPetPosts(?User $viewer, Pet $pet): bool
     {
         return $this->canViewFullProfile($viewer, $pet);
+    }
+
+    public function hasBlockedRelationship(?User $viewer, Pet $pet): bool
+    {
+        if (! $viewer instanceof User) {
+            return false;
+        }
+
+        $pet->loadMissing('owner');
+
+        return $pet->owner instanceof User && $viewer->hasBlockingRelationshipWith($pet->owner);
     }
 
     public function canViewPetGallery(?User $viewer, Pet $pet): bool
@@ -129,7 +137,7 @@ class PetVisibilityService
             return $query->whereKey(-1);
         }
 
-        $query->whereHas('owner', function (Builder $ownerQuery) use ($viewerId, $isAdmin): void {
+        $query->whereHas('owner', function (Builder $ownerQuery) use ($viewerId): void {
             User::applyAvailableForProfiles($ownerQuery);
 
             if ($viewerId > 0 && User::hasBlocksTable()) {
@@ -141,53 +149,6 @@ class PetVisibilityService
                         ->select('blocks.blocked_id')
                         ->where('blocks.blocker_id', $viewerId));
             }
-
-            if ($isAdmin) {
-                return;
-            }
-
-            if ($viewerId > 0) {
-                $ownerQuery->where(function (Builder $visibilityQuery) use ($viewerId): void {
-                    $visibilityQuery
-                        ->where('users.id', $viewerId)
-                        ->orWhere(function (Builder $privacyQuery) use ($viewerId): void {
-                            $privacyQuery
-                                ->where('is_private', false)
-                                ->orWhere(function (Builder $followerQuery) use ($viewerId): void {
-                                    $followerQuery
-                                        ->where('is_private', true)
-                                        ->whereIn('users.id', Follow::query()
-                                            ->select('following_id')
-                                            ->where('follower_id', $viewerId)
-                                            ->where('status', 'accepted'));
-                                });
-                        });
-                });
-
-                $ownerQuery->where(function (Builder $petsVisibilityQuery) use ($viewerId): void {
-                    $petsVisibilityQuery
-                        ->where('users.id', $viewerId)
-                        ->orWhereNull('pets_visibility')
-                        ->orWhere('pets_visibility', 'everyone')
-                        ->orWhere(function (Builder $followersOnlyQuery) use ($viewerId): void {
-                            $followersOnlyQuery
-                                ->where('pets_visibility', 'followers_only')
-                                ->whereIn('users.id', Follow::query()
-                                    ->select('following_id')
-                                    ->where('follower_id', $viewerId)
-                                    ->where('status', 'accepted'));
-                        });
-                });
-
-                return;
-            }
-
-            $ownerQuery->where('is_private', false);
-            $ownerQuery->where(function (Builder $petsVisibilityQuery): void {
-                $petsVisibilityQuery
-                    ->whereNull('pets_visibility')
-                    ->orWhere('pets_visibility', 'everyone');
-            });
         });
 
         if ($isAdmin) {
@@ -198,22 +159,22 @@ class PetVisibilityService
             return $query->where(function (Builder $petQuery) use ($viewerId): void {
                 $petQuery
                     ->where('pets.user_id', $viewerId)
-                    ->orWhere(function (Builder $visibleQuery): void {
+                    ->orWhereIn('pets.id', PetOwner::query()
+                        ->select('pet_id')
+                        ->where('user_id', $viewerId)
+                        ->whereNotNull('accepted_at'))
+                    ->orWhere(function (Builder $visibleQuery) use ($viewerId): void {
                         $visibleQuery
-                            ->whereNull('pets.visibility')
-                            ->orWhereIn('pets.visibility', ['public', 'followers_only'])
-                            ->orWhereNull('pets.is_public')
-                            ->orWhere('pets.is_public', true);
+                            ->whereHas('owner', fn (Builder $ownerQuery) => $this->applyOwnerPetsVisibilityScope($ownerQuery, $viewerId))
+                            ->where(fn (Builder $petVisibilityQuery) => $this->applyPetShellVisibilityScope($petVisibilityQuery));
                     });
             });
         }
 
         return $query->where(function (Builder $visibleQuery): void {
             $visibleQuery
-                ->whereNull('pets.visibility')
-                ->orWhereIn('pets.visibility', ['public', 'followers_only'])
-                ->orWhereNull('pets.is_public')
-                ->orWhere('pets.is_public', true);
+                ->whereHas('owner', fn (Builder $ownerQuery) => $this->applyOwnerPetsVisibilityScope($ownerQuery, 0))
+                ->where(fn (Builder $petVisibilityQuery) => $this->applyPetShellVisibilityScope($petVisibilityQuery));
         });
     }
 
@@ -226,6 +187,35 @@ class PetVisibilityService
         }
 
         return true;
+    }
+
+    private function applyOwnerPetsVisibilityScope(Builder $ownerQuery, int $viewerId): Builder
+    {
+        return $ownerQuery->where(function (Builder $visibilityQuery) use ($viewerId): void {
+            $visibilityQuery
+                ->whereNull('pets_visibility')
+                ->orWhere('pets_visibility', 'everyone');
+
+            if ($viewerId > 0) {
+                $visibilityQuery->orWhereIn('users.id', Follow::query()
+                    ->select('following_id')
+                    ->where('follower_id', $viewerId)
+                    ->where('status', 'accepted'));
+            }
+        });
+    }
+
+    private function applyPetShellVisibilityScope(Builder $petVisibilityQuery): Builder
+    {
+        return $petVisibilityQuery
+            ->whereIn('pets.visibility', ['public', 'followers_only'])
+            ->orWhere(function (Builder $legacyQuery): void {
+                $legacyQuery
+                    ->whereNull('pets.visibility')
+                    ->where(fn (Builder $isPublicQuery) => $isPublicQuery
+                        ->whereNull('pets.is_public')
+                        ->orWhere('pets.is_public', true));
+            });
     }
 
     private function canViewFullProfile(?User $viewer, Pet $pet): bool
@@ -253,7 +243,7 @@ class PetVisibilityService
 
     private function petVisibility(Pet $pet): string
     {
-        $visibility = (string) ($pet->getRawOriginal('visibility') ?: $pet->visibility);
+        $visibility = (string) ($pet->getRawOriginal('visibility') ?: $pet->getAttribute('visibility'));
 
         if (in_array($visibility, Pet::VISIBILITY, true)) {
             return $visibility;

@@ -111,9 +111,13 @@ class SocialLoginController extends Controller
 
         DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
 
-        return $user->hasVerifiedEmail()
+        if (! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        return $user->hasCompletedOnboarding()
             ? redirect()->route('dashboard')
-            : redirect()->route('verification.notice');
+            : redirect()->route('onboarding.show');
     }
 
     private function restrictedRouteFor(User $user): ?string

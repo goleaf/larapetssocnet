@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id',
     'provider',
     'provider_user_id',
+    'provider_avatar_url',
     'provider_token',
     'provider_token_expires_at',
 ])]

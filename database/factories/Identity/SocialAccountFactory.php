@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories\Identity;
 
 use App\Models\Identity\SocialAccount;
@@ -25,6 +27,7 @@ class SocialAccountFactory extends Factory
             'user_id' => User::factory(),
             'provider' => $provider,
             'provider_user_id' => $provider.'_'.fake()->unique()->uuid(),
+            'provider_avatar_url' => fake()->optional(0.6)->imageUrl(640, 640, 'pets', true),
             'provider_token' => Str::random(48),
             'provider_token_expires_at' => now()->addHour(),
         ];

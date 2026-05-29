@@ -51,8 +51,12 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
     'published_at',
     'visibility',
     'location',
+    'location_lat',
+    'location_lng',
     'tagged_pets',
     'is_pinned',
+    'is_system_generated',
+    'system_source',
     'pinned_at',
     'edited_at',
     'likes_count',
@@ -96,6 +100,7 @@ class Post extends Model implements HasMedia
     {
         return [
             'is_pinned' => 'boolean',
+            'is_system_generated' => 'boolean',
             'tagged_pets' => 'array',
             'group_id' => 'integer',
             'status' => PostStatus::class,
@@ -163,6 +168,16 @@ class Post extends Model implements HasMedia
     public function pet(): BelongsTo
     {
         return $this->belongsTo(Pet::class);
+    }
+
+    /**
+     * @return BelongsToMany<Pet, $this>
+     */
+    public function pets(): BelongsToMany
+    {
+        return $this->belongsToMany(Pet::class, 'pet_post')
+            ->withPivot(['is_primary'])
+            ->withTimestamps();
     }
 
     public function group(): BelongsTo
@@ -356,7 +371,8 @@ class Post extends Model implements HasMedia
         $query->where(function (Builder $petQuery) use ($viewer): void {
             $petQuery
                 ->whereNull('posts.pet_id')
-                ->orWhereHas('pet', fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer));
+                ->orWhereHas('pet', fn (Builder $petQuery): Builder => $petQuery->visibleTo($viewer))
+                ->orWhereHas('pets', fn (Builder $petTagQuery): Builder => $petTagQuery->visibleTo($viewer));
         });
     }
 
@@ -442,7 +458,11 @@ class Post extends Model implements HasMedia
             'posts.created_at',
             'posts.updated_at',
             'posts.deleted_at',
-        ])->where('posts.pet_id', (int) $petId);
+        ])->where(function (Builder $petQuery) use ($petId): void {
+            $petQuery
+                ->where('posts.pet_id', (int) $petId)
+                ->orWhereHas('pets', fn (Builder $taggedPetQuery): Builder => $taggedPetQuery->whereKey((int) $petId));
+        });
     }
 
     public function scopeWithMedia(Builder $query): Builder

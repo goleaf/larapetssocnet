@@ -5,6 +5,7 @@ namespace App\Models\Groups;
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
 use App\Models\Identity\User;
+use Carbon\CarbonInterface;
 use Database\Factories\GroupMemberFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,6 +17,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Collection;
 
+/**
+ * @property int $group_id
+ * @property int $user_id
+ * @property GroupMemberRole|string|null $role
+ * @property GroupMemberStatus|string|null $status
+ * @property CarbonInterface|null $joined_at
+ * @property CarbonInterface|null $updated_at
+ */
 #[UseFactory(GroupMemberFactory::class)]
 #[Fillable([
     'group_id',

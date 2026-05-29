@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Pets\Breed;
+use App\Models\Pets\Species;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -11,12 +12,16 @@ class BreedSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->breedsBySpecies() as $species => $breeds) {
+            $speciesModel = Species::query()->where('slug', $species)->first();
+
             foreach ($breeds as $breed) {
                 Breed::query()->updateOrCreate([
                     'slug' => $species.'-'.Str::slug($breed),
                 ], [
                     'name' => $breed,
                     'species_slug' => $species,
+                    'species_id' => $speciesModel?->getKey(),
+                    'normalized_name' => $this->normalizeSearchName($breed),
                 ]);
             }
         }
@@ -182,5 +187,13 @@ class BreedSeeder extends Seeder
                 'Small Mammal',
             ],
         ];
+    }
+
+    private function normalizeSearchName(string $value): string
+    {
+        return Str::of($value)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/u', '')
+            ->toString();
     }
 }

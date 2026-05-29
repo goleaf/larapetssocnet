@@ -38,6 +38,8 @@ class UserFactory extends Factory
         $username = (string) Str::of($username)->limit(30, '');
         $birthdate = fake()->optional(0.75)->date();
 
+        $onboardingCompletedAt = now()->subDays(fake()->numberBetween(1, 30));
+
         return [
             'name' => fake()->name(),
             'display_name' => null,
@@ -102,8 +104,11 @@ class UserFactory extends Factory
             'deactivation_reason' => null,
             'suspended_until' => null,
             'suspension_reason' => null,
-            'onboarding_step' => fake()->randomElement(['welcome', 'profile', 'pets', 'complete']),
-            'onboarding_completed_at' => fake()->optional(0.65)->dateTimeBetween('-30 days', 'now'),
+            'onboarding_step' => $onboardingCompletedAt ? 'completed' : fake()->randomElement(['welcome', 'profile', 'pets']),
+            'onboarding_completed' => $onboardingCompletedAt !== null,
+            'onboarding_completed_at' => $onboardingCompletedAt,
+            'onboarding_pet_reminder_pending' => false,
+            'onboarding_pet_reminder_shown_at' => null,
             'interests_text' => implode(', ', fake()->words(fake()->numberBetween(3, 7))),
             'followers_count' => 0,
             'following_count' => 0,
@@ -128,6 +133,17 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function onboardingIncomplete(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'onboarding_step' => '1',
+            'onboarding_completed' => false,
+            'onboarding_completed_at' => null,
+            'onboarding_pet_reminder_pending' => false,
+            'onboarding_pet_reminder_shown_at' => null,
         ]);
     }
 }

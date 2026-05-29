@@ -52,10 +52,7 @@ class StorePetRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $name = Str::squish((string) $this->input('name'));
-
-        if ($name !== '') {
-            $this->merge(['name' => $name]);
-        }
+        $this->merge(['name' => $name]);
 
         if ($this->has('species')) {
             $species = strtolower(trim((string) $this->input('species')));

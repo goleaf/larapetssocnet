@@ -29,7 +29,7 @@ use App\Http\Controllers\Media\PhotoGalleryController;
 use App\Http\Controllers\Messaging\MessageController;
 use App\Http\Controllers\Messaging\NotificationController;
 use App\Http\Controllers\Moderation\ReportController;
-use App\Http\Controllers\Onboarding\OnboardingController;
+use App\Http\Controllers\Onboarding\DismissWelcomeBannerController;
 use App\Http\Controllers\Pets\AdoptionController;
 use App\Http\Controllers\Pets\BreedAutocompleteController;
 use App\Http\Controllers\Pets\PetAvatarController;
@@ -41,6 +41,8 @@ use App\Http\Controllers\Pets\PetGalleryController;
 use App\Http\Controllers\Pets\PetHealthLogController;
 use App\Http\Controllers\Pets\PetMilestoneController;
 use App\Http\Controllers\Pets\PetOwnerController;
+use App\Http\Controllers\Pets\PetOwnerInvitationController;
+use App\Http\Controllers\Pets\PetOwnershipTransferController;
 use App\Http\Controllers\Pets\PetPostController;
 use App\Http\Controllers\Pets\PetQrCodeController;
 use App\Http\Controllers\Posts\CommentController;
@@ -60,6 +62,7 @@ use App\Http\Controllers\Social\BlockController;
 use App\Http\Controllers\Social\FollowController;
 use App\Http\Controllers\Social\FollowRequestController;
 use App\Http\Middleware\AdminMiddleware;
+use App\Models\Pets\Pet;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -111,11 +114,16 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     ->prefix('pets')
     ->name('pets.')
     ->group(function (): void {
-        Route::get('/{pet:slug}', [PetController::class, 'show'])
+        Route::get('/@{pet:slug}', [PetController::class, 'show'])
             ->where('pet', '^(?!create$)[^/]+')
             ->name('show');
-        Route::get('/{pet:slug}/qr.svg', [PetQrCodeController::class, 'show'])->name('qr.show');
-        Route::get('/{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
+        Route::get('/@{pet:slug}/qr.svg', [PetQrCodeController::class, 'show'])->name('qr.show');
+        Route::get('/@{pet:slug}/qr-download.svg', [PetQrCodeController::class, 'download'])->name('qr.download');
+        Route::get('/{pet:slug}', fn (Pet $pet) => redirect()->route('pets.show', $pet, 301))
+            ->where('pet', '^(?!create$)[^/]+')
+            ->name('show.legacy');
+        Route::get('/{pet:slug}/qr.svg', fn (Pet $pet) => redirect()->route('pets.qr.show', $pet, 301));
+        Route::get('/{pet:slug}/qr-download.svg', fn (Pet $pet) => redirect()->route('pets.qr.download', $pet, 301));
     });
 
 Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])->group(function (): void {
@@ -225,6 +233,23 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
 
         Route::patch('/{pet:slug}/adoption', [AdoptionController::class, 'update'])->name('adoption.update');
         Route::post('/{pet:slug}/owners', [PetOwnerController::class, 'store'])->name('owners.store');
+        Route::post('/{pet:slug}/owner-invitations', [PetOwnerInvitationController::class, 'store'])->name('owner-invitations.store');
+        Route::patch('/{pet:slug}/owner-invitations/{invitation}/accept', [PetOwnerInvitationController::class, 'accept'])
+            ->whereNumber('invitation')
+            ->name('owner-invitations.accept');
+        Route::patch('/{pet:slug}/owner-invitations/{invitation}/decline', [PetOwnerInvitationController::class, 'decline'])
+            ->whereNumber('invitation')
+            ->name('owner-invitations.decline');
+        Route::post('/{pet:slug}/ownership-transfers', [PetOwnershipTransferController::class, 'store'])->name('ownership-transfers.store');
+        Route::patch('/{pet:slug}/ownership-transfers/{transfer}/accept', [PetOwnershipTransferController::class, 'accept'])
+            ->whereNumber('transfer')
+            ->name('ownership-transfers.accept');
+        Route::patch('/{pet:slug}/ownership-transfers/{transfer}/decline', [PetOwnershipTransferController::class, 'decline'])
+            ->whereNumber('transfer')
+            ->name('ownership-transfers.decline');
+        Route::delete('/{pet:slug}/ownership-transfers/{transfer}', [PetOwnershipTransferController::class, 'cancel'])
+            ->whereNumber('transfer')
+            ->name('ownership-transfers.cancel');
         Route::post('/{pet:slug}/milestones', [PetMilestoneController::class, 'store'])->name('milestones.store');
         Route::patch('/{pet:slug}/milestones/{milestone}', [PetMilestoneController::class, 'update'])
             ->whereNumber('milestone')
@@ -256,15 +281,12 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     Route::patch('/tips/{tip}', [PetCareTipController::class, 'update'])->name('tips.update');
     Route::delete('/tips/{tip}', [PetCareTipController::class, 'destroy'])->name('tips.destroy');
 
-    Route::get('/onboarding/{step}', [OnboardingController::class, 'show'])
-        ->whereNumber('step')
+    Route::livewire('/onboarding', 'pages.onboarding')
+        ->middleware('onboarding.incomplete')
         ->name('onboarding.show');
-    Route::post('/onboarding/{step}', [OnboardingController::class, 'store'])
-        ->whereNumber('step')
-        ->name('onboarding.store');
-    Route::post('/onboarding/{step}/skip', [OnboardingController::class, 'skip'])
-        ->whereNumber('step')
-        ->name('onboarding.skip');
+
+    Route::post('/onboarding/welcome-banner/dismiss', DismissWelcomeBannerController::class)
+        ->name('onboarding.welcome-banner.dismiss');
 
     Route::prefix('groups')->name('groups.')->group(function (): void {
         Route::get('/', [GroupController::class, 'index'])->name('index');

@@ -77,14 +77,14 @@ class GenerateProfileWrappedImage implements ShouldBeUnique, ShouldQueue
         $this->wrappedText($image, $displayName, 72, 172, 44, 780, $text, true, 1);
         $this->text($image, '@'.$summary->user->username, 74, 218, 22, $muted);
 
-        $this->stat($image, 78, 278, (string) number_format($summary->total_posts_published), 'posts published', $text, $muted);
-        $this->stat($image, 344, 278, (string) number_format($summary->total_reactions_received), 'reactions received', $text, $muted);
+        $this->stat($image, 78, 278, number_format($summary->total_posts_published), 'posts published', $text, $muted);
+        $this->stat($image, 344, 278, number_format($summary->total_reactions_received), 'reactions received', $text, $muted);
         $this->stat($image, 610, 278, $summary->formattedTopReactionLabel(), 'top reaction', $text, $muted);
         $this->stat($image, 876, 278, $summary->formattedMostActiveMonthLabel(), 'most active month', $text, $muted);
 
-        $this->stat($image, 78, 414, (string) number_format($summary->new_followers_count), 'new followers', $text, $muted);
-        $this->stat($image, 344, 414, (string) number_format($summary->pets_added_count), 'pets added', $text, $muted);
-        $this->stat($image, 610, 414, (string) number_format($summary->most_engaged_post_score), 'engagement on top post', $text, $muted);
+        $this->stat($image, 78, 414, number_format($summary->new_followers_count), 'new followers', $text, $muted);
+        $this->stat($image, 344, 414, number_format($summary->pets_added_count), 'pets added', $text, $muted);
+        $this->stat($image, 610, 414, number_format($summary->most_engaged_post_score), 'engagement on top post', $text, $muted);
 
         $postText = $summary->mostEngagedPost
             ? Str::limit(strip_tags((string) $summary->mostEngagedPost->body), 82)

@@ -35,6 +35,15 @@ class PetFollowFeatureTest extends TestCase
         expect($pet->fresh()->followers_count)->toBe(1);
     }
 
+    public function test_guest_is_redirected_to_login_when_following_pet(): void
+    {
+        $owner = User::factory()->create();
+        $pet = Pet::factory()->for($owner)->create();
+
+        $this->post(route('pets.follow', $pet))
+            ->assertRedirect(route('login'));
+    }
+
     public function test_authenticated_user_can_unfollow_pet(): void
     {
         $owner = User::factory()->create();

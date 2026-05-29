@@ -166,7 +166,7 @@ class CreatePetWizardRequest extends FormRequest
             $input[$statusField] = strtolower((string) ($input[$statusField] ?? 'unknown'));
         }
 
-        if (($input['species'] ?? null) !== 'other') {
+        if ($input['species'] !== 'other') {
             $input['species_other'] = null;
         }
 
@@ -188,7 +188,7 @@ class CreatePetWizardRequest extends FormRequest
             $input['birth_date'] = Carbon::createFromDate($year, $month, $day)->toDateString();
         }
 
-        if (($input['vaccination_status'] ?? null) !== 'yes') {
+        if ($input['vaccination_status'] !== 'yes') {
             $input['last_vaccinated_on'] = null;
         }
 

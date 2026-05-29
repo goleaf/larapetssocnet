@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Pets\Pet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class PetSlugService
 {
@@ -25,17 +26,27 @@ class PetSlugService
 
     public function normalize(string $petName, string $ownerUsername): string
     {
-        $base = Str::slug(trim($petName.' '.$ownerUsername));
+        $base = Str::of($petName)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/u', '-')
+            ->replaceMatches('/-+/', '-')
+            ->trim('-')
+            ->toString();
 
         if ($base === '') {
-            $base = 'pet';
+            $base = Str::of($ownerUsername)
+                ->lower()
+                ->replaceMatches('/[^a-z0-9]+/u', '-')
+                ->replaceMatches('/-+/', '-')
+                ->trim('-')
+                ->toString() ?: 'pet';
         }
 
         if ($this->isReserved($base)) {
             $base .= '-pet';
         }
 
-        return Str::limit($base, 70, '');
+        return Str::limit($base, 93, '');
     }
 
     public function isReserved(string $slug): bool
@@ -46,15 +57,16 @@ class PetSlugService
     public function generateUnique(string $petName, string $ownerUsername, ?int $ignoreId = null): string
     {
         $base = $this->normalize($petName, $ownerUsername);
-        $slug = $base;
-        $suffix = 2;
 
-        while ($this->slugExists($slug, $ignoreId)) {
-            $slug = Str::limit($base.'-'.$suffix, 80, '');
-            $suffix++;
+        for ($attempt = 0; $attempt < 100; $attempt++) {
+            $slug = Str::limit($base, 93, '').'-'.Str::lower(Str::random(6));
+
+            if (! $this->slugExists($slug, $ignoreId)) {
+                return $slug;
+            }
         }
 
-        return $slug;
+        throw new RuntimeException('Unable to generate a unique pet slug after 100 attempts.');
     }
 
     private function slugExists(string $slug, ?int $ignoreId): bool

@@ -96,6 +96,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('verification.notice');
         }
 
+        if (! $result->user->hasCompletedOnboarding()) {
+            return redirect()->route('onboarding.show');
+        }
+
         return $this->redirectToSafeIntendedUrl($request);
     }
 

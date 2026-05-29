@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             BadgeSeeder::class,
 
             // Pets (depends on users)
+            SpeciesSeeder::class,
             BreedSeeder::class,
             PetSeeder::class,
             AdoptablePetSeeder::class,

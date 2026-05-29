@@ -27,7 +27,10 @@ class FollowService
             return [];
         }
 
-        $targetIds = $targets->modelKeys();
+        $targetIds = $targets
+            ->pluck('id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
 
         return Follow::query()
             ->where('follower_id', $viewer->getKey())

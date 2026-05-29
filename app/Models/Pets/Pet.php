@@ -9,6 +9,7 @@ use App\Services\PetSlugService;
 use App\Services\PetVisibilityService;
 use App\Traits\HasCounterCache;
 use Database\Factories\PetFactory;
+use DateTimeInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Attributes\Appends;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -45,13 +47,17 @@ use Throwable;
     'name',
     'slug',
     'species',
+    'species_id',
     'species_other',
     'breed',
+    'breed_id',
+    'breed_description',
     'sex',
     'gender',
     'size',
     'birth_date',
     'date_of_birth',
+    'birth_year',
     'age_text',
     'adopted_at',
     'bio',
@@ -59,25 +65,33 @@ use Throwable;
     'personality_tags',
     'color',
     'weight_kg',
+    'weight_unit',
     'is_public',
     'visibility',
     'is_lost',
     'is_deceased',
+    'is_archived',
     'spayed_neutered_status',
     'vaccination_status',
     'last_vaccinated_on',
     'microchipped_status',
+    'microchip_number',
     'is_adoptable',
     'adoption_status',
     'adoption_fee',
     'adoption_notes',
+    'adoption_story',
+    'adoption_requirements',
+    'adoption_location',
     'adoption_contact',
+    'adoption_contact_preference',
     'adoption_listed_at',
     'avatar_path',
     'cover_photo_path',
     'cover_photo_position',
     'followers_count',
     'posts_count',
+    'photo_count',
     'health_logs_count',
 ])]
 class Pet extends Model implements HasMedia
@@ -165,18 +179,23 @@ class Pet extends Model implements HasMedia
             'birth_date' => 'date',
             'date_of_birth' => 'date',
             'birthdate' => 'date',
+            'birth_year' => 'integer',
+            'birthday_month_day' => 'string',
             'adopted_at' => 'date',
             'adoption_listed_at' => 'datetime',
             'last_vaccinated_on' => 'date',
             'personality_tags' => 'array',
+            'adoption_requirements' => 'array',
             'is_public' => 'boolean',
             'is_lost' => 'boolean',
             'is_deceased' => 'boolean',
+            'is_archived' => 'boolean',
             'is_adoptable' => 'boolean',
             'weight_kg' => 'decimal:2',
             'cover_photo_position' => 'decimal:2',
             'followers_count' => 'integer',
             'posts_count' => 'integer',
+            'photo_count' => 'integer',
             'health_logs_count' => 'integer',
         ];
     }
@@ -191,6 +210,18 @@ class Pet extends Model implements HasMedia
             if ($pet->isDirty('is_public') && ! $pet->isDirty('visibility')) {
                 $pet->setAttribute('visibility', (bool) $pet->getAttribute('is_public') ? 'public' : 'private');
             }
+        });
+
+        static::saving(function (self $pet): void {
+            if (! self::hasPetsColumn('birthday_month_day')) {
+                return;
+            }
+
+            $pet->setAttribute(
+                'birthday_month_day',
+                self::formatBirthdayMonthDay($pet->getAttribute('date_of_birth'))
+                    ?? self::formatBirthdayMonthDay($pet->getAttribute('birth_date'))
+            );
         });
 
         static::creating(function (self $pet): void {
@@ -321,6 +352,7 @@ class Pet extends Model implements HasMedia
         return $this->belongsToMany(User::class, 'pet_owners', 'pet_id', 'user_id')
             ->withPivot([
                 'role',
+                'is_primary_owner',
                 'can_post',
                 'can_edit',
                 'can_manage_health',
@@ -338,6 +370,16 @@ class Pet extends Model implements HasMedia
     }
 
     /**
+     * @return BelongsToMany<Post, $this>
+     */
+    public function taggedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'pet_post')
+            ->withPivot(['is_primary'])
+            ->withTimestamps();
+    }
+
+    /**
      * @return HasMany<PetMilestone, $this>
      */
     public function milestones(): HasMany
@@ -348,6 +390,54 @@ class Pet extends Model implements HasMedia
     public function healthLogs(): HasMany
     {
         return $this->hasMany(PetHealthLog::class);
+    }
+
+    /**
+     * @return HasMany<PetWeightEntry, $this>
+     */
+    public function weightEntries(): HasMany
+    {
+        return $this->hasMany(PetWeightEntry::class)->orderBy('entry_date');
+    }
+
+    /**
+     * @return HasMany<PetOwnerInvitation, $this>
+     */
+    public function ownerInvitations(): HasMany
+    {
+        return $this->hasMany(PetOwnerInvitation::class);
+    }
+
+    /**
+     * @return HasMany<PetOwnershipTransfer, $this>
+     */
+    public function ownershipTransfers(): HasMany
+    {
+        return $this->hasMany(PetOwnershipTransfer::class);
+    }
+
+    /**
+     * @return HasMany<PetRelationship, $this>
+     */
+    public function outgoingRelationships(): HasMany
+    {
+        return $this->hasMany(PetRelationship::class, 'source_pet_id');
+    }
+
+    /**
+     * @return HasMany<PetRelationship, $this>
+     */
+    public function incomingRelationships(): HasMany
+    {
+        return $this->hasMany(PetRelationship::class, 'target_pet_id');
+    }
+
+    /**
+     * @return HasMany<PetHealthReminder, $this>
+     */
+    public function healthReminders(): HasMany
+    {
+        return $this->hasMany(PetHealthReminder::class);
     }
 
     public function marketplaceListings(): HasMany
@@ -367,12 +457,12 @@ class Pet extends Model implements HasMedia
 
     public function species(): BelongsTo
     {
-        return $this->belongsTo(Species::class, 'species', 'slug');
+        return $this->belongsTo(Species::class);
     }
 
     public function breed(): BelongsTo
     {
-        return $this->belongsTo(Breed::class, 'breed', 'name');
+        return $this->belongsTo(Breed::class);
     }
 
     public function tags(): HasMany
@@ -598,6 +688,12 @@ class Pet extends Model implements HasMedia
 
     public function scopeBySpecies(Builder $query, string|int $speciesId): Builder
     {
+        if (is_int($speciesId) || ctype_digit((string) $speciesId)) {
+            return $query
+                ->select(['pets.*'])
+                ->where('pets.species_id', (int) $speciesId);
+        }
+
         return $query
             ->select(['pets.*'])
             ->where('pets.species', (string) $speciesId);
@@ -605,6 +701,12 @@ class Pet extends Model implements HasMedia
 
     public function scopeByBreed(Builder $query, string|int $breedId): Builder
     {
+        if (is_int($breedId) || ctype_digit((string) $breedId)) {
+            return $query
+                ->select(['pets.*'])
+                ->where('pets.breed_id', (int) $breedId);
+        }
+
         return $query
             ->select(['pets.*'])
             ->where('pets.breed', (string) $breedId);
@@ -631,15 +733,9 @@ class Pet extends Model implements HasMedia
 
     public static function resolveForRoute(string $slug): ?self
     {
-        $query = self::query();
+        $slug = ltrim($slug, '@');
 
-        if (self::hasPetsColumn('slug')) {
-            $query->where('slug', $slug)->orWhere('id', $slug);
-        } else {
-            $query->where('id', $slug);
-        }
-
-        return $query->first();
+        return self::query()->where('slug', $slug)->first();
     }
 
     public function resolveRouteBinding($value, $field = null): ?Model
@@ -647,9 +743,10 @@ class Pet extends Model implements HasMedia
         $bindingField = $field ?? $this->getRouteKeyName();
 
         if ($bindingField === 'slug') {
+            $value = ltrim((string) $value, '@');
+
             return static::query()
                 ->where('slug', $value)
-                ->orWhere($this->getQualifiedKeyName(), $value)
                 ->first();
         }
 
@@ -677,6 +774,20 @@ class Pet extends Model implements HasMedia
 
     public function coOwnerCan(User $user, string $permission): bool
     {
+        $role = $this->ownerships()
+            ->where('user_id', $user->getKey())
+            ->whereNotNull('accepted_at')
+            ->value('role');
+
+        if (is_string($role) && $role !== PetOwner::ROLE_CO_OWNER) {
+            return match ($permission) {
+                'post' => in_array($role, [PetOwner::ROLE_OWNER, PetOwner::ROLE_ADMIN, PetOwner::ROLE_POSTER], true),
+                'edit', 'health', 'gallery', 'adoption' => in_array($role, [PetOwner::ROLE_OWNER, PetOwner::ROLE_ADMIN], true),
+                'delete' => $role === PetOwner::ROLE_OWNER,
+                default => false,
+            };
+        }
+
         $allowedPermissions = [
             'post' => 'can_post',
             'edit' => 'can_edit',
@@ -704,7 +815,8 @@ class Pet extends Model implements HasMedia
      */
     public function recentPostsForShow(int $limit = 12): Collection
     {
-        return $this->posts()
+        return Post::query()
+            ->byPet($this->getKey())
             ->with([
                 'user',
                 'author',
@@ -971,5 +1083,22 @@ class Pet extends Model implements HasMedia
         }
 
         return static::$petsColumnsCache[$column];
+    }
+
+    private static function formatBirthdayMonthDay(mixed $value): ?string
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->format('m-d');
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('m-d');
+        } catch (Throwable) {
+            return null;
+        }
     }
 }
