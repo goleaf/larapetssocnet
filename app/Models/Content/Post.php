@@ -811,6 +811,10 @@ class Post extends Model implements HasMedia
                 'user.media',
                 'author.media',
                 'hashtags',
+                'originalPost.author.media',
+                'originalPost.postMedia',
+                'quotePost.author.media',
+                'quotePost.postMedia',
                 'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($viewer),
             ])
             ->published()
@@ -925,6 +929,10 @@ class Post extends Model implements HasMedia
                 'hashtags',
                 'media',
                 'postMedia',
+                'originalPost.author.media',
+                'originalPost.postMedia',
+                'quotePost.author.media',
+                'quotePost.postMedia',
             ])
             ->with([
                 'pet' => fn ($petQuery) => $petQuery->visibleTo($viewer),
@@ -1440,8 +1448,10 @@ class Post extends Model implements HasMedia
                 'pet.media',
                 'media',
                 'tags',
-                'originalPost.author',
-                'quotePost.author',
+                'originalPost.author.media',
+                'originalPost.postMedia',
+                'quotePost.author.media',
+                'quotePost.postMedia',
             ])
             ->withListEngagement($viewer?->getKey());
     }

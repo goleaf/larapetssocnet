@@ -38,7 +38,7 @@
  class="font-semibold text-gray-700 underline hover:text-red-600">Unsave</button>
  </form>
  </div>
- @include('posts.partials.card', ['post'=> $savedPost->post])
+ <x-post-card :post="$savedPost->post" :instance="'saved-'.$savedPost->getKey()" />
  @endif
  @endif
  @empty

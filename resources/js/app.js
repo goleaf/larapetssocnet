@@ -2111,6 +2111,99 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('postShareMenu', (config = {}) => ({
+ open: false,
+ copied: false,
+ copyBusy: false,
+ copiedTimer: null,
+ menuStyle: '',
+ url: toStringValue(config.url),
+
+ toggle() {
+ if (this.open) {
+ this.close();
+
+ return;
+ }
+
+ this.openMenu();
+ },
+
+ openMenu() {
+ this.positionMenu();
+ this.open = true;
+ },
+
+ close() {
+ this.open = false;
+ },
+
+ positionMenu() {
+ if (!window.matchMedia('(min-width: 640px)').matches || !this.$refs.trigger) {
+ this.menuStyle = '';
+
+ return;
+ }
+
+ const rect = this.$refs.trigger.getBoundingClientRect();
+ const width = 224;
+ const left = Math.max(16, Math.min(window.innerWidth - width - 16, rect.right - width));
+ const top = Math.max(16, rect.top - 168);
+ this.menuStyle = `left:${left}px;top:${top}px;width:${width}px;`;
+ },
+
+ async copyLink($wire) {
+ if (this.copyBusy || !this.url) {
+ return;
+ }
+
+ this.copyBusy = true;
+
+ try {
+ await this.writeClipboard(this.url);
+ this.showCopied();
+
+ if ($wire && typeof $wire.trackCopyLink === 'function') {
+ void $wire.trackCopyLink();
+ }
+ } finally {
+ this.copyBusy = false;
+ }
+ },
+
+ showCopied() {
+ this.copied = true;
+
+ if (this.copiedTimer) {
+ window.clearTimeout(this.copiedTimer);
+ }
+
+ this.copiedTimer = window.setTimeout(() => {
+ this.copied = false;
+ this.copiedTimer = null;
+ this.close();
+ }, 2000);
+ },
+
+ async writeClipboard(value) {
+ if (navigator.clipboard?.writeText) {
+ await navigator.clipboard.writeText(value);
+
+ return;
+ }
+
+ const input = document.createElement('textarea');
+ input.value = value;
+ input.setAttribute('readonly', 'readonly');
+ input.style.position = 'fixed';
+ input.style.opacity = '0';
+ document.body.appendChild(input);
+ input.select();
+ document.execCommand('copy');
+ input.remove();
+ },
+ }));
+
  Alpine.data('groupFeed', (config = {}) => ({
  latestUrl: toStringValue(config.latestUrl),
  latestPostId: toNumber(config.latestPostId),

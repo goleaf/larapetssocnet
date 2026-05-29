@@ -183,6 +183,13 @@ new class extends Component
 
     public ?string $editingPostCreatedAt = null;
 
+    public ?int $quotePostId = null;
+
+    /**
+     * @var array{author_name?: string, author_avatar?: ?string, body?: string, media_url?: ?string, media_is_video?: bool}
+     */
+    public array $quotePostPreview = [];
+
     /**
      * @param  list<int>|null  $selectedPetIds
      */
@@ -195,6 +202,7 @@ new class extends Component
         ?int $fixedPetId = null,
         bool $lockPetTags = false,
         ?int $editPostId = null,
+        ?int $quotePostId = null,
     ): void {
         $this->mode = in_array($mode, [self::MODE_INLINE, self::MODE_MODAL], true) ? $mode : self::MODE_INLINE;
         $this->contextType = filled($contextType) ? (string) $contextType : 'default';
@@ -211,6 +219,12 @@ new class extends Component
             $this->hydratePostForEditing($editPostId);
 
             return;
+        }
+
+        if ($quotePostId !== null && $quotePostId > 0) {
+            $this->contextType = 'quote-post';
+            $this->contextId = $quotePostId;
+            $this->loadQuotePostForComposer($quotePostId);
         }
 
         $initialPetIds = $this->normalizePetIds($selectedPetIds ?? []);
@@ -1054,6 +1068,7 @@ new class extends Component
             'link_preview_url' => $this->detectedLinkPreviewUrl,
             'media_attachments' => $this->mediaAttachmentPayload(),
             'confirmed_duplicate' => $this->confirmedDuplicate,
+            'quote_post_id' => $this->quotePostId,
         ];
     }
 
@@ -1374,6 +1389,28 @@ new class extends Component
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
         $this->confirmedDuplicate = false;
+    }
+
+    private function loadQuotePostForComposer(int $postId): void
+    {
+        $post = Post::query()
+            ->with(['author.media', 'user.media', 'postMedia'])
+            ->whereKey($postId)
+            ->firstOrFail();
+
+        $this->authorize('share', $post);
+
+        $author = $post->user ?? $post->author;
+        $media = $post->mediaItemsForDisplay()->first();
+
+        $this->quotePostId = (int) $post->getKey();
+        $this->quotePostPreview = [
+            'author_name' => $author?->name ?? 'Community member',
+            'author_avatar' => $author?->avatar_url,
+            'body' => trim((string) $post->body),
+            'media_url' => $media ? Post::mediaItemUrl($media) : null,
+            'media_is_video' => $media ? Post::mediaItemIsVideo($media) : false,
+        ];
     }
 
     /**
@@ -1723,6 +1760,53 @@ new class extends Component
  </div>
  </div>
  </div>
+
+ @if ($quotePostId !== null && $quotePostPreview !== [])
+ <div class="rounded-[var(--radius-soft)] border ui-border bg-cream/60 p-4" data-ui="quote-composer-preview">
+ <p class="mb-3 text-xs font-bold uppercase tracking-wider text-fur">Quote post</p>
+ <div class="flex items-start gap-3">
+ @if (filled($quotePostPreview['author_avatar'] ?? null))
+ <img
+ src="{{ $quotePostPreview['author_avatar'] }}"
+ alt=""
+ class="h-10 w-10 shrink-0 rounded-full border border-whisker/30 object-cover"
+ >
+ @else
+ <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-whisker/30 bg-warm-white text-sm font-bold text-paw">
+ {{ Str::substr((string) ($quotePostPreview['author_name'] ?? 'C'), 0, 1) }}
+ </span>
+ @endif
+
+ <div class="min-w-0 flex-1">
+ <p class="truncate text-sm font-semibold ui-text">{{ $quotePostPreview['author_name'] ?? 'Community member' }}</p>
+ @if (filled($quotePostPreview['body'] ?? null))
+ <p class="mt-1 line-clamp-3 text-sm leading-6 shell-text-muted">{{ $quotePostPreview['body'] }}</p>
+ @else
+ <p class="mt-1 text-sm italic shell-text-muted">Media post</p>
+ @endif
+ </div>
+
+ @if (filled($quotePostPreview['media_url'] ?? null))
+ @if ((bool) ($quotePostPreview['media_is_video'] ?? false))
+ <video
+ src="{{ $quotePostPreview['media_url'] }}"
+ class="h-16 w-16 shrink-0 rounded-[var(--radius-soft)] bg-bark/10 object-cover"
+ muted
+ playsinline
+ preload="metadata"
+ ></video>
+ @else
+ <img
+ src="{{ $quotePostPreview['media_url'] }}"
+ alt=""
+ class="h-16 w-16 shrink-0 rounded-[var(--radius-soft)] object-cover"
+ loading="lazy"
+ >
+ @endif
+ @endif
+ </div>
+ </div>
+ @endif
 
  @if ($selectedMoodDisplay !== null)
  <p class="inline-flex max-w-full items-center gap-1.5 text-sm italic text-fur" aria-live="polite">

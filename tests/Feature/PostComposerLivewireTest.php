@@ -92,6 +92,43 @@ it('loads the composer in edit mode with existing post state', function (): void
         ->assertDontSee('Schedule post');
 });
 
+it('loads a quoted post preview and creates a quote post', function (): void {
+    Queue::fake([FeedFanOutJob::class]);
+
+    $author = User::factory()->create(['name' => 'Original Author']);
+    $viewer = User::factory()->create();
+    $original = Post::factory()->for($author)->create([
+        'body' => 'A thoughtful post about neighborhood leash manners and safe greetings.',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    PostMedia::factory()->for($original, 'post')->create([
+        'file_path' => 'posts/quote-preview.jpg',
+        'media_type' => 'image',
+        'order' => 0,
+    ]);
+
+    Livewire::actingAs($viewer)
+        ->test('posts.composer', ['mode' => 'modal', 'quotePostId' => $original->id])
+        ->assertSet('quotePostId', $original->id)
+        ->assertSee('Quote post')
+        ->assertSee('Original Author')
+        ->assertSee('A thoughtful post about neighborhood leash manners')
+        ->set('textContent', 'Adding my own experience from the park.')
+        ->call('submit')
+        ->assertDispatched('post-created')
+        ->assertDispatched('toast-message', message: 'Your post is live! 🐾', type: 'success');
+
+    $quote = Post::query()
+        ->where('user_id', $viewer->id)
+        ->where('quote_post_id', $original->id)
+        ->firstOrFail();
+
+    expect($quote->body)->toBe('Adding my own experience from the park.')
+        ->and($quote->original_post_id)->toBeNull();
+
+    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $quote->id);
+});
+
 it('keeps text state and exposes the computed character count', function (): void {
     $user = User::factory()->create();
 
@@ -748,6 +785,46 @@ it('renders post card editing actions only during the edit window', function ():
         ->and($editedHtml)
         ->toContain('Edited')
         ->toContain('title="Edited ');
+});
+
+it('renders quote and repost blocks inside shared post cards', function (): void {
+    $author = User::factory()->create(['name' => 'Original Card Author']);
+    $viewer = User::factory()->create();
+    $original = Post::factory()->for($author)->create([
+        'body' => 'Original card text that should appear inside the embedded block.',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    PostMedia::factory()->for($original, 'post')->create([
+        'file_path' => 'posts/card-quote-preview.jpg',
+        'media_type' => 'image',
+        'order' => 0,
+    ]);
+    $quote = Post::factory()->for($viewer)->create([
+        'body' => 'My quote commentary',
+        'quote_post_id' => $original->id,
+    ]);
+    $repost = Post::factory()->for($viewer)->create([
+        'body' => '',
+        'original_post_id' => $original->id,
+    ]);
+
+    $quote->load(['quotePost.author.media', 'quotePost.postMedia']);
+    $repost->load(['originalPost.author.media', 'originalPost.postMedia']);
+
+    $this->actingAs($viewer);
+
+    $quoteHtml = Blade::render('<x-post-card :post="$post" />', ['post' => $quote]);
+    $repostHtml = Blade::render('<x-post-card :post="$post" />', ['post' => $repost]);
+
+    expect($quoteHtml)
+        ->toContain('Quote post')
+        ->toContain('Original Card Author')
+        ->toContain('Original card text')
+        ->toContain('card-quote-preview.jpg')
+        ->and($repostHtml)
+        ->toContain('Repost')
+        ->toContain('Original Card Author')
+        ->toContain('Original card text');
 });
 
 it('opens the edit composer from the post card edit trigger', function (): void {

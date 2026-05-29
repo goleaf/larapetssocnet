@@ -11,7 +11,7 @@ class ShareActionRequest extends FormRequest
     /**
      * @var list<string>
      */
-    private const METHODS = ['copy_link', 'native', 'external', 'internal'];
+    private const METHODS = ['copy_link', 'native', 'external', 'internal', 'repost'];
 
     public function authorize(): bool
     {

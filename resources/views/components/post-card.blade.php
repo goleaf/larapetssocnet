@@ -50,7 +50,7 @@
         'likeUrl' => route('posts.like', $post),
         'saveUrl' => route('posts.save', $post),
         'shareUrl' => route('posts.share', $post),
-        'showUrl' => route('posts.show', $post),
+        'showUrl' => route('posts.show', ['post' => $post->uuid ?: $post->getKey()]),
         'postId' => (int) $post->getKey(),
     ];
     $pinIcon = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 17v5" /><path stroke-linecap="round" stroke-linejoin="round" d="M5 17h14l-3.5-4V5.5L17 4V2H7v2l1.5 1.5V13L5 17Z" />';
@@ -89,6 +89,10 @@
     $originalPost = $post->relationLoaded('originalPost') ? $post->originalPost : null;
     $relatedPost = $quotePost ?? $originalPost;
     $relatedPostAuthor = $relatedPost?->user ?? ($relatedPost?->relationLoaded('author') ? $relatedPost?->author : null);
+    $relatedPostMedia = $relatedPost?->mediaItemsForDisplay()->first();
+    $relatedPostMediaUrl = $relatedPostMedia ? $relatedPost::mediaItemUrl($relatedPostMedia) : null;
+    $relatedPostMediaIsVideo = $relatedPostMedia ? $relatedPost::mediaItemIsVideo($relatedPostMedia) : false;
+    $relatedPostUrl = $relatedPost ? route('posts.show', ['post' => $relatedPost->uuid ?: $relatedPost->getKey()]) : '#';
 
     $isVideoMedia = static fn (mixed $item): bool => $post::mediaItemIsVideo($item);
     $mediaUrl = static fn (mixed $item): string => $post::mediaItemUrl($item);
@@ -247,20 +251,46 @@
 
     @if ($relatedPost)
         <a
-            href="{{ route('posts.show', $relatedPost) }}"
+            href="{{ $relatedPostUrl }}"
             class="mt-4 block rounded-[var(--radius-soft)] border ui-border bg-cream/60 p-4 transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
         >
             <p class="text-xs font-semibold uppercase tracking-[0.12em] text-fur">
                 {{ $quotePost ? 'Quote post' : 'Repost' }}
             </p>
-            <p class="mt-1 text-sm font-semibold ui-text">
-                {{ $relatedPostAuthor?->name ?? __('Community member') }}
-            </p>
-            @if (filled($relatedPost->body))
-                <p class="mt-2 line-clamp-3 text-sm leading-6 shell-text-muted">
-                    {{ $relatedPost->body }}
-                </p>
-            @endif
+            <div class="mt-3 flex items-start gap-3">
+                <x-ui.avatar :src="$relatedPostAuthor?->avatar_url" :name="$relatedPostAuthor?->name ?? __('Community member')" :user="$relatedPostAuthor" size="sm"/>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold ui-text">
+                        {{ $relatedPostAuthor?->name ?? __('Community member') }}
+                    </p>
+                    @if (filled($relatedPost->body))
+                        <p class="mt-1 line-clamp-3 text-sm leading-6 shell-text-muted">
+                            {{ $relatedPost->body }}
+                        </p>
+                    @else
+                        <p class="mt-1 text-sm italic shell-text-muted">Media post</p>
+                    @endif
+                </div>
+
+                @if ($relatedPostMediaUrl)
+                    @if ($relatedPostMediaIsVideo)
+                        <video
+                            src="{{ $relatedPostMediaUrl }}"
+                            class="h-16 w-16 shrink-0 rounded-[var(--radius-soft)] bg-bark/10 object-cover"
+                            muted
+                            playsinline
+                            preload="metadata"
+                        ></video>
+                    @else
+                        <img
+                            src="{{ $relatedPostMediaUrl }}"
+                            alt=""
+                            class="h-16 w-16 shrink-0 rounded-[var(--radius-soft)] object-cover"
+                            loading="lazy"
+                        >
+                    @endif
+                @endif
+            </div>
         </a>
     @endif
 
@@ -440,19 +470,7 @@
                     <span class="opacity-80" aria-live="polite" x-text="saveCount"></span>
                 </x-ui.button>
 
-                <x-ui.button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="min-h-11 w-full sm:w-auto"
-                    aria-label="{{ __('Copy link to post by :name', ['name' => $authorName]) }}"
-                    @click="sharePost()"
-                    x-bind:disabled="shareBusy"
-                    x-bind:aria-busy="shareBusy"
-                >
-                    <span x-text="shareCopied ? 'Copied' : 'Share'"></span>
-                    <span class="opacity-80" aria-live="polite" x-text="shares"></span>
-                </x-ui.button>
+                <livewire:posts.share-menu :post="$post" :author-name="$authorName" :key="'post-share-menu-'.$post->getKey().'-'.$postDomId" />
 
                 @if (! $isOwner)
                     <form method="POST" action="{{ route('posts.report', $post) }}" class="flex sm:inline-flex" onsubmit="return confirm('Report this post?');">

@@ -38,7 +38,15 @@ class SavedPost extends Model
         return $query->with([
             'post' => fn ($postQuery) => $postQuery
                 ->withTrashed()
-                ->with(['author', 'hashtags'])
+                ->with([
+                    'author.media',
+                    'hashtags',
+                    'postMedia',
+                    'originalPost.author.media',
+                    'originalPost.postMedia',
+                    'quotePost.author.media',
+                    'quotePost.postMedia',
+                ])
                 ->where(function (Builder $visibilityQuery) use ($viewer): void {
                     $visibilityQuery->visibleTo($viewer);
                     $visibilityQuery->orWhereNotNull('posts.deleted_at');

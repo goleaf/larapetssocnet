@@ -26,6 +26,12 @@
 - Avoid new per-card database queries for reaction or save state.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
 
+## Share Menu
+- Render sharing through the reusable Livewire `posts.share-menu` in the action row, not through page-local JavaScript.
+- Keep the three actions in this order: Repost, Quote post, Copy link.
+- Use a mobile bottom sheet and desktop popover. If the menu is rendered inside an overflow-hidden card, teleport the overlay to `body` and position the desktop popover from the trigger rectangle.
+- Repost should create a new post referencing `original_post_id` and update the displayed share count. Quote post should open the shared composer in modal mode with the original post preview. Copy link should use the clipboard fallback pattern and show a short copied tooltip.
+
 ## Owner Menu
 - Render owner-only post actions from inside the `x-post-card` three-dot menu for every post-card context.
 - Keep `Edit post` as the first menu item while the post is inside the 24-hour edit window; after the window, render the disabled explanatory item instead of an edit action.
@@ -42,6 +48,10 @@
 - Use `format('M j, Y')` for older posts.
 - Provide full datetime in `title` attribute.
 - When `edited_at` is set, display `Edited` after the original timestamp with a separator and include the exact edit timestamp in the title tooltip.
+
+## Embedded Context
+- Quote posts and reposts should render an embedded original-post block everywhere `x-post-card` appears.
+- The block should show whether it is a quote or repost, the original author's avatar/name, up to three lines of original text, and the first media thumbnail when present.
 
 ## Explore Card Variants
 `x-post-card` with `context="explore"`:
