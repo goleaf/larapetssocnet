@@ -15,6 +15,7 @@ All uploads go through Spatie MediaLibrary.
 - Max video size: 100MB per file.
 - Image types: `jpg`, `jpeg`, `png`, `gif`, `webp`.
 - Video types: `mp4`, `mov`.
+- The Livewire post composer attachment strip loads Sortable.js from the approved CDN on demand and persists the final order through `post_media.order`.
 
 Post collections:
 - `photos` (multiple)

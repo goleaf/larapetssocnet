@@ -763,6 +763,8 @@ document.addEventListener('alpine:init', () => {
  mediaErrors: [],
  isDragging: false,
  draggingAttachmentId: null,
+ sortableInstance: null,
+ sortableLoadPromise: null,
  allowedMimeTypes: ['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime'],
  imageMaxBytes: 10 * 1024 * 1024,
  videoMaxBytes: 100 * 1024 * 1024,
@@ -772,6 +774,9 @@ document.addEventListener('alpine:init', () => {
  this.renderHighlighted(false);
  }
 
+ this.$nextTick(() => {
+ this.initializeSortable();
+ });
  },
 
  get characterCount() {
@@ -943,14 +948,14 @@ document.addEventListener('alpine:init', () => {
  const remainingSlots = this.maxAttachments - this.attachments.length;
 
  if (remainingSlots <= 0) {
- this.mediaErrors.push('Maximum 10 attachments per post; only 0 more can be added.');
+ this.mediaErrors.push('Maximum 10 attachments per post — only 0 more can be added.');
 
  return;
  }
 
  files.forEach((file, index) => {
  if (index >= remainingSlots) {
- this.mediaErrors.push(`Maximum 10 attachments per post; only ${remainingSlots} more can be added.`);
+ this.mediaErrors.push(`Maximum 10 attachments per post — only ${remainingSlots} more can be added.`);
 
  return;
  }
@@ -973,11 +978,11 @@ document.addEventListener('alpine:init', () => {
  }
 
  if (file.type.startsWith('image/') && file.size > this.imageMaxBytes) {
- return `${file.name} is too large; maximum size for images is 10 MB.`;
+ return `${file.name} is too large — maximum size for images is 10 MB.`;
  }
 
  if (file.type.startsWith('video/') && file.size > this.videoMaxBytes) {
- return `${file.name} is too large; maximum size for videos is 100 MB.`;
+ return `${file.name} is too large — maximum size for videos is 100 MB.`;
  }
 
  return null;
@@ -987,7 +992,7 @@ document.addEventListener('alpine:init', () => {
  const slot = this.nextAvailableSlot();
 
  if (!slot) {
- this.mediaErrors.push('Maximum 10 attachments per post; only 0 more can be added.');
+ this.mediaErrors.push('Maximum 10 attachments per post — only 0 more can be added.');
 
  return;
  }
@@ -1011,6 +1016,9 @@ document.addEventListener('alpine:init', () => {
 
  this.attachments.push(attachment);
  this.syncUploadingFlag();
+ this.$nextTick(() => {
+ this.initializeSortable();
+ });
 
  if (attachment.media_type ==='video') {
  attachment.preview_data_url = URL.createObjectURL(file);
@@ -1033,6 +1041,72 @@ document.addEventListener('alpine:init', () => {
  };
 
  reader.readAsDataURL(file);
+ },
+
+ initializeSortable() {
+ if (!this.$refs.attachmentStrip || this.sortableInstance) {
+ return;
+ }
+
+ this.loadSortable()
+ .then((Sortable) => {
+ if (!this.$refs.attachmentStrip || this.sortableInstance || typeof Sortable !=='function') {
+ return;
+ }
+
+ this.sortableInstance = Sortable.create(this.$refs.attachmentStrip, {
+ animation: 150,
+ draggable: '[data-client-id]',
+ direction: 'horizontal',
+ filter: 'button,input',
+ preventOnFilter: false,
+ ghostClass: 'opacity-40',
+ chosenClass: 'ring-2 ring-paw/30',
+ dragClass: 'cursor-grabbing',
+ onEnd: () => {
+ const orderedClientIds = Array.from(this.$refs.attachmentStrip.querySelectorAll('[data-client-id]'))
+ .map((element) => element.getAttribute('data-client-id'))
+ .filter(Boolean);
+
+ this.applyAttachmentOrder(orderedClientIds);
+ },
+ });
+ })
+ .catch(() => {
+ this.sortableInstance = null;
+ });
+ },
+
+ loadSortable() {
+ if (window.Sortable) {
+ return Promise.resolve(window.Sortable);
+ }
+
+ if (this.sortableLoadPromise) {
+ return this.sortableLoadPromise;
+ }
+
+ this.sortableLoadPromise = new Promise((resolve, reject) => {
+ const existingScript = document.querySelector('script[data-sortablejs-cdn]');
+
+ if (existingScript) {
+ existingScript.addEventListener('load', () => resolve(window.Sortable), { once: true });
+ existingScript.addEventListener('error', reject, { once: true });
+
+ return;
+ }
+
+ const script = document.createElement('script');
+ script.src ='https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js';
+ script.async = true;
+ script.defer = true;
+ script.dataset.sortablejsCdn ='true';
+ script.addEventListener('load', () => resolve(window.Sortable), { once: true });
+ script.addEventListener('error', reject, { once: true });
+ document.head.appendChild(script);
+ });
+
+ return this.sortableLoadPromise;
  },
 
  startUpload(attachment, file) {
@@ -1196,6 +1270,20 @@ document.addEventListener('alpine:init', () => {
  }
  },
 
+ applyAttachmentOrder(clientIds) {
+ if (!Array.isArray(clientIds) || clientIds.length === 0) {
+ return;
+ }
+
+ const ordered = clientIds
+ .map((clientId) => this.attachments.find((attachment) => attachment.client_id === clientId))
+ .filter(Boolean);
+ const remaining = this.attachments.filter((attachment) => !clientIds.includes(attachment.client_id));
+
+ this.attachments = [...ordered, ...remaining];
+ this.syncAttachmentOrder();
+ },
+
  startAttachmentDrag(clientId) {
  this.draggingAttachmentId = clientId;
  },
@@ -1231,6 +1319,10 @@ document.addEventListener('alpine:init', () => {
 
  this.attachments = [];
  this.mediaErrors = [];
+ if (this.sortableInstance) {
+ this.sortableInstance.destroy();
+ this.sortableInstance = null;
+ }
 
  if (this.$refs.mediaInput) {
  this.$refs.mediaInput.value = '';

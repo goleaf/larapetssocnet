@@ -61,6 +61,15 @@ it('renders the media attachment strip controls and upload behaviours', function
         ->assertSeeHtml('uploadProgressOffset');
 });
 
+it('loads sortable js for attachment reordering', function (): void {
+    $javascript = (string) file_get_contents(resource_path('js/app.js'));
+
+    expect($javascript)
+        ->toContain('cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js')
+        ->toContain('Sortable.create')
+        ->toContain('applyAttachmentOrder');
+});
+
 it('tracks uploaded attachment metadata, alt text, removal, and ordering by client id', function (): void {
     $user = User::factory()->create();
 

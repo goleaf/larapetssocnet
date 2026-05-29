@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Added
-- Added the post composer's attachment strip with click and drag-drop selection, client-side media validation, instant image/video previews, per-attachment Livewire upload progress, alt text controls, removal, and drag ordering.
+- Added the post composer's attachment strip with click and drag-drop selection, client-side media validation, instant image/video previews, per-attachment Livewire upload progress, alt text controls, removal, and Sortable-backed drag ordering.
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Fixed
