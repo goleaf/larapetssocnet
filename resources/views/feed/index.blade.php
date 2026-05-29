@@ -107,7 +107,32 @@
  </p>
  </x-ui.card>
 
- <ul role="feed" aria-label="{{ __('feed.aria_feed') }}" class="space-y-4">
+ <ul role="feed" aria-label="{{ __('feed.aria_feed') }}" class="space-y-4" x-data="feedPostList()" x-on:post-created.window="prependPost($event)">
+ <template x-for="post in pendingPosts" :key="`pending-${post.id}`">
+ <li
+ x-transition.opacity.scale.95.duration.300ms
+ class="shell-card p-5 transition duration-700"
+ x-bind:class="{ 'bg-paw/5 ring-2 ring-paw/30': post.highlighted }"
+ x-bind:aria-label="`Post by ${post.authorName}`"
+ >
+ <article class="space-y-4">
+ <div class="flex items-center gap-3">
+ <template x-if="post.authorAvatar">
+ <img x-bind:src="post.authorAvatar" alt="" class="h-11 w-11 rounded-full border border-whisker/30 object-cover">
+ </template>
+ <template x-if="!post.authorAvatar">
+ <span class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-whisker/30 bg-cream text-sm font-bold text-paw" x-text="post.authorName.slice(0, 1).toUpperCase()"></span>
+ </template>
+ <div class="min-w-0">
+ <p class="truncate text-sm font-bold text-bark" x-text="post.authorName"></p>
+ <p class="text-xs text-fur" x-text="post.createdAt"></p>
+ </div>
+ <span class="ms-auto inline-flex rounded-full bg-paw/10 px-2.5 py-1 text-xs font-bold text-paw-dark">New</span>
+ </div>
+ <p class="whitespace-pre-line text-sm leading-6 text-bark" x-text="post.body"></p>
+ </article>
+ </li>
+ </template>
  @forelse ($posts as $post)
  <li aria-label="{{ __('Post by :name', ['name' => $post->author?->name ?? __('a community member')]) }}">
  <x-post-card :post="$post" />

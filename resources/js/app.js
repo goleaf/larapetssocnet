@@ -97,7 +97,7 @@ document.addEventListener('alpine:init', () => {
  },
  });
 
- window.addEventListener('profile-toast', (event) => {
+ const pushToastFromEvent = (event) => {
  const detail = event.detail || {};
  const message = toStringValue(detail.message);
 
@@ -106,7 +106,10 @@ document.addEventListener('alpine:init', () => {
  }
 
  Alpine.store('toast').add(message, toStringValue(detail.type, 'success'));
- });
+ };
+
+ window.addEventListener('profile-toast', pushToastFromEvent);
+ window.addEventListener('toast-message', pushToastFromEvent);
 
  window.addEventListener('profile-browser-url-replace-requested', (event) => {
  const detail = event.detail || {};
@@ -1000,6 +1003,8 @@ document.addEventListener('alpine:init', () => {
 
  Alpine.data('postComposer', (config = {}) => ({
  text: toStringValue(config.text),
+ mode: toStringValue(config.mode, 'inline'),
+ componentId: toStringValue(config.componentId),
  maxCharacters: toNumber(config.maxCharacters, 1000),
  maxAttachments: Math.max(1, toNumber(config.maxAttachments, 10)),
  uploadSlots: Array.isArray(config.uploadSlots) ? config.uploadSlots : [],
@@ -1021,6 +1026,7 @@ document.addEventListener('alpine:init', () => {
  draftSavedTimer: null,
  draftSavedVisible: false,
  hasLocalUnsavedChanges: false,
+ composerVisible: true,
 
  init() {
  if (this.$refs.editor) {
@@ -1156,6 +1162,47 @@ document.addEventListener('alpine:init', () => {
  this.draftSavedTimer = window.setTimeout(() => {
  this.draftSavedVisible = false;
  }, 2000);
+ },
+
+ eventBelongsToComposer(event) {
+ const detailComposerId = toStringValue(event?.detail?.composerId);
+
+ return !detailComposerId || !this.componentId || detailComposerId === this.componentId;
+ },
+
+ handlePostCreated(event) {
+ if (!this.eventBelongsToComposer(event)) {
+ return;
+ }
+
+ this.hasLocalUnsavedChanges = false;
+ this.draftSavedVisible = false;
+
+ if (toStringValue(event.detail?.mode, this.mode) ==='inline') {
+ this.composerVisible = false;
+ }
+ },
+
+ scrollToFirstError(event) {
+ if (!this.eventBelongsToComposer(event)) {
+ return;
+ }
+
+ this.$nextTick(() => {
+ const firstError = this.$root?.querySelector('[data-composer-error], [aria-invalid="true"]');
+
+ if (!firstError) {
+ return;
+ }
+
+ firstError.scrollIntoView({ behavior:'smooth', block:'center' });
+
+ const focusTarget = firstError.closest('label,div,section,form')?.querySelector('input,textarea,select,[contenteditable="true"],button');
+
+ if (focusTarget && typeof focusTarget.focus ==='function') {
+ focusTarget.focus({ preventScroll: true });
+ }
+ });
  },
 
  applyDraftState(state = {}) {
@@ -1767,6 +1814,41 @@ document.addEventListener('alpine:init', () => {
 
  this.syncUploadingFlag();
  this.renderHighlighted(false);
+ },
+ }));
+
+ Alpine.data('feedPostList', () => ({
+ pendingPosts: [],
+
+ prependPost(event) {
+ const detail = event.detail || {};
+
+ if (toStringValue(detail.status) !=='published') {
+ return;
+ }
+
+ const postId = toNumber(detail.postId);
+
+ if (postId <= 0 || this.pendingPosts.some((post) => post.id === postId)) {
+ return;
+ }
+
+ this.pendingPosts.unshift({
+ id: postId,
+ authorName: toStringValue(detail.authorName, 'You'),
+ authorAvatar: toStringValue(detail.authorAvatar),
+ body: toStringValue(detail.body),
+ createdAt: toStringValue(detail.createdAt, 'Just now'),
+ highlighted: true,
+ });
+
+ window.setTimeout(() => {
+ const post = this.pendingPosts.find((item) => item.id === postId);
+
+ if (post) {
+ post.highlighted = false;
+ }
+ }, 1800);
  },
  }));
 

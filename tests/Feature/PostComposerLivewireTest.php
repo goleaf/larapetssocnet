@@ -29,6 +29,8 @@ it('renders the reusable composer in inline and modal modes', function (): void 
         ->assertSee('Create a post')
         ->assertSeeHtml('contenteditable="true"')
         ->assertSeeHtml('postComposer(')
+        ->assertSeeHtml('x-on:post-created.window="handlePostCreated($event)"')
+        ->assertSeeHtml('wire:loading.class="pointer-events-none opacity-70"')
         ->assertDontSee('@js');
 
     Livewire::actingAs($user)
@@ -418,7 +420,8 @@ it('creates a post through the action pipeline', function (): void {
         ->set('locationDisplayText', 'Neighborhood park')
         ->call('submit')
         ->assertHasNoErrors()
-        ->assertDispatched('post-created');
+        ->assertDispatched('post-created')
+        ->assertDispatched('toast-message', message: 'Your post is live! 🐾', type: 'success');
 
     $post = Post::query()->firstOrFail();
 
@@ -450,7 +453,8 @@ it('creates scheduled posts without immediate feed fanout', function (): void {
         )
         ->call('submit')
         ->assertHasNoErrors()
-        ->assertDispatched('post-created');
+        ->assertDispatched('post-created')
+        ->assertDispatched('toast-message', message: 'Post scheduled for '.$future->format('M j, Y \a\t g:i A').' ✓', type: 'success');
 
     $post = Post::query()->firstOrFail();
 
@@ -497,7 +501,8 @@ it('passes ordered temporary media attachments to the creation pipeline', functi
         ])
         ->call('submit')
         ->assertHasNoErrors()
-        ->assertDispatched('post-created');
+        ->assertDispatched('post-created')
+        ->assertDispatched('toast-message', message: 'Your post is live! 🐾', type: 'success');
 
     $post = Post::query()->firstOrFail();
 
@@ -523,9 +528,74 @@ it('returns a duplicate warning without creating another post', function (): voi
         ->set('textContent', '  a    duplicate story  ')
         ->call('submit')
         ->assertSet('duplicateDetected', true)
-        ->assertDispatched('post-duplicate-detected');
+        ->assertSee('Possible duplicate post')
+        ->assertSee('This looks very similar to something you posted recently. Are you sure you want to post it again?')
+        ->assertSee('Post anyway')
+        ->assertSee('Go back')
+        ->assertDispatched('post-duplicate-detected')
+        ->call('goBackFromDuplicate')
+        ->assertSet('duplicateDetected', false)
+        ->assertSet('confirmedDuplicate', false)
+        ->assertSet('textContent', '  a    duplicate story  ');
 
     expect(Post::query()->count())->toBe(1);
+});
+
+it('posts anyway after duplicate confirmation and closes modal composer with success feedback', function (): void {
+    Queue::fake();
+
+    $user = User::factory()->create();
+
+    Post::factory()->for($user)->create([
+        'body' => 'Repeat this moment',
+        'content_hash' => app(PostContentHasher::class)->hash('Repeat this moment'),
+        'author_type' => $user::class,
+        'author_id' => $user->getKey(),
+        'created_at' => now(),
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer', ['mode' => 'modal'])
+        ->set('textContent', 'Repeat this moment')
+        ->call('submit')
+        ->assertSet('duplicateDetected', true)
+        ->call('confirmDuplicateAndSubmit')
+        ->assertHasNoErrors()
+        ->assertSet('modalOpen', false)
+        ->assertSet('textContent', '')
+        ->assertDispatched('post-created')
+        ->assertDispatched('toast-message', message: 'Your post is live! 🐾', type: 'success');
+
+    expect(Post::query()->count())->toBe(2);
+});
+
+it('keeps composer content visible and scrolls to validation errors after a failed submission', function (): void {
+    $user = User::factory()->create();
+    $body = str_repeat('a', 1001);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->set('textContent', $body)
+        ->call('submit')
+        ->assertHasErrors(['body'])
+        ->assertSet('textContent', $body)
+        ->assertSet('isSubmitting', false)
+        ->assertSeeHtml('data-composer-error')
+        ->assertDispatched('post-submission-failed');
+
+    expect(Post::query()->count())->toBe(0);
+});
+
+it('renders feed listeners for optimistic published post prepending', function (): void {
+    $user = User::factory()->create();
+
+    $this
+        ->actingAs($user)
+        ->get(route('feed.index'))
+        ->assertOk()
+        ->assertSeeHtml('x-data="feedPostList()"')
+        ->assertSeeHtml('x-on:post-created.window="prependPost($event)"')
+        ->assertSee('New');
 });
 
 it('shows a resumable draft banner without restoring the draft automatically', function (): void {

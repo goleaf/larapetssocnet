@@ -29,6 +29,12 @@ The `posts:publish-scheduled` command runs every minute, uses the database cache
 
 Use the shared Livewire `posts.composer` draft lifecycle instead of page-local draft forms. Alpine tracks dirty composer state and calls `autosaveDraft()` every 10 seconds only when there are unsaved changes; the action upserts one serialized state payload per user through the unique `post_drafts_user_id_unique` index. Opening the composer must show a "You have an unsaved draft from ..." banner with Resume draft and Discard actions instead of restoring content automatically. Successful post submission and confirmed composer cancellation clear the user draft.
 
+## Composer Submission Feedback
+
+The shared Livewire `posts.composer` must disable the composer surface during `submit` / `confirmDuplicateAndSubmit`, show spinner text on the submit button, and avoid clearing form state until `CreatePostAction` succeeds. Duplicate-detection results open a modal with Post anyway and Go back actions; Go back keeps the typed content and clears only duplicate state. Validation failures keep the composer open, set field errors on the Livewire error bag, and dispatch `post-submission-failed` so Alpine scrolls to the first `[data-composer-error]`.
+
+Successful submissions dispatch `post-composer-reset`, a rich `post-created` browser event containing `composerId`, `mode`, `status`, `postId`, author/body display data, and toast text, then dispatch `toast-message`. Inline composers collapse after their own matching `post-created` event, modal composers fade out through `modalOpen = false`, and feed surfaces listen for published `post-created` events to prepend a highlighted optimistic post card. Scheduled posts show a scheduled-success toast but should not be prepended to normal feeds until publication.
+
 ## Composer Link Previews
 
 The shared Livewire `posts.composer` detects pasted HTTP(S) URLs in the contenteditable editor and calls `queueLinkPreviewFetch()` after a one-second debounce. The Livewire action must dispatch `FetchLinkPreviewMetadataJob` instead of fetching Open Graph metadata inline. While the job runs, render the composer skeleton with `wire:poll.2s="pollLinkPreviewResult"` against the short-lived cache result; successful results populate `linkPreviewData`, failed results stop loading without blocking submission, and dismissing a preview stores the dismissed URL so it does not immediately reappear.

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -680,6 +681,7 @@ new class extends Component
         $this->isSubmitting = true;
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
+        $scheduledDisplayText = $this->scheduledDisplayText;
 
         try {
             $result = $posts->handle($user, $this->creationPayload());
@@ -687,12 +689,18 @@ new class extends Component
             if ($result->duplicateDetected) {
                 $this->duplicateDetected = true;
                 $this->duplicatePostId = $result->duplicatePostId;
-                $this->dispatch('post-duplicate-detected', postId: $result->duplicatePostId);
+                $this->dispatch(
+                    'post-duplicate-detected',
+                    composerId: (string) $this->getId(),
+                    postId: $result->duplicatePostId,
+                );
 
                 return;
             }
 
             $post = $result->createdPost();
+            $createdPayload = $this->postCreatedPayload($post, $user, $scheduledDisplayText);
+
             $drafts->clear($user, $this->contextType, $this->contextId);
             $this->resetComposerState();
             $this->hasUnsavedChanges = false;
@@ -702,8 +710,13 @@ new class extends Component
             }
 
             $this->dispatch('post-composer-reset');
-            $this->dispatch('post-created', postId: (int) $post->getKey(), mode: $this->mode);
-            session()->flash('success', __('feed.flash_post_created'));
+            $this->dispatch('post-created', ...$createdPayload);
+            $this->dispatch('toast-message', message: $createdPayload['toastMessage'], type: 'success');
+        } catch (ValidationException $exception) {
+            $this->setErrorBag($exception->validator->errors());
+            $this->dispatch('post-submission-failed', composerId: (string) $this->getId());
+
+            return;
         } finally {
             $this->isSubmitting = false;
         }
@@ -712,7 +725,15 @@ new class extends Component
     public function confirmDuplicateAndSubmit(CreatePostAction $posts, PostDraftService $drafts): void
     {
         $this->confirmedDuplicate = true;
+        $this->duplicateDetected = false;
         $this->submit($posts, $drafts);
+    }
+
+    public function goBackFromDuplicate(): void
+    {
+        $this->duplicateDetected = false;
+        $this->duplicatePostId = null;
+        $this->confirmedDuplicate = false;
     }
 
     public function closeModal(): void
@@ -932,6 +953,43 @@ new class extends Component
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array{postId: int, composerId: string, mode: string, status: string, body: string, authorName: string, authorAvatar: string, createdAt: string, createdAtIso: ?string, toastMessage: string, scheduledDisplayText: ?string}
+     */
+    private function postCreatedPayload(Post $post, User $user, ?string $scheduledDisplayText): array
+    {
+        $status = $post->status instanceof PostStatus ? $post->status->value : (string) $post->status;
+        $isScheduled = $status === PostStatus::Scheduled->value;
+        $displayText = $scheduledDisplayText ?: $this->scheduledDisplayTextFor($post);
+
+        return [
+            'postId' => (int) $post->getKey(),
+            'composerId' => (string) $this->getId(),
+            'mode' => $this->mode,
+            'status' => $status,
+            'body' => (string) $post->body,
+            'authorName' => (string) $user->name,
+            'authorAvatar' => (string) ($user->avatar_url ?? ''),
+            'createdAt' => 'Just now',
+            'createdAtIso' => $post->created_at?->toIso8601String(),
+            'toastMessage' => $isScheduled && filled($displayText)
+                ? 'Post scheduled for '.$displayText.' ✓'
+                : 'Your post is live! 🐾',
+            'scheduledDisplayText' => $displayText,
+        ];
+    }
+
+    private function scheduledDisplayTextFor(Post $post): ?string
+    {
+        if (! $post->scheduled_publish_at) {
+            return null;
+        }
+
+        return $post->scheduled_publish_at
+            ->timezone(config('app.timezone'))
+            ->format('M j, Y \a\t g:i A');
     }
 
     private function syncAttachmentMetadata(): void
@@ -1252,11 +1310,15 @@ new class extends Component
 <div
  x-data="postComposer({
  text: @js($textContent),
+ mode: @js($mode),
+ componentId: @js((string) $this->getId()),
  maxCharacters: 1000,
  maxAttachments: 10,
  uploadSlots: @js($uploadSlots),
  })"
  x-on:post-composer-reset.window="resetLocalAttachments"
+ x-on:post-created.window="handlePostCreated($event)"
+ x-on:post-submission-failed.window="scrollToFirstError($event)"
  x-on:post-draft-dirty.window="hasLocalUnsavedChanges = true"
  x-on:post-draft-autosaved.window="showDraftSaved()"
  x-on:post-draft-resumed.window="applyDraftState($event.detail.state || {})"
@@ -1265,6 +1327,7 @@ new class extends Component
  <div
  x-show="$wire.modalOpen"
  x-cloak
+ x-transition.opacity.duration.200ms
  class="fixed inset-0 z-50 flex items-end justify-center bg-bark/45 p-0 sm:items-center sm:p-6"
  role="dialog"
  aria-modal="true"
@@ -1272,14 +1335,17 @@ new class extends Component
  x-on:keydown.escape.window="$wire.requestCancel()"
  >
  <button type="button" class="absolute inset-0 cursor-default" aria-label="Close post composer" wire:click="requestCancel"></button>
- <div class="{{ $surfaceClasses }} relative max-h-[92vh] overflow-y-auto">
+ <div class="{{ $surfaceClasses }} relative max-h-[92vh] overflow-y-auto" x-transition.scale.95.duration.200ms>
  @else
- <section class="{{ $surfaceClasses }}">
+ <section class="{{ $surfaceClasses }}" x-show="composerVisible" x-transition.opacity.scale.95.duration.300ms>
  @endif
  <div class="{{ $surfacePadding }}">
  <form
  wire:submit="submit"
- class="relative space-y-5 rounded-[var(--radius-card)] border border-transparent transition"
+ wire:loading.class="pointer-events-none opacity-70"
+ wire:target="submit,confirmDuplicateAndSubmit"
+ aria-busy="{{ $isSubmitting ? 'true' : 'false' }}"
+ class="relative space-y-5 rounded-[var(--radius-card)] border border-transparent transition duration-200"
  x-bind:class="{ 'border-dashed border-paw bg-paw/5 ring-2 ring-paw/15': isDragging }"
  x-on:dragover.prevent="handleDragOver"
  x-on:dragleave="handleDragLeave"
@@ -1346,13 +1412,37 @@ new class extends Component
  @endif
 
  @if ($duplicateDetected)
- <div class="rounded-[var(--radius-soft)] border border-amber/30 bg-amber-light/40 p-4" role="alert">
- <p class="text-sm font-semibold text-bark">This looks like something you posted recently.</p>
- <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
- <x-ui.button type="button" variant="secondary" size="sm" wire:click="confirmDuplicateAndSubmit" wire:loading.attr="disabled" wire:target="confirmDuplicateAndSubmit">
- Post anyway
+ <div class="fixed inset-0 z-[60] flex items-end justify-center bg-bark/45 p-0 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="{{ $composerId }}-duplicate-title">
+ <button type="button" class="absolute inset-0 cursor-default" aria-label="Go back to composer" wire:click="goBackFromDuplicate"></button>
+ <div class="relative w-full max-w-md rounded-t-[var(--radius-card)] border border-amber/25 bg-warm-white p-5 shadow-card sm:rounded-[var(--radius-card)]">
+ <div class="flex items-start gap-3">
+ <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-light text-amber-dark" aria-hidden="true">
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M10 3 2.8 16.2h14.4L10 3Z"/>
+ <path d="M10 7.5v4"/>
+ <path d="M10 14.5h.01"/>
+ </svg>
+ </span>
+ <div class="min-w-0 flex-1">
+ <p id="{{ $composerId }}-duplicate-title" class="text-base font-bold text-bark">Possible duplicate post</p>
+ <p class="mt-2 text-sm leading-6 text-fur">This looks very similar to something you posted recently. Are you sure you want to post it again?</p>
+ </div>
+ </div>
+ <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+ <button type="button" class="inline-flex h-[var(--control-height-md)] items-center justify-center rounded-[var(--radius-soft)] px-4 text-sm font-semibold text-fur transition hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="goBackFromDuplicate">
+ Go back
+ </button>
+ <x-ui.button type="button" variant="primary" wire:click="confirmDuplicateAndSubmit" wire:loading.attr="disabled" wire:target="confirmDuplicateAndSubmit">
+ <span wire:loading.remove wire:target="confirmDuplicateAndSubmit">Post anyway</span>
+ <span wire:loading.flex wire:target="confirmDuplicateAndSubmit" class="items-center gap-2">
+ <svg class="h-4 w-4 animate-spin" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+ <circle class="stroke-current opacity-25" cx="10" cy="10" r="7" stroke-width="2"></circle>
+ <path class="fill-current" d="M17 10a7 7 0 0 0-7-7V1a9 9 0 0 1 9 9h-2Z"></path>
+ </svg>
+ Posting...
+ </span>
  </x-ui.button>
- <button type="button" class="text-sm font-semibold text-fur hover:text-bark" wire:click="$set('duplicateDetected', false)">Keep editing</button>
+ </div>
  </div>
  </div>
  @endif
@@ -1374,7 +1464,7 @@ new class extends Component
 
  <div class="flex min-h-8 flex-wrap items-center justify-between gap-3">
  @error('body')
- <p class="text-sm font-medium text-rose">{{ $message }}</p>
+ <p class="text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
  @else
  <p class="text-xs text-fur">Hashtags and mentions are highlighted while you type.</p>
  @enderror
@@ -1601,7 +1691,7 @@ new class extends Component
  </div>
 
  @error('scheduledPublishAt')
- <p class="mt-3 text-sm font-medium text-rose">{{ $message }}</p>
+ <p class="mt-3 text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
  @enderror
  </div>
  @endif
@@ -1917,10 +2007,10 @@ new class extends Component
  </div>
 
  @error('media_attachments')
- <p class="text-sm font-medium text-rose">{{ $message }}</p>
+ <p class="text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
  @enderror
  @error('media')
- <p class="text-sm font-medium text-rose">{{ $message }}</p>
+ <p class="text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
  @enderror
 
  <div x-cloak x-show="attachments.length > 0" x-transition class="min-w-0">
@@ -2101,11 +2191,18 @@ new class extends Component
  type="submit"
  variant="primary"
  wire:loading.attr="disabled"
+ wire:loading.class="brightness-95"
  wire:target="submit,confirmDuplicateAndSubmit"
  x-bind:disabled="characterCount > maxCharacters || hasActiveUploads"
  >
  <span wire:loading.remove wire:target="submit,confirmDuplicateAndSubmit">{{ filled($scheduledPublishAt) ? 'Schedule' : 'Post' }}</span>
- <span wire:loading wire:target="submit,confirmDuplicateAndSubmit">{{ filled($scheduledPublishAt) ? 'Scheduling...' : 'Posting...' }}</span>
+ <span wire:loading.flex wire:target="submit,confirmDuplicateAndSubmit" class="items-center gap-2">
+ <svg class="h-4 w-4 animate-spin" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+ <circle class="stroke-current opacity-25" cx="10" cy="10" r="7" stroke-width="2"></circle>
+ <path class="fill-current" d="M17 10a7 7 0 0 0-7-7V1a9 9 0 0 1 9 9h-2Z"></path>
+ </svg>
+ {{ filled($scheduledPublishAt) ? 'Scheduling...' : 'Posting...' }}
+ </span>
  </x-ui.button>
  </div>
  </div>

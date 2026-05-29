@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added polished post-composer submission feedback with whole-composer loading states, duplicate confirmation modal actions, success toasts, and optimistic feed prepending for newly published posts.
 - Added background post-composer draft autosave with one serialized draft per user, resume/discard banners, and confirmed cancellation cleanup.
 - Added async Open Graph link previews for pasted post-composer URLs, with queued Guzzle fetching, composer skeleton/polling state, dismissible preview cards, and image rendering on shared post cards.
 - Added a toolbar scheduled-post picker to the Livewire post composer with a future-date calendar, 15-minute local time selectors, UTC storage, schedule indicator, and Schedule submit state.
@@ -42,6 +43,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire post composer coverage for success toasts, duplicate confirmation, validation-error preservation, and feed listener rendering for optimistic post prepending.
 - Added Livewire and service coverage for one-user post drafts, non-automatic draft restore, resume/discard actions, and cancellation cleanup.
 - Added link preview coverage for Open Graph parsing, local-network URL rejection, queued post updates, composer polling/dismissal, and action-level async fetch dispatch.
 - Added scheduled composer and scheduled publication coverage for picker rendering, UTC state storage, scheduled post creation without immediate fan-out, command job dispatch, command lock skipping, and due-job publication.
@@ -70,6 +72,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Changed post-created browser events to include composer identity, status, author, body, and toast metadata so page-level listeners can react without guessing at component state.
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
 - Changed scheduled post publication to dispatch one queued `PublishScheduledPostJob` per due post from the lock-protected every-minute command, with per-post job locks plus feed fan-out and mention notifications delayed until the post actually publishes.
 - Changed post media validation and storage to allow up to 10 mixed image/video attachments while preserving explicit media ordering.
