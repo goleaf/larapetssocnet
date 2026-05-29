@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
+
 ### Fixed
   - Fixed pet profile validation so whitespace-only names are rejected after normalization.
 - Fixed blocked pet profile requests to return not found instead of exposing a normal authorization denial.
@@ -28,6 +31,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire post composer coverage for inline and modal rendering, contenteditable state, character count feedback, draft restore/autosave, duplicate warnings, and action-backed post creation with pet tags, mood, location, and feed fan-out.
 - Added post creation action coverage for structured duplicate-detection results, confirmed duplicate submission, invalid link preview validation, queued temporary media processing, content hashes, pet tag counter increments, queued mentions, and after-commit feed fan-out.
 - Added post creation coverage for rich posts with pet tags, hashtags, mentions, mood, location, link previews, duplicate-submission blocking, scheduled publication, edit-window authorization, quote/repost references, private visibility filtering, and draft autosave restore/clear behavior.
 - Added pet family relationship and health reminder coverage for bidirectional links, private-pet link blocking, due notifications, invalid custom reminders, and archived-pet skips.
@@ -48,6 +52,7 @@
 
 ### Changed
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
+- Updated the feed and create-post surfaces to render through the shared Livewire post composer instead of maintaining separate form implementations.
 - Updated the post composer and shared post card to enforce the 1000-character plain-text content model and surface mood, scheduled publish timestamps, normalized location labels, link preview cards, edited labels, UUID share URLs, and quote/repost context.
 - Updated scheduled post publication to use the indexed `scheduled_publish_at` column and a lock-protected `posts:publish-scheduled` command.
 - Changed new pet profile slugs to use the pet name plus a six-character random suffix while preserving existing slug route binding.

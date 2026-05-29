@@ -752,6 +752,173 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('postComposer', (config = {}) => ({
+ text: toStringValue(config.text),
+ maxCharacters: toNumber(config.maxCharacters, 1000),
+ circumference: 75.398,
+ localAttachments: [],
+
+ init() {
+ if (this.$refs.editor) {
+ this.renderHighlighted(false);
+ }
+ },
+
+ get characterCount() {
+ return Array.from(this.text).length;
+ },
+
+ get showCharacterCounter() {
+ return this.characterCount > 800;
+ },
+
+ get overLimitCount() {
+ return Math.max(0, this.characterCount - this.maxCharacters);
+ },
+
+ get progressRatio() {
+ return Math.min(this.characterCount / this.maxCharacters, 1);
+ },
+
+ get progressOffset() {
+ return this.circumference * (1 - this.progressRatio);
+ },
+
+ get isCounterDanger() {
+ return this.characterCount >= 951;
+ },
+
+ syncFromEditor() {
+ const offset = this.saveCaretOffset();
+ this.text = this.editorPlainText();
+
+ if (this.$wire?.set) {
+ this.$wire.set('textContent', this.text, false);
+ }
+
+ this.renderHighlighted(false);
+ this.restoreCaretOffset(offset);
+ },
+
+ editorPlainText() {
+ if (!this.$refs.editor) {
+ return this.text;
+ }
+
+ return this.$refs.editor.innerText
+ .replace(/\u00a0/g, ' ')
+ .replace(/\n{3,}/g, '\n\n');
+ },
+
+ renderHighlighted(restoreCaret = true) {
+ if (!this.$refs.editor) {
+ return;
+ }
+
+ const offset = restoreCaret ? this.saveCaretOffset() : null;
+ this.$refs.editor.innerHTML = this.highlightText(this.text);
+
+ if (restoreCaret && offset !== null) {
+ this.restoreCaretOffset(offset);
+ }
+ },
+
+ highlightText(value) {
+ const escaped = this.escapeHtml(value);
+
+ return escaped
+ .replace(/(^|[\s])(@[A-Za-z0-9][A-Za-z0-9-]*)/g, '$1<span class="font-semibold text-leaf">$2</span>')
+ .replace(/(^|[\s])(#[A-Za-z0-9][A-Za-z0-9_]*)/g, '$1<span class="font-semibold text-paw">$2</span>')
+ .replace(/\n/g, '<br>');
+ },
+
+ escapeHtml(value) {
+ const element = document.createElement('div');
+ element.textContent = value;
+
+ return element.innerHTML;
+ },
+
+ saveCaretOffset() {
+ const selection = window.getSelection();
+
+ if (!selection || selection.rangeCount === 0 || !this.$refs.editor) {
+ return this.characterCount;
+ }
+
+ const range = selection.getRangeAt(0);
+
+ if (!this.$refs.editor.contains(range.endContainer)) {
+ return this.characterCount;
+ }
+
+ const preSelectionRange = range.cloneRange();
+ preSelectionRange.selectNodeContents(this.$refs.editor);
+ preSelectionRange.setEnd(range.endContainer, range.endOffset);
+
+ return Array.from(preSelectionRange.toString()).length;
+ },
+
+ restoreCaretOffset(offset) {
+ if (!this.$refs.editor) {
+ return;
+ }
+
+ const selection = window.getSelection();
+
+ if (!selection) {
+ return;
+ }
+
+ const walker = document.createTreeWalker(this.$refs.editor, NodeFilter.SHOW_TEXT);
+ let currentNode = walker.nextNode();
+ let remaining = Math.max(0, offset);
+ const range = document.createRange();
+
+ while (currentNode) {
+ const length = Array.from(currentNode.textContent || '').length;
+
+ if (remaining <= length) {
+ range.setStart(currentNode, remaining);
+ range.collapse(true);
+ selection.removeAllRanges();
+ selection.addRange(range);
+
+ return;
+ }
+
+ remaining -= length;
+ currentNode = walker.nextNode();
+ }
+
+ range.selectNodeContents(this.$refs.editor);
+ range.collapse(false);
+ selection.removeAllRanges();
+ selection.addRange(range);
+ },
+
+ previewSelectedFiles(event) {
+ const files = Array.from(event.target.files || []);
+ this.localAttachments = [];
+
+ files.forEach((file, index) => {
+ const reader = new FileReader();
+ const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+
+ reader.onload = () => {
+ this.localAttachments[index] = {
+ file_name: file.name,
+ media_type: mediaType,
+ preview_data_url: toStringValue(reader.result),
+ alt_text: '',
+ };
+ };
+
+ reader.readAsDataURL(file);
+ });
+ },
+ }));
+
  Alpine.data('postCard', (config = {}) => ({
  authorName: toStringValue(config.authorName,'a community member'),
  liked: Boolean(config.liked),
