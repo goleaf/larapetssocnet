@@ -8,6 +8,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Fixed
+- Fixed legacy morph-map aliases for post draft, mention, and pet care/ownership domain models.
 - Fixed post creation from internal services to normalize enum-backed status values before synthetic request validation.
 - Fixed group invitation acceptance and decline flows when invitation statuses are returned through Laravel enum casts.
 - Fixed pet profile validation so whitespace-only names are rejected after normalization.
@@ -35,6 +36,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Updated ChartService unit coverage for the current `WeightHistorySvg` dependency and smooth-path chart rendering.
 - Added post media coverage for 10-image posts, mixed image/video posts, multiple videos, 10 MB image limits, 100 MB video limits, and ordered temporary media dispatch from the Livewire composer.
 - Added Livewire post composer coverage for inline and modal rendering, contenteditable state, character count feedback, draft restore/autosave, duplicate warnings, and action-backed post creation with pet tags, mood, location, and feed fan-out.
 - Added post creation action coverage for structured duplicate-detection results, confirmed duplicate submission, invalid link preview validation, queued temporary media processing, content hashes, pet tag counter increments, queued mentions, and after-commit feed fan-out.

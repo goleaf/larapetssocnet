@@ -1,19 +1,17 @@
 <?php
 
 use App\Services\ChartService;
+use App\Services\Pets\WeightHistorySvg;
 use Illuminate\Support\Carbon;
 
-it('returns null for fewer than 2 weight logs', function (): void {
-    $service = new ChartService;
+it('returns null when no weight logs are available', function (): void {
+    $service = chartService();
 
     expect($service->weightChart(collect()))->toBeNull();
-    expect($service->weightChart(collect([
-        (object) ['logged_at' => now(), 'weight_kg' => 5.0],
-    ])))->toBeNull();
 });
 
 it('returns svg string for 2 or more logs', function (): void {
-    $service = new ChartService;
+    $service = chartService();
 
     $logs = collect([
         (object) ['logged_at' => Carbon::parse('2026-01-01'), 'weight_kg' => 4.5],
@@ -28,8 +26,8 @@ it('returns svg string for 2 or more logs', function (): void {
     expect($result)->toContain('</svg>');
 });
 
-it('svg contains polyline element', function (): void {
-    $service = new ChartService;
+it('svg contains a smooth path for multiple points', function (): void {
+    $service = chartService();
 
     $logs = collect([
         (object) ['logged_at' => Carbon::parse('2026-01-01'), 'weight_kg' => 4.0],
@@ -38,12 +36,12 @@ it('svg contains polyline element', function (): void {
 
     $result = $service->weightChart($logs);
 
-    expect($result)->toContain('<polyline');
-    expect($result)->toContain('stroke="#10b981"');
+    expect($result)->toContain('<path d="M ');
+    expect($result)->toContain('stroke="var(--color-paw, #b46139)"');
 });
 
 it('svg contains circle dots', function (): void {
-    $service = new ChartService;
+    $service = chartService();
 
     $logs = collect([
         (object) ['logged_at' => Carbon::parse('2026-01-01'), 'weight_kg' => 3.0],
@@ -59,7 +57,7 @@ it('svg contains circle dots', function (): void {
 });
 
 it('svg has correct viewbox attribute', function (): void {
-    $service = new ChartService;
+    $service = chartService();
 
     $logs = collect([
         (object) ['logged_at' => Carbon::parse('2026-01-01'), 'weight_kg' => 5.0],
@@ -70,3 +68,8 @@ it('svg has correct viewbox attribute', function (): void {
 
     expect($result)->toContain('viewBox="0 0 600 200"');
 });
+
+function chartService(): ChartService
+{
+    return new ChartService(new WeightHistorySvg);
+}

@@ -15,7 +15,9 @@ use App\Models\Content\Comment;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Like;
 use App\Models\Content\Post;
+use App\Models\Content\PostDraft;
 use App\Models\Content\PostMedia;
+use App\Models\Content\PostMention;
 use App\Models\Content\PostReaction;
 use App\Models\Content\PostReport;
 use App\Models\Content\Reaction;
@@ -43,12 +45,19 @@ use App\Models\Messaging\Notification;
 use App\Models\Moderation\Report;
 use App\Models\Pets\Breed;
 use App\Models\Pets\Pet;
+use App\Models\Pets\PetAdoptionInquiry;
 use App\Models\Pets\PetCareTip;
 use App\Models\Pets\PetFollow;
 use App\Models\Pets\PetHealthLog;
+use App\Models\Pets\PetHealthReminder;
 use App\Models\Pets\PetMilestone;
 use App\Models\Pets\PetOwner;
+use App\Models\Pets\PetOwnerInvitation;
+use App\Models\Pets\PetOwnershipTransfer;
+use App\Models\Pets\PetRelationship;
+use App\Models\Pets\PetSpotlightFeature;
 use App\Models\Pets\PetTag;
+use App\Models\Pets\PetWeightEntry;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Pets\Species;
 use App\Models\Security\AccountSecurityAction;
@@ -97,15 +106,24 @@ final class LegacyModelMorphMap
             'App\Models\MagicLoginToken' => MagicLoginToken::class,
             'App\Models\Notification' => Notification::class,
             'App\Models\Pet' => Pet::class,
+            'App\Models\PetAdoptionInquiry' => PetAdoptionInquiry::class,
             'App\Models\PetCareTip' => PetCareTip::class,
             'App\Models\PetFollow' => PetFollow::class,
             'App\Models\PetHealthLog' => PetHealthLog::class,
+            'App\Models\PetHealthReminder' => PetHealthReminder::class,
             'App\Models\PetMilestone' => PetMilestone::class,
             'App\Models\PetOwner' => PetOwner::class,
+            'App\Models\PetOwnerInvitation' => PetOwnerInvitation::class,
+            'App\Models\PetOwnershipTransfer' => PetOwnershipTransfer::class,
+            'App\Models\PetRelationship' => PetRelationship::class,
+            'App\Models\PetSpotlightFeature' => PetSpotlightFeature::class,
             'App\Models\PetTag' => PetTag::class,
+            'App\Models\PetWeightEntry' => PetWeightEntry::class,
             'App\Models\PhotoGallery' => PhotoGallery::class,
             'App\Models\Post' => Post::class,
+            'App\Models\PostDraft' => PostDraft::class,
             'App\Models\PostMedia' => PostMedia::class,
+            'App\Models\PostMention' => PostMention::class,
             'App\Models\PostReaction' => PostReaction::class,
             'App\Models\PostReport' => PostReport::class,
             'App\Models\ProfilePortfolioPost' => ProfilePortfolioPost::class,
