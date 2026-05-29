@@ -300,6 +300,16 @@ new class extends Component
         return $this->storeLocationSuggestion($suggestion);
     }
 
+    public function selectMood(string $mood): void
+    {
+        $this->selectedMood = PostMood::normalize($mood);
+    }
+
+    public function removeMood(): void
+    {
+        $this->selectedMood = null;
+    }
+
     public function selectVisibility(string $visibility): void
     {
         $normalizedVisibility = $this->normalizeVisibility($visibility);
@@ -870,6 +880,8 @@ new class extends Component
      ->values();
  $visibilityOptions = $this->visibilityOptions();
  $selectedVisibilityOption = $this->selectedVisibilityOption();
+ $moodOptions = PostMood::DISPLAY;
+ $selectedMoodDisplay = $selectedMood ? ($moodOptions[$selectedMood] ?? null) : null;
  $visibilityIcon = static function (string $visibility, string $classes = 'h-4 w-4'): string {
      $baseAttributes = 'class="'.$classes.'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
 
@@ -1014,6 +1026,22 @@ new class extends Component
  </div>
  </div>
 
+ @if ($selectedMoodDisplay !== null)
+ <p class="inline-flex max-w-full items-center gap-1.5 text-sm italic text-fur" aria-live="polite">
+ <span class="truncate">feeling {{ $selectedMoodDisplay['emoji'] }} {{ Str::lower($selectedMoodDisplay['label']) }}</span>
+ <button
+ type="button"
+ wire:click="removeMood"
+ class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-fur transition hover:bg-cream hover:text-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-label="Remove mood"
+ >
+ <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+ </p>
+ @endif
+
  @if ($taggedPets->isNotEmpty() || filled($locationDisplayText))
  <div class="flex flex-wrap gap-2" aria-label="Post tags">
  @if (filled($locationDisplayText))
@@ -1148,6 +1176,61 @@ new class extends Component
  <circle cx="13" cy="7" r="1.25"/>
  </svg>
  </button>
+ <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+ <button
+ type="button"
+ class="{{ $selectedMoodDisplay !== null ? 'bg-amber/10 text-amber-dark' : 'text-fur hover:bg-amber/10 hover:text-amber-dark' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="open = !open"
+ aria-label="Add mood"
+ aria-haspopup="true"
+ x-bind:aria-expanded="open.toString()"
+ >
+ @if ($selectedMoodDisplay !== null)
+ <span class="text-lg leading-none" aria-hidden="true">{{ $selectedMoodDisplay['emoji'] }}</span>
+ @else
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <circle cx="10" cy="10" r="7"/>
+ <path d="M7 8h.01"/>
+ <path d="M13 8h.01"/>
+ <path d="M7.5 12c.7 1 1.5 1.5 2.5 1.5s1.8-.5 2.5-1.5"/>
+ </svg>
+ @endif
+ </button>
+
+ <div
+ x-cloak
+ x-show="open"
+ x-transition.origin.top.left
+ x-on:click.outside="open = false"
+ class="absolute left-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-card)] border border-whisker/30 bg-warm-white shadow-card"
+ role="listbox"
+ aria-label="Mood"
+ >
+ <div class="border-b border-whisker/20 px-4 py-3">
+ <p class="text-sm font-semibold text-bark">Mood</p>
+ </div>
+
+ <div class="grid grid-cols-3 gap-2 p-2">
+ @foreach ($moodOptions as $moodValue => $moodDisplay)
+ @php
+     $isSelectedMood = $selectedMood === $moodValue;
+ @endphp
+ <button
+ type="button"
+ wire:click="selectMood('{{ $moodValue }}')"
+ x-on:click="open = false"
+ class="{{ $isSelectedMood ? 'border-amber bg-amber/10 text-bark ring-2 ring-amber/15' : 'border-whisker/30 text-fur hover:border-amber/50 hover:bg-cream hover:text-bark' }} flex min-h-20 flex-col items-center justify-center gap-1 rounded-[var(--radius-soft)] border px-2 py-2 text-center transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-pressed="{{ $isSelectedMood ? 'true' : 'false' }}"
+ role="option"
+ aria-selected="{{ $isSelectedMood ? 'true' : 'false' }}"
+ >
+ <span class="text-2xl leading-none" aria-hidden="true">{{ $moodDisplay['emoji'] }}</span>
+ <span class="text-xs font-semibold">{{ $moodDisplay['label'] }}</span>
+ </button>
+ @endforeach
+ </div>
+ </div>
+ </div>
  <button
  type="button"
  class="{{ $locationPickerOpen || filled($locationDisplayText) ? 'bg-leaf/10 text-leaf' : 'text-fur hover:bg-leaf/10 hover:text-leaf' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
@@ -1350,15 +1433,6 @@ new class extends Component
  </template>
  </ul>
  </div>
- </div>
-
- <div class="grid gap-4 md:grid-cols-2">
- <x-ui.select id="{{ $composerId }}-mood" label="Mood" wire:model="selectedMood">
- <option value="">No mood</option>
- @foreach (PostMood::DISPLAY as $moodValue => $moodDisplay)
- <option value="{{ $moodValue }}">{{ $moodDisplay['emoji'] }} {{ $moodDisplay['label'] }}</option>
- @endforeach
- </x-ui.select>
  </div>
 
  <div class="grid gap-4 md:grid-cols-3">

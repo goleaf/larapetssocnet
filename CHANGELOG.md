@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a compact emoji mood picker to the Livewire post composer toolbar with the selected "feeling" indicator and remove action below the editor.
 - Added toolbar-driven Livewire post composer location tagging with debounced server-side geocoding suggestions, browser coordinate reverse geocoding, and removable location chips.
 - Added the Livewire post composer's toolbar visibility dropdown with radio-card options and an explicit Only me warning.
 - Added pet tagging in the Livewire post composer as a toolbar dropdown with avatar/species rows, selected pet chips, and locked pet-profile context tags.
@@ -38,6 +39,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire post composer coverage for selecting and removing moods through the toolbar mood picker.
 - Added Livewire post composer coverage for location picker rendering, server-side autocomplete selection, coordinate persistence, and browser-coordinate reverse geocoding.
 - Added Livewire post composer coverage for toolbar visibility selection, private-post warning copy, and preserving the user's stored visibility preference.
 - Updated ChartService unit coverage for the current `WeightHistorySvg` dependency and smooth-path chart rendering.

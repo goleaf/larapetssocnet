@@ -24,11 +24,11 @@ final class PostMood
     public const DISPLAY = [
         self::Happy => ['label' => 'Happy', 'emoji' => '😊'],
         self::Excited => ['label' => 'Excited', 'emoji' => '🎉'],
-        self::Proud => ['label' => 'Proud', 'emoji' => '🌟'],
+        self::Proud => ['label' => 'Proud', 'emoji' => '🏆'],
         self::Worried => ['label' => 'Worried', 'emoji' => '😟'],
         self::Sad => ['label' => 'Sad', 'emoji' => '😢'],
         self::Grateful => ['label' => 'Grateful', 'emoji' => '🙏'],
-        self::Playful => ['label' => 'Playful', 'emoji' => '🐾'],
+        self::Playful => ['label' => 'Playful', 'emoji' => '🎮'],
     ];
 
     /**

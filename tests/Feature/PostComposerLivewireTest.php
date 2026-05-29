@@ -173,6 +173,37 @@ it('reverse geocodes browser coordinates through the server service', function (
         ->assertSee('London, United Kingdom');
 });
 
+it('renders and updates the toolbar mood picker', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSeeHtml('aria-label="Add mood"')
+        ->assertSee('Mood')
+        ->assertSee('Happy')
+        ->assertSee('😊')
+        ->assertSee('Excited')
+        ->assertSee('🎉')
+        ->assertSee('Proud')
+        ->assertSee('🏆')
+        ->assertSee('Worried')
+        ->assertSee('😟')
+        ->assertSee('Sad')
+        ->assertSee('😢')
+        ->assertSee('Grateful')
+        ->assertSee('🙏')
+        ->assertSee('Playful')
+        ->assertSee('🎮')
+        ->assertDontSeeHtml('wire:model="selectedMood"')
+        ->call('selectMood', 'playful')
+        ->assertSet('selectedMood', 'playful')
+        ->assertSee('feeling 🎮 playful')
+        ->assertSeeHtml('aria-label="Remove mood"')
+        ->call('removeMood')
+        ->assertSet('selectedMood', null)
+        ->assertDontSee('feeling 🎮 playful');
+});
+
 it('updates current post visibility without changing the stored account preference', function (): void {
     $user = User::factory()->create([
         'profile_visibility' => 'public',
