@@ -1028,6 +1028,7 @@ document.addEventListener('alpine:init', () => {
  temporary_path: toStringValue(attachment.temporary_path),
  livewire_upload_name: toStringValue(attachment.temporary_path),
  removing: false,
+ highlightMissingAlt: false,
  order: toNumber(attachment.order, index),
  is_existing: Boolean(attachment.is_existing),
  }))
@@ -1048,6 +1049,22 @@ document.addEventListener('alpine:init', () => {
  draftSavedVisible: false,
  hasLocalUnsavedChanges: false,
  composerVisible: true,
+ performanceTimer: null,
+ altTextEducationVisible: false,
+ altTextEducationTimer: null,
+ imageEditorOpen: false,
+ imageEditorAttachmentId: '',
+ imageEditorOriginalUrl: '',
+ imageEditorImage: null,
+ imageEditorBrightness: 100,
+ imageEditorContrast: 100,
+ imageEditorRotation: 0,
+ imageEditorFlipX: false,
+ imageEditorFlipY: false,
+ imageEditorCrop: null,
+ imageEditorDraftCrop: null,
+ imageEditorDragStart: null,
+ imageEditorCanvasScale: 1,
 
  init() {
  if (this.$refs.editor) {
@@ -1068,11 +1085,25 @@ document.addEventListener('alpine:init', () => {
  destroy() {
  window.clearTimeout(this.linkPreviewTimer);
  window.clearTimeout(this.draftSavedTimer);
+ window.clearTimeout(this.performanceTimer);
+ window.clearTimeout(this.altTextEducationTimer);
  window.clearInterval(this.autosaveInterval);
  },
 
  get characterCount() {
  return Array.from(this.text).length;
+ },
+
+ get wordCount() {
+ const textWithoutTags = toStringValue(this.text)
+ .replace(/(^|\s)(#[A-Za-z0-9_]+|@[A-Za-z0-9][A-Za-z0-9-]*)/g, ' ')
+ .trim();
+
+ if (!textWithoutTags) {
+ return 0;
+ }
+
+ return textWithoutTags.split(/\s+/).filter(Boolean).length;
  },
 
  get showCharacterCounter() {
@@ -1099,6 +1130,15 @@ document.addEventListener('alpine:init', () => {
  return this.attachments.some((attachment) => attachment.upload_state ==='queued' || attachment.upload_state ==='uploading');
  },
 
+ get missingAltTextCount() {
+ return this.attachments.filter((attachment) => (
+ attachment.media_type ==='image'
+ && !attachment.removing
+ && !attachment.is_existing
+ && toStringValue(attachment.alt_text).trim() ===''
+ )).length;
+ },
+
  get geolocationAvailable() {
  return typeof navigator !=='undefined' && Boolean(navigator.geolocation);
  },
@@ -1112,6 +1152,7 @@ document.addEventListener('alpine:init', () => {
  }
 
  this.markDraftDirty();
+ this.schedulePerformancePrediction();
  this.renderHighlighted(false);
  this.restoreCaretOffset(offset);
  },
@@ -1195,10 +1236,318 @@ document.addEventListener('alpine:init', () => {
  }, 2000);
  },
 
+ schedulePerformancePrediction() {
+ if (this.isEditMode || typeof this.$wire?.analyzePerformancePrediction !=='function') {
+ return;
+ }
+
+ window.clearTimeout(this.performanceTimer);
+
+ if (!toStringValue(this.text).trim() && this.attachments.length === 0) {
+ return;
+ }
+
+ this.performanceTimer = window.setTimeout(() => {
+ this.$wire.analyzePerformancePrediction();
+ }, 3000);
+ },
+
+ showAltTextEducationIfNeeded() {
+ if (this.missingAltTextCount <= 0) {
+ return;
+ }
+
+ const storageKey = 'petsocial.alt-text-education-seen';
+
+ try {
+ if (window.localStorage?.getItem(storageKey) ==='1') {
+ return;
+ }
+
+ window.localStorage?.setItem(storageKey, '1');
+ } catch {}
+
+ this.altTextEducationVisible = true;
+ window.clearTimeout(this.altTextEducationTimer);
+ this.altTextEducationTimer = window.setTimeout(() => {
+ this.altTextEducationVisible = false;
+ }, 8500);
+ },
+
+ openMissingAltTextReview() {
+ this.attachments.forEach((attachment) => {
+ const isMissingImageAlt = attachment.media_type ==='image' && !attachment.is_existing && toStringValue(attachment.alt_text).trim() ==='';
+ attachment.highlightMissingAlt = isMissingImageAlt;
+
+ if (isMissingImageAlt) {
+ attachment.showAltText = true;
+ }
+ });
+
+ this.$nextTick(() => {
+ this.$refs.attachmentStrip?.scrollIntoView({ behavior:'smooth', block:'center' });
+ });
+ },
+
+ openImageEditor(clientId) {
+ const attachment = this.attachments.find((item) => item.client_id === clientId);
+
+ if (!attachment || attachment.media_type !=='image' || !attachment.preview_data_url) {
+ return;
+ }
+
+ this.imageEditorAttachmentId = clientId;
+ this.imageEditorOriginalUrl = attachment.preview_data_url;
+ this.imageEditorBrightness = 100;
+ this.imageEditorContrast = 100;
+ this.imageEditorRotation = 0;
+ this.imageEditorFlipX = false;
+ this.imageEditorFlipY = false;
+ this.imageEditorCrop = null;
+ this.imageEditorDraftCrop = null;
+ this.imageEditorDragStart = null;
+
+ const image = new Image();
+ image.onload = () => {
+ this.imageEditorImage = image;
+ this.imageEditorOpen = true;
+ this.$nextTick(() => {
+ this.drawImageEditor();
+ });
+ };
+ image.src = attachment.preview_data_url;
+ },
+
+ closeImageEditor() {
+ this.imageEditorOpen = false;
+ this.imageEditorAttachmentId = '';
+ this.imageEditorOriginalUrl = '';
+ this.imageEditorImage = null;
+ this.imageEditorCrop = null;
+ this.imageEditorDraftCrop = null;
+ this.imageEditorDragStart = null;
+ },
+
+ resetImageEditor() {
+ this.imageEditorBrightness = 100;
+ this.imageEditorContrast = 100;
+ this.imageEditorRotation = 0;
+ this.imageEditorFlipX = false;
+ this.imageEditorFlipY = false;
+ this.imageEditorCrop = null;
+ this.imageEditorDraftCrop = null;
+ this.drawImageEditor();
+ },
+
+ rotateImageEditor(degrees) {
+ this.imageEditorRotation = (this.imageEditorRotation + degrees + 360) % 360;
+ this.drawImageEditor();
+ },
+
+ flipImageEditor(axis) {
+ if (axis ==='x') {
+ this.imageEditorFlipX = !this.imageEditorFlipX;
+ } else {
+ this.imageEditorFlipY = !this.imageEditorFlipY;
+ }
+
+ this.drawImageEditor();
+ },
+
+ startImageCrop(event) {
+ if (!this.imageEditorOpen || !this.imageEditorImage) {
+ return;
+ }
+
+ const point = this.imageEditorPoint(event);
+ this.imageEditorDragStart = point;
+ this.imageEditorDraftCrop = { x: point.x, y: point.y, width: 0, height: 0 };
+ },
+
+ moveImageCrop(event) {
+ if (!this.imageEditorDragStart) {
+ return;
+ }
+
+ const point = this.imageEditorPoint(event);
+ const start = this.imageEditorDragStart;
+ this.imageEditorDraftCrop = {
+ x: Math.min(start.x, point.x),
+ y: Math.min(start.y, point.y),
+ width: Math.abs(point.x - start.x),
+ height: Math.abs(point.y - start.y),
+ };
+ this.drawImageEditor();
+ },
+
+ finishImageCrop() {
+ if (!this.imageEditorDraftCrop) {
+ return;
+ }
+
+ if (this.imageEditorDraftCrop.width > 12 && this.imageEditorDraftCrop.height > 12) {
+ this.imageEditorCrop = { ...this.imageEditorDraftCrop };
+ } else {
+ this.imageEditorCrop = null;
+ }
+
+ this.imageEditorDraftCrop = null;
+ this.imageEditorDragStart = null;
+ this.drawImageEditor();
+ },
+
+ imageEditorPoint(event) {
+ const canvas = this.$refs.imageEditorCanvas;
+ const rect = canvas.getBoundingClientRect();
+ const scaleX = canvas.width / Math.max(rect.width, 1);
+ const scaleY = canvas.height / Math.max(rect.height, 1);
+
+ return {
+ x: Math.max(0, Math.min(canvas.width, (event.clientX - rect.left) * scaleX)),
+ y: Math.max(0, Math.min(canvas.height, (event.clientY - rect.top) * scaleY)),
+ };
+ },
+
+ drawImageEditor() {
+ const canvas = this.$refs.imageEditorCanvas;
+ const image = this.imageEditorImage;
+
+ if (!canvas || !image) {
+ return;
+ }
+
+ const maxWidth = 900;
+ const scale = Math.min(1, maxWidth / Math.max(image.naturalWidth, 1));
+ canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+ canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+ this.imageEditorCanvasScale = scale;
+
+ const context = canvas.getContext('2d');
+
+ if (!context) {
+ return;
+ }
+
+ context.clearRect(0, 0, canvas.width, canvas.height);
+ context.save();
+ context.filter = `brightness(${this.imageEditorBrightness}%) contrast(${this.imageEditorContrast}%)`;
+ context.translate(canvas.width / 2, canvas.height / 2);
+ context.rotate((this.imageEditorRotation * Math.PI) / 180);
+ context.scale(this.imageEditorFlipX ? -1 : 1, this.imageEditorFlipY ? -1 : 1);
+ context.drawImage(image, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+ context.restore();
+
+ const crop = this.imageEditorDraftCrop || this.imageEditorCrop;
+
+ if (crop) {
+ context.save();
+ context.fillStyle = 'rgba(44, 31, 24, 0.42)';
+ context.fillRect(0, 0, canvas.width, canvas.height);
+ context.clearRect(crop.x, crop.y, crop.width, crop.height);
+ context.strokeStyle = '#f59e0b';
+ context.lineWidth = 3;
+ context.strokeRect(crop.x, crop.y, crop.width, crop.height);
+ context.restore();
+ }
+ },
+
+ saveImageEdit() {
+ const attachment = this.attachments.find((item) => item.client_id === this.imageEditorAttachmentId);
+ const image = this.imageEditorImage;
+
+ if (!attachment || !image) {
+ return;
+ }
+
+ const crop = this.imageEditorCrop || {
+ x: 0,
+ y: 0,
+ width: image.naturalWidth * this.imageEditorCanvasScale,
+ height: image.naturalHeight * this.imageEditorCanvasScale,
+ };
+ const scale = this.imageEditorCanvasScale || 1;
+ const sourceX = Math.max(0, Math.round(crop.x / scale));
+ const sourceY = Math.max(0, Math.round(crop.y / scale));
+ const sourceWidth = Math.max(1, Math.min(image.naturalWidth - sourceX, Math.round(crop.width / scale)));
+ const sourceHeight = Math.max(1, Math.min(image.naturalHeight - sourceY, Math.round(crop.height / scale)));
+ const rotated = this.imageEditorRotation ===90 || this.imageEditorRotation ===270;
+ const output = document.createElement('canvas');
+ output.width = rotated ? sourceHeight : sourceWidth;
+ output.height = rotated ? sourceWidth : sourceHeight;
+ const context = output.getContext('2d');
+
+ if (!context) {
+ return;
+ }
+
+ context.filter = `brightness(${this.imageEditorBrightness}%) contrast(${this.imageEditorContrast}%)`;
+ context.translate(output.width / 2, output.height / 2);
+ context.rotate((this.imageEditorRotation * Math.PI) / 180);
+ context.scale(this.imageEditorFlipX ? -1 : 1, this.imageEditorFlipY ? -1 : 1);
+ context.drawImage(
+ image,
+ sourceX,
+ sourceY,
+ sourceWidth,
+ sourceHeight,
+ -sourceWidth / 2,
+ -sourceHeight / 2,
+ sourceWidth,
+ sourceHeight,
+ );
+
+ output.toBlob((blob) => {
+ if (!blob) {
+ this.mediaErrors.push(`${attachment.file_name} could not be edited.`);
+
+ return;
+ }
+
+ const editedName = this.editedImageName(attachment.file_name);
+ const editedFile = new File([blob], editedName, { type:'image/png' });
+
+ if (attachment.preview_data_url?.startsWith('blob:')) {
+ URL.revokeObjectURL(attachment.preview_data_url);
+ }
+
+ attachment.preview_data_url = URL.createObjectURL(editedFile);
+ attachment.file_name = editedName;
+ attachment.mime_type = 'image/png';
+ attachment.file_size = editedFile.size;
+ attachment.upload_state = 'queued';
+ attachment.progress = 0;
+ this.closeImageEditor();
+ this.startUpload(attachment, editedFile);
+ this.markDraftDirty();
+ }, 'image/png', 0.92);
+ },
+
+ editedImageName(fileName) {
+ const baseName = toStringValue(fileName, 'image').replace(/\.[^.]+$/, '');
+
+ return `${baseName}-edited.png`;
+ },
+
  eventBelongsToComposer(event) {
  const detailComposerId = toStringValue(event?.detail?.composerId);
 
  return !detailComposerId || !this.componentId || detailComposerId === this.componentId;
+ },
+
+ applyTemplateText(event) {
+ if (!this.eventBelongsToComposer(event)) {
+ return;
+ }
+
+ this.text = toStringValue(event.detail?.text);
+
+ if (this.$wire?.set) {
+ this.$wire.set('textContent', this.text, false);
+ }
+
+ this.markDraftDirty();
+ this.renderHighlighted(false);
+ this.schedulePerformancePrediction();
  },
 
  handlePostCreated(event) {
@@ -1263,12 +1612,15 @@ document.addEventListener('alpine:init', () => {
  temporary_path: toStringValue(attachment.temporary_path),
  livewire_upload_name: toStringValue(attachment.temporary_path),
  removing: false,
+ highlightMissingAlt: false,
  order: toNumber(attachment.order, index),
  is_existing: Boolean(attachment.is_existing),
  }))
  : [];
  this.mediaErrors = [];
  this.hasLocalUnsavedChanges = false;
+ this.showAltTextEducationIfNeeded();
+ this.schedulePerformancePrediction();
 
  if (this.$wire?.set) {
  this.$wire.set('hasUnsavedChanges', false, false);
@@ -1490,11 +1842,14 @@ document.addEventListener('alpine:init', () => {
  temporary_path:'',
  livewire_upload_name:'',
  removing: false,
+ highlightMissingAlt: false,
  is_existing: false,
  };
 
  this.attachments.push(attachment);
  this.markDraftDirty();
+ this.schedulePerformancePrediction();
+ this.showAltTextEducationIfNeeded();
  this.syncUploadingFlag();
  this.$nextTick(() => {
  this.initializeSortable();
@@ -1641,6 +1996,7 @@ document.addEventListener('alpine:init', () => {
  }
 
  this.markDraftDirty();
+ this.schedulePerformancePrediction();
  this.$wire.registerUploadedAttachment(
  attachment.client_id,
  attachment.slot,
@@ -1662,6 +2018,7 @@ document.addEventListener('alpine:init', () => {
 
  updateAltText(attachment) {
  this.markDraftDirty();
+ attachment.highlightMissingAlt = toStringValue(attachment.alt_text).trim() ==='';
 
  if (typeof this.$wire?.updateAttachmentAltText ==='function' && attachment.upload_state ==='complete') {
  this.$wire.updateAttachmentAltText(attachment.client_id, attachment.alt_text ||'');
@@ -1699,6 +2056,7 @@ document.addEventListener('alpine:init', () => {
  this.attachments.splice(index, 1);
  this.syncAttachmentOrder();
  this.syncUploadingFlag();
+ this.schedulePerformancePrediction();
 
  if (typeof this.$wire?.removeAttachment ==='function') {
  this.$wire.removeAttachment(clientId);
@@ -1861,6 +2219,8 @@ document.addEventListener('alpine:init', () => {
 
  window.clearTimeout(this.linkPreviewTimer);
  window.clearTimeout(this.draftSavedTimer);
+ window.clearTimeout(this.performanceTimer);
+ window.clearTimeout(this.altTextEducationTimer);
 
  this.attachments.forEach((attachment) => {
  if (attachment.preview_data_url?.startsWith('blob:')) {
@@ -1872,7 +2232,9 @@ document.addEventListener('alpine:init', () => {
  this.mediaErrors = [];
  this.text = '';
  this.draftSavedVisible = false;
+ this.altTextEducationVisible = false;
  this.hasLocalUnsavedChanges = false;
+ this.closeImageEditor();
  if (this.sortableInstance) {
  this.sortableInstance.destroy();
  this.sortableInstance = null;

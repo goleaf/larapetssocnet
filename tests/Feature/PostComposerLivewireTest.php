@@ -156,6 +156,69 @@ it('renders the media attachment strip controls and upload behaviours', function
         ->assertSeeHtml('uploadProgressOffset');
 });
 
+it('renders composer writing assists for word count alt text and image editing', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSee('Templates')
+        ->assertSee('Save as template')
+        ->assertSeeHtml('wordCount')
+        ->assertSeeHtml('missingAltTextCount')
+        ->assertSee('Add alt text for accessibility')
+        ->assertSee('Alt text helps people using screen readers understand the image.')
+        ->assertSeeHtml('openMissingAltTextReview()')
+        ->assertSeeHtml('openImageEditor')
+        ->assertSeeHtml('imageEditorOpen')
+        ->assertSee('Edit image')
+        ->assertSee('Save edited image');
+});
+
+it('analyzes post performance for authors with enough published history', function (): void {
+    $user = User::factory()->create();
+
+    Post::factory()->count(6)->for($user)->create([
+        'type' => Post::TYPE_PHOTO,
+        'status' => PostStatus::Published->value,
+        'published_at' => now()->subDays(3)->setTime(8, 0),
+        'reactions_count' => 30,
+        'comments_count' => 5,
+        'shares_count' => 1,
+    ]);
+    Post::factory()->count(4)->for($user)->create([
+        'type' => Post::TYPE_TEXT,
+        'status' => PostStatus::Published->value,
+        'published_at' => now()->subDays(4)->setTime(14, 0),
+        'reactions_count' => 3,
+        'comments_count' => 1,
+        'shares_count' => 0,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->set('textContent', 'Photo set from the morning walk.')
+        ->set('attachmentMetadata', [
+            [
+                'client_id' => 'client-image',
+                'slot' => 'mediaUploadSlot0',
+                'temporary_path' => 'livewire-tmp/image',
+                'preview_data_url' => null,
+                'file_name' => 'image.jpg',
+                'media_type' => 'image',
+                'mime_type' => 'image/jpeg',
+                'file_size' => 1024,
+                'alt_text' => null,
+                'order' => 0,
+            ],
+        ])
+        ->call('analyzePerformancePrediction')
+        ->assertSet('performanceInsight', 'Posts with photos tend to get 9x more reactions for you.')
+        ->assertSee('Posts with photos tend to get 9x more reactions for you.')
+        ->call('dismissPerformanceInsight')
+        ->assertSet('performanceInsightDismissed', true)
+        ->assertSet('performanceInsight', null);
+});
+
 it('renders the visibility selector as a toolbar dropdown', function (): void {
     $user = User::factory()->create([
         'profile_visibility' => 'followers_only',

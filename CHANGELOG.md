@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added post composer templates with a user-scoped `post_templates` table, apply/save/rename/delete controls, and a 20-template limit per user.
+- Added post composer writing assists for real-time word counts, non-blocking missing-alt-text reminders, one-time alt-text education, personal performance predictions, and client-side Canvas image editing before upload.
 - Added owner-only post analytics from shared post cards, with a compact Livewire modal for views, reaction breakdowns, comments, shares, estimated reach, and a server-rendered comparison chart.
 - Added a Livewire post share menu with mobile bottom-sheet and desktop popover layouts for reposting, quote posting, and copying canonical post links.
 - Added a deliberate Livewire post deletion confirmation flow with post previews, optimistic card removal, and a queued deletion cascade for soft deletes, pet tag counters, hashtag counts, and saved-post placeholders.
@@ -47,6 +49,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire coverage for post composer templates, template scoping and limits, writing-assist UI hooks, and performance prediction output.
 - Added post analytics coverage for author-only trigger rendering, direct authorization, non-author view counting, reaction counter breakdowns, estimated reach, and SVG chart rendering.
 - Added coverage for repost creation and share counters, quote-post composer submission, share-menu rendering, and shared post-card quote/repost embeds.
 - Added post deletion coverage for the confirmation modal, optimistic removal event, queued cascade side effects, and deleted saved-post placeholders.

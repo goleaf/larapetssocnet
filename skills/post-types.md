@@ -29,6 +29,12 @@ The `posts:publish-scheduled` command runs every minute, uses the database cache
 
 Use the shared Livewire `posts.composer` draft lifecycle instead of page-local draft forms. Alpine tracks dirty composer state and calls `autosaveDraft()` every 10 seconds only when there are unsaved changes; the action upserts one serialized state payload per user through the unique `post_drafts_user_id_unique` index. Opening the composer must show a "You have an unsaved draft from ..." banner with Resume draft and Discard actions instead of restoring content automatically. Successful post submission and confirmed composer cancellation clear the user draft.
 
+## Composer Templates and Writing Assists
+
+Post templates are user-scoped reusable composer text stored in `post_templates` with `user_id`, `name`, and `template_text`; keep the per-user cap at 20. The shared composer owns apply/save/rename/delete flows from the toolbar footer and must never expose another user's templates.
+
+The shared composer also shows an Alpine word count beside the character counter, non-blocking missing-alt-text reminders for image attachments, and a dismissible performance prediction from `PostPerformancePredictionService` after the user pauses composing. Performance predictions must use only the author's own published post counter caches and should return nothing until the author has at least 10 published posts.
+
 ## Composer Submission Feedback
 
 The shared Livewire `posts.composer` must disable the composer surface during `submit` / `confirmDuplicateAndSubmit`, show spinner text on the submit button, and avoid clearing form state until `CreatePostAction` succeeds. Duplicate-detection results open a modal with Post anyway and Go back actions; Go back keeps the typed content and clears only duplicate state. Validation failures keep the composer open, set field errors on the Livewire error bag, and dispatch `post-submission-failed` so Alpine scrolls to the first `[data-composer-error]`.

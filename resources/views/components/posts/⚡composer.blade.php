@@ -6,11 +6,13 @@ use App\Enums\PostStatus;
 use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
+use App\Models\Content\PostTemplate;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\Species;
 use App\Services\LocationAutocompleteService;
 use App\Services\PostDraftService;
+use App\Services\PostPerformancePredictionService;
 use App\Services\PostMetadataService;
 use App\Support\Posts\PostMood;
 use Carbon\CarbonImmutable;
@@ -34,6 +36,8 @@ new class extends Component
     private const MODE_MODAL = 'modal';
 
     private const MAX_ATTACHMENTS = 10;
+
+    private const MAX_TEMPLATES = 20;
 
     private const MEDIA_UPLOAD_SLOTS = [
         'mediaUploadSlot0',
@@ -144,6 +148,20 @@ new class extends Component
     public ?string $dismissedLinkPreviewUrl = null;
 
     public ?int $draftId = null;
+
+    public bool $templatesPanelOpen = false;
+
+    public bool $saveTemplateFormOpen = false;
+
+    public string $templateName = '';
+
+    public ?int $editingTemplateId = null;
+
+    public string $editingTemplateName = '';
+
+    public ?string $performanceInsight = null;
+
+    public bool $performanceInsightDismissed = false;
 
     public bool $hasUnsavedChanges = false;
 
@@ -287,6 +305,173 @@ new class extends Component
             })
             ->orderBy('name')
             ->get();
+    }
+
+    #[Computed]
+    public function postTemplates(): Collection
+    {
+        $user = $this->viewer();
+
+        if (! $user instanceof User) {
+            return collect();
+        }
+
+        return PostTemplate::query()
+            ->where('user_id', $user->getKey())
+            ->latest('updated_at')
+            ->get(['id', 'user_id', 'name', 'template_text', 'updated_at']);
+    }
+
+    public function applyTemplate(int $templateId): void
+    {
+        $template = $this->ownedTemplate($templateId);
+
+        if (! $template instanceof PostTemplate) {
+            return;
+        }
+
+        $this->textContent = (string) $template->template_text;
+        $this->templatesPanelOpen = false;
+        $this->markDraftDirty();
+        $this->dispatch('post-template-applied', composerId: (string) $this->getId(), text: $this->textContent);
+    }
+
+    public function openSaveTemplateForm(): void
+    {
+        $this->templateName = '';
+        $this->saveTemplateFormOpen = true;
+        $this->templatesPanelOpen = true;
+    }
+
+    public function saveCurrentAsTemplate(): void
+    {
+        $user = $this->viewer();
+
+        abort_unless($user instanceof User, 403);
+
+        $templateName = trim($this->templateName);
+        $templateText = trim($this->textContent);
+
+        $validated = validator([
+            'templateName' => $templateName,
+            'textContent' => $templateText,
+        ], [
+            'templateName' => ['required', 'string', 'max:80'],
+            'textContent' => ['required', 'string', 'max:1000'],
+        ], [
+            'textContent.required' => 'Write some post text before saving a template.',
+        ])->validate();
+
+        if ($this->postTemplates()->count() >= self::MAX_TEMPLATES) {
+            $this->addError('templateName', 'You can save up to 20 templates.');
+
+            return;
+        }
+
+        try {
+            PostTemplate::query()->create([
+                'user_id' => $user->getKey(),
+                'name' => (string) $validated['templateName'],
+                'template_text' => (string) $validated['textContent'],
+            ]);
+        } catch (\Illuminate\Database\QueryException) {
+            $this->addError('templateName', 'You already have a template with this name.');
+
+            return;
+        }
+
+        unset($this->postTemplates);
+
+        $this->templateName = '';
+        $this->saveTemplateFormOpen = false;
+        $this->templatesPanelOpen = true;
+        $this->dispatch('toast-message', message: 'Template saved.', type: 'success');
+    }
+
+    public function startRenamingTemplate(int $templateId): void
+    {
+        $template = $this->ownedTemplate($templateId);
+
+        if (! $template instanceof PostTemplate) {
+            return;
+        }
+
+        $this->editingTemplateId = (int) $template->getKey();
+        $this->editingTemplateName = (string) $template->name;
+        $this->templatesPanelOpen = true;
+    }
+
+    public function renameTemplate(): void
+    {
+        if ($this->editingTemplateId === null) {
+            return;
+        }
+
+        $template = $this->ownedTemplate($this->editingTemplateId);
+
+        if (! $template instanceof PostTemplate) {
+            return;
+        }
+
+        $validated = validator([
+            'editingTemplateName' => $this->editingTemplateName,
+        ], [
+            'editingTemplateName' => ['required', 'string', 'max:80'],
+        ])->validate();
+
+        try {
+            $template->update(['name' => trim((string) $validated['editingTemplateName'])]);
+        } catch (\Illuminate\Database\QueryException) {
+            $this->addError('editingTemplateName', 'You already have a template with this name.');
+
+            return;
+        }
+
+        unset($this->postTemplates);
+
+        $this->editingTemplateId = null;
+        $this->editingTemplateName = '';
+    }
+
+    public function deleteTemplate(int $templateId): void
+    {
+        $template = $this->ownedTemplate($templateId);
+
+        if (! $template instanceof PostTemplate) {
+            return;
+        }
+
+        $template->delete();
+
+        unset($this->postTemplates);
+
+        if ($this->editingTemplateId === $templateId) {
+            $this->editingTemplateId = null;
+            $this->editingTemplateName = '';
+        }
+    }
+
+    public function analyzePerformancePrediction(PostPerformancePredictionService $predictions): void
+    {
+        $user = $this->viewer();
+
+        if (! $user instanceof User || $this->performanceInsightDismissed || ! $this->hasDraftableContent()) {
+            return;
+        }
+
+        $insight = $predictions->analyze($user, [
+            'body' => $this->textContent,
+            'has_media' => $this->attachmentMetadata !== [],
+            'scheduled_publish_at' => $this->scheduledPublishAt,
+        ]);
+
+        $this->performanceInsight = $insight['message'] ?? null;
+    }
+
+    public function dismissPerformanceInsight(): void
+    {
+        $this->performanceInsightDismissed = true;
+        $this->performanceInsight = null;
     }
 
     public function togglePetTag(int $petId): void
@@ -816,6 +1001,13 @@ new class extends Component
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
         $this->confirmedDuplicate = false;
+        $this->templatesPanelOpen = false;
+        $this->saveTemplateFormOpen = false;
+        $this->templateName = '';
+        $this->editingTemplateId = null;
+        $this->editingTemplateName = '';
+        $this->performanceInsight = null;
+        $this->performanceInsightDismissed = false;
     }
 
     public function closeModal(): void
@@ -1389,6 +1581,13 @@ new class extends Component
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
         $this->confirmedDuplicate = false;
+        $this->templatesPanelOpen = false;
+        $this->saveTemplateFormOpen = false;
+        $this->templateName = '';
+        $this->editingTemplateId = null;
+        $this->editingTemplateName = '';
+        $this->performanceInsight = null;
+        $this->performanceInsightDismissed = false;
     }
 
     private function loadQuotePostForComposer(int $postId): void
@@ -1478,6 +1677,20 @@ new class extends Component
 
         $this->hasUnsavedChanges = true;
         $this->dispatch('post-draft-dirty');
+    }
+
+    private function ownedTemplate(int $templateId): ?PostTemplate
+    {
+        $user = $this->viewer();
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        return PostTemplate::query()
+            ->where('user_id', $user->getKey())
+            ->whereKey($templateId)
+            ->first();
     }
 
     private function viewer(): ?User
@@ -1573,6 +1786,7 @@ new class extends Component
  x-on:post-draft-dirty.window="hasLocalUnsavedChanges = true"
  x-on:post-draft-autosaved.window="showDraftSaved()"
  x-on:post-draft-resumed.window="applyDraftState($event.detail.state || {})"
+ x-on:post-template-applied.window="applyTemplateText($event)"
 >
  @if ($isModal)
  <div
@@ -1734,12 +1948,13 @@ new class extends Component
 
  <span class="sr-only" aria-live="polite">Current character count: {{ $this->characterCount }}</span>
 
+ <div class="flex items-center gap-3" aria-live="polite">
+ <p class="text-xs font-semibold text-fur" x-text="`${wordCount} words`"></p>
  <div
  x-cloak
  x-show="showCharacterCounter"
  class="flex items-center gap-2 text-xs font-semibold"
  :class="{ 'text-amber': !isCounterDanger, 'text-rose': isCounterDanger }"
- aria-live="polite"
  >
  <svg class="h-7 w-7 -rotate-90" viewBox="0 0 28 28" aria-hidden="true">
  <circle cx="14" cy="14" r="12" fill="none" class="stroke-whisker/30" stroke-width="3"></circle>
@@ -1757,6 +1972,7 @@ new class extends Component
  </svg>
  <span x-show="overLimitCount === 0"><span x-text="characterCount"></span>/1000</span>
  <span x-show="overLimitCount > 0">Delete <span x-text="overLimitCount"></span></span>
+ </div>
  </div>
  </div>
  </div>
@@ -2338,7 +2554,7 @@ new class extends Component
  draggable="true"
  class="w-36 shrink-0 cursor-grab rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white p-2 transition active:cursor-grabbing"
  x-bind:data-client-id="attachment.client_id"
- x-bind:class="{ 'scale-95 opacity-0': attachment.removing }"
+ x-bind:class="{ 'scale-95 opacity-0': attachment.removing, 'border-amber ring-2 ring-amber/25': attachment.highlightMissingAlt && attachment.media_type === 'image' && !(attachment.alt_text || '').trim() }"
  x-on:dragstart="startAttachmentDrag(attachment.client_id)"
  x-on:dragover.prevent
  x-on:drop.prevent="dropAttachmentOn(attachment.client_id)"
@@ -2362,6 +2578,16 @@ new class extends Component
  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
  <path d="M5 5l10 10M15 5 5 15"/>
  </svg>
+ </button>
+
+ <button
+ type="button"
+ class="absolute left-1 top-1 inline-flex h-7 items-center justify-center rounded-full bg-bark/75 px-2 text-[0.7rem] font-bold text-white transition hover:bg-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="openImageEditor(attachment.client_id)"
+ x-show="attachment.media_type === 'image' && !attachment.is_existing && attachment.preview_data_url"
+ x-bind:aria-label="`Edit ${attachment.file_name}`"
+ >
+ Edit
  </button>
 
  <div
@@ -2419,11 +2645,134 @@ new class extends Component
  </div>
  </li>
  </template>
- </ul>
+	 </ul>
+	 </div>
+
+ @if ($templatesPanelOpen)
+ @php
+     $postTemplates = $this->postTemplates;
+ @endphp
+ <section class="rounded-[var(--radius-card)] border border-whisker/30 bg-cream/45 p-4" aria-labelledby="{{ $composerId }}-templates-title" wire:transition>
+ <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+ <div class="min-w-0">
+ <p id="{{ $composerId }}-templates-title" class="text-sm font-bold text-bark">Post templates</p>
+ <p class="mt-1 text-xs leading-5 text-fur">{{ $postTemplates->count() }}/20 saved. Reuse a structure, then customize it before posting.</p>
+ </div>
+ <div class="flex shrink-0 items-center gap-2">
+ <button
+ type="button"
+ class="inline-flex h-9 items-center justify-center rounded-[var(--radius-soft)] px-3 text-xs font-bold text-paw transition hover:bg-paw/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="openSaveTemplateForm"
+ >
+ Save as template
+ </button>
+ <button
+ type="button"
+ class="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-soft)] text-fur transition hover:bg-warm-white hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="$set('templatesPanelOpen', false)"
+ aria-label="Close templates panel"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
  </div>
  </div>
 
+ @if ($saveTemplateFormOpen)
+ <div class="mt-4 rounded-[var(--radius-soft)] border border-paw/20 bg-warm-white p-3">
+ <label for="{{ $composerId }}-template-name" class="text-xs font-bold text-bark">Template name</label>
+ <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+ <input
+ id="{{ $composerId }}-template-name"
+ type="text"
+ class="h-[var(--control-height-md)] min-w-0 flex-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm text-bark placeholder:text-whisker focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
+ maxlength="80"
+ wire:model="templateName"
+ placeholder="Weekly training update"
+ >
+ <x-ui.button type="button" variant="primary" size="sm" wire:click="saveCurrentAsTemplate" wire:loading.attr="disabled" wire:target="saveCurrentAsTemplate">
+ Save
+ </x-ui.button>
+ </div>
+ @error('templateName')
+ <p class="mt-2 text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
+ @enderror
+ @error('textContent')
+ <p class="mt-2 text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
+ @enderror
+ </div>
+ @endif
+
+ <div class="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+ @forelse ($postTemplates as $template)
+ <article wire:key="post-template-{{ $template->id }}" class="rounded-[var(--radius-soft)] border border-whisker/25 bg-warm-white p-3">
+ @if ($editingTemplateId === (int) $template->id)
+ <label class="sr-only" for="{{ $composerId }}-rename-template-{{ $template->id }}">Rename {{ $template->name }}</label>
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+ <input
+ id="{{ $composerId }}-rename-template-{{ $template->id }}"
+ type="text"
+ class="h-9 min-w-0 flex-1 rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm text-bark focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
+ maxlength="80"
+ wire:model="editingTemplateName"
+ >
+ <button type="button" class="text-xs font-bold text-paw transition hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="renameTemplate">Save</button>
+ <button type="button" class="text-xs font-bold text-fur transition hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="$set('editingTemplateId', null)">Cancel</button>
+ </div>
+ @error('editingTemplateName')
+ <p class="mt-2 text-sm font-medium text-rose" data-composer-error>{{ $message }}</p>
+ @enderror
+ @else
+ <button
+ type="button"
+ class="block w-full rounded-[var(--radius-soft)] text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="applyTemplate({{ (int) $template->id }})"
+ >
+ <span class="block truncate text-sm font-bold text-bark">{{ $template->name }}</span>
+ <span class="mt-1 line-clamp-2 block text-sm leading-6 text-fur">{{ $template->template_text }}</span>
+ </button>
+ <div class="mt-3 flex items-center gap-3">
+ <button type="button" class="text-xs font-bold text-fur transition hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="startRenamingTemplate({{ (int) $template->id }})">Rename</button>
+ <button type="button" class="text-xs font-bold text-rose transition hover:text-rose-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="deleteTemplate({{ (int) $template->id }})">Delete</button>
+ </div>
+ @endif
+ </article>
+ @empty
+ <p class="rounded-[var(--radius-soft)] border border-dashed border-whisker/35 bg-warm-white px-4 py-6 text-center text-sm text-fur">No templates saved yet.</p>
+ @endforelse
+ </div>
+ </section>
+ @endif
+
+ @if ($performanceInsight)
+ <div class="rounded-[var(--radius-soft)] border border-leaf/20 bg-leaf/10 p-3" role="status" wire:transition>
+ <div class="flex items-start gap-3">
+ <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-leaf text-white" aria-hidden="true">
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M4 15V9"/>
+ <path d="M10 15V5"/>
+ <path d="M16 15v-8"/>
+ </svg>
+ </span>
+ <p class="min-w-0 flex-1 text-sm leading-6 text-bark">{{ $performanceInsight }}</p>
+ <button
+ type="button"
+ class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fur transition hover:bg-warm-white hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="dismissPerformanceInsight"
+ aria-label="Dismiss performance prediction"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+ </div>
+ </div>
+ @endif
+	 </div>
+
 	 <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
+	 <div class="min-w-0 space-y-2">
 	 <div class="min-h-5 text-xs text-fur" role="status">
 	 @if ($isEditMode)
 	 <span>Ready to save.</span>
@@ -2437,6 +2786,34 @@ new class extends Component
 	 @endif
 	 </span>
 	 @endif
+	 </div>
+	 <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
+	 <button type="button" class="text-paw transition hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="$toggle('templatesPanelOpen')">
+	 Templates
+	 </button>
+	 <button type="button" class="text-fur transition hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="openSaveTemplateForm">
+	 Save as template
+	 </button>
+	 <button
+	 type="button"
+	 x-cloak
+	 x-show="missingAltTextCount > 0"
+	 x-transition.opacity
+	 class="inline-flex items-center gap-1 rounded-full border border-amber/25 bg-amber-light px-2 py-1 text-amber-dark transition hover:border-amber hover:bg-amber/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+	 x-on:click="openMissingAltTextReview()"
+	 >
+	 <span>Add alt text for accessibility (<span x-text="missingAltTextCount"></span> images missing alt text)</span>
+	 </button>
+	 </div>
+	 <div
+	 x-cloak
+	 x-show="altTextEducationVisible"
+	 x-transition.opacity
+	 class="max-w-xl rounded-[var(--radius-soft)] border border-amber/25 bg-amber-light px-3 py-2 text-xs leading-5 text-amber-dark"
+	 role="status"
+	 >
+	 Alt text helps people using screen readers understand the image. Use the Add alt text link under each image.
+	 </div>
 	 </div>
 
 	 <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -2530,10 +2907,71 @@ new class extends Component
  </span>
  </x-ui.button>
  </div>
+	 </div>
+	 </form>
+
+ <div
+ x-cloak
+ x-show="imageEditorOpen"
+ x-transition.opacity
+ class="fixed inset-0 z-[70] flex items-end justify-center bg-bark/55 p-0 sm:items-center sm:p-6"
+ role="dialog"
+ aria-modal="true"
+ aria-labelledby="{{ $composerId }}-image-editor-title"
+ >
+ <button type="button" class="absolute inset-0 cursor-default" aria-label="Close image editor" x-on:click="closeImageEditor()"></button>
+ <div class="relative w-full max-w-3xl rounded-t-[var(--radius-card)] border border-whisker/25 bg-warm-white p-4 shadow-card sm:rounded-[var(--radius-card)] sm:p-5" x-transition.scale.95.duration.150ms>
+ <div class="flex items-start justify-between gap-4">
+ <div class="min-w-0">
+ <p id="{{ $composerId }}-image-editor-title" class="text-base font-bold text-bark">Edit image</p>
+ <p class="mt-1 text-sm leading-6 text-fur">Crop, rotate, flip, or tune the image before it uploads with the post.</p>
  </div>
- </form>
+ <button type="button" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-soft)] text-fur transition hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="closeImageEditor()" aria-label="Close image editor">
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
  </div>
- @if ($isModal)
+
+ <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
+ <div class="overflow-hidden rounded-[var(--radius-soft)] border border-whisker/30 bg-cream p-2">
+ <canvas
+ x-ref="imageEditorCanvas"
+ class="mx-auto block max-h-[58vh] w-full cursor-crosshair touch-none rounded-[var(--radius-soft)] bg-warm-white"
+ x-on:pointerdown="startImageCrop($event)"
+ x-on:pointermove="moveImageCrop($event)"
+ x-on:pointerup="finishImageCrop()"
+ x-on:pointerleave="finishImageCrop()"
+ ></canvas>
+ </div>
+ <div class="space-y-4">
+ <div class="grid grid-cols-2 gap-2">
+ <button type="button" class="inline-flex h-10 items-center justify-center rounded-[var(--radius-soft)] border border-whisker/35 px-3 text-xs font-bold text-bark transition hover:border-paw hover:bg-paw/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="rotateImageEditor(-90)">Rotate left</button>
+ <button type="button" class="inline-flex h-10 items-center justify-center rounded-[var(--radius-soft)] border border-whisker/35 px-3 text-xs font-bold text-bark transition hover:border-paw hover:bg-paw/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="rotateImageEditor(90)">Rotate right</button>
+ <button type="button" class="inline-flex h-10 items-center justify-center rounded-[var(--radius-soft)] border border-whisker/35 px-3 text-xs font-bold text-bark transition hover:border-paw hover:bg-paw/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="flipImageEditor('x')">Flip horizontal</button>
+ <button type="button" class="inline-flex h-10 items-center justify-center rounded-[var(--radius-soft)] border border-whisker/35 px-3 text-xs font-bold text-bark transition hover:border-paw hover:bg-paw/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="flipImageEditor('y')">Flip vertical</button>
+ </div>
+ <label class="block">
+ <span class="text-xs font-bold text-bark">Brightness</span>
+ <input type="range" min="50" max="150" step="1" class="mt-2 w-full accent-paw" x-model.number="imageEditorBrightness" x-on:input="drawImageEditor()">
+ </label>
+ <label class="block">
+ <span class="text-xs font-bold text-bark">Contrast</span>
+ <input type="range" min="50" max="150" step="1" class="mt-2 w-full accent-paw" x-model.number="imageEditorContrast" x-on:input="drawImageEditor()">
+ </label>
+ <div class="rounded-[var(--radius-soft)] border border-whisker/25 bg-cream/70 p-3 text-xs leading-5 text-fur">
+ Drag on the preview to set a crop area. Leave it untouched to keep the full image.
+ </div>
+ <div class="flex flex-col gap-2">
+ <button type="button" class="inline-flex h-[var(--control-height-md)] items-center justify-center rounded-[var(--radius-soft)] bg-paw px-4 text-sm font-bold text-white transition hover:bg-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="saveImageEdit()">Save edited image</button>
+ <button type="button" class="inline-flex h-[var(--control-height-md)] items-center justify-center rounded-[var(--radius-soft)] px-4 text-sm font-bold text-fur transition hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="resetImageEditor()">Reset edits</button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+	 </div>
+	 @if ($isModal)
  </div>
  </div>
  @else

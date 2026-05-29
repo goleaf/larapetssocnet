@@ -16,6 +16,11 @@
 - `role="status"` for non-critical updates.
 - `role="alert"` + assertive live region for errors.
 
+## Composer Media Alt Text
+- Post composer image alt text reminders are advisory only; missing alt text must never block submission.
+- Show a `role="status"` amber reminder with the missing-image count and a control that opens the attachment strip and highlights affected thumbnails.
+- Show the educational alt-text tooltip only once per browser storage context.
+
 ## Lists
 Use semantic `ul/li` for followers/blocked lists and clear labels on items.
 
