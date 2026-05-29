@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'media_payload',
     'link_preview',
     'state',
+    'state_hash',
     'scheduled_publish_at',
     'last_autosaved_at',
 ])]
@@ -42,6 +43,7 @@ class PostDraft extends Model
             'media_payload' => 'array',
             'link_preview' => 'array',
             'state' => 'array',
+            'state_hash' => 'string',
             'scheduled_publish_at' => 'datetime',
             'last_autosaved_at' => 'datetime',
         ];

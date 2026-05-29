@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Events\MediaUploaded;
 use App\Models\Content\Post;
+use App\Models\Content\PostMedia;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\File;
@@ -21,6 +22,7 @@ class MediaProcessingJob implements ShouldQueue
         public readonly string $mediaType,
         public readonly ?string $altText = null,
         public readonly int $order = 0,
+        public readonly ?int $postMediaId = null,
     ) {
         $this->afterCommit();
     }
@@ -33,9 +35,12 @@ class MediaProcessingJob implements ShouldQueue
             return;
         }
 
+        $postMedia = $this->postMediaRecord($post);
         $absolutePath = $this->absoluteTemporaryPath();
 
         if ($absolutePath === null) {
+            $postMedia?->update(['processing_status' => 'failed']);
+
             return;
         }
 
@@ -48,15 +53,33 @@ class MediaProcessingJob implements ShouldQueue
             ])
             ->toMediaCollection($mediaType === 'video' ? 'videos' : 'photos', 'public');
 
-        $post->postMedia()->create([
+        $attributes = [
             'file_path' => $media->getPathRelativeToRoot(),
             'media_type' => $mediaType,
             'alt_text' => $this->altText,
-            'processing_status' => 'processed',
+            'processing_status' => 'ready',
             'order' => $this->order,
-        ]);
+        ];
+
+        if ($postMedia instanceof PostMedia) {
+            $postMedia->update($attributes);
+        } else {
+            $post->postMedia()->create($attributes);
+        }
 
         MediaUploaded::dispatch($media, $mediaType, (int) $post->user_id);
+    }
+
+    private function postMediaRecord(Post $post): ?PostMedia
+    {
+        if ($this->postMediaId === null) {
+            return null;
+        }
+
+        return PostMedia::query()
+            ->where('post_id', $post->getKey())
+            ->whereKey($this->postMediaId)
+            ->first();
     }
 
     private function absoluteTemporaryPath(): ?string

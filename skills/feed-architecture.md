@@ -29,5 +29,9 @@ Keep the feed query centralized and cursor-paginated.
 - `withCount(['likes', 'comments'])`.
 - `withExists(['likes as liked_by_viewer' => ...])`.
 
+## Fan-Out Jobs
+- `FeedFanOutJob` is idempotent per post. It must acquire `posts:fanout:{postId}`, return immediately when `posts.is_fanned_out` is already true, and set that flag only after collecting the user-follower and pet-follower recipient set.
+- Scheduled publication and normal post creation may dispatch fan-out more than once during retries; the `is_fanned_out` flag is the durable guard that prevents duplicate delivery.
+
 ## Pinning
 - Pinning only affects profile timelines, not feed ordering.

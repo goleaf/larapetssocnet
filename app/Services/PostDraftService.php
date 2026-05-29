@@ -17,6 +17,13 @@ class PostDraftService
     {
         $now = Carbon::now();
         $state = $this->normalizeState($data, $contextType, $contextId);
+        $stateHash = $this->hashState($state);
+        $existing = $this->restore($user, $contextType, $contextId);
+
+        if ($existing instanceof PostDraft && hash_equals((string) $existing->state_hash, $stateHash)) {
+            return $existing;
+        }
+
         $identity = [
             'user_id' => $user->getKey(),
             'context_type' => $state['context_type'],
@@ -34,6 +41,7 @@ class PostDraftService
             'media_payload' => $this->encodeNullableArray($state['attachment_metadata'] ?? []),
             'link_preview' => $this->encodeNullableArray($state['link_preview'] ?? []),
             'state' => $this->encodeNullableArray($state),
+            'state_hash' => $stateHash,
             'scheduled_publish_at' => $state['scheduled_publish_at'] ?? null,
             'last_autosaved_at' => $now,
             'created_at' => $now,
@@ -56,6 +64,7 @@ class PostDraftService
                 'media_payload',
                 'link_preview',
                 'state',
+                'state_hash',
                 'scheduled_publish_at',
                 'last_autosaved_at',
                 'updated_at',
@@ -180,5 +189,30 @@ class PostDraftService
         }
 
         return json_encode($value, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function hashState(array $state): string
+    {
+        return hash('sha256', json_encode($this->canonicalize($state), JSON_THROW_ON_ERROR));
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->canonicalize($item);
+        }
+
+        return $value;
     }
 }

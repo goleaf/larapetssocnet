@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added durable post fan-out idempotency with `posts.is_fanned_out`, processing-state post media placeholders for Livewire temporary uploads, and a `post_media(post_id, order)` index for ordered media hydration.
+- Added `post_drafts.state_hash` autosave no-op detection so unchanged composer autosave ticks skip database writes.
 - Added post composer templates with a user-scoped `post_templates` table, apply/save/rename/delete controls, and a 20-template limit per user.
 - Added post composer writing assists for real-time word counts, non-blocking missing-alt-text reminders, one-time alt-text education, personal performance predictions, and client-side Canvas image editing before upload.
 - Added owner-only post analytics from shared post cards, with a compact Livewire modal for views, reaction breakdowns, comments, shares, estimated reach, and a server-rendered comparison chart.
@@ -49,6 +51,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added post creation architecture coverage for DTO-only action input, hash-based autosave no-op behavior, and duplicate feed fan-out job no-ops.
 - Added Livewire coverage for post composer templates, template scoping and limits, writing-assist UI hooks, and performance prediction output.
 - Added post analytics coverage for author-only trigger rendering, direct authorization, non-author view counting, reaction counter breakdowns, estimated reach, and SVG chart rendering.
 - Added coverage for repost creation and share counters, quote-post composer submission, share-menu rendering, and shared post-card quote/repost embeds.
@@ -83,6 +86,8 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Changed post creation callers to build `PostCreationInput` DTOs before invoking `CreatePostAction`, keeping the action free of Livewire and HTTP request concerns.
+- Changed Livewire post draft autosave to route the interval through a debounced Livewire action trigger while retaining the server-side state-hash guard.
 - Changed post-card rendering to increment `posts.view_count` only for authenticated non-author renders in feed and profile contexts, while detail, explore, group, and saved contexts remain non-counting.
 - Changed post editing to enforce the 24-hour window in the post-card UI, post policy, and `UpdatePostAction`, while re-syncing hashtags, mentions, pet tags, location, mood, visibility, and link preview state.
 - Changed post-created browser events to include composer identity, status, author, body, and toast metadata so page-level listeners can react without guessing at component state.

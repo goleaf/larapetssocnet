@@ -8,6 +8,7 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetMilestone;
+use App\Support\Posts\PostCreationInput;
 use Illuminate\Support\Facades\DB;
 
 class PetMilestoneService
@@ -73,7 +74,7 @@ class PetMilestoneService
             $milestone->body,
         ])->filter()->join("\n\n");
 
-        return $this->createPostAction->handle($actor, [
+        return $this->createPostAction->handle($actor, PostCreationInput::fromUserInput($actor, [
             'body' => $body,
             'pet_id' => $pet->getKey(),
             'tagged_pets' => [$pet->getKey()],
@@ -87,7 +88,7 @@ class PetMilestoneService
                 'milestone_type' => $milestone->milestone_type,
                 'milestone_id' => $milestone->getKey(),
             ],
-        ])->createdPost();
+        ]))->createdPost();
     }
 
     private function nullableString(mixed $value): ?string

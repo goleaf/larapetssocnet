@@ -18,6 +18,7 @@ use App\Http\Requests\Posts\UpdatePostRequest;
 use App\Models\Content\Post;
 use App\Models\Pets\Pet;
 use App\Services\CommentService;
+use App\Support\Posts\PostCreationInput;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -126,10 +127,10 @@ class PostController extends Controller
     {
         $result = $this->createPostAction->handle(
             user: $request->user(),
-            data: [
+            input: PostCreationInput::fromUserInput($request->user(), [
                 ...$request->safe()->except(['media', 'photos', 'video']),
                 'media_files' => $request->mediaFiles(),
-            ],
+            ]),
         );
 
         if ($result->duplicateDetected) {

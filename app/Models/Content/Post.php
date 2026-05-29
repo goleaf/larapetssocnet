@@ -65,6 +65,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
     'tagged_pets',
     'is_pinned',
     'is_system_generated',
+    'is_fanned_out',
     'system_source',
     'original_post_id',
     'quote_post_id',
@@ -120,6 +121,7 @@ class Post extends Model implements HasMedia
         return [
             'is_pinned' => 'boolean',
             'is_system_generated' => 'boolean',
+            'is_fanned_out' => 'boolean',
             'uuid' => 'string',
             'content_hash' => 'string',
             'tagged_pets' => 'array',

@@ -10,6 +10,7 @@ use App\Models\Groups\Group;
 use App\Services\GroupService;
 use App\Services\GroupVisibilityService;
 use App\Services\SyncGroupCountersService;
+use App\Support\Posts\PostCreationInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class GroupPostController extends Controller
             'group_id' => $group->getKey(),
         ];
 
-        $result = $action->handle($request->user(), $data);
+        $result = $action->handle($request->user(), PostCreationInput::fromUserInput($request->user(), $data));
 
         if ($result->duplicateDetected) {
             return back()

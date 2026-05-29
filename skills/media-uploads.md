@@ -16,6 +16,7 @@ All uploads go through Spatie MediaLibrary.
 - Image types: `jpg`, `jpeg`, `png`, `gif`, `webp`.
 - Video types: `mp4`, `mov`.
 - The Livewire post composer attachment strip loads Sortable.js from the approved CDN on demand and persists the final order through `post_media.order`.
+- Livewire temporary uploads create `post_media` placeholder rows inside the post creation transaction with `processing_status=processing` and the temporary path as `file_path`; `MediaProcessingJob` moves the file through Spatie MediaLibrary, updates the same row to `processing_status=ready`, and marks it `failed` if the temporary file cannot be found. Keep ordered post media hydration on the `post_media(post_id, order)` index.
 - Image attachments should expose the composer Canvas editor before upload finalization. Edits are client-side only: crop, rotate 90 degrees in either direction, flip horizontally/vertically, and brightness/contrast adjustments replace the attachment preview and re-upload the edited PNG to Livewire temporary storage.
 - Missing image alt text is encouraged, not required. The composer shows a non-blocking amber reminder and can highlight only image thumbnails missing alt text; never block post submission on alt text completeness.
 

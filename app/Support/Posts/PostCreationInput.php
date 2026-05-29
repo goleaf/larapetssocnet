@@ -2,19 +2,30 @@
 
 namespace App\Support\Posts;
 
-class PostCreationInput
+use App\Http\Requests\Posts\PostCreationRequest;
+use App\Models\Identity\User;
+
+final class PostCreationInput
 {
     /**
      * @param  array<string, mixed>  $data
      */
-    public function __construct(private readonly array $data) {}
+    private function __construct(private readonly array $data) {}
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public static function fromArray(array $data): self
+    public static function fromValidatedArray(array $data): self
     {
         return new self($data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromUserInput(User $user, array $data): self
+    {
+        return self::fromValidatedArray(PostCreationRequest::validateForUser($user, $data));
     }
 
     /**

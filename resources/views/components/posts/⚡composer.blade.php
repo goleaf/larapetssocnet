@@ -14,6 +14,7 @@ use App\Services\LocationAutocompleteService;
 use App\Services\PostDraftService;
 use App\Services\PostPerformancePredictionService;
 use App\Services\PostMetadataService;
+use App\Support\Posts\PostCreationInput;
 use App\Support\Posts\PostMood;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -918,7 +919,7 @@ new class extends Component
         $scheduledDisplayText = $this->scheduledDisplayText;
 
         try {
-            $result = $posts->handle($user, $this->creationPayload());
+            $result = $posts->handle($user, PostCreationInput::fromUserInput($user, $this->creationPayload()));
 
             if ($result->duplicateDetected) {
                 $this->duplicateDetected = true;
@@ -1816,6 +1817,14 @@ new class extends Component
  x-on:dragleave="handleDragLeave"
  x-on:drop.prevent="handleDrop"
  >
+ <button
+ type="button"
+ class="sr-only"
+ tabindex="-1"
+ aria-hidden="true"
+ x-ref="autosaveTrigger"
+ wire:click.debounce.750ms="autosaveDraft"
+ ></button>
  <div
  x-cloak
  x-show="isDragging"

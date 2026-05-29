@@ -11,6 +11,7 @@
 - Methods return typed values or throw exceptions.
 - Never return views/responses from services.
 - Never accept `Request` in services; use typed params.
+- Multi-step actions that are called from controllers, Livewire, jobs, and other services should accept DTOs instead of raw UI arrays. For post creation, build `PostCreationInput` before calling `CreatePostAction` and keep the action independent of HTTP and Livewire concerns.
 
 ## Example
 `BlockService`:

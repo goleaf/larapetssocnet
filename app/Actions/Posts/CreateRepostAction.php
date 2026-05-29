@@ -6,6 +6,7 @@ use App\Actions\Engagement\TrackShareAction;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\CanonicalContentUrlService;
+use App\Support\Posts\PostCreationInput;
 use Illuminate\Support\Facades\Gate;
 
 class CreateRepostAction
@@ -23,11 +24,11 @@ class CreateRepostAction
     {
         Gate::forUser($actor)->authorize('share', $original);
 
-        $repost = $this->posts->handle($actor, [
+        $repost = $this->posts->handle($actor, PostCreationInput::fromUserInput($actor, [
             'body' => null,
             'visibility' => $this->defaultVisibility($actor),
             'original_post_id' => $original->getKey(),
-        ])->createdPost();
+        ]))->createdPost();
 
         $shareResult = $this->shares->handle($actor, $original, 'repost');
 

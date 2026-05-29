@@ -9,6 +9,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Notifications\PetBirthdayCoOwnerNotification;
 use App\Notifications\PetBirthdayFollowerNotification;
+use App\Support\Posts\PostCreationInput;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Arr;
@@ -43,7 +44,7 @@ class ProcessPetBirthday implements ShouldQueue
             ]))
         );
 
-        $createPost->handle($pet->owner, [
+        $createPost->handle($pet->owner, PostCreationInput::fromUserInput($pet->owner, [
             'body' => $message,
             'pet_id' => $pet->getKey(),
             'tagged_pets' => [$pet->getKey()],
@@ -56,7 +57,7 @@ class ProcessPetBirthday implements ShouldQueue
                 'source' => 'pet_birthday',
                 'birthday_age' => $age,
             ],
-        ]);
+        ]));
 
         $pet->followers()
             ->select(['users.id', 'users.name', 'users.email', 'users.notification_preferences'])

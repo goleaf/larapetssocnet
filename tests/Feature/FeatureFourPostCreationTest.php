@@ -15,6 +15,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\CanonicalContentUrlService;
 use App\Services\PostMentionService;
+use App\Support\Posts\PostCreationInput;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
@@ -34,7 +35,7 @@ it('creates a rich post with pet tags hashtags mentions mood location and link p
     $mentioned = User::factory()->create(['username' => 'luna_friend']);
     $pet = Pet::factory()->for($author)->create(['name' => 'Luna']);
 
-    $result = app(CreatePostAction::class)->handle($author, [
+    $result = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => '<strong>A park update</strong> &amp; picnic for @luna_friend #ParkDay https://example.com/luna',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'mood' => 'playful',
@@ -48,7 +49,7 @@ it('creates a rich post with pet tags hashtags mentions mood location and link p
                 'title' => 'Luna at the park',
             ],
         ],
-    ]);
+    ]));
     $post = $result->createdPost();
 
     $fresh = $post->fresh();
@@ -88,11 +89,11 @@ it('creates a rich post with pet tags hashtags mentions mood location and link p
 it('validates post creation input before writing records', function (): void {
     $author = User::factory()->create();
 
-    expect(fn () => app(CreatePostAction::class)->handle($author, [
+    expect(fn () => app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Broken preview',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'link_preview' => ['url' => 'not a url'],
-    ]))->toThrow(ValidationException::class);
+    ])))->toThrow(ValidationException::class);
 
     expect(Post::query()->count())->toBe(0);
 });
@@ -106,7 +107,7 @@ it('queues temporary media processing jobs after creating the post placeholder s
 
     $author = User::factory()->create();
 
-    $post = app(CreatePostAction::class)->handle($author, [
+    $post = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Photo from the composer',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'media_attachments' => [
@@ -116,14 +117,23 @@ it('queues temporary media processing jobs after creating the post placeholder s
                 'alt_text' => 'A dog waiting at the park gate',
             ],
         ],
-    ])->createdPost();
+    ]))->createdPost();
 
     expect($post->type)->toBe(Post::TYPE_PHOTO);
+    $this->assertDatabaseHas('post_media', [
+        'post_id' => $post->id,
+        'file_path' => 'livewire-tmp/photo.webp',
+        'media_type' => 'image',
+        'alt_text' => 'A dog waiting at the park gate',
+        'processing_status' => 'processing',
+        'order' => 0,
+    ]);
 
     Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->postId === $post->id
         && $job->temporaryPath === 'livewire-tmp/photo.webp'
         && $job->mediaType === 'image'
-        && $job->altText === 'A dog waiting at the park gate');
+        && $job->altText === 'A dog waiting at the park gate'
+        && $job->postMediaId !== null);
 });
 
 it('creates posts immediately and queues link preview fetching when metadata is not preloaded', function (): void {
@@ -135,11 +145,11 @@ it('creates posts immediately and queues link preview fetching when metadata is 
 
     $author = User::factory()->create();
 
-    $post = app(CreatePostAction::class)->handle($author, [
+    $post = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Read this adoption update https://example.com/adoption',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'link_preview_url' => 'https://example.com/adoption',
-    ])->createdPost();
+    ]))->createdPost();
 
     expect($post->fresh()->link_preview)->toBeNull();
 
@@ -164,24 +174,24 @@ it('uses uuid post URLs for sharing while still resolving legacy integer post ro
 it('prevents duplicate non-draft submissions with identical text inside twenty four hours', function (): void {
     $author = User::factory()->create();
 
-    app(CreatePostAction::class)->handle($author, [
+    app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Same exact update',
         'visibility' => Post::VISIBILITY_PUBLIC,
-    ]);
+    ]));
 
-    $duplicate = app(CreatePostAction::class)->handle($author, [
+    $duplicate = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => '  SAME   exact update  ',
         'visibility' => Post::VISIBILITY_PUBLIC,
-    ]);
+    ]));
 
     expect($duplicate->duplicateDetected)->toBeTrue()
         ->and($duplicate->duplicatePostId)->toBe(Post::query()->firstOrFail()->id);
 
-    $confirmed = app(CreatePostAction::class)->handle($author, [
+    $confirmed = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Same exact update',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'confirmed_duplicate' => true,
-    ]);
+    ]));
 
     expect($confirmed->duplicateDetected)->toBeFalse()
         ->and(Post::query()->count())->toBe(2);
@@ -242,12 +252,12 @@ it('publishes a scheduled post job and dispatches fanout and mention notificatio
     $mentioned = User::factory()->create(['username' => 'future_friend']);
     $futureSchedule = now('UTC')->addDay();
 
-    $post = app(CreatePostAction::class)->handle($author, [
+    $post = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'A future update for @future_friend #Soon',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'status' => PostStatus::Scheduled->value,
         'scheduled_publish_at' => $futureSchedule->toIso8601String(),
-    ])->createdPost();
+    ]))->createdPost();
 
     $hashtag = Hashtag::query()->where('normalized_name', 'soon')->firstOrFail();
 
@@ -308,17 +318,17 @@ it('stores repost and quote references as new post records', function (): void {
     $author = User::factory()->create();
     $original = Post::factory()->for($author)->create();
 
-    $repost = app(CreatePostAction::class)->handle($author, [
+    $repost = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => null,
         'visibility' => Post::VISIBILITY_PUBLIC,
         'original_post_id' => $original->id,
-    ])->createdPost();
+    ]))->createdPost();
 
-    $quote = app(CreatePostAction::class)->handle($author, [
+    $quote = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Adding my take',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'quote_post_id' => $original->id,
-    ])->createdPost();
+    ]))->createdPost();
 
     expect($repost->original_post_id)->toBe($original->id)
         ->and($quote->quote_post_id)->toBe($original->id)

@@ -5,6 +5,7 @@ use App\Enums\PostStatus;
 use App\Events\PostCreated;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Support\Posts\PostCreationInput;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 
@@ -15,11 +16,11 @@ it('creates a post and dispatches the post created event', function (): void {
 
     $user = User::factory()->create();
 
-    $result = app(CreatePostAction::class)->handle($user, [
+    $result = app(CreatePostAction::class)->handle($user, PostCreationInput::fromUserInput($user, [
         'body' => 'New post from action #action',
         'visibility' => Post::VISIBILITY_PUBLIC,
         'media_files' => [],
-    ]);
+    ]));
     $post = $result->createdPost();
 
     expect($result->duplicateDetected)->toBeFalse();

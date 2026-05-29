@@ -3,7 +3,6 @@
 namespace App\Actions\Posts;
 
 use App\Enums\PostStatus;
-use App\Http\Requests\Posts\PostCreationRequest;
 use App\Jobs\FeedFanOutJob;
 use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Jobs\MediaProcessingJob;
@@ -35,13 +34,9 @@ class CreatePostAction
         private readonly PostDuplicateSubmissionGuard $duplicates,
     ) {}
 
-    /**
-     * @param  array<string, mixed>|PostCreationInput  $data
-     */
-    public function handle(User $user, array|PostCreationInput $data): PostCreationResult
+    public function handle(User $user, PostCreationInput $input): PostCreationResult
     {
-        $data = $data instanceof PostCreationInput ? $data->toArray() : $data;
-        $data = PostCreationRequest::validateForUser($user, $data);
+        $data = $input->toArray();
 
         $this->authorizePetAttachments($user, $data);
 
@@ -57,7 +52,11 @@ class CreatePostAction
             }
         }
 
-        return DB::transaction(function () use ($user, $data, $body, $contentHash): PostCreationResult {
+        $mediaProcessingJobs = [];
+        $fanOutPostId = null;
+        $linkPreviewJob = null;
+
+        $result = DB::transaction(function () use ($user, $data, $body, $contentHash, &$mediaProcessingJobs, &$fanOutPostId, &$linkPreviewJob): PostCreationResult {
             $mediaFiles = $this->normalizeMediaFiles($data['media_files'] ?? []);
             $temporaryMedia = $this->normalizeTemporaryMedia($data['media_attachments'] ?? []);
             $scheduledPublishAt = $this->resolveScheduledPublishAt($data['scheduled_publish_at'] ?? null);
@@ -103,13 +102,22 @@ class CreatePostAction
             }
 
             foreach ($temporaryMedia as $media) {
-                MediaProcessingJob::dispatch(
-                    temporaryPath: $media['temporary_path'],
-                    postId: (int) $post->getKey(),
-                    mediaType: $media['media_type'],
-                    altText: $media['alt_text'],
-                    order: $media['order'],
-                )->afterCommit();
+                $postMedia = $post->postMedia()->create([
+                    'file_path' => $media['temporary_path'],
+                    'media_type' => $media['media_type'],
+                    'alt_text' => $media['alt_text'],
+                    'processing_status' => 'processing',
+                    'order' => $media['order'],
+                ]);
+
+                $mediaProcessingJobs[] = [
+                    'temporary_path' => $media['temporary_path'],
+                    'post_id' => (int) $post->getKey(),
+                    'post_media_id' => (int) $postMedia->getKey(),
+                    'media_type' => $media['media_type'],
+                    'alt_text' => $media['alt_text'],
+                    'order' => $media['order'],
+                ];
             }
 
             $this->syncTaggedPets($post, $data);
@@ -117,20 +125,42 @@ class CreatePostAction
             $this->mentions->sync($post, $user, $status->isPubliclyReachable());
 
             if ($status->isPubliclyReachable()) {
-                DB::afterCommit(static function () use ($post): void {
-                    FeedFanOutJob::dispatch((int) $post->getKey())->afterCommit();
-                });
+                $fanOutPostId = (int) $post->getKey();
             }
 
             if ($linkPreview === null && $linkPreviewUrl !== null && $status !== PostStatus::Draft) {
-                FetchLinkPreviewMetadataJob::dispatch(
-                    url: $linkPreviewUrl,
-                    postId: (int) $post->getKey(),
-                )->afterCommit();
+                $linkPreviewJob = [
+                    'url' => $linkPreviewUrl,
+                    'post_id' => (int) $post->getKey(),
+                ];
             }
 
             return PostCreationResult::created($post, $contentHash);
         });
+
+        foreach ($mediaProcessingJobs as $job) {
+            MediaProcessingJob::dispatch(
+                temporaryPath: $job['temporary_path'],
+                postId: $job['post_id'],
+                mediaType: $job['media_type'],
+                altText: $job['alt_text'],
+                order: $job['order'],
+                postMediaId: $job['post_media_id'],
+            )->afterCommit();
+        }
+
+        if ($fanOutPostId !== null) {
+            FeedFanOutJob::dispatch($fanOutPostId)->afterCommit();
+        }
+
+        if ($linkPreviewJob !== null) {
+            FetchLinkPreviewMetadataJob::dispatch(
+                url: $linkPreviewJob['url'],
+                postId: $linkPreviewJob['post_id'],
+            )->afterCommit();
+        }
+
+        return $result;
     }
 
     /**

@@ -1215,6 +1215,12 @@ document.addEventListener('alpine:init', () => {
  return;
  }
 
+ if (this.$refs.autosaveTrigger) {
+ this.$refs.autosaveTrigger.click();
+
+ return;
+ }
+
  if (typeof this.$wire?.autosaveDraft !=='function') {
  return;
  }
