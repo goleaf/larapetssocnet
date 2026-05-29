@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a deliberate Livewire post deletion confirmation flow with post previews, optimistic card removal, and a queued deletion cascade for soft deletes, pet tag counters, hashtag counts, and saved-post placeholders.
 - Added modal post editing through the shared Livewire composer, including stored post hydration, edit success events, and owner post-card menu access.
 - Added polished post-composer submission feedback with whole-composer loading states, duplicate confirmation modal actions, success toasts, and optimistic feed prepending for newly published posts.
 - Added background post-composer draft autosave with one serialized draft per user, resume/discard banners, and confirmed cancellation cleanup.
@@ -44,6 +45,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added post deletion coverage for the confirmation modal, optimistic removal event, queued cascade side effects, and deleted saved-post placeholders.
 - Added Livewire and action coverage for edit-mode composer hydration, post updates, edit-window errors, post-card edit menu states, edited labels, and newly added mention notifications.
 - Added Livewire post composer coverage for success toasts, duplicate confirmation, validation-error preservation, and feed listener rendering for optimistic post prepending.
 - Added Livewire and service coverage for one-user post drafts, non-automatic draft restore, resume/discard actions, and cancellation cleanup.

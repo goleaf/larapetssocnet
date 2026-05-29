@@ -30,6 +30,7 @@
 - Render owner-only post actions from inside the `x-post-card` three-dot menu for every post-card context.
 - Keep `Edit post` as the first menu item while the post is inside the 24-hour edit window; after the window, render the disabled explanatory item instead of an edit action.
 - Keep profile pinning actions in that menu as `Pin to profile` / `Unpin from profile` only for profile-context cards; do not add separate inline pin buttons below profile posts.
+- Keep `Delete post` behind the reusable Livewire delete trigger. It must open a confirmation modal with a short post preview, dispatch `post-delete-requested` for optimistic card removal, and enqueue `DeletePostCascadeJob` instead of using a browser confirm or blocking form submission.
 - Non-owners must not render owner post actions.
 
 ## Pinned Highlight

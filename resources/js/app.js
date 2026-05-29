@@ -1935,6 +1935,7 @@ document.addEventListener('alpine:init', () => {
  shareCopied: false,
  postId: toNumber(config.postId),
  recentlyUpdated: false,
+ deletePending: false,
  likeUrl: toStringValue(config.likeUrl),
  saveUrl: toStringValue(config.saveUrl),
  shareUrl: toStringValue(config.shareUrl),
@@ -1961,6 +1962,16 @@ document.addEventListener('alpine:init', () => {
  if (this.postUpdatedHandler) {
  window.removeEventListener('post-updated', this.postUpdatedHandler);
  }
+ },
+
+ markDeleting(event) {
+ const deletedPostId = toNumber(event.detail?.postId);
+
+ if (deletedPostId <= 0 || deletedPostId !== this.postId) {
+ return;
+ }
+
+ this.deletePending = true;
  },
 
  get csrfToken() {

@@ -108,6 +108,11 @@
     ])
     x-data="postCard({{ \Illuminate\Support\Js::from($postCardState) }})"
     x-bind:class="{ 'ring-2 ring-paw/20': recentlyUpdated }"
+    x-show="!deletePending"
+    x-on:post-delete-requested.window="markDeleting($event)"
+    x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+    x-transition:leave-end="opacity-0 -translate-y-2 scale-[0.98]"
 >
     @if ($showPinnedProfileBanner)
         <div
@@ -229,13 +234,7 @@
                             @endif
                         @endif
 
-                        <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Delete this post?');">
-                            @csrf
-                            @method('DELETE')
-                            <x-ui.dropdown-item type="submit" variant="danger" data-ui="post-card-menu-delete">
-                                Delete post
-                            </x-ui.dropdown-item>
-                        </form>
+                        <livewire:posts.delete-trigger :post="$post" :key="'post-delete-trigger-'.$post->getKey().'-'.$postDomId" />
                     </x-slot>
                 </x-ui.dropdown>
             @endif

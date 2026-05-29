@@ -20,7 +20,7 @@ class SavedPost extends Model
 
     public function post(): BelongsTo
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(Post::class)->withTrashed();
     }
 
     public function user(): BelongsTo
@@ -37,8 +37,12 @@ class SavedPost extends Model
     {
         return $query->with([
             'post' => fn ($postQuery) => $postQuery
+                ->withTrashed()
                 ->with(['author', 'hashtags'])
-                ->visibleTo($viewer)
+                ->where(function (Builder $visibilityQuery) use ($viewer): void {
+                    $visibilityQuery->visibleTo($viewer);
+                    $visibilityQuery->orWhereNotNull('posts.deleted_at');
+                })
                 ->withListEngagement((int) $viewer->getKey()),
         ]);
     }

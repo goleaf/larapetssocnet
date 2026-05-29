@@ -19,6 +19,17 @@
 
  @forelse ($savedPosts as $savedPost)
  @if ($savedPost->post)
+ @if ($savedPost->post->trashed())
+ <div class="rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
+ Saved {{ $savedPost->created_at?->diffForHumans() }}
+ </div>
+ <div class="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center">
+ <p class="text-sm font-semibold text-gray-800">This post has been deleted</p>
+ <p class="mt-2 text-sm leading-6 text-gray-600">
+ It remains in your saved posts so you know why this saved item is unavailable.
+ </p>
+ </div>
+ @else
  <div class="rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
  Saved {{ $savedPost->created_at?->diffForHumans() }}
  <form method="POST" action="{{ route('posts.save', $savedPost->post) }}" class="ml-3 inline">
@@ -28,6 +39,7 @@
  </form>
  </div>
  @include('posts.partials.card', ['post'=> $savedPost->post])
+ @endif
  @endif
  @empty
  <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">

@@ -35,6 +35,8 @@ The shared Livewire `posts.composer` must disable the composer surface during `s
 
 Successful submissions dispatch `post-composer-reset`, a rich `post-created` browser event containing `composerId`, `mode`, `status`, `postId`, author/body display data, and toast text, then dispatch `toast-message`. Inline composers collapse after their own matching `post-created` event, modal composers fade out through `modalOpen = false`, and feed surfaces listen for published `post-created` events to prepend a highlighted optimistic post card. Scheduled posts show a scheduled-success toast but should not be prepended to normal feeds until publication.
 
+Post deletion from the shared post card is a Livewire-confirmed queued flow. The owner menu opens a modal with the first 150 characters and first media preview, then confirmation dispatches `post-delete-requested` for optimistic removal and queues `DeletePostCascadeJob`; saved rows are preserved so saved pages can show deleted placeholders.
+
 ## Composer Edit Mode
 
 Use the shared Livewire `posts.composer` for editing by mounting it in modal mode with `editPostId`. Edit mode must hydrate body text, existing media previews, pet chips, location, mood, visibility, and link preview state from the stored post, show the "Editing post" banner, disable draft autosave, and submit through `UpdatePostAction` rather than `CreatePostAction`. Post edits are limited to 24 hours from `posts.created_at`; enforce the window in the post-card menu, `PostPolicy`, and `UpdatePostAction`. Successful edits dispatch `post-updated` with the post ID and `toast-message` with "Post updated.", then close the modal. Mention notifications after an edit must be sent only for newly added mentions.
