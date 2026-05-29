@@ -6,10 +6,12 @@ use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Pets\Species;
 use App\Services\PostDraftService;
 use App\Support\Posts\PostMood;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -127,6 +129,10 @@ new class extends Component
 
     public int $contextId = 0;
 
+    public ?int $fixedPetId = null;
+
+    public bool $petTaggingLocked = false;
+
     /**
      * @param  list<int>|null  $selectedPetIds
      */
@@ -136,14 +142,26 @@ new class extends Component
         ?string $visibility = null,
         ?string $contextType = null,
         int $contextId = 0,
+        ?int $fixedPetId = null,
+        bool $lockPetTags = false,
     ): void {
         $this->mode = in_array($mode, [self::MODE_INLINE, self::MODE_MODAL], true) ? $mode : self::MODE_INLINE;
         $this->contextType = filled($contextType) ? (string) $contextType : 'default';
         $this->contextId = max(0, $contextId);
         $this->selectedVisibility = $this->normalizeVisibility($visibility) ?? $this->defaultVisibility();
-        $this->selectedPetIds = $this->normalizePetIds($selectedPetIds ?? []);
+        $initialPetIds = $this->normalizePetIds($selectedPetIds ?? []);
+        $contextFixedPetId = in_array($this->contextType, ['pet', 'pet-profile', 'pet_profile'], true) && $this->contextId > 0
+            ? $this->contextId
+            : null;
+
+        $this->fixedPetId = $fixedPetId && $fixedPetId > 0
+            ? $fixedPetId
+            : ($contextFixedPetId ?? ($lockPetTags ? ($initialPetIds[0] ?? null) : null));
+        $this->petTaggingLocked = $lockPetTags || $this->fixedPetId !== null;
+        $this->selectedPetIds = $this->fixedPetId !== null ? [$this->fixedPetId] : $initialPetIds;
 
         $this->restoreDraft();
+        $this->enforceFixedPetTag();
     }
 
     #[Computed]
@@ -162,7 +180,9 @@ new class extends Component
         }
 
         return Pet::query()
-            ->select(['id', 'name'])
+            ->without(['user', 'breed', 'tags'])
+            ->with(['media', 'species'])
+            ->select(['id', 'user_id', 'name', 'species', 'species_id', 'avatar_path'])
             ->where('user_id', $user->getKey())
             ->orWhereIn('id', function ($query) use ($user): void {
                 $query
@@ -178,6 +198,51 @@ new class extends Component
             })
             ->orderBy('name')
             ->get();
+    }
+
+    public function togglePetTag(int $petId): void
+    {
+        if ($this->petTaggingLocked || ! $this->availablePets()->contains('id', $petId)) {
+            return;
+        }
+
+        $selectedPetIds = collect($this->selectedPetIds);
+
+        $this->selectedPetIds = $selectedPetIds->contains($petId)
+            ? $selectedPetIds->reject(fn (int $selectedPetId): bool => $selectedPetId === $petId)->values()->all()
+            : $selectedPetIds->push($petId)->unique()->values()->all();
+    }
+
+    public function removePetTag(int $petId): void
+    {
+        if ($this->petTaggingLocked) {
+            $this->enforceFixedPetTag();
+
+            return;
+        }
+
+        $this->selectedPetIds = collect($this->selectedPetIds)
+            ->reject(fn (int $selectedPetId): bool => $selectedPetId === $petId)
+            ->values()
+            ->all();
+    }
+
+    public function isPetTagged(int $petId): bool
+    {
+        return in_array($petId, $this->selectedPetIds, true);
+    }
+
+    public function petSpeciesLabel(Pet $pet): string
+    {
+        $species = $pet->getRelationValue('species');
+
+        if ($species instanceof Species && filled($species->name)) {
+            return (string) $species->name;
+        }
+
+        $legacySpecies = trim((string) $pet->getAttribute('species'));
+
+        return $legacySpecies !== '' ? Str::headline(str_replace('_', ' ', $legacySpecies)) : 'Pet';
     }
 
     public function updatedMediaUploads(): void
@@ -367,9 +432,12 @@ new class extends Component
         $this->locationDisplayText = $draft->location;
         $this->locationLat = $draft->location_lat === null ? null : (string) $draft->location_lat;
         $this->locationLng = $draft->location_lng === null ? null : (string) $draft->location_lng;
-        $this->selectedPetIds = $this->normalizePetIds($draft->tagged_pets ?? []);
+        if (! $this->petTaggingLocked) {
+            $this->selectedPetIds = $this->normalizePetIds($draft->tagged_pets ?? []);
+        }
         $this->linkPreviewData = is_array($draft->link_preview) ? $draft->link_preview : [];
         $this->scheduledPublishAt = $draft->scheduled_publish_at?->format('Y-m-d\TH:i');
+        $this->enforceFixedPetTag();
     }
 
     /**
@@ -598,7 +666,7 @@ new class extends Component
         foreach (self::MEDIA_UPLOAD_SLOTS as $slot) {
             $this->{$slot} = null;
         }
-        $this->selectedPetIds = [];
+        $this->selectedPetIds = $this->fixedPetId !== null ? [$this->fixedPetId] : [];
         $this->locationDisplayText = null;
         $this->locationLat = null;
         $this->locationLng = null;
@@ -609,6 +677,15 @@ new class extends Component
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
         $this->confirmedDuplicate = false;
+    }
+
+    private function enforceFixedPetTag(): void
+    {
+        if ($this->fixedPetId === null) {
+            return;
+        }
+
+        $this->selectedPetIds = [$this->fixedPetId];
     }
 
     private function viewer(): ?User
@@ -639,6 +716,10 @@ new class extends Component
      'mediaUploadSlot8',
      'mediaUploadSlot9',
  ];
+ $availablePetsForTagging = $this->availablePets;
+ $taggedPets = $availablePetsForTagging
+     ->filter(fn (Pet $pet): bool => in_array((int) $pet->getKey(), $selectedPetIds, true))
+     ->values();
 @endphp
 
 <div
@@ -773,6 +854,29 @@ new class extends Component
  </div>
  </div>
 
+ @if ($taggedPets->isNotEmpty())
+ <div class="flex flex-wrap gap-2" aria-label="Tagged pets">
+ @foreach ($taggedPets as $taggedPet)
+ <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-paw/15 bg-paw/10 py-1 ps-1 pe-2 text-xs font-semibold text-paw-dark">
+ <img src="{{ $taggedPet->avatar_url }}" alt="" class="h-5 w-5 rounded-full border border-warm-white object-cover" loading="lazy">
+ <span class="truncate">{{ $taggedPet->name }}</span>
+ @unless ($petTaggingLocked)
+ <button
+ type="button"
+ wire:click="removePetTag({{ (int) $taggedPet->getKey() }})"
+ class="inline-flex h-5 w-5 items-center justify-center rounded-full text-paw transition hover:bg-paw/15 hover:text-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-label="Remove {{ $taggedPet->name }} tag"
+ >
+ <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+ @endunless
+ </span>
+ @endforeach
+ </div>
+ @endif
+
  <div class="space-y-3">
  <div class="flex flex-wrap items-center justify-between gap-3 border-y border-whisker/25 py-3">
  <div class="flex items-center gap-2">
@@ -788,6 +892,75 @@ new class extends Component
  <circle cx="13" cy="7" r="1.25"/>
  </svg>
  </button>
+ @unless ($petTaggingLocked)
+ <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+ <button
+ type="button"
+ class="inline-flex h-10 w-10 items-center justify-center rounded-full text-fur transition hover:bg-paw/10 hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="open = !open"
+ aria-label="Tag a pet"
+ aria-haspopup="listbox"
+ x-bind:aria-expanded="open.toString()"
+ >
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M8.3 5.2c.4.9.1 1.9-.6 2.2s-1.6-.2-2-1.1-.1-1.9.6-2.2 1.6.2 2 1.1Z"/>
+ <path d="M14.3 6.3c-.4.9-1.3 1.4-2 1.1s-1-1.3-.6-2.2 1.3-1.4 2-1.1 1 1.3.6 2.2Z"/>
+ <path d="M5.4 10.6c.9.4 1.4 1.3 1.1 2s-1.3 1-2.2.6-1.4-1.3-1.1-2 1.3-1 2.2-.6Z"/>
+ <path d="M15.7 13.2c-.9.4-1.9.1-2.2-.6s.2-1.6 1.1-2 1.9-.1 2.2.6-.2 1.6-1.1 2Z"/>
+ <path d="M7.2 14.8c.4-1.9 1.6-3.3 2.8-3.3s2.4 1.4 2.8 3.3c.2 1-.4 1.9-1.4 1.9H8.6c-1 0-1.6-.9-1.4-1.9Z"/>
+ </svg>
+ </button>
+
+ <div
+ x-cloak
+ x-show="open"
+ x-transition.origin.top.left
+ x-on:click.outside="open = false"
+ class="absolute left-0 top-full z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-card)] border border-whisker/30 bg-warm-white shadow-card"
+ role="listbox"
+ aria-label="Tag pets"
+ >
+ <div class="border-b border-whisker/20 px-4 py-3">
+ <p class="text-sm font-semibold text-bark">Tag a pet</p>
+ <p class="mt-0.5 text-xs text-fur">Choose one or more pets for this post.</p>
+ </div>
+
+ <div class="max-h-72 overflow-y-auto p-2">
+ @forelse ($availablePetsForTagging as $pet)
+ @php
+     $petId = (int) $pet->getKey();
+     $isTagged = $this->isPetTagged($petId);
+ @endphp
+ <button
+ type="button"
+ wire:click="togglePetTag({{ $petId }})"
+ class="flex w-full items-center gap-3 rounded-[var(--radius-soft)] px-3 py-2 text-left transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-pressed="{{ $isTagged ? 'true' : 'false' }}"
+ role="option"
+ aria-selected="{{ $isTagged ? 'true' : 'false' }}"
+ >
+ <img src="{{ $pet->avatar_url }}" alt="" class="h-8 w-8 rounded-full border border-whisker/30 object-cover" loading="lazy">
+ <span class="min-w-0 flex-1">
+ <span class="flex min-w-0 items-center gap-2">
+ <span class="truncate text-sm font-bold text-bark">{{ $pet->name }}</span>
+ <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border {{ $isTagged ? 'border-paw bg-paw text-white' : 'border-whisker/50 text-transparent' }}" aria-hidden="true">
+ <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="m5 10 3 3 7-7"/>
+ </svg>
+ </span>
+ </span>
+ <span class="mt-1 inline-flex">
+ <x-ui.badge variant="primary" size="sm">{{ $this->petSpeciesLabel($pet) }}</x-ui.badge>
+ </span>
+ </span>
+ </button>
+ @empty
+ <p class="px-3 py-6 text-center text-sm text-fur">No pets available to tag yet.</p>
+ @endforelse
+ </div>
+ </div>
+ </div>
+ @endunless
  <input
  x-ref="mediaInput"
  type="file"
@@ -928,14 +1101,6 @@ new class extends Component
  </div>
 
  <div class="grid gap-4 md:grid-cols-2">
- <x-ui.select id="{{ $composerId }}-pets" label="Tag pets" wire:model="selectedPetIds" multiple>
- @forelse ($this->availablePets as $pet)
- <option value="{{ $pet->id }}">{{ $pet->name }}</option>
- @empty
- <option value="" disabled>No pets yet</option>
- @endforelse
- </x-ui.select>
-
  <x-ui.input id="{{ $composerId }}-location" label="Location" wire:model.blur="locationDisplayText" maxlength="100" />
  </div>
 

@@ -61,6 +61,62 @@ it('renders the media attachment strip controls and upload behaviours', function
         ->assertSeeHtml('uploadProgressOffset');
 });
 
+it('renders pet tagging as a toolbar dropdown and selected chips', function (): void {
+    $user = User::factory()->create();
+    $zuzu = Pet::factory()->for($user)->create([
+        'name' => 'Zuzu',
+        'species' => 'dog',
+    ]);
+    $alfie = Pet::factory()->for($user)->create([
+        'name' => 'Alfie',
+        'species' => 'cat',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer', ['selectedPetIds' => [$zuzu->getKey()]])
+        ->assertSee('Tag a pet')
+        ->assertSee('Choose one or more pets for this post.')
+        ->assertSeeInOrder(['Alfie', 'Cat', 'Zuzu', 'Dog'])
+        ->assertSee('Remove Zuzu tag')
+        ->assertSeeHtml('wire:click="togglePetTag('.$alfie->getKey().')"');
+});
+
+it('toggles and removes tagged pets from the composer', function (): void {
+    $user = User::factory()->create();
+    $firstPet = Pet::factory()->for($user)->create();
+    $secondPet = Pet::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->call('togglePetTag', $firstPet->getKey())
+        ->assertSet('selectedPetIds', [$firstPet->getKey()])
+        ->call('togglePetTag', $secondPet->getKey())
+        ->assertSet('selectedPetIds', [$firstPet->getKey(), $secondPet->getKey()])
+        ->call('removePetTag', $firstPet->getKey())
+        ->assertSet('selectedPetIds', [$secondPet->getKey()]);
+});
+
+it('locks pet tags when composing from a pet profile context', function (): void {
+    $user = User::factory()->create();
+    $profilePet = Pet::factory()->for($user)->create(['name' => 'Miso']);
+    $otherPet = Pet::factory()->for($user)->create(['name' => 'Nori']);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer', [
+            'contextType' => 'pet-profile',
+            'contextId' => $profilePet->getKey(),
+        ])
+        ->assertSet('petTaggingLocked', true)
+        ->assertSet('selectedPetIds', [$profilePet->getKey()])
+        ->assertSee('Miso')
+        ->assertDontSee('Tag a pet')
+        ->assertDontSee('Remove Miso tag')
+        ->call('removePetTag', $profilePet->getKey())
+        ->assertSet('selectedPetIds', [$profilePet->getKey()])
+        ->call('togglePetTag', $otherPet->getKey())
+        ->assertSet('selectedPetIds', [$profilePet->getKey()]);
+});
+
 it('loads sortable js for attachment reordering', function (): void {
     $javascript = (string) file_get_contents(resource_path('js/app.js'));
 
