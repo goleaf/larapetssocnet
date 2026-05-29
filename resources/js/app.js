@@ -1017,15 +1017,29 @@ document.addEventListener('alpine:init', () => {
  reverseGeocoding: false,
  locationError: '',
  linkPreviewTimer: null,
+ autosaveInterval: null,
+ draftSavedTimer: null,
+ draftSavedVisible: false,
+ hasLocalUnsavedChanges: false,
 
  init() {
  if (this.$refs.editor) {
  this.renderHighlighted(false);
  }
 
+ this.autosaveInterval = window.setInterval(() => {
+ this.maybeAutosaveDraft();
+ }, 10000);
+
  this.$nextTick(() => {
  this.initializeSortable();
  });
+ },
+
+ destroy() {
+ window.clearTimeout(this.linkPreviewTimer);
+ window.clearTimeout(this.draftSavedTimer);
+ window.clearInterval(this.autosaveInterval);
  },
 
  get characterCount() {
@@ -1068,6 +1082,7 @@ document.addEventListener('alpine:init', () => {
  this.$wire.set('textContent', this.text, false);
  }
 
+ this.markDraftDirty();
  this.renderHighlighted(false);
  this.restoreCaretOffset(offset);
  },
@@ -1105,6 +1120,81 @@ document.addEventListener('alpine:init', () => {
  this.linkPreviewTimer = window.setTimeout(() => {
  this.$wire.queueLinkPreviewFetch(url);
  }, 1000);
+ },
+
+ markDraftDirty() {
+ this.hasLocalUnsavedChanges = true;
+
+ if (this.$wire?.set) {
+ this.$wire.set('hasUnsavedChanges', true, false);
+ }
+ },
+
+ async maybeAutosaveDraft() {
+ const serverDirty = Boolean(this.$wire?.hasUnsavedChanges);
+
+ if (!this.hasLocalUnsavedChanges && !serverDirty) {
+ return;
+ }
+
+ if (typeof this.$wire?.autosaveDraft !=='function') {
+ return;
+ }
+
+ try {
+ await this.$wire.autosaveDraft();
+ this.hasLocalUnsavedChanges = false;
+ } catch {
+ this.hasLocalUnsavedChanges = true;
+ }
+ },
+
+ showDraftSaved() {
+ this.hasLocalUnsavedChanges = false;
+ this.draftSavedVisible = true;
+ window.clearTimeout(this.draftSavedTimer);
+ this.draftSavedTimer = window.setTimeout(() => {
+ this.draftSavedVisible = false;
+ }, 2000);
+ },
+
+ applyDraftState(state = {}) {
+ this.text = toStringValue(state.text_content);
+ this.attachments = Array.isArray(state.attachment_metadata)
+ ? state.attachment_metadata.map((attachment, index) => ({
+ client_id: toStringValue(attachment.client_id || `draft-${index}`),
+ slot: toStringValue(attachment.slot),
+ file_name: toStringValue(attachment.file_name || 'attachment'),
+ media_type: toStringValue(attachment.media_type || 'image'),
+ mime_type: toStringValue(attachment.mime_type),
+ file_size: toNumber(attachment.file_size),
+ preview_data_url: toStringValue(attachment.preview_data_url),
+ alt_text: toStringValue(attachment.alt_text),
+ showAltText: Boolean(attachment.alt_text),
+ upload_state:'complete',
+ progress: 100,
+ temporary_path: toStringValue(attachment.temporary_path),
+ livewire_upload_name: toStringValue(attachment.temporary_path),
+ removing: false,
+ order: toNumber(attachment.order, index),
+ }))
+ : [];
+ this.mediaErrors = [];
+ this.hasLocalUnsavedChanges = false;
+
+ if (this.$wire?.set) {
+ this.$wire.set('hasUnsavedChanges', false, false);
+ }
+
+ this.renderHighlighted(false);
+ this.$nextTick(() => {
+ if (this.sortableInstance) {
+ this.sortableInstance.destroy();
+ this.sortableInstance = null;
+ }
+
+ this.initializeSortable();
+ });
  },
 
  editorPlainText() {
@@ -1303,6 +1393,7 @@ document.addEventListener('alpine:init', () => {
  };
 
  this.attachments.push(attachment);
+ this.markDraftDirty();
  this.syncUploadingFlag();
  this.$nextTick(() => {
  this.initializeSortable();
@@ -1444,6 +1535,7 @@ document.addEventListener('alpine:init', () => {
  return;
  }
 
+ this.markDraftDirty();
  this.$wire.registerUploadedAttachment(
  attachment.client_id,
  attachment.slot,
@@ -1464,6 +1556,8 @@ document.addEventListener('alpine:init', () => {
  },
 
  updateAltText(attachment) {
+ this.markDraftDirty();
+
  if (typeof this.$wire?.updateAttachmentAltText ==='function' && attachment.upload_state ==='complete') {
  this.$wire.updateAttachmentAltText(attachment.client_id, attachment.alt_text ||'');
  }
@@ -1478,6 +1572,7 @@ document.addEventListener('alpine:init', () => {
 
  const attachment = this.attachments[index];
  attachment.removing = true;
+ this.markDraftDirty();
 
  window.setTimeout(() => {
  if (attachment.upload_state ==='uploading') {
@@ -1556,6 +1651,8 @@ document.addEventListener('alpine:init', () => {
  if (typeof this.$wire?.reorderAttachments ==='function') {
  this.$wire.reorderAttachments(this.attachments.map((attachment) => attachment.client_id));
  }
+
+ this.markDraftDirty();
  },
 
  applyAttachmentOrder(clientIds) {
@@ -1646,6 +1743,7 @@ document.addEventListener('alpine:init', () => {
 
  resetLocalAttachments() {
  window.clearTimeout(this.linkPreviewTimer);
+ window.clearTimeout(this.draftSavedTimer);
 
  this.attachments.forEach((attachment) => {
  if (attachment.preview_data_url?.startsWith('blob:')) {
@@ -1655,6 +1753,9 @@ document.addEventListener('alpine:init', () => {
 
  this.attachments = [];
  this.mediaErrors = [];
+ this.text = '';
+ this.draftSavedVisible = false;
+ this.hasLocalUnsavedChanges = false;
  if (this.sortableInstance) {
  this.sortableInstance.destroy();
  this.sortableInstance = null;
@@ -1665,6 +1766,7 @@ document.addEventListener('alpine:init', () => {
  }
 
  this.syncUploadingFlag();
+ this.renderHighlighted(false);
  },
  }));
 

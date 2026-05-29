@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'tagged_pets',
     'media_payload',
     'link_preview',
+    'state',
     'scheduled_publish_at',
     'last_autosaved_at',
 ])]
@@ -40,6 +41,7 @@ class PostDraft extends Model
             'tagged_pets' => 'array',
             'media_payload' => 'array',
             'link_preview' => 'array',
+            'state' => 'array',
             'scheduled_publish_at' => 'datetime',
             'last_autosaved_at' => 'datetime',
         ];

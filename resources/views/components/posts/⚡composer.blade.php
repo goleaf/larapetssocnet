@@ -143,6 +143,16 @@ new class extends Component
 
     public ?int $draftId = null;
 
+    public bool $hasUnsavedChanges = false;
+
+    public bool $pendingDraftAvailable = false;
+
+    public ?int $pendingDraftId = null;
+
+    public ?string $pendingDraftRelativeTime = null;
+
+    public bool $discardConfirmOpen = false;
+
     public bool $isUploading = false;
 
     public bool $isSubmitting = false;
@@ -192,7 +202,7 @@ new class extends Component
         $this->petTaggingLocked = $lockPetTags || $this->fixedPetId !== null;
         $this->selectedPetIds = $this->fixedPetId !== null ? [$this->fixedPetId] : $initialPetIds;
 
-        $this->restoreDraft();
+        $this->loadPendingDraft();
         $this->enforceFixedPetTag();
     }
 
@@ -200,6 +210,13 @@ new class extends Component
     public function characterCount(): int
     {
         return mb_strlen($this->textContent);
+    }
+
+    public function updated(string $property): void
+    {
+        if ($this->shouldTrackDraftChange($property)) {
+            $this->markDraftDirty();
+        }
     }
 
     #[Computed]
@@ -243,6 +260,8 @@ new class extends Component
         $this->selectedPetIds = $selectedPetIds->contains($petId)
             ? $selectedPetIds->reject(fn (int $selectedPetId): bool => $selectedPetId === $petId)->values()->all()
             : $selectedPetIds->push($petId)->unique()->values()->all();
+
+        $this->markDraftDirty();
     }
 
     public function removePetTag(int $petId): void
@@ -257,6 +276,8 @@ new class extends Component
             ->reject(fn (int $selectedPetId): bool => $selectedPetId === $petId)
             ->values()
             ->all();
+
+        $this->markDraftDirty();
     }
 
     public function isPetTagged(int $petId): bool
@@ -291,7 +312,9 @@ new class extends Component
             return;
         }
 
-        $this->storeLocationSuggestion($suggestion);
+        if ($this->storeLocationSuggestion($suggestion)) {
+            $this->markDraftDirty();
+        }
     }
 
     public function removeLocationTag(): void
@@ -302,6 +325,7 @@ new class extends Component
         $this->locationLng = null;
         $this->locationSuggestions = [];
         $this->locationSuggestionsOpen = false;
+        $this->markDraftDirty();
     }
 
     public function reverseGeocodeCoordinates(float|string $latitude, float|string $longitude): bool
@@ -317,17 +341,25 @@ new class extends Component
             return false;
         }
 
-        return $this->storeLocationSuggestion($suggestion);
+        $stored = $this->storeLocationSuggestion($suggestion);
+
+        if ($stored) {
+            $this->markDraftDirty();
+        }
+
+        return $stored;
     }
 
     public function selectMood(string $mood): void
     {
         $this->selectedMood = PostMood::normalize($mood);
+        $this->markDraftDirty();
     }
 
     public function removeMood(): void
     {
         $this->selectedMood = null;
+        $this->markDraftDirty();
     }
 
     public function queueLinkPreviewFetch(string $url, PostMetadataService $metadata): void
@@ -385,6 +417,7 @@ new class extends Component
             ? $result['url']
             : ($this->linkPreviewData['url'] ?? $this->detectedLinkPreviewUrl);
         $this->dismissedLinkPreviewUrl = null;
+        $this->markDraftDirty();
 
         $this->dispatch('post-link-preview-loaded', url: $this->detectedLinkPreviewUrl);
     }
@@ -401,6 +434,7 @@ new class extends Component
         $this->linkPreviewData = [];
         $this->isLinkPreviewLoading = false;
         $this->linkPreviewRequestKey = null;
+        $this->markDraftDirty();
         $this->dispatch('post-link-preview-dismissed', url: $currentUrl);
     }
 
@@ -432,6 +466,7 @@ new class extends Component
         $this->scheduledHour = $this->normalizeNullableString($hour);
         $this->scheduledMinute = $this->normalizeNullableString($minute);
         $this->schedulePickerOpen = false;
+        $this->markDraftDirty();
     }
 
     public function clearSchedule(): void
@@ -443,6 +478,7 @@ new class extends Component
         $this->scheduledMinute = null;
         $this->schedulePickerOpen = false;
         $this->resetErrorBag('scheduledPublishAt');
+        $this->markDraftDirty();
     }
 
     public function selectVisibility(string $visibility): void
@@ -454,6 +490,7 @@ new class extends Component
         }
 
         $this->selectedVisibility = $normalizedVisibility;
+        $this->markDraftDirty();
     }
 
     /**
@@ -511,6 +548,7 @@ new class extends Component
     public function updatedMediaUploads(): void
     {
         $this->syncAttachmentMetadata();
+        $this->markDraftDirty();
     }
 
     /**
@@ -548,6 +586,7 @@ new class extends Component
 
         $this->normalizeAttachmentOrder();
         $this->refreshTemporaryFilePaths();
+        $this->markDraftDirty();
     }
 
     public function updateAttachmentAltText(int|string $identifier, string $altText): void
@@ -559,6 +598,7 @@ new class extends Component
         }
 
         $this->attachmentMetadata[$index]['alt_text'] = trim(mb_substr($altText, 0, 160)) ?: null;
+        $this->markDraftDirty();
     }
 
     /**
@@ -584,6 +624,7 @@ new class extends Component
 
         $this->normalizeAttachmentOrder();
         $this->refreshTemporaryFilePaths();
+        $this->markDraftDirty();
     }
 
     public function removeAttachment(int|string $identifier): void
@@ -603,13 +644,14 @@ new class extends Component
         array_splice($this->attachmentMetadata, $index, 1);
         $this->normalizeAttachmentOrder();
         $this->refreshTemporaryFilePaths();
+        $this->markDraftDirty();
     }
 
     public function autosaveDraft(PostDraftService $drafts): void
     {
         $user = $this->viewer();
 
-        if (! $user instanceof User || ! $this->hasDraftableContent()) {
+        if (! $user instanceof User || ! $this->hasUnsavedChanges || ! $this->hasDraftableContent()) {
             return;
         }
 
@@ -618,6 +660,10 @@ new class extends Component
         try {
             $draft = $drafts->autosave($user, $this->draftPayload(), $this->contextType, $this->contextId);
             $this->draftId = $draft->exists ? (int) $draft->getKey() : null;
+            $this->pendingDraftAvailable = false;
+            $this->pendingDraftId = null;
+            $this->pendingDraftRelativeTime = null;
+            $this->hasUnsavedChanges = false;
             $this->dispatch('post-draft-autosaved', draftId: $this->draftId);
         } finally {
             $this->isAutoSavingDraft = false;
@@ -649,6 +695,7 @@ new class extends Component
             $post = $result->createdPost();
             $drafts->clear($user, $this->contextType, $this->contextId);
             $this->resetComposerState();
+            $this->hasUnsavedChanges = false;
 
             if ($this->mode === self::MODE_MODAL) {
                 $this->modalOpen = false;
@@ -674,7 +721,86 @@ new class extends Component
         $this->dispatch('post-composer-closed');
     }
 
-    private function restoreDraft(): void
+    public function requestCancel(): void
+    {
+        if ($this->hasDraftableContent() || $this->draftId !== null || $this->pendingDraftAvailable) {
+            $this->discardConfirmOpen = true;
+
+            return;
+        }
+
+        if ($this->mode === self::MODE_MODAL) {
+            $this->closeModal();
+        }
+    }
+
+    public function keepEditing(): void
+    {
+        $this->discardConfirmOpen = false;
+    }
+
+    public function confirmDiscard(PostDraftService $drafts): void
+    {
+        $user = $this->viewer();
+
+        if ($user instanceof User) {
+            $drafts->clear($user, $this->contextType, $this->contextId);
+        }
+
+        $this->resetComposerState();
+        $this->discardConfirmOpen = false;
+        $this->hasUnsavedChanges = false;
+        $this->dispatch('post-composer-reset');
+
+        if ($this->mode === self::MODE_MODAL) {
+            $this->closeModal();
+        }
+    }
+
+    public function resumeDraft(PostDraftService $drafts): void
+    {
+        $user = $this->viewer();
+
+        if (! $user instanceof User || $this->pendingDraftId === null) {
+            return;
+        }
+
+        $draft = $drafts->restore($user);
+
+        if (! $draft instanceof PostDraft || (int) $draft->getKey() !== $this->pendingDraftId) {
+            $this->pendingDraftAvailable = false;
+            $this->pendingDraftId = null;
+            $this->pendingDraftRelativeTime = null;
+
+            return;
+        }
+
+        $state = $drafts->stateFor($draft);
+        $this->applyDraftState($state);
+        $this->draftId = (int) $draft->getKey();
+        $this->pendingDraftAvailable = false;
+        $this->pendingDraftId = null;
+        $this->pendingDraftRelativeTime = null;
+        $this->discardConfirmOpen = false;
+        $this->hasUnsavedChanges = false;
+        $this->dispatch('post-draft-resumed', state: $state);
+    }
+
+    public function discardDraft(PostDraftService $drafts): void
+    {
+        $user = $this->viewer();
+
+        if ($user instanceof User) {
+            $drafts->clear($user, $this->contextType, $this->contextId);
+        }
+
+        $this->pendingDraftAvailable = false;
+        $this->pendingDraftId = null;
+        $this->pendingDraftRelativeTime = null;
+        $this->draftId = null;
+    }
+
+    private function loadPendingDraft(): void
     {
         $user = $this->viewer();
 
@@ -688,30 +814,48 @@ new class extends Component
             return;
         }
 
-        $this->draftId = (int) $draft->getKey();
-        $this->textContent = (string) ($draft->body ?? '');
-        $this->selectedVisibility = $this->normalizeVisibility($draft->visibility) ?? $this->selectedVisibility;
-        $this->selectedMood = PostMood::normalize($draft->mood);
-        $this->locationDisplayText = $draft->location;
-        $this->locationSearch = $draft->location;
-        $this->locationLat = $draft->location_lat === null ? null : (string) $draft->location_lat;
-        $this->locationLng = $draft->location_lng === null ? null : (string) $draft->location_lng;
-        if (! $this->petTaggingLocked) {
-            $this->selectedPetIds = $this->normalizePetIds($draft->tagged_pets ?? []);
-        }
-        $this->linkPreviewData = is_array($draft->link_preview) ? $draft->link_preview : [];
-        $this->detectedLinkPreviewUrl = is_string($this->linkPreviewData['url'] ?? null) ? $this->linkPreviewData['url'] : null;
-        if ($draft->scheduled_publish_at !== null) {
-            $scheduledAt = CarbonImmutable::instance($draft->scheduled_publish_at)->utc();
-            $localScheduledAt = $scheduledAt->timezone((string) config('app.timezone'));
-
-            $this->scheduledPublishAt = $scheduledAt->toIso8601String();
-            $this->scheduledDisplayText = $localScheduledAt->format('M j, Y \a\t g:i A');
-            $this->scheduledDate = $localScheduledAt->format('Y-m-d');
-            $this->scheduledHour = $localScheduledAt->format('H');
-            $this->scheduledMinute = $localScheduledAt->format('i');
-        }
+        $this->pendingDraftAvailable = true;
+        $this->pendingDraftId = (int) $draft->getKey();
+        $this->pendingDraftRelativeTime = ($draft->last_autosaved_at ?? $draft->updated_at)?->diffForHumans() ?? 'recently';
         $this->enforceFixedPetTag();
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function applyDraftState(array $state): void
+    {
+        $this->textContent = (string) ($state['text_content'] ?? '');
+        $this->temporaryFilePaths = is_array($state['temporary_file_paths'] ?? null)
+            ? array_values($state['temporary_file_paths'])
+            : [];
+        $this->attachmentMetadata = is_array($state['attachment_metadata'] ?? null)
+            ? array_values($state['attachment_metadata'])
+            : [];
+        $this->selectedVisibility = $this->normalizeVisibility($state['selected_visibility'] ?? null) ?? $this->selectedVisibility;
+        $this->selectedMood = PostMood::normalize($state['selected_mood'] ?? null);
+        $this->locationDisplayText = $this->normalizeNullableString($state['location_display_text'] ?? null);
+        $this->locationSearch = $this->locationDisplayText;
+        $this->locationLat = filled($state['location_lat'] ?? null) ? (string) $state['location_lat'] : null;
+        $this->locationLng = filled($state['location_lng'] ?? null) ? (string) $state['location_lng'] : null;
+
+        if (! $this->petTaggingLocked) {
+            $this->selectedPetIds = $this->normalizePetIds(is_array($state['selected_pet_ids'] ?? null) ? $state['selected_pet_ids'] : []);
+        }
+
+        $this->scheduledPublishAt = $this->normalizeNullableString($state['scheduled_publish_at'] ?? null);
+        $this->scheduledDisplayText = $this->normalizeNullableString($state['scheduled_display_text'] ?? null);
+        $this->scheduledDate = $this->normalizeNullableString($state['scheduled_date'] ?? null);
+        $this->scheduledHour = $this->normalizeNullableString($state['scheduled_hour'] ?? null);
+        $this->scheduledMinute = $this->normalizeNullableString($state['scheduled_minute'] ?? null);
+        $this->linkPreviewData = is_array($state['link_preview'] ?? null) ? $state['link_preview'] : [];
+        $this->detectedLinkPreviewUrl = $this->normalizeNullableString($state['detected_link_preview_url'] ?? ($this->linkPreviewData['url'] ?? null));
+        $this->dismissedLinkPreviewUrl = null;
+        $this->isLinkPreviewLoading = false;
+        $this->linkPreviewRequestKey = null;
+        $this->enforceFixedPetTag();
+        $this->normalizeAttachmentOrder();
+        $this->refreshTemporaryFilePaths();
     }
 
     /**
@@ -744,6 +888,18 @@ new class extends Component
     private function draftPayload(): array
     {
         return [
+            'text_content' => $this->textContent,
+            'temporary_file_paths' => $this->temporaryFilePaths,
+            'attachment_metadata' => $this->attachmentMetadata,
+            'selected_pet_ids' => $this->selectedPetIds,
+            'location_display_text' => $this->locationDisplayText,
+            'selected_mood' => $this->selectedMood,
+            'selected_visibility' => $this->selectedVisibility,
+            'scheduled_display_text' => $this->scheduledDisplayText,
+            'scheduled_date' => $this->scheduledDate,
+            'scheduled_hour' => $this->scheduledHour,
+            'scheduled_minute' => $this->scheduledMinute,
+            'detected_link_preview_url' => $this->detectedLinkPreviewUrl,
             'body' => $this->textContent,
             'visibility' => $this->selectedVisibility,
             'mood' => $this->selectedMood,
@@ -964,6 +1120,11 @@ new class extends Component
         $this->dismissedLinkPreviewUrl = null;
         $this->isLinkPreviewLoading = false;
         $this->draftId = null;
+        $this->pendingDraftAvailable = false;
+        $this->pendingDraftId = null;
+        $this->pendingDraftRelativeTime = null;
+        $this->discardConfirmOpen = false;
+        $this->hasUnsavedChanges = false;
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
         $this->confirmedDuplicate = false;
@@ -1001,6 +1162,35 @@ new class extends Component
         }
 
         $this->selectedPetIds = [$this->fixedPetId];
+    }
+
+    private function shouldTrackDraftChange(string $property): bool
+    {
+        return Str::startsWith($property, [
+            'textContent',
+            'temporaryFilePaths',
+            'attachmentMetadata',
+            'selectedPetIds',
+            'locationDisplayText',
+            'locationSearch',
+            'locationLat',
+            'locationLng',
+            'selectedMood',
+            'selectedVisibility',
+            'scheduledPublishAt',
+            'scheduledDisplayText',
+            'scheduledDate',
+            'scheduledHour',
+            'scheduledMinute',
+            'linkPreviewData',
+            'detectedLinkPreviewUrl',
+        ]);
+    }
+
+    private function markDraftDirty(): void
+    {
+        $this->hasUnsavedChanges = true;
+        $this->dispatch('post-draft-dirty');
     }
 
     private function viewer(): ?User
@@ -1067,6 +1257,9 @@ new class extends Component
  uploadSlots: @js($uploadSlots),
  })"
  x-on:post-composer-reset.window="resetLocalAttachments"
+ x-on:post-draft-dirty.window="hasLocalUnsavedChanges = true"
+ x-on:post-draft-autosaved.window="showDraftSaved()"
+ x-on:post-draft-resumed.window="applyDraftState($event.detail.state || {})"
 >
  @if ($isModal)
  <div
@@ -1076,9 +1269,9 @@ new class extends Component
  role="dialog"
  aria-modal="true"
  aria-labelledby="{{ $titleId }}"
- x-on:keydown.escape.window="$wire.closeModal()"
+ x-on:keydown.escape.window="$wire.requestCancel()"
  >
- <button type="button" class="absolute inset-0 cursor-default" aria-label="Close post composer" wire:click="closeModal"></button>
+ <button type="button" class="absolute inset-0 cursor-default" aria-label="Close post composer" wire:click="requestCancel"></button>
  <div class="{{ $surfaceClasses }} relative max-h-[92vh] overflow-y-auto">
  @else
  <section class="{{ $surfaceClasses }}">
@@ -1118,7 +1311,7 @@ new class extends Component
  <button
  type="button"
  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-soft)] text-fur transition hover:bg-cream hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
- wire:click="closeModal"
+ wire:click="requestCancel"
  aria-label="Close post composer"
  >
  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -1127,6 +1320,30 @@ new class extends Component
  </button>
  @endif
  </div>
+
+ @if ($pendingDraftAvailable)
+ <div class="rounded-[var(--radius-soft)] border border-paw/20 bg-paw/5 p-4" role="status">
+ <p class="text-sm font-semibold text-bark">You have an unsaved draft from {{ $pendingDraftRelativeTime ?? 'recently' }}.</p>
+ <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+ <x-ui.button type="button" variant="secondary" size="sm" wire:click="resumeDraft" wire:loading.attr="disabled" wire:target="resumeDraft">
+ Resume draft
+ </x-ui.button>
+ <button type="button" class="text-sm font-semibold text-fur hover:text-bark" wire:click="discardDraft">Discard</button>
+ </div>
+ </div>
+ @endif
+
+ @if ($discardConfirmOpen)
+ <div class="rounded-[var(--radius-soft)] border border-rose/25 bg-rose/5 p-4" role="alert">
+ <p class="text-sm font-semibold text-bark">Discard this post? Your unsaved draft will be lost.</p>
+ <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+ <x-ui.button type="button" variant="danger" size="sm" wire:click="confirmDiscard" wire:loading.attr="disabled" wire:target="confirmDiscard">
+ Discard
+ </x-ui.button>
+ <button type="button" class="text-sm font-semibold text-fur hover:text-bark" wire:click="keepEditing">Keep editing</button>
+ </div>
+ </div>
+ @endif
 
  @if ($duplicateDetected)
  <div class="rounded-[var(--radius-soft)] border border-amber/30 bg-amber-light/40 p-4" role="alert">
@@ -1795,25 +2012,23 @@ new class extends Component
  </div>
  </div>
 
- <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
- <div class="min-h-5 text-xs text-fur" role="status">
- <span wire:loading.remove wire:target="autosaveDraft">
- @if ($draftId)
- Draft saved.
- @elseif ($isLinkPreviewLoading)
- Loading link preview...
- @else
- Ready to post.
- @endif
- </span>
- <span wire:loading wire:target="autosaveDraft">Saving draft...</span>
- </div>
+	 <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
+	 <div class="min-h-5 text-xs text-fur" role="status">
+	 <span x-cloak x-show="draftSavedVisible" x-transition.opacity>Draft saved</span>
+	 <span x-show="!draftSavedVisible">
+	 @if ($isLinkPreviewLoading)
+	 Loading link preview...
+	 @else
+	 Ready to post.
+	 @endif
+	 </span>
+	 </div>
 
- <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
- <x-ui.button type="button" variant="ghost" wire:click="autosaveDraft" wire:loading.attr="disabled" wire:target="autosaveDraft">
- Save draft
- </x-ui.button>
- <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+	 <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+	 <x-ui.button type="button" variant="ghost" wire:click="requestCancel">
+	 Cancel
+	 </x-ui.button>
+	 <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
  <button
  type="button"
  class="inline-flex h-[var(--control-height-md)] w-full items-center justify-center gap-2 rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm font-semibold text-bark transition hover:border-paw hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw sm:w-auto"

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added background post-composer draft autosave with one serialized draft per user, resume/discard banners, and confirmed cancellation cleanup.
 - Added async Open Graph link previews for pasted post-composer URLs, with queued Guzzle fetching, composer skeleton/polling state, dismissible preview cards, and image rendering on shared post cards.
 - Added a toolbar scheduled-post picker to the Livewire post composer with a future-date calendar, 15-minute local time selectors, UTC storage, schedule indicator, and Schedule submit state.
 - Added a compact emoji mood picker to the Livewire post composer toolbar with the selected "feeling" indicator and remove action below the editor.
@@ -41,6 +42,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire and service coverage for one-user post drafts, non-automatic draft restore, resume/discard actions, and cancellation cleanup.
 - Added link preview coverage for Open Graph parsing, local-network URL rejection, queued post updates, composer polling/dismissal, and action-level async fetch dispatch.
 - Added scheduled composer and scheduled publication coverage for picker rendering, UTC state storage, scheduled post creation without immediate fan-out, command job dispatch, command lock skipping, and due-job publication.
 - Added Livewire post composer coverage for selecting and removing moods through the toolbar mood picker.

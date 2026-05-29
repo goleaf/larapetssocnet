@@ -25,6 +25,10 @@ Use the shared Livewire `posts.composer` scheduled-post controls instead of raw 
 
 The `posts:publish-scheduled` command runs every minute, uses the database cache lock `posts:publish-scheduled-command`, selects at most 100 due posts through the `posts_status_scheduled_publish_at_index`, and dispatches one queued job per post. Keep the per-post job guarded by `posts:publish-scheduled:{postId}` and idempotent by returning early unless the post is still scheduled and due.
 
+## Composer Draft Autosave
+
+Use the shared Livewire `posts.composer` draft lifecycle instead of page-local draft forms. Alpine tracks dirty composer state and calls `autosaveDraft()` every 10 seconds only when there are unsaved changes; the action upserts one serialized state payload per user through the unique `post_drafts_user_id_unique` index. Opening the composer must show a "You have an unsaved draft from ..." banner with Resume draft and Discard actions instead of restoring content automatically. Successful post submission and confirmed composer cancellation clear the user draft.
+
 ## Composer Link Previews
 
 The shared Livewire `posts.composer` detects pasted HTTP(S) URLs in the contenteditable editor and calls `queueLinkPreviewFetch()` after a one-second debounce. The Livewire action must dispatch `FetchLinkPreviewMetadataJob` instead of fetching Open Graph metadata inline. While the job runs, render the composer skeleton with `wire:poll.2s="pollLinkPreviewResult"` against the short-lived cache result; successful results populate `linkPreviewData`, failed results stop loading without blocking submission, and dismissing a preview stores the dismissed URL so it does not immediately reappear.

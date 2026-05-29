@@ -371,7 +371,9 @@ it('loads sortable js for attachment reordering', function (): void {
     expect($javascript)
         ->toContain('cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js')
         ->toContain('Sortable.create')
-        ->toContain('applyAttachmentOrder');
+        ->toContain('applyAttachmentOrder')
+        ->toContain('maybeAutosaveDraft')
+        ->toContain('window.setInterval');
 });
 
 it('tracks uploaded attachment metadata, alt text, removal, and ordering by client id', function (): void {
@@ -526,7 +528,7 @@ it('returns a duplicate warning without creating another post', function (): voi
     expect(Post::query()->count())->toBe(1);
 });
 
-it('restores and autosaves composer drafts by context', function (): void {
+it('shows a resumable draft banner without restoring the draft automatically', function (): void {
     $user = User::factory()->create();
 
     $draft = PostDraft::factory()->for($user)->create([
@@ -535,16 +537,92 @@ it('restores and autosaves composer drafts by context', function (): void {
         'body' => 'Saved thought',
         'visibility' => Post::VISIBILITY_PRIVATE,
         'tagged_pets' => [],
+        'state' => [
+            'text_content' => 'Saved thought',
+            'temporary_file_paths' => [],
+            'attachment_metadata' => [],
+            'selected_pet_ids' => [],
+            'location_display_text' => null,
+            'location_lat' => null,
+            'location_lng' => null,
+            'selected_mood' => null,
+            'selected_visibility' => Post::VISIBILITY_PRIVATE,
+            'scheduled_publish_at' => null,
+            'link_preview' => [],
+            'context_type' => 'feed',
+            'context_id' => 0,
+        ],
     ]);
 
     Livewire::actingAs($user)
         ->test('posts.composer', ['contextType' => 'feed'])
+        ->assertSet('draftId', null)
+        ->assertSet('pendingDraftAvailable', true)
+        ->assertSet('pendingDraftId', $draft->getKey())
+        ->assertSet('textContent', '')
+        ->assertSee('You have an unsaved draft from')
+        ->assertSee('Resume draft')
+        ->assertSee('Discard')
+        ->call('resumeDraft')
+        ->assertSet('pendingDraftAvailable', false)
         ->assertSet('draftId', $draft->getKey())
         ->assertSet('textContent', 'Saved thought')
         ->assertSet('selectedVisibility', Post::VISIBILITY_PRIVATE)
+        ->assertSet('hasUnsavedChanges', false)
+        ->assertDispatched('post-draft-resumed')
         ->set('textContent', 'Updated draft thought')
+        ->set('hasUnsavedChanges', true)
         ->call('autosaveDraft')
+        ->assertSet('hasUnsavedChanges', false)
         ->assertDispatched('post-draft-autosaved');
 
-    expect($draft->fresh()->body)->toBe('Updated draft thought');
+    $draft->refresh();
+
+    expect($draft->body)->toBe('Updated draft thought')
+        ->and($draft->state['text_content'])->toBe('Updated draft thought');
+});
+
+it('discards pending and active drafts from the composer', function (): void {
+    $user = User::factory()->create();
+
+    PostDraft::factory()->for($user)->create([
+        'body' => 'Discard me',
+        'state' => [
+            'text_content' => 'Discard me',
+            'selected_visibility' => Post::VISIBILITY_PUBLIC,
+        ],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSet('pendingDraftAvailable', true)
+        ->call('discardDraft')
+        ->assertSet('pendingDraftAvailable', false)
+        ->assertSet('draftId', null);
+
+    expect(PostDraft::query()->count())->toBe(0);
+});
+
+it('confirms composer cancellation before clearing an unsaved draft', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer', ['mode' => 'modal'])
+        ->set('textContent', 'An unfinished update')
+        ->set('hasUnsavedChanges', true)
+        ->call('autosaveDraft')
+        ->assertSet('draftId', fn (?int $draftId): bool => $draftId !== null)
+        ->call('requestCancel')
+        ->assertSet('discardConfirmOpen', true)
+        ->assertSee('Discard this post? Your unsaved draft will be lost.')
+        ->call('keepEditing')
+        ->assertSet('discardConfirmOpen', false)
+        ->call('requestCancel')
+        ->call('confirmDiscard')
+        ->assertSet('textContent', '')
+        ->assertSet('draftId', null)
+        ->assertSet('modalOpen', false)
+        ->assertDispatched('post-composer-reset');
+
+    expect(PostDraft::query()->count())->toBe(0);
 });
