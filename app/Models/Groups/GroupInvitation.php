@@ -111,7 +111,13 @@ class GroupInvitation extends Model
 
     private function statusValue(): GroupInvitationStatus
     {
-        return GroupInvitationStatus::tryFrom((string) $this->getAttribute('status')) ?? GroupInvitationStatus::Pending;
+        $status = $this->getAttribute('status');
+
+        if ($status instanceof GroupInvitationStatus) {
+            return $status;
+        }
+
+        return GroupInvitationStatus::tryFrom((string) $status) ?? GroupInvitationStatus::Pending;
     }
 
     private function expiresAt(): ?CarbonInterface

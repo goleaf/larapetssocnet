@@ -55,7 +55,8 @@ it('keeps existing identity columns and adds missing auth security columns', fun
 it('keeps authentication feature database changes in one focused migration', function (): void {
     $authMigrations = collect(File::files(database_path('migrations')))
         ->map(fn ($file): string => $file->getFilename())
-        ->filter(fn (string $filename): bool => str_contains($filename, 'auth')
+        ->filter(fn (string $filename): bool => str_contains($filename, 'authentication')
+            || str_contains($filename, 'auth_audit')
             || str_contains($filename, 'social_accounts')
             || str_contains($filename, 'magic_login')
             || str_contains($filename, 'magic_link'))

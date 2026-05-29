@@ -7,7 +7,9 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Fixed
-  - Fixed pet profile validation so whitespace-only names are rejected after normalization.
+- Fixed post creation from internal services to normalize enum-backed status values before synthetic request validation.
+- Fixed group invitation acceptance and decline flows when invitation statuses are returned through Laravel enum casts.
+- Fixed pet profile validation so whitespace-only names are rejected after normalization.
 - Fixed blocked pet profile requests to return not found instead of exposing a normal authorization denial.
 - Fixed pet birthday notifications to use an indexed birthday lookup key instead of month/day function scans.
 - Fixed pet deletion cleanup so posts tagged through the normalized `pet_post` table are soft-deleted with legacy pet-owned posts.

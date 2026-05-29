@@ -83,6 +83,8 @@ it('edits a shared milestone without mutating the associated post', function ():
     $pet = Pet::factory()->for($owner)->create();
     $post = Post::factory()->create([
         'user_id' => $owner->getKey(),
+        'author_type' => User::class,
+        'author_id' => $owner->getKey(),
         'pet_id' => $pet->getKey(),
         'body' => 'Milestone: First beach walk',
         'tagged_pets' => [$pet->getKey()],

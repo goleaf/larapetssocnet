@@ -10,6 +10,7 @@ use App\Services\ContentService;
 use App\Services\PostMetadataService;
 use App\Support\Hashtags\HashtagParser;
 use App\Support\Posts\PostMood;
+use BackedEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Redirector;
@@ -39,7 +40,7 @@ class PostCreationRequest extends FormRequest
     public static function validateForUser(User $user, array $data): array
     {
         $data = self::normalizeFileArrays($data);
-        $request = self::create('/posts', 'POST', Arr::except($data, ['media', 'photos', 'video', 'media_files']), [], self::filesFrom($data));
+        $request = self::create('/posts', 'POST', self::normalizeInputValues(Arr::except($data, ['media', 'photos', 'video', 'media_files'])), [], self::filesFrom($data));
         $request->setContainer(app());
         $request->setRedirector(app(Redirector::class));
         $request->setUserResolver(fn (): User => $user);
@@ -50,6 +51,34 @@ class PostCreationRequest extends FormRequest
             'media_files' => $request->mediaFiles(),
             'media_attachments' => $request->temporaryMediaAttachments(),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private static function normalizeInputValues(array $input): array
+    {
+        foreach ($input as $key => $value) {
+            $input[$key] = self::normalizeInputValue($value);
+        }
+
+        return $input;
+    }
+
+    private static function normalizeInputValue(mixed $value): mixed
+    {
+        if ($value instanceof BackedEnum) {
+            return $value->value;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                $value[$key] = self::normalizeInputValue($item);
+            }
+        }
+
+        return $value;
     }
 
     protected function prepareForValidation(): void
