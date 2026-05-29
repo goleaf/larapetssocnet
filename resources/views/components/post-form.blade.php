@@ -5,7 +5,7 @@
 
 @php
  $statusValue = old('status', $post?->status?->value ?? 'published');
- $publishedAtValue = old('published_at', optional($post?->published_at)->format('Y-m-d\\TH:i'));
+ $publishedAtValue = old('scheduled_publish_at', old('published_at', optional($post?->scheduled_publish_at ?? $post?->published_at)->format('Y-m-d\\TH:i')));
 @endphp
 
 <form action="{{ $post ? route('posts.update', $post) : route('posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5"
@@ -21,6 +21,8 @@
  rows="4"
  label="What's on your mind?"
  :value="old('body', $post->body ?? '')"
+ maxlength="1000"
+ placeholder="Share a walk, a tiny victory, a question, or a moment worth remembering."
  />
  @error('body')
  <span class="text-sm text-rose">{{ $message }}</span>
@@ -76,14 +78,32 @@
  :value="old('location', $post?->location)"
  />
 
+ <x-ui.select
+ id="mood"
+ name="mood"
+ label="Mood"
+ :value="old('mood', $post?->mood)"
+ >
+ <option value="">No mood</option>
+ @foreach(\App\Support\Posts\PostMood::DISPLAY as $moodValue => $moodDisplay)
+ <option value="{{ $moodValue }}" @selected(old('mood', $post?->mood) === $moodValue)>{{ $moodDisplay['emoji'] }} {{ $moodDisplay['label'] }}</option>
+ @endforeach
+ </x-ui.select>
+ </div>
+
+ <div class="grid gap-4 md:grid-cols-2">
+
  <div x-show="status === 'scheduled'" x-cloak>
  <x-ui.input
  type="datetime-local"
- name="published_at"
- id="published_at"
+ name="scheduled_publish_at"
+ id="scheduled_publish_at"
  label="Publish At"
  :value="$publishedAtValue"
  />
+ @error('scheduled_publish_at')
+ <span class="text-sm text-rose">{{ $message }}</span>
+ @enderror
  @error('published_at')
  <span class="text-sm text-rose">{{ $message }}</span>
  @enderror
@@ -93,7 +113,7 @@
  @if(!$post)
  <x-ui.panel padding="md" class="bg-cream/50">
  <div class="space-y-4">
- <x-ui.file-upload name="photos[]" label="Photos (Max 5)" accept="image/*" multiple />
+ <x-ui.file-upload name="photos[]" label="Photos (Max 5)" accept="image/*" multiple max-size="10mb" preview />
  @error('media.photos.*')
  <span class="text-sm text-rose block">{{ $message }}</span>
  @enderror
@@ -101,7 +121,7 @@
  <span class="text-sm text-rose block">{{ $message }}</span>
  @enderror
 
- <x-ui.file-upload name="video" label="Or Video (Max 1, replaces photos)" accept="video/*" />
+ <x-ui.file-upload name="video" label="Or Video (Max 1, replaces photos)" accept="video/*" max-size="50mb" />
  @error('video')
  <span class="text-sm text-rose block">{{ $message }}</span>
  @enderror

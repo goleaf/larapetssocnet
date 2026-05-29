@@ -7,6 +7,7 @@ use App\Models\Content\Post;
 use App\Models\Pets\Pet;
 use App\Services\PostMetadataService;
 use App\Support\Hashtags\HashtagParser;
+use App\Support\Posts\PostMood;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -28,7 +29,9 @@ class StorePostRequest extends FormRequest
         $this->merge([
             'status' => $this->input('status') ?? PostStatus::Published->value,
             'published_at' => $this->normalizeNullableString($this->input('published_at')),
+            'scheduled_publish_at' => $this->normalizeNullableString($this->input('scheduled_publish_at') ?? $this->input('published_at')),
             'location' => $this->normalizeNullableString($this->input('location')),
+            'location_display_text' => $this->normalizeNullableString($this->input('location_display_text') ?? $this->input('location')),
             'metadata' => app(PostMetadataService::class)->normalize(is_array($metadata) ? $metadata : null),
         ]);
     }
@@ -36,13 +39,14 @@ class StorePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => ['nullable', 'string', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:1000'],
             'status' => ['nullable', 'string', Rule::in([
                 PostStatus::Draft->value,
                 PostStatus::Published->value,
                 PostStatus::Scheduled->value,
             ])],
             'published_at' => ['nullable', 'date'],
+            'scheduled_publish_at' => ['nullable', 'date'],
             'pet_id' => [
                 'nullable',
                 'integer',
@@ -54,7 +58,13 @@ class StorePostRequest extends FormRequest
                 $this->petPostPermissionRule(),
             ],
             'visibility' => ['nullable', 'string', Rule::in(Post::visibilityValues())],
+            'mood' => ['nullable', 'string', Rule::in(PostMood::values())],
             'location' => ['nullable', 'string', 'max:100'],
+            'location_display_text' => ['nullable', 'string', 'max:120'],
+            'location_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'location_lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'original_post_id' => ['nullable', 'integer', Rule::exists('posts', 'id')],
+            'quote_post_id' => ['nullable', 'integer', Rule::exists('posts', 'id')],
             'metadata' => ['nullable', 'array'],
             'metadata.link' => ['nullable', 'array'],
             'metadata.link.url' => ['nullable', 'url', 'max:500'],
@@ -92,10 +102,20 @@ class StorePostRequest extends FormRequest
             $status = PostStatus::tryFrom((string) ($this->input('status') ?? PostStatus::Published->value)) ?? PostStatus::Published;
             $publishedAt = null;
             $publishedAtInput = $this->input('published_at');
+            $scheduledPublishAtInput = $this->input('scheduled_publish_at') ?: $publishedAtInput;
+            $scheduledPublishAt = null;
 
             if ($publishedAtInput) {
                 try {
                     $publishedAt = Carbon::parse((string) $publishedAtInput);
+                } catch (Throwable) {
+                    $validator->errors()->add('published_at', 'Publish date is invalid.');
+                }
+            }
+
+            if ($scheduledPublishAtInput) {
+                try {
+                    $scheduledPublishAt = Carbon::parse((string) $scheduledPublishAtInput);
                 } catch (Throwable) {
                     $validator->errors()->add('published_at', 'Publish date is invalid.');
                 }
@@ -131,11 +151,11 @@ class StorePostRequest extends FormRequest
                 $validator->errors()->add('published_at', 'Draft posts cannot have a publish date.');
             }
 
-            if ($status === PostStatus::Scheduled && ! $publishedAt) {
+            if ($status === PostStatus::Scheduled && ! $scheduledPublishAtInput) {
                 $validator->errors()->add('published_at', 'Select a publish date for scheduled posts.');
             }
 
-            if ($status === PostStatus::Scheduled && $publishedAt && $publishedAt->isPast()) {
+            if ($status === PostStatus::Scheduled && $scheduledPublishAt && $scheduledPublishAt->isPast()) {
                 $validator->errors()->add('published_at', 'Scheduled posts must be set in the future.');
             }
 

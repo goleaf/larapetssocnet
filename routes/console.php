@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Console\Commands\ExpirePetOwnerInvitationsCommand;
 use App\Console\Commands\ExpirePetOwnershipTransfersCommand;
 use App\Console\Commands\GenerateProfileWrappedCommand;
+use App\Console\Commands\PublishScheduledPostsCommand;
 use App\Console\Commands\SendPetBirthdayNotificationsCommand;
 use App\Console\Commands\SendPetHealthRemindersCommand;
 use Illuminate\Support\Facades\Schedule;
@@ -14,6 +15,10 @@ Schedule::command(GenerateProfileWrappedCommand::class)
     ->when(fn (): bool => now()->month === 1 && now()->day <= 7)
     ->withoutOverlapping()
     ->runInBackground();
+
+Schedule::command(PublishScheduledPostsCommand::class)
+    ->everyMinute()
+    ->withoutOverlapping();
 
 Schedule::command(SendPetBirthdayNotificationsCommand::class)
     ->dailyAt((string) config('pets.birthday.notification_time', '08:00'))

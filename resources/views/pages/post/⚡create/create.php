@@ -92,7 +92,7 @@ class extends Component
         );
 
         return [
-            'body' => ['nullable', 'string', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:1000'],
             'pet_id' => ['nullable', 'integer', $petOwnershipRule],
             'tagged_pets' => ['nullable', 'array'],
             'tagged_pets.*' => ['integer', $petOwnershipRule],

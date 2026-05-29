@@ -23,6 +23,18 @@ class ContentService
         return $this->linkUrls($html);
     }
 
+    public function plainText(mixed $input): ?string
+    {
+        $text = strip_tags((string) $input);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = strip_tags($text);
+        $text = preg_replace('/[ \\t]+/', ' ', $text) ?? $text;
+        $text = preg_replace('/\\R/u', "\n", $text) ?? $text;
+        $text = trim($text);
+
+        return $text === '' ? null : $text;
+    }
+
     private function purify(string $input): string
     {
         return Purifier::clean($input);

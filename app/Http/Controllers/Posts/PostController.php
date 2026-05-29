@@ -64,6 +64,8 @@ class PostController extends Controller
             'user',
             'author',
             'author.media',
+            'originalPost.author',
+            'quotePost.author',
             'pet' => fn (BelongsTo $petQuery): BelongsTo => $petQuery->visibleTo($request->user()),
             'media',
             'tags',

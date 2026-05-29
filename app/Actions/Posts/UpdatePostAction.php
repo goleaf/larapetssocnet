@@ -9,7 +9,9 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\ContentService;
+use App\Services\PostMentionService;
 use App\Services\PostMetadataService;
+use App\Support\Posts\PostMood;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,7 @@ class UpdatePostAction
         private readonly AttachPetToPostAction $attachPetToPostAction,
         private readonly DetachPetFromPostAction $detachPetFromPostAction,
         private readonly PostMetadataService $metadata,
+        private readonly PostMentionService $mentions,
     ) {}
 
     /**
@@ -39,39 +42,52 @@ class UpdatePostAction
             $currentTaggedPets = $post->getAttribute('tagged_pets');
 
             $nextBody = array_key_exists('body', $data)
-                ? $this->normalizeNullableString($data['body'])
+                ? $this->content->plainText($data['body'])
                 : $currentBody;
 
             $nextMetadata = array_key_exists('metadata', $data)
                 ? $this->metadata->normalize(is_array($data['metadata']) ? $data['metadata'] : null)
                 : $currentMetadata;
+            $nextLinkPreview = array_key_exists('metadata', $data) || array_key_exists('body', $data)
+                ? $this->metadata->linkPreview($nextBody, is_array($data['metadata'] ?? null) ? $data['metadata'] : null)
+                : $post->getAttribute('link_preview');
 
             $nextStatus = $this->normalizeStatus($data['status'] ?? $post->getAttribute('status') ?? PostStatus::Published);
             $nextPublishedAt = $currentPublishedAt;
+            $nextScheduledPublishAt = $post->getAttribute('scheduled_publish_at');
 
-            if (array_key_exists('status', $data) || array_key_exists('published_at', $data)) {
-                $nextPublishedAt = $this->resolvePublishedAt($nextStatus, $data['published_at'] ?? $currentPublishedAt);
+            if (array_key_exists('status', $data) || array_key_exists('published_at', $data) || array_key_exists('scheduled_publish_at', $data)) {
+                $nextPublishedAt = $this->resolvePublishedAt($nextStatus, $data['scheduled_publish_at'] ?? $data['published_at'] ?? $currentPublishedAt);
+                $nextScheduledPublishAt = $this->resolveScheduledPublishAt($nextStatus, $data['scheduled_publish_at'] ?? $data['published_at'] ?? $nextScheduledPublishAt);
             }
 
             $editedAt = $currentEditedAt;
+            $editCount = (int) ($post->getAttribute('edit_count') ?? 0);
 
             if (array_key_exists('body', $data) && $nextBody !== $currentBody) {
                 $editedAt = now();
+                $editCount++;
             }
 
             $post->update([
                 'body' => $nextBody,
                 'body_html' => $nextBody ? $this->content->process($nextBody) : null,
                 'visibility' => $data['visibility'] ?? $currentVisibility,
+                'mood' => PostMood::normalize($data['mood'] ?? $nextMetadata['mood'] ?? $post->getAttribute('mood')),
                 'location' => $this->normalizeNullableString($data['location'] ?? $currentLocation),
+                'location_display_text' => $this->normalizeNullableString($data['location_display_text'] ?? $data['location'] ?? $post->getAttribute('location_display_text')),
                 'tagged_pets' => $data['tagged_pets'] ?? $currentTaggedPets,
                 'status' => $nextStatus->value,
                 'published_at' => $nextPublishedAt,
+                'scheduled_publish_at' => $nextScheduledPublishAt,
                 'metadata' => $nextMetadata,
+                'link_preview' => $nextLinkPreview,
                 'edited_at' => $editedAt,
+                'edit_count' => $editCount,
             ]);
 
             $this->processTags->handle($post);
+            $this->mentions->sync($post, $actor);
 
             $this->syncPetAttachment($actor, $post, $data);
 
@@ -122,6 +138,23 @@ class UpdatePostAction
         }
 
         return now();
+    }
+
+    private function resolveScheduledPublishAt(PostStatus $status, mixed $publishedAt): ?CarbonInterface
+    {
+        if ($status !== PostStatus::Scheduled) {
+            return null;
+        }
+
+        if ($publishedAt instanceof CarbonInterface) {
+            return $publishedAt;
+        }
+
+        if (is_string($publishedAt) && $publishedAt !== '') {
+            return CarbonImmutable::parse($publishedAt);
+        }
+
+        return null;
     }
 
     /**

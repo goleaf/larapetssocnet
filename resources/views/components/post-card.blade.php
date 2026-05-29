@@ -72,6 +72,18 @@
     $bodyHtml = $storedBodyHtml !== '' && ($body === '' || $storedBodyText === $body)
         ? $storedBodyHtml
         : nl2br(e($body));
+    $locationLabel = $post->location_display_text ?: $post->location;
+    $moodLabel = \App\Support\Posts\PostMood::label($post->mood);
+    $moodEmoji = \App\Support\Posts\PostMood::emoji($post->mood);
+    $linkPreview = is_array($post->link_preview ?? null) ? $post->link_preview : [];
+    $linkPreviewUrl = $linkPreview['url'] ?? null;
+    $linkPreviewTitle = $linkPreview['title'] ?? $linkPreview['domain'] ?? $linkPreviewUrl;
+    $linkPreviewDescription = $linkPreview['description'] ?? null;
+    $linkPreviewDomain = $linkPreview['domain'] ?? ($linkPreviewUrl ? parse_url((string) $linkPreviewUrl, PHP_URL_HOST) : null);
+    $quotePost = $post->relationLoaded('quotePost') ? $post->quotePost : null;
+    $originalPost = $post->relationLoaded('originalPost') ? $post->originalPost : null;
+    $relatedPost = $quotePost ?? $originalPost;
+    $relatedPostAuthor = $relatedPost?->user ?? ($relatedPost?->relationLoaded('author') ? $relatedPost?->author : null);
 
     $isVideoMedia = static fn (mixed $item): bool => $post::mediaItemIsVideo($item);
     $mediaUrl = static fn (mixed $item): string => $post::mediaItemUrl($item);
@@ -148,6 +160,13 @@
                                 {{ ucfirst($statusValue) }}
                             </span>
                         @endif
+
+                        @if ($post->edited_at)
+                            <span aria-hidden="true">•</span>
+                            <span class="inline-flex min-h-5 items-center text-xs shell-text-muted">
+                                Edited
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -213,6 +232,25 @@
         <div id="{{ $postBodyId }}" class="mt-3 whitespace-pre-line text-[0.95rem] leading-7 ui-text">{!! $bodyHtml !!}</div>
     @endif
 
+    @if ($relatedPost)
+        <a
+            href="{{ route('posts.show', $relatedPost) }}"
+            class="mt-4 block rounded-[var(--radius-soft)] border ui-border bg-cream/60 p-4 transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+        >
+            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-fur">
+                {{ $quotePost ? 'Quote post' : 'Repost' }}
+            </p>
+            <p class="mt-1 text-sm font-semibold ui-text">
+                {{ $relatedPostAuthor?->name ?? __('Community member') }}
+            </p>
+            @if (filled($relatedPost->body))
+                <p class="mt-2 line-clamp-3 text-sm leading-6 shell-text-muted">
+                    {{ $relatedPost->body }}
+                </p>
+            @endif
+        </a>
+    @endif
+
     @if ($post->relationLoaded('hashtags') && $post->hashtags->isNotEmpty())
         <div class="mt-3 flex flex-wrap gap-2">
             @foreach ($post->hashtags as $hashtag)
@@ -227,17 +265,47 @@
         </div>
     @endif
 
-    @if ($isOwner && $statusValue === 'scheduled' && $post->published_at)
+    @if ($isOwner && $statusValue === 'scheduled' && ($post->scheduled_publish_at || $post->published_at))
         <p class="mt-2 text-xs text-amber-700">
-            Scheduled for {{ $post->published_at->format('M j, Y g:i A') }}
+            Scheduled for {{ ($post->scheduled_publish_at ?? $post->published_at)->format('M j, Y g:i A') }}
         </p>
     @endif
 
-    @if ($post->location)
-        <p class="mt-3 ui-token">
-            <span aria-hidden="true">📍</span>
-            <span>{{ $post->location }}</span>
-        </p>
+    @if ($locationLabel || $moodLabel)
+        <div class="mt-3 flex flex-wrap gap-2">
+            @if ($locationLabel)
+                <p class="ui-token">
+                    <span aria-hidden="true">📍</span>
+                    <span>{{ $locationLabel }}</span>
+                </p>
+            @endif
+
+            @if ($moodLabel)
+                <p class="ui-token">
+                    <span aria-hidden="true">{{ $moodEmoji }}</span>
+                    <span>{{ $moodLabel }}</span>
+                </p>
+            @endif
+        </div>
+    @endif
+
+    @if ($linkPreviewUrl)
+        <a
+            href="{{ $linkPreviewUrl }}"
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            class="mt-4 block overflow-hidden rounded-[var(--radius-soft)] border ui-border bg-warm-white transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+        >
+            <div class="p-4">
+                @if ($linkPreviewDomain)
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-fur">{{ $linkPreviewDomain }}</p>
+                @endif
+                <p class="mt-1 line-clamp-2 text-sm font-semibold ui-text">{{ $linkPreviewTitle }}</p>
+                @if ($linkPreviewDescription)
+                    <p class="mt-2 line-clamp-2 text-sm leading-6 shell-text-muted">{{ $linkPreviewDescription }}</p>
+                @endif
+            </div>
+        </a>
     @endif
 
     @if ($shownMedia->isNotEmpty())

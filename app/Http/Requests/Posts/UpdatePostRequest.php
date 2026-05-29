@@ -7,6 +7,7 @@ use App\Models\Content\Post;
 use App\Models\Pets\Pet;
 use App\Services\PostMetadataService;
 use App\Support\Hashtags\HashtagParser;
+use App\Support\Posts\PostMood;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -29,12 +30,14 @@ class UpdatePostRequest extends FormRequest
             $payload['status'] = $this->input('status');
         }
 
-        if ($this->has('published_at')) {
+        if ($this->has('published_at') || $this->has('scheduled_publish_at')) {
             $payload['published_at'] = $this->normalizeNullableString($this->input('published_at'));
+            $payload['scheduled_publish_at'] = $this->normalizeNullableString($this->input('scheduled_publish_at') ?? $this->input('published_at'));
         }
 
         if ($this->has('location')) {
             $payload['location'] = $this->normalizeNullableString($this->input('location'));
+            $payload['location_display_text'] = $this->normalizeNullableString($this->input('location_display_text') ?? $this->input('location'));
         }
 
         if ($this->has('metadata')) {
@@ -49,7 +52,7 @@ class UpdatePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => ['nullable', 'string', 'max:5000'],
+            'body' => ['nullable', 'string', 'max:1000'],
             'status' => ['nullable', 'string', Rule::in([
                 PostStatus::Draft->value,
                 PostStatus::Published->value,
@@ -57,8 +60,13 @@ class UpdatePostRequest extends FormRequest
                 PostStatus::Archived->value,
             ])],
             'published_at' => ['nullable', 'date'],
+            'scheduled_publish_at' => ['nullable', 'date'],
             'visibility' => ['nullable', 'string', Rule::in(Post::visibilityValues())],
+            'mood' => ['nullable', 'string', Rule::in(PostMood::values())],
             'location' => ['nullable', 'string', 'max:100'],
+            'location_display_text' => ['nullable', 'string', 'max:120'],
+            'location_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'location_lng' => ['nullable', 'numeric', 'between:-180,180'],
             'metadata' => ['nullable', 'array'],
             'metadata.link' => ['nullable', 'array'],
             'metadata.link.url' => ['nullable', 'url', 'max:500'],
@@ -102,6 +110,8 @@ class UpdatePostRequest extends FormRequest
             $status = PostStatus::tryFrom((string) ($this->input('status') ?? PostStatus::Published->value)) ?? PostStatus::Published;
             $publishedAt = null;
             $publishedAtInput = $this->input('published_at');
+            $scheduledPublishAtInput = $this->input('scheduled_publish_at') ?: $publishedAtInput;
+            $scheduledPublishAt = null;
 
             if ($publishedAtInput) {
                 try {
@@ -111,15 +121,23 @@ class UpdatePostRequest extends FormRequest
                 }
             }
 
+            if ($scheduledPublishAtInput) {
+                try {
+                    $scheduledPublishAt = Carbon::parse((string) $scheduledPublishAtInput);
+                } catch (Throwable) {
+                    $validator->errors()->add('published_at', 'Publish date is invalid.');
+                }
+            }
+
             if ($status === PostStatus::Draft && $publishedAt) {
                 $validator->errors()->add('published_at', 'Draft posts cannot have a publish date.');
             }
 
-            if ($status === PostStatus::Scheduled && ! $publishedAt) {
+            if ($status === PostStatus::Scheduled && ! $scheduledPublishAtInput) {
                 $validator->errors()->add('published_at', 'Select a publish date for scheduled posts.');
             }
 
-            if ($status === PostStatus::Scheduled && $publishedAt && $publishedAt->isPast()) {
+            if ($status === PostStatus::Scheduled && $scheduledPublishAt && $scheduledPublishAt->isPast()) {
                 $validator->errors()->add('published_at', 'Scheduled posts must be set in the future.');
             }
 

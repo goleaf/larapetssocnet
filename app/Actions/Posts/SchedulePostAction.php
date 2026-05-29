@@ -22,6 +22,7 @@ class SchedulePostAction
             $post->update([
                 'status' => PostStatus::Scheduled->value,
                 'published_at' => $publishAt,
+                'scheduled_publish_at' => $publishAt,
             ]);
 
             $this->activity->log($actor, $post, 'scheduled');

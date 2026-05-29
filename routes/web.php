@@ -144,7 +144,7 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         ->name('events.ics');
     Route::get('/hashtags/{hashtag:slug}', [HashtagController::class, 'show'])->name('hashtags.show');
     Route::get('/posts/{post}', [PostController::class, 'show'])
-        ->whereNumber('post')
+        ->where('post', '[0-9]+|[0-9a-fA-F-]{36}')
         ->name('posts.show');
     Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
     Route::prefix('pets')->name('pets.')->group(function (): void {

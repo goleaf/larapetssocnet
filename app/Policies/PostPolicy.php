@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PostStatus;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\VisibilityService;
@@ -25,7 +26,17 @@ class PostPolicy
 
     public function update(User $user, Post $post): bool
     {
-        return $user->id === $post->user_id;
+        if ($user->id !== $post->user_id) {
+            return false;
+        }
+
+        $status = $post->status instanceof PostStatus ? $post->status : PostStatus::tryFrom((string) $post->status);
+
+        if (in_array($status, [PostStatus::Draft, PostStatus::Scheduled], true)) {
+            return true;
+        }
+
+        return $post->created_at === null || $post->created_at->greaterThanOrEqualTo(now()->subDay());
     }
 
     public function delete(User $user, Post $post): bool

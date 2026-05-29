@@ -8,7 +8,10 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\ContentService;
+use App\Services\PostDuplicateSubmissionGuard;
+use App\Services\PostMentionService;
 use App\Services\PostMetadataService;
+use App\Support\Posts\PostMood;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -23,6 +26,8 @@ class CreatePostAction
         private readonly ProcessTagsAction $processTags,
         private readonly UploadMediaAction $uploadMedia,
         private readonly PostMetadataService $metadata,
+        private readonly PostMentionService $mentions,
+        private readonly PostDuplicateSubmissionGuard $duplicates,
     ) {}
 
     /**
@@ -31,47 +36,67 @@ class CreatePostAction
     public function handle(User $user, array $data): Post
     {
         $this->authorizePetAttachments($user, $data);
+        $body = $this->content->plainText($data['body'] ?? null);
+        $status = $this->normalizeStatus($data['status'] ?? PostStatus::Published);
 
-        return DB::transaction(function () use ($user, $data): Post {
-            $mediaFiles = $this->normalizeMediaFiles($data['media_files'] ?? []);
-            $body = $this->normalizeNullableString($data['body'] ?? null);
-            $status = $this->normalizeStatus($data['status'] ?? PostStatus::Published);
-            $publishedAt = $this->resolvePublishedAt($status, $data['published_at'] ?? null);
-            $metadata = $this->metadata->normalize($data['metadata'] ?? null);
+        $create = function () use ($user, $data, $body, $status): Post {
+            return DB::transaction(function () use ($user, $data, $body, $status): Post {
+                $mediaFiles = $this->normalizeMediaFiles($data['media_files'] ?? []);
+                $publishedAt = $this->resolvePublishedAt($status, $data['published_at'] ?? null);
+                $scheduledPublishAt = $this->resolveScheduledPublishAt($status, $data['scheduled_publish_at'] ?? $data['published_at'] ?? null);
+                $metadata = $this->metadata->normalize($data['metadata'] ?? null);
+                $linkPreview = $this->metadata->linkPreview($body, $data['metadata'] ?? null);
+                $location = $this->normalizeNullableString($data['location'] ?? null);
 
-            $post = Post::query()->create([
-                'user_id' => $user->getKey(),
-                'group_id' => $data['group_id'] ?? null,
-                'pet_id' => $data['pet_id'] ?? ($data['tagged_pets'][0] ?? null),
-                'body' => $body,
-                'body_html' => $body ? $this->content->process($body) : null,
-                'type' => $this->resolveType($mediaFiles),
-                'status' => $status->value,
-                'published_at' => $publishedAt,
-                'visibility' => $data['visibility'] ?? Post::VISIBILITY_PUBLIC,
-                'location' => $this->normalizeNullableString($data['location'] ?? null),
-                'location_lat' => $data['location_lat'] ?? null,
-                'location_lng' => $data['location_lng'] ?? null,
-                'tagged_pets' => $data['tagged_pets'] ?? null,
-                'metadata' => $metadata,
-                'is_system_generated' => (bool) ($data['is_system_generated'] ?? false),
-                'system_source' => $this->normalizeNullableString($data['system_source'] ?? null),
-            ]);
+                $post = Post::query()->create([
+                    'user_id' => $user->getKey(),
+                    'author_type' => $user::class,
+                    'author_id' => $user->getKey(),
+                    'group_id' => $data['group_id'] ?? null,
+                    'pet_id' => $data['pet_id'] ?? ($data['tagged_pets'][0] ?? null),
+                    'body' => $body,
+                    'body_html' => $body ? $this->content->process($body) : null,
+                    'type' => $this->resolveType($mediaFiles),
+                    'status' => $status->value,
+                    'published_at' => $publishedAt,
+                    'scheduled_publish_at' => $scheduledPublishAt,
+                    'visibility' => $data['visibility'] ?? Post::VISIBILITY_PUBLIC,
+                    'mood' => PostMood::normalize($data['mood'] ?? $metadata['mood'] ?? null),
+                    'location' => $location,
+                    'location_display_text' => $this->normalizeNullableString($data['location_display_text'] ?? $location),
+                    'location_lat' => $data['location_lat'] ?? null,
+                    'location_lng' => $data['location_lng'] ?? null,
+                    'tagged_pets' => $data['tagged_pets'] ?? null,
+                    'metadata' => $metadata,
+                    'link_preview' => $linkPreview,
+                    'is_system_generated' => (bool) ($data['is_system_generated'] ?? false),
+                    'system_source' => $this->normalizeNullableString($data['system_source'] ?? null),
+                    'original_post_id' => $data['original_post_id'] ?? null,
+                    'quote_post_id' => $data['quote_post_id'] ?? null,
+                ]);
 
-            $this->processTags->handle($post);
+                $this->processTags->handle($post);
+                $this->mentions->sync($post, $user);
 
-            if ($mediaFiles !== []) {
-                $this->uploadMedia->handle($post, $mediaFiles);
-            }
+                if ($mediaFiles !== []) {
+                    $this->uploadMedia->handle($post, $mediaFiles);
+                }
 
-            $this->syncTaggedPets($post, $data);
+                $this->syncTaggedPets($post, $data);
 
-            DB::afterCommit(static function () use ($post): void {
-                PostCreated::dispatch($post);
+                DB::afterCommit(static function () use ($post): void {
+                    PostCreated::dispatch($post);
+                });
+
+                return $post;
             });
+        };
 
-            return $post;
-        });
+        if ($status !== PostStatus::Draft) {
+            return $this->duplicates->run($user, $body, $create);
+        }
+
+        return $create();
     }
 
     /**
@@ -205,5 +230,22 @@ class CreatePostAction
         }
 
         return now();
+    }
+
+    private function resolveScheduledPublishAt(PostStatus $status, mixed $publishedAt): ?CarbonInterface
+    {
+        if ($status !== PostStatus::Scheduled) {
+            return null;
+        }
+
+        if ($publishedAt instanceof CarbonInterface) {
+            return $publishedAt;
+        }
+
+        if (is_string($publishedAt) && $publishedAt !== '') {
+            return CarbonImmutable::parse($publishedAt);
+        }
+
+        return null;
     }
 }

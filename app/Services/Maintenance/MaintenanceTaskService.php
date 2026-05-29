@@ -6,7 +6,6 @@ use App\Actions\Hashtags\RecalculateHashtagUsageCountsAction;
 use App\Actions\Hashtags\SyncPostHashtagsAction;
 use App\Enums\GroupMemberRole;
 use App\Enums\GroupMemberStatus;
-use App\Enums\PostStatus;
 use App\Models\Content\Comment;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Like;
@@ -197,17 +196,13 @@ class MaintenanceTaskService
     public function publishScheduledPosts(): MaintenanceTaskResult
     {
         $published = 0;
-        $now = now();
-        $query = $this->postQuery();
-        $query->where('posts.status', PostStatus::Scheduled->value);
-        $query->whereNotNull('published_at');
-        $query->where('published_at', '<=', $now);
+        $query = $this->postQuery()->dueForPublication();
 
         $this->eachModelById(
             $query,
             100,
             function (Post $post) use (&$published): void {
-                $publishedAt = $post->getAttribute('published_at');
+                $publishedAt = $post->getAttribute('scheduled_publish_at') ?? $post->getAttribute('published_at');
 
                 $this->posts->publish($post, $publishedAt instanceof CarbonInterface ? $publishedAt : null);
                 $published++;

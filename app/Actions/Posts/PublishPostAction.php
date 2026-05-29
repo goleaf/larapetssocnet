@@ -22,6 +22,7 @@ class PublishPostAction
             $post->update([
                 'status' => PostStatus::Published->value,
                 'published_at' => $publishedAt ?? now(),
+                'scheduled_publish_at' => null,
             ]);
 
             $this->activity->log($actor, $post, 'published');

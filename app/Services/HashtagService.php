@@ -32,7 +32,10 @@ class HashtagService
         $attach = $ids->diff($existing);
         $detach = $existing->diff($ids);
 
-        $post->hashtags()->sync($ids);
+        $postCreatedAt = $post->getAttribute('created_at') ?? now();
+        $post->hashtags()->sync($ids->mapWithKeys(
+            fn (int $hashtagId): array => [$hashtagId => ['post_created_at' => $postCreatedAt]]
+        ));
 
         if (! $updateCounts || ! $this->isEligibleForUsage($post)) {
             return;

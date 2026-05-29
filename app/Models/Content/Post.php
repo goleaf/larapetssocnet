@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -41,28 +42,45 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 ])]
 #[Fillable([
     'user_id',
+    'uuid',
+    'author_type',
+    'author_id',
     'group_id',
     'pet_id',
     'body',
     'body_html',
     'metadata',
+    'link_preview',
     'type',
     'status',
     'published_at',
+    'scheduled_publish_at',
     'visibility',
+    'mood',
     'location',
+    'location_display_text',
     'location_lat',
     'location_lng',
     'tagged_pets',
     'is_pinned',
     'is_system_generated',
     'system_source',
+    'original_post_id',
+    'quote_post_id',
     'pinned_at',
     'edited_at',
+    'edit_count',
     'likes_count',
     'comments_count',
     'reactions_count',
+    'love_count',
+    'cute_count',
+    'funny_count',
+    'wow_count',
+    'sad_count',
+    'support_count',
     'shares_count',
+    'view_count',
     'save_count',
 ])]
 class Post extends Model implements HasMedia
@@ -101,17 +119,28 @@ class Post extends Model implements HasMedia
         return [
             'is_pinned' => 'boolean',
             'is_system_generated' => 'boolean',
+            'uuid' => 'string',
             'tagged_pets' => 'array',
             'group_id' => 'integer',
             'status' => PostStatus::class,
             'published_at' => 'datetime',
+            'scheduled_publish_at' => 'datetime',
             'pinned_at' => 'datetime',
             'edited_at' => 'datetime',
+            'edit_count' => 'integer',
             'metadata' => 'array',
+            'link_preview' => 'array',
             'likes_count' => 'integer',
             'comments_count' => 'integer',
             'reactions_count' => 'integer',
+            'love_count' => 'integer',
+            'cute_count' => 'integer',
+            'funny_count' => 'integer',
+            'wow_count' => 'integer',
+            'sad_count' => 'integer',
+            'support_count' => 'integer',
             'shares_count' => 'integer',
+            'view_count' => 'integer',
             'save_count' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -153,11 +182,40 @@ class Post extends Model implements HasMedia
             ->nonQueued();
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $post): void {
+            if (! filled($post->uuid)) {
+                $post->uuid = (string) Str::uuid();
+            }
+        });
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field !== null) {
+            return parent::resolveRouteBinding($value, $field);
+        }
+
+        $query = $this->newQuery()->where('uuid', $value);
+
+        if (ctype_digit((string) $value)) {
+            $query->orWhere($this->getKeyName(), (int) $value);
+        }
+
+        return $query->first();
+    }
+
     // Relationships
 
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function contentAuthor(): MorphTo
+    {
+        return $this->morphTo('author');
     }
 
     public function user(): BelongsTo
@@ -241,6 +299,28 @@ class Post extends Model implements HasMedia
     public function postReactions(): HasMany
     {
         return $this->hasMany(PostReaction::class);
+    }
+
+    public function postMentions(): HasMany
+    {
+        return $this->hasMany(PostMention::class);
+    }
+
+    public function mentionedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'post_mentions', 'post_id', 'mentioned_user_id')
+            ->withPivot(['mentioned_username'])
+            ->withTimestamps();
+    }
+
+    public function originalPost(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'original_post_id');
+    }
+
+    public function quotePost(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'quote_post_id');
     }
 
     public function savedBy(): BelongsToMany
@@ -403,6 +483,15 @@ class Post extends Model implements HasMedia
         return $query->select(['posts.*'])->where('posts.status', PostStatus::Scheduled->value);
     }
 
+    public function scopeDueForPublication(Builder $query): Builder
+    {
+        return $query
+            ->select(['posts.*'])
+            ->where('posts.status', PostStatus::Scheduled->value)
+            ->whereNotNull('posts.scheduled_publish_at')
+            ->where('posts.scheduled_publish_at', '<=', now());
+    }
+
     public function scopeArchived(Builder $query): Builder
     {
         return $query->select(['posts.*'])->where('posts.status', PostStatus::Archived->value);
@@ -442,14 +531,23 @@ class Post extends Model implements HasMedia
             'posts.body_html',
             'posts.type',
             'posts.visibility',
+            'posts.mood',
             'posts.status',
             'posts.published_at',
+            'posts.scheduled_publish_at',
             'posts.location',
+            'posts.location_display_text',
             'posts.tagged_pets',
             'posts.metadata',
+            'posts.link_preview',
             'posts.is_pinned',
+            'posts.is_system_generated',
+            'posts.system_source',
+            'posts.original_post_id',
+            'posts.quote_post_id',
             'posts.pinned_at',
             'posts.edited_at',
+            'posts.edit_count',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
@@ -476,14 +574,23 @@ class Post extends Model implements HasMedia
             'posts.body_html',
             'posts.type',
             'posts.visibility',
+            'posts.mood',
             'posts.status',
             'posts.published_at',
+            'posts.scheduled_publish_at',
             'posts.location',
+            'posts.location_display_text',
             'posts.tagged_pets',
             'posts.metadata',
+            'posts.link_preview',
             'posts.is_pinned',
+            'posts.is_system_generated',
+            'posts.system_source',
+            'posts.original_post_id',
+            'posts.quote_post_id',
             'posts.pinned_at',
             'posts.edited_at',
+            'posts.edit_count',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
@@ -556,14 +663,23 @@ class Post extends Model implements HasMedia
             'posts.body_html',
             'posts.type',
             'posts.visibility',
+            'posts.mood',
             'posts.status',
             'posts.published_at',
+            'posts.scheduled_publish_at',
             'posts.location',
+            'posts.location_display_text',
             'posts.tagged_pets',
             'posts.metadata',
+            'posts.link_preview',
             'posts.is_pinned',
+            'posts.is_system_generated',
+            'posts.system_source',
+            'posts.original_post_id',
+            'posts.quote_post_id',
             'posts.pinned_at',
             'posts.edited_at',
+            'posts.edit_count',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
@@ -572,7 +688,10 @@ class Post extends Model implements HasMedia
             'posts.created_at',
             'posts.updated_at',
             'posts.deleted_at',
-        ])->whereHas('hashtags', fn (Builder $hashtagQuery): Builder => $hashtagQuery->where('hashtags.normalized_name', $normalizedSlug));
+        ])
+            ->join('post_hashtag as hashtag_posts', 'hashtag_posts.post_id', '=', 'posts.id')
+            ->join('hashtags as matched_hashtags', 'matched_hashtags.id', '=', 'hashtag_posts.hashtag_id')
+            ->where('matched_hashtags.normalized_name', $normalizedSlug);
     }
 
     public function scopeExplorable(Builder $query, ?User $viewer): void
@@ -753,12 +872,21 @@ class Post extends Model implements HasMedia
             'posts.body_html',
             'posts.status',
             'posts.visibility',
+            'posts.mood',
             'posts.location',
+            'posts.location_display_text',
             'posts.tagged_pets',
             'posts.is_pinned',
+            'posts.is_system_generated',
+            'posts.system_source',
+            'posts.original_post_id',
+            'posts.quote_post_id',
             'posts.pinned_at',
             'posts.edited_at',
+            'posts.edit_count',
             'posts.published_at',
+            'posts.scheduled_publish_at',
+            'posts.link_preview',
             'posts.likes_count',
             'posts.comments_count',
             'posts.reactions_count',
@@ -771,6 +899,13 @@ class Post extends Model implements HasMedia
     public function scopeForProfile(Builder $query, User $user): Builder
     {
         return $query->where('posts.user_id', $user->getKey());
+    }
+
+    public function scopeAuthoredBy(Builder $query, Model $author): Builder
+    {
+        return $query
+            ->where('posts.author_type', $author::class)
+            ->where('posts.author_id', $author->getKey());
     }
 
     /**
@@ -1303,6 +1438,8 @@ class Post extends Model implements HasMedia
                 'pet.media',
                 'media',
                 'tags',
+                'originalPost.author',
+                'quotePost.author',
             ])
             ->withListEngagement($viewer?->getKey());
     }

@@ -67,6 +67,34 @@ class PostMetadataService
         return $normalized === [] ? null : $normalized;
     }
 
+    /**
+     * @param  array<string, mixed>|null  $metadata
+     * @return array<string, string>|null
+     */
+    public function linkPreview(?string $body, ?array $metadata = null): ?array
+    {
+        $metadata = $this->normalize($metadata);
+        $link = $metadata['link'] ?? null;
+
+        if (is_array($link) && isset($link['url'])) {
+            return $link;
+        }
+
+        $body = (string) $body;
+
+        if (! preg_match('/https?:\/\/[^\s<]+/i', $body, $matches)) {
+            return null;
+        }
+
+        $url = mb_substr(rtrim($matches[0], '.,!?)]}'), 0, 500);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return [
+            'url' => $url,
+            'title' => is_string($host) && $host !== '' ? $host : $url,
+        ];
+    }
+
     private function normalizeScalar(mixed $value): ?string
     {
         if (is_bool($value) || is_numeric($value)) {

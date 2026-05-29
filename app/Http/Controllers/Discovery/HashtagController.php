@@ -30,7 +30,7 @@ class HashtagController extends Controller
                 fn ($query) => $query->when(
                     $sort === 'top',
                     fn ($topQuery) => $topQuery->topRated(),
-                    fn ($latestQuery) => $latestQuery->latest('posts.created_at')
+                    fn ($latestQuery) => $latestQuery->orderByDesc('hashtag_posts.post_created_at')
                 )
             )
             ->paginate(20)

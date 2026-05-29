@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed
-- Fixed pet profile validation so whitespace-only names are rejected after normalization.
+  - Fixed pet profile validation so whitespace-only names are rejected after normalization.
 - Fixed blocked pet profile requests to return not found instead of exposing a normal authorization denial.
 - Fixed pet birthday notifications to use an indexed birthday lookup key instead of month/day function scans.
 - Fixed pet deletion cleanup so posts tagged through the normalized `pet_post` table are soft-deleted with legacy pet-owned posts.
@@ -28,6 +28,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added post creation coverage for rich posts with pet tags, hashtags, mentions, mood, location, link previews, duplicate-submission blocking, scheduled publication, edit-window authorization, quote/repost references, private visibility filtering, and draft autosave restore/clear behavior.
 - Added pet family relationship and health reminder coverage for bidirectional links, private-pet link blocking, due notifications, invalid custom reminders, and archived-pet skips.
 - Added pet co-owner invitation and ownership transfer coverage for acceptance, decline, expiry, role storage, and owner capability preservation before transfer acceptance.
 - Added pet profile coverage for avatar upload validation, guest follow redirects, follower-only timeline access, blocked-viewer not-found responses, milestone edits preserving shared posts, and chronological weight trend data.
@@ -46,6 +47,8 @@
 
 ### Changed
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
+- Updated the post composer and shared post card to enforce the 1000-character plain-text content model and surface mood, scheduled publish timestamps, normalized location labels, link preview cards, edited labels, UUID share URLs, and quote/repost context.
+- Updated scheduled post publication to use the indexed `scheduled_publish_at` column and a lock-protected `posts:publish-scheduled` command.
 - Changed new pet profile slugs to use the pet name plus a six-character random suffix while preserving existing slug route binding.
 - Changed pet profile routing to use canonical authenticated `/pets/@{pet:slug}` URLs while keeping legacy slug URLs as redirects.
 - Changed pet ownership to store canonical Owner/Admin/Poster/Viewer roles with a policy capability matrix while keeping legacy scoped booleans synchronized.
@@ -95,6 +98,7 @@
 - Refined the profile Photos tab into a uniform square two-column mobile/tablet and three-column desktop grid with a desktop hover overlay for reaction and comment counts.
 
 ### Added
+- Added post system schema support for UUID public identifiers, FQCN polymorphic authorship, mention records, autosaved drafts, per-type reaction counters, view counts, JSON link previews, and quote/repost references.
 - Added two-phase pet co-owner invitations and ownership transfers with database notifications, route handlers, form requests, services, policy-backed authorization, and daily expiry commands.
 - Added pet family relationship linking with transactional inverse relationship creation and visibility checks that prevent private pet disclosure.
 - Added daily pet health reminders with configurable schedule time, database notifications for primary owners and accepted co-owners, and due-date advancement after dispatch.
