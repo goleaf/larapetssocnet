@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added owner-only post analytics from shared post cards, with a compact Livewire modal for views, reaction breakdowns, comments, shares, estimated reach, and a server-rendered comparison chart.
 - Added a Livewire post share menu with mobile bottom-sheet and desktop popover layouts for reposting, quote posting, and copying canonical post links.
 - Added a deliberate Livewire post deletion confirmation flow with post previews, optimistic card removal, and a queued deletion cascade for soft deletes, pet tag counters, hashtag counts, and saved-post placeholders.
 - Added modal post editing through the shared Livewire composer, including stored post hydration, edit success events, and owner post-card menu access.
@@ -46,6 +47,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added post analytics coverage for author-only trigger rendering, direct authorization, non-author view counting, reaction counter breakdowns, estimated reach, and SVG chart rendering.
 - Added coverage for repost creation and share counters, quote-post composer submission, share-menu rendering, and shared post-card quote/repost embeds.
 - Added post deletion coverage for the confirmation modal, optimistic removal event, queued cascade side effects, and deleted saved-post placeholders.
 - Added Livewire and action coverage for edit-mode composer hydration, post updates, edit-window errors, post-card edit menu states, edited labels, and newly added mention notifications.
@@ -78,6 +80,7 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Changed post-card rendering to increment `posts.view_count` only for authenticated non-author renders in feed and profile contexts, while detail, explore, group, and saved contexts remain non-counting.
 - Changed post editing to enforce the 24-hour window in the post-card UI, post policy, and `UpdatePostAction`, while re-syncing hashtags, mentions, pet tags, location, mood, visibility, and link preview state.
 - Changed post-created browser events to include composer identity, status, author, body, and toast metadata so page-level listeners can react without guessing at component state.
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.

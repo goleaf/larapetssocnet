@@ -28,11 +28,41 @@ it('toggles post reactions and updates likes_count', function (): void {
         'type' => 'love',
     ]);
 
+    $this->assertDatabaseHas('posts', [
+        'id' => $post->id,
+        'likes_count' => 1,
+        'reactions_count' => 1,
+        'love_count' => 1,
+        'cute_count' => 0,
+    ]);
+
     $this->actingAs($user)
-        ->postJson(route('posts.react', $post), ['type' => 'love'])
+        ->postJson(route('posts.react', $post), ['type' => 'cute'])
+        ->assertOk()
+        ->assertJsonPath('data.likes_count', 1)
+        ->assertJsonPath('data.current_reaction', 'cute');
+
+    $this->assertDatabaseHas('posts', [
+        'id' => $post->id,
+        'likes_count' => 1,
+        'reactions_count' => 1,
+        'love_count' => 0,
+        'cute_count' => 1,
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('posts.react', $post), ['type' => 'cute'])
         ->assertOk()
         ->assertJsonPath('data.likes_count', 0)
         ->assertJsonPath('data.current_reaction', null);
+
+    $this->assertDatabaseHas('posts', [
+        'id' => $post->id,
+        'likes_count' => 0,
+        'reactions_count' => 0,
+        'love_count' => 0,
+        'cute_count' => 0,
+    ]);
 });
 
 it('accepts all supported reaction types and rejects invalid type', function (): void {

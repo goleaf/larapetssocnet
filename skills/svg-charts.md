@@ -13,3 +13,12 @@ Use pure server-rendered SVG. No JS chart libraries.
 - Add dot `<title>` tooltips.
 - Use Warm Editorial paw color tokens and responsive width `100%`.
 - Static rendering only (no animation).
+
+## Post analytics comparison
+`PostEngagementComparisonSvg::render(iterable $metrics): ?string`
+
+- Return `null` when there are no numeric metrics.
+- Render grouped bars for this post and the author's recent-post average.
+- Keep the SVG self-contained with `role="img"` and an accessible label.
+- Escape all labels before embedding them into SVG text or title nodes.
+- Use Warm Editorial paw and leaf color tokens, responsive width `100%`, and static rendering only.

@@ -34,6 +34,13 @@
     $showPinnedProfileBanner = $context === 'profile' && $post->is_pinned && $instance === 'pinned-highlight';
     $statusValue = $post->status?->value ?? (string) $post->status;
     $isScheduledProfilePost = $context === 'profile' && $isOwner && $statusValue === 'scheduled';
+
+    app(\App\Actions\Posts\RecordPostViewAction::class)->handle(
+        $viewer instanceof \App\Models\Identity\User ? $viewer : null,
+        $post,
+        (string) $context,
+    );
+
     $likeCount = (int) ($post->likes_count ?? $post->reactions_count ?? 0);
     $isLiked = (bool) ($post->liked_by_viewer ?? false);
     $commentCount = (int) ($post->comments_count ?? 0);
@@ -194,6 +201,10 @@
         <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
             @if ($author && ! $isOwner)
                 <x-follow-button :user="$author" :follow-status="$followStatus ?? 'none'" size="sm"/>
+            @endif
+
+            @if ($isOwner)
+                <livewire:posts.analytics-trigger :post="$post" :key="'post-analytics-trigger-'.$post->getKey().'-'.$postDomId" />
             @endif
 
             @if ($showOwnerMenu)

@@ -5,7 +5,7 @@
 ## Props
 - `$post`: eager-loaded `Post` model.
 - `$viewer`: optional viewer, defaults to `auth()->user()`.
-- `$context`: `feed|profile|explore`.
+- `$context`: `feed|profile|explore|detail|group|saved`.
 
 ## Sections Order
 1. Pinned banner (only the dedicated profile pinned-highlight instance).
@@ -25,6 +25,14 @@
 - Use `liked_by_viewer`, `saved_by_viewer`, and counter attributes when eager-loaded by feed queries.
 - Avoid new per-card database queries for reaction or save state.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
+- Count `posts.view_count` during authenticated non-author `feed` and `profile` renders only. Pass explicit non-counting contexts such as `detail`, `explore`, `group`, or `saved` for cards that should not contribute to author analytics.
+
+## Author Analytics
+- Render the owner-only chart trigger from `x-post-card`, not page-specific menus.
+- Author analytics must authorize through `PostPolicy::viewAnalytics` before loading metric data.
+- Keep analytics reads on counter-cache columns for views, reaction totals, comments, and shares. Per-type reaction breakdowns come from the `*_count` reaction columns.
+- Estimated reach is an approximation: author follower count plus follower counts for users who reposted the original post.
+- Render the comparison chart as server-generated inline SVG through `PostEngagementComparisonSvg`; do not introduce a browser charting dependency.
 
 ## Share Menu
 - Render sharing through the reusable Livewire `posts.share-menu` in the action row, not through page-local JavaScript.

@@ -44,7 +44,7 @@
     <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div class="space-y-5">
             @forelse ($posts as $post)
-                <x-post-card :post="$post"/>
+                <x-post-card :post="$post" context="explore"/>
             @empty
                 <x-ui.empty-state
                     title="No posts found"

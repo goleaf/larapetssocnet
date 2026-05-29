@@ -46,13 +46,16 @@ class ReactionService
                 $existing->delete();
                 $post->decrementCounter('likes_count');
                 $post->decrementCounter('reactions_count');
+                $post->decrementCounter($this->counterColumn($normalizedType));
                 $this->postAuthor($post)?->decrementCounter('post_reactions_received_count');
 
                 return ['action' => 'removed', 'current_reaction' => null];
             }
 
             if ($existing) {
+                $post->decrementCounter($this->counterColumn(Reaction::normalizeType((string) $existing->type)));
                 $existing->update(['type' => $normalizedType]);
+                $post->incrementCounter($this->counterColumn($normalizedType));
 
                 return ['action' => 'changed', 'current_reaction' => $normalizedType];
             }
@@ -66,6 +69,7 @@ class ReactionService
 
             $post->incrementCounter('likes_count');
             $post->incrementCounter('reactions_count');
+            $post->incrementCounter($this->counterColumn($normalizedType));
             $this->postAuthor($post)?->incrementCounter('post_reactions_received_count');
 
             return ['action' => 'added', 'current_reaction' => $normalizedType];
@@ -100,6 +104,11 @@ class ReactionService
             'acceptedFollowers',
             'acceptedFollowing',
         ]);
+    }
+
+    private function counterColumn(string $type): string
+    {
+        return $type.'_count';
     }
 
     private function postAuthor(Post $post): ?User

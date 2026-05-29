@@ -56,7 +56,7 @@
  <ul role="feed" aria-label="Explore public posts" class="space-y-4">
  @forelse ($posts as $post)
  <li aria-label="{{ __('Post by :name', ['name' => $post->author?->name ?? __('a community member')]) }}">
- <x-post-card :post="$post"/>
+ <x-post-card :post="$post" context="explore"/>
  </li>
  @empty
  <li>

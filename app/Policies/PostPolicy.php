@@ -103,4 +103,9 @@ class PostPolicy
 
         return $this->view($user, $post);
     }
+
+    public function viewAnalytics(User $user, Post $post): bool
+    {
+        return $user->id === $post->user_id;
+    }
 }

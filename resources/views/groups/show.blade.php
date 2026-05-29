@@ -320,7 +320,7 @@
 
  <div class="space-y-4" data-group-feed-items>
  @forelse ($feedPosts ?? [] as $post)
-    <x-post-card :post="$post" :viewer="$viewer"/>
+    <x-post-card :post="$post" :viewer="$viewer" context="group"/>
  @empty
  <x-ui.empty-state
  title="No Group Posts Yet"

@@ -4,7 +4,7 @@
  </x-slot>
 
  <div class="mx-auto max-w-4xl space-y-5 py-8">
- <x-post-card :post="$post"/>
+ <x-post-card :post="$post" context="detail"/>
 
  @if ($taggedPets->isNotEmpty())
  <x-ui.card>

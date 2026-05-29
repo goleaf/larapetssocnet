@@ -38,7 +38,7 @@
  class="font-semibold text-gray-700 underline hover:text-red-600">Unsave</button>
  </form>
  </div>
- <x-post-card :post="$savedPost->post" :instance="'saved-'.$savedPost->getKey()" />
+ <x-post-card :post="$savedPost->post" context="saved" :instance="'saved-'.$savedPost->getKey()" />
  @endif
  @endif
  @empty

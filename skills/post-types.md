@@ -41,6 +41,12 @@ Post deletion from the shared post card is a Livewire-confirmed queued flow. The
 
 Use the shared Livewire `posts.share-menu` from `x-post-card` for all post-card sharing. The menu renders as a mobile bottom sheet and desktop popover with Repost, Quote post, and Copy link. Repost is a single-tap action that creates a new post for the actor with `original_post_id` set, no body content, normal feed fan-out, and a share-counter increment on the original post. Quote post opens the shared composer in modal mode with `quotePostId`; the composer renders the original post preview below the editor and creates the new post with `quote_post_id` plus the viewer's commentary. Copy link remains a clipboard action with fallback, but it should call the share tracking action so counters and analytics stay consistent.
 
+## Post Analytics
+
+Use the shared Livewire `posts.analytics-trigger` from `x-post-card` for owner-only post analytics. It must authorize with `PostPolicy::viewAnalytics`, load metrics through `PostAnalyticsService`, and render a compact modal with counter-cache values for views, reactions, comments, shares, estimated reach, reaction breakdowns, and a server-side SVG comparison chart.
+
+Count views through `RecordPostViewAction` only when a post card renders in `feed` or `profile` context for an authenticated non-author. Pass explicit non-counting contexts for post detail, explore/hashtag discovery, group feeds, and saved-post pages.
+
 ## Composer Edit Mode
 
 Use the shared Livewire `posts.composer` for editing by mounting it in modal mode with `editPostId`. Edit mode must hydrate body text, existing media previews, pet chips, location, mood, visibility, and link preview state from the stored post, show the "Editing post" banner, disable draft autosave, and submit through `UpdatePostAction` rather than `CreatePostAction`. Post edits are limited to 24 hours from `posts.created_at`; enforce the window in the post-card menu, `PostPolicy`, and `UpdatePostAction`. Successful edits dispatch `post-updated` with the post ID and `toast-message` with "Post updated.", then close the modal. Mention notifications after an edit must be sent only for newly added mentions.
