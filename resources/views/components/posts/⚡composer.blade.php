@@ -10,6 +10,7 @@ use App\Models\Pets\Species;
 use App\Services\LocationAutocompleteService;
 use App\Services\PostDraftService;
 use App\Support\Posts\PostMood;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -115,6 +116,16 @@ new class extends Component
     public string $selectedVisibility = Post::VISIBILITY_PUBLIC;
 
     public ?string $scheduledPublishAt = null;
+
+    public ?string $scheduledDisplayText = null;
+
+    public ?string $scheduledDate = null;
+
+    public ?string $scheduledHour = null;
+
+    public ?string $scheduledMinute = null;
+
+    public bool $schedulePickerOpen = false;
 
     /**
      * @var array<string, mixed>
@@ -308,6 +319,47 @@ new class extends Component
     public function removeMood(): void
     {
         $this->selectedMood = null;
+    }
+
+    public function setScheduledPost(
+        string $utcDateTime,
+        string $displayText,
+        ?string $date = null,
+        ?string $hour = null,
+        ?string $minute = null,
+    ): void {
+        try {
+            $scheduledAt = CarbonImmutable::parse($utcDateTime)->utc();
+        } catch (Throwable) {
+            $this->addError('scheduledPublishAt', 'Choose a valid future publish time.');
+
+            return;
+        }
+
+        if ($scheduledAt->lessThanOrEqualTo(CarbonImmutable::now('UTC'))) {
+            $this->addError('scheduledPublishAt', 'Choose a future publish time.');
+
+            return;
+        }
+
+        $this->resetErrorBag('scheduledPublishAt');
+        $this->scheduledPublishAt = $scheduledAt->toIso8601String();
+        $this->scheduledDisplayText = trim(mb_substr($displayText, 0, 80));
+        $this->scheduledDate = $this->normalizeNullableString($date);
+        $this->scheduledHour = $this->normalizeNullableString($hour);
+        $this->scheduledMinute = $this->normalizeNullableString($minute);
+        $this->schedulePickerOpen = false;
+    }
+
+    public function clearSchedule(): void
+    {
+        $this->scheduledPublishAt = null;
+        $this->scheduledDisplayText = null;
+        $this->scheduledDate = null;
+        $this->scheduledHour = null;
+        $this->scheduledMinute = null;
+        $this->schedulePickerOpen = false;
+        $this->resetErrorBag('scheduledPublishAt');
     }
 
     public function selectVisibility(string $visibility): void
@@ -565,7 +617,16 @@ new class extends Component
             $this->selectedPetIds = $this->normalizePetIds($draft->tagged_pets ?? []);
         }
         $this->linkPreviewData = is_array($draft->link_preview) ? $draft->link_preview : [];
-        $this->scheduledPublishAt = $draft->scheduled_publish_at?->format('Y-m-d\TH:i');
+        if ($draft->scheduled_publish_at !== null) {
+            $scheduledAt = CarbonImmutable::instance($draft->scheduled_publish_at)->utc();
+            $localScheduledAt = $scheduledAt->timezone((string) config('app.timezone'));
+
+            $this->scheduledPublishAt = $scheduledAt->toIso8601String();
+            $this->scheduledDisplayText = $localScheduledAt->format('M j, Y \a\t g:i A');
+            $this->scheduledDate = $localScheduledAt->format('Y-m-d');
+            $this->scheduledHour = $localScheduledAt->format('H');
+            $this->scheduledMinute = $localScheduledAt->format('i');
+        }
         $this->enforceFixedPetTag();
     }
 
@@ -804,7 +865,7 @@ new class extends Component
         $this->locationPickerOpen = false;
         $this->locationSuggestionsOpen = false;
         $this->selectedMood = null;
-        $this->scheduledPublishAt = null;
+        $this->clearSchedule();
         $this->linkPreviewData = [];
         $this->draftId = null;
         $this->duplicateDetected = false;
@@ -882,6 +943,7 @@ new class extends Component
  $selectedVisibilityOption = $this->selectedVisibilityOption();
  $moodOptions = PostMood::DISPLAY;
  $selectedMoodDisplay = $selectedMood ? ($moodOptions[$selectedMood] ?? null) : null;
+ $minuteOptions = ['00', '15', '30', '45'];
  $visibilityIcon = static function (string $visibility, string $classes = 'h-4 w-4'): string {
      $baseAttributes = 'class="'.$classes.'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
 
@@ -1042,6 +1104,28 @@ new class extends Component
  </p>
  @endif
 
+ @if (filled($scheduledPublishAt) && filled($scheduledDisplayText))
+ <p class="inline-flex max-w-full items-center gap-1.5 text-sm font-semibold text-amber-dark" aria-live="polite">
+ <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="M5 3v3"/>
+ <path d="M15 3v3"/>
+ <path d="M3.5 7.5h13"/>
+ <path d="M5.5 4.5h9A2.5 2.5 0 0 1 17 7v8a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 3 15V7a2.5 2.5 0 0 1 2.5-2.5Z"/>
+ </svg>
+ <span class="truncate">Scheduled for {{ $scheduledDisplayText }}</span>
+ <button
+ type="button"
+ wire:click="clearSchedule"
+ class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-amber-dark transition hover:bg-amber/15 hover:text-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-label="Cancel scheduled post"
+ >
+ <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+ </p>
+ @endif
+
  @if ($taggedPets->isNotEmpty() || filled($locationDisplayText))
  <div class="flex flex-wrap gap-2" aria-label="Post tags">
  @if (filled($locationDisplayText))
@@ -1082,6 +1166,123 @@ new class extends Component
  @endunless
  </span>
  @endforeach
+ </div>
+ @endif
+
+ @if ($schedulePickerOpen)
+ <div
+ class="rounded-[var(--radius-soft)] border border-amber/25 bg-amber-light/25 p-4"
+ x-data="postSchedulePicker({
+ initialIso: @js($scheduledPublishAt),
+ selectedDate: @js($scheduledDate),
+ selectedHour: @js($scheduledHour),
+ selectedMinute: @js($scheduledMinute),
+ })"
+ x-init="init()"
+ wire:transition
+ >
+ <div class="flex flex-col gap-4 lg:flex-row">
+ <div class="min-w-0 flex-1">
+ <div class="mb-3 flex items-center justify-between gap-3">
+ <button
+ type="button"
+ class="inline-flex h-9 w-9 items-center justify-center rounded-full text-fur transition hover:bg-warm-white hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="previousMonth()"
+ aria-label="Previous month"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="m12 15-5-5 5-5"/>
+ </svg>
+ </button>
+ <p class="text-sm font-bold text-bark" x-text="monthLabel"></p>
+ <button
+ type="button"
+ class="inline-flex h-9 w-9 items-center justify-center rounded-full text-fur transition hover:bg-warm-white hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ x-on:click="nextMonth()"
+ aria-label="Next month"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <path d="m8 5 5 5-5 5"/>
+ </svg>
+ </button>
+ </div>
+
+ <div class="grid grid-cols-7 gap-1 text-center text-[0.7rem] font-bold uppercase tracking-wide text-fur" aria-hidden="true">
+ <span>Sun</span>
+ <span>Mon</span>
+ <span>Tue</span>
+ <span>Wed</span>
+ <span>Thu</span>
+ <span>Fri</span>
+ <span>Sat</span>
+ </div>
+
+ <div class="mt-2 grid grid-cols-7 gap-1" role="grid" aria-label="Select a date">
+ <template x-for="day in calendarDays" :key="day.key">
+ <button
+ type="button"
+ class="aspect-square rounded-full text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-35"
+ x-bind:class="dayButtonClass(day)"
+ x-bind:disabled="day.disabled || !day.inMonth"
+ x-on:click="selectDate(day.iso)"
+ x-bind:aria-pressed="(selectedDate === day.iso).toString()"
+ x-text="day.day"
+ ></button>
+ </template>
+ </div>
+ </div>
+
+ <div class="w-full space-y-4 lg:w-56">
+ <div>
+ <p class="text-sm font-bold text-bark">Select a time</p>
+ <p class="mt-1 text-xs leading-5 text-fur">Times use your local timezone and publish in 15-minute increments.</p>
+ </div>
+ <div class="grid grid-cols-2 gap-2">
+ <label class="space-y-1">
+ <span class="text-xs font-semibold text-fur">Hour</span>
+ <select
+ x-model="selectedHour"
+ class="h-[var(--control-height-md)] w-full rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm font-semibold text-bark focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
+ aria-label="Scheduled hour"
+ >
+ @for ($hour = 0; $hour < 24; $hour++)
+ @php
+     $hourValue = str_pad((string) $hour, 2, '0', STR_PAD_LEFT);
+ @endphp
+ <option value="{{ $hourValue }}" x-bind:disabled="isTimeDisabled('{{ $hourValue }}', selectedMinute)">{{ $hourValue }}</option>
+ @endfor
+ </select>
+ </label>
+
+ <label class="space-y-1">
+ <span class="text-xs font-semibold text-fur">Minute</span>
+ <select
+ x-model="selectedMinute"
+ class="h-[var(--control-height-md)] w-full rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-3 text-sm font-semibold text-bark focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/15"
+ aria-label="Scheduled minute"
+ >
+ @foreach ($minuteOptions as $minuteValue)
+ <option value="{{ $minuteValue }}" x-bind:disabled="isTimeDisabled(selectedHour, '{{ $minuteValue }}')">{{ $minuteValue }}</option>
+ @endforeach
+ </select>
+ </label>
+ </div>
+
+ <p class="text-sm font-semibold text-amber-dark" x-show="previewText" x-text="`Scheduled for ${previewText}`"></p>
+ <button
+ type="button"
+ class="inline-flex h-[var(--control-height-md)] w-full items-center justify-center gap-2 rounded-[var(--radius-soft)] bg-amber px-4 text-sm font-bold text-bark transition hover:bg-amber-dark hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-50"
+ x-bind:disabled="!canApply"
+ x-on:click="applySchedule($wire)"
+ >
+ Apply schedule
+ </button>
+ </div>
+ </div>
+
+ @error('scheduledPublishAt')
+ <p class="mt-3 text-sm font-medium text-rose">{{ $message }}</p>
+ @enderror
  </div>
  @endif
 
@@ -1231,6 +1432,18 @@ new class extends Component
  </div>
  </div>
  </div>
+ <button
+ type="button"
+ class="{{ $schedulePickerOpen || filled($scheduledPublishAt) ? 'bg-amber/10 text-amber-dark' : 'text-fur hover:bg-amber/10 hover:text-amber-dark' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ wire:click="$toggle('schedulePickerOpen')"
+ aria-label="Schedule post"
+ aria-expanded="{{ $schedulePickerOpen ? 'true' : 'false' }}"
+ >
+ <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <circle cx="10" cy="10" r="7"/>
+ <path d="M10 6v4l2.5 1.5"/>
+ </svg>
+ </button>
  <button
  type="button"
  class="{{ $locationPickerOpen || filled($locationDisplayText) ? 'bg-leaf/10 text-leaf' : 'text-fur hover:bg-leaf/10 hover:text-leaf' }} inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
@@ -1435,10 +1648,6 @@ new class extends Component
  </div>
  </div>
 
- <div class="grid gap-4 md:grid-cols-3">
- <x-ui.input id="{{ $composerId }}-scheduled" label="Schedule" type="datetime-local" wire:model.blur="scheduledPublishAt" />
- </div>
-
  <div class="flex flex-col gap-3 border-t border-whisker/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
  <div class="min-h-5 text-xs text-fur" role="status">
  <span wire:loading.remove wire:target="autosaveDraft">
@@ -1533,8 +1742,8 @@ new class extends Component
  wire:target="submit,confirmDuplicateAndSubmit"
  x-bind:disabled="characterCount > maxCharacters || hasActiveUploads"
  >
- <span wire:loading.remove wire:target="submit,confirmDuplicateAndSubmit">Post</span>
- <span wire:loading wire:target="submit,confirmDuplicateAndSubmit">Posting...</span>
+ <span wire:loading.remove wire:target="submit,confirmDuplicateAndSubmit">{{ filled($scheduledPublishAt) ? 'Schedule' : 'Post' }}</span>
+ <span wire:loading wire:target="submit,confirmDuplicateAndSubmit">{{ filled($scheduledPublishAt) ? 'Scheduling...' : 'Posting...' }}</span>
  </x-ui.button>
  </div>
  </div>

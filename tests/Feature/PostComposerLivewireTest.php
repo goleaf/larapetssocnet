@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PostStatus;
 use App\Jobs\FeedFanOutJob;
 use App\Jobs\MediaProcessingJob;
 use App\Models\Content\Post;
@@ -95,6 +96,48 @@ it('renders the location tag picker controls', function (): void {
         ->assertSeeHtml('placeholder="Add a location."')
         ->assertSeeHtml('wire:model.live.debounce.400ms="locationSearch"')
         ->assertSee('Searching locations...');
+});
+
+it('renders the scheduled posting picker controls', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->assertSeeHtml('aria-label="Schedule post"')
+        ->assertDontSeeHtml('type="datetime-local"')
+        ->set('schedulePickerOpen', true)
+        ->assertSeeHtml('postSchedulePicker(')
+        ->assertSee('Select a date')
+        ->assertSee('Select a time')
+        ->assertSee('Times use your local timezone and publish in 15-minute increments.')
+        ->assertSee('Apply schedule');
+});
+
+it('sets and clears a scheduled publish time from the composer', function (): void {
+    $user = User::factory()->create();
+    $future = now('UTC')->addDay()->setTime(9, 0, 0);
+    $displayText = $future->format('M j, Y \a\t g:i A');
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->call(
+            'setScheduledPost',
+            $future->toIso8601String(),
+            $displayText,
+            $future->format('Y-m-d'),
+            '09',
+            '00',
+        )
+        ->assertSet('scheduledPublishAt', $future->toIso8601String())
+        ->assertSet('scheduledDisplayText', $displayText)
+        ->assertSet('schedulePickerOpen', false)
+        ->assertSee('Scheduled for '.$displayText)
+        ->assertSeeHtml('aria-label="Cancel scheduled post"')
+        ->assertSee('Schedule')
+        ->call('clearSchedule')
+        ->assertSet('scheduledPublishAt', null)
+        ->assertSet('scheduledDisplayText', null)
+        ->assertDontSee('Scheduled for '.$displayText);
 });
 
 it('loads post composer location suggestions and stores selected coordinates', function (): void {
@@ -339,6 +382,36 @@ it('creates a post through the action pipeline', function (): void {
         ->and($post->pets()->whereKey($pet->getKey())->exists())->toBeTrue();
 
     Queue::assertPushed(FeedFanOutJob::class);
+});
+
+it('creates scheduled posts without immediate feed fanout', function (): void {
+    Queue::fake([FeedFanOutJob::class]);
+
+    $user = User::factory()->create();
+    $future = now('UTC')->addDay()->setTime(10, 15, 0);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->set('textContent', 'Tomorrow morning update')
+        ->call(
+            'setScheduledPost',
+            $future->toIso8601String(),
+            $future->format('M j, Y \a\t g:i A'),
+            $future->format('Y-m-d'),
+            '10',
+            '15',
+        )
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertDispatched('post-created');
+
+    $post = Post::query()->firstOrFail();
+
+    expect($post->body)->toBe('Tomorrow morning update')
+        ->and($post->status)->toBe(PostStatus::Scheduled)
+        ->and($post->scheduled_publish_at?->toIso8601String())->toBe($future->toIso8601String());
+
+    Queue::assertNotPushed(FeedFanOutJob::class);
 });
 
 it('passes ordered temporary media attachments to the creation pipeline', function (): void {

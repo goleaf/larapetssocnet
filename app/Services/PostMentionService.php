@@ -23,7 +23,7 @@ class PostMentionService
         )));
     }
 
-    public function sync(Post $post, User $author): void
+    public function sync(Post $post, User $author, bool $dispatchNotifications = true): void
     {
         $usernames = $this->extractUsernames((string) $post->getAttribute('body'));
 
@@ -42,7 +42,7 @@ class PostMentionService
 
         $post->mentionedUsers()->sync($payload);
 
-        if ($mentionedUsers->isEmpty()) {
+        if ($mentionedUsers->isEmpty() || ! $dispatchNotifications) {
             return;
         }
 

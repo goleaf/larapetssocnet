@@ -19,6 +19,12 @@ Use the shared Livewire `posts.composer` location controls instead of raw locati
 
 Use the shared Livewire `posts.composer` mood controls instead of raw select fields. The toolbar mood button opens a compact emoji grid backed by `PostMood::DISPLAY`; selecting a mood stores the existing mood value, closes the popover, and renders an italic "feeling {emoji} {label}" indicator below the editor with a remove button. Keep mood labels and emoji centralized in `PostMood` so composer, post card, and validation behavior stay aligned.
 
+## Composer Scheduled Posting
+
+Use the shared Livewire `posts.composer` scheduled-post controls instead of raw `datetime-local` fields. The toolbar clock opens an inline month calendar plus hour/minute selectors in 15-minute increments, disables past dates/times in the browser, and calls `setScheduledPost()` with a UTC ISO timestamp generated from the viewer's local selection. Scheduled posts render a removable "Scheduled for ..." indicator below the editor, change the submit button to "Schedule", persist as `PostStatus::Scheduled`, and must not dispatch feed fan-out or mention notifications until `PublishScheduledPostJob` publishes them.
+
+The `posts:publish-scheduled` command runs every minute, uses the database cache lock `posts:publish-scheduled-command`, selects at most 100 due posts through the `posts_status_scheduled_publish_at_index`, and dispatches one queued job per post. Keep the per-post job guarded by `posts:publish-scheduled:{postId}` and idempotent by returning early unless the post is still scheduled and due.
+
 ## Composer Visibility
 
 The shared Livewire `posts.composer` uses a compact toolbar visibility dropdown instead of a full form select. Mount should initialize `selectedVisibility` from the passed prop when present, otherwise from the user's stored visibility preference on the user record; selecting a different post visibility must update only composer state and must not persist a new account default. The dropdown renders radio-card options for Public, Followers, Friends, and Only me, and the Only me state shows the explicit warning: "Only you will see this post".

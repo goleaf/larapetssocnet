@@ -112,11 +112,13 @@ class CreatePostAction
 
             $this->syncTaggedPets($post, $data);
             $this->processTags->handle($post);
-            $this->mentions->sync($post, $user);
+            $this->mentions->sync($post, $user, $status->isPubliclyReachable());
 
-            DB::afterCommit(static function () use ($post): void {
-                FeedFanOutJob::dispatch((int) $post->getKey())->afterCommit();
-            });
+            if ($status->isPubliclyReachable()) {
+                DB::afterCommit(static function () use ($post): void {
+                    FeedFanOutJob::dispatch((int) $post->getKey())->afterCommit();
+                });
+            }
 
             return PostCreationResult::created($post, $contentHash);
         });

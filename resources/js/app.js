@@ -752,6 +752,252 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('postSchedulePicker', (config = {}) => ({
+ initialIso: toStringValue(config.initialIso),
+ selectedDate: toStringValue(config.selectedDate),
+ selectedHour: toStringValue(config.selectedHour),
+ selectedMinute: toStringValue(config.selectedMinute),
+ viewYear: new Date().getFullYear(),
+ viewMonth: new Date().getMonth(),
+
+ init() {
+ const initial = this.initialDate();
+
+ this.selectedDate = this.selectedDate || this.toIsoDate(initial);
+ this.selectedHour = this.selectedHour || this.pad(initial.getHours());
+ this.selectedMinute = this.selectedMinute || this.pad(initial.getMinutes());
+ this.viewYear = initial.getFullYear();
+ this.viewMonth = initial.getMonth();
+ this.ensureFutureTime();
+ },
+
+ get monthLabel() {
+ return new Date(this.viewYear, this.viewMonth, 1).toLocaleDateString(undefined, {
+ month:'long',
+ year:'numeric',
+ });
+ },
+
+ get calendarDays() {
+ const firstOfMonth = new Date(this.viewYear, this.viewMonth, 1);
+ const start = new Date(this.viewYear, this.viewMonth, 1 - firstOfMonth.getDay());
+
+ return Array.from({ length: 42 }, (_, index) => {
+ const date = new Date(start);
+ date.setDate(start.getDate() + index);
+
+ return {
+ key: this.toIsoDate(date),
+ iso: this.toIsoDate(date),
+ day: date.getDate(),
+ inMonth: date.getMonth() === this.viewMonth,
+ disabled: this.isDateDisabled(date),
+ };
+ });
+ },
+
+ get scheduledDateTime() {
+ if (!this.selectedDate || !this.selectedHour || !this.selectedMinute) {
+ return null;
+ }
+
+ const [year, month, day] = this.selectedDate.split('-').map((part) => Number(part));
+
+ if (!year || !month || !day) {
+ return null;
+ }
+
+ return new Date(year, month - 1, day, Number(this.selectedHour), Number(this.selectedMinute), 0, 0);
+ },
+
+ get previewText() {
+ const date = this.scheduledDateTime;
+
+ if (!date) {
+ return '';
+ }
+
+ return `${date.toLocaleDateString(undefined, {
+ month:'short',
+ day:'numeric',
+ year:'numeric',
+ })} at ${date.toLocaleTimeString(undefined, {
+ hour:'numeric',
+ minute:'2-digit',
+ })}`;
+ },
+
+ get canApply() {
+ const date = this.scheduledDateTime;
+
+ return date instanceof Date && date.getTime() > Date.now();
+ },
+
+ initialDate() {
+ if (this.initialIso) {
+ const parsed = new Date(this.initialIso);
+
+ if (!Number.isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+ return this.roundToQuarter(parsed);
+ }
+ }
+
+ return this.nextQuarterDate();
+ },
+
+ previousMonth() {
+ const previous = new Date(this.viewYear, this.viewMonth - 1, 1);
+ this.viewYear = previous.getFullYear();
+ this.viewMonth = previous.getMonth();
+ },
+
+ nextMonth() {
+ const next = new Date(this.viewYear, this.viewMonth + 1, 1);
+ this.viewYear = next.getFullYear();
+ this.viewMonth = next.getMonth();
+ },
+
+ selectDate(iso) {
+ const date = this.dateFromIso(iso);
+
+ if (!date || this.isDateDisabled(date)) {
+ return;
+ }
+
+ this.selectedDate = iso;
+ this.ensureFutureTime();
+ },
+
+ applySchedule(wire) {
+ if (!this.canApply || !wire?.setScheduledPost) {
+ return;
+ }
+
+ wire.setScheduledPost(
+ this.scheduledDateTime.toISOString(),
+ this.previewText,
+ this.selectedDate,
+ this.selectedHour,
+ this.selectedMinute,
+ );
+ },
+
+ ensureFutureTime() {
+ if (!this.selectedDate) {
+ return;
+ }
+
+ if (!this.isTimeDisabled(this.selectedHour, this.selectedMinute)) {
+ return;
+ }
+
+ for (let hour = 0; hour < 24; hour += 1) {
+ for (const minute of [0, 15, 30, 45]) {
+ const hourValue = this.pad(hour);
+ const minuteValue = this.pad(minute);
+
+ if (!this.isTimeDisabled(hourValue, minuteValue)) {
+ this.selectedHour = hourValue;
+ this.selectedMinute = minuteValue;
+
+ return;
+ }
+ }
+ }
+ },
+
+ isDateDisabled(date) {
+ const today = this.startOfDay(new Date());
+ const candidate = this.startOfDay(date);
+
+ if (candidate.getTime() < today.getTime()) {
+ return true;
+ }
+
+ if (candidate.getTime() === today.getTime()) {
+ return !this.hasFutureTimeForDate(date);
+ }
+
+ return false;
+ },
+
+ hasFutureTimeForDate(date) {
+ const lastQuarter = new Date(date);
+ lastQuarter.setHours(23, 45, 0, 0);
+
+ return lastQuarter.getTime() > Date.now();
+ },
+
+ isTimeDisabled(hour, minute) {
+ if (!this.selectedDate || !hour || !minute) {
+ return true;
+ }
+
+ const [year, month, day] = this.selectedDate.split('-').map((part) => Number(part));
+ const candidate = new Date(year, month - 1, day, Number(hour), Number(minute), 0, 0);
+
+ return candidate.getTime() <= Date.now();
+ },
+
+ dayButtonClass(day) {
+ if (this.selectedDate === day.iso) {
+ return 'bg-amber text-bark ring-2 ring-amber/20';
+ }
+
+ if (!day.inMonth) {
+ return 'text-transparent';
+ }
+
+ if (day.disabled) {
+ return 'text-whisker';
+ }
+
+ return 'text-bark hover:bg-warm-white';
+ },
+
+ nextQuarterDate() {
+ return this.roundToQuarter(new Date(Date.now() + 15 * 60 * 1000));
+ },
+
+ roundToQuarter(date) {
+ const rounded = new Date(date);
+ const nextQuarter = Math.ceil(rounded.getMinutes() / 15) * 15;
+
+ rounded.setMinutes(nextQuarter, 0, 0);
+
+ return rounded;
+ },
+
+ dateFromIso(iso) {
+ const parts = toStringValue(iso).split('-').map((part) => Number(part));
+
+ if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
+ return null;
+ }
+
+ return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+ },
+
+ startOfDay(date) {
+ const copy = new Date(date);
+ copy.setHours(0, 0, 0, 0);
+
+ return copy;
+ },
+
+ toIsoDate(date) {
+ return [
+ date.getFullYear(),
+ this.pad(date.getMonth() + 1),
+ this.pad(date.getDate()),
+ ].join('-');
+ },
+
+ pad(value) {
+ return String(value).padStart(2, '0');
+ },
+ }));
+
  Alpine.data('postComposer', (config = {}) => ({
  text: toStringValue(config.text),
  maxCharacters: toNumber(config.maxCharacters, 1000),

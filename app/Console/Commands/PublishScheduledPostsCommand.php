@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Maintenance\MaintenanceTaskService;
+use App\Jobs\PublishScheduledPostJob;
+use App\Models\Content\Post;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -13,9 +14,9 @@ use Illuminate\Support\Facades\Log;
 #[Description('Publish due scheduled posts.')]
 class PublishScheduledPostsCommand extends Command
 {
-    public function handle(MaintenanceTaskService $tasks): int
+    public function handle(): int
     {
-        $lock = Cache::lock('posts:publish-scheduled', 300);
+        $lock = Cache::store('database')->lock('posts:publish-scheduled-command', 70);
 
         if (! $lock->get()) {
             Log::info('Scheduled post publication skipped because the lock is already held.');
@@ -27,8 +28,18 @@ class PublishScheduledPostsCommand extends Command
         Log::info('Scheduled post publication lock acquired.');
 
         try {
-            $result = $tasks->publishScheduledPosts();
-            $this->components->info($result->message);
+            $postIds = Post::query()
+                ->dueForPublication()
+                ->orderBy('posts.scheduled_publish_at')
+                ->orderBy('posts.id')
+                ->limit(100)
+                ->pluck('posts.id');
+
+            foreach ($postIds as $postId) {
+                PublishScheduledPostJob::dispatch((int) $postId);
+            }
+
+            $this->components->info("Dispatched {$postIds->count()} scheduled post publication job(s).");
 
             return self::SUCCESS;
         } finally {

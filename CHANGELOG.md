@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a toolbar scheduled-post picker to the Livewire post composer with a future-date calendar, 15-minute local time selectors, UTC storage, schedule indicator, and Schedule submit state.
 - Added a compact emoji mood picker to the Livewire post composer toolbar with the selected "feeling" indicator and remove action below the editor.
 - Added toolbar-driven Livewire post composer location tagging with debounced server-side geocoding suggestions, browser coordinate reverse geocoding, and removable location chips.
 - Added the Livewire post composer's toolbar visibility dropdown with radio-card options and an explicit Only me warning.
@@ -39,6 +40,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added scheduled composer and scheduled publication coverage for picker rendering, UTC state storage, scheduled post creation without immediate fan-out, command job dispatch, command lock skipping, and due-job publication.
 - Added Livewire post composer coverage for selecting and removing moods through the toolbar mood picker.
 - Added Livewire post composer coverage for location picker rendering, server-side autocomplete selection, coordinate persistence, and browser-coordinate reverse geocoding.
 - Added Livewire post composer coverage for toolbar visibility selection, private-post warning copy, and preserving the user's stored visibility preference.
@@ -65,6 +67,7 @@
 
 ### Changed
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
+- Changed scheduled post publication to dispatch one queued `PublishScheduledPostJob` per due post from the lock-protected every-minute command, with per-post job locks plus feed fan-out and mention notifications delayed until the post actually publishes.
 - Changed post media validation and storage to allow up to 10 mixed image/video attachments while preserving explicit media ordering.
 - Updated the feed and create-post surfaces to render through the shared Livewire post composer instead of maintaining separate form implementations.
 - Updated the post composer and shared post card to enforce the 1000-character plain-text content model and surface mood, scheduled publish timestamps, normalized location labels, link preview cards, edited labels, UUID share URLs, and quote/repost context.
