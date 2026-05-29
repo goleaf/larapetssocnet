@@ -151,7 +151,7 @@ class extends Component
 
     private function safeIntendedPath(Request $request): string
     {
-        $fallback = route('dashboard', absolute: false);
+        $fallback = route('feed.index', absolute: false);
         $intended = session()->pull('url.intended');
 
         if (! is_string($intended) || $intended === '') {

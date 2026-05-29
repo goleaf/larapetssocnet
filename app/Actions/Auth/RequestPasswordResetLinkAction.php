@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class RequestPasswordResetLinkAction
@@ -60,7 +61,11 @@ class RequestPasswordResetLinkAction
 
             $mailQueued = $this->mailDispatcher->queuePasswordResetLink(
                 user: $user,
-                resetUrl: route('password.reset', ['token' => $token]),
+                resetUrl: URL::temporarySignedRoute(
+                    'password.reset',
+                    now()->addMinutes((int) config('auth.passwords.users.expire', 60)),
+                    ['token' => $token],
+                ),
             );
         }
 

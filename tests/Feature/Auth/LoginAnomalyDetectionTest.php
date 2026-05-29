@@ -25,7 +25,7 @@ it('dispatches anomaly detection after a successful credential login', function 
     $this->post(route('login'), [
         'credential' => $user->email,
         'password' => 'password',
-    ])->assertRedirect(route('dashboard', absolute: false));
+    ])->assertRedirect(route('feed.index', absolute: false));
 
     Queue::assertPushed(DetectLoginAnomaly::class);
 });

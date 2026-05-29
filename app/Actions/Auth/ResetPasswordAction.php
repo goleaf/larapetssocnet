@@ -107,7 +107,12 @@ class ResetPasswordAction
             ]);
         }
 
-        Auth::login($updatedUser, false);
+        Auth::guard('web')->logout();
+
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return $updatedUser;
     }

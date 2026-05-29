@@ -44,7 +44,9 @@ it('queues a password reset mailable for existing emails and stores a determinis
     Mail::assertQueued(PasswordResetLinkMail::class, function (PasswordResetLinkMail $mail) use ($user): bool {
         return $mail->hasTo($user->email)
             && $mail->user->is($user)
-            && str_contains($mail->resetUrl, '/reset-password/');
+            && str_contains($mail->resetUrl, '/reset-password/')
+            && str_contains($mail->resetUrl, 'expires=')
+            && str_contains($mail->resetUrl, 'signature=');
     });
 
     $tokenRecord = DB::table('password_reset_tokens')->where('email', $user->email)->first();
@@ -160,7 +162,7 @@ it('redirects invalid and expired reset tokens back to the request page', functi
         ->assertSessionHas('status', ResetPasswordAction::EXPIRED_LINK_MESSAGE);
 });
 
-it('resets the password, invalidates sessions, queues a security alert, and signs the user in', function (): void {
+it('resets the password, invalidates sessions, queues a security alert, and redirects to login', function (): void {
     Mail::fake();
 
     $user = User::factory()->create([
@@ -194,7 +196,7 @@ it('resets the password, invalidates sessions, queues a security alert, and sign
         ->set('password_confirmation', 'PetSocial2027!')
         ->call('resetPassword')
         ->assertHasNoErrors()
-        ->assertRedirect(route('feed.index'));
+        ->assertRedirect(route('login'));
 
     $user->refresh();
 
@@ -205,7 +207,7 @@ it('resets the password, invalidates sessions, queues a security alert, and sign
         ->and(DB::table('sessions')->where('user_id', $user->id)->exists())->toBeFalse()
         ->and(AccountSecurityAction::query()->where('user_id', $user->id)->exists())->toBeTrue();
 
-    $this->assertAuthenticatedAs($user);
+    $this->assertGuest();
     $this->assertDatabaseHas('auth_audit_logs', [
         'user_id' => $user->getKey(),
         'event_type' => 'password_reset',

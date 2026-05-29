@@ -93,9 +93,7 @@ class extends Component
 
     public function updatedEmail(): void
     {
-        $this->email = Str::lower(trim($this->email));
-        $this->emailDuplicate = false;
-        $this->resetErrorBag('email');
+        $this->validateEmailField();
     }
 
     public function validateEmailField(): void

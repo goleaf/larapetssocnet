@@ -34,10 +34,8 @@ class NewPasswordController extends Controller
             request: $request,
         );
 
-        $request->session()->regenerate();
-
         return redirect()
-            ->route('feed.index')
+            ->route('login')
             ->with('status', ResetPasswordAction::SUCCESS_MESSAGE);
     }
 }

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added an Alpine dirty-state logout guard so users with unsaved post drafts confirm before ending their session.
 - Added durable post fan-out idempotency with `posts.is_fanned_out`, processing-state post media placeholders for Livewire temporary uploads, and a `post_media(post_id, order)` index for ordered media hydration.
 - Added `post_drafts.state_hash` autosave no-op detection so unchanged composer autosave ticks skip database writes.
 - Added post composer templates with a user-scoped `post_templates` table, apply/save/rename/delete controls, and a 20-template limit per user.
@@ -51,6 +52,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Updated auth coverage for RateLimiter-backed login lockouts, signed password-reset URLs, login-page reset redirects, verification resend toasts, and expired verification links opened from another browser session.
 - Added post creation architecture coverage for DTO-only action input, hash-based autosave no-op behavior, and duplicate feed fan-out job no-ops.
 - Added Livewire coverage for post composer templates, template scoping and limits, writing-assist UI hooks, and performance prediction output.
 - Added post analytics coverage for author-only trigger rendering, direct authorization, non-author view counting, reaction counter breakdowns, estimated reach, and SVG chart rendering.
@@ -86,6 +88,8 @@
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
+- Changed credential login fallback redirects to land on the feed, moved failed-login lockouts to Laravel `RateLimiter` at 5 attempts for 60 seconds, and kept existing audit/counter updates for known accounts.
+- Changed password reset links to use signed URLs and successful password resets to invalidate sessions, leave the user logged out, and redirect to the login page with status feedback.
 - Changed post creation callers to build `PostCreationInput` DTOs before invoking `CreatePostAction`, keeping the action free of Livewire and HTTP request concerns.
 - Changed Livewire post draft autosave to route the interval through a debounced Livewire action trigger while retaining the server-side state-hash guard.
 - Changed post-card rendering to increment `posts.view_count` only for authenticated non-author renders in feed and profile contexts, while detail, explore, group, and saved contexts remain non-counting.

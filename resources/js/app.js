@@ -97,6 +97,18 @@ document.addEventListener('alpine:init', () => {
  },
  });
 
+ Alpine.store('dirtyState', {
+ dirty: false,
+
+ markDirty() {
+ this.dirty = true;
+ },
+
+ clear() {
+ this.dirty = false;
+ },
+ });
+
  const pushToastFromEvent = (event) => {
  const detail = event.detail || {};
  const message = toStringValue(detail.message);
@@ -110,6 +122,40 @@ document.addEventListener('alpine:init', () => {
 
  window.addEventListener('profile-toast', pushToastFromEvent);
  window.addEventListener('toast-message', pushToastFromEvent);
+
+ window.addEventListener('post-draft-dirty', () => Alpine.store('dirtyState').markDirty());
+ window.addEventListener('post-created', () => Alpine.store('dirtyState').clear());
+ window.addEventListener('post-updated', () => Alpine.store('dirtyState').clear());
+ window.addEventListener('post-composer-reset', () => Alpine.store('dirtyState').clear());
+
+ document.addEventListener('submit', async (event) => {
+ const form = event.target;
+
+ if (!(form instanceof HTMLFormElement) || !Alpine.store('dirtyState').dirty) {
+ return;
+ }
+
+ const action = form.getAttribute('action') || '';
+ const path = new URL(action, window.location.href).pathname.replace(/\/+$/, '');
+
+ if (path !=='/logout') {
+ return;
+ }
+
+ event.preventDefault();
+
+ const message ='You have unsaved changes. Log out anyway?';
+ const confirmed = Alpine.store('confirm')
+ ? await Alpine.store('confirm').ask(message)
+ : window.confirm(message);
+
+ if (!confirmed) {
+ return;
+ }
+
+ Alpine.store('dirtyState').clear();
+ form.submit();
+ });
 
  window.addEventListener('profile-browser-url-replace-requested', (event) => {
  const detail = event.detail || {};

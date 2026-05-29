@@ -64,14 +64,14 @@ it('invalidates existing database sessions after a successful password reset', f
         'email' => $user->email,
         'password' => 'PetSocial2027!',
         'password_confirmation' => 'PetSocial2027!',
-    ])->assertRedirect(route('feed.index'));
+    ])->assertRedirect(route('login'));
 
     expect(Hash::check('PetSocial2027!', $user->refresh()->password))->toBeTrue()
         ->and($user->password_changed_at)->not->toBeNull()
         ->and($user->remember_token)->toBeNull()
         ->and(DB::table('sessions')->where('user_id', $user->id)->exists())->toBeFalse();
 
-    $this->assertAuthenticatedAs($user);
+    $this->assertGuest();
     Mail::assertQueued(PasswordChangedSecurityAlertMail::class);
 });
 

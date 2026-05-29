@@ -105,7 +105,7 @@ class AuthenticatedSessionController extends Controller
 
     private function redirectToSafeIntendedUrl(Request $request): RedirectResponse
     {
-        $fallback = route('dashboard', absolute: false);
+        $fallback = route('feed.index', absolute: false);
         $intended = $request->session()->pull('url.intended');
 
         if (! is_string($intended) || $intended === '') {

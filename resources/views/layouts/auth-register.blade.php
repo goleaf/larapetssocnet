@@ -14,6 +14,7 @@
  <main class="min-h-screen w-full sm:flex sm:items-center sm:justify-center sm:px-6 sm:py-8" data-ui="register-shell">
  {{ $slot }}
  </main>
+ <x-ui.toast-container />
 
  {!! \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scriptConfig() !!}
  </body>

@@ -66,10 +66,9 @@ class extends Component
             request: request(),
         );
 
-        session()->regenerate();
         session()->flash('status', ResetPasswordAction::SUCCESS_MESSAGE);
 
-        $this->redirectRoute('feed.index', navigate: false);
+        $this->redirectRoute('login', navigate: false);
     }
 
     /**

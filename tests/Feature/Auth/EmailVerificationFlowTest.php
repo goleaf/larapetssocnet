@@ -38,7 +38,8 @@ it('queues a branded verification mailable when the pending page resends the ema
         ->test('pages.auth.verify-email')
         ->call('resendVerificationEmail')
         ->assertSet('statusMessage', 'Verification email sent — check your inbox and spam folder.')
-        ->assertDispatched('verification-resend-sent');
+        ->assertDispatched('verification-resend-sent')
+        ->assertDispatched('toast-message', message: 'Verification email sent — check your inbox and spam folder.', type: 'success');
 
     Mail::assertQueued(VerifyEmailAddressMail::class, function (VerifyEmailAddressMail $mail) use ($user): bool {
         return $mail->hasTo($user->email)
@@ -153,6 +154,22 @@ it('redirects expired verification links back to the pending page with a flash m
         ->assertRedirect(route('verification.notice'))
         ->assertSessionHas('status', 'verification-link-expired');
 
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+it('shows the pending page for an expired verification link opened from another browser session', function (): void {
+    $user = User::factory()->unverified()->create();
+
+    $expiredUrl = URL::temporarySignedRoute('verification.verify', now()->subMinute(), [
+        'id' => $user->getKey(),
+        'hash' => sha1($user->email),
+    ]);
+
+    $this->get($expiredUrl)
+        ->assertRedirect(route('verification.notice'))
+        ->assertSessionHas('status', 'verification-link-expired');
+
+    $this->assertAuthenticatedAs($user);
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
 });
 

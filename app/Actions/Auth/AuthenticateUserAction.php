@@ -12,6 +12,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 class AuthenticateUserAction
@@ -22,9 +23,7 @@ class AuthenticateUserAction
 
     private const int LOCKOUT_THRESHOLD = 5;
 
-    private const int BASE_LOCKOUT_SECONDS = 60;
-
-    private const int MAX_LOCKOUT_SECONDS = 1800;
+    private const int LOCKOUT_DECAY_SECONDS = 60;
 
     public function __construct(
         private readonly AuthAuditLogger $auditLogger,
@@ -38,23 +37,24 @@ class AuthenticateUserAction
         $type = $this->credentialType($rawCredential);
         $identifier = $this->normalizeIdentifier($rawCredential, $type);
         $user = $this->candidateUser($identifier, $type);
+        $rateLimitKey = $this->rateLimitKey($identifier, $type, $request);
 
         if ($user instanceof User) {
             $this->resetExpiredFailureWindow($user);
+        }
 
-            $lockoutSeconds = $this->activeLockoutSeconds($user);
+        if (RateLimiter::tooManyAttempts($rateLimitKey, self::LOCKOUT_THRESHOLD)) {
+            $lockoutSeconds = max(1, RateLimiter::availableIn($rateLimitKey));
 
-            if ($lockoutSeconds > 0) {
-                $this->recordFailure($user, $identifier, $type, 'locked_out', $request, [
-                    'lockout_seconds' => $lockoutSeconds,
-                ]);
+            $this->recordFailure($user, $identifier, $type, 'locked_out', $request, [
+                'lockout_seconds' => $lockoutSeconds,
+            ]);
 
-                return AuthenticationResult::lockedOut($lockoutSeconds);
-            }
+            return AuthenticationResult::lockedOut($lockoutSeconds);
         }
 
         if (! $user instanceof User || ! Hash::check($password, (string) $user->password)) {
-            return $this->failedCredentialAttempt($user, $identifier, $type, $request);
+            return $this->failedCredentialAttempt($user, $identifier, $type, $rateLimitKey, $request);
         }
 
         if ($user->trashed()) {
@@ -100,6 +100,7 @@ class AuthenticateUserAction
         }
 
         Auth::login($user, $remember);
+        RateLimiter::clear($rateLimitKey);
 
         $requiresTwoFactor = $user->two_factor_secret !== null;
 
@@ -144,16 +145,26 @@ class AuthenticateUserAction
         return AuthenticationResult::success($user, $requiresTwoFactor);
     }
 
-    private function failedCredentialAttempt(?User $user, string $identifier, string $type, Request $request): AuthenticationResult
+    private function failedCredentialAttempt(?User $user, string $identifier, string $type, string $rateLimitKey, Request $request): AuthenticationResult
     {
+        RateLimiter::hit($rateLimitKey, self::LOCKOUT_DECAY_SECONDS);
+        $lockoutSeconds = RateLimiter::tooManyAttempts($rateLimitKey, self::LOCKOUT_THRESHOLD)
+            ? max(1, RateLimiter::availableIn($rateLimitKey))
+            : 0;
+
         if (! $user instanceof User) {
-            $this->recordFailure(null, $identifier, $type, 'invalid_credentials', $request);
+            $this->recordFailure(null, $identifier, $type, $lockoutSeconds > 0 ? 'lockout_applied' : 'invalid_credentials', $request, [
+                'lockout_seconds' => $lockoutSeconds > 0 ? $lockoutSeconds : null,
+            ]);
+
+            if ($lockoutSeconds > 0) {
+                return AuthenticationResult::lockedOut($lockoutSeconds);
+            }
 
             return AuthenticationResult::failure('invalid_credentials', self::GENERIC_FAILURE_MESSAGE);
         }
 
         $this->incrementFailedAttempts($user);
-        $lockoutSeconds = $this->activeLockoutSeconds($user);
 
         $this->recordFailure($user, $identifier, $type, $lockoutSeconds > 0 ? 'lockout_applied' : 'invalid_credentials', $request, [
             'lockout_seconds' => $lockoutSeconds > 0 ? $lockoutSeconds : null,
@@ -218,6 +229,15 @@ class AuthenticateUserAction
         return User::normalizeUsername($credential);
     }
 
+    private function rateLimitKey(string $identifier, string $type, Request $request): string
+    {
+        return sprintf(
+            'login:%s:%s',
+            $type,
+            hash('sha256', Str::lower($identifier).'|'.(string) $request->ip()),
+        );
+    }
+
     private function resetExpiredFailureWindow(User $user): void
     {
         $lastFailedLoginAt = $this->lastFailedLoginAt($user);
@@ -244,33 +264,6 @@ class AuthenticateUserAction
             'failed_login_attempts' => $attempts,
             'last_failed_login_at' => now(),
         ])->saveQuietly();
-    }
-
-    private function activeLockoutSeconds(User $user): int
-    {
-        $lastFailedLoginAt = $this->lastFailedLoginAt($user);
-
-        if ((int) $user->failed_login_attempts < self::LOCKOUT_THRESHOLD || ! $lastFailedLoginAt instanceof CarbonInterface) {
-            return 0;
-        }
-
-        if ($lastFailedLoginAt->lessThan(now()->subMinutes(self::FAILURE_WINDOW_MINUTES))) {
-            return 0;
-        }
-
-        $expiresAt = $lastFailedLoginAt->copy()->addSeconds(
-            $this->lockoutDurationSeconds((int) $user->failed_login_attempts),
-        );
-
-        return max(0, $expiresAt->getTimestamp() - now()->getTimestamp());
-    }
-
-    private function lockoutDurationSeconds(int $failedAttempts): int
-    {
-        $lockoutNumber = max(1, intdiv($failedAttempts, self::LOCKOUT_THRESHOLD));
-        $exponent = max(0, $lockoutNumber - 1);
-
-        return min(self::MAX_LOCKOUT_SECONDS, self::BASE_LOCKOUT_SECONDS * (2 ** $exponent));
     }
 
     /**

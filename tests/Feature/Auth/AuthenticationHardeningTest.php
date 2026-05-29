@@ -68,7 +68,7 @@ it('records successful and failed login attempts without revealing which credent
         'email' => 'audit_user',
         'password' => 'password',
     ])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('feed.index', absolute: false));
 
     $this->assertAuthenticatedAs($user);
     expect($user->refresh()->failed_login_attempts)->toBe(0)
@@ -153,7 +153,7 @@ it('normalizes email and username identifiers before authentication and throttli
     $this->post('/login', [
         'email' => '  TRIM-LOGIN@EXAMPLE.COM  ',
         'password' => 'password',
-    ])->assertRedirect(route('dashboard', absolute: false));
+    ])->assertRedirect(route('feed.index', absolute: false));
 
     $this->assertAuthenticatedAs($emailUser);
     auth()->logout();
@@ -161,7 +161,7 @@ it('normalizes email and username identifiers before authentication and throttli
     $this->post('/login', [
         'email' => 'Case_Login',
         'password' => 'password',
-    ])->assertRedirect(route('dashboard', absolute: false));
+    ])->assertRedirect(route('feed.index', absolute: false));
 
     $this->assertAuthenticatedAs($usernameUser);
 });
@@ -286,7 +286,7 @@ it('drops unsafe external intended URLs after successful login', function (): vo
             'email' => $user->email,
             'password' => 'password',
         ])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('feed.index', absolute: false));
 
     $this->assertAuthenticatedAs($user);
 });

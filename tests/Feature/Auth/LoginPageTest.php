@@ -49,7 +49,7 @@ it('authenticates users from the Livewire login page with email or username cred
         ->set('credential', '  LOGIN-LIVEWIRE@EXAMPLE.COM  ')
         ->set('password', 'password')
         ->call('authenticate')
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('feed.index', absolute: false));
 
     $this->assertAuthenticatedAs($emailUser);
     auth()->logout();
@@ -62,7 +62,7 @@ it('authenticates users from the Livewire login page with email or username cred
         ->set('credential', 'Livewire_Login')
         ->set('password', 'password')
         ->call('authenticate')
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('feed.index', absolute: false));
 
     $this->assertAuthenticatedAs($usernameUser);
 });
@@ -247,7 +247,7 @@ it('sets remember me tokens on login and clears them on logout', function (): vo
         ->set('password', 'password')
         ->set('remember', true)
         ->call('authenticate')
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('feed.index', absolute: false));
 
     expect($user->refresh()->remember_token)->not->toBeNull();
 

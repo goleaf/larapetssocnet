@@ -61,6 +61,7 @@ class extends Component
 
         $this->statusMessage = 'Verification email sent — check your inbox and spam folder.';
         $this->dispatch('verification-resend-sent', seconds: 60);
+        $this->dispatch('toast-message', message: $this->statusMessage, type: 'success');
     }
 
     public function maskedEmail(): string

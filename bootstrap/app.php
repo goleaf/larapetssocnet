@@ -19,6 +19,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
@@ -88,7 +90,21 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (InvalidSignatureException $e, Request $request) {
             $expires = $request->query('expires');
 
-            if ($request->routeIs('verification.verify') && is_numeric($expires) && (int) $expires < time()) {
+            if (
+                $request->routeIs('verification.verify')
+                && is_numeric($expires)
+                && (int) $expires < time()
+                && URL::hasCorrectSignature($request)
+            ) {
+                $routeUserId = (string) $request->route('id');
+                $routeHash = (string) $request->route('hash');
+                $user = User::query()->find($routeUserId);
+
+                if ($user instanceof User && hash_equals($routeHash, sha1($user->getEmailForVerification())) && ! ($request->user() instanceof User)) {
+                    Auth::login($user);
+                    $request->session()->regenerate();
+                }
+
                 return redirect()->route('verification.notice')->with('status', 'verification-link-expired');
             }
         });
