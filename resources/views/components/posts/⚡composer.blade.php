@@ -2,6 +2,7 @@
 
 use App\Actions\Posts\CreatePostAction;
 use App\Enums\PostStatus;
+use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
 use App\Models\Identity\User;
@@ -9,10 +10,12 @@ use App\Models\Pets\Pet;
 use App\Models\Pets\Species;
 use App\Services\LocationAutocompleteService;
 use App\Services\PostDraftService;
+use App\Services\PostMetadataService;
 use App\Support\Posts\PostMood;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -131,6 +134,12 @@ new class extends Component
      * @var array<string, mixed>
      */
     public array $linkPreviewData = [];
+
+    public ?string $detectedLinkPreviewUrl = null;
+
+    public ?string $linkPreviewRequestKey = null;
+
+    public ?string $dismissedLinkPreviewUrl = null;
 
     public ?int $draftId = null;
 
@@ -319,6 +328,80 @@ new class extends Component
     public function removeMood(): void
     {
         $this->selectedMood = null;
+    }
+
+    public function queueLinkPreviewFetch(string $url, PostMetadataService $metadata): void
+    {
+        $detectedUrl = $metadata->extractFirstUrl($url);
+
+        if (
+            $detectedUrl === null
+            || $this->linkPreviewData !== []
+            || $this->dismissedLinkPreviewUrl === $detectedUrl
+            || ! $metadata->isAllowedPreviewUrl($detectedUrl)
+        ) {
+            return;
+        }
+
+        $this->detectedLinkPreviewUrl = $detectedUrl;
+        $this->linkPreviewRequestKey = (string) Str::uuid();
+        $this->isLinkPreviewLoading = true;
+
+        Cache::forget($this->linkPreviewCacheKey($this->linkPreviewRequestKey));
+
+        FetchLinkPreviewMetadataJob::dispatch(
+            url: $detectedUrl,
+            cacheKey: $this->linkPreviewCacheKey($this->linkPreviewRequestKey),
+        )->afterCommit();
+
+        $this->dispatch('post-link-preview-queued', url: $detectedUrl);
+    }
+
+    public function pollLinkPreviewResult(): void
+    {
+        if (! $this->isLinkPreviewLoading || $this->linkPreviewRequestKey === null) {
+            return;
+        }
+
+        $cacheKey = $this->linkPreviewCacheKey($this->linkPreviewRequestKey);
+        $result = Cache::get($cacheKey);
+
+        if (! is_array($result)) {
+            return;
+        }
+
+        Cache::forget($cacheKey);
+        $this->isLinkPreviewLoading = false;
+        $this->linkPreviewRequestKey = null;
+
+        if (($result['status'] ?? null) !== 'ready' || ! is_array($result['preview'] ?? null)) {
+            $this->dispatch('post-link-preview-unavailable', url: $this->detectedLinkPreviewUrl);
+
+            return;
+        }
+
+        $this->linkPreviewData = $result['preview'];
+        $this->detectedLinkPreviewUrl = is_string($result['url'] ?? null)
+            ? $result['url']
+            : ($this->linkPreviewData['url'] ?? $this->detectedLinkPreviewUrl);
+        $this->dismissedLinkPreviewUrl = null;
+
+        $this->dispatch('post-link-preview-loaded', url: $this->detectedLinkPreviewUrl);
+    }
+
+    public function removeLinkPreview(): void
+    {
+        $currentUrl = $this->detectedLinkPreviewUrl;
+
+        if ($currentUrl === null && is_string($this->linkPreviewData['url'] ?? null)) {
+            $currentUrl = $this->linkPreviewData['url'];
+        }
+
+        $this->dismissedLinkPreviewUrl = $currentUrl;
+        $this->linkPreviewData = [];
+        $this->isLinkPreviewLoading = false;
+        $this->linkPreviewRequestKey = null;
+        $this->dispatch('post-link-preview-dismissed', url: $currentUrl);
     }
 
     public function setScheduledPost(
@@ -617,6 +700,7 @@ new class extends Component
             $this->selectedPetIds = $this->normalizePetIds($draft->tagged_pets ?? []);
         }
         $this->linkPreviewData = is_array($draft->link_preview) ? $draft->link_preview : [];
+        $this->detectedLinkPreviewUrl = is_string($this->linkPreviewData['url'] ?? null) ? $this->linkPreviewData['url'] : null;
         if ($draft->scheduled_publish_at !== null) {
             $scheduledAt = CarbonImmutable::instance($draft->scheduled_publish_at)->utc();
             $localScheduledAt = $scheduledAt->timezone((string) config('app.timezone'));
@@ -648,6 +732,7 @@ new class extends Component
             'location_lat' => $this->locationLat,
             'location_lng' => $this->locationLng,
             'link_preview' => $this->linkPreviewData ?: null,
+            'link_preview_url' => $this->detectedLinkPreviewUrl,
             'media_attachments' => $this->mediaAttachmentPayload(),
             'confirmed_duplicate' => $this->confirmedDuplicate,
         ];
@@ -796,6 +881,13 @@ new class extends Component
             ->all();
     }
 
+    private function linkPreviewCacheKey(string $requestKey): string
+    {
+        $viewerId = (int) ($this->viewer()?->getKey() ?? 0);
+
+        return "posts:link-preview:{$viewerId}:{$requestKey}";
+    }
+
     private function normalizeNullableString(mixed $value): ?string
     {
         $normalized = trim((string) $value);
@@ -867,6 +959,10 @@ new class extends Component
         $this->selectedMood = null;
         $this->clearSchedule();
         $this->linkPreviewData = [];
+        $this->detectedLinkPreviewUrl = null;
+        $this->linkPreviewRequestKey = null;
+        $this->dismissedLinkPreviewUrl = null;
+        $this->isLinkPreviewLoading = false;
         $this->draftId = null;
         $this->duplicateDetected = false;
         $this->duplicatePostId = null;
@@ -943,6 +1039,13 @@ new class extends Component
  $selectedVisibilityOption = $this->selectedVisibilityOption();
  $moodOptions = PostMood::DISPLAY;
  $selectedMoodDisplay = $selectedMood ? ($moodOptions[$selectedMood] ?? null) : null;
+ $linkPreviewUrl = is_string($linkPreviewData['url'] ?? null) ? (string) $linkPreviewData['url'] : null;
+ $linkPreviewTitle = is_string($linkPreviewData['title'] ?? null) ? (string) $linkPreviewData['title'] : null;
+ $linkPreviewDescription = is_string($linkPreviewData['description'] ?? null) ? (string) $linkPreviewData['description'] : null;
+ $linkPreviewImage = is_string($linkPreviewData['image'] ?? null) ? (string) $linkPreviewData['image'] : null;
+ $linkPreviewDomain = is_string($linkPreviewData['domain'] ?? null)
+     ? (string) $linkPreviewData['domain']
+     : ($linkPreviewUrl ? parse_url($linkPreviewUrl, PHP_URL_HOST) : null);
  $minuteOptions = ['00', '15', '30', '45'];
  $visibilityIcon = static function (string $visibility, string $classes = 'h-4 w-4'): string {
      $baseAttributes = 'class="'.$classes.'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
@@ -1049,7 +1152,7 @@ new class extends Component
  data-placeholder="Share a walk, a tiny victory, a question, or a moment worth remembering."
  class="min-h-32 w-full rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-4 py-3 text-base leading-7 text-bark outline-none transition empty:before:content-[attr(data-placeholder)] empty:before:text-whisker focus:border-paw focus:ring-2 focus:ring-paw/15"
  x-on:input.debounce.150ms="syncFromEditor"
- x-on:paste.debounce.150ms="syncFromEditor"
+ x-on:paste="handlePasteForLinkPreview($event)"
 >{{ $textContent }}</div>
 
  <div class="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -1357,6 +1460,50 @@ new class extends Component
  </li>
  @endforeach
  </ul>
+ @endif
+ </div>
+ </div>
+ @endif
+
+ @if ($isLinkPreviewLoading)
+ <div
+ wire:poll.2s="pollLinkPreviewResult"
+ class="overflow-hidden rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white"
+ aria-live="polite"
+ aria-label="Loading link preview"
+ >
+ <div class="h-32 max-h-[200px] animate-pulse bg-cream"></div>
+ <div class="space-y-2 p-4">
+ <div class="h-3 w-24 animate-pulse rounded-full bg-whisker/30"></div>
+ <div class="h-4 w-3/4 animate-pulse rounded-full bg-whisker/40"></div>
+ <div class="h-3 w-full animate-pulse rounded-full bg-whisker/25"></div>
+ <div class="h-3 w-2/3 animate-pulse rounded-full bg-whisker/25"></div>
+ </div>
+ </div>
+ @elseif ($linkPreviewUrl && $linkPreviewTitle)
+ <div class="relative overflow-hidden rounded-[var(--radius-soft)] border border-whisker/30 bg-warm-white">
+ <button
+ type="button"
+ wire:click="removeLinkPreview"
+ class="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-bark/75 text-white transition hover:bg-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ aria-label="Dismiss link preview"
+ >
+ <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+ <path d="M5 5l10 10M15 5 5 15"/>
+ </svg>
+ </button>
+
+ @if ($linkPreviewImage)
+ <img src="{{ $linkPreviewImage }}" alt="" class="max-h-[200px] w-full object-cover" loading="lazy">
+ @endif
+
+ <div class="p-4">
+ @if ($linkPreviewDomain)
+ <p class="text-xs font-semibold uppercase tracking-[0.12em] text-fur">{{ $linkPreviewDomain }}</p>
+ @endif
+ <p class="mt-1 line-clamp-2 text-sm font-bold text-bark">{{ $linkPreviewTitle }}</p>
+ @if ($linkPreviewDescription)
+ <p class="mt-2 line-clamp-2 text-sm leading-6 text-fur">{{ $linkPreviewDescription }}</p>
  @endif
  </div>
  </div>

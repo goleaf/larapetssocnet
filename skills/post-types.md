@@ -25,6 +25,12 @@ Use the shared Livewire `posts.composer` scheduled-post controls instead of raw 
 
 The `posts:publish-scheduled` command runs every minute, uses the database cache lock `posts:publish-scheduled-command`, selects at most 100 due posts through the `posts_status_scheduled_publish_at_index`, and dispatches one queued job per post. Keep the per-post job guarded by `posts:publish-scheduled:{postId}` and idempotent by returning early unless the post is still scheduled and due.
 
+## Composer Link Previews
+
+The shared Livewire `posts.composer` detects pasted HTTP(S) URLs in the contenteditable editor and calls `queueLinkPreviewFetch()` after a one-second debounce. The Livewire action must dispatch `FetchLinkPreviewMetadataJob` instead of fetching Open Graph metadata inline. While the job runs, render the composer skeleton with `wire:poll.2s="pollLinkPreviewResult"` against the short-lived cache result; successful results populate `linkPreviewData`, failed results stop loading without blocking submission, and dismissing a preview stores the dismissed URL so it does not immediately reappear.
+
+`FetchLinkPreviewMetadataJob` uses `PostMetadataService` with Guzzle timeout and redirect tracking, rejects localhost/private preview targets, parses Open Graph/canonical metadata server-side, and either caches composer preview results or updates `posts.link_preview` after a post has been created. Posts with an unfetched URL must still be created immediately; the queued job is responsible for filling the JSON preview later. Shared post cards render the preview image when present, capped at 200px high with object-cover.
+
 ## Composer Visibility
 
 The shared Livewire `posts.composer` uses a compact toolbar visibility dropdown instead of a full form select. Mount should initialize `selectedVisibility` from the passed prop when present, otherwise from the user's stored visibility preference on the user record; selecting a different post visibility must update only composer state and must not persist a new account default. The dropdown renders radio-card options for Public, Followers, Friends, and Only me, and the Only me state shows the explicit warning: "Only you will see this post".

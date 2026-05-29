@@ -2,6 +2,7 @@
 
 use App\Enums\PostStatus;
 use App\Jobs\FeedFanOutJob;
+use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Jobs\MediaProcessingJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
@@ -10,6 +11,7 @@ use App\Models\Pets\Pet;
 use App\Services\LocationAutocompleteService;
 use App\Support\Posts\PostContentHasher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
@@ -111,6 +113,49 @@ it('renders the scheduled posting picker controls', function (): void {
         ->assertSee('Select a time')
         ->assertSee('Times use your local timezone and publish in 15-minute increments.')
         ->assertSee('Apply schedule');
+});
+
+it('queues pasted link previews and hydrates the preview card from cached job results', function (): void {
+    Queue::fake([FetchLinkPreviewMetadataJob::class]);
+
+    $user = User::factory()->create();
+    $component = Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->call('queueLinkPreviewFetch', 'https://example.com/luna')
+        ->assertSet('isLinkPreviewLoading', true)
+        ->assertSet('detectedLinkPreviewUrl', 'https://example.com/luna')
+        ->assertSeeHtml('wire:poll.2s="pollLinkPreviewResult"');
+
+    Queue::assertPushed(FetchLinkPreviewMetadataJob::class, fn (FetchLinkPreviewMetadataJob $job): bool => $job->url === 'https://example.com/luna'
+        && $job->postId === null
+        && is_string($job->cacheKey));
+
+    $requestKey = $component->get('linkPreviewRequestKey');
+
+    Cache::put("posts:link-preview:{$user->id}:{$requestKey}", [
+        'status' => 'ready',
+        'url' => 'https://example.com/luna',
+        'preview' => [
+            'url' => 'https://example.com/luna',
+            'title' => 'Luna at the park',
+            'description' => 'A sunny afternoon walk',
+            'image' => 'https://example.com/luna.jpg',
+            'domain' => 'example.com',
+        ],
+    ], now()->addMinutes(10));
+
+    $component
+        ->call('pollLinkPreviewResult')
+        ->assertSet('isLinkPreviewLoading', false)
+        ->assertSet('linkPreviewData.title', 'Luna at the park')
+        ->assertSee('Luna at the park')
+        ->assertSee('A sunny afternoon walk')
+        ->assertSeeHtml('aria-label="Dismiss link preview"')
+        ->call('removeLinkPreview')
+        ->assertSet('linkPreviewData', [])
+        ->assertSet('dismissedLinkPreviewUrl', 'https://example.com/luna')
+        ->call('queueLinkPreviewFetch', 'https://example.com/luna')
+        ->assertSet('isLinkPreviewLoading', false);
 });
 
 it('sets and clears a scheduled publish time from the composer', function (): void {

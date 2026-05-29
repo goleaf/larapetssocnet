@@ -79,6 +79,7 @@
     $linkPreviewUrl = $linkPreview['url'] ?? null;
     $linkPreviewTitle = $linkPreview['title'] ?? $linkPreview['domain'] ?? $linkPreviewUrl;
     $linkPreviewDescription = $linkPreview['description'] ?? null;
+    $linkPreviewImage = $linkPreview['image'] ?? null;
     $linkPreviewDomain = $linkPreview['domain'] ?? ($linkPreviewUrl ? parse_url((string) $linkPreviewUrl, PHP_URL_HOST) : null);
     $quotePost = $post->relationLoaded('quotePost') ? $post->quotePost : null;
     $originalPost = $post->relationLoaded('originalPost') ? $post->originalPost : null;
@@ -296,6 +297,9 @@
             rel="nofollow noopener noreferrer"
             class="mt-4 block overflow-hidden rounded-[var(--radius-soft)] border ui-border bg-warm-white transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
         >
+            @if ($linkPreviewImage)
+                <img src="{{ $linkPreviewImage }}" alt="" class="max-h-[200px] w-full object-cover" loading="lazy">
+            @endif
             <div class="p-4">
                 @if ($linkPreviewDomain)
                     <p class="text-xs font-semibold uppercase tracking-[0.12em] text-fur">{{ $linkPreviewDomain }}</p>

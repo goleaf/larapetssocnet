@@ -1016,6 +1016,7 @@ document.addEventListener('alpine:init', () => {
  videoMaxBytes: 100 * 1024 * 1024,
  reverseGeocoding: false,
  locationError: '',
+ linkPreviewTimer: null,
 
  init() {
  if (this.$refs.editor) {
@@ -1069,6 +1070,41 @@ document.addEventListener('alpine:init', () => {
 
  this.renderHighlighted(false);
  this.restoreCaretOffset(offset);
+ },
+
+ handlePasteForLinkPreview(event) {
+ const pastedText = event.clipboardData?.getData('text/plain') || event.clipboardData?.getData('text') || '';
+
+ window.setTimeout(() => {
+ this.syncFromEditor();
+ }, 0);
+
+ const url = this.firstUrl(pastedText);
+
+ if (url) {
+ this.scheduleLinkPreviewFetch(url);
+ }
+ },
+
+ firstUrl(value) {
+ const match = toStringValue(value).match(/https?:\/\/[^\s<>"']+/i);
+
+ if (!match) {
+ return '';
+ }
+
+ return match[0].replace(/[.,!?)]}+$/g, '');
+ },
+
+ scheduleLinkPreviewFetch(url) {
+ if (!url || typeof this.$wire?.queueLinkPreviewFetch !=='function') {
+ return;
+ }
+
+ window.clearTimeout(this.linkPreviewTimer);
+ this.linkPreviewTimer = window.setTimeout(() => {
+ this.$wire.queueLinkPreviewFetch(url);
+ }, 1000);
  },
 
  editorPlainText() {
@@ -1609,6 +1645,8 @@ document.addEventListener('alpine:init', () => {
  },
 
  resetLocalAttachments() {
+ window.clearTimeout(this.linkPreviewTimer);
+
  this.attachments.forEach((attachment) => {
  if (attachment.preview_data_url?.startsWith('blob:')) {
  URL.revokeObjectURL(attachment.preview_data_url);

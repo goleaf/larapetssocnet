@@ -5,6 +5,7 @@ namespace App\Actions\Posts;
 use App\Enums\PostStatus;
 use App\Http\Requests\Posts\PostCreationRequest;
 use App\Jobs\FeedFanOutJob;
+use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Jobs\MediaProcessingJob;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
@@ -65,7 +66,8 @@ class CreatePostAction
             $metadata = $this->metadata->normalize($data['metadata'] ?? null);
             $linkPreview = is_array($data['link_preview'] ?? null)
                 ? $data['link_preview']
-                : $this->metadata->linkPreview($body, $metadata);
+                : $this->metadata->linkPreview(null, $metadata);
+            $linkPreviewUrl = $this->resolveLinkPreviewUrl($data, $body, is_array($linkPreview) ? $linkPreview : null);
             $location = $this->normalizeNullableString($data['location'] ?? null);
 
             $post = Post::query()->create([
@@ -120,8 +122,36 @@ class CreatePostAction
                 });
             }
 
+            if ($linkPreview === null && $linkPreviewUrl !== null && $status !== PostStatus::Draft) {
+                FetchLinkPreviewMetadataJob::dispatch(
+                    url: $linkPreviewUrl,
+                    postId: (int) $post->getKey(),
+                )->afterCommit();
+            }
+
             return PostCreationResult::created($post, $contentHash);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>|null  $linkPreview
+     */
+    private function resolveLinkPreviewUrl(array $data, ?string $body, ?array $linkPreview): ?string
+    {
+        foreach ([
+            $data['link_preview_url'] ?? null,
+            $linkPreview['url'] ?? null,
+            $body,
+        ] as $candidate) {
+            $url = $this->metadata->extractFirstUrl(is_string($candidate) ? $candidate : null);
+
+            if ($url !== null) {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /**

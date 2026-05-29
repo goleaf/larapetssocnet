@@ -4,6 +4,7 @@ use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\PublishPostAction;
 use App\Enums\PostStatus;
 use App\Jobs\FeedFanOutJob;
+use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Jobs\MediaProcessingJob;
 use App\Jobs\MentionNotificationJob;
 use App\Jobs\PublishScheduledPostJob;
@@ -124,14 +125,36 @@ it('queues temporary media processing jobs after creating the post placeholder s
         && $job->altText === 'A dog waiting at the park gate');
 });
 
+it('creates posts immediately and queues link preview fetching when metadata is not preloaded', function (): void {
+    Queue::fake([
+        FeedFanOutJob::class,
+        FetchLinkPreviewMetadataJob::class,
+        MentionNotificationJob::class,
+    ]);
+
+    $author = User::factory()->create();
+
+    $post = app(CreatePostAction::class)->handle($author, [
+        'body' => 'Read this adoption update https://example.com/adoption',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'link_preview_url' => 'https://example.com/adoption',
+    ])->createdPost();
+
+    expect($post->fresh()->link_preview)->toBeNull();
+
+    Queue::assertPushed(FetchLinkPreviewMetadataJob::class, fn (FetchLinkPreviewMetadataJob $job): bool => $job->postId === $post->id
+        && $job->url === 'https://example.com/adoption');
+    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $post->id);
+});
+
 it('uses uuid post URLs for sharing while still resolving legacy integer post routes', function (): void {
     $author = User::factory()->create();
     $post = Post::factory()->for($author)->create();
 
     $shareUrl = app(CanonicalContentUrlService::class)->post($post);
 
-    expect($shareUrl)->toContain($post->uuid)
-        ->and($shareUrl)->not->toContain('/posts/'.$post->id);
+    expect($shareUrl)->toContain('/posts/'.$post->uuid)
+        ->and($shareUrl)->not->toEndWith('/posts/'.$post->id);
 
     $this->actingAs($author)->get($shareUrl)->assertOk();
     $this->actingAs($author)->get(route('posts.show', ['post' => $post->id]))->assertOk();

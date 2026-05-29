@@ -154,6 +154,7 @@ class PostCreationRequest extends FormRequest
             'link_preview.description' => ['nullable', 'string', 'max:500'],
             'link_preview.image' => ['nullable', 'string', 'max:500'],
             'link_preview.domain' => ['nullable', 'string', 'max:120'],
+            'link_preview_url' => ['nullable', 'url', 'max:500'],
             'confirmed_duplicate' => ['sometimes', 'boolean'],
             'skip_duplicate_check' => ['sometimes', 'boolean'],
             'media' => ['nullable', 'array', 'max:'.self::MAX_ATTACHMENTS],
