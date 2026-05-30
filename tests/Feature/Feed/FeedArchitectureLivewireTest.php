@@ -20,16 +20,18 @@ it('renders the feed as a full-page livewire shell with lazy sidebars and eager 
         ->assertDontSee('data-ui="feed-stream-skeleton"', false);
 });
 
-it('builds the main feed eligibility query from a unioned post id subquery', function (): void {
+it('builds the main feed eligibility query from precomputed feed items with relationship fallback', function (): void {
     $viewer = User::factory()->create();
 
     $sql = strtolower(Post::query()->forFeed((int) $viewer->getKey())->toSql());
 
     expect($sql)
+        ->toContain('feed_items')
         ->toContain('union')
         ->toContain('feed_post_ids')
         ->toContain('pet_followers')
-        ->toContain('follows');
+        ->toContain('follows')
+        ->toContain('posts"."visibility');
 });
 
 it('renders feed post cards as independent livewire components', function (): void {

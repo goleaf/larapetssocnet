@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Models\Content\Post;
+use App\Support\Media\DateBasedMediaPathGenerator;
 use Spatie\ImageOptimizer\Optimizers\Avifenc;
 use Spatie\ImageOptimizer\Optimizers\Cwebp;
 use Spatie\ImageOptimizer\Optimizers\Gifsicle;
@@ -120,6 +122,7 @@ return [
      * Here you can specify which path generator should be used for the given class.
      */
     'custom_path_generators' => [
+        Post::class => DateBasedMediaPathGenerator::class,
         // Model::class => PathGenerator::class
         // or
         // 'model_morph_alias' => PathGenerator::class

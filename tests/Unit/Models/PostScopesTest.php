@@ -6,6 +6,7 @@ use App\Models\Content\Post;
 use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Social\FeedItem;
 use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -157,6 +158,87 @@ it('returns followed pet posts linked through normalized pet tags', function ():
         ->pluck('posts.id');
 
     expect($postIds)->toContain($taggedPetPost->getKey());
+});
+
+it('returns precomputed feed items while enforcing post visibility', function (): void {
+    $viewer = User::factory()->create();
+    $author = User::factory()->create();
+
+    $publicPost = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+    $privatePost = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PRIVATE,
+        'status' => 'published',
+    ]);
+
+    FeedItem::factory()->create([
+        'user_id' => $viewer->getKey(),
+        'post_id' => $publicPost->getKey(),
+        'source_type' => FeedItem::SOURCE_USER,
+        'source_id' => $author->getKey(),
+        'post_created_at' => $publicPost->created_at,
+    ]);
+    FeedItem::factory()->create([
+        'user_id' => $viewer->getKey(),
+        'post_id' => $privatePost->getKey(),
+        'source_type' => FeedItem::SOURCE_USER,
+        'source_id' => $author->getKey(),
+        'post_created_at' => $privatePost->created_at,
+    ]);
+
+    $postIds = Post::query()
+        ->forFeed($viewer->getKey())
+        ->pluck('posts.id');
+
+    expect($postIds)
+        ->toContain($publicPost->getKey())
+        ->not->toContain($privatePost->getKey());
+});
+
+it('filters precomputed feed items by source type', function (): void {
+    $viewer = User::factory()->create();
+    $author = User::factory()->create();
+    $pet = Pet::factory()->for($author)->create();
+
+    $peoplePost = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+    $petPost = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+
+    FeedItem::factory()->create([
+        'user_id' => $viewer->getKey(),
+        'post_id' => $peoplePost->getKey(),
+        'source_type' => FeedItem::SOURCE_USER,
+        'source_id' => $author->getKey(),
+        'post_created_at' => $peoplePost->created_at,
+    ]);
+    FeedItem::factory()->create([
+        'user_id' => $viewer->getKey(),
+        'post_id' => $petPost->getKey(),
+        'source_type' => FeedItem::SOURCE_PET,
+        'source_id' => $pet->getKey(),
+        'post_created_at' => $petPost->created_at,
+    ]);
+
+    $peoplePostIds = Post::query()
+        ->forFeed($viewer->getKey(), 'people')
+        ->pluck('posts.id');
+    $petPostIds = Post::query()
+        ->forFeed($viewer->getKey(), 'pets')
+        ->pluck('posts.id');
+
+    expect($peoplePostIds)
+        ->toContain($peoplePost->getKey())
+        ->not->toContain($petPost->getKey())
+        ->and($petPostIds)
+        ->toContain($petPost->getKey())
+        ->not->toContain($peoplePost->getKey());
 });
 
 it('returns only posts that have media', function (): void {

@@ -5,6 +5,7 @@ Keep the feed query centralized and cursor-paginated.
 
 ## Source of Truth
 - Query scope: `Post::scopeForFeed(int $viewerId, ?string $source = null)` in `app/Models/Content/Post.php`.
+- Precomputed delivery table: `feed_items`, written by `FeedFanOutJob` and `FeedFanOutChunkJob`.
 - Page shell: full-page Livewire `pages.feed.index` in `resources/views/components/pages/feed/⚡index.blade.php`.
 - Stream UI: eager Livewire `feed.stream` in `resources/views/components/feed/⚡stream.blade.php`.
 - Sidebars: lazy Livewire `feed.left-sidebar` and `feed.right-sidebar`.
@@ -12,9 +13,9 @@ Keep the feed query centralized and cursor-paginated.
 - Sidebar data: `FeedService::getSidebarData(User $viewer)`.
 
 ## Inclusion Rules
-- Viewer’s own posts (all visibilities).
-- Posts from accepted follows with visibility `public` or `followers`.
-- Posts from pets the viewer follows (non-owner) with visibility `public` or `followers`, including both legacy `posts.pet_id` and normalized `pet_post` tags.
+- Viewer’s precomputed `feed_items` rows for own posts, accepted followed users, and followed pets.
+- Compatibility fallback branches still cover older or not-yet-fanned-out posts from the viewer, accepted follows, and followed pets.
+- Viewer’s own posts can include all visibilities; followed author and pet posts must pass query-level visibility checks.
 
 ## Exclusions
 - Unpublished posts (`published()` scope).
@@ -30,7 +31,7 @@ Keep the feed query centralized and cursor-paginated.
 - Feed UI uses the Livewire stream state plus a `wire:intersect.margin.300px` sentinel to append older cursor pages.
 - `loadMore` records the last loaded post ID in session with the active source/type/ranking so the stream can restore that read position during the same session and offer Jump to latest.
 - The stream polls for new posts every 30 seconds only while the tab is visible. Polling queries only a count plus the newest matching post ID; full post rows are fetched only after the user taps the new-post indicator.
-- `scopeForFeed()` wraps a unioned post-ID subquery for own, followed-user, tagged-pet, and legacy-pet branches, then the outer Eloquent query handles eager loading, filtering, ordering, and cursor pagination.
+- `scopeForFeed()` wraps a post-ID subquery whose first branch reads `feed_items`, followed by compatibility branches for own, followed-user, tagged-pet, and legacy-pet membership. The outer Eloquent query still handles visibility, blocks, mutes, eager loading, ordering, and cursor pagination so stale feed rows cannot leak content.
 - The feed stream loads immediately as the page center column. Left and right sidebars are lazy child components with skeleton placeholders.
 
 ## Eager Loading & Engagement
@@ -43,7 +44,9 @@ Keep the feed query centralized and cursor-paginated.
 - Hashtag usage changes must call `FeedService::flushTrendingHashtagsCache()` through `HashtagService` so sidebars refresh within the next request.
 
 ## Fan-Out Jobs
-- `FeedFanOutJob` is idempotent per post. It must acquire `posts:fanout:{postId}`, return immediately when `posts.is_fanned_out` is already true, and set that flag only after collecting the user-follower and pet-follower recipient set.
+- `FeedFanOutJob` is idempotent per post. It must acquire `posts:fanout:{postId}`, return immediately when `posts.is_fanned_out` is already true, and dispatch `FeedFanOutChunkJob` batches of up to 500 precomputed feed rows for the post author, accepted user followers, and pet followers.
+- `feed_items` uses `user_id` as the recipient, `post_id`, `source_type` (`self`, `user`, `pet`), `source_id`, and `post_created_at`; the unique user/post/source key makes chunk retries safe.
+- Keep `feed_items(user_id, post_created_at, post_id)` and `feed_items(user_id, source_type, post_created_at, post_id)` indexes aligned with feed reads and source-filtered reads.
 - Scheduled publication and normal post creation may dispatch fan-out more than once during retries; the `is_fanned_out` flag is the durable guard that prevents duplicate delivery.
 
 ## Pinning

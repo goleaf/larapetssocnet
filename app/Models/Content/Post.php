@@ -8,6 +8,7 @@ use App\Models\Identity\User;
 use App\Models\Moderation\Report;
 use App\Models\Pets\Pet;
 use App\Models\Social\Block;
+use App\Models\Social\FeedItem;
 use App\Models\Social\Follow;
 use App\Services\ProfilePostOrderingService;
 use App\Services\VisibilityService;
@@ -313,6 +314,11 @@ class Post extends Model implements HasMedia
     public function postMentions(): HasMany
     {
         return $this->hasMany(PostMention::class);
+    }
+
+    public function feedItems(): HasMany
+    {
+        return $this->hasMany(FeedItem::class);
     }
 
     public function mentionedUsers(): BelongsToMany
@@ -1437,6 +1443,23 @@ class Post extends Model implements HasMedia
             ->select(['posts.*'])
             ->whereIn('posts.id', self::feedPostIdsSubquery($userId, $source))
             ->published()
+            ->where(function (Builder $visibilityQuery) use ($userId): void {
+                $visibilityQuery
+                    ->where('posts.user_id', $userId)
+                    ->orWhereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
+                    ->orWhere(function (Builder $friendsQuery) use ($userId): void {
+                        $friendsQuery
+                            ->where('posts.visibility', self::VISIBILITY_FRIENDS)
+                            ->whereExists(function (QueryBuilder $mutualQuery) use ($userId): void {
+                                $mutualQuery
+                                    ->selectRaw('1')
+                                    ->from('follows as feed_outer_mutual_follows')
+                                    ->whereColumn('feed_outer_mutual_follows.follower_id', 'posts.user_id')
+                                    ->where('feed_outer_mutual_follows.following_id', $userId)
+                                    ->where('feed_outer_mutual_follows.status', 'accepted');
+                            });
+                    });
+            })
             ->whereHas('author', function (Builder $authorQuery): void {
                 User::applyAvailableForProfiles($authorQuery);
             })
@@ -1449,7 +1472,9 @@ class Post extends Model implements HasMedia
     private static function feedPostIdsSubquery(int $userId, ?string $source): QueryBuilder
     {
         $source = in_array($source, ['people', 'pets'], true) ? $source : null;
-        $branches = [];
+        $branches = [
+            self::precomputedFeedPostIdsQuery($userId, $source),
+        ];
 
         if ($source !== 'pets') {
             $branches[] = self::ownFeedPostIdsQuery($userId);
@@ -1469,6 +1494,22 @@ class Post extends Model implements HasMedia
         return DB::query()
             ->fromSub($union, 'feed_post_ids')
             ->select('feed_post_ids.id');
+    }
+
+    private static function precomputedFeedPostIdsQuery(int $userId, ?string $source): QueryBuilder
+    {
+        return DB::table('feed_items')
+            ->select('feed_items.post_id as id')
+            ->where('feed_items.user_id', $userId)
+            ->when($source === 'people', function (QueryBuilder $query): void {
+                $query->whereIn('feed_items.source_type', [
+                    FeedItem::SOURCE_SELF,
+                    FeedItem::SOURCE_USER,
+                ]);
+            })
+            ->when($source === 'pets', function (QueryBuilder $query): void {
+                $query->where('feed_items.source_type', FeedItem::SOURCE_PET);
+            });
     }
 
     private static function ownFeedPostIdsQuery(int $userId): QueryBuilder
