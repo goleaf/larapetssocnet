@@ -9,6 +9,7 @@ use App\Services\Auth\AuthAuditLogger;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -62,7 +63,9 @@ class extends Component
     {
         $viewer = request()->user() ?: auth()->user();
 
-        abort_unless($viewer instanceof User && $viewer->is($this->profileOwner), 403);
+        abort_unless($viewer instanceof User, 403);
+
+        Gate::forUser($viewer)->authorize('repositionProfileCover', $this->profileOwner);
 
         $validated = Validator::make(
             ['position' => $position],
@@ -105,7 +108,9 @@ class extends Component
     {
         $viewer = request()->user() ?: auth()->user();
 
-        abort_unless($viewer instanceof User && $viewer->is($this->profileOwner), 403);
+        abort_unless($viewer instanceof User, 403);
+
+        Gate::forUser($viewer)->authorize('editProfile', $this->profileOwner);
 
         $this->editProfileFocusTarget = $this->sanitizeEditProfileFocusTarget($focusTarget);
         $this->showEditProfileModal = true;

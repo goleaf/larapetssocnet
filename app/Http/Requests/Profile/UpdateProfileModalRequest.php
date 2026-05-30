@@ -19,7 +19,7 @@ class UpdateProfileModalRequest extends FormRequest
 
         return $actor instanceof User
             && $target instanceof User
-            && $actor->can('update', $target);
+            && $actor->can('updateProfile', $target);
     }
 
     /**
@@ -47,9 +47,9 @@ class UpdateProfileModalRequest extends FormRequest
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
-    public static function validateForLivewire(User $target, User $actor, array $input): array
+    public static function validateInput(User $target, User $actor, array $input): array
     {
-        Gate::forUser($actor)->authorize('update', $target);
+        Gate::forUser($actor)->authorize('updateProfile', $target);
 
         /** @var array<string, mixed> $validated */
         $validated = Validator::make(
@@ -59,6 +59,15 @@ class UpdateProfileModalRequest extends FormRequest
         )->validate();
 
         return $validated;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    public static function validateForLivewire(User $target, User $actor, array $input): array
+    {
+        return self::validateInput($target, $actor, $input);
     }
 
     /**

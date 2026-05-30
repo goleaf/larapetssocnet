@@ -33,6 +33,21 @@ class UserPolicy
         return $actor->is($target) || $actor->hasAnyRole(['admin', 'moderator']);
     }
 
+    public function editProfile(User $actor, User $target): bool
+    {
+        return $actor->is($target);
+    }
+
+    public function updateProfile(User $actor, User $target): bool
+    {
+        return $this->editProfile($actor, $target);
+    }
+
+    public function repositionProfileCover(User $actor, User $target): bool
+    {
+        return $this->editProfile($actor, $target);
+    }
+
     public function updateAvatar(User $actor, User $target): bool
     {
         return $this->update($actor, $target);

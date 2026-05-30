@@ -25,6 +25,7 @@
 - Username redirects must not resolve reserved names and must not point to banned, suspended, deactivated, deleted, or pending-deletion users.
 - Profile audit events should record changed field names and safe metadata only; never log raw bio contents, private contact values, media secrets, or security state.
 - Profile view analytics counts are private owner-only data; never pass or render them for guests or profile visitors.
+- Profile edit modal opening, profile-modal saves, and cover repositioning must authorize through `UserPolicy::editProfile`, `UserPolicy::updateProfile`, and `UserPolicy::repositionProfileCover`; do not duplicate owner comparisons in Livewire actions.
 - Username changes from the profile edit modal must go through `UpdateProfileAction` and `UsernameService` so reserved names, uniqueness, redirects, and the 30-day cooldown are enforced server-side, not only through Livewire availability UI.
 - Profile edit privacy toggles must re-authorize the owner on every Livewire action and may store the email-discovery preference, but must not expose raw email values or add public email search without a dedicated visibility policy.
 

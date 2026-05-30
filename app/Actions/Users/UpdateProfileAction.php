@@ -3,17 +3,33 @@
 namespace App\Actions\Users;
 
 use App\Enums\ProfileTheme;
+use App\Http\Requests\Profile\UpdateProfileModalRequest;
 use App\Models\Identity\User;
 use App\Services\UsernameService;
+use App\Support\Profiles\ProfileUpdateResult;
 use App\Support\Profiles\SocialLinkNormalizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Mews\Purifier\Facades\Purifier;
 
 class UpdateProfileAction
 {
     public function __construct(private readonly UsernameService $usernames) {}
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function handleModalUpdate(User $actor, User $target, array $input): ProfileUpdateResult
+    {
+        Gate::forUser($actor)->authorize('updateProfile', $target);
+
+        $validated = UpdateProfileModalRequest::validateInput($target, $actor, $input);
+        $updatedUser = $this->handle($target, $this->profileModalPayload($validated));
+
+        return new ProfileUpdateResult($updatedUser, $validated);
+    }
 
     /**
      * @param  array<string, mixed>  $data
@@ -50,6 +66,34 @@ class UpdateProfileAction
         $this->syncMedia($user, $data);
 
         return $user->refresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function profileModalPayload(array $validated): array
+    {
+        return [
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'display_name' => $validated['display_name'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+            'headline' => $validated['headline'] ?? null,
+            'pronouns' => $validated['pronouns'] ?? null,
+            'location' => $validated['location'] ?? null,
+            'location_lat' => $validated['location_lat'] ?? null,
+            'location_lng' => $validated['location_lng'] ?? null,
+            'website' => $validated['website'] ?? null,
+            'birth_date' => $validated['birth_date'] ?? null,
+            'gender' => $validated['gender'] ?? null,
+            'social_links' => ($validated['social_links'] ?? []) !== [] ? $validated['social_links'] : null,
+            'avatar' => ($validated['avatar'] ?? null) instanceof UploadedFile ? $validated['avatar'] : null,
+            'cover' => ($validated['cover'] ?? null) instanceof UploadedFile ? $validated['cover'] : null,
+            'cover_photo_position' => (float) ($validated['cover_photo_position'] ?? User::DEFAULT_COVER_PHOTO_POSITION),
+            'remove_avatar' => (bool) ($validated['remove_avatar'] ?? false),
+            'remove_cover' => (bool) ($validated['remove_cover'] ?? false),
+        ];
     }
 
     /**

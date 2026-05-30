@@ -139,9 +139,9 @@ new class extends Component
         $user = $this->profileUser();
         $viewer = $this->viewer();
 
-        abort_unless($viewer instanceof User && $viewer->is($user), 403);
+        abort_unless($viewer instanceof User, 403);
 
-        Gate::forUser($viewer)->authorize('update', $user);
+        Gate::forUser($viewer)->authorize('editProfile', $user);
 
         $this->name = (string) $user->name;
         $this->username = (string) $user->username;
@@ -171,46 +171,25 @@ new class extends Component
     public function save(UpdateProfileAction $updateProfile, AuthAuditLogger $auditLogger): void
     {
         [$user, $viewer] = $this->authorizeProfileOwnerUpdate();
+        $oldUsername = (string) $user->username;
 
         try {
-            $validated = UpdateProfileModalRequest::validateForLivewire($user, $viewer, $this->profileInput());
+            $result = $updateProfile->handleModalUpdate($viewer, $user, $this->profileInput());
         } catch (ValidationException $exception) {
             $this->setErrorBag($exception->validator->errors());
             $this->dispatch('profile-edit-validation-failed', target: $this->firstInvalidFieldTarget($exception->validator->errors()));
 
             return;
-        }
-
-        $oldUsername = (string) $user->username;
-        $this->syncValidatedProfileState($validated);
-
-        try {
-            $updatedUser = $updateProfile->handle($user, [
-                'name' => $validated['name'],
-                'username' => $validated['username'],
-                'display_name' => $validated['display_name'] ?? null,
-                'bio' => $validated['bio'] ?? null,
-                'headline' => $validated['headline'] ?? null,
-                'pronouns' => $validated['pronouns'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'location_lat' => $validated['location_lat'] ?? null,
-                'location_lng' => $validated['location_lng'] ?? null,
-                'website' => $validated['website'] ?? null,
-                'birth_date' => $validated['birth_date'] ?? null,
-                'gender' => $validated['gender'] ?? null,
-                'social_links' => ($validated['social_links'] ?? []) !== [] ? $validated['social_links'] : null,
-                'avatar' => $this->avatar instanceof UploadedFile ? $this->avatar : null,
-                'cover' => $this->cover instanceof UploadedFile ? $this->cover : null,
-                'cover_photo_position' => (float) ($validated['cover_photo_position'] ?? User::DEFAULT_COVER_PHOTO_POSITION),
-                'remove_avatar' => (bool) ($validated['remove_avatar'] ?? false),
-                'remove_cover' => (bool) ($validated['remove_cover'] ?? false),
-            ]);
         } catch (UsernameChangeCooldownException|UsernameNotAvailableException|UsernameReservedException $exception) {
             $this->addError('username', $exception->getMessage());
             $this->dispatch('profile-edit-validation-failed', target: self::FIELD_TARGETS['username']);
 
             return;
         }
+
+        $validated = $result->validated;
+        $updatedUser = $result->user;
+        $this->syncValidatedProfileState($validated);
 
         $changedFields = $this->changedFields($validated);
 
@@ -392,9 +371,9 @@ new class extends Component
         $user = $this->profileUser();
         $viewer = $this->viewer();
 
-        abort_unless($viewer instanceof User && $viewer->is($user), 403);
+        abort_unless($viewer instanceof User, 403);
 
-        Gate::forUser($viewer)->authorize('update', $user);
+        Gate::forUser($viewer)->authorize('updateProfile', $user);
 
         return [$user, $viewer];
     }

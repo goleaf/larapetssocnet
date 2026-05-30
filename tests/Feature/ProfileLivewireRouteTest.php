@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
 use Spatie\Image\Enums\Fit;
@@ -236,6 +237,19 @@ it('rejects nested edit profile modal access for non owners', function (): void 
 
     Livewire::actingAs(User::factory()->create())
         ->test('profile.edit-modal', ['userId' => $profileOwner->getKey()])
+        ->assertForbidden();
+});
+
+it('rejects opening the nested edit profile modal from the profile page for non owners', function (): void {
+    $profileOwner = User::factory()->create([
+        'username' => 'page_modal_forbidden_owner',
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages.profile.show', ['user' => $profileOwner->username])
+        ->call('openEditProfileModal')
         ->assertForbidden();
 });
 
@@ -751,6 +765,21 @@ it('validates basic information length limits in the nested edit profile modal',
             'display_name',
             'bio',
         ]);
+});
+
+it('validates profile modal input inside the profile update action', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Action Validation Owner',
+        'username' => 'action_validation_owner',
+    ]);
+
+    expect(fn () => app(UpdateProfileAction::class)->handleModalUpdate($profileOwner, $profileOwner, [
+        'name' => '',
+        'username' => 'action_validation_owner',
+        'bio' => str_repeat('b', 161),
+    ]))->toThrow(ValidationException::class);
+
+    expect($profileOwner->fresh()->name)->toBe('Action Validation Owner');
 });
 
 it('enforces username cooldown inside the profile update action', function (): void {
