@@ -7,6 +7,10 @@ use App\Models\Activities\Event;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class FeedService
 {
@@ -45,11 +49,58 @@ class FeedService
 
     public function getSidebarData(User $user): array
     {
-        $suggestions = $user->getSuggestedUsersToFollow(4);
-        $trending = Hashtag::query()->trending(6)->get();
+        $suggestions = $user->getSuggestedUsersToFollow(5);
+        $trending = Cache::remember(
+            'feed:trending-hashtags',
+            now()->addMinutes(10),
+            fn (): Collection => Hashtag::query()->trending(10)->get()
+        );
         $events = Event::query()->upcoming()->published()->limit(2)->get();
         $contest = Contest::query()->active()->first();
+        $upcomingBirthdays = $this->upcomingPetBirthdays($user);
 
-        return ['suggestions' => $suggestions, 'trending' => $trending, 'events' => $events, 'contest' => $contest];
+        return [
+            'suggestions' => $suggestions,
+            'trending' => $trending,
+            'events' => $events,
+            'contest' => $contest,
+            'upcomingBirthdays' => $upcomingBirthdays,
+        ];
+    }
+
+    /**
+     * @return Collection<int, Pet>
+     */
+    private function upcomingPetBirthdays(User $user): Collection
+    {
+        $today = Carbon::today();
+        $birthdayKeys = collect(range(0, 7))
+            ->map(fn (int $offset): string => $today->copy()->addDays($offset)->format('m-d'))
+            ->values();
+
+        $daysByBirthdayKey = $birthdayKeys
+            ->flip()
+            ->map(fn (int $offset): int => $offset);
+
+        $pets = Pet::query()
+            ->without(['user', 'species', 'breed', 'media', 'tags'])
+            ->with(['media'])
+            ->visibleTo($user)
+            ->whereIn('pets.user_id', $user->acceptedFollowing()->select('users.id'))
+            ->whereIn('pets.birthday_month_day', $birthdayKeys->all())
+            ->where('pets.is_archived', false)
+            ->orderBy('pets.birthday_month_day')
+            ->limit(20)
+            ->get();
+
+        return $pets
+            ->each(function (Pet $pet) use ($daysByBirthdayKey): void {
+                $daysUntil = (int) ($daysByBirthdayKey->get((string) $pet->birthday_month_day) ?? 0);
+
+                $pet->setAttribute('days_until_birthday', $daysUntil);
+            })
+            ->sortBy(fn (Pet $pet): int => (int) $pet->getAttribute('days_until_birthday'))
+            ->take(5)
+            ->values();
     }
 }

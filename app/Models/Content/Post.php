@@ -1310,7 +1310,7 @@ class Post extends Model implements HasMedia
             ->withQueryString();
     }
 
-    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15, ?string $source = null): CursorPaginator
+    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15, ?string $source = null, ?string $cursor = null): CursorPaginator
     {
         $viewerId = (int) $viewer->getKey();
 
@@ -1321,8 +1321,33 @@ class Post extends Model implements HasMedia
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->cursorPaginate($perPage)
+            ->cursorPaginate($perPage, ['posts.*'], 'feed_cursor', $cursor)
             ->withQueryString();
+    }
+
+    /**
+     * @param  list<int>  $postIds
+     * @return Collection<int, self>
+     */
+    public static function mainFeedPostsByIds(User $viewer, array $postIds, ?string $type = null, ?string $source = null): Collection
+    {
+        if ($postIds === []) {
+            return collect();
+        }
+
+        $posts = self::query()
+            ->forFeed((int) $viewer->getKey())
+            ->forFeedSource((int) $viewer->getKey(), $source)
+            ->withFeedRelations($viewer)
+            ->when($type !== null, fn (Builder $query) => $query->byType($type))
+            ->whereIn('posts.id', $postIds)
+            ->get()
+            ->keyBy(fn (self $post): int => (int) $post->getKey());
+
+        return collect($postIds)
+            ->map(fn (int $postId): ?self => $posts->get($postId))
+            ->filter()
+            ->values();
     }
 
     /**
@@ -1406,7 +1431,11 @@ class Post extends Model implements HasMedia
                                             ->whereIn('posts.user_id', $mutualUserIdsQuery);
                                     });
                             })
-                            ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
+                            ->where(function (Builder $petFollowQuery) use ($userId): void {
+                                $petFollowQuery
+                                    ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId))
+                                    ->orWhereHas('pets.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
+                            });
                     });
             })
             ->whereHas('author', function (Builder $authorQuery): void {
@@ -1435,7 +1464,11 @@ class Post extends Model implements HasMedia
             'pets' => $query->where(function (Builder $petsQuery) use ($userId): void {
                 $petsQuery
                     ->where('posts.user_id', '!=', $userId)
-                    ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
+                    ->where(function (Builder $petFollowQuery) use ($userId): void {
+                        $petFollowQuery
+                            ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId))
+                            ->orWhereHas('pets.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
+                    });
             }),
             default => $query,
         };
