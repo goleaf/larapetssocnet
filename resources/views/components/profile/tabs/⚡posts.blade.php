@@ -6,6 +6,7 @@ use App\Models\Identity\User;
 use App\Services\CommentService;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -13,6 +14,7 @@ new class extends Component
 {
     private const POSTS_PER_PAGE = 15;
 
+    #[Locked]
     public int $profileUserId;
 
     /**
@@ -309,8 +311,8 @@ new class extends Component
  </section>
  @endif
 
- @forelse ($data['posts'] as $post)
- <x-post-card :post="$post" context="profile"/>
+	 @forelse ($data['posts'] as $post)
+	 <x-post-card :post="$post" context="profile" wire:key="profile-post-{{ $post->getKey() }}"/>
  @empty
  <x-ui.empty-state icon="📝" title="No posts yet" description="No posts published yet."/>
  @endforelse

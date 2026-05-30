@@ -17,6 +17,10 @@ class SearchController extends Controller
 {
     public function __invoke(Request $request): View
     {
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:80'],
+        ]);
+
         $query = trim((string) $request->string('q'));
         $type = (string) $request->string('type', 'users');
 

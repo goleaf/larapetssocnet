@@ -64,7 +64,7 @@
 
                         @if ($isEditMode)
                             <div class="mt-3 space-y-2">
-                                <textarea wire:model.live="editContent" maxlength="500" class="min-h-24 w-full rounded-[var(--radius-soft)] border border-fur/20 bg-cream px-3 py-2 text-sm text-bark focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/20"></textarea>
+                                <textarea wire:model.live.debounce.500ms="editContent" maxlength="500" class="min-h-24 w-full rounded-[var(--radius-soft)] border border-fur/20 bg-cream px-3 py-2 text-sm text-bark focus:border-paw focus:outline-none focus:ring-2 focus:ring-paw/20"></textarea>
                                 <div class="flex items-center justify-between text-xs text-fur">
                                     <span>{{ strlen($editContent) }}/500</span>
                                     <span class="flex gap-2">

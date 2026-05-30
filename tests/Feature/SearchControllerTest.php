@@ -61,3 +61,9 @@ test('user search only returns discoverable users', function (): void {
         ->assertDontSee('Findable Private User')
         ->assertDontSee('Findable Banned User');
 });
+
+test('search rejects overly broad query strings before running model searches', function (): void {
+    $this->actingAs(User::factory()->create())
+        ->get(route('search.index', ['type' => 'posts', 'q' => str_repeat('a', 81)]))
+        ->assertInvalid('q');
+});

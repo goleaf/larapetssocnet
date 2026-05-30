@@ -34,7 +34,7 @@
                 @if (count($mentionSuggestions) > 0)
                     <div class="absolute left-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-[var(--radius-soft)] border border-fur/15 bg-warm-white shadow-lg">
                         @foreach ($mentionSuggestions as $suggestion)
-                            <button type="button" wire:click="selectMention({{ $suggestion['id'] }}, '{{ $suggestion['username'] }}')" class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-cream">
+                            <button type="button" wire:key="top-level-mention-{{ $suggestion['id'] }}" wire:click="selectMention({{ $suggestion['id'] }}, @js($suggestion['username']))" class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-cream">
                                 <span class="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-paw-light text-xs font-bold text-paw-dark">
                                     @if ($suggestion['avatar_url'])
                                         <img src="{{ $suggestion['avatar_url'] }}" alt="{{ $suggestion['name'] }}" class="h-full w-full object-cover">

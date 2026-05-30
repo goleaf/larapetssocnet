@@ -892,25 +892,25 @@ new class extends Component
                                     <input type="search" wire:model.live.debounce.350ms="gifSearch" wire:keydown.debounce.350ms="searchGifs" class="form-input min-h-9 flex-1 text-sm" placeholder="Search GIFs">
                                     <button type="button" wire:click="searchGifs" class="rounded-[var(--radius-pill)] px-3 py-1.5 text-xs font-bold text-paw hover:bg-paw-light/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Search</button>
                                 </div>
-                                @if($gifResults !== [])
-                                    <div class="mt-3 grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
-                                        @foreach($gifResults as $index => $gif)
-                                            <button type="button" wire:click="selectGif({{ $index }})" class="overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-cream transition hover:border-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
-                                                <img src="{{ $gif['gif_preview_url'] ?: $gif['gif_url'] }}" alt="{{ $gif['title'] }}" class="h-24 w-full object-cover" loading="lazy">
-                                            </button>
-                                        @endforeach
+	                                @if($gifResults !== [])
+	                                    <div class="mt-3 grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+	                                        @foreach($gifResults as $index => $gif)
+	                                            <button type="button" wire:key="comment-gif-{{ $gif['id'] ?? $index }}" wire:click="selectGif({{ $index }})" class="overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-cream transition hover:border-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+	                                                <img src="{{ $gif['gif_preview_url'] ?: $gif['gif_url'] }}" alt="{{ $gif['title'] }}" class="h-24 w-full object-cover" loading="lazy">
+	                                            </button>
+	                                        @endforeach
                                     </div>
                                 @elseif(mb_strlen($gifSearch) >= 2)
                                     <p class="mt-3 text-xs text-fur">No GIFs found.</p>
                                 @endif
                             </div>
                         @endif
-                        @if ($mentionSuggestionsOpen && $mentionTarget === 'body' && $mentionSuggestions !== [])
-                            <div class="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white shadow-card" role="listbox" aria-label="Mention suggestions">
-                                @foreach ($mentionSuggestions as $suggestion)
-                                    <button type="button" wire:click="insertMention('{{ $suggestion['username'] }}')" class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-cream focus:bg-cream focus:outline-none" role="option">
-                                        <x-ui.avatar :src="$suggestion['avatar_url']" :name="$suggestion['name']" size="sm"/>
-                                        <span class="min-w-0">
+	                        @if ($mentionSuggestionsOpen && $mentionTarget === 'body' && $mentionSuggestions !== [])
+	                            <div class="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white shadow-card" role="listbox" aria-label="Mention suggestions">
+	                                @foreach ($mentionSuggestions as $suggestion)
+	                                    <button type="button" wire:key="comment-mention-{{ $mentionTarget }}-{{ $suggestion['id'] }}" wire:click="insertMention(@js($suggestion['username']))" class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-cream focus:bg-cream focus:outline-none" role="option">
+	                                        <x-ui.avatar :src="$suggestion['avatar_url']" :name="$suggestion['name']" size="sm"/>
+	                                        <span class="min-w-0">
                                             <span class="block truncate text-sm font-semibold text-bark">{{ $suggestion['name'] }}</span>
                                             <span class="block truncate text-xs text-fur">&#64;{{ $suggestion['username'] }}</span>
                                         </span>
@@ -966,13 +966,14 @@ new class extends Component
         </div>
     @endauth
 
-    @forelse ($comments as $comment)
-        @if ($loop->first)
-            <div class="space-y-4">
-        @endif
-            <x-comment-item
-                :comment="$comment"
-                :post="$post"
+	    @forelse ($comments as $comment)
+	        @if ($loop->first)
+	            <div class="space-y-4">
+	        @endif
+	            <x-comment-item
+	                wire:key="comment-thread-item-{{ $comment->getKey() }}"
+	                :comment="$comment"
+	                :post="$post"
                 :livewire="true"
                 :editing-comment-id="$editingCommentId"
                 :mention-target="$mentionTarget"

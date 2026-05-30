@@ -5,10 +5,12 @@ use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public int $postId;
 
     public bool $open = false;

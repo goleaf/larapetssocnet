@@ -7,6 +7,7 @@ use App\Models\Content\Post;
 use App\Models\Content\PostMedia;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 
 class PostMediaProcessingService
 {
@@ -92,19 +93,36 @@ class PostMediaProcessingService
 
     private function absoluteTemporaryPath(): ?string
     {
-        if (File::exists($this->temporaryPath)) {
-            return $this->temporaryPath;
-        }
+        $temporaryPath = $this->trustedTemporaryPath();
 
-        $storagePath = Storage::path($this->temporaryPath);
-
-        if (File::exists($storagePath)) {
-            return $storagePath;
+        if ($temporaryPath === null) {
+            return null;
         }
 
         $livewirePath = Storage::disk(config('livewire.temporary_file_upload.disk') ?: config('filesystems.default'))
-            ->path($this->temporaryPath);
+            ->path($temporaryPath);
 
         return File::exists($livewirePath) ? $livewirePath : null;
+    }
+
+    private function trustedTemporaryPath(): ?string
+    {
+        $path = str_replace('\\', '/', trim($this->temporaryPath));
+
+        if ($path === '' || str_starts_with($path, '/') || preg_match('/^[A-Za-z]:\//', $path) === 1) {
+            return null;
+        }
+
+        if (in_array('..', explode('/', $path), true)) {
+            return null;
+        }
+
+        $directory = FileUploadConfiguration::directory();
+
+        if ($path === $directory || ! str_starts_with($path, $directory.'/')) {
+            return null;
+        }
+
+        return $path;
     }
 }

@@ -3,12 +3,14 @@
 use App\Models\Content\Post;
 use App\Services\PostAnalyticsService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
     use AuthorizesRequests;
 
+    #[Locked]
     public int $postId;
 
     public bool $open = false;

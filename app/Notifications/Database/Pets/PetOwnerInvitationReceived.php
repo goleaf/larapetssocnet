@@ -2,12 +2,12 @@
 
 namespace App\Notifications\Database\Pets;
 
-use App\Notifications\Database\QueuesDatabaseNotification;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwnerInvitation;
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 

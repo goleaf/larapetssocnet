@@ -120,6 +120,24 @@ it('processes temporary media after creating the post placeholder state', functi
     ]);
 });
 
+it('rejects temporary media paths outside the Livewire upload directory', function (): void {
+    $author = User::factory()->create();
+
+    expect(fn () => app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
+        'body' => 'Photo from a forged composer payload',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'media_attachments' => [
+            [
+                'temporary_path' => '/etc/passwd',
+                'media_type' => 'image',
+                'alt_text' => 'A forged upload path',
+            ],
+        ],
+    ])))->toThrow(ValidationException::class);
+
+    expect(Post::query()->count())->toBe(0);
+});
+
 it('creates posts immediately and fetches link preview metadata when it is not preloaded', function (): void {
     $author = User::factory()->create();
     $this->instance(PostLinkPreviewService::class, new class extends PostLinkPreviewService

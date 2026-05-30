@@ -247,6 +247,12 @@ class PostCreationRequest extends FormRequest
             });
 
             $temporaryMedia->values()->each(function (array $media, int $index) use ($validator): void {
+                if (! $this->isTrustedTemporaryMediaPath((string) $media['temporary_path'])) {
+                    $validator->errors()->add("media_attachments.{$index}.temporary_path", 'The selected media upload is invalid.');
+
+                    return;
+                }
+
                 $sizeKilobytes = (int) ceil(((int) ($media['file_size'] ?? 0)) / 1024);
 
                 if ($sizeKilobytes <= 0) {
@@ -360,6 +366,23 @@ class PostCreationRequest extends FormRequest
         if (count($hashtags) > $max) {
             $validator->errors()->add('body', "You can use up to {$max} hashtags per post.");
         }
+    }
+
+    private function isTrustedTemporaryMediaPath(string $path): bool
+    {
+        $path = str_replace('\\', '/', trim($path));
+
+        if ($path === '' || str_starts_with($path, '/') || preg_match('/^[A-Za-z]:\//', $path) === 1) {
+            return false;
+        }
+
+        if (in_array('..', explode('/', $path), true)) {
+            return false;
+        }
+
+        $directory = trim((string) (config('livewire.temporary_file_upload.directory') ?: 'livewire-tmp'), '/');
+
+        return $path !== $directory && str_starts_with($path, $directory.'/');
     }
 
     private function normalizeNullableString(mixed $value): ?string

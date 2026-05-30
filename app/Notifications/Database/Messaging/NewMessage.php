@@ -2,11 +2,11 @@
 
 namespace App\Notifications\Database\Messaging;
 
+use App\Models\Identity\User;
+use App\Models\Messaging\Message;
 use App\Notifications\Database\QueuesDatabaseNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
-use App\Models\Identity\User;
-use App\Models\Messaging\Message;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;

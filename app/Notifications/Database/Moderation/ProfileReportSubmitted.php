@@ -2,11 +2,11 @@
 
 namespace App\Notifications\Database\Moderation;
 
+use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use App\Notifications\Database\QueuesDatabaseNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
-use App\Models\Identity\User;
-use App\Models\Moderation\Report;
 use Illuminate\Notifications\Notification;
 
 class ProfileReportSubmitted extends Notification implements ShouldQueue, ShouldQueueAfterCommit

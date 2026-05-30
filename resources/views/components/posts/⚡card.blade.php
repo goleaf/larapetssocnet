@@ -5,6 +5,7 @@ use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -12,6 +13,7 @@ new class extends Component
 {
     public Post $post;
 
+    #[Locked]
     public ?int $viewerId = null;
 
     public string $context = 'feed';

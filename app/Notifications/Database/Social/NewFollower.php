@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Social;
 
+use App\Models\Identity\User;
 use App\Notifications\Database\QueuesDatabaseNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
-use App\Models\Identity\User;
 use Illuminate\Notifications\Notification;
 
 class NewFollower extends Notification implements ShouldQueue, ShouldQueueAfterCommit

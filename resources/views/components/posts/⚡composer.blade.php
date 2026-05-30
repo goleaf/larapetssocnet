@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -197,20 +198,25 @@ new class extends Component
 
     public bool $confirmedDuplicate = false;
 
+    #[Locked]
     public string $contextType = 'default';
 
+    #[Locked]
     public int $contextId = 0;
 
+    #[Locked]
     public ?int $fixedPetId = null;
 
     public bool $petTaggingLocked = false;
 
+    #[Locked]
     public ?int $editPostId = null;
 
     public bool $isEditMode = false;
 
     public ?string $editingPostCreatedAt = null;
 
+    #[Locked]
     public ?int $quotePostId = null;
 
     /**
@@ -1499,7 +1505,9 @@ new class extends Component
             return null;
         }
 
-        return $file->getRealPath() ?: $file->getPathname();
+        $directory = trim((string) (config('livewire.temporary_file_upload.directory') ?: 'livewire-tmp'), '/');
+
+        return $directory.'/'.$file->getFilename();
     }
 
     private function attachmentIndex(int|string $identifier): ?int

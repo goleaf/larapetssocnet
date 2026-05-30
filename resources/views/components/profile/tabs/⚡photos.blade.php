@@ -9,12 +9,14 @@ use App\Services\CommentService;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
     private const PHOTOS_PER_PAGE = 30;
 
+    #[Locked]
     public int $profileUserId;
 
     /**
@@ -650,8 +652,8 @@ new class extends Component
  <span class="text-sm text-fur">{{ number_format($commentCount) }}</span>
  </div>
 
- @forelse ($data['selectedPhotoComments'] as $comment)
- <x-comment-item :comment="$comment" :post="$selectedPost"/>
+	 @forelse ($data['selectedPhotoComments'] as $comment)
+	 <x-comment-item :comment="$comment" :post="$selectedPost" wire:key="profile-photo-comment-{{ $comment->getKey() }}"/>
  @empty
  <x-ui.empty-state title="No comments yet" description="Be the first to share your thoughts!" icon="💬"/>
  @endforelse

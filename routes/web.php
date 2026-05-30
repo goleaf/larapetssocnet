@@ -128,7 +128,9 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     });
 
 Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])->group(function (): void {
-    Route::get('/search', SearchController::class)->name('search.index');
+    Route::get('/search', SearchController::class)
+        ->middleware('throttle:30,1')
+        ->name('search.index');
     Route::get('/api/breeds', BreedAutocompleteController::class)
         ->middleware('throttle:60,1')
         ->name('api.breeds.index');

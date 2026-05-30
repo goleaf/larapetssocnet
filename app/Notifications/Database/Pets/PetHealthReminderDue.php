@@ -2,10 +2,10 @@
 
 namespace App\Notifications\Database\Pets;
 
+use App\Models\Pets\PetHealthReminder;
 use App\Notifications\Database\QueuesDatabaseNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
-use App\Models\Pets\PetHealthReminder;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
