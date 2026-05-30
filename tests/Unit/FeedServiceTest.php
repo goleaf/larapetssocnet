@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
@@ -58,4 +59,31 @@ it('returns upcoming pet birthdays for followed users', function (): void {
     expect($sidebarData['upcomingBirthdays'])
         ->pluck('name')
         ->not->toContain('Hidden Birthday');
+});
+
+it('caches trending hashtags and can invalidate the tagged cache key', function (): void {
+    $service = app(FeedService::class);
+    $service->flushTrendingHashtagsCache();
+
+    $first = Hashtag::factory()->create([
+        'name' => 'walks',
+        'slug' => 'walks',
+        'normalized_name' => 'walks',
+        'posts_count' => 5,
+    ]);
+
+    expect($service->trendingHashtags()->first()?->getKey())->toBe($first->getKey());
+
+    $second = Hashtag::factory()->create([
+        'name' => 'training',
+        'slug' => 'training',
+        'normalized_name' => 'training',
+        'posts_count' => 50,
+    ]);
+
+    expect($service->trendingHashtags()->first()?->getKey())->toBe($first->getKey());
+
+    $service->flushTrendingHashtagsCache();
+
+    expect($service->trendingHashtags()->first()?->getKey())->toBe($second->getKey());
 });

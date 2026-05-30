@@ -14,7 +14,6 @@ use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Discovery\ExploreController;
 use App\Http\Controllers\Discovery\HashtagController;
 use App\Http\Controllers\Discovery\SearchController;
-use App\Http\Controllers\Feed\FeedController;
 use App\Http\Controllers\Gamification\BadgeController;
 use App\Http\Controllers\Groups\GroupBanController;
 use App\Http\Controllers\Groups\GroupController;
@@ -157,7 +156,7 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         ->name('tips.show');
     Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
 
-    Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
+    Route::livewire('/feed', 'pages.feed.index')->name('feed.index');
     Route::post('/feed/mutes', [FeedMuteController::class, 'store'])->name('feed.mutes.store');
     Route::delete('/feed/mutes/{feedMute}', [FeedMuteController::class, 'destroy'])
         ->whereNumber('feedMute')

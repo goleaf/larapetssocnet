@@ -47,6 +47,8 @@ new class extends Component
 
     public ?string $newestPostCreatedAt = null;
 
+    public ?int $polledNewestPostId = null;
+
     public function mount(?string $source = null, ?string $type = null): void
     {
         $this->source = $this->sanitizeSource($source ?? $this->source);
@@ -121,9 +123,20 @@ new class extends Component
             return;
         }
 
-        $this->newPostsCount = $this->baseFeedQuery()
-            ->where($this->newerThanCurrentTop(...))
-            ->count();
+        $newerPostsQuery = $this->baseFeedQuery()
+            ->where($this->newerThanCurrentTop(...));
+
+        $this->newPostsCount = (int) (clone $newerPostsQuery)->count();
+
+        $polledNewestPost = $newerPostsQuery
+            ->select(['posts.id', 'posts.created_at'])
+            ->orderByDesc('posts.created_at')
+            ->orderByDesc('posts.id')
+            ->first();
+
+        $this->polledNewestPostId = $polledNewestPost instanceof Post
+            ? (int) $polledNewestPost->getKey()
+            : null;
     }
 
     public function loadNewPosts(): void
@@ -154,6 +167,7 @@ new class extends Component
         }
 
         $this->newPostsCount = 0;
+        $this->polledNewestPostId = null;
         $this->dispatch('feed-new-posts-loaded');
     }
 
@@ -274,8 +288,7 @@ new class extends Component
         $viewer = $this->viewer();
 
         return Post::query()
-            ->forFeed((int) $viewer->getKey())
-            ->forFeedSource((int) $viewer->getKey(), $this->normalizedSource())
+            ->forFeed((int) $viewer->getKey(), $this->normalizedSource())
             ->when($this->normalizedType() !== null, fn (Builder $query) => $query->byType((string) $this->normalizedType()));
     }
 
@@ -288,6 +301,7 @@ new class extends Component
         $this->newPostsCount = 0;
         $this->newestPostId = null;
         $this->newestPostCreatedAt = null;
+        $this->polledNewestPostId = null;
         $this->restoreFromPostId = null;
         $this->restoredReadPosition = false;
     }
@@ -485,7 +499,7 @@ new class extends Component
     data-ui="feed-stream"
     class="space-y-4"
     x-data="feedLiveState()"
-    x-init="start($wire)"
+    x-init="start($wire, $el)"
     x-on:feed-new-posts-loaded.window="$nextTick(() => document.getElementById('feed-stream-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))"
 >
     <x-ui.card padding="base" data-ui="feed-moments-strip">
@@ -639,7 +653,13 @@ new class extends Component
 
         @forelse ($data['posts'] as $post)
             <li wire:key="feed-post-{{ $post->getKey() }}" aria-label="{{ __('Post by :name', ['name' => $post->author?->name ?? __('a community member')]) }}">
-                <x-post-card :post="$post" />
+                <livewire:posts.card
+                    :post="$post"
+                    :viewer-id="auth()->id()"
+                    context="feed"
+                    :instance="'feed-'.$post->getKey()"
+                    :key="'feed-post-card-'.$post->getKey()"
+                />
             </li>
         @empty
             <li>

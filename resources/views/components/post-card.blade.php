@@ -3,6 +3,7 @@
     'viewer' => null,
     'context' => 'feed',
     'instance' => null,
+    'livewireComments' => false,
 ])
 
 @php
@@ -113,6 +114,8 @@
 
     $isVideoMedia = static fn (mixed $item): bool => $post::mediaItemIsVideo($item);
     $mediaUrl = static fn (mixed $item): string => $post::mediaItemUrl($item);
+    $mediaBlurhash = static fn (mixed $item): ?string => $post::mediaItemBlurhash($item);
+    $mediaPlaceholder = static fn (mixed $item): ?string => $post::mediaItemPlaceholder($item);
 @endphp
 
 <x-ui.card
@@ -481,7 +484,15 @@
                             <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                         </video>
                     @else
-                        <img src="{{ $mediaUrl($item) }}" alt="{{ $mediaAlt }}" class="h-72 w-full object-cover sm:h-96" loading="lazy">
+                        @php($itemPlaceholder = $mediaPlaceholder($item))
+                        <img
+                            src="{{ $mediaUrl($item) }}"
+                            alt="{{ $mediaAlt }}"
+                            class="h-72 w-full object-cover sm:h-96"
+                            loading="lazy"
+                            data-blurhash="{{ $mediaBlurhash($item) }}"
+                            @if ($itemPlaceholder) style="background-image: url('{{ $itemPlaceholder }}'); background-size: cover; background-position: center;" @endif
+                        >
                     @endif
                 </div>
             @elseif ($shownMedia->count() === 2)
@@ -493,7 +504,15 @@
                                     <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                                 </video>
                             @else
-                                <img src="{{ $mediaUrl($item) }}" alt="{{ $mediaAlt }}" class="h-44 w-full object-cover sm:h-56" loading="lazy">
+                                @php($itemPlaceholder = $mediaPlaceholder($item))
+                                <img
+                                    src="{{ $mediaUrl($item) }}"
+                                    alt="{{ $mediaAlt }}"
+                                    class="h-44 w-full object-cover sm:h-56"
+                                    loading="lazy"
+                                    data-blurhash="{{ $mediaBlurhash($item) }}"
+                                    @if ($itemPlaceholder) style="background-image: url('{{ $itemPlaceholder }}'); background-size: cover; background-position: center;" @endif
+                                >
                             @endif
                         </div>
                     @endforeach
@@ -514,11 +533,19 @@
                                     <source src="{{ $mediaUrl($item) }}" type="{{ $item->mime_type ?? 'video/mp4' }}">
                                 </video>
                             @else
-                                <img src="{{ $mediaUrl($item) }}" alt="{{ $mediaAlt }}" @class([
-                                    'w-full object-cover',
-                                    'h-52 sm:h-64' => $loop->first,
-                                    'h-36 sm:h-44' => ! $loop->first,
-                                ]) loading="lazy">
+                                @php($itemPlaceholder = $mediaPlaceholder($item))
+                                <img
+                                    src="{{ $mediaUrl($item) }}"
+                                    alt="{{ $mediaAlt }}"
+                                    @class([
+                                        'w-full object-cover',
+                                        'h-52 sm:h-64' => $loop->first,
+                                        'h-36 sm:h-44' => ! $loop->first,
+                                    ])
+                                    loading="lazy"
+                                    data-blurhash="{{ $mediaBlurhash($item) }}"
+                                    @if ($itemPlaceholder) style="background-image: url('{{ $itemPlaceholder }}'); background-size: cover; background-position: center;" @endif
+                                >
                             @endif
 
                             @if ($loop->last && $hiddenMediaCount > 0)
@@ -556,18 +583,34 @@
                 </x-ui.button>
             @endauth
 
-            <x-ui.button
-                :href="route('posts.show', $post) . '#comments'"
-                data-testid="comments-toggle"
-                size="sm"
-                variant="ghost"
-                class="min-h-11 w-full sm:w-auto"
-                aria-label="{{ __('Read comments on post by :name', ['name' => $authorName]) }}"
-            >
-                <span aria-hidden="true">💬</span>
-                <span>Comments</span>
-                <span class="opacity-80">({{ $commentCount }})</span>
-            </x-ui.button>
+            @if ($livewireComments)
+                <x-ui.button
+                    type="button"
+                    wire:click="toggleComments"
+                    data-testid="comments-toggle"
+                    size="sm"
+                    variant="ghost"
+                    class="min-h-11 w-full sm:w-auto"
+                    aria-label="{{ __('Toggle comments on post by :name', ['name' => $authorName]) }}"
+                >
+                    <span aria-hidden="true">💬</span>
+                    <span>Comments</span>
+                    <span class="opacity-80">({{ $commentCount }})</span>
+                </x-ui.button>
+            @else
+                <x-ui.button
+                    :href="route('posts.show', $post) . '#comments'"
+                    data-testid="comments-toggle"
+                    size="sm"
+                    variant="ghost"
+                    class="min-h-11 w-full sm:w-auto"
+                    aria-label="{{ __('Read comments on post by :name', ['name' => $authorName]) }}"
+                >
+                    <span aria-hidden="true">💬</span>
+                    <span>Comments</span>
+                    <span class="opacity-80">({{ $commentCount }})</span>
+                </x-ui.button>
+            @endif
 
             @auth
                 <x-ui.button

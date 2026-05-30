@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -1143,6 +1144,43 @@ class Post extends Model implements HasMedia
         return '';
     }
 
+    public static function mediaItemBlurhash(mixed $item): ?string
+    {
+        $customProperties = self::mediaItemCustomProperties($item);
+        $blurhash = $customProperties['blurhash'] ?? $customProperties['blur_hash'] ?? null;
+
+        return is_string($blurhash) && $blurhash !== '' ? $blurhash : null;
+    }
+
+    public static function mediaItemPlaceholder(mixed $item): ?string
+    {
+        $customProperties = self::mediaItemCustomProperties($item);
+        $placeholder = $customProperties['blurhash_placeholder']
+            ?? $customProperties['placeholder']
+            ?? $customProperties['placeholder_data_uri']
+            ?? null;
+
+        if (! is_string($placeholder) || $placeholder === '') {
+            return null;
+        }
+
+        return str_starts_with($placeholder, 'data:image/') ? $placeholder : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function mediaItemCustomProperties(mixed $item): array
+    {
+        if (! is_object($item) || ! isset($item->custom_properties)) {
+            return [];
+        }
+
+        $properties = $item->custom_properties;
+
+        return is_array($properties) ? $properties : [];
+    }
+
     /**
      * @return Collection<int, self>
      */
@@ -1327,8 +1365,7 @@ class Post extends Model implements HasMedia
         $viewerId = (int) $viewer->getKey();
 
         return self::query()
-            ->forFeed($viewerId)
-            ->forFeedSource($viewerId, $source)
+            ->forFeed($viewerId, $source)
             ->withFeedRelations($viewer)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->when($fromPostId !== null, fn (Builder $query) => $query->atOrOlderThanPost((int) $fromPostId))
@@ -1348,8 +1385,7 @@ class Post extends Model implements HasMedia
         }
 
         $posts = self::query()
-            ->forFeed((int) $viewer->getKey())
-            ->forFeedSource((int) $viewer->getKey(), $source)
+            ->forFeed((int) $viewer->getKey(), $source)
             ->withFeedRelations($viewer)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->whereIn('posts.id', $postIds)
@@ -1395,61 +1431,12 @@ class Post extends Model implements HasMedia
             ->flip();
     }
 
-    public function scopeForFeed(Builder $query, int $userId): Builder
+    public function scopeForFeed(Builder $query, int $userId, ?string $source = null): Builder
     {
-        $query->select(['posts.*'])->distinct();
-
-        $followedUserIdsQuery = Follow::query()
-            ->select('follows.following_id')
-            ->where('follows.follower_id', $userId)
-            ->where('follows.status', 'accepted');
-
-        $mutualUserIdsQuery = Follow::query()
-            ->select('follows.following_id')
-            ->where('follows.follower_id', $userId)
-            ->where('follows.status', 'accepted')
-            ->whereIn('follows.following_id', Follow::query()
-                ->select('follows.follower_id')
-                ->where('follows.following_id', $userId)
-                ->where('follows.status', 'accepted'));
-
         return $query
+            ->select(['posts.*'])
+            ->whereIn('posts.id', self::feedPostIdsSubquery($userId, $source))
             ->published()
-            ->where(function (Builder $feedQuery) use ($userId, $followedUserIdsQuery, $mutualUserIdsQuery): void {
-                $feedQuery
-                    ->where('posts.user_id', $userId)
-                    ->orWhere(function (Builder $followingQuery) use ($followedUserIdsQuery, $mutualUserIdsQuery): void {
-                        $followingQuery
-                            ->whereIn('posts.user_id', $followedUserIdsQuery)
-                            ->where(function (Builder $visibilityQuery) use ($mutualUserIdsQuery): void {
-                                $visibilityQuery
-                                    ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
-                                    ->orWhere(function (Builder $friendsQuery) use ($mutualUserIdsQuery): void {
-                                        $friendsQuery
-                                            ->where('posts.visibility', self::VISIBILITY_FRIENDS)
-                                            ->whereIn('posts.user_id', $mutualUserIdsQuery);
-                                    });
-                            });
-                    })
-                    ->orWhere(function (Builder $followedPetsQuery) use ($userId, $mutualUserIdsQuery): void {
-                        $followedPetsQuery
-                            ->where('posts.user_id', '!=', $userId)
-                            ->where(function (Builder $visibilityQuery) use ($mutualUserIdsQuery): void {
-                                $visibilityQuery
-                                    ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
-                                    ->orWhere(function (Builder $friendsQuery) use ($mutualUserIdsQuery): void {
-                                        $friendsQuery
-                                            ->where('posts.visibility', self::VISIBILITY_FRIENDS)
-                                            ->whereIn('posts.user_id', $mutualUserIdsQuery);
-                                    });
-                            })
-                            ->where(function (Builder $petFollowQuery) use ($userId): void {
-                                $petFollowQuery
-                                    ->whereHas('pet.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId))
-                                    ->orWhereHas('pets.followers', fn (Builder $followersQuery): Builder => $followersQuery->where('users.id', $userId));
-                            });
-                    });
-            })
             ->whereHas('author', function (Builder $authorQuery): void {
                 User::applyAvailableForProfiles($authorQuery);
             })
@@ -1457,6 +1444,112 @@ class Post extends Model implements HasMedia
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocked_id')->where('blocks.blocker_id', $userId))
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId))
             ->withoutFeedMutes($userId);
+    }
+
+    private static function feedPostIdsSubquery(int $userId, ?string $source): QueryBuilder
+    {
+        $source = in_array($source, ['people', 'pets'], true) ? $source : null;
+        $branches = [];
+
+        if ($source !== 'pets') {
+            $branches[] = self::ownFeedPostIdsQuery($userId);
+            $branches[] = self::followedUserFeedPostIdsQuery($userId);
+        }
+
+        if ($source !== 'people') {
+            array_push($branches, ...self::followedPetFeedPostIdsQueries($userId));
+        }
+
+        $union = array_shift($branches) ?? self::ownFeedPostIdsQuery($userId)->whereRaw('1 = 0');
+
+        foreach ($branches as $branch) {
+            $union->union($branch);
+        }
+
+        return DB::query()
+            ->fromSub($union, 'feed_post_ids')
+            ->select('feed_post_ids.id');
+    }
+
+    private static function ownFeedPostIdsQuery(int $userId): QueryBuilder
+    {
+        return self::baseFeedPostIdsQuery()
+            ->where('posts.user_id', $userId);
+    }
+
+    private static function followedUserFeedPostIdsQuery(int $userId): QueryBuilder
+    {
+        $query = self::baseFeedPostIdsQuery()
+            ->join('follows as feed_author_follows', function ($join) use ($userId): void {
+                $join
+                    ->on('feed_author_follows.following_id', '=', 'posts.user_id')
+                    ->where('feed_author_follows.follower_id', $userId)
+                    ->where('feed_author_follows.status', 'accepted');
+            });
+
+        return self::applyFollowedAuthorVisibility($query, $userId);
+    }
+
+    /**
+     * @return list<QueryBuilder>
+     */
+    private static function followedPetFeedPostIdsQueries(int $userId): array
+    {
+        $taggedPetPosts = self::baseFeedPostIdsQuery()
+            ->join('pet_post as feed_pet_posts', 'feed_pet_posts.post_id', '=', 'posts.id')
+            ->join('pet_followers as feed_tagged_pet_followers', function ($join) use ($userId): void {
+                $join
+                    ->on('feed_tagged_pet_followers.pet_id', '=', 'feed_pet_posts.pet_id')
+                    ->where('feed_tagged_pet_followers.user_id', $userId);
+            })
+            ->where('posts.user_id', '!=', $userId);
+
+        $legacyPetPosts = self::baseFeedPostIdsQuery()
+            ->join('pet_followers as feed_legacy_pet_followers', function ($join) use ($userId): void {
+                $join
+                    ->on('feed_legacy_pet_followers.pet_id', '=', 'posts.pet_id')
+                    ->where('feed_legacy_pet_followers.user_id', $userId);
+            })
+            ->where('posts.user_id', '!=', $userId);
+
+        return [
+            self::applyFollowedAuthorVisibility($taggedPetPosts, $userId),
+            self::applyFollowedAuthorVisibility($legacyPetPosts, $userId),
+        ];
+    }
+
+    private static function baseFeedPostIdsQuery(): QueryBuilder
+    {
+        return DB::table('posts')
+            ->select('posts.id')
+            ->whereNull('posts.deleted_at')
+            ->whereNull('posts.group_id')
+            ->where('posts.status', PostStatus::Published->value)
+            ->where(function (QueryBuilder $publishedQuery): void {
+                $publishedQuery
+                    ->whereNull('posts.published_at')
+                    ->orWhere('posts.published_at', '<=', now());
+            });
+    }
+
+    private static function applyFollowedAuthorVisibility(QueryBuilder $query, int $userId): QueryBuilder
+    {
+        return $query->where(function (QueryBuilder $visibilityQuery) use ($userId): void {
+            $visibilityQuery
+                ->whereIn('posts.visibility', [self::VISIBILITY_PUBLIC, self::VISIBILITY_FOLLOWERS])
+                ->orWhere(function (QueryBuilder $friendsQuery) use ($userId): void {
+                    $friendsQuery
+                        ->where('posts.visibility', self::VISIBILITY_FRIENDS)
+                        ->whereExists(function (QueryBuilder $mutualQuery) use ($userId): void {
+                            $mutualQuery
+                                ->selectRaw('1')
+                                ->from('follows as feed_mutual_follows')
+                                ->whereColumn('feed_mutual_follows.follower_id', 'posts.user_id')
+                                ->where('feed_mutual_follows.following_id', $userId)
+                                ->where('feed_mutual_follows.status', 'accepted');
+                        });
+                });
+        });
     }
 
     public function scopeWithoutFeedMutes(Builder $query, int $userId): Builder

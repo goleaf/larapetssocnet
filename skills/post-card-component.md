@@ -1,6 +1,6 @@
 # Post Card Component
 
-`x-post-card` is the core UI unit shared across feed, profile, explore, search, hashtags, group feeds, and saved posts.
+`x-post-card` is the core Blade UI unit shared across feed, profile, explore, search, hashtags, group feeds, and saved posts. The main feed wraps it in the Livewire `posts.card` island so per-card comment toggles, nested menu components, and refreshes do not re-render the whole feed stream.
 
 ## Props
 - `$post`: eager-loaded `Post` model.
@@ -25,7 +25,13 @@
 - Use `liked_by_viewer`, `saved_by_viewer`, and counter attributes when eager-loaded by feed queries.
 - Avoid new per-card database queries for reaction or save state.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
+- Feed images must keep native `loading="lazy"` and may expose `data-blurhash` plus a low-resolution placeholder data URI from media custom properties when the processing pipeline has provided them.
 - Count `posts.view_count` during authenticated non-author `feed` and `profile` renders only. Pass explicit non-counting contexts such as `detail`, `explore`, `group`, or `saved` for cards that should not contribute to author analytics.
+
+## Feed Island Wrapper
+- Use `<livewire:posts.card>` inside the `feed.stream` loop with a stable key based on the post ID.
+- The wrapper receives the eager-loaded post model and viewer ID, then delegates visual rendering to `x-post-card`.
+- Keep heavy per-post interactions inside this child component or existing nested post menu components so the parent feed stream only owns pagination, filters, and polling state.
 
 ## Author Analytics
 - Render the owner-only chart trigger from `x-post-card`, not page-specific menus.

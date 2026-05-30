@@ -20,12 +20,12 @@ it('renders followed people, followed pet tags, and own posts in the live feed s
     $followedPet = Pet::factory()->for($petOwner)->create(['name' => 'Miso']);
     $viewer->followedPets()->attach($followedPet->getKey());
 
-    Post::factory()->for($viewer)->create([
+    $ownPost = Post::factory()->for($viewer)->create([
         'body' => 'own-feed-stream-post',
         'created_at' => now()->subMinutes(1),
     ]);
 
-    Post::factory()->for($followedUser)->create([
+    $followedPersonPost = Post::factory()->for($followedUser)->create([
         'body' => 'followed-person-stream-post',
         'created_at' => now()->subMinutes(2),
     ]);
@@ -43,6 +43,11 @@ it('renders followed people, followed pet tags, and own posts in the live feed s
 
     Livewire::actingAs($viewer)
         ->test('feed.stream')
+        ->assertSet('postIds', [
+            $ownPost->getKey(),
+            $followedPersonPost->getKey(),
+            $taggedPetPost->getKey(),
+        ])
         ->assertSee('own-feed-stream-post')
         ->assertSee('followed-person-stream-post')
         ->assertSee('followed-normalized-pet-stream-post')
@@ -60,12 +65,12 @@ it('switches feed source filters without a page reload', function (): void {
     $followedPet = Pet::factory()->for($petOwner)->create();
     $viewer->followedPets()->attach($followedPet->getKey());
 
-    Post::factory()->for($followedUser)->create([
+    $peoplePost = Post::factory()->for($followedUser)->create([
         'body' => 'people-only-livewire-post',
         'created_at' => now()->subMinutes(1),
     ]);
 
-    Post::factory()->for($petOwner)->create([
+    $petPost = Post::factory()->for($petOwner)->create([
         'pet_id' => $followedPet->getKey(),
         'body' => 'pets-only-livewire-post',
         'created_at' => now()->subMinutes(2),
@@ -75,12 +80,10 @@ it('switches feed source filters without a page reload', function (): void {
         ->test('feed.stream')
         ->call('setSource', 'people')
         ->assertSet('source', 'people')
-        ->assertSee('people-only-livewire-post')
-        ->assertDontSee('pets-only-livewire-post')
+        ->assertSet('postIds', [$peoplePost->getKey()])
         ->call('setSource', 'pets')
         ->assertSet('source', 'pets')
-        ->assertSee('pets-only-livewire-post')
-        ->assertDontSee('people-only-livewire-post');
+        ->assertSet('postIds', [$petPost->getKey()]);
 });
 
 it('appends older posts through the infinite scroll action', function (): void {
@@ -111,17 +114,17 @@ it('appends older posts through the infinite scroll action', function (): void {
 it('counts and prepends new posts without disturbing existing scroll state', function (): void {
     $viewer = User::factory()->create();
 
-    Post::factory()->for($viewer)->create([
+    $existingPost = Post::factory()->for($viewer)->create([
         'body' => 'existing-live-feed-post',
         'created_at' => now()->subMinutes(5),
     ]);
 
     $component = Livewire::actingAs($viewer)
         ->test('feed.stream')
-        ->assertSee('existing-live-feed-post')
+        ->assertSet('postIds', [$existingPost->getKey()])
         ->assertSet('newPostsCount', 0);
 
-    Post::factory()->for($viewer)->create([
+    $newPost = Post::factory()->for($viewer)->create([
         'body' => 'newly-polled-live-feed-post',
         'created_at' => now(),
     ]);
@@ -129,7 +132,8 @@ it('counts and prepends new posts without disturbing existing scroll state', fun
     $component
         ->call('checkForNewPosts')
         ->assertSet('newPostsCount', 1)
+        ->assertSet('polledNewestPostId', $newPost->getKey())
         ->call('loadNewPosts')
         ->assertSet('newPostsCount', 0)
-        ->assertSee('newly-polled-live-feed-post');
+        ->assertSet('postIds', [$newPost->getKey(), $existingPost->getKey()]);
 });

@@ -8,17 +8,24 @@ use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use BadMethodCallException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 class FeedService
 {
+    private const TRENDING_HASHTAGS_CACHE_KEY = 'feed:trending-hashtags';
+
+    /**
+     * @var list<string>
+     */
+    private const TRENDING_HASHTAGS_CACHE_TAGS = ['feed', 'hashtags'];
+
     public function getFeed(User $user, ?string $type, int $perPage, ?string $source = null, ?string $ranking = null): array
     {
         $posts = Post::query()
-            ->forFeed((int) $user->getKey())
-            ->forFeedSource((int) $user->getKey(), $source)
+            ->forFeed((int) $user->getKey(), $source)
             ->whereDoesntHave('author', fn ($query) => $query->where('is_banned', true))
             ->whereNotIn('user_id', $user->blocking()->select('users.id'))
             ->whereNotIn('user_id', $user->blockedBy()->select('users.id'))
@@ -50,11 +57,7 @@ class FeedService
     public function getSidebarData(User $user): array
     {
         $suggestions = $user->getSuggestedUsersToFollow(5);
-        $trending = Cache::remember(
-            'feed:trending-hashtags',
-            now()->addMinutes(10),
-            fn (): Collection => Hashtag::query()->trending(10)->get()
-        );
+        $trending = $this->trendingHashtags();
         $events = Event::query()->upcoming()->published()->limit(2)->get();
         $contest = Contest::query()->active()->first();
         $upcomingBirthdays = $this->upcomingPetBirthdays($user);
@@ -66,6 +69,32 @@ class FeedService
             'contest' => $contest,
             'upcomingBirthdays' => $upcomingBirthdays,
         ];
+    }
+
+    /**
+     * @return Collection<int, Hashtag>
+     */
+    public function trendingHashtags(): Collection
+    {
+        $resolver = fn (): Collection => Hashtag::query()->trending(10)->get();
+
+        if ($this->cacheSupportsTags()) {
+            return Cache::tags(self::TRENDING_HASHTAGS_CACHE_TAGS)
+                ->remember(self::TRENDING_HASHTAGS_CACHE_KEY, now()->addMinutes(10), $resolver);
+        }
+
+        return Cache::remember(self::TRENDING_HASHTAGS_CACHE_KEY, now()->addMinutes(10), $resolver);
+    }
+
+    public function flushTrendingHashtagsCache(): void
+    {
+        if ($this->cacheSupportsTags()) {
+            Cache::tags(self::TRENDING_HASHTAGS_CACHE_TAGS)->flush();
+
+            return;
+        }
+
+        Cache::forget(self::TRENDING_HASHTAGS_CACHE_KEY);
     }
 
     /**
@@ -134,5 +163,16 @@ class FeedService
             ->sortBy(fn (Pet $pet): int => (int) $pet->getAttribute('days_until_birthday'))
             ->take(5)
             ->values();
+    }
+
+    private function cacheSupportsTags(): bool
+    {
+        try {
+            Cache::tags(self::TRENDING_HASHTAGS_CACHE_TAGS);
+
+            return true;
+        } catch (BadMethodCallException) {
+            return false;
+        }
     }
 }

@@ -2365,12 +2365,16 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
- Alpine.data('feedLiveState', () => ({
+Alpine.data('feedLiveState', () => ({
  wire: null,
+ componentId: null,
+ componentName: null,
  intervalId: null,
 
- start(wire) {
+ start(wire, element = null) {
  this.wire = wire;
+ this.componentId = element?.closest?.('[wire\\:id]')?.getAttribute('wire:id') || null;
+ this.componentName = element?.closest?.('[wire\\:name]')?.getAttribute('wire:name') || null;
  this.stop();
 
  this.visibilityHandler = () => {
@@ -2404,7 +2408,29 @@ document.addEventListener('alpine:init', () => {
  return;
  }
 
- this.wire.checkForNewPosts();
+ const component = this.resolveWireComponent();
+
+ if (component && this.componentName === 'feed.stream' && typeof component.checkForNewPosts === 'function') {
+ component.checkForNewPosts();
+
+ return;
+ }
+
+ if (component && this.componentName === 'feed.stream' && typeof component.$call === 'function') {
+ component.$call('checkForNewPosts');
+ }
+ },
+
+ resolveWireComponent() {
+ if (this.componentId && window.Livewire && typeof window.Livewire.find === 'function') {
+ const component = window.Livewire.find(this.componentId);
+
+ if (component) {
+ return component;
+ }
+ }
+
+ return this.wire;
  },
  }));
 

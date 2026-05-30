@@ -4,9 +4,11 @@ The feed is the most read-heavy page in the app.
 Keep the feed query centralized and cursor-paginated.
 
 ## Source of Truth
-- Query scope: `Post::scopeForFeed(int $viewerId)` in `app/Models/Content/Post.php`.
-- Controller: `FeedController@index` in `app/Http/Controllers/Feed/FeedController.php`.
-- Stream UI: Livewire `feed.stream` in `resources/views/components/feed/⚡stream.blade.php`.
+- Query scope: `Post::scopeForFeed(int $viewerId, ?string $source = null)` in `app/Models/Content/Post.php`.
+- Page shell: full-page Livewire `pages.feed.index` in `resources/views/components/pages/feed/⚡index.blade.php`.
+- Stream UI: eager Livewire `feed.stream` in `resources/views/components/feed/⚡stream.blade.php`.
+- Sidebars: lazy Livewire `feed.left-sidebar` and `feed.right-sidebar`.
+- Post cards: Livewire `posts.card` islands wrap the shared `x-post-card` so per-card comment/reaction/menu state does not re-render the whole stream.
 - Sidebar data: `FeedService::getSidebarData(User $viewer)`.
 
 ## Inclusion Rules
@@ -27,14 +29,18 @@ Keep the feed query centralized and cursor-paginated.
 - Use `cursorPaginate(15)` and always chain `->withQueryString()`.
 - Feed UI uses the Livewire stream state plus a `wire:intersect.margin.300px` sentinel to append older cursor pages.
 - `loadMore` records the last loaded post ID in session with the active source/type/ranking so the stream can restore that read position during the same session and offer Jump to latest.
-- The stream polls for new posts every 30 seconds only while the tab is visible and prepends them after the user taps the new-post indicator.
-- `scopeForFeed()` selects distinct `posts.*` so a post followed through both author and pet tags renders once.
-- Initial lazy renders use five skeleton post cards shaped like real cards to avoid layout shift.
+- The stream polls for new posts every 30 seconds only while the tab is visible. Polling queries only a count plus the newest matching post ID; full post rows are fetched only after the user taps the new-post indicator.
+- `scopeForFeed()` wraps a unioned post-ID subquery for own, followed-user, tagged-pet, and legacy-pet branches, then the outer Eloquent query handles eager loading, filtering, ordering, and cursor pagination.
+- The feed stream loads immediately as the page center column. Left and right sidebars are lazy child components with skeleton placeholders.
 
 ## Eager Loading & Engagement
 - `with(['user', 'user.media', 'pet.media', 'pets', 'media', 'tags'])`.
 - `withCount(['likes', 'comments'])`.
 - `withExists(['likes as liked_by_viewer' => ...])`.
+
+## Sidebar Cache
+- Trending hashtags are cached through `FeedService::trendingHashtags()` using cache tags when the store supports them and a plain key fallback when it does not.
+- Hashtag usage changes must call `FeedService::flushTrendingHashtagsCache()` through `HashtagService` so sidebars refresh within the next request.
 
 ## Fan-Out Jobs
 - `FeedFanOutJob` is idempotent per post. It must acquire `posts:fanout:{postId}`, return immediately when `posts.is_fanned_out` is already true, and set that flag only after collecting the user-follower and pet-follower recipient set.

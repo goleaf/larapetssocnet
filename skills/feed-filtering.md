@@ -24,17 +24,17 @@ Feed supports optional filters via query string parameters.
 - Feed does not expose runtime visual style switchers. Keep it on the single Warm Editorial surface.
 
 ## Implementation
-- `FeedController@index` validates `source` with `in_array` against `people|pets`.
-- `FeedController@index` validates `type` with `in_array` against `text|photo|video`.
-- `feed.stream` revalidates the same values because it owns reactive filter changes after the first render.
+- `pages.feed.index` validates initial `source` with `in_array` against `people|pets`.
+- `pages.feed.index` validates initial `type` with `in_array` against `text|photo|video`.
+- `feed.stream` revalidates the same values because it owns reactive filter changes after first render.
 - The feed view renders `data-feed-surface="warm-editorial"` for the single design standard.
-- Source values apply `->forFeedSource($viewerId, $source)` on the base `Post::forFeed($viewerId)` query:
+- Source values are passed into `Post::forFeed($viewerId, $source)` so candidate membership is selected by the unioned ID subquery:
   - `people` keeps the viewer's own posts and posts from accepted followed users.
   - `pets` keeps posts associated with pets followed by the viewer through either `posts.pet_id` or `pet_post`.
-- Valid values apply `->byType($type)` on the base `Post::forFeed($viewerId)` query.
+- Valid values apply `->byType($type)` on the base `Post::forFeed($viewerId, $source)` query.
 - Ranking values apply `->orderForMainFeed($rank)` on the base query:
   - `latest` orders strictly by `created_at` and `id`.
   - `best` uses the database score expression and then falls back to `created_at` and `id`.
-- `Post::forFeed()` applies `->distinct()` so followed author plus followed pet matches never duplicate a card.
+- `Post::forFeed()` uses SQL `UNION` branches so followed author plus followed pet matches never duplicate a card.
 - `feed_mutes` exclusions happen in the feed scope, not in Blade.
 - Unknown values are ignored and the feed remains unfiltered for that dimension.

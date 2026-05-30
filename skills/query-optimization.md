@@ -9,7 +9,7 @@ Prevent N+1 in social-network pages.
 
 ## Rules
 - Feed pages should eager load all required relations in one `with([...])` chain.
-- Main feed reads should keep source membership in SQL, select distinct post IDs/rows before hydration, and apply `feed_mutes(user_id, mutable_type, mutable_id)` exclusions through indexed `NOT EXISTS` subqueries instead of filtering muted posts in PHP.
+- Main feed reads should keep source membership in SQL through the unioned `Post::forFeed($viewerId, $source)` candidate ID subquery, then hydrate posts through the outer Eloquent query for ordering, eager loading, and cursor pagination. Apply `feed_mutes(user_id, mutable_type, mutable_id)` exclusions through indexed `NOT EXISTS` subqueries instead of filtering muted posts in PHP.
 - Best-ranked feed reads may order by a raw database score expression, but the base candidate set must still use existing published/group/feed indexes and cursor pagination.
 - Empty feed suggestions should use the viewer's pet species list to run one filtered `users` query with a `whereHas('pets')` species predicate; never load all users or all pets for recommendation scoring.
 - Profile pages should eager load user media, pet card media, and count data before rendering.
@@ -32,7 +32,7 @@ Prevent N+1 in social-network pages.
 ## Correct patterns
 ```php
 Post::query()
-    ->forFeed($viewerId)
+    ->forFeed($viewerId, $source)
     ->with(['author.media', 'media', 'hashtags'])
     ->withCount(['comments', 'likes'])
     ->cursorPaginate(15);

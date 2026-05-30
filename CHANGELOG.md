@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added a full-page Livewire feed shell with lazy left/right sidebar child components and reusable Livewire post-card islands for feed post cards.
+- Added tagged-cache trending hashtag reads with a SQLite-safe fallback and invalidation when hashtag usage changes.
 - Added feed ranking controls for Latest and Best, persisted per user, with Best scored from recency, reactions, comments, and media signals in the feed query.
 - Added same-session feed read-position restore, a pinned Jump to latest action, five-card skeleton placeholders for lazy feed startup, contextual empty-feed suggestions from matching pet species, feed-health freshness dots, and feed muting for users and pets without unfollowing.
 - Added a Livewire feed stream with source/type filters, infinite-scroll cursor loading, new-post polling, relative post timestamps, and richer feed sidebars for owned pets, suggestions, hashtags, groups, and upcoming pet birthdays.
@@ -27,6 +29,8 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed the main feed candidate query to use a unioned post-ID subquery for own, followed-user, and followed-pet posts before outer Eloquent ordering and cursor pagination.
+- Changed feed new-post polling to store the newest matching post ID while still avoiding full post hydration until the indicator is tapped.
 - Changed feed queries to deduplicate posts that match followed-user and followed-pet sources, exclude muted users and pets at the query layer, and keep long post text available through a desktop Alpine hover preview on See more.
 - Changed the canonical pet profile route to a full-page Livewire wrapper with reactive per-pet tab state while preserving the existing controller-backed profile rendering and slug route binding.
 - Updated profile edit modal architecture so modal opening, modal saves, and cover repositioning authorize through owner-only `UserPolicy` abilities while save validation runs inside `UpdateProfileAction`.
@@ -36,6 +40,7 @@
 - Updated profile media conversions so public profile avatar cards are cropped to 400x400 and cover banners are cropped to 1200x400.
 
 ### Fixed
+- Fixed feed new-post polling Alpine calls inside the full-page Livewire feed shell by resolving the nearest stream component before invoking the polling action.
 - Fixed legacy morph-map aliases for post draft, mention, and pet care/ownership domain models.
 - Fixed post creation from internal services to normalize enum-backed status values before synthetic request validation.
 - Fixed group invitation acceptance and decline flows when invitation statuses are returned through Laravel enum casts.
@@ -64,6 +69,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added feed architecture coverage for the full-page Livewire shell, lazy sidebars, post-card islands, union-backed feed SQL, and trending hashtag cache invalidation.
 - Added feed enhancement coverage for ranking persistence/order, session read-position restore, user and pet muting, contextual empty suggestions, long-post hover preview markup, muted settings unmute flow, and feed-source deduplication.
 - Added feed stream coverage for Livewire source filters, infinite-scroll loading, new-post polling, normalized pet-tag feed visibility, and upcoming followed-pet birthday sidebar data.
 - Added pet profile Livewire route coverage for reactive tab activation and per-pet tab memory.

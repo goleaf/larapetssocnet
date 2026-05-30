@@ -148,6 +148,8 @@ class HashtagService
                     ]);
                 }
             });
+
+        app(FeedService::class)->flushTrendingHashtagsCache();
     }
 
     /**
@@ -225,6 +227,8 @@ class HashtagService
         Hashtag::query()
             ->whereIn('id', $hashtagIds)
             ->increment('posts_count');
+
+        app(FeedService::class)->flushTrendingHashtagsCache();
     }
 
     /**
@@ -240,5 +244,7 @@ class HashtagService
             ->whereIn('id', $hashtagIds)
             ->where('posts_count', '>', 0)
             ->decrement('posts_count');
+
+        app(FeedService::class)->flushTrendingHashtagsCache();
     }
 }
