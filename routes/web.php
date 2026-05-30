@@ -114,7 +114,7 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     ->prefix('pets')
     ->name('pets.')
     ->group(function (): void {
-        Route::get('/@{pet:slug}', [PetController::class, 'show'])
+        Route::livewire('/@{pet:slug}', 'pages.pets.show')
             ->where('pet', '^(?!create$)[^/]+')
             ->name('show');
         Route::get('/@{pet:slug}/qr.svg', [PetQrCodeController::class, 'show'])->name('qr.show');

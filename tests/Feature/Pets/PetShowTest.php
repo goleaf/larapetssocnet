@@ -7,6 +7,7 @@ use App\Models\Pets\PetHealthLog;
 use App\Models\Pets\PetMilestone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -22,6 +23,41 @@ it('returns 200 for a public pet profile', function (): void {
         ->get(route('pets.show', $pet))
         ->assertSuccessful()
         ->assertSee('Mochi');
+});
+
+it('mounts pet profiles as a full page Livewire component with reactive tabs', function (): void {
+    $owner = User::factory()->create();
+    $pet = Pet::factory()
+        ->for($owner)
+        ->create([
+            'name' => 'Signal',
+            'is_public' => true,
+        ]);
+
+    Livewire::actingAs($owner)
+        ->test('pages.pets.show', ['pet' => $pet])
+        ->assertSet('activeTab', 'posts')
+        ->assertSee('data-ui="pet-profile-stack"', false)
+        ->call('activateTab', 'about')
+        ->assertSet('activeTab', 'about')
+        ->assertSee('data-ui="pet-profile-about"', false);
+});
+
+it('remembers the last activated pet profile tab per pet', function (): void {
+    $owner = User::factory()->create();
+    $pet = Pet::factory()
+        ->for($owner)
+        ->create([
+            'is_public' => true,
+        ]);
+
+    Livewire::actingAs($owner)
+        ->test('pages.pets.show', ['pet' => $pet])
+        ->call('activateTab', 'about');
+
+    Livewire::actingAs($owner)
+        ->test('pages.pets.show', ['pet' => $pet])
+        ->assertSet('activeTab', 'about');
 });
 
 it('uses the shared full-width pet profile block system', function (): void {

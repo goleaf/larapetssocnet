@@ -213,11 +213,18 @@
             if ($isOwner) {
                 $petTabs[] = ['label' => __('pets.tabs.health'), 'value' => 'health'];
             }
+            $petTabValues = collect($petTabs)->pluck('value')->values()->all();
         @endphp
 
-        <x-ui.card padding="none" data-ui="pet-profile-tabs">
+        <x-ui.card
+            id="pet-profile-tabs"
+            padding="none"
+            data-ui="pet-profile-tabs"
+            class="sticky top-20 z-30 scroll-mt-24 border-whisker/50 bg-warm-white/85 backdrop-blur-md!"
+            x-data="profileTabs({ activeTab: @js($activeTab), tabs: @js($petTabValues), scrollTarget: 'pet-profile-tabs' })"
+            @click="selectFromClick($event)">
             <div class="px-4 pt-4 sm:px-6">
-                <x-ui.tabs :tabs="$petTabs" :active="$activeTab" paramName="tab"/>
+                <x-ui.tabs :tabs="$petTabs" :active="$activeTab" paramName="tab" :animated-indicator="true" class="mb-0"/>
             </div>
         </x-ui.card>
 

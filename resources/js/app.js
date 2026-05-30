@@ -2866,6 +2866,7 @@ document.addEventListener('alpine:init', () => {
  Alpine.data('profileTabs', (config = {}) => ({
  tabs: Array.isArray(config.tabs) ? config.tabs.map((tab) => toStringValue(tab)) : [],
  activeTab: toStringValue(config.activeTab,'posts'),
+ scrollTarget: toStringValue(config.scrollTarget,'profile-tabs'),
 
  init() {
  this.activateFromHash();
@@ -2929,7 +2930,7 @@ document.addEventListener('alpine:init', () => {
  this.$nextTick(() => this.updateIndicator());
 
  if (options.scroll) {
- this.$nextTick(() => document.getElementById('profile-tabs')?.scrollIntoView({ behavior:'smooth', block:'start' }));
+ this.$nextTick(() => document.getElementById(this.scrollTarget)?.scrollIntoView({ behavior:'smooth', block:'start' }));
  }
  },
 

@@ -68,7 +68,7 @@ class PetController extends Controller
             $tabs[] = 'health';
         }
 
-        $activeTab = $request->string('tab')->toString() ?: 'posts';
+        $activeTab = (string) ($request->attributes->get('pet_active_tab') ?: $request->string('tab')->toString() ?: 'posts');
 
         if (! in_array($activeTab, $tabs, true)) {
             $activeTab = 'posts';

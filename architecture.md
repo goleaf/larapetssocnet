@@ -31,7 +31,7 @@ Application pages are private by default. Keep Explore, search, profiles, posts,
 - User profiles: the `/@username` route is a full-page Livewire component with lazy child tab components and a nested edit modal; profile edit modal opening, saves, and cover repositioning authorize through owner-only `UserPolicy` abilities, while `UpdateProfileAction` owns modal validation and persistence.
 - Feed and posts: feed controller, cursor pagination, post cards, reactions, comments, saves, shares, reports.
 - Social graph: follows, pet follows, blocks, requests, counters, notifications.
-- Pets and adoption: pet profiles, galleries, health logs, adoption browse/listing flows.
+- Pets and adoption: the canonical `/pets/@{pet:slug}` profile route is a full-page Livewire wrapper with reactive tab state delegated through the existing pet show controller/view; pet profiles, galleries, health logs, adoption browse/listing flows.
 - Groups: membership, roles, privacy, archive/read-only lifecycle.
 - Discovery: Explore, search, hashtags, trending.
 - Messaging: inbox threads, conversations, notifications.

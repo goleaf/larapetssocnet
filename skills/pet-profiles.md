@@ -3,7 +3,7 @@
 Pet profiles are user-owned sub-entities.
 
 - One user can own multiple pets.
-- Pet profile page: `/pets/@{slug}` (route model binding resolves slug only and strips the `@` prefix) and requires authentication. Legacy `/pets/{slug}` links redirect to the canonical route.
+- Pet profile page: `/pets/@{slug}` is served by the full-page Livewire `pages.pets.show` component with route model binding by slug and requires authentication. Legacy `/pets/{slug}` links redirect to the canonical route.
 - Slug is generated on create from pet name + a six-character random suffix and is not updated on edit.
 
 ## Core Fields
@@ -48,10 +48,16 @@ Pet profiles are user-owned sub-entities.
 
 ## Profile Identity
 - The pet show page should present the pet as an independent community identity, not as a shortened user profile.
+- The full-page Livewire wrapper owns pet tab state, stores the last active tab per pet in the session, and delegates rendering through the existing show controller/view so policies, query preparation, and page variables stay centralized.
 - Keep the summary focused on identity facts: species/breed, sex, size, dynamic age, species-aware life stage, visibility, personality tags, and memorial state when relevant.
 - Species-aware life stages are derived from completed months since `birth_date` or `date_of_birth`; keep this calculation deterministic instead of relying on ambiguous date-diff defaults.
 - Visitors may see the public identity, stewardship, QR sharing, adoption availability, and milestone story preview. Owner-only care notes can include latest weight, vaccination, and upcoming care reminders.
 - Do not expose health-derived care notes to non-owners; profile visibility and pet policies still decide whether the profile can be loaded at all.
+
+## Profile Tabs
+- Pet profile tabs use the shared sticky translucent tab surface and animated underline behavior from user profiles.
+- Alpine intercepts tab clicks, reflects the active tab in the URL hash, and calls the parent Livewire `activateTab` action so tab content swaps without a full page reload.
+- The tab links keep query-string `tab` fallbacks for non-JavaScript navigation; the Livewire wrapper passes the active tab to the controller through the request attributes.
 
 ## Sharing and Notifications
 - Pet profile QR codes are generated server-side as SVGs through the pet QR routes. Do not add a QR package unless the in-house SVG service stops meeting requirements.
