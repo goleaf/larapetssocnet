@@ -113,4 +113,19 @@ class Reaction extends Model
             self::TYPE_SUPPORT => '🤝',
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function labelMap(): array
+    {
+        return [
+            self::TYPE_LOVE => 'Love',
+            self::TYPE_CUTE => 'Cute',
+            self::TYPE_FUNNY => 'Funny',
+            self::TYPE_WOW => 'Wow',
+            self::TYPE_SAD => 'Sad',
+            self::TYPE_SUPPORT => 'Support',
+        ];
+    }
 }

@@ -92,6 +92,10 @@ it('renders refined post cards with article semantics and stateful actions', fun
         ->assertSee('aria-label="Like post by Riley Hart"', false)
         ->assertSee('x-bind:aria-pressed="liked"', false)
         ->assertSee('x-bind:aria-busy="likeBusy"', false)
+        ->assertSee('data-ui="post-card-reaction-picker"', false)
+        ->assertSee('data-ui="post-card-reaction-option"', false)
+        ->assertSee('data-ui="post-card-reaction-burst"', false)
+        ->assertSee('x-transition:enter="transition ease-out duration-150"', false)
         ->assertSee('min-h-11', false);
 });
 

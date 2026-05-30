@@ -14,7 +14,7 @@ class ToggleReactionAction
     public function __construct(private readonly ReactionService $reactions) {}
 
     /**
-     * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int}
+     * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int, reactions_count: int, reaction_counts: array<string, int>}
      */
     public function handle(User $actor, Post $post): array
     {

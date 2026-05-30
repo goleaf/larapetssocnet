@@ -51,8 +51,29 @@
         (string) $context,
     );
 
+    $reactionLabels = \App\Models\Content\Reaction::labelMap();
+    $reactionOptions = collect(\App\Models\Content\Reaction::emojiMap())
+        ->map(fn (string $emoji, string $type): array => [
+            'type' => $type,
+            'emoji' => $emoji,
+            'label' => $reactionLabels[$type] ?? \Illuminate\Support\Str::headline($type),
+        ])
+        ->values()
+        ->all();
+    $rawViewerReaction = $post->getAttribute('current_user_reaction_type');
+
+    if ($rawViewerReaction === null && $post->relationLoaded('reactions') && $viewer instanceof \App\Models\Identity\User) {
+        $rawViewerReaction = $post->reactions->firstWhere('user_id', $viewer->getKey())?->type;
+    }
+
+    $currentReaction = filled($rawViewerReaction) ? \App\Models\Content\Reaction::normalizeType((string) $rawViewerReaction) : null;
     $likeCount = (int) ($post->likes_count ?? $post->reactions_count ?? 0);
-    $isLiked = (bool) ($post->liked_by_viewer ?? false);
+    $isLiked = $currentReaction !== null || (bool) ($post->liked_by_viewer ?? false);
+
+    if ($currentReaction === null && $isLiked) {
+        $currentReaction = \App\Models\Content\Reaction::TYPE_LOVE;
+    }
+
     $commentCount = (int) ($post->comments_count ?? 0);
     $isSaved = (bool) ($post->saved_by_viewer ?? false);
     $saveCount = (int) ($post->save_count ?? 0);
@@ -60,10 +81,13 @@
     $postCardState = [
         'authorName' => $authorName,
         'liked' => $isLiked,
+        'reaction' => $currentReaction,
+        'reactionOptions' => $reactionOptions,
         'likes' => $likeCount,
         'saved' => $isSaved,
         'saveCount' => $saveCount,
         'shares' => $shareCount,
+        'reactionUrl' => route('posts.react', $post),
         'likeUrl' => route('posts.like', $post),
         'saveUrl' => route('posts.save', $post),
         'shareUrl' => route('posts.share', $post),
@@ -563,24 +587,81 @@
     <div class="mt-4 border-t ui-border pt-3">
         <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             @auth
-                <x-ui.button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    class="min-h-11 w-full sm:w-auto"
-                    data-testid="like-toggle"
-                    aria-label="{{ __('Like post by :name', ['name' => $authorName]) }}"
-                    @click="toggleLike()"
-                    x-bind:disabled="likeBusy"
-                    x-bind:aria-label="(liked ? 'Unlike post by ' : 'Like post by ') + authorName"
-                    x-bind:aria-pressed="liked"
-                    x-bind:aria-busy="likeBusy"
-                    x-bind:class="liked ? 'border-rose/40 bg-rose-light/60 text-rose' : ''"
+                <div
+                    class="relative w-full sm:w-auto"
+                    @mouseenter="openReactionPicker()"
+                    @mouseleave="closeReactionPickerSoon()"
+                    @focusin="openReactionPicker()"
+                    @focusout="closeReactionPickerSoon()"
+                    @keydown.escape="closeReactionPicker()"
+                    data-ui="post-card-reaction-control"
                 >
-                    <span aria-hidden="true" x-text="liked ? '♥' : '♡'"></span>
-                    <span x-text="liked ? 'Liked' : 'Like'"></span>
-                    <span class="opacity-80" aria-live="polite" x-text="likes"></span>
-                </x-ui.button>
+                    <x-ui.button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        class="min-h-11 w-full sm:w-auto"
+                        data-testid="like-toggle"
+                        data-ui="post-card-reaction-toggle"
+                        aria-label="{{ __('Like post by :name', ['name' => $authorName]) }}"
+                        @click="togglePrimaryReaction()"
+                        x-bind:disabled="likeBusy"
+                        x-bind:aria-label="(liked ? 'Unlike post by ' : 'Like post by ') + authorName"
+                        x-bind:aria-pressed="liked"
+                        x-bind:aria-busy="likeBusy"
+                        x-bind:class="liked ? 'border-rose/40 bg-rose-light/60 text-rose' : ''"
+                    >
+                        <span aria-hidden="true" x-text="activeReactionEmoji()"></span>
+                        <span x-text="activeReactionLabel()"></span>
+                        <span class="opacity-80" aria-live="polite" x-text="likes"></span>
+                    </x-ui.button>
+
+                    <div
+                        x-show="reactionPickerOpen"
+                        x-cloak
+                        x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 translate-y-1 scale-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                        x-transition:leave="transition ease-in duration-100"
+                        x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                        x-transition:leave-end="opacity-0 translate-y-1 scale-95"
+                        @click.outside="closeReactionPicker()"
+                        class="absolute bottom-full left-0 z-30 mb-2 flex gap-1 rounded-[var(--radius-soft)] border ui-border bg-warm-white p-1.5 shadow-card-hover"
+                        data-ui="post-card-reaction-picker"
+                        role="group"
+                        aria-label="{{ __('Choose a reaction') }}"
+                    >
+                        <template x-for="option in reactionOptions" :key="option.type">
+                            <button
+                                type="button"
+                                class="flex size-10 items-center justify-center rounded-[var(--radius-soft)] border text-lg transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+                                :class="reaction === option.type ? 'border-paw/50 bg-paw-light/70 text-paw' : 'border-transparent hover:border-whisker/60 hover:bg-cream/80'"
+                                :aria-label="'React with ' + option.label"
+                                :aria-pressed="reaction === option.type"
+                                @click="setReaction(option.type)"
+                                data-ui="post-card-reaction-option"
+                            >
+                                <span aria-hidden="true" x-text="option.emoji"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <div
+                        x-show="reactionBurst"
+                        x-cloak
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2 scale-75"
+                        x-transition:enter-end="opacity-100 -translate-y-2 scale-110"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 -translate-y-2 scale-110"
+                        x-transition:leave-end="opacity-0 -translate-y-6 scale-95"
+                        class="pointer-events-none absolute -top-6 left-1/2 z-40 -translate-x-1/2 text-xl drop-shadow-sm"
+                        data-ui="post-card-reaction-burst"
+                        aria-hidden="true"
+                    >
+                        <span x-text="reactionBurst"></span>
+                    </div>
+                </div>
             @endauth
 
             @if ($livewireComments)

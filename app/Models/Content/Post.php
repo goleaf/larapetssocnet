@@ -1742,6 +1742,7 @@ class Post extends Model implements HasMedia
         }
 
         return $query
+            ->withCurrentViewerReaction($viewerId)
             ->withExists([
                 'reactions as liked_by_viewer' => fn (Builder $reactionQuery): Builder => $reactionQuery
                     ->where('reactions.user_id', $viewerId),
@@ -1754,11 +1755,31 @@ class Post extends Model implements HasMedia
     {
         $viewerId = $viewerId ?? 0;
 
-        return $query->withExists([
-            'reactions as liked_by_viewer' => fn (Builder $reactionQuery) => $reactionQuery
-                ->where('reactions.user_id', $viewerId),
-            'savedBy as saved_by_viewer' => fn (Builder $saveQuery): Builder => $saveQuery
-                ->where('saved_posts.user_id', $viewerId),
+        return $query
+            ->withCurrentViewerReaction($viewerId)
+            ->withExists([
+                'reactions as liked_by_viewer' => fn (Builder $reactionQuery) => $reactionQuery
+                    ->where('reactions.user_id', $viewerId),
+                'savedBy as saved_by_viewer' => fn (Builder $saveQuery): Builder => $saveQuery
+                    ->where('saved_posts.user_id', $viewerId),
+            ]);
+    }
+
+    public function scopeWithCurrentViewerReaction(Builder $query, ?int $viewerId): Builder
+    {
+        $viewerId = $viewerId ?? 0;
+
+        if ($viewerId <= 0) {
+            return $query;
+        }
+
+        return $query->addSelect([
+            'current_user_reaction_type' => Reaction::query()
+                ->select('type')
+                ->where('reactions.reactable_type', (new self)->getMorphClass())
+                ->whereColumn('reactions.reactable_id', 'posts.id')
+                ->where('reactions.user_id', $viewerId)
+                ->limit(1),
         ]);
     }
 

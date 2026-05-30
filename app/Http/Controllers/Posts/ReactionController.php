@@ -24,6 +24,8 @@ class ReactionController extends Controller
             'data' => [
                 'post_id' => $post->id,
                 'likes_count' => $result['likes_count'],
+                'reactions_count' => $result['reactions_count'],
+                'reaction_counts' => $result['reaction_counts'],
                 'current_reaction' => $result['current_reaction'],
             ],
         ]);

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a shared post-card reaction picker with typed Love, Cute, Funny, Wow, Sad, and Support reactions, Alpine transitions, optimistic updates, and floating emoji burst feedback.
 - Added precomputed `feed_items` delivery rows for the news feed, written by queued 500-row fan-out chunks with recipient/source uniqueness for retry safety.
 - Added a post-specific Spatie media path generator so finalized post media is stored under `posts/YYYY/MM/DD/{media_id}/`.
 - Added a full-page Livewire feed shell with lazy left/right sidebar child components and reusable Livewire post-card islands for feed post cards.
@@ -33,6 +34,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed post reaction responses and feed/list post queries to expose the current viewer reaction plus per-type counter-cache values without per-card reaction lookups.
 - Changed the main feed candidate query to read `feed_items` first, while retaining relationship fallback branches and outer query-level visibility, block, and mute enforcement.
 - Changed the feed compatibility fallback to continue using unioned own, followed-user, and followed-pet post-ID branches before outer Eloquent ordering and cursor pagination.
 - Changed feed new-post polling to store the newest matching post ID while still avoiding full post hydration until the indicator is tapped.
@@ -76,6 +78,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added reaction coverage for guest blocking, pet-tagged posts, database uniqueness, bulk counter sync, current reaction hydration, and picker transition markup.
 - Added feed fan-out chunk coverage for idempotent `feed_items` writes, source-filtered feed reads, stale private-row filtering, and date-partitioned post media paths.
 - Added feed architecture coverage for the full-page Livewire shell, lazy sidebars, post-card islands, precomputed feed SQL with relationship fallback, and trending hashtag cache invalidation.
 - Added feed enhancement coverage for ranking persistence/order, session read-position restore, user and pet muting, contextual empty suggestions, long-post hover preview markup, muted settings unmute flow, and feed-source deduplication.

@@ -22,6 +22,9 @@ class LikeController extends Controller
             'liked' => $result['action'] !== 'removed',
             'count' => $result['likes_count'],
             'likes_count' => $result['likes_count'],
+            'reactions_count' => $result['reactions_count'],
+            'reaction_counts' => $result['reaction_counts'],
+            'current_reaction' => $result['current_reaction'],
         ]);
     }
 }

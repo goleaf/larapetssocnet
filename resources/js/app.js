@@ -2574,8 +2574,14 @@ Alpine.data('feedLiveState', () => ({
  }));
 
  Alpine.data('postCard', (config = {}) => ({
- authorName: toStringValue(config.authorName,'a community member'),
+ authorName: toStringValue(config.authorName, 'a community member'),
  liked: Boolean(config.liked),
+ reaction: toStringValue(config.reaction),
+ reactionOptions: Array.isArray(config.reactionOptions) ? config.reactionOptions : [],
+ reactionPickerOpen: false,
+ reactionCloseTimer: null,
+ reactionBurst: '',
+ reactionBurstTimer: null,
  likes: toNumber(config.likes),
  likeBusy: false,
  saved: Boolean(config.saved),
@@ -2587,12 +2593,14 @@ Alpine.data('feedLiveState', () => ({
  postId: toNumber(config.postId),
  recentlyUpdated: false,
  deletePending: false,
+ reactionUrl: toStringValue(config.reactionUrl),
  likeUrl: toStringValue(config.likeUrl),
  saveUrl: toStringValue(config.saveUrl),
  shareUrl: toStringValue(config.shareUrl),
  showUrl: toStringValue(config.showUrl),
 
  init() {
+ this.liked = this.reaction !== '' || this.liked;
  this.postUpdatedHandler = (event) => {
  const updatedPostId = toNumber(event.detail?.postId);
 
@@ -2613,6 +2621,8 @@ Alpine.data('feedLiveState', () => ({
  if (this.postUpdatedHandler) {
  window.removeEventListener('post-updated', this.postUpdatedHandler);
  }
+
+ this.clearReactionTimers();
  },
 
  markDeleting(event) {
@@ -2629,23 +2639,210 @@ Alpine.data('feedLiveState', () => ({
  return document.querySelector('meta[name=csrf-token]')?.content ||'';
  },
 
+ clearReactionTimers() {
+ if (this.reactionCloseTimer) {
+ window.clearTimeout(this.reactionCloseTimer);
+ this.reactionCloseTimer = null;
+ }
+
+ if (this.reactionBurstTimer) {
+ window.clearTimeout(this.reactionBurstTimer);
+ this.reactionBurstTimer = null;
+ }
+ },
+
+ activeReactionOption() {
+ return this.reactionOptions.find((option) => option.type === this.reaction) || null;
+ },
+
+ activeReactionEmoji() {
+ return this.activeReactionOption()?.emoji || (this.liked ? '♥' : '♡');
+ },
+
+ activeReactionLabel() {
+ return this.activeReactionOption()?.label || (this.liked ? 'Liked' : 'Like');
+ },
+
+ openReactionPicker() {
+ if (this.reactionOptions.length === 0) {
+ return;
+ }
+
+ if (this.reactionCloseTimer) {
+ window.clearTimeout(this.reactionCloseTimer);
+ this.reactionCloseTimer = null;
+ }
+
+ this.reactionPickerOpen = true;
+ },
+
+ closeReactionPickerSoon() {
+ if (this.reactionCloseTimer) {
+ window.clearTimeout(this.reactionCloseTimer);
+ }
+
+ this.reactionCloseTimer = window.setTimeout(() => {
+ this.reactionPickerOpen = false;
+ this.reactionCloseTimer = null;
+ }, 180);
+ },
+
+ closeReactionPicker() {
+ if (this.reactionCloseTimer) {
+ window.clearTimeout(this.reactionCloseTimer);
+ this.reactionCloseTimer = null;
+ }
+
+ this.reactionPickerOpen = false;
+ },
+
+ readCurrentReaction(data) {
+ if (data.current_reaction === null || typeof data.current_reaction === 'string') {
+ return toStringValue(data.current_reaction);
+ }
+
+ if (data.data && (data.data.current_reaction === null || typeof data.data.current_reaction === 'string')) {
+ return toStringValue(data.data.current_reaction);
+ }
+
+ return null;
+ },
+
+ readLikesCount(data) {
+ if (typeof data.count === 'number') {
+ return data.count;
+ }
+
+ if (typeof data.likes_count === 'number') {
+ return data.likes_count;
+ }
+
+ if (typeof data.data?.likes_count === 'number') {
+ return data.data.likes_count;
+ }
+
+ return null;
+ },
+
+ showReactionBurst(type) {
+ const option = this.reactionOptions.find((reactionOption) => reactionOption.type === type);
+
+ if (!option) {
+ return;
+ }
+
+ if (this.reactionBurstTimer) {
+ window.clearTimeout(this.reactionBurstTimer);
+ }
+
+ this.reactionBurst = option.emoji;
+ this.reactionBurstTimer = window.setTimeout(() => {
+ this.reactionBurst = '';
+ this.reactionBurstTimer = null;
+ }, 650);
+ },
+
+ async togglePrimaryReaction() {
+ if (this.reactionUrl) {
+ return this.setReaction(this.reaction || 'love');
+ }
+
+ return this.toggleLikeLegacy();
+ },
+
  async toggleLike() {
+ return this.togglePrimaryReaction();
+ },
+
+ async setReaction(type) {
+ if (!this.reactionUrl) {
+ return this.toggleLikeLegacy();
+ }
+
+ if (this.likeBusy) {
+ return;
+ }
+
+ this.likeBusy = true;
+ const previousReaction = this.reaction;
+ const previousLiked = this.liked;
+ const previousLikes = this.likes;
+ const nextReaction = previousReaction === type ? '' : type;
+ this.reaction = nextReaction;
+ this.liked = nextReaction !== '';
+ this.likes = Math.max(0, this.likes + (!previousLiked && this.liked ? 1 : (previousLiked && !this.liked ? -1 : 0)));
+
+ try {
+ const response = await fetch(this.reactionUrl, {
+ method: 'POST',
+ headers: {
+ Accept: 'application/json',
+ 'Content-Type': 'application/json',
+ 'X-CSRF-TOKEN': this.csrfToken,
+ },
+ body: JSON.stringify({ type }),
+ });
+
+ if (!response.ok) {
+ throw new Error('reaction_request_failed');
+ }
+
+ const data = await response.json();
+ const reaction = this.readCurrentReaction(data);
+ const likes = this.readLikesCount(data);
+
+ if (reaction !== null) {
+ this.reaction = reaction;
+ this.liked = reaction !== '';
+ } else if (typeof data.action === 'string') {
+ this.liked = data.action !== 'removed';
+ this.reaction = this.liked ? type : '';
+ }
+
+ if (likes !== null) {
+ this.likes = likes;
+ }
+
+ if (this.reaction !== '') {
+ this.showReactionBurst(this.reaction);
+ }
+
+ window.dispatchEvent(new CustomEvent('post-reaction-toggled', {
+ detail: {
+ postId: this.postId,
+ reaction: this.reaction,
+ likes: this.likes,
+ },
+ }));
+ } catch {
+ this.reaction = previousReaction;
+ this.liked = previousLiked;
+ this.likes = previousLikes;
+ } finally {
+ this.likeBusy = false;
+ this.closeReactionPicker();
+ }
+ },
+
+ async toggleLikeLegacy() {
  if (this.likeBusy || !this.likeUrl) {
  return;
  }
 
  this.likeBusy = true;
+ const previousReaction = this.reaction;
  const previousLiked = this.liked;
  const previousLikes = this.likes;
  this.liked = !this.liked;
+ this.reaction = this.liked ? 'love' : '';
  this.likes = Math.max(0, this.likes + (this.liked ? 1 : -1));
 
  try {
  const response = await fetch(this.likeUrl, {
- method:'POST',
+ method: 'POST',
  headers: {
- Accept:'application/json',
-'X-CSRF-TOKEN': this.csrfToken,
+ Accept: 'application/json',
+ 'X-CSRF-TOKEN': this.csrfToken,
  },
  });
 
@@ -2654,23 +2851,29 @@ Alpine.data('feedLiveState', () => ({
  }
 
  const data = await response.json();
+ const likes = this.readLikesCount(data);
+ const reaction = this.readCurrentReaction(data);
 
- if (typeof data.count ==='number') {
- this.likes = data.count;
- } else if (typeof data.likes_count ==='number') {
- this.likes = data.likes_count;
- } else if (typeof data.data?.likes_count ==='number') {
- this.likes = data.data.likes_count;
+ if (likes !== null) {
+ this.likes = likes;
  }
 
- if (typeof data.liked ==='boolean') {
+ if (reaction !== null) {
+ this.reaction = reaction;
+ this.liked = reaction !== '';
+ } else if (typeof data.liked === 'boolean') {
  this.liked = data.liked;
- } else if (typeof data.action ==='string') {
- this.liked = data.action !=='removed';
- } else if (typeof data.data?.current_reaction ==='string') {
- this.liked = data.data.current_reaction !=='';
+ this.reaction = data.liked ? 'love' : '';
+ } else if (typeof data.action === 'string') {
+ this.liked = data.action !== 'removed';
+ this.reaction = this.liked ? 'love' : '';
+ }
+
+ if (this.reaction !== '') {
+ this.showReactionBurst(this.reaction);
  }
  } catch {
+ this.reaction = previousReaction;
  this.liked = previousLiked;
  this.likes = previousLikes;
  } finally {

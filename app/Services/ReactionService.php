@@ -24,7 +24,7 @@ class ReactionService
     ];
 
     /**
-     * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int}
+     * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int, reactions_count: int, reaction_counts: array<string, int>}
      */
     public function react(User $user, Post $post, string $type): array
     {
@@ -75,7 +75,9 @@ class ReactionService
             return ['action' => 'added', 'current_reaction' => $normalizedType];
         });
 
-        $likesCount = (int) ($post->fresh()?->likes_count ?? $post->likes_count ?? 0);
+        $freshPost = $post->fresh();
+        $likesCount = (int) ($freshPost?->likes_count ?? $post->likes_count ?? 0);
+        $reactionsCount = (int) ($freshPost?->reactions_count ?? $post->reactions_count ?? 0);
 
         if ($result['action'] === 'added' && $user->id !== $post->user_id) {
             $post->loadMissing('author');
@@ -92,6 +94,8 @@ class ReactionService
             'action' => $result['action'],
             'current_reaction' => $result['current_reaction'],
             'likes_count' => $likesCount,
+            'reactions_count' => $reactionsCount,
+            'reaction_counts' => $this->reactionCountsFromPost($freshPost ?? $post),
         ];
     }
 
@@ -109,6 +113,20 @@ class ReactionService
     private function counterColumn(string $type): string
     {
         return $type.'_count';
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function reactionCountsFromPost(Post $post): array
+    {
+        $counts = [];
+
+        foreach (Reaction::TYPES as $type) {
+            $counts[$type] = (int) ($post->getAttribute($this->counterColumn($type)) ?? 0);
+        }
+
+        return $counts;
     }
 
     private function postAuthor(Post $post): ?User
