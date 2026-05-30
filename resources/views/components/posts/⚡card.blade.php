@@ -189,7 +189,7 @@ new class extends Component
     />
 
     @if ($commentsOpen)
-        <section class="mt-3" data-ui="feed-post-livewire-comments">
+        <section class="mt-3" wire:transition.opacity.duration.200ms data-ui="feed-post-livewire-comments">
             <livewire:posts.comments-thread :post="$post" :key="'feed-post-comments-'.$post->getKey()" />
         </section>
     @endif

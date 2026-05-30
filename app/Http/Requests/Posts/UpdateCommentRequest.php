@@ -29,7 +29,7 @@ class UpdateCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => ['required', 'string', 'min:1', 'max:1000'],
+            'body' => ['required', 'string', 'min:1', 'max:500'],
         ];
     }
 
@@ -37,7 +37,7 @@ class UpdateCommentRequest extends FormRequest
     {
         return [
             'body.required' => 'Please write something before submitting.',
-            'body.max' => 'Comments may not be longer than 1000 characters.',
+            'body.max' => 'Comments may not be longer than 500 characters.',
         ];
     }
 }

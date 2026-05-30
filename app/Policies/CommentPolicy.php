@@ -45,12 +45,24 @@ class CommentPolicy
             return false;
         }
 
-        return (int) $comment->user_id === (int) $user->getKey() || $user->hasAnyRole(['admin', 'moderator']);
+        if ($user->hasAnyRole(['admin', 'moderator'])) {
+            return true;
+        }
+
+        if ((int) $comment->user_id !== (int) $user->getKey()) {
+            return false;
+        }
+
+        return $comment->created_at === null || $comment->created_at->greaterThanOrEqualTo(now()->subHour());
     }
 
     public function delete(User $user, Comment $comment): bool
     {
-        return $this->update($user, $comment);
+        if ($comment->trashed()) {
+            return false;
+        }
+
+        return (int) $comment->user_id === (int) $user->getKey() || $user->hasAnyRole(['admin', 'moderator']);
     }
 
     public function react(User $user, Comment $comment): bool

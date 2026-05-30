@@ -21,12 +21,12 @@ Inline feed comment panels use:
 
 ```php
 $comments = app(CommentService::class)
-    ->previewThread($post, $viewer, 5);
+    ->previewThread($post, $viewer, CommentService::PREVIEW_TOP_LEVEL_LIMIT, CommentService::PREVIEW_REPLY_LIMIT);
 ```
 
 Implementation details:
 - Top-level comments: `topLevel()` scope (`parent_id` is null).
-- Replies are eager loaded via `replies` relation.
+- Replies and reply-to-reply comments are eager loaded through the `replies` relation.
 - `withTrashed()` keeps tombstoned comments visible in-thread.
 - Reaction summaries are hydrated in-memory after pagination.
 - Visible Livewire polling should use `CommentService::threadActivity()` and compare the returned fingerprint before dispatching parent card refresh events.
@@ -39,11 +39,13 @@ Implementation details:
 ## Reply UX
 - Replies are created by posting `parent_id` to `POST /posts/{post}/comments`.
 - Feed inline replies are created through `posts.comments-thread`, which calls the same comment actions as the HTTP route.
-- Only one reply level is allowed (enforced in `CommentService`).
+- Three visual levels are allowed: top-level, direct reply, and reply-to-reply.
+- New replies targeting an already third-level comment are flattened onto that third-level parent by `CommentService`.
 
 ## Pagination
-- Paginate only top-level comments (`20/page`).
-- Replies are not paginated.
+- Inline feed panels show three top-level comments by default, append three more via `loadMoreComments()`, and show two recent replies per top-level comment until that reply thread is expanded.
+- Full post pages mount the same Livewire component with `fullPage=true`, render the loaded thread through `CommentService::threadForPost()`, and support Top/Newest/Oldest sorting without a page reload.
+- HTTP pagination remains available through `CommentService::paginateThread()` for non-Livewire contexts.
 - Always chain `->withQueryString()`.
 
 ## Collapse

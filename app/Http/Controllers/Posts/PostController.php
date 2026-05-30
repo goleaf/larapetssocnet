@@ -17,7 +17,6 @@ use App\Http\Requests\Posts\SchedulePostRequest;
 use App\Http\Requests\Posts\UpdatePostRequest;
 use App\Models\Content\Post;
 use App\Models\Pets\Pet;
-use App\Services\CommentService;
 use App\Support\Posts\PostCreationInput;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,7 +37,6 @@ class PostController extends Controller
         private readonly ArchivePostAction $archivePostAction,
         private readonly PinPostAction $pinPostAction,
         private readonly UnpinPostAction $unpinPostAction,
-        private readonly CommentService $comments,
     ) {}
 
     public function create(Request $request): View
@@ -84,8 +82,6 @@ class PostController extends Controller
             'savedBy as saved_by_viewer' => fn (Builder $savedQuery): Builder => $savedQuery->where('saved_posts.user_id', $viewerId),
         ]);
 
-        $comments = $this->comments->paginateThread($post, $request->user(), 20);
-
         $taggedPetIds = collect($post->tagged_pets ?? [])
             ->filter()
             ->map(fn (mixed $petId): int => (int) $petId)
@@ -101,7 +97,6 @@ class PostController extends Controller
 
         return view('posts.show', [
             'post' => $post,
-            'comments' => $comments,
             'taggedPets' => $taggedPets,
         ]);
     }

@@ -81,7 +81,7 @@ it('allows replies and keeps reply counters in sync', function (): void {
     ]);
 });
 
-it('prevents replying beyond one level', function (): void {
+it('allows nested replies and flattens replies beyond the third visual level', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
     $post = Post::factory()->for($author)->create();
@@ -104,11 +104,32 @@ it('prevents replying beyond one level', function (): void {
     $this->actingAs($viewer)
         ->from(route('posts.show', $post))
         ->post(route('posts.comments.store', $post), [
-            'body' => 'Too deep',
+            'body' => 'Second reply level',
             'parent_id' => $reply->id,
         ])
         ->assertRedirect(route('posts.show', $post))
-        ->assertSessionHasErrors('parent_id');
+        ->assertSessionDoesntHaveErrors();
+
+    $thirdLevel = Comment::query()
+        ->where('post_id', $post->id)
+        ->where('parent_id', $reply->id)
+        ->where('body', 'Second reply level')
+        ->firstOrFail();
+
+    $this->actingAs($viewer)
+        ->from(route('posts.show', $post))
+        ->post(route('posts.comments.store', $post), [
+            'body' => 'Flattened reply',
+            'parent_id' => $thirdLevel->id,
+        ])
+        ->assertRedirect(route('posts.show', $post))
+        ->assertSessionDoesntHaveErrors();
+
+    $this->assertDatabaseHas('comments', [
+        'post_id' => $post->id,
+        'parent_id' => $reply->id,
+        'body' => 'Flattened reply',
+    ]);
 });
 
 it('prevents commenting on an inaccessible post', function (): void {

@@ -19,51 +19,8 @@
  </x-ui.card>
  @endif
 
- <x-ui.card id="comments" padding="none">
- <x-slot name="header">
- <x-ui.card-header title="Comments" :subtitle="'('.$post->comments_count.')'"/>
- </x-slot>
-
- <div class="p-5">
- @can('create', [App\Models\Content\Comment::class, $post])
- <div class="mb-6 flex items-start gap-3">
- <x-ui.avatar :src="auth()->user()->avatar_url" :name="auth()->user()->name" :user="auth()->user()" size="sm" class="mt-1"/>
- <div class="flex-1">
- <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="space-y-3">
- @csrf
- <x-ui.textarea
- name="body"
- rows="2"
- placeholder="Write a comment..."
- oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
- required
- />
- <div class="flex justify-end">
- <x-ui.button type="submit" size="sm" variant="primary">Post Comment</x-ui.button>
+ <div id="comments">
+ <livewire:posts.comments-thread :post="$post" :full-page="true" :key="'post-page-comments-'.$post->getKey()" />
  </div>
- </form>
- </div>
- </div>
- @endcan
-
-@forelse($comments as $comment)
-@if($loop->first)
-<div class="space-y-4">
-@endif
-<x-comment-item :comment="$comment" :post="$post"/>
-@if($loop->last)
-</div>
-@endif
-@empty
-<x-ui.empty-state title="No comments yet" description="Be the first to share your thoughts!" icon="💬"/>
-@endforelse
-
- @if($comments->hasPages())
- <div class="mt-4">
- {{ $comments->links() }}
- </div>
- @endif
- </div>
- </x-ui.card>
  </div>
 </x-app-layout>

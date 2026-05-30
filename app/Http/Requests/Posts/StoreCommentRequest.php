@@ -37,12 +37,11 @@ class StoreCommentRequest extends FormRequest
         if ($post instanceof Post) {
             $parentRule = $parentRule
                 ->where('post_id', $post->getKey())
-                ->whereNull('parent_id')
                 ->whereNull('deleted_at');
         }
 
         return [
-            'body' => ['required', 'string', 'min:1', 'max:1000'],
+            'body' => ['required', 'string', 'min:1', 'max:500'],
             'parent_id' => ['nullable', 'integer', $parentRule],
         ];
     }
@@ -51,8 +50,8 @@ class StoreCommentRequest extends FormRequest
     {
         return [
             'body.required' => 'Please write something before submitting.',
-            'body.max' => 'Comments may not be longer than 1000 characters.',
-            'parent_id.exists' => 'Reply target must be a top-level comment on this post.',
+            'body.max' => 'Comments may not be longer than 500 characters.',
+            'parent_id.exists' => 'Reply target must be a visible comment on this post.',
         ];
     }
 }

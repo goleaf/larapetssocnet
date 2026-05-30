@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added full-page Livewire comment threads on post detail pages with Top/Newest/Oldest sorting, shared mention suggestions, emoji insertion, pin/unpin actions, report submission, and commenter blocking.
+- Added inline feed comment preview batching with three recent top-level comments, two recent replies per thread, load-more comments, expandable reply threads, and smooth comment-panel transitions.
 - Added inline Livewire comment editing and spam reporting inside feed post-card comment threads, reusing the shared comment and report actions without leaving the post context.
 - Added Livewire inline comment-thread actions for feed post cards, including top-level comments, replies, soft-delete tombstone refreshes, visible polling, and parent post-card counter refresh events.
 - Added animated reaction count roll-up/down feedback, keyboard-accessible reaction picker controls, Livewire post-card reaction actions with Alpine optimistic reconciliation, four-second Undo toasts, cached reaction-summary emoji stacks, reaction velocity snapshots with Trending badges, pet About "Most loved posts" leaderboards, delayed unique per-post reaction notification jobs, reaction batch notifications, and opt-in daily reaction summary emails.
@@ -37,6 +39,8 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.
+- Changed comment validation to enforce the current 500-character maximum across HTTP requests, Livewire actions, and `CommentService`.
 - Changed post reaction notifications to dispatch after a four-second undo window and re-check the persisted reaction row before notifying authors.
 - Changed reaction notification dispatch to batch recent reactions through a unique database-queued job per post.
 - Changed the shared post-card reaction picker to use the configured pet-themed reaction set, delayed desktop hover, mobile long-press behavior, top-reaction breakdown icons, and Paw-backed legacy like toggles.
@@ -84,6 +88,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added comment-thread coverage for three-level replies, deeper reply flattening, preview loading, expandable reply threads, pinned comments, blocking commenters, full-page sorting, 500-character validation, and one-hour edit-window enforcement.
 - Added Livewire comment-thread coverage for inline comment editing, sanitized rendered output, inline reporting, and self-report authorization blocking.
 - Added explicit comment coverage for guest posting redirects and blocked-user comment visibility filtering.
 - Added Livewire comment-thread coverage for creating comments, replying, deleting parent comments into tombstones, depth-limit rejection, and visible refresh polling.

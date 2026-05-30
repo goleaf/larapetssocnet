@@ -1,17 +1,44 @@
-@props(['comment','post','livewire' => false,'editingCommentId' => null])
+@props([
+    'comment',
+    'post',
+    'livewire' => false,
+    'editingCommentId' => null,
+    'mentionTarget' => null,
+    'mentionSuggestions' => [],
+    'mentionSuggestionsOpen' => false,
+    'expandedReplyIds' => [],
+])
 
 @php($replyErrorKey = 'replyBodies.'.$comment->id)
 @php($editErrorKey = 'editBodies.'.$comment->id)
 @php($isLivewireEditing = $livewire && (int) ($editingCommentId ?? 0) === (int) $comment->id)
+@php($threadDepth = (int) ($comment->thread_depth ?? ($comment->isReply() ? 2 : 1)))
+@php($loadedReplyCount = $comment->relationLoaded('replies') ? $comment->replies->count() : 0)
+@php($isReplyExpanded = (bool) ($expandedReplyIds[$comment->id] ?? false))
 
-<div class="group py-2 {{ $comment->isReply() ? 'ml-11 mt-1' : 'mt-4' }}" id="comment-{{ $comment->id }}">
+<div class="group/comment py-2 {{ $comment->isReply() ? 'relative ml-8 border-l border-whisker/35 pl-3 mt-1 sm:ml-11' : 'mt-4' }}" id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
  <!-- Avatar -->
  <a href="{{ route('profile.show', $comment->user->username) }}" class="shrink-0 mt-0.5">
  <x-ui.avatar :src="$comment->user->avatar_url" :name="$comment->user->name" :user="$comment->user" size="sm"/>
  </a>
 
- <div class="flex-1 min-w-0" x-data="{ showReply: false, editing: false, collapsed: false }">
+ <div class="flex-1 min-w-0" x-data="{
+ showReply: false,
+ editing: false,
+ collapsed: false,
+ deleteConfirm: false,
+ detectMention(value, target) {
+ const match = value.match(/(?:^|\s)@([A-Za-z0-9-]{1,30})$/)
+
+ if (match) {
+ $wire.searchMentionSuggestions(match[1], target)
+ return
+ }
+
+ $wire.closeMentionSuggestions()
+ },
+ }">
 
  <!-- Comment Bubble -->
  <div @if(! $livewire) x-show="!editing" @endif @if($isLivewireEditing) class="hidden" @endif>
@@ -61,9 +88,25 @@
  @if($isLivewireEditing)
  <div class="w-full max-w-2xl border border-whisker/30 bg-cream/60 p-2">
  <form wire:submit.prevent="updateComment({{ (int) $comment->id }})">
- <textarea wire:model.live.debounce.300ms="editBodies.{{ (int) $comment->id }}" rows="2"
+ <textarea wire:model.live.debounce.300ms="editBodies.{{ (int) $comment->id }}" rows="2" maxlength="{{ \App\Services\CommentService::MAX_BODY_LENGTH }}"
  class="form-textarea w-full border-0 bg-transparent p-1 text-sm resize-none focus:ring-0"
- required></textarea>
+ required
+ x-on:input.debounce.250ms="detectMention($event.target.value, 'edit:{{ (int) $comment->id }}')"
+ x-on:keydown.enter.exact.prevent="$wire.updateComment({{ (int) $comment->id }})"
+ x-on:keydown.escape="$wire.cancelEditing()"></textarea>
+ @if($mentionSuggestionsOpen && $mentionTarget === 'edit:'.$comment->id && $mentionSuggestions !== [])
+ <div class="mb-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white shadow-card" role="listbox" aria-label="Mention suggestions">
+ @foreach($mentionSuggestions as $suggestion)
+ <button type="button" wire:click="insertMention('{{ $suggestion['username'] }}')" class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-cream focus:bg-cream focus:outline-none" role="option">
+ <x-ui.avatar :src="$suggestion['avatar_url']" :name="$suggestion['name']" size="sm"/>
+ <span class="min-w-0">
+ <span class="block truncate text-sm font-semibold text-bark">{{ $suggestion['name'] }}</span>
+ <span class="block truncate text-xs text-fur">&#64;{{ $suggestion['username'] }}</span>
+ </span>
+ </button>
+ @endforeach
+ </div>
+ @endif
  @error($editErrorKey)
  <p class="mt-1 px-1 text-xs font-semibold text-rose">{{ $message }}</p>
  @enderror
@@ -109,9 +152,13 @@
 
  <!-- Reply Button -->
  @can('reply', $comment)
- @if(! $comment->isReply())
- <button @click="showReply = !showReply; if(showReply) { $nextTick(() => $refs.replyInput.focus()); }"
- class="hover:underline">Reply</button>
+ @if(! $comment->trashed())
+ <button
+ @if($livewire)
+ wire:click="startReply({{ (int) $comment->id }}, '{{ $comment->user->username }}')"
+ @endif
+ @click="showReply = !showReply; if(showReply) { $nextTick(() => $refs.replyInput.focus()); }"
+ class="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Reply</button>
  @endif
  @endcan
  @endauth
@@ -123,7 +170,7 @@
  </span>
 
  <!-- Hover Actions (Edit/Delete/Report) -->
- <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+ <div class="flex items-center gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/comment:opacity-100">
  <span class="text-gray-300 font-normal">&middot;</span>
  @can('update', $comment)
  @if($livewire)
@@ -134,7 +181,7 @@
  @endcan
  @can('delete', $comment)
  @if($livewire)
- <button type="button" wire:click="deleteComment({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="deleteComment" class="hover:underline hover:text-red-500">Delete</button>
+ <button type="button" @click="deleteConfirm = ! deleteConfirm" class="hover:underline hover:text-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Delete</button>
  @else
  <form method="POST"
  action="{{ route('posts.comments.destroy', ['post'=> $post,'comment'=> $comment]) }}"
@@ -144,10 +191,19 @@
  </form>
  @endif
  @endcan
+ @can('pin', $post)
+ @if($livewire && ! $comment->trashed())
+ @if((int) data_get($post->metadata ?? [], 'pinned_comment_id') === (int) $comment->id)
+ <button type="button" wire:click="unpinComment" class="hover:underline hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Unpin</button>
+ @else
+ <button type="button" wire:click="pinComment({{ (int) $comment->id }})" class="hover:underline hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Pin</button>
+ @endif
+ @endif
+ @endcan
 @can('report', $comment)
 @if(! $comment->trashed())
 @if($livewire)
-<button type="button" wire:click="reportComment({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="reportComment" class="hover:underline hover:text-amber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Report</button>
+<button type="button" wire:click="openReport({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="openReport" class="hover:underline hover:text-amber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Report</button>
 @else
 <form method="POST"
  action="{{ route('comments.report', ['post'=> $post,'comment'=> $comment]) }}"
@@ -159,21 +215,35 @@
 @endif
 @endif
 @endcan
+@auth
+@if($livewire && ! $comment->trashed() && (int) $comment->user_id !== (int) auth()->id())
+<button type="button" wire:click="blockCommenter({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="blockCommenter" class="hover:underline hover:text-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Block user</button>
+@endif
+@endauth
  </div>
  </div>
 
+ @if($livewire)
+ <div x-show="deleteConfirm" x-cloak x-transition.opacity.duration.150ms class="ml-3 mt-2 inline-flex items-center gap-2 rounded-[var(--radius-soft)] border border-rose/30 bg-rose-light/30 px-3 py-2 text-xs font-semibold text-bark">
+ <span>Are you sure?</span>
+ <button type="button" wire:click="deleteComment({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="deleteComment" class="text-rose hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Delete</button>
+ <button type="button" @click="deleteConfirm = false" class="text-fur hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Cancel</button>
+ </div>
+ @endif
+
  <!-- Inline Reply Form -->
  @can('reply', $comment)
- @if(! $comment->isReply())
  <div x-show="showReply" x-cloak class="mt-2 w-full max-w-2xl flex items-start gap-2">
  <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" :user="auth()->user()" size="xs" class="mt-1"/>
  <div class="flex-1">
  @if($livewire)
  <form wire:submit.prevent="createReply({{ (int) $comment->id }})" class="relative">
- <textarea x-ref="replyInput" wire:model.live.debounce.300ms="replyBodies.{{ (int) $comment->id }}" rows="1"
+ <textarea x-ref="replyInput" wire:model.live.debounce.300ms="replyBodies.{{ (int) $comment->id }}" rows="1" maxlength="{{ \App\Services\CommentService::MAX_BODY_LENGTH }}"
  class="form-textarea w-full resize-none overflow-hidden py-2 pl-3 pr-10 text-sm"
  placeholder="Write a reply..." required
  oninput="this.style.height =''; this.style.height = this.scrollHeight +'px'"
+ x-on:input.debounce.250ms="detectMention($event.target.value, 'reply:{{ (int) $comment->id }}')"
+ x-on:keydown.enter.exact.prevent="$wire.createReply({{ (int) $comment->id }})"
  @keydown.escape="showReply = false"></textarea>
  <button type="submit"
  wire:loading.attr="disabled"
@@ -186,6 +256,19 @@
  </svg>
  </button>
  </form>
+ @if($mentionSuggestionsOpen && $mentionTarget === 'reply:'.$comment->id && $mentionSuggestions !== [])
+ <div class="mt-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white shadow-card" role="listbox" aria-label="Mention suggestions">
+ @foreach($mentionSuggestions as $suggestion)
+ <button type="button" wire:click="insertMention('{{ $suggestion['username'] }}')" class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-cream focus:bg-cream focus:outline-none" role="option">
+ <x-ui.avatar :src="$suggestion['avatar_url']" :name="$suggestion['name']" size="sm"/>
+ <span class="min-w-0">
+ <span class="block truncate text-sm font-semibold text-bark">{{ $suggestion['name'] }}</span>
+ <span class="block truncate text-xs text-fur">&#64;{{ $suggestion['username'] }}</span>
+ </span>
+ </button>
+ @endforeach
+ </div>
+ @endif
  @error($replyErrorKey)
  <p class="mt-1 text-xs font-semibold text-rose">{{ $message }}</p>
  @enderror
@@ -210,21 +293,38 @@
  @endif
  </div>
  </div>
- @endif
  @endcan
 
  <!-- Children / Replies -->
  @if($comment->replies_count > 0)
  <div class="mt-1">
  <div class="flex items-center gap-2 px-3 text-xs font-semibold text-gray-500">
- <button type="button" class="hover:underline" @click="collapsed = !collapsed">
- <span x-show="!collapsed">Hide {{ $comment->replies_count }} replies</span>
- <span x-show="collapsed">Show {{ $comment->replies_count }} replies</span>
+ @if($livewire && $loadedReplyCount < (int) $comment->replies_count && ! $isReplyExpanded)
+ <button type="button" class="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="toggleReplies({{ (int) $comment->id }})">
+ View {{ (int) $comment->replies_count - $loadedReplyCount }} more {{ \Illuminate\Support\Str::plural('reply', (int) $comment->replies_count - $loadedReplyCount) }}
  </button>
+ @else
+ <button type="button" class="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" @click="collapsed = !collapsed">
+ <span x-show="!collapsed">{{ $isReplyExpanded ? 'Collapse replies' : 'Hide '.$comment->replies_count.' '.\Illuminate\Support\Str::plural('reply', (int) $comment->replies_count) }}</span>
+ <span x-show="collapsed">Show {{ $comment->replies_count }} {{ \Illuminate\Support\Str::plural('reply', (int) $comment->replies_count) }}</span>
+ </button>
+ @if($livewire && $isReplyExpanded)
+ <button type="button" class="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="toggleReplies({{ (int) $comment->id }})">Show fewer</button>
+ @endif
+ @endif
  </div>
  <div class="mt-2" x-show="!collapsed" x-cloak x-transition.opacity.duration.150ms>
  @foreach($comment->replies as $reply)
- <x-comment-item :comment="$reply" :post="$post" :livewire="$livewire" :editing-comment-id="$editingCommentId"/>
+ <x-comment-item
+ :comment="$reply"
+ :post="$post"
+ :livewire="$livewire"
+ :editing-comment-id="$editingCommentId"
+ :mention-target="$mentionTarget"
+ :mention-suggestions="$mentionSuggestions"
+ :mention-suggestions-open="$mentionSuggestionsOpen"
+ :expanded-reply-ids="$expandedReplyIds"
+ />
  @endforeach
  </div>
  </div>

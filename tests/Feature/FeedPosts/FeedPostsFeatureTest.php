@@ -153,7 +153,7 @@ class FeedPostsFeatureTest extends TestCase
             ->assertInvalid(['type']);
     }
 
-    public function test_comments_support_one_level_replies_and_refresh_comments_count(): void
+    public function test_comments_support_nested_replies_and_refresh_comments_count(): void
     {
         $author = User::factory()->create();
         $replier = User::factory()->create();
@@ -190,15 +190,41 @@ class FeedPostsFeatureTest extends TestCase
         $this->actingAs($author)
             ->from(route('posts.show', $post))
             ->post(route('posts.comments.store', $post), [
-                'body' => 'invalid-depth-two-reply',
+                'body' => 'second-level-reply',
                 'parent_id' => $replyComment->id,
             ])
             ->assertRedirect(route('posts.show', $post))
-            ->assertSessionHasErrors('parent_id');
+            ->assertSessionDoesntHaveErrors();
+
+        $secondLevelReply = Comment::query()
+            ->where('post_id', $post->id)
+            ->where('parent_id', $replyComment->id)
+            ->where('body', 'second-level-reply')
+            ->firstOrFail();
 
         $this->assertDatabaseHas('posts', [
             'id' => $post->id,
-            'comments_count' => 2,
+            'comments_count' => 3,
+        ]);
+
+        $this->actingAs($author)
+            ->from(route('posts.show', $post))
+            ->post(route('posts.comments.store', $post), [
+                'body' => 'flattened-third-level-reply',
+                'parent_id' => $secondLevelReply->id,
+            ])
+            ->assertRedirect(route('posts.show', $post))
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertDatabaseHas('comments', [
+            'post_id' => $post->id,
+            'parent_id' => $replyComment->id,
+            'body' => 'flattened-third-level-reply',
+        ]);
+
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'comments_count' => 4,
         ]);
 
         $this->actingAs($author)
@@ -207,7 +233,7 @@ class FeedPostsFeatureTest extends TestCase
 
         $this->assertDatabaseHas('posts', [
             'id' => $post->id,
-            'comments_count' => 1,
+            'comments_count' => 3,
         ]);
 
         $this->assertSoftDeleted('comments', [

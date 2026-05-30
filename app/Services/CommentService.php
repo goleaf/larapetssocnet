@@ -19,7 +19,13 @@ use Illuminate\Validation\ValidationException;
 
 class CommentService
 {
-    public const MAX_BODY_LENGTH = 1000;
+    public const MAX_BODY_LENGTH = 500;
+
+    public const PREVIEW_TOP_LEVEL_LIMIT = 3;
+
+    public const PREVIEW_REPLY_LIMIT = 2;
+
+    public const MAX_THREAD_DEPTH = 3;
 
     public function __construct(
         private readonly ContentService $content,
@@ -30,14 +36,15 @@ class CommentService
     /**
      * @return LengthAwarePaginator<int, Comment>
      */
-    public function paginateThread(Post $post, ?User $viewer, int $perPage = 20): LengthAwarePaginator
+    public function paginateThread(Post $post, ?User $viewer, int $perPage = 20, string $sort = 'oldest'): LengthAwarePaginator
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
 
-        $comments = $this->threadQuery($post, $viewer)
-            ->oldest('comments.created_at')
-            ->paginate($perPage)
-            ->withQueryString();
+        $query = $this->threadQuery($post, $viewer, replyLimit: null, nestedReplyLimit: null);
+
+        $this->applyThreadSort($query, $sort);
+
+        $comments = $query->paginate($perPage)->withQueryString();
 
         $comments->setCollection($this->hydrateThreadMetadata($comments->getCollection(), $viewerId));
 
@@ -47,14 +54,15 @@ class CommentService
     /**
      * @return Collection<int, Comment>
      */
-    public function threadForPost(Post $post, ?User $viewer): Collection
+    public function threadForPost(Post $post, ?User $viewer, string $sort = 'oldest'): Collection
     {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
+        $query = $this->threadQuery($post, $viewer, replyLimit: null, nestedReplyLimit: null);
+
+        $this->applyThreadSort($query, $sort);
 
         return $this->hydrateThreadMetadata(
-            $this->threadQuery($post, $viewer)
-                ->oldest('comments.created_at')
-                ->get(),
+            $query->get(),
             $viewerId
         );
     }
@@ -62,17 +70,63 @@ class CommentService
     /**
      * @return Collection<int, Comment>
      */
-    public function previewThread(Post $post, ?User $viewer, int $limit = 5): Collection
-    {
+    public function previewThread(
+        Post $post,
+        ?User $viewer,
+        int $limit = self::PREVIEW_TOP_LEVEL_LIMIT,
+        int $replyLimit = self::PREVIEW_REPLY_LIMIT,
+        array $expandedReplyIds = [],
+    ): Collection {
         $viewerId = (int) ($viewer?->getKey() ?? 0);
 
-        return $this->hydrateThreadMetadata(
-            $this->threadQuery($post, $viewer)
-                ->oldest('comments.created_at')
+        $comments = $this->hydrateThreadMetadata(
+            $this->threadQuery($post, $viewer, replyLimit: $replyLimit, nestedReplyLimit: $replyLimit)
+                ->latest('comments.created_at')
                 ->limit($limit)
                 ->get(),
             $viewerId
         );
+
+        return $this->replaceExpandedReplies($comments, $post, $viewer, $expandedReplyIds, $viewerId);
+    }
+
+    public function topLevelCount(Post $post, ?User $viewer): int
+    {
+        return Comment::query()
+            ->where('comments.post_id', $post->getKey())
+            ->topLevel()
+            ->visibleTo($viewer)
+            ->withTrashed()
+            ->count();
+    }
+
+    public function inlineComment(Post $post, ?User $viewer, int $commentId, int $replyLimit = self::PREVIEW_REPLY_LIMIT): ?Comment
+    {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+        $comment = Comment::query()
+            ->threadColumns()
+            ->where('comments.post_id', $post->getKey())
+            ->whereKey($commentId)
+            ->visibleTo($viewer)
+            ->withTrashed()
+            ->with([
+                'user' => fn (BelongsTo $userQuery): BelongsTo => $userQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'user.media',
+                'replies' => fn (HasMany $replyQuery): HasMany => $this->replyQuery($replyQuery, $viewer, $replyLimit)
+                    ->with([
+                        'replies' => fn (HasMany $nestedReplyQuery): HasMany => $this->replyQuery($nestedReplyQuery, $viewer, $replyLimit),
+                    ]),
+                'reactions',
+            ])
+            ->first();
+
+        return $comment instanceof Comment ? $this->hydrateCommentMetadata($comment, $viewerId, 1) : null;
     }
 
     /**
@@ -106,9 +160,7 @@ class CommentService
             ]);
         }
 
-        if ($parent instanceof Comment) {
-            $this->assertValidParent($post, $parent);
-        }
+        $parent = $parent instanceof Comment ? $this->normalizedParentForReply($post, $parent) : null;
 
         return DB::transaction(function () use ($post, $author, $body, $parent): Comment {
             $comment = Comment::query()->create([
@@ -178,27 +230,13 @@ class CommentService
      */
     private function hydrateThreadMetadata($comments, int $viewerId)
     {
-        return $comments->map(function (Comment $comment) use ($viewerId): Comment {
-            $comment->setAttribute('reaction_summary', $this->summarizeReactions($comment));
-            $comment->setAttribute('current_viewer_reaction', $this->resolveViewerReaction($comment, $viewerId));
-
-            $replies = $comment->replies->map(function (Comment $reply) use ($viewerId): Comment {
-                $reply->setAttribute('reaction_summary', $this->summarizeReactions($reply));
-                $reply->setAttribute('current_viewer_reaction', $this->resolveViewerReaction($reply, $viewerId));
-
-                return $reply;
-            });
-
-            $comment->setRelation('replies', $replies);
-
-            return $comment;
-        });
+        return $comments->map(fn (Comment $comment): Comment => $this->hydrateCommentMetadata($comment, $viewerId, 1));
     }
 
     /**
      * @return Builder<Comment>
      */
-    private function threadQuery(Post $post, ?User $viewer): Builder
+    private function threadQuery(Post $post, ?User $viewer, ?int $replyLimit, ?int $nestedReplyLimit): Builder
     {
         return Comment::query()
             ->threadColumns()
@@ -215,24 +253,131 @@ class CommentService
                     'users.profile_photo_path',
                 ]),
                 'user.media',
-                'replies' => fn (HasMany $replyQuery): HasMany => $replyQuery
-                    ->threadColumns()
-                    ->visibleTo($viewer)
-                    ->withTrashed()
-                    ->oldest('comments.created_at')
+                'replies' => fn (HasMany $replyQuery): HasMany => $this->replyQuery($replyQuery, $viewer, $replyLimit)
                     ->with([
-                        'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
-                            'users.id',
-                            'users.name',
-                            'users.username',
-                            'users.avatar_path',
-                            'users.profile_photo_path',
-                        ]),
-                        'user.media',
-                        'reactions',
+                        'replies' => fn (HasMany $nestedReplyQuery): HasMany => $this->replyQuery($nestedReplyQuery, $viewer, $nestedReplyLimit),
                     ]),
                 'reactions',
             ]);
+    }
+
+    private function replyQuery(HasMany $replyQuery, ?User $viewer, ?int $limit): HasMany
+    {
+        $replyQuery
+            ->threadColumns()
+            ->visibleTo($viewer)
+            ->withTrashed();
+
+        if ($limit !== null) {
+            $replyQuery->latest('comments.created_at')->limit($limit);
+        } else {
+            $replyQuery->oldest('comments.created_at');
+        }
+
+        $replyQuery->with([
+            'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
+                'users.id',
+                'users.name',
+                'users.username',
+                'users.avatar_path',
+                'users.profile_photo_path',
+            ]),
+            'user.media',
+            'reactions',
+        ]);
+
+        return $replyQuery;
+    }
+
+    /**
+     * @param  Builder<Comment>  $query
+     */
+    private function applyThreadSort(Builder $query, string $sort): void
+    {
+        match ($sort) {
+            'newest' => $query->latest('comments.created_at'),
+            'top' => $query->orderByDesc('comments.reactions_count')->latest('comments.created_at'),
+            default => $query->oldest('comments.created_at'),
+        };
+    }
+
+    private function hydrateCommentMetadata(Comment $comment, int $viewerId, int $depth): Comment
+    {
+        $comment->setAttribute('reaction_summary', $this->summarizeReactions($comment));
+        $comment->setAttribute('current_viewer_reaction', $this->resolveViewerReaction($comment, $viewerId));
+        $comment->setAttribute('thread_depth', $depth);
+
+        if (! $comment->relationLoaded('replies')) {
+            return $comment;
+        }
+
+        $comment->setRelation('replies', $comment->replies->map(
+            fn (Comment $reply): Comment => $this->hydrateCommentMetadata($reply, $viewerId, $depth + 1)
+        ));
+
+        return $comment;
+    }
+
+    /**
+     * @param  Collection<int, Comment>  $comments
+     * @param  array<int, bool|int|string>  $expandedReplyIds
+     * @return Collection<int, Comment>
+     */
+    private function replaceExpandedReplies(Collection $comments, Post $post, ?User $viewer, array $expandedReplyIds, int $viewerId): Collection
+    {
+        $expandedIds = collect($expandedReplyIds)
+            ->filter()
+            ->keys()
+            ->merge(collect($expandedReplyIds)->filter(fn ($value): bool => is_int($value) || is_string($value))->values())
+            ->map(fn ($value): int => (int) $value)
+            ->filter(fn (int $value): bool => $value > 0)
+            ->unique()
+            ->values();
+
+        if ($expandedIds->isEmpty()) {
+            return $comments;
+        }
+
+        $fullReplyGroups = Comment::query()
+            ->threadColumns()
+            ->where('comments.post_id', $post->getKey())
+            ->whereIn('comments.parent_id', $expandedIds->all())
+            ->visibleTo($viewer)
+            ->withTrashed()
+            ->oldest('comments.created_at')
+            ->with([
+                'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'user.media',
+                'replies' => fn (HasMany $nestedReplyQuery): HasMany => $this->replyQuery($nestedReplyQuery, $viewer, null),
+                'reactions',
+            ])
+            ->get()
+            ->groupBy('parent_id');
+
+        $replace = function (Comment $comment, int $depth) use (&$replace, $fullReplyGroups, $viewerId): Comment {
+            if ($fullReplyGroups->has($comment->getKey())) {
+                $comment->setRelation(
+                    'replies',
+                    $fullReplyGroups
+                        ->get($comment->getKey())
+                        ->map(fn (Comment $reply): Comment => $this->hydrateCommentMetadata($reply, $viewerId, $depth + 1))
+                );
+            }
+
+            if ($comment->relationLoaded('replies')) {
+                $comment->setRelation('replies', $comment->replies->map(fn (Comment $reply): Comment => $replace($reply, $depth + 1)));
+            }
+
+            return $comment;
+        };
+
+        return $comments->map(fn (Comment $comment): Comment => $replace($comment, (int) ($comment->thread_depth ?? 1)));
     }
 
     /**
@@ -271,24 +416,18 @@ class CommentService
 
         if (mb_strlen($body) > self::MAX_BODY_LENGTH) {
             throw ValidationException::withMessages([
-                'body' => 'Comments may not be longer than 1000 characters.',
+                'body' => 'Comments may not be longer than 500 characters.',
             ]);
         }
 
         return $body;
     }
 
-    private function assertValidParent(Post $post, Comment $parent): void
+    private function normalizedParentForReply(Post $post, Comment $parent): Comment
     {
         if ((int) $parent->post_id !== (int) $post->getKey()) {
             throw ValidationException::withMessages([
                 'parent_id' => 'Reply target must belong to the same post.',
-            ]);
-        }
-
-        if ($parent->parent_id !== null) {
-            throw ValidationException::withMessages([
-                'parent_id' => 'Only one reply level is allowed.',
             ]);
         }
 
@@ -297,6 +436,31 @@ class CommentService
                 'parent_id' => 'Cannot reply to a removed comment.',
             ]);
         }
+
+        while ($this->commentDepth($parent) >= self::MAX_THREAD_DEPTH - 1 && $parent->parent_id !== null) {
+            $parent = Comment::query()
+                ->where('comments.post_id', $post->getKey())
+                ->whereKey($parent->parent_id)
+                ->firstOrFail();
+        }
+
+        return $parent;
+    }
+
+    private function commentDepth(Comment $comment): int
+    {
+        $depth = 0;
+        $current = $comment;
+
+        while ($current->parent_id !== null && $depth < self::MAX_THREAD_DEPTH + 5) {
+            $depth++;
+            $current = Comment::query()
+                ->select(['comments.id', 'comments.parent_id', 'comments.post_id', 'comments.user_id', 'comments.body', 'comments.body_html', 'comments.deleted_at'])
+                ->whereKey($current->parent_id)
+                ->firstOrFail();
+        }
+
+        return $depth;
     }
 
     private function notifyOnCreate(User $author, Post $post, Comment $comment, ?Comment $parent): void
