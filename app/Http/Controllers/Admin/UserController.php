@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
 use App\Services\AdminService;
+use App\Support\Search\SearchInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,14 +15,15 @@ class UserController extends Controller
 {
     public function index(Request $request): View
     {
-        $q = $request->q;
+        $q = SearchInput::normalize($request->input('q'));
         $filter = $request->filter;
+        $pattern = SearchInput::containsPattern($q);
 
         $users = User::withTrashed()
-            ->when($q, fn ($query, $s) => $query->where(function ($query) use ($s): void {
-                $query->where('name', 'like', "%{$s}%")
-                    ->orWhere('username', 'like', "%{$s}%")
-                    ->orWhere('email', 'like', "%{$s}%");
+            ->when(SearchInput::hasSearchableLength($q), fn ($query) => $query->where(function ($query) use ($pattern): void {
+                $query->where('name', 'like', $pattern)
+                    ->orWhere('username', 'like', $pattern)
+                    ->orWhere('email', 'like', $pattern);
             }))
             ->when($filter === 'banned', fn ($query) => $query->where('is_banned', true))
             ->when($filter === 'admin', fn ($query) => $query->where('role', 'admin'))

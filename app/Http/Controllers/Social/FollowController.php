@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Identity\User;
 use App\Models\Social\Follow;
 use App\Services\FollowService;
+use App\Support\Search\SearchInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -94,6 +95,9 @@ class FollowController extends Controller
 
         $this->authorize(FollowAbility::ViewFollowers, $user);
 
+        $search = SearchInput::normalize($request->string('q')->toString());
+        $pattern = SearchInput::containsPattern($search);
+
         $followers = $user->acceptedFollowers()
             ->active()
             ->notBlockedFor($viewer)
@@ -108,11 +112,11 @@ class FollowController extends Controller
                         ->where('status', 'accepted')
                 );
             })
-            ->when($request->string('q')->toString(), function ($query, $term): void {
-                $query->where(function ($subQuery) use ($term): void {
+            ->when(SearchInput::hasSearchableLength($search), function ($query) use ($pattern): void {
+                $query->where(function ($subQuery) use ($pattern): void {
                     $subQuery
-                        ->where('name', 'like', "%{$term}%")
-                        ->orWhere('username', 'like', "%{$term}%");
+                        ->where('name', 'like', $pattern)
+                        ->orWhere('username', 'like', $pattern);
                 });
             })
             ->paginate(24)
@@ -127,6 +131,7 @@ class FollowController extends Controller
             'followers' => $followers,
             'followStatusMap' => $followStatusMap,
             'showMutualOnly' => $showMutualOnly,
+            'q' => $search,
         ]);
     }
 
@@ -140,16 +145,19 @@ class FollowController extends Controller
 
         $this->authorize(FollowAbility::ViewFollowing, $user);
 
+        $search = SearchInput::normalize($request->string('q')->toString());
+        $pattern = SearchInput::containsPattern($search);
+
         $following = $user->acceptedFollowing()
             ->active()
             ->notBlockedFor($viewer)
             ->with('media')
             ->withCount(['acceptedFollowers as followers_count', 'posts'])
-            ->when($request->string('q')->toString(), function ($query, $term): void {
-                $query->where(function ($subQuery) use ($term): void {
+            ->when(SearchInput::hasSearchableLength($search), function ($query) use ($pattern): void {
+                $query->where(function ($subQuery) use ($pattern): void {
                     $subQuery
-                        ->where('name', 'like', "%{$term}%")
-                        ->orWhere('username', 'like', "%{$term}%");
+                        ->where('name', 'like', $pattern)
+                        ->orWhere('username', 'like', $pattern);
                 });
             })
             ->paginate(24)
@@ -171,7 +179,7 @@ class FollowController extends Controller
             ? $this->followService->followStatusMap($viewer, $following->getCollection())
             : [];
 
-        return view('profile.following', ['user' => $user, 'following' => $following, 'followsYouIds' => $followsYouIds, 'followStatusMap' => $followStatusMap]);
+        return view('profile.following', ['user' => $user, 'following' => $following, 'followsYouIds' => $followsYouIds, 'followStatusMap' => $followStatusMap, 'q' => $search]);
     }
 
     public function removeFollower(Request $request, User $user): JsonResponse

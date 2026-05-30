@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
@@ -81,6 +82,23 @@ class SocialLoginController extends Controller
             return redirect()->route($restrictedRoute);
         }
 
+        $statusFailure = $this->statusFailure($user);
+
+        if ($statusFailure !== null) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            $auditLogger->record($user, 'social_login_rejected', $request, [
+                'provider' => $provider,
+                'restriction_reason' => $statusFailure['reason'],
+            ]);
+
+            return redirect()->route('login')->withErrors([
+                'email' => $statusFailure['message'],
+            ]);
+        }
+
         $loginAt = now();
 
         if ($user->two_factor_secret !== null) {
@@ -119,6 +137,35 @@ class SocialLoginController extends Controller
         return $user->hasCompletedOnboarding()
             ? redirect()->route('dashboard')
             : redirect()->route('onboarding.show');
+    }
+
+    /**
+     * @return array{reason: string, message: string}|null
+     */
+    private function statusFailure(User $user): ?array
+    {
+        if ($user->hasAccountStatus(AccountStatus::Deactivated)) {
+            return [
+                'reason' => 'deactivated',
+                'message' => 'This account is deactivated. Reactivation is required before signing in.',
+            ];
+        }
+
+        if ($user->hasAccountStatus(AccountStatus::Suspended)) {
+            return [
+                'reason' => 'suspended',
+                'message' => 'This account is suspended and cannot sign in right now.',
+            ];
+        }
+
+        if ($user->hasAccountStatus(AccountStatus::PendingDeletion)) {
+            return [
+                'reason' => 'pending_deletion',
+                'message' => 'This account is pending deletion. Contact support if you need help recovering it.',
+            ];
+        }
+
+        return null;
     }
 
     private function restrictedRouteFor(User $user): ?string

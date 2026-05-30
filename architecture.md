@@ -4,7 +4,7 @@ PetSocial is a Laravel 13 application with feature-oriented domain folders and a
 
 ## Runtime Shape
 
-- PHP 8.4, Laravel 13.12.0, Livewire 4.3, Breeze auth, Pest 4, PHPUnit 12; keep implementation compatible with Laravel 13's PHP >= 8.3 requirement.
+- PHP 8.5 locally with Composer requiring PHP `^8.4`, Laravel 13.12.0, Livewire 4.3, Breeze auth, Pest 4, PHPUnit 12; keep framework code compatible with Laravel 13's PHP >= 8.3 support while respecting this app's dependency floor.
 - SQLite is the local/default deployment database.
 - Tailwind 4 runs after Sass through PostCSS.
 - Vite builds public assets into root `build/`.
@@ -14,10 +14,13 @@ PetSocial is a Laravel 13 application with feature-oriented domain folders and a
 
 ## Performance Baseline
 
+- Laravel and Livewire framework decisions must use Laravel Boost `application_info` and version-specific `search-docs` before implementation when behavior is uncertain.
 - Keep `Model::preventLazyLoading(! app()->isProduction())` enabled outside production unless a documented, tested exception exists.
-- Every Eloquent list query must declare selected columns, eager loads, aggregate counts/existence flags, deterministic sorting, and pagination before rendering.
-- Livewire components must keep public state small, avoid heavy `render()` queries, use stable `wire:key` values in loops, and use `#[Computed]`, lazy/defer loading, islands, async actions, and renderless actions when they reduce payload or query cost.
-- Production deploys should run optimized Composer autoloads, built assets, `php artisan optimize`, queue worker restarts when queues are active, OPcache reset on shared hosting, and `APP_DEBUG=false`.
+- Every Eloquent list query must declare selected parent/relation columns, eager loads, aggregate counts/existence flags, deterministic sorting, and pagination before rendering.
+- Livewire components must keep public state small and serializable, avoid heavy `render()` queries, use stable `wire:key` values in loops, and use `#[Computed]`, `#[Locked]`, lazy/defer loading, bundled lazy/deferred widget groups, islands, async actions, renderless actions, and `data-loading` control states when they reduce payload, request blocking, or query cost.
+- Cache expensive reads with explicit keys, TTLs, user scoping, and invalidation. Use `Cache::memo()` for repeated per-request cache reads and `Cache::touch()` for TTL extension.
+- API resources must use `whenLoaded()`, `whenCounted()`, conditional fields, pagination, and sensitive-column filtering instead of triggering lazy loads.
+- Production deploys should run optimized Composer autoloads, built assets, `php artisan optimize` or equivalent `config:cache` / `route:cache` / `view:cache`, queue worker restarts when queues are active, OPcache reset on shared hosting, and `APP_DEBUG=false`.
 
 ## Layers
 
@@ -36,7 +39,7 @@ Application pages are private by default. Keep Explore, search, profiles, posts,
 - Auth and account: Breeze controllers, full-page Livewire auth/onboarding pages, one focused auth schema migration, auth audit logging, verified-email gating, onboarding completion tracking, encrypted two-factor fields, pending email changes, account status tracking, failed-login counters, `users.last_active_at` online presence, and separate OAuth social account identities.
 - Auth mail delivery: `AuthMailDispatcher` centralizes queued auth mail handoff and reports transport failures without turning registration, reset, verification, or magic-link requests into user-facing server errors.
 - User profiles: the `/@username` route is a full-page Livewire component with lazy child tab components and a nested edit modal; profile edit modal opening, saves, and cover repositioning authorize through owner-only `UserPolicy` abilities, while `UpdateProfileAction` owns modal validation and persistence.
-- Feed and posts: full-page Livewire feed shell, eager center feed stream, lazy Livewire feed sidebars, shared Livewire post composer entry points, Livewire post-card islands, precomputed `feed_items` delivery with relationship fallback queries, Latest/Best ranking preference, read-position memory, feed mutes, cursor pagination, post cards, reactions, comments, saves, shares, reports, and immediate soft-delete with queued post cleanup.
+- Feed and posts: full-page Livewire feed shell, eager center feed stream, bundled lazy Livewire feed sidebars, shared Livewire post composer entry points, Livewire post-card islands, precomputed `feed_items` delivery with relationship fallback queries, Latest/Best ranking preference, read-position memory, feed mutes, cursor pagination, post cards, reactions, comments, saves, shares, reports, and immediate soft-delete with queued post cleanup.
 - Social graph: follows, pet follows, blocks, requests, counters, notifications.
 - Pets and adoption: the canonical `/pets/@{pet:slug}` profile route is a full-page Livewire wrapper with reactive tab state delegated through the existing pet show controller/view; pet profiles, galleries, health logs, adoption browse/listing flows.
 - Groups: membership, roles, privacy, archive/read-only lifecycle.

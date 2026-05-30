@@ -10,9 +10,7 @@ class CommentPolicy
 {
     public function view(?User $user, Comment $comment): bool
     {
-        $post = $this->postFor($comment);
-
-        return $post instanceof Post && app(PostPolicy::class)->view($user, $post);
+        return $this->canViewPostFor($user, $comment);
     }
 
     public function create(User $user, Post $post): bool
@@ -30,19 +28,15 @@ class CommentPolicy
             return false;
         }
 
-        if ($this->belongsToArchivedGroup($comment)) {
+        if ($this->belongsToArchivedGroup($comment, $user)) {
             return false;
         }
 
-        $post = $this->postFor($comment);
-
-        if (! $post instanceof Post || ! app(PostPolicy::class)->view($user, $post)) {
+        if (! $this->canViewPostFor($user, $comment)) {
             return false;
         }
 
-        $commentAuthor = $this->authorFor($comment);
-
-        return $commentAuthor instanceof User && ! $user->hasBlockingRelationshipWith($commentAuthor);
+        return ! $this->hasBlockingRelationshipWithAuthor($user, $comment);
     }
 
     public function update(User $user, Comment $comment): bool
@@ -77,19 +71,15 @@ class CommentPolicy
             return false;
         }
 
-        if ($this->belongsToArchivedGroup($comment)) {
+        if ($this->belongsToArchivedGroup($comment, $user)) {
             return false;
         }
 
-        $post = $this->postFor($comment);
-
-        if (! $post instanceof Post || ! app(PostPolicy::class)->view($user, $post)) {
+        if (! $this->canViewPostFor($user, $comment)) {
             return false;
         }
 
-        $commentAuthor = $this->authorFor($comment);
-
-        return $commentAuthor instanceof User && ! $user->hasBlockingRelationshipWith($commentAuthor);
+        return ! $this->hasBlockingRelationshipWithAuthor($user, $comment);
     }
 
     public function report(User $user, Comment $comment): bool
@@ -98,9 +88,7 @@ class CommentPolicy
             return false;
         }
 
-        $post = $this->postFor($comment);
-
-        return $post instanceof Post && app(PostPolicy::class)->view($user, $post);
+        return $this->canViewPostFor($user, $comment);
     }
 
     public function pin(User $user, Comment $comment): bool
@@ -113,14 +101,60 @@ class CommentPolicy
 
         return $post instanceof Post
             && (int) $post->user_id === (int) $user->getKey()
-            && app(PostPolicy::class)->view($user, $post);
+            && $this->canViewPostFor($user, $comment);
     }
 
-    private function belongsToArchivedGroup(Comment $comment): bool
+    private function belongsToArchivedGroup(Comment $comment, User $user): bool
     {
+        $preloaded = $this->preloadedBool($comment, $user, 'policy_post_belongs_to_archived_group');
+
+        if ($preloaded !== null) {
+            return $preloaded;
+        }
+
         $post = $this->postFor($comment);
 
         return $post instanceof Post && $post->belongsToArchivedGroup();
+    }
+
+    private function canViewPostFor(?User $user, Comment $comment): bool
+    {
+        $preloaded = $this->preloadedBool($comment, $user, 'policy_can_view_post');
+
+        if ($preloaded !== null) {
+            return $preloaded;
+        }
+
+        $post = $this->postFor($comment);
+
+        return $post instanceof Post && app(PostPolicy::class)->view($user, $post);
+    }
+
+    private function hasBlockingRelationshipWithAuthor(User $user, Comment $comment): bool
+    {
+        $preloaded = $this->preloadedBool($comment, $user, 'policy_author_blocked_by_viewer');
+
+        if ($preloaded !== null) {
+            return $preloaded;
+        }
+
+        $commentAuthor = $this->authorFor($comment);
+
+        return ! $commentAuthor instanceof User || $user->hasBlockingRelationshipWith($commentAuthor);
+    }
+
+    private function preloadedBool(Comment $comment, ?User $user, string $attribute): ?bool
+    {
+        $viewerId = (int) ($user?->getKey() ?? 0);
+        $preloadedViewerId = $comment->getAttribute('policy_viewer_id');
+
+        if (! is_int($preloadedViewerId) || $preloadedViewerId !== $viewerId) {
+            return null;
+        }
+
+        $value = $comment->getAttribute($attribute);
+
+        return is_bool($value) ? $value : null;
     }
 
     private function postFor(Comment $comment): ?Post

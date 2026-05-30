@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Marketplace;
 use App\Http\Controllers\Controller;
 use App\Models\Identity\User;
 use App\Models\Marketplace\MarketplaceListing;
+use App\Support\Search\SearchInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,26 +18,30 @@ class MarketplaceListingController extends Controller
     public function index(Request $request): View
     {
         $status = $request->string('status')->trim()->lower()->value();
-        $sort = $request->string('sort')->trim()->value() ?: 'newest';
+        if (! in_array($status, [MarketplaceListing::STATUS_ACTIVE, MarketplaceListing::STATUS_SOLD], true)) {
+            $status = MarketplaceListing::STATUS_ACTIVE;
+        }
+
+        $sort = $this->catalogSort($request->string('sort')->trim()->value());
+        $search = SearchInput::normalize($request->input('q'));
+        $location = SearchInput::normalize($request->input('location'));
 
         $listings = MarketplaceListing::paginatePublicCatalog([
-            'q' => trim((string) $request->input('q')),
+            'q' => $search,
             'listing_type' => $request->string('listing_type')->trim()->value(),
             'status' => $status,
             'min_price' => $request->input('min_price'),
             'max_price' => $request->input('max_price'),
-            'location' => trim((string) $request->input('location')),
+            'location' => $location,
             'sort' => $sort,
         ]);
-
-        if (! in_array($status, [MarketplaceListing::STATUS_ACTIVE, MarketplaceListing::STATUS_SOLD], true)) {
-            $status = MarketplaceListing::STATUS_ACTIVE;
-        }
 
         return view('marketplace.index', [
             'listings' => $listings,
             'status' => $status,
             'sort' => $sort,
+            'search' => $search,
+            'location' => $location,
             'typeOptions' => MarketplaceListing::listingTypeOptions(),
         ]);
     }
@@ -140,17 +145,19 @@ class MarketplaceListingController extends Controller
     public function myListings(Request $request): View
     {
         $viewer = $request->user();
-        $status = $request->string('status')->trim()->lower()->value();
-        $sort = $request->string('sort')->trim()->value() ?: 'newest';
+        $status = $this->sellerStatus($request->string('status')->trim()->lower()->value());
+        $sort = $this->catalogSort($request->string('sort')->trim()->value());
+        $search = SearchInput::normalize($request->input('q'));
 
         return view('marketplace.my-listings', [
             'listings' => MarketplaceListing::paginateForSellerDashboard($viewer, [
-                'q' => trim((string) $request->input('q')),
+                'q' => $search,
                 'status' => $status,
                 'sort' => $sort,
             ]),
             'status' => $status,
             'sort' => $sort,
+            'search' => $search,
         ]);
     }
 
@@ -221,6 +228,25 @@ class MarketplaceListingController extends Controller
         $validated['currency'] = strtoupper((string) ($validated['currency'] ?? 'USD'));
 
         return $validated;
+    }
+
+    private function catalogSort(string $sort): string
+    {
+        return in_array($sort, ['newest', 'oldest', 'price_low', 'price_high', 'most_viewed'], true)
+            ? $sort
+            : 'newest';
+    }
+
+    private function sellerStatus(string $status): string
+    {
+        return in_array($status, [
+            'all',
+            'deleted',
+            MarketplaceListing::STATUS_ACTIVE,
+            MarketplaceListing::STATUS_ARCHIVED,
+            MarketplaceListing::STATUS_DRAFT,
+            MarketplaceListing::STATUS_SOLD,
+        ], true) ? $status : 'all';
     }
 
     private function syncMediaFromRequest(MarketplaceListing $listing, Request $request, bool $isUpdate = false): void

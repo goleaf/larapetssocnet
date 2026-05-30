@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -20,6 +21,7 @@ new class extends Component
 {
     use WithFileUploads;
 
+    #[Locked]
     public int $profileUserId;
 
     public string $name = '';

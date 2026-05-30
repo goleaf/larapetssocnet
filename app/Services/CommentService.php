@@ -7,8 +7,10 @@ use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
+use App\Models\Social\Block;
 use App\Notifications\Database\Comments\NewComment;
 use App\Notifications\Database\Comments\NewCommentReply;
+use App\Policies\PostPolicy;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -51,7 +53,7 @@ class CommentService
 
         $comments = $query->paginate($perPage)->withQueryString();
 
-        $comments->setCollection($this->hydrateThreadMetadata($comments->getCollection(), $viewerId, $viewer));
+        $comments->setCollection($this->hydrateThreadMetadata($comments->getCollection(), $viewerId, $viewer, null, $post));
 
         return $comments;
     }
@@ -69,7 +71,9 @@ class CommentService
         return $this->hydrateThreadMetadata(
             $query->get(),
             $viewerId,
-            $viewer
+            $viewer,
+            null,
+            $post
         );
     }
 
@@ -116,7 +120,7 @@ class CommentService
             ->get()
             ->each(fn (Comment $comment): Comment => $comment->setRelation('replies', collect()));
 
-        return $this->hydrateThreadMetadata($comments, $viewerId, $viewer, $term);
+        return $this->hydrateThreadMetadata($comments, $viewerId, $viewer, $term, $post);
     }
 
     /**
@@ -139,7 +143,9 @@ class CommentService
                 ->limit($limit)
                 ->get(),
             $viewerId,
-            $viewer
+            $viewer,
+            null,
+            $post
         );
 
         return $this->replaceExpandedReplies($comments, $post, $viewer, $expandedReplyIds, $viewerId);
@@ -188,7 +194,13 @@ class CommentService
             ])
             ->first();
 
-        return $comment instanceof Comment ? $this->hydrateCommentMetadata($comment, $viewerId, 1) : null;
+        if (! $comment instanceof Comment) {
+            return null;
+        }
+
+        $this->prepareCommentPolicyContext(collect([$comment]), $viewerId, $viewer, $post);
+
+        return $this->hydrateCommentMetadata($comment, $viewerId, 1);
     }
 
     /**
@@ -309,9 +321,13 @@ class CommentService
      * @param  Collection<int, Comment>  $comments
      * @return Collection<int, Comment>
      */
-    private function hydrateThreadMetadata($comments, int $viewerId, ?User $viewer = null, ?string $searchTerm = null)
+    private function hydrateThreadMetadata($comments, int $viewerId, ?User $viewer = null, ?string $searchTerm = null, ?Post $post = null)
     {
         $subscriptionMap = $this->threadSubscriptions->subscribedRootMap($viewer, $comments);
+
+        if ($post instanceof Post) {
+            $this->prepareCommentPolicyContext($comments, $viewerId, $viewer, $post);
+        }
 
         return $comments->map(fn (Comment $comment): Comment => $this->hydrateCommentMetadata($comment, $viewerId, 1, $subscriptionMap, null, $searchTerm));
     }
@@ -492,6 +508,8 @@ class CommentService
             ->get()
             ->groupBy('parent_id');
 
+        $this->prepareCommentPolicyContext($fullReplyGroups->flatten(1), $viewerId, $viewer, $post);
+
         $subscriptionMap = $this->threadSubscriptions->subscribedRootMap($viewer, $comments);
 
         $replace = function (Comment $comment, int $depth) use (&$replace, $fullReplyGroups, $viewerId, $subscriptionMap): Comment {
@@ -514,6 +532,109 @@ class CommentService
         };
 
         return $comments->map(fn (Comment $comment): Comment => $replace($comment, (int) ($comment->thread_depth ?? 1)));
+    }
+
+    /**
+     * @param  Collection<int, Comment>  $comments
+     */
+    private function prepareCommentPolicyContext(Collection $comments, int $viewerId, ?User $viewer, Post $post): void
+    {
+        if ($comments->isEmpty()) {
+            return;
+        }
+
+        $policyPost = $this->postForCommentPolicies($post);
+        $allComments = $this->flattenThreadComments($comments);
+        $blockedAuthorIds = $this->blockedCommentAuthorIds($viewer, $allComments);
+        $canViewPost = app(PostPolicy::class)->view($viewer, $policyPost);
+        $belongsToArchivedGroup = $policyPost->belongsToArchivedGroup();
+
+        $allComments->each(function (Comment $comment) use ($blockedAuthorIds, $canViewPost, $belongsToArchivedGroup, $policyPost, $viewerId): void {
+            $comment->setRelation('post', $policyPost);
+            $comment->setAttribute('policy_viewer_id', $viewerId);
+            $comment->setAttribute('policy_can_view_post', $canViewPost);
+            $comment->setAttribute('policy_post_belongs_to_archived_group', $belongsToArchivedGroup);
+            $comment->setAttribute('policy_author_blocked_by_viewer', isset($blockedAuthorIds[(int) $comment->user_id]));
+        });
+    }
+
+    private function postForCommentPolicies(Post $post): Post
+    {
+        return $post->loadMissing(['author', 'pet', 'group:id,status,archived_at']);
+    }
+
+    /**
+     * @param  Collection<int, Comment>  $comments
+     * @return Collection<int, Comment>
+     */
+    private function flattenThreadComments(Collection $comments): Collection
+    {
+        return $comments
+            ->filter(fn (mixed $comment): bool => $comment instanceof Comment)
+            ->flatMap(fn (Comment $comment): Collection => $this->flattenComment($comment))
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, Comment>
+     */
+    private function flattenComment(Comment $comment): Collection
+    {
+        $comments = collect([$comment]);
+
+        if (! $comment->relationLoaded('replies')) {
+            return $comments;
+        }
+
+        return $comments->merge(
+            $comment->replies
+                ->filter(fn (mixed $reply): bool => $reply instanceof Comment)
+                ->flatMap(fn (Comment $reply): Collection => $this->flattenComment($reply))
+        );
+    }
+
+    /**
+     * @param  Collection<int, Comment>  $comments
+     * @return array<int, true>
+     */
+    private function blockedCommentAuthorIds(?User $viewer, Collection $comments): array
+    {
+        if (! $viewer instanceof User || $comments->isEmpty()) {
+            return [];
+        }
+
+        $viewerId = (int) $viewer->getKey();
+        $authorIds = $comments
+            ->pluck('user_id')
+            ->map(fn (mixed $authorId): int => (int) $authorId)
+            ->filter(fn (int $authorId): bool => $authorId > 0 && $authorId !== $viewerId)
+            ->unique()
+            ->values();
+
+        if ($authorIds->isEmpty()) {
+            return [];
+        }
+
+        return Block::query()
+            ->select(['blocker_id', 'blocked_id'])
+            ->where(function (Builder $blockQuery) use ($authorIds, $viewerId): void {
+                $blockQuery
+                    ->where(function (Builder $outboundQuery) use ($authorIds, $viewerId): void {
+                        $outboundQuery
+                            ->where('blocker_id', $viewerId)
+                            ->whereIn('blocked_id', $authorIds->all());
+                    })
+                    ->orWhere(function (Builder $inboundQuery) use ($authorIds, $viewerId): void {
+                        $inboundQuery
+                            ->whereIn('blocker_id', $authorIds->all())
+                            ->where('blocked_id', $viewerId);
+                    });
+            })
+            ->get()
+            ->mapWithKeys(fn (Block $block): array => [
+                ((int) $block->blocker_id === $viewerId ? (int) $block->blocked_id : (int) $block->blocker_id) => true,
+            ])
+            ->all();
     }
 
     /**

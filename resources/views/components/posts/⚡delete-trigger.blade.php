@@ -5,12 +5,14 @@ use App\Services\PostDeletionCascadeService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
     use AuthorizesRequests;
 
+    #[Locked]
     public int $postId;
 
     public bool $open = false;

@@ -25,6 +25,7 @@ Start every Laravel task with `using-laravel-superpowers`, then use this map to 
 - `git-changelog-workflow.md`
 - `memory.md`
 - `laravel.md`
+- `boost-ai-guidelines.md`
 - Superpowers Laravel pack: `.claude/skills/using-laravel-superpowers/SKILL.md`, `.claude/skills/tdd-with-pest/SKILL.md`, `.claude/skills/quality-checks/SKILL.md`, and other matching `.claude/skills/*/SKILL.md` files when upstream workflow detail is useful.
 
 ## Security And Visibility
@@ -39,6 +40,7 @@ Start every Laravel task with `using-laravel-superpowers`, then use this map to 
 ## Performance And Persistence
 
 - `livewire-performance.md`
+- `boost-ai-guidelines.md`
 - `query-optimization.md`
 - `eager-loading-patterns.md`
 - `pagination-patterns.md`

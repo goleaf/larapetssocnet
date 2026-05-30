@@ -3,6 +3,7 @@
 namespace App\Models\Content;
 
 use App\Support\Hashtags\HashtagNormalizer;
+use App\Support\Search\SearchInput;
 use Database\Factories\HashtagFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -46,10 +47,12 @@ class Hashtag extends Model
 
     public function scopeSearch(Builder $query, string $term): void
     {
-        $query->where(function (Builder $searchQuery) use ($term): void {
+        $pattern = SearchInput::containsPattern($term);
+
+        $query->where(function (Builder $searchQuery) use ($pattern): void {
             $searchQuery
-                ->where('name', 'like', "%{$term}%")
-                ->orWhere('normalized_name', 'like', "%{$term}%");
+                ->where('name', 'like', $pattern)
+                ->orWhere('normalized_name', 'like', $pattern);
         });
     }
 
@@ -94,8 +97,9 @@ class Hashtag extends Model
     public static function paginateSearchResults(string $term, int $perPage = 15): LengthAwarePaginator
     {
         $normalizer = new HashtagNormalizer;
-        $normalized = $normalizer->normalizeFromInput($term);
-        $searchTerm = $normalized ?? $term;
+        $clean = SearchInput::normalize($term);
+        $normalized = $normalizer->normalizeFromInput($clean);
+        $searchTerm = $normalized ?? $clean;
 
         return self::query()
             ->searchResultColumns()

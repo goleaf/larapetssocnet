@@ -77,9 +77,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', function (): Factory|View {
-    return view('dashboard.index');
-})->middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])->name('dashboard');
+Route::livewire('/dashboard', 'pages.dashboard.index')
+    ->middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])
+    ->name('dashboard');
 
 Route::get('/dev/components', function (): Factory|View {
     abort_unless(app()->isLocal(), 404);
@@ -108,7 +108,7 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::get('/api/username-available', [ProfileController::class, 'usernameAvailable'])
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:expensive-search')
     ->name('api.username.available');
 
 Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])
@@ -129,16 +129,26 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
 
 Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 'track_last_seen'])->group(function (): void {
     Route::get('/search', SearchController::class)
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:expensive-search')
         ->name('search.index');
     Route::get('/api/breeds', BreedAutocompleteController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:expensive-search')
         ->name('api.breeds.index');
-    Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
-    Route::get('/explore/pets', [PetController::class, 'explore'])->name('pets.explore');
-    Route::get('/adopt', [PetController::class, 'adopt'])->name('pets.adopt');
-    Route::get('/adoption', [AdoptionController::class, 'index'])->name('adoption.index');
-    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/explore', [ExploreController::class, 'index'])
+        ->middleware('throttle:catalog-browse')
+        ->name('explore.index');
+    Route::get('/explore/pets', [PetController::class, 'explore'])
+        ->middleware('throttle:catalog-browse')
+        ->name('pets.explore');
+    Route::get('/adopt', [PetController::class, 'adopt'])
+        ->middleware('throttle:catalog-browse')
+        ->name('pets.adopt');
+    Route::get('/adoption', [AdoptionController::class, 'index'])
+        ->middleware('throttle:catalog-browse')
+        ->name('adoption.index');
+    Route::get('/events', [EventController::class, 'index'])
+        ->middleware('throttle:catalog-browse')
+        ->name('events.index');
     Route::get('/events/{event}', [EventController::class, 'show'])
         ->whereNumber('event')
         ->name('events.show');
@@ -149,11 +159,15 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     Route::get('/posts/{post}', [PostController::class, 'show'])
         ->where('post', '[0-9]+|[0-9a-fA-F-]{36}')
         ->name('posts.show');
-    Route::get('/marketplace', [MarketplaceListingController::class, 'index'])->name('marketplace.index');
+    Route::get('/marketplace', [MarketplaceListingController::class, 'index'])
+        ->middleware('throttle:catalog-browse')
+        ->name('marketplace.index');
     Route::prefix('pets')->name('pets.')->group(function (): void {
         Route::get('/', [PetController::class, 'index'])->name('index');
     });
-    Route::get('/tips', [PetCareTipController::class, 'index'])->name('tips.index');
+    Route::get('/tips', [PetCareTipController::class, 'index'])
+        ->middleware('throttle:catalog-browse')
+        ->name('tips.index');
     Route::get('/tips/{tip}', [PetCareTipController::class, 'show'])
         ->where('tip', '^(?!create$)[^/]+')
         ->name('tips.show');
@@ -166,7 +180,9 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         ->name('feed.mutes.destroy');
     Route::get('/saved', [SavedPostController::class, 'index'])->name('saved.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
+    Route::get('/notifications/latest', [NotificationController::class, 'latest'])
+        ->middleware('throttle:polling-refresh')
+        ->name('notifications.latest');
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markOneRead'])
         ->whereUuid('notification')
@@ -193,7 +209,7 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         ->name('posts.share');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
     Route::get('/comments/gifs/search', CommentGifController::class)
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:expensive-search')
         ->name('comments.gifs.search');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.legacy.store');
@@ -336,7 +352,9 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         Route::delete('/{group:slug}/bans/{user}', [GroupBanController::class, 'destroy'])->name('bans.destroy');
 
         Route::post('/{group:slug}/posts', [GroupPostController::class, 'store'])->name('posts.store');
-        Route::get('/{group:slug}/posts/latest', [GroupPostController::class, 'latest'])->name('posts.latest');
+        Route::get('/{group:slug}/posts/latest', [GroupPostController::class, 'latest'])
+            ->middleware('throttle:polling-refresh')
+            ->name('posts.latest');
         Route::delete('/{group:slug}/posts/{post}', [GroupPostController::class, 'destroy'])->name('posts.destroy');
     });
 
@@ -429,8 +447,8 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/@{user:username}/photos/galleries/{gallery}', [PhotoGalleryController::class, 'show'])
         ->name('photo-galleries.show');
-    Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->name('profile.followers')->where('user', '[a-zA-Z0-9_-]+');
-    Route::get('/@{user:username}/following', [FollowController::class, 'following'])->name('profile.following')->where('user', '[a-zA-Z0-9_-]+');
+    Route::get('/@{user:username}/followers', [FollowController::class, 'followers'])->middleware('throttle:catalog-browse')->name('profile.followers')->where('user', '[a-zA-Z0-9_-]+');
+    Route::get('/@{user:username}/following', [FollowController::class, 'following'])->middleware('throttle:catalog-browse')->name('profile.following')->where('user', '[a-zA-Z0-9_-]+');
     Route::get('/@{user:username}/redirect-check', [PublicProfileController::class, 'show'])->name('profile.redirect')->where('user', '[a-zA-Z0-9_-]+');
 
     // Legacy settings routes removed

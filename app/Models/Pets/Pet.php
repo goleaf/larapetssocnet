@@ -7,6 +7,7 @@ use App\Models\Identity\User;
 use App\Models\Marketplace\MarketplaceListing;
 use App\Services\PetSlugService;
 use App\Services\PetVisibilityService;
+use App\Support\Search\SearchInput;
 use App\Traits\HasCounterCache;
 use Database\Factories\PetFactory;
 use DateTimeInterface;
@@ -472,22 +473,26 @@ class Pet extends Model implements HasMedia
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (! $term) {
+        $term = SearchInput::normalize($term);
+
+        if ($term === '') {
             return $query;
         }
 
         $slug = Str::slug($term);
+        $pattern = SearchInput::containsPattern($term);
+        $slugPattern = SearchInput::containsPattern($slug);
 
-        return $query->where(function (Builder $subQuery) use ($term, $slug): void {
+        return $query->where(function (Builder $subQuery) use ($pattern, $slug, $slugPattern): void {
             $subQuery
-                ->where('name', 'like', "%{$term}%")
-                ->orWhere('species', 'like', "%{$term}%")
-                ->orWhere('breed', 'like', "%{$term}%")
-                ->orWhereHas('tags', function (Builder $tagQuery) use ($term, $slug): void {
-                    $tagQuery->where('name', 'like', "%{$term}%");
+                ->where('name', 'like', $pattern)
+                ->orWhere('species', 'like', $pattern)
+                ->orWhere('breed', 'like', $pattern)
+                ->orWhereHas('tags', function (Builder $tagQuery) use ($pattern, $slug, $slugPattern): void {
+                    $tagQuery->where('name', 'like', $pattern);
 
                     if ($slug !== '') {
-                        $tagQuery->orWhere('slug', 'like', "%{$slug}%");
+                        $tagQuery->orWhere('slug', 'like', $slugPattern);
                     }
                 });
         });
@@ -535,12 +540,14 @@ class Pet extends Model implements HasMedia
             ->public()
             ->with('owner:id,name');
 
-        $search = trim((string) ($filters['q'] ?? ''));
+        $search = SearchInput::normalize($filters['q'] ?? '');
         if ($search !== '') {
-            $query->where(function (Builder $innerQuery) use ($search): void {
+            $pattern = SearchInput::containsPattern($search);
+
+            $query->where(function (Builder $innerQuery) use ($pattern): void {
                 foreach (['name', 'bio', 'breed', 'species'] as $column) {
                     if (self::hasPetsColumn($column)) {
-                        $innerQuery->orWhere($column, 'like', "%{$search}%");
+                        $innerQuery->orWhere($column, 'like', $pattern);
                     }
                 }
             });
@@ -595,12 +602,14 @@ class Pet extends Model implements HasMedia
             $query->where('is_for_adoption', true);
         }
 
-        $search = trim((string) ($filters['q'] ?? ''));
+        $search = SearchInput::normalize($filters['q'] ?? '');
         if ($search !== '') {
-            $query->where(function (Builder $innerQuery) use ($search): void {
+            $pattern = SearchInput::containsPattern($search);
+
+            $query->where(function (Builder $innerQuery) use ($pattern): void {
                 foreach (['name', 'bio', 'breed'] as $column) {
                     if (self::hasPetsColumn($column)) {
-                        $innerQuery->orWhere($column, 'like', "%{$search}%");
+                        $innerQuery->orWhere($column, 'like', $pattern);
                     }
                 }
             });

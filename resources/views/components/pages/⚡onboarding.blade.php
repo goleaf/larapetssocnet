@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -59,6 +60,7 @@ class extends Component
 
     public mixed $petPhoto = null;
 
+    #[Locked]
     public ?int $createdPetId = null;
 
     public ?string $createdPetSpecies = null;

@@ -7,7 +7,7 @@ Laravel pagination best practices for this project.
 - Most list pages use `paginate($perPage)` when totals are needed.
 - Always preserve query string with `->withQueryString()`.
 - Avoid `simplePaginate` unless a page explicitly does not need totals.
-- Every paginated query must define selected columns, eager loads, aggregate counts/existence flags, and a deterministic sort. Cursor pagination must include a stable unique tiebreaker such as `id`.
+- Every paginated query must define selected parent/relation columns, eager loads, aggregate counts/existence flags, and a deterministic sort. Cursor pagination must include a stable unique tiebreaker such as `id`.
 - Infinite scroll must append IDs/state only, then rehydrate visible rows through the same authorization and visibility scopes before rendering.
 
 ## UI Components

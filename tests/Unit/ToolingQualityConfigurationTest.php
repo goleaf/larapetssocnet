@@ -6,6 +6,7 @@ it('defines a complete local quality toolchain', function (): void {
     expect($composer['require-dev'] ?? [])->toMatchArray([
         'driftingly/rector-laravel' => '^2.3',
         'larastan/larastan' => '^3.9',
+        'laravel/boost' => '^2.0',
         'laravel/pint' => '^1.29',
         'pestphp/pest' => '^4.7',
         'pestphp/pest-plugin-laravel' => '^4.1',
@@ -31,7 +32,7 @@ it('defines a complete local quality toolchain', function (): void {
     expect($composer['scripts']['post-update-cmd'] ?? [])->toContain('@php artisan boost:update --ansi --ignore-skills');
 });
 
-it('configures laravel boost for project ai agents without syncing curated skills automatically', function (): void {
+it('configures laravel boost for project ai agents with curated framework skills', function (): void {
     $boost = qualityJson(project_path('boost.json'));
 
     expect($boost)->toMatchArray([
@@ -44,9 +45,12 @@ it('configures laravel boost for project ai agents without syncing curated skill
     ]);
 
     expect($boost['skills'] ?? [])->toBe([
+        'livewire-development',
         'pest-testing',
         'tailwindcss-development',
     ]);
+
+    expect(project_path('.ai/guidelines/larapetssocnet-laravel-livewire-performance.md'))->toBeFile();
 });
 
 it('does not carry horizon configuration when horizon is not installed', function (): void {

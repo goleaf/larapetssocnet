@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pets;
 use App\Http\Controllers\Controller;
 use App\Models\Pets\Breed;
 use App\Models\Pets\Species;
+use App\Support\Search\SearchInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -19,8 +20,9 @@ class BreedAutocompleteController extends Controller
             'q' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $search = trim((string) ($validated['q'] ?? ''));
-        $species = $this->resolveSpecies((string) $validated['species']);
+        $search = SearchInput::normalize($validated['q'] ?? '');
+        $speciesName = SearchInput::normalize($validated['species']);
+        $species = $this->resolveSpecies($speciesName);
         $normalizedSearch = $this->normalizeSearchName($search);
 
         $breeds = Breed::query()
@@ -28,7 +30,7 @@ class BreedAutocompleteController extends Controller
             ->when(
                 $species instanceof Species && Schema::hasColumn('breeds', 'species_id'),
                 fn ($query) => $query->where('species_id', $species->getKey()),
-                fn ($query) => $query->where('species_slug', strtolower((string) $validated['species']))
+                fn ($query) => $query->where('species_slug', strtolower($speciesName))
             )
             ->when(
                 $normalizedSearch !== '' && Schema::hasColumn('breeds', 'normalized_name'),
@@ -60,14 +62,14 @@ class BreedAutocompleteController extends Controller
                     'id' => null,
                     'name' => 'Mixed breed',
                     'slug' => 'mixed-breed',
-                    'species' => $species?->slug ?? strtolower((string) $validated['species']),
+                    'species' => $species?->slug ?? strtolower($speciesName),
                     'type' => 'mixed',
                 ],
                 [
                     'id' => null,
                     'name' => 'Unknown breed',
                     'slug' => 'unknown-breed',
-                    'species' => $species?->slug ?? strtolower((string) $validated['species']),
+                    'species' => $species?->slug ?? strtolower($speciesName),
                     'type' => 'unknown',
                 ],
             ])->merge($breeds)->values(),

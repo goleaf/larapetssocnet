@@ -1,13 +1,13 @@
 ---
 name: laravel:constants-and-configuration
-description: Replace hardcoded values with constants, enums, and configuration for maintainability; use PHP 8.4 native enums and config files
+description: Replace hardcoded values with constants, enums, and configuration for maintainability; use PHP 8.3+ compatible enums, typed constants, and config files
 ---
 
 # Constants and Configuration Values
 
 ## Laravel 13 Baseline
 
-Use this skill for this app as Laravel 13.12.0 guidance on PHP 8.4+ with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4.3, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+Use this skill for this app as Laravel 13.12.0 guidance on PHP 8.5 locally with Composer requiring PHP `^8.4`, Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4.3, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
 
 Avoid hardcoded values throughout your codebase. Use constants, configuration files, and enums to make your application more maintainable, refactorable, and debuggable.
 
@@ -64,7 +64,7 @@ if ($user->role === UserRole::ADMIN) {
 }
 ```
 
-### PHP 8.4 Native Enums
+### PHP Native Enums
 
 ```php
 // app/Enums/OrderStatus.php

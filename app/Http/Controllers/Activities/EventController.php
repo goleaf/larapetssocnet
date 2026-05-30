@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Activities;
 use App\Http\Controllers\Controller;
 use App\Models\Activities\Event;
 use App\Models\Groups\Group;
+use App\Support\Search\SearchInput;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -29,7 +30,7 @@ class EventController extends Controller
     public function index(Request $request): View
     {
         $viewer = $request->user();
-        $search = trim($request->string('q')->toString());
+        $search = SearchInput::normalize($request->string('q')->toString());
         $scope = $request->string('scope')->toString();
         $groupId = $request->integer('group_id');
 

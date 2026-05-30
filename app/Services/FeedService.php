@@ -76,14 +76,8 @@ class FeedService
      */
     public function trendingHashtags(): Collection
     {
-        $resolver = fn (): Collection => Hashtag::query()->trending(10)->get();
-
-        if ($this->cacheSupportsTags()) {
-            return Cache::tags(self::TRENDING_HASHTAGS_CACHE_TAGS)
-                ->remember(self::TRENDING_HASHTAGS_CACHE_KEY, now()->addMinutes(10), $resolver);
-        }
-
-        return Cache::remember(self::TRENDING_HASHTAGS_CACHE_KEY, now()->addMinutes(10), $resolver);
+        return collect($this->trendingHashtagRows())
+            ->map(fn (array $attributes): Hashtag => (new Hashtag)->newFromBuilder($attributes));
     }
 
     public function flushTrendingHashtagsCache(): void
@@ -174,5 +168,73 @@ class FeedService
         } catch (BadMethodCallException) {
             return false;
         }
+    }
+
+    /**
+     * @return list<array{id: int, name: string, slug: string|null, normalized_name: string|null, posts_count: int, created_at: string|null, updated_at: string|null}>
+     */
+    private function trendingHashtagRows(): array
+    {
+        $resolver = fn (): array => Hashtag::query()
+            ->select(['id', 'name', 'slug', 'normalized_name', 'posts_count', 'created_at', 'updated_at'])
+            ->trending(10)
+            ->get()
+            ->map(fn (Hashtag $hashtag): array => $this->hashtagCacheRow($hashtag))
+            ->all();
+
+        $rows = $this->cacheSupportsTags()
+            ? Cache::tags(self::TRENDING_HASHTAGS_CACHE_TAGS)
+                ->remember(self::TRENDING_HASHTAGS_CACHE_KEY, now()->addMinutes(10), $resolver)
+            : Cache::remember(self::TRENDING_HASHTAGS_CACHE_KEY, now()->addMinutes(10), $resolver);
+
+        return $this->normalizeTrendingHashtagRows($rows);
+    }
+
+    /**
+     * @return array{id: int, name: string, slug: string|null, normalized_name: string|null, posts_count: int, created_at: string|null, updated_at: string|null}
+     */
+    private function hashtagCacheRow(Hashtag $hashtag): array
+    {
+        $attributes = $hashtag->getAttributes();
+
+        return [
+            'id' => (int) $attributes['id'],
+            'name' => (string) $attributes['name'],
+            'slug' => isset($attributes['slug']) ? (string) $attributes['slug'] : null,
+            'normalized_name' => isset($attributes['normalized_name']) ? (string) $attributes['normalized_name'] : null,
+            'posts_count' => (int) ($attributes['posts_count'] ?? 0),
+            'created_at' => isset($attributes['created_at']) ? (string) $attributes['created_at'] : null,
+            'updated_at' => isset($attributes['updated_at']) ? (string) $attributes['updated_at'] : null,
+        ];
+    }
+
+    /**
+     * @return list<array{id: int, name: string, slug: string|null, normalized_name: string|null, posts_count: int, created_at: string|null, updated_at: string|null}>
+     */
+    private function normalizeTrendingHashtagRows(mixed $rows): array
+    {
+        return collect($rows)
+            ->map(function (mixed $row): ?array {
+                if ($row instanceof Hashtag) {
+                    return $this->hashtagCacheRow($row);
+                }
+
+                if (! is_array($row) || ! isset($row['id'], $row['name'])) {
+                    return null;
+                }
+
+                return [
+                    'id' => (int) $row['id'],
+                    'name' => (string) $row['name'],
+                    'slug' => isset($row['slug']) ? (string) $row['slug'] : null,
+                    'normalized_name' => isset($row['normalized_name']) ? (string) $row['normalized_name'] : null,
+                    'posts_count' => (int) ($row['posts_count'] ?? 0),
+                    'created_at' => isset($row['created_at']) ? (string) $row['created_at'] : null,
+                    'updated_at' => isset($row['updated_at']) ? (string) $row['updated_at'] : null,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }

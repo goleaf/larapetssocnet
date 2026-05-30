@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AccountStatus;
 use App\Mail\Auth\MagicLoginLinkMail;
 use App\Mail\Auth\PasswordChangedSecurityAlertMail;
 use App\Models\Identity\SocialAccount;
@@ -212,6 +213,39 @@ it('merges a verified social login profile with an existing email account', func
         'user_id' => $user->id,
         'provider' => 'google',
         'provider_user_id' => 'provider-merge',
+    ]);
+});
+
+it('rejects social login for enum-restricted accounts before recording a successful login', function (): void {
+    configureGoogleSocialLogin();
+
+    $user = User::factory()->create([
+        'email' => 'social-suspended@example.com',
+        'account_status' => AccountStatus::Suspended,
+        'last_login_at' => null,
+    ]);
+
+    fakeGoogleProvider('provider-suspended', 'social-suspended@example.com');
+    $state = socialLoginState($this, 'google');
+
+    $this->get(route('social.callback', ['provider' => 'google', 'code' => 'valid-code', 'state' => $state]))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'email' => 'This account is suspended and cannot sign in right now.',
+        ]);
+
+    $this->assertGuest();
+
+    expect($user->refresh()->last_login_at)->toBeNull();
+
+    $this->assertDatabaseHas('auth_audit_logs', [
+        'user_id' => $user->id,
+        'event_type' => 'social_login_rejected',
+    ]);
+
+    $this->assertDatabaseMissing('auth_audit_logs', [
+        'user_id' => $user->id,
+        'event_type' => 'social_login_success',
     ]);
 });
 

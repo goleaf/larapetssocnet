@@ -3,10 +3,29 @@
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 
 uses(RefreshDatabase::class);
 
-it('renders the feed as a full-page livewire shell with lazy sidebars and eager center stream', function (): void {
+it('routes the feed to a class based full-page livewire component', function (): void {
+    $route = Route::getRoutes()->getByName('feed.index');
+
+    expect($route)->not->toBeNull()
+        ->and($route?->getAction('livewire_component'))->toBe('pages.feed.index')
+        ->and(is_file(app_path('Livewire/Pages/Feed/Index.php')))->toBeTrue()
+        ->and(is_file(resource_path('views/livewire/pages/feed/index.blade.php')))->toBeTrue()
+        ->and(is_file(resource_path('views/components/pages/feed/⚡index.blade.php')))->toBeFalse();
+});
+
+it('keeps the migrated feed page blade template free of inline livewire php', function (): void {
+    $source = file_get_contents(resource_path('views/livewire/pages/feed/index.blade.php'));
+
+    expect($source)->toBeString()
+        ->and((string) $source)->not->toContain('<?php')
+        ->and((string) $source)->not->toContain('new class extends Component');
+});
+
+it('renders the feed as a full-page livewire shell with bundled lazy sidebars and eager center stream', function (): void {
     $viewer = User::factory()->create();
 
     $this->actingAs($viewer)

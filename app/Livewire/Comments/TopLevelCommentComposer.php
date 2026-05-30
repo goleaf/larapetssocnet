@@ -10,6 +10,7 @@ use App\Services\CommentDraftService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 class TopLevelCommentComposer extends Component
@@ -99,6 +100,7 @@ class TopLevelCommentComposer extends Component
         $this->mentionSuggestions = [];
     }
 
+    #[Renderless]
     public function autosaveDraft(CommentDraftService $drafts): void
     {
         $viewer = Auth::user();

@@ -4,18 +4,22 @@ use App\Enums\FollowAbility;
 use App\Models\Identity\User;
 use App\Models\Social\Follow;
 use App\Services\FollowService;
+use App\Support\Search\SearchInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public int $profileUserId;
 
+    #[Locked]
     public string $mode;
 
     public ?int $total = null;
@@ -89,10 +93,12 @@ new class extends Component
         $searchTerm = $this->searchTerm();
 
         if ($searchTerm !== '') {
-            $query->where(function (Builder $searchQuery) use ($searchTerm): void {
+            $pattern = SearchInput::containsPattern($searchTerm);
+
+            $query->where(function (Builder $searchQuery) use ($pattern): void {
                 $searchQuery
-                    ->where('users.name', 'like', '%'.$searchTerm.'%')
-                    ->orWhere('users.username', 'like', '%'.$searchTerm.'%');
+                    ->where('users.name', 'like', $pattern)
+                    ->orWhere('users.username', 'like', $pattern);
             });
         }
 
@@ -278,7 +284,9 @@ new class extends Component
 
     private function searchTerm(): string
     {
-        return trim($this->search);
+        $search = SearchInput::normalize($this->search);
+
+        return SearchInput::hasSearchableLength($search) ? $search : '';
     }
 
     private function loadedLimit(): int

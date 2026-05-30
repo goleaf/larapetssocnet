@@ -8,6 +8,7 @@ description: Use when optimizing feed, profile, search, explore, or widget queri
 Use this skill for read-heavy pages and data-access optimizations. Open only the guide files that match the performance work.
 
 Also read the matching project guides when relevant:
+- [boost-ai-guidelines.md](../../../skills/boost-ai-guidelines.md)
 - [eager-loading-patterns.md](../../../skills/eager-loading-patterns.md)
 - [livewire-performance.md](../../../skills/livewire-performance.md)
 - [query-optimization.md](../../../skills/query-optimization.md)
@@ -24,3 +25,4 @@ Also read the matching project guides when relevant:
 - Verification patterns: [testing.md](../../../skills/testing.md)
 
 Prefer measured changes over speculative optimization.
+Before delivery, run the Performance Checklist, Livewire Component Checklist, Eloquent Query Checklist, and Deployment Checklist in [boost-ai-guidelines.md](../../../skills/boost-ai-guidelines.md) when the change touches framework rules, Livewire state, list queries, caching, queues, APIs, or deployment guidance.

@@ -7,6 +7,7 @@ use App\Models\Activities\Event;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\GroupSlugService;
+use App\Support\Search\SearchInput;
 use App\Traits\HasCounterCache;
 use Database\Factories\GroupFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -335,19 +336,24 @@ class Group extends Model implements HasMedia
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        $term = trim((string) $term);
+        $term = SearchInput::normalize($term);
 
         if ($term === '') {
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($term): void {
-            $slugTerm = str($term)->slug()->toString();
+        $descriptionPattern = SearchInput::containsPattern($term);
+        $namePattern = SearchInput::prefixPattern($term);
+        $slugTerm = str($term)->slug()->toString();
 
+        return $query->where(function (Builder $subQuery) use ($descriptionPattern, $namePattern, $slugTerm): void {
             $subQuery
-                ->where('name', 'like', "{$term}%")
-                ->orWhere('slug', 'like', "{$slugTerm}%")
-                ->orWhere('description', 'like', "%{$term}%");
+                ->where('name', 'like', $namePattern)
+                ->orWhere('description', 'like', $descriptionPattern);
+
+            if ($slugTerm !== '') {
+                $subQuery->orWhere('slug', 'like', SearchInput::prefixPattern($slugTerm));
+            }
         });
     }
 
@@ -436,14 +442,21 @@ class Group extends Model implements HasMedia
             $query->where($ownerColumn, $viewerId);
         }
 
-        if ($search !== '') {
-            $query->where(function (Builder $searchQuery) use ($search): void {
-                $slugSearch = str($search)->slug()->toString();
+        $search = SearchInput::normalize($search);
 
+        if ($search !== '') {
+            $descriptionPattern = SearchInput::containsPattern($search);
+            $namePattern = SearchInput::prefixPattern($search);
+            $slugSearch = str($search)->slug()->toString();
+
+            $query->where(function (Builder $searchQuery) use ($descriptionPattern, $namePattern, $slugSearch): void {
                 $searchQuery
-                    ->where('groups.name', 'like', "{$search}%")
-                    ->orWhere('groups.slug', 'like', "{$slugSearch}%")
-                    ->orWhere('groups.description', 'like', "%{$search}%");
+                    ->where('groups.name', 'like', $namePattern)
+                    ->orWhere('groups.description', 'like', $descriptionPattern);
+
+                if ($slugSearch !== '') {
+                    $searchQuery->orWhere('groups.slug', 'like', SearchInput::prefixPattern($slugSearch));
+                }
             });
         }
 

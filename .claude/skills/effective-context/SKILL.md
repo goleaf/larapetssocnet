@@ -7,7 +7,7 @@ description: Provide comprehensive context in prompts—files, errors, Laravel v
 
 ## Laravel 13 Baseline
 
-Use this skill for this app as Laravel 13.12.0 guidance on PHP 8.4+ with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4.3, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+Use this skill for this app as Laravel 13.12.0 guidance on PHP 8.5 locally with Composer requiring PHP `^8.4`, Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4.3, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
 
 Give the AI assistant the right context to generate accurate, relevant code. Missing context leads to generic solutions that don't fit your project.
 
@@ -24,7 +24,7 @@ Give the AI assistant the right context to generate accurate, relevant code. Mis
 - Include relevant configuration: `.env` settings, `config/` values
 
 ### Laravel Context
-- **Version**: "Laravel 13.12.0 on PHP 8.4" plus relevant package versions
+- **Version**: "Laravel 13.12.0 on PHP 8.5 locally, Composer PHP ^8.4" plus relevant package versions
 - **Dependencies**: Mention packages like Sanctum, Horizon, Telescope
 - **Patterns in use**: "using Form Requests", "jobs with Horizon", "API resources"
 - **Runner**: Specify if using Sail or host commands

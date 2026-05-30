@@ -16,6 +16,7 @@ use App\Models\Pets\PetMilestone;
 use App\Services\ChartService;
 use App\Services\PersonalityTagService;
 use App\Services\PetReactionLeaderboardService;
+use App\Support\Search\SearchInput;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Http\RedirectResponse;
@@ -232,8 +233,8 @@ class PetController extends Controller
 
     public function explore(Request $request): View
     {
-        $search = trim((string) $request->string('q'));
-        $sort = $request->string('sort')->toString() ?: 'newest';
+        $search = SearchInput::normalize($request->string('q')->toString());
+        $sort = $this->petCatalogSort($request->string('sort')->toString(), true);
         $isAdoptableFilter = ($request->filled('is_adoptable') || $request->filled('is_for_adoption'))
             ? ($request->boolean('is_adoptable') || $request->boolean('is_for_adoption'))
             : null;
@@ -266,8 +267,8 @@ class PetController extends Controller
 
     public function adopt(Request $request): View
     {
-        $search = trim((string) $request->string('q'));
-        $sort = $request->string('sort')->toString() ?: 'newest';
+        $search = SearchInput::normalize($request->string('q')->toString());
+        $sort = $this->petCatalogSort($request->string('sort')->toString(), false);
         $personalityTags = $this->normalizePersonalityTagsFilter($request->input('personality_tags'));
         $pets = Pet::paginateAdoptionCatalog([
             'q' => $search,
@@ -369,6 +370,17 @@ class PetController extends Controller
         }
 
         return app(PersonalityTagService::class)->normalize($rawTags);
+    }
+
+    private function petCatalogSort(string $sort, bool $allowWeightSort): string
+    {
+        $allowed = ['newest', 'oldest', 'name_asc', 'name_desc'];
+
+        if ($allowWeightSort) {
+            $allowed[] = 'weight_desc';
+        }
+
+        return in_array($sort, $allowed, true) ? $sort : 'newest';
     }
 
     /**

@@ -55,6 +55,7 @@
 - Device-session display and login anomaly detection may parse user agents and derive IP geography locally, but must not call a remote geolocation API during page render or login alert checks.
 - Login anomaly alerts compare the current login country against the user's last 90 days of auth audit history. Alert action links must be signed, single-use, and token-hash backed; the secure-account action clears sessions and remember tokens, creates a high-priority moderation report, and records an audit event.
 - OAuth provider data belongs in `social_accounts`; merge by provider ID first, then by verified email only.
+- Social login callbacks must enforce the same banned, deleted, pending-deletion, deactivated, suspended, two-factor, verification, and onboarding gates as password and magic-link login before recording a successful login event.
 - Logout must clear the remember token, expire the remember-me cookie, invalidate the session, regenerate the CSRF token, and record a `logout` audit event. Browser logout forms should consult the Alpine dirty-state guard before submitting when unsaved post drafts exist. Password changes and password resets should invalidate database-backed sessions.
 - Do not expose seed users, shared passwords, or quick-login shortcuts on public auth screens.
 - Record security-significant auth events in `auth_audit_logs` through `AuthAuditLogger`.

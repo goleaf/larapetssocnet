@@ -6,6 +6,7 @@ use App\Models\Identity\User;
 use App\Models\Messaging\Message;
 use App\Models\Moderation\Report;
 use App\Models\Pets\Pet;
+use App\Support\Search\SearchInput;
 use App\Traits\HasCounterCache;
 use Database\Factories\MarketplaceListingFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -110,15 +111,19 @@ class MarketplaceListing extends Model implements HasMedia
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (! $term) {
+        $term = SearchInput::normalize($term);
+
+        if ($term === '') {
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($term): void {
+        $pattern = SearchInput::containsPattern($term);
+
+        return $query->where(function (Builder $subQuery) use ($pattern): void {
             $subQuery
-                ->where('title', 'like', "%{$term}%")
-                ->orWhere('description', 'like', "%{$term}%")
-                ->orWhere('location_text', 'like', "%{$term}%");
+                ->where('title', 'like', $pattern)
+                ->orWhere('description', 'like', $pattern)
+                ->orWhere('location_text', 'like', $pattern);
         });
     }
 
@@ -185,7 +190,7 @@ class MarketplaceListing extends Model implements HasMedia
     {
         $query = self::query()
             ->with(['seller:id,name,username,avatar_path'])
-            ->search(trim((string) ($filters['q'] ?? '')))
+            ->search($filters['q'] ?? '')
             ->ofType(trim((string) ($filters['listing_type'] ?? '')));
 
         $status = static::normalizePublicStatusFilter((string) ($filters['status'] ?? ''));
@@ -201,9 +206,9 @@ class MarketplaceListing extends Model implements HasMedia
             $query->where('price', '<=', (float) $maxPrice);
         }
 
-        $location = trim((string) ($filters['location'] ?? ''));
+        $location = SearchInput::normalize($filters['location'] ?? '');
         if ($location !== '') {
-            $query->where('location_text', 'like', "%{$location}%");
+            $query->where('location_text', 'like', SearchInput::containsPattern($location));
         }
 
         static::applySort($query, (string) ($filters['sort'] ?? 'newest'));
@@ -223,7 +228,7 @@ class MarketplaceListing extends Model implements HasMedia
         $query = self::query()
             ->forSeller($seller)
             ->with(['pet:id,name'])
-            ->search(trim((string) ($filters['q'] ?? '')));
+            ->search($filters['q'] ?? '');
 
         $status = trim(strtolower((string) ($filters['status'] ?? '')));
         if ($status !== '' && $status !== 'all') {
@@ -248,7 +253,7 @@ class MarketplaceListing extends Model implements HasMedia
             ->withTrashed()
             ->forSeller($seller)
             ->with(['pet:id,name'])
-            ->search(trim((string) ($filters['q'] ?? '')));
+            ->search($filters['q'] ?? '');
 
         $status = trim(strtolower((string) ($filters['status'] ?? '')));
 

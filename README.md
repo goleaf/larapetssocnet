@@ -6,7 +6,7 @@ Application browsing pages are private by default. Guests can access authenticat
 
 ## Stack
  
-- PHP 8.4+
+- PHP 8.5 locally, with Composer requiring PHP `^8.4`
 - Laravel 13
 - Livewire 4.3
 - SQLite by default for local and shared-hosting deployments
@@ -16,13 +16,13 @@ Application browsing pages are private by default. Guests can access authenticat
 
 ## Performance Rules
 
-Project guidance targets the installed Laravel 13.12.0, Livewire 4.3.0, and PHP 8.4+ runtime. Laravel 13 supports PHP >= 8.3, but this lock currently requires PHP 8.4+ because of Symfony 8.1 and `spatie/laravel-activitylog` 5. AI agents must verify Laravel and Livewire behavior through Laravel Boost `application_info` and `search-docs` before changing framework-sensitive code.
+Project guidance targets the installed Laravel 13.12.0, Livewire 4.3.0, and current local PHP 8.5 runtime while keeping Composer's `^8.4` PHP floor. Laravel 13 supports PHP >= 8.3, but this application should not lower its runtime requirement without an explicit dependency audit. AI agents must verify Laravel and Livewire behavior through Laravel Boost `application_info` and `search-docs` before changing framework-sensitive code, then apply the checklists in `skills/boost-ai-guidelines.md`.
 
-Every Eloquent list query must declare eager loads, selected columns, pagination, sorting, and aggregate counts or existence flags where needed. `Model::preventLazyLoading(! app()->isProduction())` stays enabled outside production unless a documented, tested exception exists.
+Every Eloquent list query must declare eager loads, selected parent/relation columns, pagination strategy, deterministic sorting, and aggregate counts or existence flags where needed. `Model::preventLazyLoading(! app()->isProduction())` stays enabled outside production unless a documented, tested exception exists.
 
-Livewire components should keep heavy queries out of `render()`, keep public properties small, use `#[Computed]`, `#[Locked]`, `#[Url]`, `#[Session]`, lazy/defer loading, islands, async actions, and renderless actions where they reduce payload or query cost, and include stable `wire:key` values in loops.
+Livewire components should keep heavy queries out of `render()`, keep public properties small and serializable, use `#[Computed]`, `#[Locked]`, `#[Url]`, `#[Session]`, lazy/defer loading, islands, async actions, and renderless actions where they reduce payload or query cost, clear stale computed values after writes, and include stable `wire:key` values in loops. Use bundled lazy/deferred loading for independent widget groups, async actions for independent polling or long-running work, renderless actions for tracking/autosave side effects, and Tailwind `data-loading:*` variants on request-triggering controls.
 
-Production deploys should run optimized Composer installs, built assets, `php artisan optimize`, queue worker restarts when queues are active, OPcache resets on shared hosting, and `APP_DEBUG=false`. Performance-sensitive changes need focused Pest coverage for query bounds, cache invalidation, visibility states, and lazy-loading prevention.
+Query/cache performance changes should preserve indexes, cache compact read models with explicit keys, TTLs, user scoping, and invalidation, use `Cache::memo()` for repeated in-request cache reads, use `Cache::touch()` for TTL extension, and use cache tags only with a non-tagged fallback. API resources must use loaded relationships/counts conditionally and never trigger lazy loading. Production deploys should run optimized Composer installs, built assets, `php artisan optimize` or equivalent `config:cache` / `route:cache` / `view:cache`, queue worker restarts when queues are active, OPcache resets on shared hosting, and `APP_DEBUG=false`. Performance-sensitive changes need focused Pest coverage for query bounds, cache invalidation, visibility states, Livewire payload/state behavior, queue dispatch, and lazy-loading prevention.
 
 ## Local Setup
 

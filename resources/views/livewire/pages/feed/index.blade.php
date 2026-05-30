@@ -1,67 +1,3 @@
-<?php
-
-use App\Models\Identity\User;
-use Illuminate\Support\Carbon;
-use Livewire\Attributes\Layout;
-use Livewire\Component;
-
-new
-#[Layout('layouts.livewire-pass-through')]
-class extends Component
-{
-    public string $source = '';
-
-    public string $type = '';
-
-    public bool $showWelcomeBanner = false;
-
-    public bool $showOnboardingPetReminder = false;
-
-    public User $user;
-
-    public function mount(): void
-    {
-        $this->source = $this->sanitizeSource(request()->query('source'));
-        $this->type = $this->sanitizeType(request()->query('type'));
-
-        $this->user = $this->viewer();
-        $onboardingCompletedAt = $this->user->onboarding_completed_at;
-
-        $this->showWelcomeBanner = $onboardingCompletedAt !== null
-            && Carbon::parse((string) $onboardingCompletedAt)->greaterThanOrEqualTo(now()->subDay())
-            && ! request()->session()->has('onboarding_welcome_banner_dismissed');
-
-        $this->showOnboardingPetReminder = (bool) $this->user->onboarding_pet_reminder_pending
-            && $this->user->onboarding_pet_reminder_shown_at === null;
-
-        if ($this->showOnboardingPetReminder) {
-            $this->user->forceFill([
-                'onboarding_pet_reminder_shown_at' => now(),
-            ])->saveQuietly();
-        }
-    }
-
-    private function viewer(): User
-    {
-        $viewer = auth()->user();
-
-        abort_unless($viewer instanceof User, 403);
-
-        return $viewer;
-    }
-
-    private function sanitizeSource(mixed $source): string
-    {
-        return is_string($source) && in_array($source, ['people', 'pets'], true) ? $source : '';
-    }
-
-    private function sanitizeType(mixed $type): string
-    {
-        return is_string($type) && in_array($type, ['text', 'photo', 'video'], true) ? $type : '';
-    }
-};
-?>
-
 @section('title', __('feed.page_title'))
 
 <x-app-layout>
@@ -77,15 +13,15 @@ class extends Component
     </x-slot>
 
     <div class="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_18rem]" data-feed-surface="warm-editorial" data-ui="feed-livewire-page">
-        <livewire:feed.left-sidebar lazy />
+        <livewire:feed.left-sidebar lazy.bundle />
 
         <main class="min-w-0 space-y-4" data-ui="feed-main-column">
             @if ($showWelcomeBanner)
                 <x-ui.card padding="base">
                     <div class="flex items-start gap-3">
-                        <x-ui.avatar :src="$user->avatar_url" :name="$user->name" :user="$user" size="lg"/>
+                        <x-ui.avatar :src="$this->user->avatar_url" :name="$this->user->name" :user="$this->user" size="lg"/>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-bold text-bark">Welcome to PetSocial, {{ \Illuminate\Support\Str::before((string) $user->name, ' ') }}!</p>
+                            <p class="text-sm font-bold text-bark">Welcome to PetSocial, {{ \Illuminate\Support\Str::before((string) $this->user->name, ' ') }}!</p>
                             <p class="mt-1 text-sm leading-6 text-fur">Start exploring by reacting to posts, following more pets, or creating your first post.</p>
                         </div>
                         <form method="POST" action="{{ route('onboarding.welcome-banner.dismiss') }}">
@@ -112,6 +48,6 @@ class extends Component
             <livewire:feed.stream :source="$source" :type="$type" />
         </main>
 
-        <livewire:feed.right-sidebar lazy />
+        <livewire:feed.right-sidebar lazy.bundle />
     </div>
 </x-app-layout>

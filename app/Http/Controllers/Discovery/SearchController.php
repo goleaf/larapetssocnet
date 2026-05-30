@@ -9,8 +9,9 @@ use App\Models\Content\Post;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Support\Search\SearchInput;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class SearchController extends Controller
@@ -19,9 +20,10 @@ class SearchController extends Controller
     {
         $request->validate([
             'q' => ['nullable', 'string', 'max:80'],
+            'type' => ['nullable', 'string', 'max:32'],
         ]);
 
-        $query = trim((string) $request->string('q'));
+        $query = SearchInput::normalize($request->string('q')->toString());
         $type = (string) $request->string('type', 'users');
 
         $allowedTypes = ['users', 'pets', 'posts', 'groups', 'events', 'hashtags'];
@@ -29,7 +31,9 @@ class SearchController extends Controller
             $type = 'users';
         }
 
-        $results = $this->searchByType($type, $query);
+        $results = SearchInput::hasSearchableLength($query)
+            ? $this->searchByType($type, $query)
+            : $this->emptyResults();
 
         return view('discovery.search.index', [
             'q' => $query,
@@ -52,5 +56,13 @@ class SearchController extends Controller
             'hashtags' => Hashtag::paginateSearchResults($query),
             default => User::paginateSearchResults($viewer, $query),
         };
+    }
+
+    private function emptyResults(int $perPage = 15): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator([], 0, $perPage, 1, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
     }
 }

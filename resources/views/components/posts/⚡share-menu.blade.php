@@ -5,13 +5,16 @@ use App\Actions\Posts\CreateRepostAction;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 new class extends Component
 {
     use AuthorizesRequests;
 
+    #[Locked]
     public int $postId;
 
     public int $sharesCount;
@@ -49,6 +52,7 @@ new class extends Component
         $this->dispatch('toast-message', message: 'Reposted!', type: 'success');
     }
 
+    #[Renderless]
     public function trackCopyLink(TrackShareAction $shares): void
     {
         $viewer = auth()->user();
@@ -58,9 +62,7 @@ new class extends Component
         }
 
         $post = $this->postForSharing();
-        $result = $shares->handle($viewer, $post, 'copy_link');
-
-        $this->sharesCount = $result['shares_count'];
+        $shares->handle($viewer, $post, 'copy_link');
     }
 
     public function openQuoteComposer(): void
@@ -139,7 +141,7 @@ new class extends Component
 
  <button
  type="button"
- class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold ui-text transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
+ class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold ui-text transition data-loading:pointer-events-none data-loading:opacity-60 hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw disabled:cursor-not-allowed disabled:opacity-60"
  role="menuitem"
  wire:click="repost"
  wire:loading.attr="disabled"

@@ -5,6 +5,7 @@ namespace App\Models\Activities;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
+use App\Support\Search\SearchInput;
 use App\Traits\HasCounterCache;
 use Database\Factories\EventFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -120,15 +121,19 @@ class Event extends Model implements HasMedia
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (! $term) {
+        $term = SearchInput::normalize($term);
+
+        if ($term === '') {
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($term): void {
+        $pattern = SearchInput::containsPattern($term);
+
+        return $query->where(function (Builder $subQuery) use ($pattern): void {
             $subQuery
-                ->where('title', 'like', "%{$term}%")
-                ->orWhere('description', 'like', "%{$term}%")
-                ->orWhere('location_text', 'like', "%{$term}%");
+                ->where('title', 'like', $pattern)
+                ->orWhere('description', 'like', $pattern)
+                ->orWhere('location_text', 'like', $pattern);
         });
     }
 
@@ -203,12 +208,16 @@ class Event extends Model implements HasMedia
             });
         }
 
+        $search = SearchInput::normalize($search);
+
         if ($search !== '') {
-            $query->where(function (Builder $searchQuery) use ($locationColumn, $search): void {
+            $pattern = SearchInput::containsPattern($search);
+
+            $query->where(function (Builder $searchQuery) use ($locationColumn, $pattern): void {
                 $searchQuery
-                    ->where('events.title', 'like', "%{$search}%")
-                    ->orWhere('events.description', 'like', "%{$search}%")
-                    ->orWhere("events.{$locationColumn}", 'like', "%{$search}%");
+                    ->where('events.title', 'like', $pattern)
+                    ->orWhere('events.description', 'like', $pattern)
+                    ->orWhere("events.{$locationColumn}", 'like', $pattern);
             });
         }
 

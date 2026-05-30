@@ -1,61 +1,10 @@
-@php
- $user = auth()->user();
- $firstName = filled($user?->name) ? \Illuminate\Support\Str::of((string) $user->name)->before(' ') : __('friend');
- $profileHref = $user && Route::has('profile.show') ? route('profile.show', $user) : '#';
-
- $quickActions = collect([
- [
- 'label' => __('Share an update'),
- 'description' => __('Post a photo, care note, or adoption story.'),
- 'href' => Route::has('posts.create') ? route('posts.create') : null,
- 'icon' => '✚',
- 'tone' => 'bg-paw-light text-paw-dark',
- ],
- [
- 'label' => __('Add a pet'),
- 'description' => __('Create a pet profile with photos and details.'),
- 'href' => Route::has('pets.create') ? route('pets.create') : null,
- 'icon' => '🐾',
- 'tone' => 'bg-leaf-light text-leaf',
- ],
- [
- 'label' => __('Find groups'),
- 'description' => __('Join communities by interest, location, or species.'),
- 'href' => Route::has('groups.index') ? route('groups.index') : null,
- 'icon' => '👥',
- 'tone' => 'bg-sky-light text-sky',
- ],
- [
- 'label' => __('Browse adoption'),
- 'description' => __('See pets currently looking for a home.'),
- 'href' => Route::has('pets.adopt') ? route('pets.adopt') : null,
- 'icon' => '🏡',
- 'tone' => 'bg-amber-light text-amber',
- ],
- [
- 'label' => __('Open messages'),
- 'description' => __('Continue conversations with pet people.'),
- 'href' => Route::has('messages.index') ? route('messages.index') : null,
- 'icon' => '✉',
- 'tone' => 'bg-rose-light text-rose',
- ],
- [
- 'label' => __('Marketplace'),
- 'description' => __('List supplies or discover local pet items.'),
- 'href' => Route::has('marketplace.index') ? route('marketplace.index') : null,
- 'icon' => '🛍',
- 'tone' => 'bg-cream text-fur',
- ],
- ])->filter(fn (array $action): bool => filled($action['href']))->values();
-@endphp
-
 <x-app-layout>
  <x-slot name="header">
  <x-ui.page-header :title="__('Dashboard')" description="Your daily starting point for posts, pets, groups, and messages." icon="📊">
  <x-slot:action>
  <div class="flex flex-wrap items-center gap-2">
  <x-ui.button href="{{ route('feed.index') }}" variant="ghost" size="sm">{{ __('Open feed') }}</x-ui.button>
- <x-ui.button href="{{ $profileHref }}" variant="primary" size="sm">{{ __('View profile') }}</x-ui.button>
+ <x-ui.button href="{{ $this->profileHref }}" variant="primary" size="sm">{{ __('View profile') }}</x-ui.button>
  </div>
  </x-slot:action>
  </x-ui.page-header>
@@ -69,7 +18,7 @@
  <div>
  <p class="shell-kicker">{{ __('Welcome back') }}</p>
  <h2 class="mt-2 text-3xl font-bold font-display text-bark sm:text-4xl">
- {{ __('Hi :name, keep your pet world moving.', ['name' => $firstName]) }}
+ {{ __('Hi :name, keep your pet world moving.', ['name' => $this->firstName]) }}
  </h2>
  <p class="mt-3 max-w-2xl text-base leading-7 text-fur">
  {{ __('Use the dashboard for the next action: publish something, update a pet profile, join a group, or check conversations.') }}
@@ -77,10 +26,10 @@
  </div>
 
  <div class="flex flex-wrap gap-3">
- <x-ui.button href="{{ Route::has('posts.create') ? route('posts.create') : route('feed.index') }}" variant="primary">
+ <x-ui.button href="{{ $this->createPostHref }}" variant="primary">
  {{ __('Create post') }}
  </x-ui.button>
- <x-ui.button href="{{ Route::has('pets.explore') ? route('pets.explore') : route('feed.index') }}" variant="outline">
+ <x-ui.button href="{{ $this->explorePetsHref }}" variant="outline">
  {{ __('Explore pets') }}
  </x-ui.button>
  </div>
@@ -88,10 +37,10 @@
 
  <div class="ui-subtle-card p-4">
  <div class="flex items-center gap-3">
- <x-ui.avatar :name="$user?->name ?? __('User')" :src="$user?->avatar_url" :user="$user" size="lg"/>
+ <x-ui.avatar :name="$this->viewer?->name ?? __('User')" :src="$this->viewer?->avatar_url" :user="$this->viewer" size="lg"/>
  <div class="min-w-0">
- <p class="truncate text-sm font-semibold text-bark">{{ $user?->name ?? __('User') }}</p>
- <p class="truncate text-xs text-fur">{{ $user?->username ? '@'.$user->username : $user?->email }}</p>
+ <p class="truncate text-sm font-semibold text-bark">{{ $this->viewer?->name ?? __('User') }}</p>
+ <p class="truncate text-xs text-fur">{{ $this->viewer?->username ? '@'.$this->viewer->username : $this->viewer?->email }}</p>
  </div>
  </div>
 
@@ -102,7 +51,7 @@
  </div>
  <div class="ui-list-item px-3 py-3">
  <dt class="text-xs font-semibold uppercase tracking-[0.08em] text-fur">{{ __('Privacy') }}</dt>
- <dd class="mt-1 font-semibold text-bark">{{ $user?->is_private ? __('Private') : __('Public') }}</dd>
+ <dd class="mt-1 font-semibold text-bark">{{ $this->viewer?->is_private ? __('Private') : __('Public') }}</dd>
  </div>
  </dl>
  </div>
@@ -118,9 +67,10 @@
  </div>
 
  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
- @foreach ($quickActions as $action)
+ @foreach ($this->quickActions as $action)
  <a
  href="{{ $action['href'] }}"
+ wire:key="dashboard-action-{{ $action['key'] }}"
  class="shell-card ui-card-interactive group flex min-h-32 flex-col justify-between p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
  >
  <span class="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-soft)] text-lg {{ $action['tone'] }}" aria-hidden="true">{{ $action['icon'] }}</span>

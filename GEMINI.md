@@ -5,6 +5,18 @@ This is an active Laravel 13 PetSocial application with established domain struc
 
 Prefer `composer quality` as the broad local gate. It validates Composer metadata, checks Pint, runs PHPStan, performs a Rector dry run, checks Pest type coverage, runs the full test suite, lints SCSS, and builds assets. Keep tests meaningful: no placeholder truth assertions, focused/skipped/todo tests, or raw common HTTP status assertions when semantic assertions exist.
 
+Laravel and Livewire work must target Laravel 13.12.0, Livewire 4.3.0, and the current local PHP 8.5 runtime while keeping this app on its Composer `^8.4` PHP floor and Laravel 13's PHP >= 8.3 support. Use Laravel Boost `application_info` and `search-docs` before changing framework behavior. Every Eloquent list query must explicitly define eager loads, selected parent/relation columns, pagination, deterministic sorting, and aggregate counts/existence flags; keep `Model::preventLazyLoading(! app()->isProduction())` enabled unless the exception is documented and tested. Livewire components must avoid heavy `render()` queries, large public properties, unstable loop keys, and unnecessary re-renders; use `#[Computed]`, `#[Locked]`, `#[Url]`, `#[Session]`, lazy/defer loading, islands, async actions, and renderless actions where they reduce payload or query cost.
+
+Use Laravel Boost as the first source of truth for uncertain Laravel, Livewire, Eloquent, Blade, cache, queue, API resource, deployment, or testing behavior. Start Laravel tasks with `application_info`, then use `search-docs` with broad topic queries and relevant package filters before changing framework-sensitive code. Prefer official Laravel and Livewire APIs, Laravel-native features, PHP 8.3+ typing, constructor property promotion, readonly values, typed properties, strict return types, enums, and Laravel-supported PHP attributes where useful. Do not use deprecated Laravel, Livewire, Volt, Eloquent, Blade, queue, cache, or testing patterns.
+
+Performance checklist before commit: confirm changed list/read queries define selected columns, eager loads, filters, sorting, aggregates, and pagination; include primary and foreign keys needed by relationships; avoid per-row relationship/count/existence queries in Blade or Livewire loops; define cache keys, TTLs, user scoping, tag fallback, and invalidation; move slow side effects out of HTTP/Livewire into project-approved queued work; and run focused Pest coverage for query counts, lazy-loading prevention, cache invalidation, queue dispatch, and denied/empty states when relevant.
+
+Livewire component checklist: prefer single-file components for focused components and multi-file components for complex components; keep public properties small, safe, authorized, and serializable; never store large Eloquent collections or sensitive data in public properties; use `#[Computed]`, `#[Locked]`, `#[Url]`, and `#[Session]` deliberately; use `#[Lazy]`, `#[Defer]`, `#[Isolate]`, `#[Async]`, `#[Renderless]`, and `@island` only for clear performance or clarity gains; use `wire:show` or Alpine for simple show/hide behavior; use `wire:navigate` for internal navigation where appropriate; and add stable `wire:key` values in every loop.
+
+Eloquent query checklist: start from `Model::query()`; define selected parent columns, selected relation columns, eager loads, aggregates, filters, deterministic sorting, and pagination before rendering; use `withWhereHas()` when filtering and eager loading the same relationship; use `morphWith()`, `loadMorph()`, or `loadMorphCount()` for `morphTo` graphs; batch viewer state such as reactions, saves, follows, blocks, and permissions outside item loops; never use `Model::all()` for pages, tables, exports, queued work, or APIs unless the table is proven tiny and documented; never let user input directly choose `orderBy` columns.
+
+Cache, queue, API, and deployment checklist: use `Cache::remember()`, `Cache::memo()`, and `Cache::touch()` with explicit keys, TTLs, and invalidation; never use `Cache::flush()` on shared stores; use cache tags only with a supported-driver fallback; in this repo do not create `app/Jobs`, but every `ShouldQueue` class must define queue name, retries, backoff, timeout, fail-on-timeout, and duplicate-burst protections; API resources must use `whenLoaded()`, `whenCounted()`, conditional fields, pagination, and sensitive-column filtering; production must use `APP_ENV=production`, `APP_DEBUG=false`, `composer install --no-dev --optimize-autoloader`, production Vite assets, `php artisan optimize`, queue/long-running service reloads when active, OPcache reset on shared hosting, and no exposed debug tooling.
+
 After every implementation prompt, complete the maintenance pass before the final response: update all affected Markdown files, update `FEATURES.md` for feature scope/status changes, update `CHANGELOG.md` under `Unreleased`, check `git status --short`, stage only intended task files, commit when git delivery is requested or the task is ready for repository history, and push only when explicitly requested.
 </project-guidelines>
 
@@ -19,7 +31,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.16
+- php - 8.5
 - laravel/framework (LARAVEL) - v13
 - laravel/prompts (PROMPTS) - v0
 - laravel/boost (BOOST) - v2

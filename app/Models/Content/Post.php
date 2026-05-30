@@ -13,6 +13,7 @@ use App\Models\Social\Follow;
 use App\Services\ProfilePostOrderingService;
 use App\Services\VisibilityService;
 use App\Support\Hashtags\HashtagNormalizer;
+use App\Support\Search\SearchInput;
 use App\Traits\HasCounterCache;
 use Carbon\CarbonImmutable;
 use Database\Factories\PostFactory;
@@ -778,47 +779,49 @@ class Post extends Model implements HasMedia
 
     public function scopeSearch(Builder $query, string $term): void
     {
-        $clean = Str::limit(trim($term), 100, '');
+        $clean = SearchInput::normalize($term);
+        $pattern = SearchInput::containsPattern($clean);
         $normalizer = new HashtagNormalizer;
         $normalizedTag = $normalizer->normalizeFromInput($clean);
 
-        $query->where(function (Builder $searchQuery) use ($clean, $normalizedTag): void {
+        $query->where(function (Builder $searchQuery) use ($pattern, $normalizedTag): void {
             $searchQuery
-                ->where('body', 'like', "%{$clean}%")
-                ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($clean, $normalizedTag): void {
-                    $hashtagQuery->where('name', 'like', "%{$clean}%")
-                        ->orWhere('normalized_name', 'like', "%{$clean}%");
+                ->where('body', 'like', $pattern)
+                ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($pattern, $normalizedTag): void {
+                    $hashtagQuery->where('name', 'like', $pattern)
+                        ->orWhere('normalized_name', 'like', $pattern);
 
                     if ($normalizedTag) {
                         $hashtagQuery->orWhere('normalized_name', $normalizedTag);
                     }
                 })
-                ->orWhere('location', 'like', "%{$clean}%");
+                ->orWhere('location', 'like', $pattern);
         });
     }
 
     public function scopeExploreSearch(Builder $query, string $term): void
     {
-        $clean = Str::limit(trim($term), 100, '');
+        $clean = SearchInput::normalize($term);
+        $pattern = SearchInput::containsPattern($clean);
         $normalizer = new HashtagNormalizer;
         $normalizedTag = $normalizer->normalizeFromInput($clean);
 
-        $query->where(function (Builder $searchQuery) use ($clean, $normalizedTag): void {
+        $query->where(function (Builder $searchQuery) use ($pattern, $normalizedTag): void {
             $searchQuery
-                ->where('body', 'like', "%{$clean}%")
-                ->orWhere('location', 'like', "%{$clean}%")
-                ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($clean, $normalizedTag): void {
-                    $hashtagQuery->where('name', 'like', '%'.strtolower($clean).'%')
-                        ->orWhere('normalized_name', 'like', '%'.strtolower($clean).'%');
+                ->where('body', 'like', $pattern)
+                ->orWhere('location', 'like', $pattern)
+                ->orWhereHas('hashtags', function (Builder $hashtagQuery) use ($pattern, $normalizedTag): void {
+                    $hashtagQuery->where('name', 'like', $pattern)
+                        ->orWhere('normalized_name', 'like', $pattern);
 
                     if ($normalizedTag) {
                         $hashtagQuery->orWhere('normalized_name', $normalizedTag);
                     }
                 })
-                ->orWhereHas('user', function (Builder $userQuery) use ($clean): void {
+                ->orWhereHas('user', function (Builder $userQuery) use ($pattern): void {
                     $userQuery
-                        ->where('name', 'like', "%{$clean}%")
-                        ->orWhere('username', 'like', "%{$clean}%");
+                        ->where('name', 'like', $pattern)
+                        ->orWhere('username', 'like', $pattern);
                 });
         });
     }

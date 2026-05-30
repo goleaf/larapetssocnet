@@ -25,10 +25,12 @@
 - Keep `only()`, `skip()`, and `todo()` out of committed tests unless the team explicitly accepts a temporary disabled test.
 
 ## Performance-sensitive code
-- Add focused tests for read-heavy Laravel and Livewire changes that assert bounded query counts, eager-loaded relation availability, cache invalidation, pagination/cursor behavior, and visibility-denied branches.
+- Add focused tests for read-heavy Laravel and Livewire changes that assert bounded query counts, eager-loaded relation availability, cache invalidation, pagination/cursor behavior, Livewire payload/state behavior, and visibility-denied branches.
 - Keep a unit or architecture guard proving `Model::preventLazyLoading(! app()->isProduction())` remains enabled in non-production.
 - For Livewire components, test that lazy/deferred components can be rendered with `Livewire::withoutLazyLoading()` when assertions need final content instead of placeholders.
 - For cache-backed reads, assert both cache-hit behavior and invalidation after writes or counter updates.
+- For queued slow work, assert dispatch, queue name, uniqueness/idempotency, and retry/runtime configuration rather than running expensive work synchronously in request tests.
+- For API resources, assert conditional fields use loaded relationships/counts and do not increase query counts per item.
 - For list queries, test at least one high-volume setup where rendered items do not increase queries linearly per item.
 
 ## Controller coverage and local hooks

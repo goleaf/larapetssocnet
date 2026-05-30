@@ -7,10 +7,18 @@ globs:
 alwaysApply: true
 ---
 
-Use Laravel 13.12.0, Livewire 4.3, PHP 8.4 locally, and Laravel 13's PHP >= 8.3 support floor. Verify Laravel and Livewire guidance with Laravel Boost `application_info` and `search-docs` before changing framework behavior.
+Use Laravel 13.12.0, Livewire 4.3, PHP 8.5 locally, this app's Composer `^8.4` PHP floor, and Laravel 13's PHP >= 8.3 support floor. Verify Laravel and Livewire guidance with Laravel Boost `application_info` and `search-docs` before changing framework behavior.
 
-Every Eloquent list query must explicitly define eager loads, selected columns, pagination, deterministic sorting, and aggregate counts or existence flags. Keep `Model::preventLazyLoading(! app()->isProduction())` enabled unless a documented and tested exception exists.
+Every Eloquent list query must explicitly define eager loads, selected parent/relation columns, pagination, deterministic sorting, and aggregate counts or existence flags. Keep `Model::preventLazyLoading(! app()->isProduction())` enabled unless a documented and tested exception exists.
 
-Livewire components must avoid heavy queries in `render()`, avoid large public properties, use `#[Computed]`, `#[Locked]`, `#[Url]`, `#[Session]`, lazy/defer loading, islands, async actions, and renderless actions where appropriate, and include stable `wire:key` values in loops.
+Prefer official Laravel and Livewire APIs over third-party or deprecated examples. Use PHP 8.3+ typing, constructor property promotion, readonly values, typed properties, explicit return types, enums, and Laravel-supported PHP attributes where useful.
 
-Performance-sensitive changes need focused Pest coverage for query bounds, cache invalidation, visibility states, lazy-loading prevention, and Livewire payload/state behavior.
+Livewire checklist: prefer single-file components for focused components and multi-file components for complex components; avoid heavy queries in `render()`; keep public properties small, safe, authorized, and serializable; never store large Eloquent collections or sensitive data publicly; use `#[Computed]`, `#[Locked]`, `#[Url]`, `#[Session]`, lazy/defer loading, `@island`, async actions, and renderless actions where appropriate; use `wire:show` or Alpine for simple show/hide behavior; use `wire:navigate` for suitable internal links; clear stale computed values after writes; include stable `wire:key` values in loops.
+
+Eloquent checklist: start from `Model::query()`; select parent and relation columns explicitly; include primary and foreign keys needed by relationships; define eager loads, filters, sorting, aggregates, and pagination before rendering; use `withWhereHas()` for matching filter/eager-load constraints; use `morphWith()` or `loadMorph()` for `morphTo`; batch viewer reactions, saves, follows, blocks, and permissions outside loops; never use `Model::all()` for pages, tables, exports, queued work, or APIs unless tiny and documented.
+
+Cache/queue/API checklist: use `Cache::remember()`, `Cache::memo()`, and `Cache::touch()` with explicit keys, TTLs, and invalidation; do not use `Cache::flush()` on shared stores; use cache tags only with a supported-driver fallback; move slow work out of HTTP and Livewire into project-approved queued work without creating `app/Jobs`; define queue names, retries, backoff, timeouts, fail-on-timeout, and duplicate-burst protections for `ShouldQueue`; API resources must use `whenLoaded()`, `whenCounted()`, conditional fields, pagination, sensitive-column filtering, and query-count tests for important endpoints.
+
+Performance-sensitive changes need focused Pest coverage for query bounds, cache invalidation, visibility states, lazy-loading prevention, queue dispatch, and Livewire payload/state behavior.
+
+Deployment checklist: production uses `APP_ENV=production`, `APP_DEBUG=false`, `composer install --no-dev --optimize-autoloader`, production Vite assets, `php artisan optimize`, queue/long-running service reloads when active, OPcache reset on shared hosting, and no exposed Telescope, Debugbar, or verbose query logging.

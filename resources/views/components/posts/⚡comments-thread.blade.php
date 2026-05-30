@@ -19,6 +19,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 new class extends Component
@@ -206,6 +207,7 @@ new class extends Component
         $this->dispatchThreadUpdated();
     }
 
+    #[Renderless]
     public function autosaveDraft(CommentDraftService $drafts): void
     {
         $viewer = $this->viewer();

@@ -5,10 +5,12 @@ use App\Http\Requests\Moderation\StoreProfileReportRequest;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public int $profileUserId;
 
     public string $profileDisplayName = '';

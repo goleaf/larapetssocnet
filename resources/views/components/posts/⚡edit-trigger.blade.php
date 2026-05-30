@@ -2,6 +2,7 @@
 
 use App\Models\Content\Post;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -9,6 +10,7 @@ new class extends Component
 {
     use AuthorizesRequests;
 
+    #[Locked]
     public int $postId;
 
     public bool $open = false;

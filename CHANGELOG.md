@@ -45,6 +45,9 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed the authenticated dashboard from a closure-rendered Blade page to a class-based full-page Livewire component with computed UI data and no legacy `dashboard.index` view.
+- Changed the feed page shell from an anonymous Livewire SFC to a class-based full-page Livewire component, kept its Blade template markup-only, moved skipped-pet reminder persistence into an onboarding action, bundled lazy sidebars, marked feed new-post polling async, and added `data-loading` styles to feed/share controls.
+- Changed post copy-link tracking and post/comment draft autosaves to renderless Livewire actions to avoid avoidable re-renders.
 - Documented that Horizon is not installed for the current queue runtime, and added guardrails for any future Horizon adoption to require Redis-backed queues, `QueueName::workerOrder()` supervisor priority, dashboard authorization, and `horizon:terminate` deploy restarts.
 - Changed queued application work to share structured failure handling: every app `ShouldQueue` class using the queue runtime trait now logs job class, connection, queue, unique ID, retry runtime, and exception metadata when Laravel marks the job failed.
 - Changed queue naming to encode explicit priorities: `mail` first for latency-sensitive auth/security mail, `notifications` second for user-visible notification work, `comments` third for comment fan-out/counter maintenance, and `default` last for framework/package fallback jobs.
@@ -54,7 +57,7 @@
 - Changed queued comment mention dispatch to batch recipient block, follow, pet-visibility, and role checks before creating notification jobs, avoiding per-mentioned-user visibility queries.
 - Changed Livewire comment threads so comment reactions call the parent thread component, mention notifications dispatch through queued batch jobs, thread subscription creation runs from the comment observer, and deleted-comment post counters finalize in a queued job.
 - Reorganized notification classes under provider and domain folders in `app/Notifications`.
-- Updated AI/rules guidance, Boost agent configuration, and local skills for Laravel 13.12.0, Livewire 4.3, PHP 8.4+ lock compatibility, explicit Eloquent list-query contracts, Livewire payload minimization, production optimization, and performance-sensitive testing.
+- Updated AI/rules guidance, Boost agent configuration, and local skills for Laravel 13.12.0, Livewire 4.3, PHP 8.5 local runtime with Composer `^8.4` compatibility, `laravel/boost:^2.0`, a curated safe Boost skill set, explicit Eloquent list-query contracts, Livewire payload minimization, cache/query/API performance discipline, production optimization, and performance-sensitive testing.
 - Changed comment preview and Top sorting to use the stored comment quality score before falling back to reaction count and recency.
 - Moved direct-message sending into the Messaging action namespace and kept message delivery behavior covered by focused tests.
 - Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.
@@ -96,6 +99,8 @@
 - Fixed the FTP deploy path to upload one archive and run a token-protected server-side cleanup/extract step instead of mirroring every folder over FTP.
 - Fixed the FTP deployment workflow's Node setup action to use the Node 24-compatible action runtime.
 - Fixed login failure handling so legacy remote auth audit tables cannot turn invalid sign-in attempts into server errors.
+- Fixed social login so enum-restricted accounts are rejected before successful-login auditing or timestamp updates.
+- Fixed auth security model serialization to hide magic-link, emergency-lock, and login-alert token secrets.
 - Fixed FTP archive deployments to reset OPcache after extraction so shared hosting serves the newly deployed PHP files immediately.
 - Fixed first-install SQLite FTP deployments to temporarily install seeder-only development dependencies before restoring production-only dependencies for the uploaded archive.
 - Fixed the production login smoke workflow to parse the Livewire CSRF token and only install FTP diagnostics tooling after smoke failures.
@@ -109,6 +114,8 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added dashboard Livewire route, component rendering, template-structure, and route query-count coverage.
+- Added Livewire performance architecture coverage for bundled lazy sidebars, async polling, renderless side effects, and loading-state styling.
 - Added feed query assertions that main feed posts hydrate author media relations without lazy loading.
 - Added comment enhancement coverage for per-post draft restore/cleanup, GIF selection, search highlighting, eager-loaded reaction faces, thread subscription notifications, and translation caching.
 - Added comment-thread coverage for three-level replies, deeper reply flattening, preview loading, expandable reply threads, pinned comments, blocking commenters, full-page sorting, 500-character validation, and one-hour edit-window enforcement.
@@ -159,6 +166,7 @@
 - Added Livewire registration coverage for route wiring, authenticated redirects, successful account creation, username suggestions, username/email validation, underage DOB rejection, common-password rejection, and honeypot false success.
 - Added schema coverage proving the authentication database changes remain in one focused migration and that the requested auth indexes exist.
 - Added lifecycle coverage for magic login links, password reset non-enumeration and session invalidation, Google OAuth account creation/returning/merge flows, device-session scoping, and TOTP/recovery-code challenges.
+- Added auth hardening coverage for enum-restricted social login rejection and serialized token-secret hiding.
 - Updated pet visibility, personality-tag, and profile pet wizard assertions to match the current config-backed and global-wizard behavior.
 
 ### Changed
@@ -336,7 +344,7 @@
 - Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, record profile views with insert-or-ignore writes against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.
-- Updated all project-installed Laravel Superpowers skills with the Laravel 13.12.0 / PHP 8.4+ baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
+- Updated all project-installed Laravel Superpowers skills with the Laravel 13.12.0 / PHP 8.5 local / PHP `^8.4` Composer baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
 - Clarified agent and project skill guidance so every Laravel task starts with `using-laravel-superpowers` and then activates every matching project/router skill.
 - Updated the pet profile page to remove the page-local width cap and align the profile summary, tabs, and tab content with the app header block.
 - Migrated shared UI primitives, Tailwind theme aliases, app shell, guest shell, forms, buttons, cards, alerts, badges, and component-library examples to the Warm Editorial visual system.

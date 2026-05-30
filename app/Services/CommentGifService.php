@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\Search\SearchInput;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
@@ -12,12 +13,12 @@ class CommentGifService
      */
     public function search(string $query): array
     {
-        $query = trim($query);
+        $query = SearchInput::normalize($query);
         $endpoint = (string) config('services.gif.endpoint', '');
         $apiKey = (string) config('services.gif.key', '');
         $provider = (string) config('services.gif.provider', 'tenor');
 
-        if ($query === '' || $endpoint === '' || $apiKey === '') {
+        if (! SearchInput::hasSearchableLength($query) || $endpoint === '' || $apiKey === '') {
             return [];
         }
 

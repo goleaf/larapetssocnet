@@ -3,7 +3,7 @@
 Right sidebar widgets on feed page.
 
 ## Rule
-- Feed sidebars are lazy Livewire child components under the full-page `pages.feed.index` shell.
+- Feed sidebars are bundled lazy Livewire child components under the full-page `pages.feed.index` shell.
 - Right-sidebar aggregate data is fetched through `FeedService` from `feed.right-sidebar`.
 - Sidebar components own their narrow queries so the center feed stream can render first.
 - Keep sidebar queries capped, eager-loaded, and independent from the center feed pagination state.

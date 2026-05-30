@@ -19,7 +19,7 @@ Also activate other matching skills when relevant:
 - Hooks and skill routing: [hooks.md](../../../hooks.md), [hooks.md](../../../skills/hooks.md), [skills.md](../../../skills.md), [skill-map.md](../../../skills/skill-map.md)
 - Localization and Blade normalization: [localization-light-ui-workflow.md](../../../skills/localization-light-ui-workflow.md), [blade.md](../../../skills/blade.md), [tailwind.md](../../../skills/tailwind.md)
 - Git close-out workflow: [git-changelog-workflow.md](../../../skills/git-changelog-workflow.md)
-- Core Laravel project rules: [laravel.md](../../../skills/laravel.md), [forms.md](../../../skills/forms.md)
+- Core Laravel project rules: [laravel.md](../../../skills/laravel.md), [boost-ai-guidelines.md](../../../skills/boost-ai-guidelines.md), [forms.md](../../../skills/forms.md)
 
 ## End-of-Prompt Close-Out
 

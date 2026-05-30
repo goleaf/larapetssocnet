@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Identity\User;
 use App\Models\Marketplace\MarketplaceListing;
 use App\Models\Pets\Pet;
+use App\Support\Search\SearchInput;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -120,9 +121,16 @@ class AdoptionService
             ->when($filters['free'] ?? false, fn ($q) => $q->where(function ($q): void {
                 $q->whereNull('adoption_fee')->orWhere('adoption_fee', 0);
             }))
-            ->when($filters['location'] ?? null, fn ($q, $l) => $q->whereHas('owner', fn ($o) => $o->where('location', 'like', "%{$l}%")))
+            ->when($this->searchPattern($filters['location'] ?? null), fn ($q, string $pattern) => $q->whereHas('owner', fn ($o) => $o->where('location', 'like', $pattern)))
             ->latest('adoption_listed_at')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    private function searchPattern(mixed $value): ?string
+    {
+        $search = SearchInput::normalize($value);
+
+        return SearchInput::hasSearchableLength($search) ? SearchInput::containsPattern($search) : null;
     }
 }

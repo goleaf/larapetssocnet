@@ -24,6 +24,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -931,6 +932,7 @@ new class extends Component
         $this->markDraftDirty();
     }
 
+    #[Renderless]
     public function autosaveDraft(PostDraftService $drafts): void
     {
         if ($this->isEditMode) {

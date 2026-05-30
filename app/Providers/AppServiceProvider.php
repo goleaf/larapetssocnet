@@ -160,6 +160,32 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('expensive-search', function (Request $request): array {
+            $key = (string) ($request->user()?->getKey() ?? $request->ip());
+
+            return [
+                Limit::perMinute(40)->by('minute:'.$key),
+                Limit::perHour(300)->by('hour:'.$key),
+            ];
+        });
+
+        RateLimiter::for('catalog-browse', function (Request $request): array {
+            $key = (string) ($request->user()?->getKey() ?? $request->ip());
+
+            return [
+                Limit::perMinute(90)->by('minute:'.$key),
+                Limit::perHour(600)->by('hour:'.$key),
+            ];
+        });
+
+        RateLimiter::for('polling-refresh', function (Request $request): array {
+            $key = (string) ($request->user()?->getKey() ?? $request->ip());
+
+            return [
+                Limit::perMinute(120)->by('minute:'.$key),
+            ];
+        });
+
         Pet::observe(PetObserver::class);
         Message::observe(MessageObserver::class);
         Post::observe(PostObserver::class);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Content\Post;
 use App\Services\ModerationService;
+use App\Support\Search\SearchInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,15 +14,17 @@ class PostController extends Controller
 {
     public function index(Request $request): View
     {
+        $search = SearchInput::normalize($request->input('q'));
+
         $posts = Post::withTrashed()
             ->with(['author', 'media'])
-            ->when($request->q, fn ($q, $s) => $q->where('body', 'like', "%{$s}%"))
+            ->when(SearchInput::hasSearchableLength($search), fn ($q) => $q->where('body', 'like', SearchInput::containsPattern($search)))
             ->when($request->filter === 'deleted', fn ($q) => $q->onlyTrashed())
             ->when($request->filter === 'reported', fn ($q) => $q->whereHas('reports', fn ($r) => $r->where('status', 'pending')))
             ->latest()
             ->paginate(30);
 
-        return view('admin.posts.index', ['posts' => $posts]);
+        return view('admin.posts.index', ['posts' => $posts, 'q' => $search]);
     }
 
     public function destroy(Post $post): JsonResponse

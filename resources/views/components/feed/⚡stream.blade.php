@@ -6,6 +6,7 @@ use App\Services\FeedService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Async;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -113,6 +114,7 @@ new class extends Component
         $this->rememberReadPosition();
     }
 
+    #[Async]
     public function checkForNewPosts(): void
     {
         $this->ensureLoaded();
@@ -540,7 +542,7 @@ new class extends Component
                             type="button"
                             wire:click="setSource('{{ $filter['value'] }}')"
                             @class([
-                                'inline-flex min-h-10 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
+                                'inline-flex min-h-10 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors data-loading:pointer-events-none data-loading:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
                                 'border-paw-light bg-paw-light text-paw-dark' => $data['source'] === $filter['value'],
                                 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' => $data['source'] !== $filter['value'],
                             ])
@@ -557,7 +559,7 @@ new class extends Component
                             type="button"
                             wire:click="setType('{{ $filter['value'] }}')"
                             @class([
-                                'inline-flex min-h-10 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
+                                'inline-flex min-h-10 items-center rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors data-loading:pointer-events-none data-loading:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
                                 'border-paw-light bg-paw-light text-paw-dark' => $data['type'] === $filter['value'],
                                 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' => $data['type'] !== $filter['value'],
                             ])
@@ -574,7 +576,7 @@ new class extends Component
                             type="button"
                             wire:click="setRanking('{{ $filter['value'] }}')"
                             @class([
-                                'inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
+                                'inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors data-loading:pointer-events-none data-loading:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
                                 'border-paw-light bg-paw-light text-paw-dark' => $data['ranking'] === $filter['value'],
                                 'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' => $data['ranking'] !== $filter['value'],
                             ])
@@ -605,7 +607,7 @@ new class extends Component
             <button
                 type="button"
                 wire:click="jumpToLatest"
-                class="inline-flex min-h-10 items-center rounded-pill border border-whisker/40 bg-warm-white px-4 text-sm font-bold text-paw shadow-card transition hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+                class="inline-flex min-h-10 items-center rounded-pill border border-whisker/40 bg-warm-white px-4 text-sm font-bold text-paw shadow-card transition data-loading:pointer-events-none data-loading:opacity-60 hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
             >
                 {{ __('feed.jump_to_latest') }}
             </button>
@@ -617,7 +619,7 @@ new class extends Component
             <button
                 type="button"
                 wire:click="loadNewPosts"
-                class="inline-flex min-h-10 items-center rounded-pill border border-paw-light bg-paw px-4 text-sm font-bold text-white shadow-card transition hover:bg-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+                class="inline-flex min-h-10 items-center rounded-pill border border-paw-light bg-paw px-4 text-sm font-bold text-white shadow-card transition data-loading:pointer-events-none data-loading:opacity-60 hover:bg-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
             >
                 {{ trans_choice('feed.new_posts_indicator', $data['newPostsCount'], ['count' => $data['newPostsCount']]) }}
             </button>

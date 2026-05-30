@@ -31,17 +31,72 @@ The project root is the shared-hosting document surface. Root `.htaccess` must k
 Application pages are closed to guests by default. Keep Explore, search, profiles, posts, pets, adoption, marketplace, events, hashtags, tips, groups, feeds, messages, notifications, and settings behind the authenticated application route group unless a new product-policy change explicitly opens them.
 
 ## Laravel, Livewire & Performance Rules
-Use the installed Laravel 13.12.0, Livewire 4.3.0, and PHP 8.4+ runtime. Laravel 13 supports PHP >= 8.3, but this application's current lock file does not install on PHP 8.3 because locked Symfony 8.1 components and `spatie/laravel-activitylog` 5 require PHP 8.4+. Before changing Laravel or Livewire behavior, verify current official guidance through Laravel Boost `application_info` and `search-docs`, then apply the project skills that match the touched domain.
+Use the installed Laravel 13.12.0, Livewire 4.3.0, and current local PHP 8.5 runtime. Laravel 13 supports PHP >= 8.3, while this application's Composer requirement is `^8.4`; do not lower the project runtime floor without an explicit dependency audit. Before changing Laravel or Livewire behavior, verify current official guidance through Laravel Boost `application_info` and `search-docs`, then apply the project skills that match the touched domain.
 
-Every Eloquent list query must explicitly define its relation graph, selected columns, pagination strategy, deterministic sorting, and aggregate counts or existence flags where needed. Start from `Model::query()`, prefer relationships and scopes, use `with()`, constrained eager loads, `morphWith()`, `withCount()`, `withExists()`, and cursor pagination for feeds/infinite scroll. Never access relationship properties, count relations, check saved/reaction/follow state, or run policy-adjacent lookup queries inside Blade or Livewire loops unless that data was eagerly loaded or batched first.
+Every Eloquent list query must explicitly define its relation graph, parent and relation selected columns, pagination strategy, deterministic sorting, and aggregate counts or existence flags where needed. Start from `Model::query()`, prefer relationships and scopes, use `with()`, constrained eager loads, `morphWith()`, `withCount()`, `withExists()`, and cursor pagination for feeds/infinite scroll. Cursor pagination must order by stable unique columns. Never access relationship properties, count relations, check saved/reaction/follow state, or run policy-adjacent lookup queries inside Blade or Livewire loops unless that data was eagerly loaded or batched first.
 
 `Model::preventLazyLoading(! app()->isProduction())` must stay enabled unless an exception is documented in the affected guide and covered by tests. Laravel automatic eager loading is beta; do not use it as the primary N+1 strategy for critical surfaces.
 
-Livewire 4 components must keep public state small and serializable. Avoid heavy queries in `render()`; move expensive data to focused query methods, `#[Computed]` properties, cached services, lazy/defer-loaded components, islands, async actions, or renderless actions when appropriate. Store model IDs or compact arrays instead of large Eloquent models/collections in public properties, use `#[Locked]` for client-immutable identifiers, use `#[Url]` only for bookmarkable filters, use `#[Session]` only for small user-specific state, and include stable `wire:key` / `:wire:key` values in every rendered loop or nested component loop.
+Livewire 4 components must keep public state small, serializable, and authorized. Avoid heavy queries in `render()`; move expensive data to focused query methods, `#[Computed]` properties, cached services, lazy/defer-loaded components, islands, async actions, or renderless actions when appropriate. Store model IDs or compact arrays instead of large Eloquent models/collections in public properties, use `#[Locked]` for client-immutable identifiers, use `#[Url]` only for bookmarkable filters, use `#[Session]` only for small user-specific state, clear stale computed values with `unset($this->property)` after writes, and include stable `wire:key` / `:wire:key` values in every rendered loop or nested component loop. Use `lazy.bundle` or `defer.bundle` for groups of independent widgets when fewer requests matter, `#[Async]` or `.async` only for independent long-running actions or polling, `#[Renderless]` / `.renderless` for tracking and autosave side effects that do not need a re-render, and Tailwind `data-loading:*` variants on request-triggering controls.
 
-Query and cache performance changes must be measured. Add or preserve indexes for new `where`, `join`, `exists`, and `order by` paths; cache expensive read models with explicit keys and invalidation; use tag-aware cache only with a fallback for cache stores that do not support tags; keep production deploys on `php artisan optimize`, built assets, OPcache reset, queue worker restart, and `APP_DEBUG=false`.
+Query and cache performance changes must be measured. Add or preserve indexes for new `where`, `join`, `exists`, and `order by` paths; cache compact arrays/read models with explicit keys and invalidation instead of arbitrary graph-loaded Eloquent objects; use tag-aware cache only with a fallback for cache stores that do not support tags; keep production deploys on optimized Composer autoloads, built assets, `php artisan optimize` or equivalent `config:cache` / `route:cache` / `view:cache`, OPcache reset, queue worker restart, and `APP_DEBUG=false`.
 
 Performance-sensitive code must be tested with focused Pest coverage: assert query counts or bounded queries for critical list pages, assert lazy-loading prevention remains enabled, test cache invalidation, and cover success plus denied/empty states for visibility-aware queries.
+
+## Boost Search Docs Before Coding
+Use Laravel Boost as the first source of truth for uncertain Laravel, Livewire, Eloquent, Blade, cache, queue, API resource, deployment, or testing behavior. Start Laravel tasks with `application_info`, then use `search-docs` with broad topic queries and relevant package filters before changing framework-sensitive code. Prefer official Laravel and Livewire APIs over third-party packages or older examples, and do not use deprecated Laravel, Livewire, Volt, Eloquent, Blade, queue, cache, or testing patterns.
+
+## Modern Laravel, PHP, And Livewire Rules
+- Use Laravel 13.x patterns and PHP 8.3+ syntax. This app currently runs on PHP 8.5 locally and requires Composer PHP `^8.4`, so do not lower the runtime floor without a dependency audit.
+- Prefer constructor property promotion, typed and readonly properties, explicit return types, enums, immutable value objects, and Laravel-supported PHP attributes when they improve clarity.
+- Prefer Laravel-native features before adding packages.
+- Use Livewire 4.x patterns. Prefer single-file components for focused components and multi-file components for complex components.
+- Use `#[Computed]` for derived data, `#[Locked]` for IDs and immutable public state, and `#[Lazy]`, `#[Defer]`, `#[Isolate]`, `#[Async]`, `#[Renderless]`, or `@island` only when they improve clarity or measured performance.
+- Use `wire:show` or Alpine for simple client-side show/hide behavior, `wire:navigate` for appropriate internal navigation, and stable `wire:key` values in every rendered loop.
+
+## Backend Performance And Safety Rules
+- Never allow N+1 queries. Never access unloaded relationships, relationship counts, sums, or existence checks inside loops.
+- Use `with()`, constrained eager loads, `load()`, `loadMissing()`, `withCount()`, `withSum()`, `withExists()`, `withAvg()`, `withMin()`, `withMax()`, `withWhereHas()`, `morphWith()`, and `loadMorph()` deliberately.
+- Never use `Model::all()` for pages, tables, exports, queued work, or APIs unless the table is proven tiny and documented. Use `paginate()`, `simplePaginate()`, `cursorPaginate()`, `chunkById()`, `lazyById()`, `lazy()`, or `cursor()` for the use case.
+- Add or preserve indexes for foreign keys, filters, sorting columns, search columns, and common composite query patterns. Do not let user input directly choose `orderBy` columns.
+- Avoid raw SQL unless the query builder cannot express the query clearly; bind parameters safely when raw SQL is necessary.
+- Use `DB::listen()` and `DB::whenQueryingForLongerThan()` only in local, testing, or explicit performance monitoring contexts.
+- Use `Cache::remember()` for stable expensive data, `Cache::memo()` to avoid repeated cache hits in one request or job, and `Cache::touch()` when only TTL extension is needed. Do not use `Cache::flush()` on shared stores, do not cache user-specific data with global keys, and use cache tags only with a driver-supported fallback.
+- Move slow work out of HTTP and Livewire actions into queued, idempotent work. In this repository, do not create `app/Jobs`; use existing services, actions, commands, observers, notifications, or framework/package queued classes, and define queue name, retries, backoff, timeout, fail-on-timeout, and duplicate-burst protections for every `ShouldQueue` class.
+- API resources must not lazy-load relationships. Use `whenLoaded()`, `whenCounted()`, conditional fields, pagination for large responses, sensitive-column filtering, and query-count tests for important endpoints. Use JSON:API resources only when JSON:API compliance is required.
+
+## Performance Checklist Before Commit
+- Confirm all changed list/read queries define selected columns, eager loads, filters, sorting, aggregates, and pagination.
+- Confirm selected columns include primary keys and foreign keys required by eager-loaded relationships.
+- Confirm no Blade or Livewire loop performs per-row relationship, policy-adjacent, saved/reaction/follow, count, sum, or exists queries.
+- Confirm cache keys, TTLs, user scoping, tag fallback, and invalidation are explicit and tested.
+- Confirm slow side effects are queued or moved into project-approved background layers, not run inside the request.
+- Run focused Pest coverage for query counts, lazy-loading prevention, cache invalidation, queue dispatch, and denied/empty states when relevant.
+
+## Livewire Component Checklist
+- Keep public properties small, safe, authorized, and serializable; never store large Eloquent collections or sensitive data in public properties.
+- Use `#[Computed]` for derived reads and clear stale computed values with `unset($this->property)` after writes.
+- Use `#[Locked]` for immutable IDs and client-immutable state, `#[Url]` only for bookmarkable filters, and `#[Session]` only for small user-specific state.
+- Avoid heavy queries in `render()`; move expensive reads to focused query methods, computed properties, services, lazy/defer-loaded regions, or islands.
+- Use `@island` for expensive independent regions, but do not put islands inside loops or conditionals.
+- Prefer `wire:show` or Alpine for simple visibility toggles and use `wire:navigate` for internal navigation when it fits the route flow.
+- Add stable `wire:key` / `:wire:key` values to every loop and nested Livewire component loop.
+- Add Livewire tests for important components, including locked-property tampering, lazy/deferred rendering, validation, authorization, and query bounds where relevant.
+
+## Eloquent Query Checklist
+- Start from `Model::query()` and use relationships/scopes before raw SQL.
+- Define selected parent columns and relation columns; include every key Eloquent needs for hydration.
+- Define eager loads, constrained eager loads, aggregate counts/existence flags, filters, deterministic sorting, and pagination before rendering.
+- Use `withWhereHas()` when filtering and eager loading the same relationship.
+- Use `morphWith()`, `loadMorph()`, or `loadMorphCount()` for `morphTo` relation graphs.
+- Batch viewer-specific state such as reactions, saves, follows, blocks, and permissions outside item loops.
+
+## Deployment Checklist
+- Production must use `APP_ENV=production` and `APP_DEBUG=false`.
+- Deploy with `composer install --no-dev --optimize-autoloader`, production Vite assets, and `php artisan optimize`.
+- Reload queue workers and any long-running services such as Reverb, Octane, or Horizon when they are installed and active; reset OPcache on shared hosting.
+- Keep Telescope, Debugbar, verbose query logging, and other debug tooling unavailable in production.
+- Preserve the repository-root shared-hosting web surface and root `.htaccess` protections.
 
 ## AI Skill Activation
 This project has domain-specific skills available. You MUST activate `using-laravel-superpowers` at the start of every Laravel task in this repository, including implementation, review, debugging, testing, documentation, and maintenance work. You MUST also activate every other matching project/router skill for the domains touched by the prompt; do not treat Superpowers as a replacement for project-specific, Pest, Tailwind, security, performance, workflow, or memory skills.
@@ -56,6 +111,7 @@ This project has domain-specific skills available. You MUST activate `using-lara
 - `larapetssocnet-test-hooks-guides` — Project-specific router for local git hooks, changed-controller test coverage, controller-test mapping, and quality-gate expectations documented in `hooks.md`, `controller-testing.md`, `skills/hooks.md`, and `skills/controller-testing.md`.
 - `larapetssocnet-memory-guides` — Project-specific router for memory lookup/update rules, durable preferences, and prior rollout context documented in `skills/memory.md`.
 - Detailed markdown guides in `skills/*.md` and upstream Superpowers guides in `.claude/skills/` are intentionally not all exposed as Codex local skills, to avoid overflowing the skills context budget. Use the compact router skills above to find and read only the matching guide files.
+- `livewire-development` — Boost-generated Livewire 4 skill for component formats, islands, async actions, directives, and testing; use it alongside project UI and performance routers for Livewire-specific work.
 - `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, architecture testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
 - `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
 
@@ -100,6 +156,20 @@ Each PR should include:
 ===
 
 <laravel-boost-guidelines>
+=== .ai/larapetssocnet-laravel-livewire-performance rules ===
+
+# PetSocial Laravel And Livewire AI Rules
+
+Use Laravel Boost `application_info` and `search-docs` before changing uncertain Laravel, Livewire, Eloquent, Blade, cache, queue, API resource, deployment, or testing behavior. Prefer official Laravel and Livewire APIs, Laravel-native features, PHP 8.3+ typing, constructor property promotion, readonly values, typed properties, explicit return types, enums, and Laravel-supported PHP attributes. Do not use deprecated Laravel, Livewire, Volt, Eloquent, Blade, queue, cache, or testing patterns.
+
+Target Laravel 13.x, Livewire 4.x, the local PHP 8.5 runtime, this app's Composer PHP `^8.4` floor, and Laravel 13's PHP >= 8.3 support floor. Keep project rules in `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `skills.md`, and the matching `skills/*.md` guides above generic examples.
+
+Livewire checklist: prefer single-file components for focused components and multi-file components for complex components; keep public properties small, safe, authorized, and serializable; never store large Eloquent collections or sensitive data in public properties; use `#[Computed]`, `#[Locked]`, `#[Url]`, and `#[Session]` deliberately; use `#[Lazy]`, `#[Defer]`, `#[Isolate]`, `#[Async]`, `#[Renderless]`, and `@island` only for clarity or measured performance; use `wire:show` or Alpine for simple show/hide behavior; use `wire:navigate` where appropriate; and add stable `wire:key` values in every loop.
+
+Eloquent checklist: start from `Model::query()`; select parent and relation columns explicitly; include primary and foreign keys needed by relationships; define eager loads, filters, sorting, aggregates, and pagination before rendering; use `withWhereHas()` when filtering and eager loading the same relationship; use `morphWith()`, `loadMorph()`, or `loadMorphCount()` for `morphTo` graphs; batch viewer state outside loops; never use `Model::all()` for pages, tables, exports, queued work, or APIs unless tiny and documented.
+
+Cache, queue, API, and deployment checklist: use `Cache::remember()`, `Cache::memo()`, and `Cache::touch()` with explicit keys, TTLs, and invalidation; never use `Cache::flush()` on shared stores; use cache tags only with a supported-driver fallback; do not create `app/Jobs` in this repo, but define queue names, retries, backoff, timeouts, fail-on-timeout, and duplicate-burst protections for `ShouldQueue`; API resources must use `whenLoaded()`, `whenCounted()`, conditional fields, pagination, sensitive-column filtering, and query-count tests; production must use `APP_ENV=production`, `APP_DEBUG=false`, optimized Composer autoloads, production Vite assets, `php artisan optimize`, worker/service reloads when active, OPcache reset on shared hosting, and no exposed debug tooling.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -110,7 +180,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4
+- php - 8.5
 - laravel/framework (LARAVEL) - v13
 - laravel/prompts (PROMPTS) - v0
 - livewire/livewire (LIVEWIRE) - v4

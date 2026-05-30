@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -26,6 +27,7 @@ new class extends Component
 {
     use WithFileUploads;
 
+    #[Locked]
     public int $userId;
 
     public ?string $focusTarget = null;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Pets;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pets\PetCareTip;
+use App\Support\Search\SearchInput;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,12 +20,14 @@ class PetCareTipController extends Controller
         $query = PetCareTip::query();
         $userId = $request->user()?->getAuthIdentifier();
 
-        $search = trim((string) $request->string('q'));
-        if ($search !== '') {
-            $query->where(function ($innerQuery) use ($search): void {
+        $search = SearchInput::normalize($request->string('q')->toString());
+        if (SearchInput::hasSearchableLength($search)) {
+            $pattern = SearchInput::containsPattern($search);
+
+            $query->where(function ($innerQuery) use ($pattern): void {
                 $innerQuery
-                    ->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%");
+                    ->where('title', 'like', $pattern)
+                    ->orWhere('content', 'like', $pattern);
             });
         }
 
@@ -44,6 +47,10 @@ class PetCareTipController extends Controller
         });
 
         $sort = $request->string('sort')->toString() ?: 'latest';
+
+        if (! in_array($sort, ['latest', 'oldest', 'helpful'], true)) {
+            $sort = 'latest';
+        }
 
         match ($sort) {
             'helpful' => $query->orderByDesc('helpful_count'),

@@ -5,17 +5,21 @@ Prevent N+1 in social-network pages.
 ## Detection
 - Use Debugbar in local.
 - Use `DB::listen()` in local/dev.
+- Use `DB::whenQueryingForLongerThan()` only in local, testing, or explicit performance monitoring contexts.
 - Assert query counts in tests for critical endpoints.
 - Keep `Model::preventLazyLoading(! app()->isProduction())` enabled so local and test runs catch accidental relation access.
 - Treat Laravel automatic eager loading as beta; it may help exploratory development, but explicit eager loading remains mandatory for production-critical list surfaces.
 
 ## Rules
-- Every Eloquent list query must define its relation graph, selected columns, pagination strategy, deterministic sort order, and aggregate counts/existence flags before rendering.
+- Every Eloquent list query must define its relation graph, selected parent and relation columns, pagination strategy, deterministic sort order, and aggregate counts/existence flags before rendering.
 - Select only the parent columns and relation columns the view needs. When constraining eager-load columns, include `id` and every foreign key required by the relationship.
 - Use `withCount()`, `withExists()`, `withSum()`, batched `pluck()->flip()`, or precomputed counter caches instead of per-row `count()`, `exists()`, reaction, saved, follow, or policy-adjacent lookups.
+- Use `withAvg()`, `withMin()`, and `withMax()` when those aggregate values are needed by the UI.
+- Use `withWhereHas()` when filtering and eager loading the same relationship.
 - Queue dispatchers that fan out notifications must batch eligibility checks (blocks, follows, roles, visibility, notification preferences) before creating jobs; do not call relationship/policy helpers inside per-recipient loops. Bursty fan-out dispatchers must also be unique, overlap-protected, debounced, or idempotent before they create duplicate user-visible notifications.
 - Use `cursorPaginate()` for feeds and infinite scroll, ordered by stable unique columns. Use `paginate()` only when totals are required.
-- Cache expensive read models with explicit keys and invalidation paths. Use cache tags only with a fallback for cache stores that do not support tags.
+- Cache compact arrays/read models with explicit keys and invalidation paths instead of arbitrary graph-loaded Eloquent objects. Use cache tags only with a fallback for cache stores that do not support tags.
+- Use `Cache::memo()` for repeated stable cache reads within one request/job and `Cache::touch()` when only TTL extension is needed. Do not call `Cache::flush()` on shared stores.
 - Feed pages should eager load all required relations in one `with([...])` chain.
 - Main feed reads should keep source membership in SQL through the unioned `Post::forFeed($viewerId, $source)` candidate ID subquery, then hydrate posts through the outer Eloquent query for ordering, eager loading, and cursor pagination. Apply `feed_mutes(user_id, mutable_type, mutable_id)` exclusions through indexed `NOT EXISTS` subqueries instead of filtering muted posts in PHP.
 - Best-ranked feed reads may order by a raw database score expression, but the base candidate set must still use existing published/group/feed indexes and cursor pagination.

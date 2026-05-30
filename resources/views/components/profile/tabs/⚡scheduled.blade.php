@@ -3,10 +3,12 @@
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public int $profileUserId;
 
     public function mount(int $profileUserId): void

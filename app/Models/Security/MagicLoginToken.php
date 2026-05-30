@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'used_at',
 ])]
 #[Hidden([
+    'token',
     'token_hash',
 ])]
 #[Table(name: 'magic_link_tokens')]

@@ -38,6 +38,7 @@ use App\Services\FollowService;
 use App\Services\FollowSuggestionService;
 use App\Services\PetFollowService;
 use App\Services\ProfileVisibilityService;
+use App\Support\Search\SearchInput;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use App\Traits\HasCounterCache;
@@ -1011,16 +1012,20 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (! $term) {
+        $term = SearchInput::normalize($term);
+
+        if ($term === '') {
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($term): void {
+        $pattern = SearchInput::containsPattern($term);
+
+        return $query->where(function (Builder $subQuery) use ($pattern): void {
             $subQuery
-                ->where('name', 'like', "%{$term}%")
-                ->orWhere('display_name', 'like', "%{$term}%")
-                ->orWhere('username', 'like', "%{$term}%")
-                ->orWhere('headline', 'like', "%{$term}%");
+                ->where('name', 'like', $pattern)
+                ->orWhere('display_name', 'like', $pattern)
+                ->orWhere('username', 'like', $pattern)
+                ->orWhere('headline', 'like', $pattern);
         });
     }
 

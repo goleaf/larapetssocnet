@@ -8,21 +8,22 @@ use App\Models\Groups\Group;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Support\Hashtags\HashtagNormalizer;
-use Illuminate\Support\Str;
+use App\Support\Search\SearchInput;
 
 class SearchService
 {
     /** @return array<string, mixed> */
     public function search(string $term, ?User $viewer, string $tab = 'all'): array
     {
-        $clean = Str::limit(trim($term), 100);
+        $clean = SearchInput::normalize($term);
 
-        if (mb_strlen($clean) < 2) {
+        if (! SearchInput::hasSearchableLength($clean)) {
             return [];
         }
 
         $results = [];
         $limit = $tab === 'all' ? 3 : 20;
+        $containsPattern = SearchInput::containsPattern($clean);
 
         if ($tab === 'all' || $tab === 'users') {
             $query = User::query()
@@ -42,7 +43,7 @@ class SearchService
         if ($tab === 'all' || $tab === 'pets') {
             $query = Pet::query()
                 ->visibleTo($viewer)
-                ->where(fn ($q) => $q->where('name', 'like', "%{$clean}%")->orWhere('breed', 'like', "%{$clean}%"))
+                ->where(fn ($q) => $q->where('name', 'like', $containsPattern)->orWhere('breed', 'like', $containsPattern))
                 ->with('media')
                 ->limit($limit);
 
@@ -53,7 +54,7 @@ class SearchService
             $query = Post::query()
                 ->published()
                 ->visibleTo($viewer)
-                ->where('body', 'like', "%{$clean}%")
+                ->where('body', 'like', $containsPattern)
                 ->with(['author.media', 'media'])
                 ->withCount(['comments', 'reactions'])
                 ->latest()
@@ -63,7 +64,8 @@ class SearchService
         }
 
         if ($tab === 'all' || $tab === 'groups') {
-            $query = Group::where('name', 'like', "%{$clean}%")
+            $query = Group::query()
+                ->where('name', 'like', $containsPattern)
                 ->where('privacy', '!=', 'secret')
                 ->with('media')
                 ->limit($limit);

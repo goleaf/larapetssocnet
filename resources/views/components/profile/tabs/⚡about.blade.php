@@ -8,10 +8,12 @@ use App\Support\Profiles\SocialLinkNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 new class extends Component
 {
+    #[Locked]
     public int $profileUserId;
 
     public function mount(int $profileUserId): void

@@ -32,7 +32,7 @@ Keep the feed query centralized and cursor-paginated.
 - `loadMore` records the last loaded post ID in session with the active source/type/ranking so the stream can restore that read position during the same session and offer Jump to latest.
 - The stream polls for new posts every 30 seconds only while the tab is visible. Polling queries only a count plus the newest matching post ID; full post rows are fetched only after the user taps the new-post indicator.
 - `scopeForFeed()` wraps a post-ID subquery whose first branch reads `feed_items`, followed by compatibility branches for own, followed-user, tagged-pet, and legacy-pet membership. The outer Eloquent query still handles visibility, blocks, mutes, eager loading, ordering, and cursor pagination so stale feed rows cannot leak content.
-- The feed stream loads immediately as the page center column. Left and right sidebars are lazy child components with skeleton placeholders.
+- The feed stream loads immediately as the page center column. Left and right sidebars are `lazy.bundle` child components with skeleton placeholders so their independent widget queries do not block the first render and can share a lazy request.
 
 ## Eager Loading & Engagement
 - `with(['author', 'author.media', 'pet.media', 'pets', 'media', 'tags'])`.

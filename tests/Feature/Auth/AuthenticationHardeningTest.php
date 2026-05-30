@@ -2,7 +2,10 @@
 
 use App\Enums\AccountStatus;
 use App\Models\Identity\User;
+use App\Models\Security\AccountSecurityAction;
 use App\Models\Security\AuthAuditLog;
+use App\Models\Security\LoginSecurityAlert;
+use App\Models\Security\MagicLoginToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -360,4 +363,30 @@ it('keeps enum-suspended authenticated users away from application pages', funct
     $this->actingAs($user)
         ->get(route('feed.index'))
         ->assertRedirect(route('account.suspended'));
+});
+
+it('keeps auth token secrets out of serialized security models', function (): void {
+    $user = User::factory()->create();
+
+    $magicToken = MagicLoginToken::factory()
+        ->for($user)
+        ->create([
+            'token' => 'stored-decoy-token',
+            'token_hash' => hash('sha256', 'plain-magic-token'),
+        ]);
+    $securityAction = AccountSecurityAction::factory()
+        ->for($user)
+        ->create([
+            'token_hash' => hash('sha256', 'plain-emergency-token'),
+        ]);
+    $loginAlert = LoginSecurityAlert::factory()
+        ->for($user)
+        ->create([
+            'token_hash' => hash('sha256', 'plain-alert-token'),
+        ]);
+
+    expect(array_key_exists('token', $magicToken->toArray()))->toBeFalse()
+        ->and(array_key_exists('token_hash', $magicToken->toArray()))->toBeFalse()
+        ->and(array_key_exists('token_hash', $securityAction->toArray()))->toBeFalse()
+        ->and(array_key_exists('token_hash', $loginAlert->toArray()))->toBeFalse();
 });
