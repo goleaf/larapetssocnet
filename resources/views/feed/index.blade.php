@@ -95,7 +95,7 @@
                 </x-ui.card>
             @endif
 
-            <livewire:feed.stream :source="$source ?? ''" :type="$type ?? ''" />
+            <livewire:feed.stream :source="$source ?? ''" :type="$type ?? ''" lazy />
         </main>
 
         <aside class="hidden space-y-4 xl:block xl:sticky xl:top-24 xl:self-start" data-ui="feed-right-sidebar">

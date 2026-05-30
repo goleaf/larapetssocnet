@@ -59,6 +59,7 @@ use App\Http\Controllers\Profile\ProfilePortfolioController;
 use App\Http\Controllers\Profile\PublicProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Social\BlockController;
+use App\Http\Controllers\Social\FeedMuteController;
 use App\Http\Controllers\Social\FollowController;
 use App\Http\Controllers\Social\FollowRequestController;
 use App\Http\Middleware\AdminMiddleware;
@@ -157,6 +158,10 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
     Route::post('/tips/{tip}/helpful', [PetCareTipController::class, 'helpful'])->name('tips.helpful');
 
     Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
+    Route::post('/feed/mutes', [FeedMuteController::class, 'store'])->name('feed.mutes.store');
+    Route::delete('/feed/mutes/{feedMute}', [FeedMuteController::class, 'destroy'])
+        ->whereNumber('feedMute')
+        ->name('feed.mutes.destroy');
     Route::get('/saved', [SavedPostController::class, 'index'])->name('saved.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
@@ -360,6 +365,7 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         Route::get('/blocked', [SettingsController::class, 'blockedUsers'])->name('blocked');
         Route::post('/blocked', [SettingsController::class, 'blockUser'])->name('blocked.store');
         Route::delete('/blocked/{user:username}', [SettingsController::class, 'unblockUser'])->name('blocked.destroy');
+        Route::get('/muted', [FeedMuteController::class, 'index'])->name('muted');
 
         Route::get('/data', [SettingsController::class, 'editData'])->name('data');
         Route::post('/export-data', [SettingsController::class, 'exportData'])->name('export-data');

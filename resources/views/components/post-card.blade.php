@@ -36,6 +36,7 @@
 
     $isOwner = (int) auth()->id() === (int) $post->user_id;
     $showOwnerMenu = $isOwner;
+    $showViewerMenu = auth()->check() && $author && ! $isOwner;
     $editWindowOpen = $post->created_at === null || $post->created_at->greaterThanOrEqualTo(now()->subDay());
     $canEditPost = $isOwner && $editWindowOpen && auth()->user()?->can('update', $post);
     $editedAtTitle = $post->edited_at?->format('M j, Y g:i A');
@@ -86,6 +87,7 @@
     }
 
     $body = trim((string) $post->body);
+    $hasLongBody = \Illuminate\Support\Str::length($body) > 280 || substr_count($body, "\n") > 5;
     $storedBodyHtml = (string) ($post->body_html ?? '');
     $storedBodyText = trim(html_entity_decode(strip_tags($storedBodyHtml)));
     $bodyHtml = $storedBodyHtml !== '' && ($body === '' || $storedBodyText === $body)
@@ -227,6 +229,48 @@
                 <livewire:posts.analytics-trigger :post="$post" :key="'post-analytics-trigger-'.$post->getKey().'-'.$postDomId" />
             @endif
 
+            @if ($showViewerMenu)
+                <x-ui.dropdown align="right" width="64" content-classes="py-2">
+                    <x-slot name="trigger">
+                        <button
+                            type="button"
+                            data-ui="post-card-viewer-menu-trigger"
+                            class="icon-button btn-ghost h-[var(--control-height-sm)] w-[var(--control-height-sm)] rounded-none text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+                            aria-label="Post options"
+                            aria-haspopup="menu"
+                        >
+                            <span aria-hidden="true">•••</span>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <form method="POST" action="{{ route('feed.mutes.store') }}">
+                            @csrf
+                            <input type="hidden" name="mutable_type" value="user">
+                            <input type="hidden" name="mutable_id" value="{{ $author->getKey() }}">
+                            <x-ui.dropdown-item type="submit" data-ui="post-card-menu-mute-author">
+                                Mute {{ '@'.($author->username ?: $author->name) }}
+                            </x-ui.dropdown-item>
+                        </form>
+
+                        @foreach ($petTagsForDisplay as $taggedPet)
+                            <form method="POST" action="{{ route('feed.mutes.store') }}">
+                                @csrf
+                                <input type="hidden" name="mutable_type" value="pet">
+                                <input type="hidden" name="mutable_id" value="{{ $taggedPet->getKey() }}">
+                                <x-ui.dropdown-item type="submit" data-ui="post-card-menu-mute-pet">
+                                    Mute {{ $taggedPet->name }}
+                                </x-ui.dropdown-item>
+                            </form>
+                        @endforeach
+
+                        <x-ui.dropdown-item :href="route('settings.muted')" data-ui="post-card-menu-muted-settings">
+                            Manage muted accounts
+                        </x-ui.dropdown-item>
+                    </x-slot>
+                </x-ui.dropdown>
+            @endif
+
             @if ($showOwnerMenu)
                 <x-ui.dropdown align="right" width="56" content-classes="py-2">
                     <x-slot name="trigger">
@@ -277,7 +321,44 @@
     </header>
 
     @if (filled($bodyHtml))
-        <div id="{{ $postBodyId }}" class="mt-3 whitespace-pre-line text-[0.95rem] leading-7 ui-text">{!! $bodyHtml !!}</div>
+        <div
+            class="mt-3"
+            x-data="{ expanded: false, previewOpen: false }"
+        >
+            <div
+                id="{{ $postBodyId }}"
+                class="whitespace-pre-line text-[0.95rem] leading-7 ui-text"
+                @if ($hasLongBody)
+                    x-bind:class="expanded ? 'line-clamp-none' : 'line-clamp-5'"
+                @endif
+            >{!! $bodyHtml !!}</div>
+
+            @if ($hasLongBody)
+                <div class="relative mt-2 inline-flex">
+                    <button
+                        type="button"
+                        class="text-sm font-semibold text-paw hover:text-paw-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+                        x-on:click="expanded = ! expanded"
+                        x-on:mouseenter="previewOpen = true"
+                        x-on:mouseleave="previewOpen = false"
+                        x-on:focus="previewOpen = true"
+                        x-on:blur="previewOpen = false"
+                        x-text="expanded ? 'Show less' : 'See more'"
+                        aria-controls="{{ $postBodyId }}"
+                    >See more</button>
+
+                    <div
+                        x-cloak
+                        x-show="previewOpen && ! expanded"
+                        x-transition.opacity.duration.150ms
+                        class="absolute bottom-full left-0 z-30 mb-2 hidden w-80 rounded-[var(--radius-soft)] border border-whisker/40 bg-warm-white p-4 text-sm leading-6 text-bark shadow-card md:block"
+                        role="tooltip"
+                    >
+                        {{ $body }}
+                    </div>
+                </div>
+            @endif
+        </div>
     @endif
 
     @if ($relatedPost)

@@ -47,6 +47,16 @@
 - Keep `Delete post` behind the reusable Livewire delete trigger. It must open a confirmation modal with a short post preview, dispatch `post-delete-requested` for optimistic card removal, and enqueue `DeletePostCascadeJob` instead of using a browser confirm or blocking form submission.
 - Non-owners must not render owner post actions.
 
+## Viewer Menu
+- Authenticated non-owners may see a viewer menu with feed mute actions.
+- Muting an author or tagged pet posts to `feed.mutes.store` and must not unfollow that author or pet.
+- Include a link to `settings.muted` so users can reverse mutes without finding another post from the source.
+
+## Long Text Preview
+- Long post bodies use a CSS line clamp until the reader expands them.
+- The See more trigger uses Alpine only: click expands/collapses and desktop hover/focus shows a tooltip containing the full body text that is already in the DOM.
+- Do not fetch preview text from the server or navigate away for this hover preview.
+
 ## Pinned Highlight
 - The top profile pinned post uses the same post card content as regular posts, with only an edge-to-edge `Pinned post` banner prepended above the card body.
 - Do not render a floating pinned badge inside chronological duplicates of the same post.

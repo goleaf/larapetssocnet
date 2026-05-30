@@ -2,6 +2,7 @@
 
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Services\FeedService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -12,11 +13,22 @@ new class extends Component
 {
     private const POSTS_PER_PAGE = 15;
 
+    private const SESSION_LAST_SEEN_POST_ID = 'feed.last_seen_post_id';
+
+    private const SESSION_LAST_SEEN_SOURCE = 'feed.last_seen_source';
+
+    private const SESSION_LAST_SEEN_TYPE = 'feed.last_seen_type';
+
+    private const SESSION_LAST_SEEN_RANKING = 'feed.last_seen_ranking';
+
     #[Url(as: 'source', except: '')]
     public string $source = '';
 
     #[Url(as: 'type', except: '')]
     public string $type = '';
+
+    #[Url(as: 'rank', except: 'latest')]
+    public string $ranking = 'latest';
 
     /**
      * @var list<int>
@@ -39,7 +51,16 @@ new class extends Component
     {
         $this->source = $this->sanitizeSource($source ?? $this->source);
         $this->type = $this->sanitizeType($type ?? $this->type);
+        $requestedRanking = request()->query('rank');
+        $this->ranking = $this->sanitizeRanking(
+            is_string($requestedRanking) ? $requestedRanking : $this->viewer()->preferredFeedRanking()
+        );
+        $this->restoreReadPositionIfPossible();
     }
+
+    public ?int $restoreFromPostId = null;
+
+    public bool $restoredReadPosition = false;
 
     public function updatedSource(): void
     {
@@ -51,6 +72,11 @@ new class extends Component
     {
         $this->type = $this->sanitizeType($this->type);
         $this->resetFeed();
+    }
+
+    public function updatedRanking(): void
+    {
+        $this->setRanking($this->ranking);
     }
 
     public function setSource(?string $source): void
@@ -65,6 +91,16 @@ new class extends Component
         $this->resetFeed();
     }
 
+    public function setRanking(string $ranking): void
+    {
+        $this->ranking = $this->sanitizeRanking($ranking);
+        $this->viewer()
+            ->forceFill(['feed_ranking_preference' => $this->ranking])
+            ->save();
+        $this->forgetReadPosition();
+        $this->resetFeed();
+    }
+
     public function loadMore(): void
     {
         if ($this->postsLoaded && ! $this->hasMorePosts) {
@@ -72,6 +108,7 @@ new class extends Component
         }
 
         $this->appendPosts($this->postsLoaded ? $this->nextCursor : null);
+        $this->rememberReadPosition();
     }
 
     public function checkForNewPosts(): void
@@ -120,25 +157,46 @@ new class extends Component
         $this->dispatch('feed-new-posts-loaded');
     }
 
+    public function jumpToLatest(): void
+    {
+        $this->forgetReadPosition();
+        $this->resetFeed();
+        $this->dispatch('feed-new-posts-loaded');
+    }
+
     /**
      * @return array{
      *     posts: Collection<int, Post>,
      *     source: string,
      *     type: string,
      *     hasMorePosts: bool,
-     *     newPostsCount: int
+     *     newPostsCount: int,
+     *     ranking: string,
+     *     feedHealth: string,
+     *     feedHealthLabel: string,
+     *     restoredReadPosition: bool,
+     *     emptySuggestions: Collection<int, User>
      * }
      */
     public function viewData(): array
     {
         $this->ensureLoaded();
+        $posts = Post::mainFeedPostsByIds($this->viewer(), $this->postIds, $this->normalizedType(), $this->normalizedSource());
+        $feedHealth = $this->feedHealthStatus();
 
         return [
-            'posts' => Post::mainFeedPostsByIds($this->viewer(), $this->postIds, $this->normalizedType(), $this->normalizedSource()),
+            'posts' => $posts,
             'source' => $this->source,
             'type' => $this->type,
             'hasMorePosts' => $this->hasMorePosts,
             'newPostsCount' => $this->newPostsCount,
+            'ranking' => $this->ranking,
+            'feedHealth' => $feedHealth,
+            'feedHealthLabel' => $this->feedHealthLabel($feedHealth),
+            'restoredReadPosition' => $this->restoredReadPosition,
+            'emptySuggestions' => $posts->isEmpty()
+                ? app(FeedService::class)->contextualEmptyFeedSuggestions($this->viewer())
+                : collect(),
         ];
     }
 
@@ -159,6 +217,8 @@ new class extends Component
             self::POSTS_PER_PAGE,
             $this->normalizedSource(),
             $cursor,
+            $this->ranking,
+            $cursor === null ? $this->restoreFromPostId : null,
         );
 
         foreach ($posts->items() as $post) {
@@ -172,6 +232,7 @@ new class extends Component
         $this->nextCursor = $posts->nextCursor()?->encode();
         $this->hasMorePosts = $posts->hasMorePages();
         $this->postsLoaded = true;
+        $this->restoreFromPostId = null;
         $this->refreshNewestPostMarker();
     }
 
@@ -227,6 +288,102 @@ new class extends Component
         $this->newPostsCount = 0;
         $this->newestPostId = null;
         $this->newestPostCreatedAt = null;
+        $this->restoreFromPostId = null;
+        $this->restoredReadPosition = false;
+    }
+
+    private function rememberReadPosition(): void
+    {
+        $lastSeenPostId = collect($this->postIds)->last();
+
+        if (! is_int($lastSeenPostId) || $lastSeenPostId <= 0) {
+            return;
+        }
+
+        session([
+            self::SESSION_LAST_SEEN_POST_ID => $lastSeenPostId,
+            self::SESSION_LAST_SEEN_SOURCE => $this->source,
+            self::SESSION_LAST_SEEN_TYPE => $this->type,
+            self::SESSION_LAST_SEEN_RANKING => $this->ranking,
+        ]);
+    }
+
+    private function restoreReadPositionIfPossible(): void
+    {
+        $lastSeenPostId = (int) session(self::SESSION_LAST_SEEN_POST_ID, 0);
+
+        if ($lastSeenPostId <= 0) {
+            return;
+        }
+
+        if (
+            session(self::SESSION_LAST_SEEN_SOURCE, '') !== $this->source
+            || session(self::SESSION_LAST_SEEN_TYPE, '') !== $this->type
+            || session(self::SESSION_LAST_SEEN_RANKING, User::FEED_RANKING_LATEST) !== $this->ranking
+        ) {
+            return;
+        }
+
+        $this->restoreFromPostId = $lastSeenPostId;
+        $this->restoredReadPosition = true;
+    }
+
+    private function forgetReadPosition(): void
+    {
+        session()->forget([
+            self::SESSION_LAST_SEEN_POST_ID,
+            self::SESSION_LAST_SEEN_SOURCE,
+            self::SESSION_LAST_SEEN_TYPE,
+            self::SESSION_LAST_SEEN_RANKING,
+        ]);
+
+        $this->restoreFromPostId = null;
+        $this->restoredReadPosition = false;
+    }
+
+    private function feedHealthStatus(): string
+    {
+        $latestCreatedAt = $this->latestFeedPostCreatedAt();
+
+        if ($latestCreatedAt === null) {
+            return 'grey';
+        }
+
+        $ageInHours = $latestCreatedAt->diffInHours(now());
+
+        if ($ageInHours <= 1) {
+            return 'green';
+        }
+
+        if ($ageInHours <= 24) {
+            return 'yellow';
+        }
+
+        return 'grey';
+    }
+
+    private function feedHealthLabel(string $status): string
+    {
+        return match ($status) {
+            'green' => __('feed.ranking.health_green'),
+            'yellow' => __('feed.ranking.health_yellow'),
+            default => __('feed.ranking.health_grey'),
+        };
+    }
+
+    private function latestFeedPostCreatedAt(): ?CarbonImmutable
+    {
+        $latestPost = $this->baseFeedQuery()
+            ->select(['posts.id', 'posts.created_at'])
+            ->orderByDesc('posts.created_at')
+            ->orderByDesc('posts.id')
+            ->first();
+
+        if (! $latestPost instanceof Post || $latestPost->created_at === null) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($latestPost->created_at);
     }
 
     private function viewer(): User
@@ -257,8 +414,43 @@ new class extends Component
     {
         return in_array($type, ['text', 'photo', 'video'], true) ? (string) $type : '';
     }
+
+    private function sanitizeRanking(?string $ranking): string
+    {
+        return in_array($ranking, User::feedRankingPreferences(), true)
+            ? (string) $ranking
+            : User::FEED_RANKING_LATEST;
+    }
 };
 ?>
+
+@placeholder
+    <section data-ui="feed-stream-skeleton" class="space-y-4">
+        @for ($index = 0; $index < 5; $index++)
+            <x-ui.card padding="base" class="animate-pulse">
+                <div class="flex items-center gap-3">
+                    <div class="h-11 w-11 rounded-full bg-whisker/30"></div>
+                    <div class="min-w-0 flex-1 space-y-2">
+                        <div class="h-4 w-40 rounded-full bg-whisker/30"></div>
+                        <div class="h-3 w-24 rounded-full bg-whisker/20"></div>
+                    </div>
+                    <div class="h-8 w-20 rounded-[var(--radius-soft)] bg-whisker/20"></div>
+                </div>
+                <div class="mt-5 space-y-3">
+                    <div class="h-4 w-full rounded-full bg-whisker/20"></div>
+                    <div class="h-4 w-11/12 rounded-full bg-whisker/20"></div>
+                    <div class="h-4 w-2/3 rounded-full bg-whisker/20"></div>
+                </div>
+                <div class="mt-5 h-44 rounded-[var(--radius-soft)] bg-whisker/20"></div>
+                <div class="mt-5 flex gap-2">
+                    <div class="h-9 w-24 rounded-[var(--radius-soft)] bg-whisker/20"></div>
+                    <div class="h-9 w-24 rounded-[var(--radius-soft)] bg-whisker/20"></div>
+                    <div class="h-9 w-24 rounded-[var(--radius-soft)] bg-whisker/20"></div>
+                </div>
+            </x-ui.card>
+        @endfor
+    </section>
+@endplaceholder
 
 @php
     $data = $this->viewData();
@@ -275,6 +467,17 @@ new class extends Component
         ['value' => 'video', 'label' => __('feed.filters.videos')],
         ['value' => 'text', 'label' => __('feed.filters.text')],
     ];
+
+    $rankingFilters = [
+        ['value' => 'latest', 'label' => __('feed.ranking.latest')],
+        ['value' => 'best', 'label' => __('feed.ranking.best')],
+    ];
+
+    $feedHealthClass = match ($data['feedHealth']) {
+        'green' => 'bg-emerald-500',
+        'yellow' => 'bg-amber-500',
+        default => 'bg-whisker',
+    };
 @endphp
 
 <section
@@ -350,6 +553,26 @@ new class extends Component
                         </button>
                     @endforeach
                 </div>
+
+                <div class="flex flex-wrap gap-2" aria-label="{{ __('feed.ranking.label') }}">
+                    @foreach ($rankingFilters as $filter)
+                        <button
+                            type="button"
+                            wire:click="setRanking('{{ $filter['value'] }}')"
+                            @class([
+                                'inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-soft)] border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw',
+                                'border-paw-light bg-paw-light text-paw-dark' => $data['ranking'] === $filter['value'],
+                                'border-whisker/40 bg-transparent text-fur hover:bg-cream hover:text-bark' => $data['ranking'] !== $filter['value'],
+                            ])
+                            @if ($data['ranking'] === $filter['value']) aria-current="true" @endif
+                        >
+                            @if ($filter['value'] === 'latest')
+                                <span class="h-2.5 w-2.5 rounded-full {{ $feedHealthClass }}" title="{{ $data['feedHealthLabel'] }}" aria-label="{{ $data['feedHealthLabel'] }}"></span>
+                            @endif
+                            <span>{{ $filter['label'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
             </div>
         </div>
     </x-ui.card>
@@ -362,6 +585,18 @@ new class extends Component
             <span>{{ __('feed.feed_note') }}</span>
         </p>
     </x-ui.card>
+
+    @if ($data['restoredReadPosition'])
+        <div class="sticky top-20 z-20 flex justify-center" aria-live="polite" data-ui="feed-read-position-indicator">
+            <button
+                type="button"
+                wire:click="jumpToLatest"
+                class="inline-flex min-h-10 items-center rounded-pill border border-whisker/40 bg-warm-white px-4 text-sm font-bold text-paw shadow-card transition hover:border-paw hover:bg-paw-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+            >
+                {{ __('feed.jump_to_latest') }}
+            </button>
+        </div>
+    @endif
 
     @if ($data['newPostsCount'] > 0)
         <div class="sticky top-20 z-20 flex justify-center" aria-live="polite" data-ui="feed-new-posts-indicator">
@@ -410,9 +645,27 @@ new class extends Component
             <li>
                 <x-ui.empty-state :title="__('feed.empty_title')" :description="__('feed.empty_description')">
                     <x-slot:action>
-                        <div class="flex flex-wrap justify-center gap-2">
-                            <x-ui.button href="{{ route('search.index', ['type' => 'users']) }}" variant="secondary">{{ __('feed.empty_find_people') }}</x-ui.button>
-                            <x-ui.button href="{{ route('explore.index', ['tab' => 'pets']) }}" variant="primary">{{ __('feed.empty_browse_pets') }}</x-ui.button>
+                        <div class="space-y-4">
+                            @if ($data['emptySuggestions']->isNotEmpty())
+                                <div class="mx-auto max-w-2xl rounded-[var(--radius-soft)] border border-whisker/30 bg-cream/40 p-4 text-left">
+                                    <p class="text-sm font-semibold text-bark">{{ __('feed.empty_contextual_title') }}</p>
+                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                        @foreach ($data['emptySuggestions'] as $suggestedUser)
+                                            <a href="{{ route('profile.show', $suggestedUser) }}" class="ui-list-item flex items-center gap-3 px-3 py-2">
+                                                <x-ui.avatar :src="$suggestedUser->avatar_url" :name="$suggestedUser->name" :user="$suggestedUser" size="sm"/>
+                                                <span class="min-w-0">
+                                                    <span class="block truncate text-sm font-semibold text-bark">{{ $suggestedUser->name }}</span>
+                                                    <span class="block truncate text-xs text-fur">&#64;{{ $suggestedUser->username }}</span>
+                                                </span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <x-ui.button href="{{ route('search.index', ['type' => 'users']) }}" variant="secondary">{{ __('feed.empty_find_people') }}</x-ui.button>
+                                <x-ui.button href="{{ route('explore.index', ['tab' => 'pets']) }}" variant="primary">{{ __('feed.empty_browse_pets') }}</x-ui.button>
+                            </div>
                         </div>
                     </x-slot:action>
                 </x-ui.empty-state>

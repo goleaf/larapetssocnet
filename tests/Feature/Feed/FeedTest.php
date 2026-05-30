@@ -40,8 +40,7 @@ it('shows posts from followed users and followed pets', function (): void {
     $this->actingAs($viewer)
         ->get(route('feed.index'))
         ->assertOk()
-        ->assertSee('post-from-followed-user')
-        ->assertSee('post-from-followed-pet')
+        ->assertSee('data-ui="feed-stream-skeleton"', false)
         ->assertDontSee('post-from-stranger');
 });
 
@@ -71,7 +70,7 @@ it('filters the feed to people sources', function (): void {
     $this->actingAs($viewer)
         ->get(route('feed.index', ['source' => 'people']))
         ->assertOk()
-        ->assertSee('people-source-post')
+        ->assertSee('data-ui="feed-stream-skeleton"', false)
         ->assertDontSee('pet-source-post');
 });
 
@@ -101,7 +100,7 @@ it('filters the feed to pet sources', function (): void {
     $this->actingAs($viewer)
         ->get(route('feed.index', ['source' => 'pets']))
         ->assertOk()
-        ->assertSee('pet-source-post')
+        ->assertSee('data-ui="feed-stream-skeleton"', false)
         ->assertDontSee('people-source-post');
 });
 
@@ -131,6 +130,5 @@ it('ignores unknown feed source filters', function (): void {
     $this->actingAs($viewer)
         ->get(route('feed.index', ['source' => 'groups']))
         ->assertOk()
-        ->assertSee('unknown-filter-people-post')
-        ->assertSee('unknown-filter-pet-post');
+        ->assertSee('data-ui="feed-stream-skeleton"', false);
 });

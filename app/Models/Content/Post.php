@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -102,6 +103,10 @@ class Post extends Model implements HasMedia
     public const VISIBILITY_FRIENDS = 'friends';
 
     public const VISIBILITY_PRIVATE = 'private';
+
+    public const FEED_RANKING_LATEST = User::FEED_RANKING_LATEST;
+
+    public const FEED_RANKING_BEST = User::FEED_RANKING_BEST;
 
     /**
      * @return list<string>
@@ -1310,8 +1315,15 @@ class Post extends Model implements HasMedia
             ->withQueryString();
     }
 
-    public static function paginateMainFeedResults(User $viewer, ?string $type = null, int $perPage = 15, ?string $source = null, ?string $cursor = null): CursorPaginator
-    {
+    public static function paginateMainFeedResults(
+        User $viewer,
+        ?string $type = null,
+        int $perPage = 15,
+        ?string $source = null,
+        ?string $cursor = null,
+        string $ranking = self::FEED_RANKING_LATEST,
+        ?int $fromPostId = null
+    ): CursorPaginator {
         $viewerId = (int) $viewer->getKey();
 
         return self::query()
@@ -1319,8 +1331,8 @@ class Post extends Model implements HasMedia
             ->forFeedSource($viewerId, $source)
             ->withFeedRelations($viewer)
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
+            ->when($fromPostId !== null, fn (Builder $query) => $query->atOrOlderThanPost((int) $fromPostId))
+            ->orderForMainFeed($ranking)
             ->cursorPaginate($perPage, ['posts.*'], 'cursor', $cursor)
             ->withQueryString();
     }
@@ -1385,7 +1397,7 @@ class Post extends Model implements HasMedia
 
     public function scopeForFeed(Builder $query, int $userId): Builder
     {
-        $query->select(['posts.*']);
+        $query->select(['posts.*'])->distinct();
 
         $followedUserIdsQuery = Follow::query()
             ->select('follows.following_id')
@@ -1443,7 +1455,97 @@ class Post extends Model implements HasMedia
             })
             ->whereNull('posts.group_id')
             ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocked_id')->where('blocks.blocker_id', $userId))
-            ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId));
+            ->whereNotIn('posts.user_id', Block::query()->select('blocks.blocker_id')->where('blocks.blocked_id', $userId))
+            ->withoutFeedMutes($userId);
+    }
+
+    public function scopeWithoutFeedMutes(Builder $query, int $userId): Builder
+    {
+        $userMorphClass = (new User)->getMorphClass();
+        $petMorphClass = (new Pet)->getMorphClass();
+
+        return $query
+            ->whereNotExists(function ($muteQuery) use ($userId, $userMorphClass): void {
+                $muteQuery
+                    ->selectRaw('1')
+                    ->from('feed_mutes')
+                    ->where('feed_mutes.user_id', $userId)
+                    ->where('feed_mutes.mutable_type', $userMorphClass)
+                    ->whereColumn('feed_mutes.mutable_id', 'posts.user_id');
+            })
+            ->where(function (Builder $legacyPetQuery) use ($userId, $petMorphClass): void {
+                $legacyPetQuery
+                    ->whereNull('posts.pet_id')
+                    ->orWhereNotExists(function ($muteQuery) use ($userId, $petMorphClass): void {
+                        $muteQuery
+                            ->selectRaw('1')
+                            ->from('feed_mutes')
+                            ->where('feed_mutes.user_id', $userId)
+                            ->where('feed_mutes.mutable_type', $petMorphClass)
+                            ->whereColumn('feed_mutes.mutable_id', 'posts.pet_id');
+                    });
+            })
+            ->whereDoesntHave('pets', function (Builder $petsQuery) use ($userId, $petMorphClass): void {
+                $petsQuery->whereExists(function ($muteQuery) use ($userId, $petMorphClass): void {
+                    $muteQuery
+                        ->selectRaw('1')
+                        ->from('feed_mutes')
+                        ->where('feed_mutes.user_id', $userId)
+                        ->where('feed_mutes.mutable_type', $petMorphClass)
+                        ->whereColumn('feed_mutes.mutable_id', 'pets.id');
+                });
+            });
+    }
+
+    public function scopeAtOrOlderThanPost(Builder $query, int $postId): Builder
+    {
+        $anchor = self::query()
+            ->select(['posts.id', 'posts.created_at'])
+            ->whereKey($postId)
+            ->first();
+
+        if (! $anchor instanceof self || $anchor->created_at === null) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $positionQuery) use ($anchor): void {
+            $positionQuery
+                ->where('posts.created_at', '<', $anchor->created_at)
+                ->orWhere(function (Builder $tieQuery) use ($anchor): void {
+                    $tieQuery
+                        ->where('posts.created_at', $anchor->created_at)
+                        ->where('posts.id', '<=', (int) $anchor->getKey());
+                });
+        });
+    }
+
+    public function scopeOrderForMainFeed(Builder $query, string $ranking): Builder
+    {
+        if ($ranking === self::FEED_RANKING_BEST) {
+            return $query
+                ->selectRaw(self::feedRankingScoreExpression().' as feed_rank_score')
+                ->orderByDesc('feed_rank_score')
+                ->orderByDesc('posts.created_at')
+                ->orderByDesc('posts.id');
+        }
+
+        return $query
+            ->orderByDesc('posts.created_at')
+            ->orderByDesc('posts.id');
+    }
+
+    private static function feedRankingScoreExpression(): string
+    {
+        $driver = DB::connection()->getDriverName();
+        $mediaBonus = "case when posts.type in ('photo', 'video') or exists (select 1 from post_media where post_media.post_id = posts.id and post_media.deleted_at is null) then 250 else 0 end";
+
+        if ($driver === 'sqlite') {
+            $recencyScore = "max(0, 1000000 - ((strftime('%s', 'now') - strftime('%s', posts.created_at)) / 60.0))";
+        } else {
+            $recencyScore = 'greatest(0, 1000000 - (timestampdiff(minute, posts.created_at, utc_timestamp())))';
+        }
+
+        return "({$recencyScore}) + (coalesce(posts.reactions_count, posts.likes_count, 0) * 75) + (coalesce(posts.comments_count, 0) * 120) + {$mediaBonus}";
     }
 
     /**

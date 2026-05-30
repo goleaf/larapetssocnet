@@ -93,6 +93,7 @@ class UserFactory extends Factory
             'show_in_explore' => true,
             'open_following' => true,
             'notification_preferences' => null,
+            'feed_ranking_preference' => User::FEED_RANKING_LATEST,
             'password_changed_at' => null,
             'last_active_at' => fake()->dateTimeBetween('-7 days', 'now'),
             'last_seen_at' => null,

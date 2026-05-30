@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added feed ranking controls for Latest and Best, persisted per user, with Best scored from recency, reactions, comments, and media signals in the feed query.
+- Added same-session feed read-position restore, a pinned Jump to latest action, five-card skeleton placeholders for lazy feed startup, contextual empty-feed suggestions from matching pet species, feed-health freshness dots, and feed muting for users and pets without unfollowing.
 - Added a Livewire feed stream with source/type filters, infinite-scroll cursor loading, new-post polling, relative post timestamps, and richer feed sidebars for owned pets, suggestions, hashtags, groups, and upcoming pet birthdays.
 - Added an Alpine dirty-state logout guard so users with unsaved post drafts confirm before ending their session.
 - Added durable post fan-out idempotency with `posts.is_fanned_out`, processing-state post media placeholders for Livewire temporary uploads, and a `post_media(post_id, order)` index for ordered media hydration.
@@ -25,6 +27,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed feed queries to deduplicate posts that match followed-user and followed-pet sources, exclude muted users and pets at the query layer, and keep long post text available through a desktop Alpine hover preview on See more.
 - Changed the canonical pet profile route to a full-page Livewire wrapper with reactive per-pet tab state while preserving the existing controller-backed profile rendering and slug route binding.
 - Updated profile edit modal architecture so modal opening, modal saves, and cover repositioning authorize through owner-only `UserPolicy` abilities while save validation runs inside `UpdateProfileAction`.
 - Updated profile view tracking to keep one daily row per viewer/profile pair while incrementing a `views_count` aggregate for repeat same-day visits.
@@ -61,6 +64,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added feed enhancement coverage for ranking persistence/order, session read-position restore, user and pet muting, contextual empty suggestions, long-post hover preview markup, muted settings unmute flow, and feed-source deduplication.
 - Added feed stream coverage for Livewire source filters, infinite-scroll loading, new-post polling, normalized pet-tag feed visibility, and upcoming followed-pet birthday sidebar data.
 - Added pet profile Livewire route coverage for reactive tab activation and per-pet tab memory.
 - Added profile policy and Livewire route coverage for owner-only edit modal access, action-level modal validation, and cover focal-point authorization.

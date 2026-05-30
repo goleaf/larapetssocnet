@@ -29,6 +29,7 @@ use App\Models\Pets\PetHealthLog;
 use App\Models\Pets\PetOwner;
 use App\Models\Pets\PhotoGallery;
 use App\Models\Social\Block;
+use App\Models\Social\FeedMute;
 use App\Models\Social\Follow;
 use App\Notifications\FollowRequestApproved;
 use App\Services\Auth\AuthMailDispatcher;
@@ -129,6 +130,7 @@ use Spatie\Permission\Traits\HasRoles;
     'show_in_explore',
     'open_following',
     'notification_preferences',
+    'feed_ranking_preference',
     'is_private',
     'onboarding_step',
     'onboarding_completed',
@@ -220,6 +222,10 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public const ACTIVE_STATUS_WRITE_THROTTLE_SECONDS = 60;
 
+    public const FEED_RANKING_LATEST = 'latest';
+
+    public const FEED_RANKING_BEST = 'best';
+
     private const PROFILE_DEFAULT_GRADIENTS = [
         'bg-gradient-to-r from-paw-light via-cream to-sky-light',
         'bg-gradient-to-r from-amber-100 via-cream to-paw-light',
@@ -235,6 +241,17 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         'bg-rose-light text-rose',
         'bg-sky-light text-sky',
     ];
+
+    /**
+     * @return list<string>
+     */
+    public static function feedRankingPreferences(): array
+    {
+        return [
+            self::FEED_RANKING_LATEST,
+            self::FEED_RANKING_BEST,
+        ];
+    }
 
     /**
      * @var array<string, bool>
@@ -270,6 +287,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'show_in_explore' => 'boolean',
             'open_following' => 'boolean',
             'notification_preferences' => 'array',
+            'feed_ranking_preference' => 'string',
             'social_links' => 'array',
             'is_private' => 'boolean',
             'onboarding_completed' => 'boolean',
@@ -637,6 +655,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
         return $this->hasMany(Share::class);
     }
 
+    public function feedMutes(): HasMany
+    {
+        return $this->hasMany(FeedMute::class);
+    }
+
     public function ownedGroups(): HasMany
     {
         return $this->hasMany(Group::class, 'owner_id');
@@ -680,6 +703,15 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'acceptedFollowers as followers_count',
             'acceptedFollowing as following_count',
         ]);
+    }
+
+    public function preferredFeedRanking(): string
+    {
+        $preference = (string) ($this->getAttribute('feed_ranking_preference') ?? self::FEED_RANKING_LATEST);
+
+        return in_array($preference, self::feedRankingPreferences(), true)
+            ? $preference
+            : self::FEED_RANKING_LATEST;
     }
 
     public function eventAttendances(): HasMany

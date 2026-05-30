@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 
 class FeedService
 {
-    public function getFeed(User $user, ?string $type, int $perPage, ?string $source = null): array
+    public function getFeed(User $user, ?string $type, int $perPage, ?string $source = null, ?string $ranking = null): array
     {
         $posts = Post::query()
             ->forFeed((int) $user->getKey())
@@ -25,7 +25,7 @@ class FeedService
             ->withFeedRelations($user)
             ->withFeedLikeExistsForViewer((int) (auth()->id() ?? $user->getKey()))
             ->when(in_array($type, ['text', 'photo', 'video'], true), fn ($query) => $query->byType($type))
-            ->orderByDesc('created_at')
+            ->orderForMainFeed($ranking ?? $user->preferredFeedRanking())
             ->cursorPaginate($perPage)
             ->withQueryString();
 
@@ -66,6 +66,38 @@ class FeedService
             'contest' => $contest,
             'upcomingBirthdays' => $upcomingBirthdays,
         ];
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function contextualEmptyFeedSuggestions(User $user, int $limit = 4): Collection
+    {
+        $species = $user->pets()
+            ->without(['user', 'species', 'breed', 'media', 'tags'])
+            ->select(['pets.species'])
+            ->whereNotNull('pets.species')
+            ->distinct()
+            ->pluck('pets.species')
+            ->filter()
+            ->values();
+
+        if ($species->isEmpty()) {
+            return collect();
+        }
+
+        return User::query()
+            ->discoverable()
+            ->notBlockedFor($user)
+            ->whereKeyNot($user->getKey())
+            ->whereNotIn('users.id', $user->acceptedFollowing()->select('users.id'))
+            ->whereHas('pets', function ($petQuery) use ($species): void {
+                $petQuery->whereIn('pets.species', $species->all());
+            })
+            ->with('media')
+            ->orderByDesc('users.followers_count')
+            ->limit($limit)
+            ->get();
     }
 
     /**
