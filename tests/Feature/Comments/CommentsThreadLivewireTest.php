@@ -3,6 +3,7 @@
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -93,6 +94,82 @@ it('rejects replies beyond the configured single reply level in the Livewire thr
         ->call('createReply', $reply->id)
         ->assertHasErrors(['replyBodies.'.$reply->id])
         ->assertDontSee('Too deep');
+});
+
+it('edits comments inline from the Livewire thread and keeps sanitized output in sync', function (): void {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    $comment = Comment::factory()->for($post)->for($viewer, 'user')->create([
+        'body' => 'Original comment',
+        'body_html' => 'Original comment',
+    ]);
+
+    Livewire::actingAs($viewer)
+        ->test('posts.comments-thread', ['post' => $post])
+        ->call('startEditing', $comment->id)
+        ->assertSet('editingCommentId', $comment->id)
+        ->assertSet('editBodies.'.$comment->id, 'Original comment')
+        ->set('editBodies.'.$comment->id, '<script>alert("x")</script> Edited with 🐾')
+        ->call('updateComment', $comment->id)
+        ->assertSet('editingCommentId', null)
+        ->assertSee('Comment updated.')
+        ->assertSee('Edited with 🐾')
+        ->assertDontSee('<script>alert("x")</script>', false)
+        ->assertDispatched('post-card-refresh', postId: $post->id)
+        ->assertDispatched('comments-thread-updated', postId: $post->id, commentsCount: 1);
+
+    $comment->refresh();
+
+    expect($comment->body)->toBe('<script>alert("x")</script> Edited with 🐾')
+        ->and($comment->body_html)->not->toContain('<script')
+        ->and($comment->edited_at)->not->toBeNull();
+});
+
+it('reports comments inline from the Livewire thread', function (): void {
+    $reporter = User::factory()->create();
+    $author = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    $comment = Comment::factory()->for($post)->for($author, 'user')->create([
+        'body' => 'Reportable comment',
+        'body_html' => 'Reportable comment',
+    ]);
+
+    Livewire::actingAs($reporter)
+        ->test('posts.comments-thread', ['post' => $post])
+        ->call('reportComment', $comment->id)
+        ->assertSee('Comment reported. Thank you.')
+        ->assertDispatched('comments-thread-reported', postId: $post->id, commentId: $comment->id);
+
+    $this->assertDatabaseHas('reports', [
+        'reporter_user_id' => $reporter->id,
+        'reportable_type' => (new Comment)->getMorphClass(),
+        'reportable_id' => $comment->id,
+        'reason' => Report::REASON_SPAM,
+        'status' => Report::STATUS_PENDING,
+    ]);
+});
+
+it('blocks inline self-reporting from the Livewire thread', function (): void {
+    $author = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    $comment = Comment::factory()->for($post)->for($author, 'user')->create([
+        'body' => 'Own comment',
+        'body_html' => 'Own comment',
+    ]);
+
+    Livewire::actingAs($author)
+        ->test('posts.comments-thread', ['post' => $post])
+        ->call('reportComment', $comment->id)
+        ->assertForbidden();
+
+    expect(Report::query()->count())->toBe(0);
 });
 
 it('refreshes the Livewire thread when another user adds a visible comment', function (): void {

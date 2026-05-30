@@ -49,4 +49,5 @@ Comment body processing mirrors posts:
 - Feed post cards mount `posts.comments-thread` only when the comments panel is opened.
 - The component must use `CommentService::previewThread()` so inline feed comments and full post pages share tombstone, reply-depth, reaction-summary, and visibility behavior.
 - The component may poll while visible through a lightweight activity fingerprint from `CommentService::threadActivity()`.
-- Reply forms inside this component submit through Livewire, but full post pages can continue using the HTTP routes backed by the same actions.
+- Top-level comments, replies, edits, deletes, and spam reports inside this component submit through Livewire-backed shared actions so the user remains inside the post card context.
+- Full post pages can continue using the HTTP routes backed by the same actions.

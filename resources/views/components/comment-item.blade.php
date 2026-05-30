@@ -1,6 +1,8 @@
-@props(['comment','post','livewire' => false])
+@props(['comment','post','livewire' => false,'editingCommentId' => null])
 
 @php($replyErrorKey = 'replyBodies.'.$comment->id)
+@php($editErrorKey = 'editBodies.'.$comment->id)
+@php($isLivewireEditing = $livewire && (int) ($editingCommentId ?? 0) === (int) $comment->id)
 
 <div class="group py-2 {{ $comment->isReply() ? 'ml-11 mt-1' : 'mt-4' }}" id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
@@ -12,7 +14,7 @@
  <div class="flex-1 min-w-0" x-data="{ showReply: false, editing: false, collapsed: false }">
 
  <!-- Comment Bubble -->
- <div x-show="!editing">
+ <div @if(! $livewire) x-show="!editing" @endif @if($isLivewireEditing) class="hidden" @endif>
  <div class="flex items-center gap-2">
  <div class="inline-block max-w-[85%] border border-whisker/30 bg-cream/60 px-3.5 py-2.5">
  <a href="{{ route('profile.show', $comment->user->username) }}"
@@ -55,6 +57,28 @@
 
  <!-- Edit Form -->
  @can('update', $comment)
+ @if($livewire)
+ @if($isLivewireEditing)
+ <div class="w-full max-w-2xl border border-whisker/30 bg-cream/60 p-2">
+ <form wire:submit.prevent="updateComment({{ (int) $comment->id }})">
+ <textarea wire:model.live.debounce.300ms="editBodies.{{ (int) $comment->id }}" rows="2"
+ class="form-textarea w-full border-0 bg-transparent p-1 text-sm resize-none focus:ring-0"
+ required></textarea>
+ @error($editErrorKey)
+ <p class="mt-1 px-1 text-xs font-semibold text-rose">{{ $message }}</p>
+ @enderror
+ <div class="mt-2 flex justify-end gap-2 pr-1 pb-1">
+ <button type="button" wire:click="cancelEditing"
+ class="text-xs font-semibold text-gray-500 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Cancel</button>
+ <button type="submit"
+ wire:loading.attr="disabled"
+ wire:target="updateComment"
+ class="text-xs font-bold text-paw hover:text-paw-dark drop-shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Update</button>
+ </div>
+ </form>
+ </div>
+ @endif
+ @else
  <div x-show="editing" x-cloak class="w-full max-w-2xl border border-whisker/30 bg-cream/60 p-2">
  <form action="{{ route('posts.comments.update', ['post'=> $post,'comment'=> $comment]) }}"
  method="POST">
@@ -70,10 +94,11 @@
  </div>
  </form>
  </div>
+ @endif
  @endcan
 
  <!-- Action Links -->
- <div x-show="!editing" class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500">
+ <div @if(! $livewire) x-show="!editing" @endif @if($isLivewireEditing) class="hidden" @else class="flex items-center gap-3 px-3 mt-1 text-xs font-bold text-gray-500" @endif>
 @auth
 @if(! $comment->trashed())
 <!-- Like Button / Reactions -->
@@ -101,7 +126,11 @@
  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
  <span class="text-gray-300 font-normal">&middot;</span>
  @can('update', $comment)
+ @if($livewire)
+ <button type="button" wire:click="startEditing({{ (int) $comment->id }})" class="hover:underline hover:text-gray-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Edit</button>
+ @else
  <button @click="editing = true" class="hover:underline hover:text-gray-800">Edit</button>
+ @endif
  @endcan
  @can('delete', $comment)
  @if($livewire)
@@ -116,6 +145,10 @@
  @endif
  @endcan
 @can('report', $comment)
+@if(! $comment->trashed())
+@if($livewire)
+<button type="button" wire:click="reportComment({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="reportComment" class="hover:underline hover:text-amber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Report</button>
+@else
 <form method="POST"
  action="{{ route('comments.report', ['post'=> $post,'comment'=> $comment]) }}"
  class="inline m-0 p-0" onsubmit="return confirm('Report this comment?');">
@@ -123,6 +156,8 @@
  <input type="hidden" name="reason" value="spam">
  <button type="submit" class="hover:underline hover:text-amber-600">Report</button>
 </form>
+@endif
+@endif
 @endcan
  </div>
  </div>
@@ -189,7 +224,7 @@
  </div>
  <div class="mt-2" x-show="!collapsed" x-cloak x-transition.opacity.duration.150ms>
  @foreach($comment->replies as $reply)
- <x-comment-item :comment="$reply" :post="$post" :livewire="$livewire"/>
+ <x-comment-item :comment="$reply" :post="$post" :livewire="$livewire" :editing-comment-id="$editingCommentId"/>
  @endforeach
  </div>
  </div>

@@ -2,11 +2,15 @@
 
 use App\Actions\Comments\CreateCommentAction;
 use App\Actions\Comments\DeleteCommentAction;
+use App\Actions\Comments\UpdateCommentAction;
+use App\Actions\Engagement\CreateReportAction;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Moderation\Report;
 use App\Services\CommentService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -20,6 +24,13 @@ new class extends Component
      * @var array<int, string>
      */
     public array $replyBodies = [];
+
+    /**
+     * @var array<int, string>
+     */
+    public array $editBodies = [];
+
+    public ?int $editingCommentId = null;
 
     public int $commentCount = 0;
 
@@ -97,22 +108,88 @@ new class extends Component
         $this->dispatchThreadUpdated();
     }
 
+    public function startEditing(int $commentId): void
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $comment = $this->threadComment($commentId);
+
+        Gate::forUser($viewer)->authorize('update', $comment);
+
+        $this->editingCommentId = $commentId;
+        $this->editBodies[$commentId] = (string) $comment->body;
+        $this->resetErrorBag('editBodies.'.$commentId);
+    }
+
+    public function cancelEditing(): void
+    {
+        $this->editingCommentId = null;
+    }
+
+    public function updateComment(int $commentId, UpdateCommentAction $action): void
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $errorKey = 'editBodies.'.$commentId;
+        $body = $this->validatedInlineBody((string) ($this->editBodies[$commentId] ?? ''), $errorKey);
+
+        if ($body === null) {
+            return;
+        }
+
+        try {
+            $action->handle($viewer, $this->threadComment($commentId), $body);
+        } catch (ValidationException $exception) {
+            $this->copyValidationErrors($exception, $errorKey);
+
+            return;
+        }
+
+        unset($this->editBodies[$commentId]);
+
+        $this->editingCommentId = null;
+        $this->statusMessage = 'Comment updated.';
+        $this->syncThreadState();
+        $this->dispatchThreadUpdated();
+    }
+
     public function deleteComment(int $commentId, DeleteCommentAction $action): void
     {
         $viewer = $this->viewer();
 
         abort_unless($viewer instanceof User, 401);
 
-        $comment = Comment::query()
-            ->where('comments.post_id', $this->post->getKey())
-            ->whereKey($commentId)
-            ->firstOrFail();
-
-        $action->handle($viewer, $comment);
+        $action->handle($viewer, $this->threadComment($commentId));
 
         $this->statusMessage = 'Comment removed.';
         $this->syncThreadState();
         $this->dispatchThreadUpdated();
+    }
+
+    public function reportComment(int $commentId, CreateReportAction $action): void
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $comment = $this->threadComment($commentId);
+
+        Gate::forUser($viewer)->authorize('report', $comment);
+
+        try {
+            $action->handle($viewer, $comment, Report::REASON_SPAM);
+        } catch (ValidationException $exception) {
+            $this->copyValidationErrors($exception, 'report');
+
+            return;
+        }
+
+        $this->statusMessage = 'Comment reported. Thank you.';
+        $this->dispatch('comments-thread-reported', postId: (int) $this->post->getKey(), commentId: $commentId);
     }
 
     public function refreshThread(): void
@@ -132,6 +209,14 @@ new class extends Component
         $viewer = auth()->user();
 
         return $viewer instanceof User ? $viewer : null;
+    }
+
+    private function threadComment(int $commentId): Comment
+    {
+        return Comment::query()
+            ->where('comments.post_id', $this->post->getKey())
+            ->whereKey($commentId)
+            ->firstOrFail();
     }
 
     private function validatedInlineBody(string $body, string $errorKey): ?string
@@ -200,10 +285,15 @@ new class extends Component
             <p class="mt-0.5 text-xs text-fur" aria-live="polite">
                 @if ($hasFreshActivity)
                     Thread refreshed just now.
+                @elseif ($statusMessage)
+                    {{ $statusMessage }}
                 @else
                     Live updates check while this thread is visible.
                 @endif
             </p>
+            @error('report')
+                <p class="mt-1 text-xs font-semibold text-rose">{{ $message }}</p>
+            @enderror
         </div>
         <a href="{{ route('posts.show', $post) }}#comments" class="text-xs font-semibold text-paw hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
             View full thread
@@ -250,7 +340,7 @@ new class extends Component
         @if ($loop->first)
             <div class="space-y-4">
         @endif
-            <x-comment-item :comment="$comment" :post="$post" :livewire="true"/>
+            <x-comment-item :comment="$comment" :post="$post" :livewire="true" :editing-comment-id="$editingCommentId"/>
         @if ($loop->last)
             </div>
         @endif
