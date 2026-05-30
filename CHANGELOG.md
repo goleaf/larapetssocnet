@@ -83,6 +83,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added explicit comment coverage for guest posting redirects and blocked-user comment visibility filtering.
 - Added Livewire comment-thread coverage for creating comments, replying, deleting parent comments into tombstones, depth-limit rejection, and visible refresh polling.
 - Added reaction enhancement coverage for summary-cache invalidation, velocity badges, Livewire card reaction actions, unique reaction batching jobs, undo-safe delayed notifications, daily digest dispatch/mail, pet reaction leaderboards, and notification preference persistence.
 - Added reaction coverage for configured reaction definitions, legacy alias normalization, Paw/Haha/Angry counter caches, and simplified comment Paw reaction counts.

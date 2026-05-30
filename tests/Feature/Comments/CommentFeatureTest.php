@@ -31,6 +31,27 @@ it('allows an authorized user to add a top-level comment', function (): void {
     ]);
 });
 
+it('redirects guests who try to post a comment to login', function (): void {
+    $author = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->post(route('posts.comments.store', $post), [
+        'body' => 'Guest comment attempt',
+    ])->assertRedirect(route('login'));
+
+    $this->assertDatabaseMissing('comments', [
+        'post_id' => $post->id,
+        'body' => 'Guest comment attempt',
+    ]);
+
+    $this->assertDatabaseHas('posts', [
+        'id' => $post->id,
+        'comments_count' => 0,
+    ]);
+});
+
 it('allows replies and keeps reply counters in sync', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
@@ -118,6 +139,34 @@ it('prevents blocked users from commenting', function (): void {
             'body' => 'Nope',
         ])
         ->assertForbidden();
+});
+
+it('hides comments from a blocked user when the blocker views the thread', function (): void {
+    $author = User::factory()->create();
+    $blocker = User::factory()->create();
+    $blocked = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'body' => 'Post visible to the blocker',
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Comment::factory()->for($post)->for($blocked, 'user')->create([
+        'body' => 'blocked-user-comment-body',
+        'body_html' => 'blocked-user-comment-body',
+    ]);
+
+    $blocker->blocking()->attach($blocked->id);
+
+    $this->actingAs($blocked)
+        ->get(route('posts.show', $post))
+        ->assertOk()
+        ->assertSee('blocked-user-comment-body');
+
+    $this->actingAs($blocker)
+        ->get(route('posts.show', $post))
+        ->assertOk()
+        ->assertSee('Post visible to the blocker')
+        ->assertDontSee('blocked-user-comment-body');
 });
 
 it('updates edited_at only when content changes', function (): void {
