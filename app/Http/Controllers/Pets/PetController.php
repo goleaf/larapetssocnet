@@ -15,6 +15,7 @@ use App\Models\Pets\PetHealthLog;
 use App\Models\Pets\PetMilestone;
 use App\Services\ChartService;
 use App\Services\PersonalityTagService;
+use App\Services\PetReactionLeaderboardService;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Http\RedirectResponse;
@@ -120,6 +121,9 @@ class PetController extends Controller
             lifeStageLabel: $lifeStageLabel,
         );
         $careSnapshot = $this->careSnapshotForShow($pet, $isOwner);
+        $mostLovedPosts = $activeTab === 'about'
+            ? app(PetReactionLeaderboardService::class)->mostLovedPosts($pet)
+            : collect();
 
         return view('pets.show', [
             'pet' => $pet,
@@ -149,6 +153,7 @@ class PetController extends Controller
             'featuredMilestones' => $featuredMilestones,
             'identityFacts' => $identityFacts,
             'careSnapshot' => $careSnapshot,
+            'mostLovedPosts' => $mostLovedPosts,
         ]);
     }
 

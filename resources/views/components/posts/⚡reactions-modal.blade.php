@@ -31,16 +31,19 @@ new class extends Component
 
     public int $total = 0;
 
+    public string $summaryHtml = '';
+
     /**
      * @param  array<string, int>  $summary
      * @param  list<array{type: string, label: string, emoji: string, count: int, icon_class: string}>  $top
      */
-    public function mount(Post $post, array $summary = [], array $top = [], int $total = 0): void
+    public function mount(Post $post, array $summary = [], array $top = [], int $total = 0, string $summaryHtml = ''): void
     {
         $this->postId = (int) $post->getKey();
         $this->summary = $summary;
         $this->top = $top;
         $this->total = $total;
+        $this->summaryHtml = $summaryHtml;
     }
 
     public function open(string $filter = 'all'): void
@@ -144,6 +147,7 @@ new class extends Component
         $this->summary = Reaction::countMapForModel($post);
         $this->top = Reaction::topCountsForModel($post, 3);
         $this->total = (int) ($post->reactions_count ?? 0);
+        $this->summaryHtml = (string) app(\App\Services\ReactionSummaryCache::class)->html($post);
     }
 
     private function reactionQuery(): Builder
@@ -202,13 +206,7 @@ new class extends Component
     >
         @if ($top !== [])
             <span class="inline-flex items-center" data-ui="post-card-reaction-breakdown">
-                @foreach ($top as $index => $reaction)
-                    <span
-                        class="-ml-1 inline-flex size-7 items-center justify-center rounded-full border border-warm-white text-sm shadow-sm first:ml-0 {{ $reaction['icon_class'] }}"
-                        style="z-index: {{ 10 - $index }}"
-                        aria-hidden="true"
-                    >{{ $reaction['emoji'] }}</span>
-                @endforeach
+                {!! $summaryHtml !!}
             </span>
         @endif
         <span>{{ number_format($total) }}</span>

@@ -80,6 +80,7 @@ Pet profiles are user-owned sub-entities.
 ## Profile About Summary
 - The user profile About tab includes a compact horizontal pet strip after the activity summary. Query it through `Pet::visibleTo($viewer)`, eager-load only avatar media, and render circular avatar/name links to each visible pet profile.
 - Keep this strip read-only and lightweight: no follow controls, no per-pet relationship queries, and no private pets for visitors who cannot view them.
+- The pet profile About tab may show a compact "Most loved posts" leaderboard. Query it through the pet's tagged posts, keep visibility/status constraints in the relationship query, order by `posts.reactions_count` descending, and limit to three rows without aggregating reaction records.
 
 ## Media
 Pet uses Spatie MediaLibrary (public disk).

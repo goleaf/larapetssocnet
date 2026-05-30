@@ -454,6 +454,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'security_alerts' => true,
             'verification_emails' => true,
             'password_resets' => true,
+            'daily_reaction_summary' => false,
             'marketing' => false,
         ];
     }
@@ -993,10 +994,15 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function notificationEnabled(string $type): bool
     {
+        return $this->notificationPreference($type);
+    }
+
+    public function notificationPreference(string $type, bool $default = true): bool
+    {
         $prefs = $this->notification_preferences;
 
         if (! is_array($prefs) || ! array_key_exists($type, $prefs)) {
-            return true;
+            return $default;
         }
 
         return (bool) $prefs[$type];

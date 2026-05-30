@@ -2,15 +2,20 @@
 
 namespace App\Services;
 
+use App\Jobs\SendReactionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
-use App\Notifications\NewReaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReactionService
 {
+    public function __construct(
+        private readonly ReactionSummaryCache $summaryCache,
+        private readonly ReactionVelocityService $velocity,
+    ) {}
+
     /**
      * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int, reactions_count: int, reaction_counts: array<string, int>}
      */
@@ -21,6 +26,8 @@ class ReactionService
         if (! in_array($normalizedType, Reaction::types(), true)) {
             throw ValidationException::withMessages(['type' => 'Invalid reaction type.']);
         }
+
+        $topReactionsBefore = Reaction::topCountsForModel($post, 3);
 
         $result = DB::transaction(function () use ($user, $post, $normalizedType): array {
             $existing = Reaction::query()
@@ -66,17 +73,19 @@ class ReactionService
         $freshPost = $post->fresh();
         $likesCount = (int) ($freshPost?->likes_count ?? $post->likes_count ?? 0);
         $reactionsCount = (int) ($freshPost?->reactions_count ?? $post->reactions_count ?? 0);
+        $postForSummary = $freshPost ?? $post;
+        $topReactionsAfter = Reaction::topCountsForModel($postForSummary, 3);
 
         if ($result['action'] === 'added' && $user->id !== $post->user_id) {
-            $post->loadMissing('author');
-
-            if ($post->author->notificationEnabled('post_likes')) {
-                $notificationPost = $post->withoutRelation('author');
-                $notificationUser = $this->relationLightReactor($user);
-
-                $post->author->notify(new NewReaction($notificationUser, $notificationPost, $result['current_reaction']));
-            }
+            SendReactionNotificationJob::dispatch(
+                (int) $postForSummary->getKey(),
+                (int) $user->getKey(),
+                (string) $result['current_reaction'],
+            )->delay(now()->addSeconds(4));
         }
+
+        $this->summaryCache->forgetIfCompositionChanged($postForSummary, $topReactionsBefore, $topReactionsAfter);
+        $this->velocity->recordSnapshot($postForSummary);
 
         return [
             'action' => $result['action'],
@@ -85,17 +94,6 @@ class ReactionService
             'reactions_count' => $reactionsCount,
             'reaction_counts' => $this->reactionCountsFromPost($freshPost ?? $post),
         ];
-    }
-
-    private function relationLightReactor(User $user): User
-    {
-        return $user->withoutRelation([
-            'media',
-            'followers',
-            'following',
-            'acceptedFollowers',
-            'acceptedFollowing',
-        ]);
     }
 
     /**

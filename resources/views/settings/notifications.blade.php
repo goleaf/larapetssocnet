@@ -23,6 +23,9 @@
  <x-ui.toggle name="notifications[mentions]" label="Mentions"
  description="When someone @mentions you"
  :checked="$user->notificationEnabled('mentions')"/>
+ <x-ui.toggle name="notifications[daily_reaction_summary]" label="Daily reaction summary"
+ description="Optional 8pm roundup when you react to more than 20 posts in a day"
+ :checked="$user->notificationPreference('daily_reaction_summary', false)"/>
  </div>
  </div>
 

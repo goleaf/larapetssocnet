@@ -317,6 +317,11 @@ class Post extends Model implements HasMedia
         return $this->hasMany(PostReaction::class);
     }
 
+    public function reactionSnapshots(): HasMany
+    {
+        return $this->hasMany(PostReactionSnapshot::class);
+    }
+
     public function postMentions(): HasMany
     {
         return $this->hasMany(PostMention::class);

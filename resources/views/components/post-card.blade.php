@@ -55,6 +55,8 @@
     $defaultReaction = \App\Models\Content\Reaction::defaultType();
     $reactionCounts = \App\Models\Content\Reaction::countMapForModel($post);
     $topReactions = \App\Models\Content\Reaction::topCountsForModel($post, 3);
+    $reactionSummaryHtml = app(\App\Services\ReactionSummaryCache::class)->html($post);
+    $isReactionTrending = app(\App\Services\ReactionVelocityService::class)->isTrending($post);
     $rawViewerReaction = $post->getAttribute('current_user_reaction_type');
 
     if ($rawViewerReaction === null && $post->relationLoaded('reactions') && $viewer instanceof \App\Models\Identity\User) {
@@ -589,8 +591,7 @@
                 @auth
                     @mouseenter="queueReactionPicker()"
                     @mouseleave="closeReactionPickerSoon()"
-                    @focusin="openReactionPicker()"
-                    @focusout="closeReactionPickerSoon()"
+                    @focusout="if (!$el.contains($event.relatedTarget)) closeReactionPickerSoon()"
                     @touchstart.passive="startReactionPress()"
                     @touchend="cancelReactionPress()"
                     @touchcancel="cancelReactionPress()"
@@ -606,17 +607,29 @@
                         class="min-h-11 flex-1 sm:flex-none"
                         data-testid="like-toggle"
                         data-ui="post-card-reaction-toggle"
+                        x-ref="reactionButton"
+                        aria-controls="{{ $postDomId }}-reaction-picker"
+                        aria-haspopup="listbox"
+                        x-bind:aria-expanded="reactionPickerOpen"
                         aria-label="{{ __('React to post by :name', ['name' => $authorName]) }}"
                         @click="togglePrimaryReaction()"
+                        @keydown.enter.prevent="openReactionPicker({ focus: true })"
+                        @keydown.space.prevent="openReactionPicker({ focus: true })"
                         x-bind:disabled="likeBusy"
-                        x-bind:aria-label="(liked ? 'Remove reaction from post by ' : 'React to post by ') + authorName"
+                        x-bind:aria-label="reactionButtonLabel()"
                         x-bind:aria-pressed="liked"
                         x-bind:aria-busy="likeBusy"
                         x-bind:class="liked ? activeReactionClass() : ''"
                     >
                         <span aria-hidden="true" x-text="activeReactionEmoji()"></span>
                         <span x-text="activeReactionLabel()"></span>
-                        <span class="opacity-80" aria-live="polite" x-text="likes"></span>
+                        <span
+                            class="inline-block opacity-80"
+                            aria-live="polite"
+                            x-text="likes"
+                            x-bind:class="reactionCountAnimationClass"
+                            x-on:animationend="clearReactionCountAnimation()"
+                        ></span>
                     </x-ui.button>
 
                     <livewire:posts.reactions-modal
@@ -624,10 +637,18 @@
                         :summary="$reactionCounts"
                         :top="$topReactions"
                         :total="$likeCount"
+                        :summary-html="(string) $reactionSummaryHtml"
                         :key="'post-reactions-modal-'.$post->getKey().'-'.$postDomId"
                     />
 
+                    @if ($isReactionTrending)
+                        <span class="inline-flex min-h-8 items-center rounded-[var(--radius-pill)] border border-amber/30 bg-amber-light/70 px-2 text-xs font-semibold text-amber" data-ui="post-card-reaction-trending-badge">
+                            🔥 Trending
+                        </span>
+                    @endif
+
                     <div
+                        id="{{ $postDomId }}-reaction-picker"
                         x-show="reactionPickerOpen"
                         x-cloak
                         x-transition:enter="transition ease-out duration-150"
@@ -639,18 +660,29 @@
                         @click.outside="closeReactionPicker()"
                         class="fixed inset-x-4 bottom-4 z-50 grid grid-cols-3 gap-1 rounded-[var(--radius-pill)] border ui-border bg-warm-white p-2 shadow-card-hover sm:absolute sm:bottom-full sm:left-0 sm:right-auto sm:mb-2 sm:flex sm:w-max"
                         data-ui="post-card-reaction-picker"
-                        role="group"
+                        role="listbox"
                         aria-label="{{ __('Choose a reaction') }}"
                     >
-                        <template x-for="option in reactionOptions" :key="option.type">
+                        <template x-for="(option, index) in reactionOptions" :key="option.type">
                             <button
                                 type="button"
                                 class="flex min-h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-soft)] border px-2 text-center transition duration-150 hover:-translate-y-1 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
                                 :class="reaction === option.type ? option.button_class : 'border-transparent hover:border-whisker/60 hover:bg-cream/80'"
+                                :id="'{{ $postDomId }}-reaction-option-' + option.type"
                                 :aria-label="'React with ' + option.label"
-                                :aria-pressed="reaction === option.type"
+                                :aria-selected="reaction === option.type"
+                                :tabindex="focusedReactionIndex === index ? 0 : -1"
                                 @click="setReaction(option.type)"
+                                @focus="focusedReactionIndex = index"
+                                @keydown.arrow-right.prevent="focusNextReaction()"
+                                @keydown.arrow-down.prevent="focusNextReaction()"
+                                @keydown.arrow-left.prevent="focusPreviousReaction()"
+                                @keydown.arrow-up.prevent="focusPreviousReaction()"
+                                @keydown.enter.prevent="setReaction(option.type)"
+                                @keydown.space.prevent="setReaction(option.type)"
+                                @keydown.escape.prevent="closeReactionPicker({ restoreFocus: true })"
                                 data-ui="post-card-reaction-option"
+                                role="option"
                             >
                                 <span class="text-xl leading-none" aria-hidden="true" x-text="option.emoji"></span>
                                 <span class="text-[10px] font-semibold leading-tight" x-text="option.label"></span>
@@ -678,14 +710,14 @@
                             data-ui="post-card-reaction-breakdown"
                             title="{{ collect($topReactions)->map(fn (array $reaction): string => $reaction['emoji'].' '.$reaction['count'])->implode(' · ') }}"
                         >
-                            @foreach ($topReactions as $index => $reaction)
-                                <span
-                                    class="-ml-1 inline-flex size-7 items-center justify-center rounded-full border border-warm-white text-sm shadow-sm first:ml-0 {{ $reaction['icon_class'] }}"
-                                    style="z-index: {{ 10 - $index }}"
-                                    aria-hidden="true"
-                                >{{ $reaction['emoji'] }}</span>
-                            @endforeach
+                            {!! $reactionSummaryHtml !!}
                         </div>
+                    @endif
+
+                    @if ($isReactionTrending)
+                        <span class="inline-flex min-h-8 items-center rounded-[var(--radius-pill)] border border-amber/30 bg-amber-light/70 px-2 text-xs font-semibold text-amber" data-ui="post-card-reaction-trending-badge">
+                            🔥 Trending
+                        </span>
                     @endif
                 @endauth
 
@@ -703,6 +735,25 @@
                     aria-hidden="true"
                 >
                     <span x-text="reactionBurst"></span>
+                </div>
+
+                <div
+                    x-show="undoToastVisible"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 translate-y-2"
+                    class="fixed bottom-4 left-1/2 z-[80] flex min-h-11 -translate-x-1/2 items-center gap-3 rounded-[var(--radius-pill)] border ui-border bg-bark px-4 py-2 text-sm font-semibold text-white shadow-card-hover"
+                    role="status"
+                    data-ui="post-card-reaction-undo-toast"
+                >
+                    <span>Reaction saved.</span>
+                    <button type="button" class="rounded-[var(--radius-soft)] px-2 py-1 text-cream underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream" @click="undoReaction()">
+                        Undo
+                    </button>
                 </div>
             </div>
 

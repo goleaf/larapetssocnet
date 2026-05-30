@@ -165,6 +165,7 @@ class SettingsTest extends TestCase
             ->put('/settings/notifications', [
                 'notifications' => [
                     'post_likes' => 1,
+                    'daily_reaction_summary' => 1,
                     'new_follower' => 0,
                     'direct_messages' => 0,
                 ],
@@ -173,6 +174,7 @@ class SettingsTest extends TestCase
 
         $user->refresh();
         $this->assertTrue($user->notificationEnabled('post_likes'));
+        $this->assertTrue($user->notificationPreference('daily_reaction_summary', false));
         $this->assertFalse($user->notificationEnabled('new_follower'));
         $this->assertFalse($user->notificationEnabled('direct_messages'));
     }

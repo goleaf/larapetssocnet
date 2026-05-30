@@ -1,4 +1,46 @@
 @layer utilities {
+    @keyframes reaction-count-roll-up {
+        0% {
+            opacity: 0;
+            transform: translateY(0.45rem);
+        }
+
+        55% {
+            opacity: 1;
+            transform: translateY(-0.12rem);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes reaction-count-roll-down {
+        0% {
+            opacity: 0;
+            transform: translateY(-0.45rem);
+        }
+
+        55% {
+            opacity: 1;
+            transform: translateY(0.12rem);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .reaction-count-roll-up {
+        animation: reaction-count-roll-up 360ms var(--ease-standard);
+    }
+
+    .reaction-count-roll-down {
+        animation: reaction-count-roll-down 360ms var(--ease-standard);
+    }
+
     .surface-glass {
         background: var(--surface-panel);
         backdrop-filter: none;

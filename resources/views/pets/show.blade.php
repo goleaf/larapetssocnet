@@ -461,6 +461,39 @@
                         </section>
                     </div>
 
+                    @if(isset($mostLovedPosts) && $mostLovedPosts->isNotEmpty())
+                        <section class="mt-6 border-t ui-border pt-5" data-ui="pet-about-most-loved-posts" aria-labelledby="pet-most-loved-posts-heading">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="shell-kicker">Reaction leaderboard</p>
+                                    <h3 id="pet-most-loved-posts-heading" class="mt-1 font-display text-lg font-semibold text-bark">Most loved posts</h3>
+                                </div>
+                                <x-ui.badge variant="primary" size="sm">Top {{ $mostLovedPosts->count() }}</x-ui.badge>
+                            </div>
+
+                            <ol class="mt-4 grid gap-3" role="list">
+                                @foreach($mostLovedPosts as $leaderboardPost)
+                                    <li class="ui-list-item p-4" data-ui="pet-about-most-loved-post">
+                                        <a href="{{ route('posts.show', ['post' => $leaderboardPost->uuid ?: $leaderboardPost->getKey()]) }}" class="block rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <p class="text-xs font-semibold uppercase text-fur">#{{ $loop->iteration }} most loved</p>
+                                                    <p class="mt-1 line-clamp-2 text-sm leading-6 text-bark">
+                                                        {{ filled($leaderboardPost->body) ? $leaderboardPost->body : 'Media post' }}
+                                                    </p>
+                                                </div>
+                                                <span class="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-[var(--radius-pill)] border border-paw/20 bg-paw-light/70 px-2 text-xs font-semibold text-paw">
+                                                    <span aria-hidden="true">🐾</span>
+                                                    {{ number_format((int) $leaderboardPost->reactions_count) }}
+                                                </span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </section>
+                    @endif
+
                 </x-ui.card>
             @endif
         </div>

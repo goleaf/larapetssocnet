@@ -26,6 +26,11 @@
 - Avoid new per-card database queries for reaction or save state.
 - The primary reaction control should keep `data-testid="like-toggle"` for compatibility while rendering the richer configured `paw`, `love`, `haha`, `wow`, `sad`, and `angry` reaction picker, reaction breakdown trigger, and floating burst animation.
 - The reaction picker uses Alpine delayed hover, mobile long-press timers, `x-transition` directives, optimistic state, and rollback from the `posts.react` JSON response; keep the picker itself Alpine-owned. The reactions-list modal may be a separate Livewire child component because it owns pagination and follow actions.
+- The reaction picker must be keyboard accessible: the trigger exposes `aria-haspopup="listbox"`, Enter/Space opens the picker, reaction options use `role="option"` inside `role="listbox"`, arrow keys move the roving focus, Enter/Space selects, and Escape closes with focus restored.
+- Reaction count changes should use Alpine to apply the CSS roll-up or roll-down class and remove it after the keyframe finishes. Do not directly swap numbers without animation.
+- The reaction summary emoji stack is supplied by `ReactionSummaryCache` and passed into the reactions modal as rendered HTML. Keep the cache TTL short and invalidate it from the reaction write path when the top-three composition changes.
+- The Trending badge is display-only and backed by reaction snapshots; it should not run aggregate reaction queries from the card.
+- The Undo toast appears after successful add/change reactions for four seconds and calls the same reaction endpoint with the active type to remove it. Notification suppression belongs to the delayed reaction notification job, not to the browser.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
 - Feed images must keep native `loading="lazy"` and may expose `data-blurhash` plus a low-resolution placeholder data URI from media custom properties when the processing pipeline has provided them.
 - Count `posts.view_count` during authenticated non-author `feed` and `profile` renders only. Pass explicit non-counting contexts such as `detail`, `explore`, `group`, or `saved` for cards that should not contribute to author analytics.

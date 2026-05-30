@@ -6,6 +6,7 @@ use App\Console\Commands\ExpirePetOwnerInvitationsCommand;
 use App\Console\Commands\ExpirePetOwnershipTransfersCommand;
 use App\Console\Commands\GenerateProfileWrappedCommand;
 use App\Console\Commands\PublishScheduledPostsCommand;
+use App\Console\Commands\SendDailyReactionSummariesCommand;
 use App\Console\Commands\SendPetBirthdayNotificationsCommand;
 use App\Console\Commands\SendPetHealthRemindersCommand;
 use Illuminate\Support\Facades\Schedule;
@@ -34,4 +35,8 @@ Schedule::command(ExpirePetOwnershipTransfersCommand::class)
 
 Schedule::command(SendPetHealthRemindersCommand::class)
     ->dailyAt((string) config('pets.health_reminders.notification_time', '09:00'))
+    ->withoutOverlapping();
+
+Schedule::command(SendDailyReactionSummariesCommand::class)
+    ->hourly()
     ->withoutOverlapping();

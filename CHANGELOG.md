@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added animated reaction count roll-up/down feedback, keyboard-accessible reaction picker controls, four-second Undo toasts, cached reaction-summary emoji stacks, reaction velocity snapshots with Trending badges, pet About "Most loved posts" leaderboards, delayed reaction notification jobs, and opt-in daily reaction summary emails.
 - Added config-backed Paw, Love, Haha, Wow, Sad, and Angry post reactions with legacy alias normalization, Paw as the default reaction, new post/comment reaction counter columns, a paginated reactions-list modal, and simplified Paw/Love comment reactions.
 - Added precomputed `feed_items` delivery rows for the news feed, written by queued 500-row fan-out chunks with recipient/source uniqueness for retry safety.
 - Added a post-specific Spatie media path generator so finalized post media is stored under `posts/YYYY/MM/DD/{media_id}/`.
@@ -34,6 +35,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed post reaction notifications to dispatch after a four-second undo window and re-check the persisted reaction row before notifying authors.
 - Changed the shared post-card reaction picker to use the configured pet-themed reaction set, delayed desktop hover, mobile long-press behavior, top-reaction breakdown icons, and Paw-backed legacy like toggles.
 - Changed post reaction responses and feed/list post queries to expose the current viewer reaction plus per-type counter-cache values without per-card reaction lookups.
 - Changed the main feed candidate query to read `feed_items` first, while retaining relationship fallback branches and outer query-level visibility, block, and mute enforcement.
@@ -79,6 +81,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added reaction enhancement coverage for summary-cache invalidation, velocity badges, undo-safe delayed notifications, daily digest dispatch/mail, pet reaction leaderboards, and notification preference persistence.
 - Added reaction coverage for configured reaction definitions, legacy alias normalization, Paw/Haha/Angry counter caches, and simplified comment Paw reaction counts.
 - Added reaction coverage for guest blocking, pet-tagged posts, database uniqueness, bulk counter sync, current reaction hydration, and picker transition markup.
 - Added feed fan-out chunk coverage for idempotent `feed_items` writes, source-filtered feed reads, stale private-row filtering, and date-partitioned post media paths.
