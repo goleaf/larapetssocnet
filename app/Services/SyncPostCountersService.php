@@ -22,12 +22,7 @@ class SyncPostCountersService
             'comments_count' => $commentsCount,
             'save_count' => $saveCount,
             'reactions_count' => $likesCount,
-            'love_count' => $typeCounts[Reaction::TYPE_LOVE],
-            'cute_count' => $typeCounts[Reaction::TYPE_CUTE],
-            'funny_count' => $typeCounts[Reaction::TYPE_FUNNY],
-            'wow_count' => $typeCounts[Reaction::TYPE_WOW],
-            'sad_count' => $typeCounts[Reaction::TYPE_SAD],
-            'support_count' => $typeCounts[Reaction::TYPE_SUPPORT],
+            ...$this->counterColumnUpdates($typeCounts),
             'shares_count' => $sharesCount,
         ]);
 
@@ -39,7 +34,7 @@ class SyncPostCountersService
      */
     private function reactionTypeCounts(Post $post): array
     {
-        $counts = array_fill_keys(Reaction::TYPES, 0);
+        $counts = array_fill_keys(Reaction::types(), 0);
 
         foreach ($post->reactions()->selectRaw('type, count(*) as aggregate')->groupBy('type')->pluck('aggregate', 'type') as $type => $count) {
             $type = Reaction::normalizeType((string) $type);
@@ -50,5 +45,20 @@ class SyncPostCountersService
         }
 
         return $counts;
+    }
+
+    /**
+     * @param  array<string, int>  $typeCounts
+     * @return array<string, int>
+     */
+    private function counterColumnUpdates(array $typeCounts): array
+    {
+        $updates = [];
+
+        foreach (Reaction::types() as $type) {
+            $updates[Reaction::counterColumn($type)] = $typeCounts[$type] ?? 0;
+        }
+
+        return $updates;
     }
 }

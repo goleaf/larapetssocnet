@@ -10,6 +10,7 @@ export default {
         './resources/**/*.js',
         './resources/**/*.scss',
         './resources/**/*.vue',
+        './config/**/*.php',
         './vendor/robsontenorio/mary/src/View/Components/**/*.php',
     ],
     blocklist: ['[file:line]'],

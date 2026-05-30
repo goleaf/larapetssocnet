@@ -24,8 +24,8 @@
 ## Engagement State
 - Use `liked_by_viewer`, `current_user_reaction_type`, `saved_by_viewer`, and counter attributes when eager-loaded by feed queries.
 - Avoid new per-card database queries for reaction or save state.
-- The primary reaction control should keep `data-testid="like-toggle"` for compatibility while rendering the richer `data-ui="post-card-reaction-picker"` emoji picker and floating burst animation.
-- The reaction picker uses Alpine `x-transition` directives, optimistic state, and rollback from the `posts.react` JSON response; do not add a second Livewire child component for the picker itself.
+- The primary reaction control should keep `data-testid="like-toggle"` for compatibility while rendering the richer configured `paw`, `love`, `haha`, `wow`, `sad`, and `angry` reaction picker, reaction breakdown trigger, and floating burst animation.
+- The reaction picker uses Alpine delayed hover, mobile long-press timers, `x-transition` directives, optimistic state, and rollback from the `posts.react` JSON response; keep the picker itself Alpine-owned. The reactions-list modal may be a separate Livewire child component because it owns pagination and follow actions.
 - Use `Post::mediaItemsForDisplay()` when rendering post media or profile media grids so legacy `post_media` rows and Spatie MediaLibrary collections resolve consistently.
 - Feed images must keep native `loading="lazy"` and may expose `data-blurhash` plus a low-resolution placeholder data URI from media custom properties when the processing pipeline has provided them.
 - Count `posts.view_count` during authenticated non-author `feed` and `profile` renders only. Pass explicit non-counting contexts such as `detail`, `explore`, `group`, or `saved` for cards that should not contribute to author analytics.

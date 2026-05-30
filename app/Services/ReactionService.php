@@ -12,25 +12,13 @@ use Illuminate\Validation\ValidationException;
 class ReactionService
 {
     /**
-     * @var list<string>
-     */
-    public const TYPES = [
-        Reaction::TYPE_LOVE,
-        Reaction::TYPE_CUTE,
-        Reaction::TYPE_FUNNY,
-        Reaction::TYPE_WOW,
-        Reaction::TYPE_SAD,
-        Reaction::TYPE_SUPPORT,
-    ];
-
-    /**
      * @return array{action: 'added'|'changed'|'removed', current_reaction: ?string, likes_count: int, reactions_count: int, reaction_counts: array<string, int>}
      */
     public function react(User $user, Post $post, string $type): array
     {
         $normalizedType = Reaction::normalizeType($type);
 
-        if (! in_array($normalizedType, self::TYPES, true)) {
+        if (! in_array($normalizedType, Reaction::types(), true)) {
             throw ValidationException::withMessages(['type' => 'Invalid reaction type.']);
         }
 
@@ -42,20 +30,20 @@ class ReactionService
                 ->lockForUpdate()
                 ->first();
 
-            if ($existing?->type === $normalizedType) {
+            if ($existing !== null && Reaction::normalizeType((string) $existing->type) === $normalizedType) {
                 $existing->delete();
                 $post->decrementCounter('likes_count');
                 $post->decrementCounter('reactions_count');
-                $post->decrementCounter($this->counterColumn($normalizedType));
+                $post->decrementCounter(Reaction::counterColumn($normalizedType));
                 $this->postAuthor($post)?->decrementCounter('post_reactions_received_count');
 
                 return ['action' => 'removed', 'current_reaction' => null];
             }
 
             if ($existing) {
-                $post->decrementCounter($this->counterColumn(Reaction::normalizeType((string) $existing->type)));
+                $post->decrementCounter(Reaction::counterColumn((string) $existing->type));
                 $existing->update(['type' => $normalizedType]);
-                $post->incrementCounter($this->counterColumn($normalizedType));
+                $post->incrementCounter(Reaction::counterColumn($normalizedType));
 
                 return ['action' => 'changed', 'current_reaction' => $normalizedType];
             }
@@ -69,7 +57,7 @@ class ReactionService
 
             $post->incrementCounter('likes_count');
             $post->incrementCounter('reactions_count');
-            $post->incrementCounter($this->counterColumn($normalizedType));
+            $post->incrementCounter(Reaction::counterColumn($normalizedType));
             $this->postAuthor($post)?->incrementCounter('post_reactions_received_count');
 
             return ['action' => 'added', 'current_reaction' => $normalizedType];
@@ -110,23 +98,12 @@ class ReactionService
         ]);
     }
 
-    private function counterColumn(string $type): string
-    {
-        return $type.'_count';
-    }
-
     /**
      * @return array<string, int>
      */
     private function reactionCountsFromPost(Post $post): array
     {
-        $counts = [];
-
-        foreach (Reaction::TYPES as $type) {
-            $counts[$type] = (int) ($post->getAttribute($this->counterColumn($type)) ?? 0);
-        }
-
-        return $counts;
+        return Reaction::countMapForModel($post);
     }
 
     private function postAuthor(Post $post): ?User

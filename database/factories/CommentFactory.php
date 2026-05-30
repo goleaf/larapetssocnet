@@ -33,6 +33,8 @@ class CommentFactory extends Factory
             'body_html' => $body,
             'replies_count' => 0,
             'reactions_count' => 0,
+            'paw_count' => 0,
+            'love_count' => 0,
         ];
     }
 }

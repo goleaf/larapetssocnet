@@ -3,6 +3,7 @@
 namespace App\Models\Analytics;
 
 use App\Models\Content\Post;
+use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use Carbon\CarbonImmutable;
 use Database\Factories\Analytics\ProfileWrappedSummaryFactory;
@@ -114,15 +115,9 @@ class ProfileWrappedSummary extends Model
             return 'No reactions yet';
         }
 
-        return match ($this->top_reaction_type) {
-            'love', 'like' => 'Love',
-            'cute' => 'Cute',
-            'funny', 'laugh' => 'Funny',
-            'wow' => 'Wow',
-            'sad' => 'Sad',
-            'support' => 'Support',
-            default => Str::headline((string) $this->top_reaction_type),
-        };
+        $type = Reaction::normalizeType((string) $this->top_reaction_type);
+
+        return Reaction::labelMap()[$type] ?? Str::headline($type);
     }
 
     /**

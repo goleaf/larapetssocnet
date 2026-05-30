@@ -501,7 +501,7 @@ class MaintenanceTaskService
                                 'reactable_type' => $post->getMorphClass(),
                                 'reactable_id' => $legacy->getAttribute('post_id'),
                             ], [
-                                'type' => Reaction::TYPE_LOVE,
+                                'type' => Reaction::defaultType(),
                             ]);
                         });
                 }

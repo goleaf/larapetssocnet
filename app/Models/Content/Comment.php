@@ -34,6 +34,8 @@ use Illuminate\Support\Str;
     'edited_at',
     'replies_count',
     'reactions_count',
+    'paw_count',
+    'love_count',
 ])]
 class Comment extends Model
 {
@@ -48,6 +50,8 @@ class Comment extends Model
             'edited_at' => 'datetime',
             'replies_count' => 'integer',
             'reactions_count' => 'integer',
+            'paw_count' => 'integer',
+            'love_count' => 'integer',
         ];
     }
 
@@ -98,6 +102,8 @@ class Comment extends Model
             'comments.edited_at',
             'comments.replies_count',
             'comments.reactions_count',
+            'comments.paw_count',
+            'comments.love_count',
             'comments.created_at',
             'comments.updated_at',
             'comments.deleted_at',

@@ -56,11 +56,11 @@ it('generates annual wrapped metrics from profile activity', function (): void {
         'created_at' => '2024-12-31 10:00:00',
     ]);
 
-    wrappedReaction($marchPost, $firstFan, Reaction::TYPE_CUTE, '2025-04-01 10:00:00');
+    wrappedReaction($marchPost, $firstFan, Reaction::TYPE_HAHA, '2025-04-01 10:00:00');
     wrappedReaction($marchPost, $secondFan, Reaction::TYPE_LOVE, '2025-04-02 10:00:00');
-    wrappedReaction($topPost, $firstFan, Reaction::TYPE_CUTE, '2025-04-03 10:00:00');
-    wrappedReaction($topPost, $secondFan, Reaction::TYPE_CUTE, '2025-04-04 10:00:00');
-    wrappedReaction($topPost, $thirdFan, Reaction::TYPE_SUPPORT, '2025-04-05 10:00:00');
+    wrappedReaction($topPost, $firstFan, Reaction::TYPE_HAHA, '2025-04-03 10:00:00');
+    wrappedReaction($topPost, $secondFan, Reaction::TYPE_HAHA, '2025-04-04 10:00:00');
+    wrappedReaction($topPost, $thirdFan, Reaction::TYPE_PAW, '2025-04-05 10:00:00');
 
     Comment::factory()->for($topPost, 'post')->for($firstFan, 'user')->create(['created_at' => '2025-04-06 10:00:00']);
     Comment::factory()->for($topPost, 'post')->for($secondFan, 'user')->create(['created_at' => '2025-04-07 10:00:00']);
@@ -101,7 +101,7 @@ it('generates annual wrapped metrics from profile activity', function (): void {
 
     expect($summary->total_posts_published)->toBe(3)
         ->and($summary->total_reactions_received)->toBe(5)
-        ->and($summary->top_reaction_type)->toBe(Reaction::TYPE_CUTE)
+        ->and($summary->top_reaction_type)->toBe(Reaction::TYPE_HAHA)
         ->and($summary->top_reaction_count)->toBe(3)
         ->and($summary->most_active_month)->toBe(3)
         ->and($summary->most_active_month_posts)->toBe(2)
@@ -186,7 +186,7 @@ it('shows wrapped only to the profile owner during the first two weeks of januar
             'year' => 2026,
             'total_posts_published' => 12,
             'total_reactions_received' => 99,
-            'top_reaction_type' => Reaction::TYPE_CUTE,
+            'top_reaction_type' => Reaction::TYPE_HAHA,
             'top_reaction_count' => 35,
             'most_active_month' => 4,
             'most_active_month_posts' => 6,
@@ -203,7 +203,7 @@ it('shows wrapped only to the profile owner during the first two weeks of januar
             ->assertSeeText('2026 Profile wrapped')
             ->assertSeeText('12')
             ->assertSeeText('Reactions received')
-            ->assertSeeText('Cute')
+            ->assertSeeText('Haha')
             ->assertSeeText('April')
             ->assertSee('data-ui="profile-wrapped-share-image"', false);
 

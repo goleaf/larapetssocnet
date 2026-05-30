@@ -1,78 +1,97 @@
-@props(['post','comment','currentReaction'=> null])
+@props(['post', 'comment', 'currentReaction' => null])
 
 @php
-    $reactionOptions = \App\Models\Content\Reaction::emojiMap();
+    $options = collect(\App\Models\Content\Reaction::options())
+        ->whereIn('type', \App\Models\Content\Reaction::commentTypes())
+        ->values()
+        ->all();
+    $counts = [
+        'paw' => (int) ($comment->paw_count ?? 0),
+        'love' => (int) ($comment->love_count ?? 0),
+    ];
+    $currentReaction = filled($currentReaction)
+        ? \App\Models\Content\Reaction::normalizeType((string) $currentReaction)
+        : null;
 @endphp
 
-<div class="relative inline-flex items-center gap-2 group/react" x-data="{
- current: '{{ $currentReaction }}',
- total: {{ $comment->reactions_count }},
- showPicker: false,
- loading: false,
- async react(type) {
- if (this.loading) { return; }
- this.loading = true;
- const prev = this.current;
- const prevTotal = this.total;
+<div
+    class="inline-flex items-center gap-1"
+    x-data="{
+        current: @js($currentReaction),
+        counts: @js($counts),
+        loading: false,
+        async react(type) {
+            if (this.loading) {
+                return
+            }
 
- if (this.current === type) {
- this.total = Math.max(0, this.total - 1);
- this.current = null;
- } else {
- if (!this.current) {
- this.total += 1;
- }
- this.current = type;
- }
+            this.loading = true
+            const previousCurrent = this.current
+            const previousCounts = { ...this.counts }
+            const removing = this.current === type
 
- this.showPicker = false;
+            if (removing) {
+                this.counts[type] = Math.max(0, (this.counts[type] || 0) - 1)
+                this.current = null
+            } else {
+                if (this.current) {
+                    this.counts[this.current] = Math.max(0, (this.counts[this.current] || 0) - 1)
+                }
 
- try {
- const response = await fetch('{{ route('comments.react', $comment) }}', {
- method:'POST',
- headers: {
-'Content-Type':'application/json',
-'X-CSRF-TOKEN':'{{ csrf_token() }}',
-'Accept':'application/json',
- },
- body: JSON.stringify({ type }),
- });
- const data = await response.json();
- if (!response.ok || !data.success) {
- throw new Error('Reaction failed');
- }
- } catch (e) {
- this.current = prev;
- this.total = prevTotal;
- }
+                this.counts[type] = (this.counts[type] || 0) + 1
+                this.current = type
+            }
 
- this.loading = false;
- }
- }" @mouseleave="setTimeout(() => { if (!$el.matches(':hover')) showPicker = false }, 300)">
- <!-- Reaction Button -->
- <button @mouseenter="showPicker = true" @click="react(current ||'love')" class="hover:underline"
- :class="current ?'text-paw':''">
- <span x-show="!current">React</span>
- <span x-show="current ==='love'">Love</span>
- <span x-show="current ==='cute'">Cute</span>
- <span x-show="current ==='funny'">Funny</span>
- <span x-show="current ==='wow'">Wow</span>
- <span x-show="current ==='sad'">Sad</span>
- <span x-show="current ==='support'">Support</span>
- </button>
+            try {
+                const response = await fetch(@js(route('comments.react', $comment)), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ type }),
+                })
+                const data = await response.json()
 
- <!-- Reaction Picker Popover -->
- <div x-show="showPicker" x-transition:enter="transition ease-out duration-100"
- x-transition:enter-start="opacity-0 translate-y-2 scale-95"
- x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-75"
- x-transition:leave-start="opacity-100 translate-y-0 scale-100"
- x-transition:leave-end="opacity-0 translate-y-2 scale-95"
- class="absolute bottom-6 -left-2 z-50 flex items-center gap-1 rounded-full border border-gray-200 bg-white p-1 shadow-lg"
- style="display: none;">
- @foreach($reactionOptions as $type => $emoji)
- <button type="button" title="{{ ucfirst($type) }}"
- class="h-8 w-8 rounded-full text-xl hover:scale-125 transition-transform origin-bottom"
- :class="current ==='{{ $type }}'?'bg-gray-100':''" @click="react('{{ $type }}')">{{ $emoji }}</button>
- @endforeach
- </div>
+                if (!response.ok || !data.success) {
+                    throw new Error('reaction_failed')
+                }
+
+                if (data.data?.current_reaction === null || typeof data.data?.current_reaction === 'string') {
+                    this.current = data.data.current_reaction
+                }
+
+                if (data.data?.reaction_counts) {
+                    this.counts = {
+                        paw: Number(data.data.reaction_counts.paw || 0),
+                        love: Number(data.data.reaction_counts.love || 0),
+                    }
+                }
+            } catch {
+                this.current = previousCurrent
+                this.counts = previousCounts
+            } finally {
+                this.loading = false
+            }
+        },
+    }"
+    data-ui="comment-reaction-bar"
+>
+    @foreach ($options as $option)
+        <button
+            type="button"
+            class="inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-pill)] border px-2 text-xs font-semibold transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+            :class="current === @js($option['type']) ? @js($option['button_class']) : 'border-transparent text-fur'"
+            :aria-pressed="current === @js($option['type'])"
+            x-bind:disabled="loading"
+            x-bind:aria-busy="loading"
+            @click="react(@js($option['type']))"
+            data-ui="comment-reaction-{{ $option['type'] }}"
+        >
+            <span aria-hidden="true">{{ $option['emoji'] }}</span>
+            <span>{{ $option['label'] }}</span>
+            <span class="opacity-80" x-text="counts[@js($option['type'])] || 0">{{ $counts[$option['type']] ?? 0 }}</span>
+        </button>
+    @endforeach
 </div>

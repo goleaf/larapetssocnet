@@ -80,7 +80,7 @@ it('toggles post likes via json endpoint', function (): void {
         'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->id,
         'user_id' => $viewer->id,
-        'type' => 'love',
+        'type' => 'paw',
     ]);
 
     $this->actingAs($viewer)

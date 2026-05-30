@@ -6,6 +6,7 @@ namespace App\Http\Requests\Posts;
 
 use App\Models\Content\Reaction;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReactToPostRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class ReactToPostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', 'in:'.implode(',', Reaction::allowedTypes())],
+            'type' => ['required', 'string', Rule::in(Reaction::allowedTypes())],
         ];
     }
 }

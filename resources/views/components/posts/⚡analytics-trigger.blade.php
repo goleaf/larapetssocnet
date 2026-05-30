@@ -19,7 +19,7 @@ new class extends Component
     public array $metricCards = [];
 
     /**
-     * @var list<array{type: string, label: string, count: int}>
+     * @var list<array{type: string, label: string, emoji: string, count: int}>
      */
     public array $reactions = [];
 
@@ -117,7 +117,10 @@ new class extends Component
  <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
  @foreach ($reactions as $reaction)
  <div class="flex items-center justify-between gap-3 rounded-[var(--radius-soft)] border ui-border px-3 py-2" data-ui="post-analytics-reaction-{{ $reaction['type'] }}">
- <span class="text-sm font-medium text-fur">{{ $reaction['label'] }}</span>
+ <span class="inline-flex min-w-0 items-center gap-2 text-sm font-medium text-fur">
+ <span aria-hidden="true">{{ $reaction['emoji'] }}</span>
+ <span>{{ $reaction['label'] }}</span>
+ </span>
  <span class="text-sm font-bold ui-text">{{ number_format($reaction['count']) }}</span>
  </div>
  @endforeach

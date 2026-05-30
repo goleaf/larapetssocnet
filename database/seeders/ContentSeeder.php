@@ -129,7 +129,7 @@ class ContentSeeder extends Seeder
         }
 
         $reactions = [];
-        $reactionTypes = ['like', 'love', 'wow', 'care'];
+        $reactionTypes = ['paw', 'love', 'haha', 'wow', 'sad', 'angry'];
 
         $maxPostReactors = min(8, count($userIds));
 
@@ -217,7 +217,21 @@ class ContentSeeder extends Seeder
 
         DB::statement('UPDATE posts SET comments_count = (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id)');
         DB::statement("UPDATE posts SET reactions_count = (SELECT COUNT(*) FROM reactions WHERE reactions.reactable_type = 'App\\Models\\Post' AND reactions.reactable_id = posts.id)");
+        foreach (['paw', 'love', 'haha', 'wow', 'sad', 'angry'] as $type) {
+            $column = $type.'_count';
+
+            if (Schema::hasColumn('posts', $column)) {
+                DB::statement("UPDATE posts SET {$column} = (SELECT COUNT(*) FROM reactions WHERE reactions.reactable_type = 'App\\Models\\Post' AND reactions.reactable_id = posts.id AND reactions.type = '{$type}')");
+            }
+        }
         DB::statement("UPDATE comments SET reactions_count = (SELECT COUNT(*) FROM reactions WHERE reactions.reactable_type = 'App\\Models\\Comment' AND reactions.reactable_id = comments.id)");
+        foreach (['paw', 'love'] as $type) {
+            $column = $type.'_count';
+
+            if (Schema::hasColumn('comments', $column)) {
+                DB::statement("UPDATE comments SET {$column} = (SELECT COUNT(*) FROM reactions WHERE reactions.reactable_type = 'App\\Models\\Comment' AND reactions.reactable_id = comments.id AND reactions.type = '{$type}')");
+            }
+        }
         DB::statement('UPDATE pets SET posts_count = (SELECT COUNT(*) FROM posts WHERE posts.pet_id = pets.id)');
         DB::statement('UPDATE users SET posts_count = (SELECT COUNT(*) FROM posts WHERE posts.user_id = users.id)');
         if (Schema::hasColumn('users', 'scheduled_posts_count')) {

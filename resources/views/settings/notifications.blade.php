@@ -14,7 +14,7 @@
  <div class="rounded-[var(--radius-card)] border border-whisker/40 bg-cream/30 p-4">
  <h4 class="text-base font-medium text-bark">Posts & Engagement</h4>
  <div class="mt-4 space-y-4">
- <x-ui.toggle name="notifications[post_likes]" label="Likes on your posts"
+ <x-ui.toggle name="notifications[post_likes]" label="Reactions on your posts"
  :checked="$user->notificationEnabled('post_likes')"/>
  <x-ui.toggle name="notifications[post_comments]" label="Comments on your posts"
  :checked="$user->notificationEnabled('post_comments')"/>

@@ -22,13 +22,15 @@ it('toggles reactions via ReactionService', function (): void {
 
     $service = app(ReactionService::class);
 
-    $first = $service->react($user, $post, 'love');
+    $first = $service->react($user, $post, 'paw');
     expect($first['action'])->toBe('added');
     expect($post->refresh()->likes_count)->toBe(1);
+    expect($post->paw_count)->toBe(1);
 
-    $second = $service->react($user, $post, 'love');
+    $second = $service->react($user, $post, 'paw');
     expect($second['action'])->toBe('removed');
     expect($post->refresh()->likes_count)->toBe(0);
+    expect($post->paw_count)->toBe(0);
 });
 
 it('toggles saved posts via SavedPostService', function (): void {

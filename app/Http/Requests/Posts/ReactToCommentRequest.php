@@ -18,7 +18,7 @@ class ReactToCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', Rule::in(Reaction::allowedTypes())],
+            'type' => ['required', 'string', Rule::in(Reaction::allowedCommentTypes())],
         ];
     }
 }

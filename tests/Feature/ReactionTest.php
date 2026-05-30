@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Notification;
 
 uses(RefreshDatabase::class);
 
-it('toggles post reactions and updates likes_count', function (): void {
+it('toggles post reactions and updates configured counter caches', function (): void {
     $user = User::factory()->create();
     $post = Post::factory()->create([
         'user_id' => User::factory()->create()->id,
@@ -20,59 +20,59 @@ it('toggles post reactions and updates likes_count', function (): void {
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('posts.react', $post), ['type' => 'love'])
+        ->postJson(route('posts.react', $post), ['type' => 'paw'])
         ->assertOk()
         ->assertJsonPath('data.likes_count', 1)
         ->assertJsonPath('data.reactions_count', 1)
-        ->assertJsonPath('data.reaction_counts.love', 1)
-        ->assertJsonPath('data.current_reaction', 'love');
+        ->assertJsonPath('data.reaction_counts.paw', 1)
+        ->assertJsonPath('data.current_reaction', 'paw');
 
     $this->assertDatabaseHas('reactions', [
         'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->id,
         'user_id' => $user->id,
-        'type' => 'love',
+        'type' => 'paw',
     ]);
 
     $this->assertDatabaseHas('posts', [
         'id' => $post->id,
         'likes_count' => 1,
         'reactions_count' => 1,
-        'love_count' => 1,
-        'cute_count' => 0,
+        'paw_count' => 1,
+        'love_count' => 0,
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('posts.react', $post), ['type' => 'cute'])
+        ->postJson(route('posts.react', $post), ['type' => 'haha'])
         ->assertOk()
         ->assertJsonPath('data.likes_count', 1)
         ->assertJsonPath('data.reactions_count', 1)
-        ->assertJsonPath('data.reaction_counts.love', 0)
-        ->assertJsonPath('data.reaction_counts.cute', 1)
-        ->assertJsonPath('data.current_reaction', 'cute');
+        ->assertJsonPath('data.reaction_counts.paw', 0)
+        ->assertJsonPath('data.reaction_counts.haha', 1)
+        ->assertJsonPath('data.current_reaction', 'haha');
 
     $this->assertDatabaseHas('posts', [
         'id' => $post->id,
         'likes_count' => 1,
         'reactions_count' => 1,
-        'love_count' => 0,
-        'cute_count' => 1,
+        'paw_count' => 0,
+        'haha_count' => 1,
     ]);
 
     $this->actingAs($user)
-        ->postJson(route('posts.react', $post), ['type' => 'cute'])
+        ->postJson(route('posts.react', $post), ['type' => 'haha'])
         ->assertOk()
         ->assertJsonPath('data.likes_count', 0)
         ->assertJsonPath('data.reactions_count', 0)
-        ->assertJsonPath('data.reaction_counts.cute', 0)
+        ->assertJsonPath('data.reaction_counts.haha', 0)
         ->assertJsonPath('data.current_reaction', null);
 
     $this->assertDatabaseHas('posts', [
         'id' => $post->id,
         'likes_count' => 0,
         'reactions_count' => 0,
-        'love_count' => 0,
-        'cute_count' => 0,
+        'paw_count' => 0,
+        'haha_count' => 0,
     ]);
 });
 
@@ -100,17 +100,17 @@ it('reacts to posts tagged to pet profiles', function (): void {
     $post->pets()->attach($pet->getKey(), ['is_primary' => true]);
 
     $this->actingAs($actor)
-        ->postJson(route('posts.react', $post), ['type' => 'support'])
+        ->postJson(route('posts.react', $post), ['type' => 'angry'])
         ->assertOk()
         ->assertJsonPath('data.likes_count', 1)
-        ->assertJsonPath('data.reaction_counts.support', 1)
-        ->assertJsonPath('data.current_reaction', 'support');
+        ->assertJsonPath('data.reaction_counts.angry', 1)
+        ->assertJsonPath('data.current_reaction', 'angry');
 
     $this->assertDatabaseHas('reactions', [
         'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->getKey(),
         'user_id' => $actor->getKey(),
-        'type' => 'support',
+        'type' => 'angry',
     ]);
 });
 
@@ -132,7 +132,7 @@ it('enforces one active reaction per user and post at the database layer', funct
         'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $post->getKey(),
         'user_id' => $user->getKey(),
-        'type' => Reaction::TYPE_CUTE,
+        'type' => Reaction::TYPE_HAHA,
     ]))->toThrow(QueryException::class);
 
     expect(Reaction::query()
@@ -149,11 +149,12 @@ it('keeps counter caches accurate after bulk reaction sync', function (): void {
         'likes_count' => 42,
         'reactions_count' => 42,
         'love_count' => 42,
-        'cute_count' => 42,
-        'support_count' => 42,
+        'paw_count' => 42,
+        'haha_count' => 42,
+        'angry_count' => 42,
     ]);
 
-    foreach ([Reaction::TYPE_LOVE, Reaction::TYPE_CUTE, Reaction::TYPE_CUTE, Reaction::TYPE_SUPPORT] as $type) {
+    foreach ([Reaction::TYPE_LOVE, Reaction::TYPE_PAW, Reaction::TYPE_PAW, Reaction::TYPE_ANGRY] as $type) {
         Reaction::query()->create([
             'reactable_type' => (new Post)->getMorphClass(),
             'reactable_id' => $post->getKey(),
@@ -169,9 +170,9 @@ it('keeps counter caches accurate after bulk reaction sync', function (): void {
     expect($post->likes_count)->toBe(4)
         ->and($post->reactions_count)->toBe(4)
         ->and($post->love_count)->toBe(1)
-        ->and($post->cute_count)->toBe(2)
-        ->and($post->funny_count)->toBe(0)
-        ->and($post->support_count)->toBe(1);
+        ->and($post->paw_count)->toBe(2)
+        ->and($post->haha_count)->toBe(0)
+        ->and($post->angry_count)->toBe(1);
 });
 
 it('accepts all supported reaction types and rejects invalid type', function (): void {
@@ -181,7 +182,7 @@ it('accepts all supported reaction types and rejects invalid type', function ():
         'visibility' => 'public',
     ]);
 
-    foreach (['love', 'cute', 'funny', 'wow', 'sad', 'support'] as $type) {
+    foreach (['paw', 'love', 'haha', 'wow', 'sad', 'angry'] as $type) {
         $this->actingAs($user)
             ->postJson(route('posts.react', $post), ['type' => $type])
             ->assertOk()
@@ -189,8 +190,37 @@ it('accepts all supported reaction types and rejects invalid type', function ():
     }
 
     $this->actingAs($user)
-        ->postJson(route('posts.react', $post), ['type' => 'angry'])
+        ->postJson(route('posts.react', $post), ['type' => 'sparkle'])
         ->assertInvalid(['type']);
+});
+
+it('normalizes legacy reaction aliases to configured canonical types', function (): void {
+    $user = User::factory()->create();
+    $post = Post::factory()->create([
+        'user_id' => User::factory()->create()->id,
+        'visibility' => 'public',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('posts.react', $post), ['type' => 'like'])
+        ->assertOk()
+        ->assertJsonPath('data.current_reaction', 'paw')
+        ->assertJsonPath('data.reaction_counts.paw', 1);
+
+    $this->actingAs($user)
+        ->postJson(route('posts.react', $post), ['type' => 'funny'])
+        ->assertOk()
+        ->assertJsonPath('data.current_reaction', 'haha')
+        ->assertJsonPath('data.reaction_counts.paw', 0)
+        ->assertJsonPath('data.reaction_counts.haha', 1);
+});
+
+it('loads reaction definitions from configuration', function (): void {
+    expect(Reaction::defaultType())->toBe('paw')
+        ->and(Reaction::types())->toBe(['paw', 'love', 'haha', 'wow', 'sad', 'angry'])
+        ->and(Reaction::emojiMap())->toHaveKey('paw', '🐾')
+        ->and(Reaction::labelMap())->toHaveKey('angry', 'Angry')
+        ->and(Reaction::counterColumn('haha'))->toBe('haha_count');
 });
 
 it('sends reaction notification with relation-light models', function (): void {

@@ -17,7 +17,6 @@ class CommentReactionController extends Controller
         abort_unless($post->canBeViewedBy($request->user()), 403);
         abort_if($comment->trashed(), 404);
         $this->authorize('react', $comment);
-        $this->authorize('react', $comment);
 
         $type = Reaction::normalizeType($request->validated('type'));
         $reaction = $comment->toggleReaction($request->user(), $type);
@@ -29,6 +28,10 @@ class CommentReactionController extends Controller
                 'comment_id' => $comment->id,
                 'current_reaction' => $reaction?->type,
                 'reactions_count' => (int) $comment->reactions_count,
+                'reaction_counts' => [
+                    'paw' => (int) $comment->paw_count,
+                    'love' => (int) $comment->love_count,
+                ],
             ],
         ]);
     }
@@ -40,7 +43,6 @@ class CommentReactionController extends Controller
         abort_unless($post !== null && $post->canBeViewedBy($request->user()), 403);
         abort_if($comment->trashed(), 404);
         $this->authorize('react', $comment);
-        $this->authorize('react', $comment);
 
         $type = Reaction::normalizeType($request->validated('type'));
         $reaction = $comment->toggleReaction($request->user(), $type);
@@ -52,6 +54,10 @@ class CommentReactionController extends Controller
                 'comment_id' => $comment->id,
                 'current_reaction' => $reaction?->type,
                 'reactions_count' => (int) $comment->reactions_count,
+                'reaction_counts' => [
+                    'paw' => (int) $comment->paw_count,
+                    'love' => (int) $comment->love_count,
+                ],
             ],
         ]);
     }

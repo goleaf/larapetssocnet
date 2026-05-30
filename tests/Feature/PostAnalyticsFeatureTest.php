@@ -56,12 +56,12 @@ it('shows post analytics metrics and the comparison chart to the author', functi
     $post = Post::factory()->for($author)->create([
         'view_count' => 321,
         'reactions_count' => 9,
+        'paw_count' => 2,
         'love_count' => 3,
-        'cute_count' => 2,
-        'funny_count' => 1,
+        'haha_count' => 1,
         'wow_count' => 1,
         'sad_count' => 1,
-        'support_count' => 1,
+        'angry_count' => 1,
         'comments_count' => 4,
         'shares_count' => 5,
     ]);

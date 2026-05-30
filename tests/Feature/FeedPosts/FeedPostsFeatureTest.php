@@ -73,19 +73,20 @@ class FeedPostsFeatureTest extends TestCase
         ]);
 
         $firstReaction = $this->actingAs($user)
-            ->postJson(route('posts.react', $post), ['type' => 'love']);
+            ->postJson(route('posts.react', $post), ['type' => 'paw']);
 
         $firstReaction
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.likes_count', 1)
-            ->assertJsonPath('data.current_reaction', 'love');
+            ->assertJsonPath('data.current_reaction', 'paw')
+            ->assertJsonPath('data.reaction_counts.paw', 1);
 
         $this->assertDatabaseHas('reactions', [
             'reactable_type' => (new Post)->getMorphClass(),
             'reactable_id' => $post->id,
             'user_id' => $user->id,
-            'type' => 'love',
+            'type' => 'paw',
         ]);
 
         $this->assertDatabaseHas('posts', [
@@ -94,7 +95,7 @@ class FeedPostsFeatureTest extends TestCase
         ]);
 
         $toggleOff = $this->actingAs($user)
-            ->postJson(route('posts.react', $post), ['type' => 'love']);
+            ->postJson(route('posts.react', $post), ['type' => 'paw']);
 
         $toggleOff
             ->assertOk()
@@ -127,7 +128,7 @@ class FeedPostsFeatureTest extends TestCase
             'visibility' => Post::VISIBILITY_PUBLIC,
         ]);
 
-        foreach (['love', 'cute', 'funny', 'wow', 'sad', 'support'] as $type) {
+        foreach (['paw', 'love', 'haha', 'wow', 'sad', 'angry'] as $type) {
             $response = $this->actingAs($user)
                 ->postJson(route('posts.react', $post), ['type' => $type]);
 
@@ -148,7 +149,7 @@ class FeedPostsFeatureTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->postJson(route('posts.react', $post), ['type' => 'angry'])
+            ->postJson(route('posts.react', $post), ['type' => 'sparkle'])
             ->assertInvalid(['type']);
     }
 
@@ -242,29 +243,32 @@ class FeedPostsFeatureTest extends TestCase
         ]);
 
         $this->actingAs($reactor)
-            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'support'])
+            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'paw'])
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.current_reaction', 'support')
-            ->assertJsonPath('data.reactions_count', 1);
+            ->assertJsonPath('data.current_reaction', 'paw')
+            ->assertJsonPath('data.reactions_count', 1)
+            ->assertJsonPath('data.reaction_counts.paw', 1);
 
         $this->assertDatabaseHas('reactions', [
             'reactable_type' => (new Comment)->getMorphClass(),
             'reactable_id' => $comment->id,
             'user_id' => $reactor->id,
-            'type' => 'support',
+            'type' => 'paw',
         ]);
 
         $this->assertDatabaseHas('comments', [
             'id' => $comment->id,
             'reactions_count' => 1,
+            'paw_count' => 1,
         ]);
 
         $this->actingAs($reactor)
-            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'support'])
+            ->postJson(route('posts.comments.react', [$post, $comment]), ['type' => 'paw'])
             ->assertOk()
             ->assertJsonPath('data.current_reaction', null)
-            ->assertJsonPath('data.reactions_count', 0);
+            ->assertJsonPath('data.reactions_count', 0)
+            ->assertJsonPath('data.reaction_counts.paw', 0);
     }
 
     public function test_comment_reaction_endpoint_rejects_invalid_reaction_type(): void

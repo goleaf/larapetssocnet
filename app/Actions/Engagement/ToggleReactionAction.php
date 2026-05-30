@@ -18,6 +18,6 @@ class ToggleReactionAction
      */
     public function handle(User $actor, Post $post): array
     {
-        return $this->reactions->react($actor, $post, Reaction::TYPE_LOVE);
+        return $this->reactions->react($actor, $post, Reaction::defaultType());
     }
 }

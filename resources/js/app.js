@@ -2578,7 +2578,12 @@ Alpine.data('feedLiveState', () => ({
  liked: Boolean(config.liked),
  reaction: toStringValue(config.reaction),
  reactionOptions: Array.isArray(config.reactionOptions) ? config.reactionOptions : [],
+ defaultReaction: toStringValue(config.defaultReaction, 'paw'),
+ reactionCounts: typeof config.reactionCounts === 'object' && config.reactionCounts !== null ? { ...config.reactionCounts } : {},
+ topReactions: Array.isArray(config.topReactions) ? config.topReactions : [],
  reactionPickerOpen: false,
+ reactionOpenTimer: null,
+ reactionPressTimer: null,
  reactionCloseTimer: null,
  reactionBurst: '',
  reactionBurstTimer: null,
@@ -2640,6 +2645,16 @@ Alpine.data('feedLiveState', () => ({
  },
 
  clearReactionTimers() {
+ if (this.reactionOpenTimer) {
+ window.clearTimeout(this.reactionOpenTimer);
+ this.reactionOpenTimer = null;
+ }
+
+ if (this.reactionPressTimer) {
+ window.clearTimeout(this.reactionPressTimer);
+ this.reactionPressTimer = null;
+ }
+
  if (this.reactionCloseTimer) {
  window.clearTimeout(this.reactionCloseTimer);
  this.reactionCloseTimer = null;
@@ -2656,11 +2671,60 @@ Alpine.data('feedLiveState', () => ({
  },
 
  activeReactionEmoji() {
- return this.activeReactionOption()?.emoji || (this.liked ? '♥' : '♡');
+ return this.activeReactionOption()?.emoji || this.defaultReactionOption()?.emoji || '🐾';
  },
 
  activeReactionLabel() {
- return this.activeReactionOption()?.label || (this.liked ? 'Liked' : 'Like');
+ return this.activeReactionOption()?.label || this.defaultReactionOption()?.label || 'React';
+ },
+
+ activeReactionClass() {
+ return this.activeReactionOption()?.button_class || this.defaultReactionOption()?.button_class || 'border-paw/40 bg-paw-light/70 text-paw';
+ },
+
+ defaultReactionOption() {
+ return this.reactionOptions.find((option) => option.type === this.defaultReaction) || null;
+ },
+
+ queueReactionPicker() {
+ if (this.reactionOptions.length === 0) {
+ return;
+ }
+
+ if (this.reactionOpenTimer) {
+ window.clearTimeout(this.reactionOpenTimer);
+ }
+
+ this.reactionOpenTimer = window.setTimeout(() => {
+ this.openReactionPicker();
+ this.reactionOpenTimer = null;
+ }, 400);
+ },
+
+ startReactionPress() {
+ if (this.reactionOptions.length === 0) {
+ return;
+ }
+
+ if (this.reactionPressTimer) {
+ window.clearTimeout(this.reactionPressTimer);
+ }
+
+ this.reactionPressTimer = window.setTimeout(() => {
+ if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+ navigator.vibrate(10);
+ }
+
+ this.openReactionPicker();
+ this.reactionPressTimer = null;
+ }, 500);
+ },
+
+ cancelReactionPress() {
+ if (this.reactionPressTimer) {
+ window.clearTimeout(this.reactionPressTimer);
+ this.reactionPressTimer = null;
+ }
  },
 
  openReactionPicker() {
@@ -2673,10 +2737,20 @@ Alpine.data('feedLiveState', () => ({
  this.reactionCloseTimer = null;
  }
 
+ if (this.reactionOpenTimer) {
+ window.clearTimeout(this.reactionOpenTimer);
+ this.reactionOpenTimer = null;
+ }
+
  this.reactionPickerOpen = true;
  },
 
  closeReactionPickerSoon() {
+ if (this.reactionOpenTimer) {
+ window.clearTimeout(this.reactionOpenTimer);
+ this.reactionOpenTimer = null;
+ }
+
  if (this.reactionCloseTimer) {
  window.clearTimeout(this.reactionCloseTimer);
  }
@@ -2724,6 +2798,44 @@ Alpine.data('feedLiveState', () => ({
  return null;
  },
 
+ readReactionCounts(data) {
+ if (data.reaction_counts && typeof data.reaction_counts === 'object') {
+ return data.reaction_counts;
+ }
+
+ if (data.data?.reaction_counts && typeof data.data.reaction_counts === 'object') {
+ return data.data.reaction_counts;
+ }
+
+ return null;
+ },
+
+ updateReactionSummaryFromCounts(counts) {
+ this.reactionCounts = { ...counts };
+ this.topReactions = this.reactionOptions
+ .map((option) => ({
+ ...option,
+ count: toNumber(counts[option.type]),
+ }))
+ .filter((option) => option.count > 0)
+ .sort((a, b) => b.count - a.count)
+ .slice(0, 3);
+ },
+
+ applyOptimisticReactionCounts(previousReaction, nextReaction) {
+ const counts = { ...this.reactionCounts };
+
+ if (previousReaction) {
+ counts[previousReaction] = Math.max(0, toNumber(counts[previousReaction]) - 1);
+ }
+
+ if (nextReaction) {
+ counts[nextReaction] = toNumber(counts[nextReaction]) + 1;
+ }
+
+ this.updateReactionSummaryFromCounts(counts);
+ },
+
  showReactionBurst(type) {
  const option = this.reactionOptions.find((reactionOption) => reactionOption.type === type);
 
@@ -2744,7 +2856,7 @@ Alpine.data('feedLiveState', () => ({
 
  async togglePrimaryReaction() {
  if (this.reactionUrl) {
- return this.setReaction(this.reaction || 'love');
+ return this.setReaction(this.reaction || this.defaultReaction);
  }
 
  return this.toggleLikeLegacy();
@@ -2767,10 +2879,12 @@ Alpine.data('feedLiveState', () => ({
  const previousReaction = this.reaction;
  const previousLiked = this.liked;
  const previousLikes = this.likes;
+ const previousReactionCounts = { ...this.reactionCounts };
  const nextReaction = previousReaction === type ? '' : type;
  this.reaction = nextReaction;
  this.liked = nextReaction !== '';
  this.likes = Math.max(0, this.likes + (!previousLiked && this.liked ? 1 : (previousLiked && !this.liked ? -1 : 0)));
+ this.applyOptimisticReactionCounts(previousReaction, nextReaction);
 
  try {
  const response = await fetch(this.reactionUrl, {
@@ -2790,6 +2904,7 @@ Alpine.data('feedLiveState', () => ({
  const data = await response.json();
  const reaction = this.readCurrentReaction(data);
  const likes = this.readLikesCount(data);
+ const reactionCounts = this.readReactionCounts(data);
 
  if (reaction !== null) {
  this.reaction = reaction;
@@ -2801,6 +2916,10 @@ Alpine.data('feedLiveState', () => ({
 
  if (likes !== null) {
  this.likes = likes;
+ }
+
+ if (reactionCounts !== null) {
+ this.updateReactionSummaryFromCounts(reactionCounts);
  }
 
  if (this.reaction !== '') {
@@ -2818,6 +2937,7 @@ Alpine.data('feedLiveState', () => ({
  this.reaction = previousReaction;
  this.liked = previousLiked;
  this.likes = previousLikes;
+ this.updateReactionSummaryFromCounts(previousReactionCounts);
  } finally {
  this.likeBusy = false;
  this.closeReactionPicker();
@@ -2833,9 +2953,11 @@ Alpine.data('feedLiveState', () => ({
  const previousReaction = this.reaction;
  const previousLiked = this.liked;
  const previousLikes = this.likes;
+ const previousReactionCounts = { ...this.reactionCounts };
  this.liked = !this.liked;
- this.reaction = this.liked ? 'love' : '';
+ this.reaction = this.liked ? this.defaultReaction : '';
  this.likes = Math.max(0, this.likes + (this.liked ? 1 : -1));
+ this.applyOptimisticReactionCounts(previousReaction, this.reaction);
 
  try {
  const response = await fetch(this.likeUrl, {
@@ -2853,6 +2975,7 @@ Alpine.data('feedLiveState', () => ({
  const data = await response.json();
  const likes = this.readLikesCount(data);
  const reaction = this.readCurrentReaction(data);
+ const reactionCounts = this.readReactionCounts(data);
 
  if (likes !== null) {
  this.likes = likes;
@@ -2863,10 +2986,14 @@ Alpine.data('feedLiveState', () => ({
  this.liked = reaction !== '';
  } else if (typeof data.liked === 'boolean') {
  this.liked = data.liked;
- this.reaction = data.liked ? 'love' : '';
+ this.reaction = data.liked ? this.defaultReaction : '';
  } else if (typeof data.action === 'string') {
  this.liked = data.action !== 'removed';
- this.reaction = this.liked ? 'love' : '';
+ this.reaction = this.liked ? this.defaultReaction : '';
+ }
+
+ if (reactionCounts !== null) {
+ this.updateReactionSummaryFromCounts(reactionCounts);
  }
 
  if (this.reaction !== '') {
@@ -2876,6 +3003,7 @@ Alpine.data('feedLiveState', () => ({
  this.reaction = previousReaction;
  this.liked = previousLiked;
  this.likes = previousLikes;
+ this.updateReactionSummaryFromCounts(previousReactionCounts);
  } finally {
  this.likeBusy = false;
  }

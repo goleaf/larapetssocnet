@@ -367,13 +367,28 @@ new class extends Component
      */
     private function postState(Post $post, User $profileUser): array
     {
+        $rawReaction = $post->getAttribute('current_user_reaction_type');
+        $currentReaction = filled($rawReaction)
+            ? \App\Models\Content\Reaction::normalizeType((string) $rawReaction)
+            : null;
+
+        if ($currentReaction === null && (bool) ($post->liked_by_viewer ?? false)) {
+            $currentReaction = \App\Models\Content\Reaction::defaultType();
+        }
+
         return [
             'authorName' => $profileUser->name,
             'liked' => (bool) ($post->liked_by_viewer ?? false),
-            'likes' => (int) ($post->likes_count ?? $post->reactions_count ?? 0),
+            'reaction' => $currentReaction,
+            'reactionOptions' => \App\Models\Content\Reaction::options(),
+            'defaultReaction' => \App\Models\Content\Reaction::defaultType(),
+            'reactionCounts' => \App\Models\Content\Reaction::countMapForModel($post),
+            'topReactions' => \App\Models\Content\Reaction::topCountsForModel($post, 3),
+            'likes' => (int) ($post->reactions_count ?? $post->likes_count ?? 0),
             'saved' => (bool) ($post->saved_by_viewer ?? false),
             'saveCount' => (int) ($post->save_count ?? 0),
             'shares' => (int) ($post->shares_count ?? 0),
+            'reactionUrl' => route('posts.react', $post),
             'likeUrl' => route('posts.like', $post),
             'saveUrl' => route('posts.save', $post),
             'shareUrl' => route('posts.share', $post),
@@ -592,16 +607,16 @@ new class extends Component
  size="sm"
  variant="outline"
  class="min-h-11 w-full sm:w-auto"
- aria-label="{{ __('Like post by :name', ['name' => $selectedAuthorName]) }}"
+ aria-label="{{ __('React to post by :name', ['name' => $selectedAuthorName]) }}"
  @click="toggleLike()"
  x-bind:disabled="likeBusy"
- x-bind:aria-label="(liked ? 'Unlike post by ' : 'Like post by ') + authorName"
+ x-bind:aria-label="(liked ? 'Remove reaction from post by ' : 'React to post by ') + authorName"
  x-bind:aria-pressed="liked"
  x-bind:aria-busy="likeBusy"
- x-bind:class="liked ? 'border-rose/40 bg-rose-light/60 text-rose' : ''"
+ x-bind:class="liked ? activeReactionClass() : ''"
  >
- <span aria-hidden="true" x-text="liked ? '♥' : '♡'"></span>
- <span x-text="liked ? 'Liked' : 'Like'"></span>
+ <span aria-hidden="true" x-text="activeReactionEmoji()"></span>
+ <span x-text="activeReactionLabel()"></span>
  <span class="opacity-80" aria-live="polite" x-text="likes">{{ number_format($reactionCount) }}</span>
  </x-ui.button>
  @else

@@ -24,7 +24,7 @@ class ProfileWrappedSummaryFactory extends Factory
             'year' => now()->subYear()->year,
             'total_posts_published' => fake()->numberBetween(0, 250),
             'total_reactions_received' => fake()->numberBetween(0, 5000),
-            'top_reaction_type' => fake()->randomElement(['love', 'cute', 'funny', 'wow', 'support']),
+            'top_reaction_type' => fake()->randomElement(['paw', 'love', 'haha', 'wow', 'sad', 'angry']),
             'top_reaction_count' => fake()->numberBetween(0, 800),
             'most_active_month' => fake()->numberBetween(1, 12),
             'most_active_month_posts' => fake()->numberBetween(0, 60),

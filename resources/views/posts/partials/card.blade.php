@@ -1,6 +1,6 @@
 <article id="post-{{ $post->id }}" class="shell-card hover-lift overflow-hidden p-4 sm:p-5" x-data="{
 reaction: null,
-likes: {{ (int) $post->likes_count }},
+likes: {{ (int) ($post->reactions_count ?? $post->likes_count) }},
 busy: false,
 saved: {{ auth()->check() && ($post->saved_by_viewer ?? false) ? 'true' : 'false' }},
 saveCount: {{ (int) ($post->save_count ?? 0) }},
@@ -165,16 +165,16 @@ async sharePost() {
 
  @auth
  <div class="mb-3 flex flex-wrap gap-1.5">
- @foreach (\App\Models\Content\Post::reactionEmojiMap() as $type => $emoji)
+ @foreach (\App\Models\Content\Reaction::options() as $reactionOption)
  <button
  type="button"
- @click="react('{{ $type }}')"
+ @click="react('{{ $reactionOption['type'] }}')"
  :disabled="busy"
  class="btn-base btn-ghost px-2.5 py-1 text-xs"
- :class="{'ring-2 ring-emerald-500': reaction ==='{{ $type }}'}"
- aria-label="React {{ $type }}"
+ :class="{'ring-2 ring-emerald-500': reaction ==='{{ $reactionOption['type'] }}'}"
+ aria-label="React {{ $reactionOption['label'] }}"
  >
- {{ $emoji }} {{ ucfirst($type) }}
+ {{ $reactionOption['emoji'] }} {{ $reactionOption['label'] }}
  </button>
  @endforeach
  </div>

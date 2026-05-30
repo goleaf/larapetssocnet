@@ -12,24 +12,12 @@ use Illuminate\Support\Collection;
 
 class PostAnalyticsService
 {
-    /**
-     * @var array<string, string>
-     */
-    private const REACTION_LABELS = [
-        Reaction::TYPE_LOVE => 'Love',
-        Reaction::TYPE_CUTE => 'Cute',
-        Reaction::TYPE_FUNNY => 'Funny',
-        Reaction::TYPE_WOW => 'Wow',
-        Reaction::TYPE_SAD => 'Sad',
-        Reaction::TYPE_SUPPORT => 'Support',
-    ];
-
     public function __construct(private readonly PostEngagementComparisonSvg $chart) {}
 
     /**
      * @return array{
      *     metric_cards: list<array{key: string, label: string, description: string, value: int}>,
-     *     reactions: list<array{type: string, label: string, count: int}>,
+     *     reactions: list<array{type: string, label: string, emoji: string, count: int}>,
      *     comparison: list<array{label: string, post: int, average: float}>,
      *     comparison_chart: ?string
      * }
@@ -104,15 +92,16 @@ class PostAnalyticsService
     }
 
     /**
-     * @return list<array{type: string, label: string, count: int}>
+     * @return list<array{type: string, label: string, emoji: string, count: int}>
      */
     private function reactionBreakdown(Post $post): array
     {
-        return collect(self::REACTION_LABELS)
-            ->map(fn (string $label, string $type): array => [
-                'type' => $type,
-                'label' => $label,
-                'count' => (int) $post->getAttribute($type.'_count'),
+        return collect(Reaction::options())
+            ->map(fn (array $reaction): array => [
+                'type' => (string) $reaction['type'],
+                'label' => (string) $reaction['label'],
+                'emoji' => (string) $reaction['emoji'],
+                'count' => (int) $post->getAttribute(Reaction::counterColumn((string) $reaction['type'])),
             ])
             ->values()
             ->all();

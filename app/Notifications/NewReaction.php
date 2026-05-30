@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Content\Post;
+use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -11,18 +12,6 @@ use Illuminate\Support\Facades\Route;
 class NewReaction extends Notification
 {
     use Queueable;
-
-    /**
-     * @var array<string, string>
-     */
-    private const REACTION_LABELS = [
-        'love' => 'love',
-        'cute' => 'cute',
-        'funny' => 'funny',
-        'wow' => 'wow',
-        'sad' => 'sad',
-        'support' => 'support',
-    ];
 
     public function __construct(
         public readonly User $reactor,
@@ -60,7 +49,8 @@ class NewReaction extends Notification
     protected function formatMessage(): string
     {
         if (filled($this->reactionType)) {
-            $reactionLabel = self::REACTION_LABELS[$this->reactionType] ?? $this->reactionType;
+            $labels = Reaction::labelMap();
+            $reactionLabel = strtolower($labels[Reaction::normalizeType((string) $this->reactionType)] ?? (string) $this->reactionType);
 
             return $this->reactor->name.' reacted ('.$reactionLabel.') to your post.';
         }

@@ -32,7 +32,7 @@ it('loads the main feed pagination query in five queries or fewer', function ():
         'reactable_type' => (new Post)->getMorphClass(),
         'reactable_id' => $likedPost->getKey(),
         'user_id' => $viewer->getKey(),
-        'type' => Reaction::TYPE_CUTE,
+        'type' => Reaction::TYPE_HAHA,
     ]);
 
     $viewer->load([
@@ -52,5 +52,5 @@ it('loads the main feed pagination query in five queries or fewer', function ():
 
     expect($loadedLikedPost)->not->toBeNull();
     expect((bool) ($loadedLikedPost->liked_by_viewer ?? false))->toBeTrue();
-    expect($loadedLikedPost->getAttribute('current_user_reaction_type'))->toBe(Reaction::TYPE_CUTE);
+    expect($loadedLikedPost->getAttribute('current_user_reaction_type'))->toBe(Reaction::TYPE_HAHA);
 });
