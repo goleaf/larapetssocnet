@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added Livewire inline comment-thread actions for feed post cards, including top-level comments, replies, soft-delete tombstone refreshes, visible polling, and parent post-card counter refresh events.
 - Added animated reaction count roll-up/down feedback, keyboard-accessible reaction picker controls, Livewire post-card reaction actions with Alpine optimistic reconciliation, four-second Undo toasts, cached reaction-summary emoji stacks, reaction velocity snapshots with Trending badges, pet About "Most loved posts" leaderboards, delayed unique per-post reaction notification jobs, reaction batch notifications, and opt-in daily reaction summary emails.
 - Added config-backed Paw, Love, Haha, Wow, Sad, and Angry post reactions with legacy alias normalization, Paw as the default reaction, new post/comment reaction counter columns, a paginated reactions-list modal, and simplified Paw/Love comment reactions.
 - Added precomputed `feed_items` delivery rows for the news feed, written by queued 500-row fan-out chunks with recipient/source uniqueness for retry safety.
@@ -82,6 +83,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added Livewire comment-thread coverage for creating comments, replying, deleting parent comments into tombstones, depth-limit rejection, and visible refresh polling.
 - Added reaction enhancement coverage for summary-cache invalidation, velocity badges, Livewire card reaction actions, unique reaction batching jobs, undo-safe delayed notifications, daily digest dispatch/mail, pet reaction leaderboards, and notification preference persistence.
 - Added reaction coverage for configured reaction definitions, legacy alias normalization, Paw/Haha/Angry counter caches, and simplified comment Paw reaction counts.
 - Added reaction coverage for guest blocking, pet-tagged posts, database uniqueness, bulk counter sync, current reaction hydration, and picker transition markup.

@@ -25,6 +25,7 @@ Comments table fields include:
 
 ## Counters
 - `posts.comments_count` includes top-level + replies.
+- Livewire thread surfaces refresh their local counter from `posts.comments_count` and dispatch `post-card-refresh` after create, reply, delete, or visible polling updates.
 
 ## Content Pipeline
 Comment body processing mirrors posts:
@@ -43,3 +44,9 @@ Comment body processing mirrors posts:
 
 `CommentService` owns business logic.
 `CommentPolicy` owns authorization.
+
+## Livewire Thread Surface
+- Feed post cards mount `posts.comments-thread` only when the comments panel is opened.
+- The component must use `CommentService::previewThread()` so inline feed comments and full post pages share tombstone, reply-depth, reaction-summary, and visibility behavior.
+- The component may poll while visible through a lightweight activity fingerprint from `CommentService::threadActivity()`.
+- Reply forms inside this component submit through Livewire, but full post pages can continue using the HTTP routes backed by the same actions.

@@ -1,4 +1,6 @@
-@props(['comment','post'])
+@props(['comment','post','livewire' => false])
+
+@php($replyErrorKey = 'replyBodies.'.$comment->id)
 
 <div class="group py-2 {{ $comment->isReply() ? 'ml-11 mt-1' : 'mt-4' }}" id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
@@ -19,7 +21,7 @@
  </a>
 
  @if($comment->trashed())
- <div class="text-sm text-gray-500 italic mt-0.5 leading-snug">[comment removed]</div>
+ <div class="text-sm text-gray-500 italic mt-0.5 leading-snug">This comment was removed.</div>
  @else
  <div class="text-sm text-gray-800 whitespace-pre-wrap break-words mt-0.5 leading-snug">
  {!! $comment->body_html !!}
@@ -102,12 +104,16 @@
  <button @click="editing = true" class="hover:underline hover:text-gray-800">Edit</button>
  @endcan
  @can('delete', $comment)
+ @if($livewire)
+ <button type="button" wire:click="deleteComment({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="deleteComment" class="hover:underline hover:text-red-500">Delete</button>
+ @else
  <form method="POST"
  action="{{ route('posts.comments.destroy', ['post'=> $post,'comment'=> $comment]) }}"
  class="inline m-0 p-0" onsubmit="return confirm('Delete this comment?');">
  @csrf @method('DELETE')
  <button type="submit" class="hover:underline hover:text-red-500">Delete</button>
  </form>
+ @endif
  @endcan
 @can('report', $comment)
 <form method="POST"
@@ -127,6 +133,28 @@
  <div x-show="showReply" x-cloak class="mt-2 w-full max-w-2xl flex items-start gap-2">
  <x-ui.avatar :src="auth()->user()?->avatar_url" :name="auth()->user()?->name" :user="auth()->user()" size="xs" class="mt-1"/>
  <div class="flex-1">
+ @if($livewire)
+ <form wire:submit.prevent="createReply({{ (int) $comment->id }})" class="relative">
+ <textarea x-ref="replyInput" wire:model.live.debounce.300ms="replyBodies.{{ (int) $comment->id }}" rows="1"
+ class="form-textarea w-full resize-none overflow-hidden py-2 pl-3 pr-10 text-sm"
+ placeholder="Write a reply..." required
+ oninput="this.style.height =''; this.style.height = this.scrollHeight +'px'"
+ @keydown.escape="showReply = false"></textarea>
+ <button type="submit"
+ wire:loading.attr="disabled"
+ wire:target="createReply"
+ class="absolute bottom-1.5 right-2 p-1 text-paw transition-colors hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+ class="w-4 h-4">
+ <path
+ d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
+ </svg>
+ </button>
+ </form>
+ @error($replyErrorKey)
+ <p class="mt-1 text-xs font-semibold text-rose">{{ $message }}</p>
+ @enderror
+ @else
  <form action="{{ route('posts.comments.store', $post) }}" method="POST" class="relative">
  @csrf
  <input type="hidden" name="parent_id" value="{{ $comment->id }}">
@@ -144,6 +172,7 @@
  </svg>
  </button>
  </form>
+ @endif
  </div>
  </div>
  @endif
@@ -158,9 +187,9 @@
  <span x-show="collapsed">Show {{ $comment->replies_count }} replies</span>
  </button>
  </div>
- <div class="mt-2" x-show="!collapsed" x-cloak>
+ <div class="mt-2" x-show="!collapsed" x-cloak x-transition.opacity.duration.150ms>
  @foreach($comment->replies as $reply)
- <x-comment-item :comment="$reply" :post="$post"/>
+ <x-comment-item :comment="$reply" :post="$post" :livewire="$livewire"/>
  @endforeach
  </div>
  </div>

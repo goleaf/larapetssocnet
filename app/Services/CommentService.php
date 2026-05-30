@@ -59,6 +59,43 @@ class CommentService
         );
     }
 
+    /**
+     * @return Collection<int, Comment>
+     */
+    public function previewThread(Post $post, ?User $viewer, int $limit = 5): Collection
+    {
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+
+        return $this->hydrateThreadMetadata(
+            $this->threadQuery($post, $viewer)
+                ->oldest('comments.created_at')
+                ->limit($limit)
+                ->get(),
+            $viewerId
+        );
+    }
+
+    /**
+     * @return array{visible_count: int, latest_id: int, latest_updated_at: ?string}
+     */
+    public function threadActivity(Post $post, ?User $viewer): array
+    {
+        $summary = Comment::query()
+            ->where('comments.post_id', $post->getKey())
+            ->visibleTo($viewer)
+            ->withTrashed()
+            ->selectRaw('COUNT(*) as visible_count, COALESCE(MAX(comments.id), 0) as latest_id, MAX(comments.updated_at) as latest_updated_at')
+            ->first();
+
+        return [
+            'visible_count' => (int) ($summary?->getAttribute('visible_count') ?? 0),
+            'latest_id' => (int) ($summary?->getAttribute('latest_id') ?? 0),
+            'latest_updated_at' => $summary?->getAttribute('latest_updated_at') !== null
+                ? (string) $summary->getAttribute('latest_updated_at')
+                : null,
+        ];
+    }
+
     public function create(Post $post, User $author, string $body, ?Comment $parent = null): Comment
     {
         $body = $this->normalizeBody($body);
@@ -230,7 +267,15 @@ class CommentService
 
     private function normalizeBody(string $body): string
     {
-        return trim($body);
+        $body = trim($body);
+
+        if (mb_strlen($body) > self::MAX_BODY_LENGTH) {
+            throw ValidationException::withMessages([
+                'body' => 'Comments may not be longer than 1000 characters.',
+            ]);
+        }
+
+        return $body;
     }
 
     private function assertValidParent(Post $post, Comment $parent): void
