@@ -38,6 +38,7 @@
 ## Feed Island Wrapper
 - Use `<livewire:posts.card>` inside the `feed.stream` loop with a stable key based on the post ID.
 - The wrapper receives the eager-loaded post model and viewer ID, then delegates visual rendering to `x-post-card`.
+- Reaction toggles in the wrapper should call the wrapper's Livewire `react` action from Alpine, update local Alpine and Livewire properties optimistically before the network response, and sync back from the returned action payload.
 - Keep heavy per-post interactions inside this child component or existing nested post menu components so the parent feed stream only owns pagination, filters, and polling state.
 
 ## Author Analytics

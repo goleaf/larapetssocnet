@@ -2606,6 +2606,8 @@ Alpine.data('feedLiveState', () => ({
  deletePending: false,
  reactionUrl: toStringValue(config.reactionUrl),
  likeUrl: toStringValue(config.likeUrl),
+ usesLivewireReactions: Boolean(config.usesLivewireReactions),
+ livewireComponent: null,
  saveUrl: toStringValue(config.saveUrl),
  shareUrl: toStringValue(config.shareUrl),
  showUrl: toStringValue(config.showUrl),
@@ -2865,6 +2867,61 @@ Alpine.data('feedLiveState', () => ({
  }
  },
 
+ resolveLivewireReactionComponent(wire = null) {
+ if (wire) {
+ this.livewireComponent = wire;
+ }
+
+ return this.livewireComponent;
+ },
+
+ syncLivewireReactionState(nextReaction, nextLikes, nextCounts, wire = null) {
+ if (!this.usesLivewireReactions) {
+ return;
+ }
+
+ const component = this.resolveLivewireReactionComponent(wire);
+
+ if (!component || typeof component.$set !== 'function') {
+ return;
+ }
+
+ component.$set('currentReaction', nextReaction || null, false);
+ component.$set('viewerHasReacted', nextReaction !== '', false);
+ component.$set('displayedReactionCount', Math.max(0, toNumber(nextLikes)), false);
+ component.$set('displayedReactionCounts', { ...nextCounts }, false);
+ },
+
+ async persistReaction(type, wire = null) {
+ if (this.usesLivewireReactions) {
+ const component = this.resolveLivewireReactionComponent(wire);
+
+ if (component && typeof component.react === 'function') {
+ return component.react(type);
+ }
+
+ if (component && typeof component.$call === 'function') {
+ return component.$call('react', type);
+ }
+ }
+
+ const response = await fetch(this.reactionUrl, {
+ method: 'POST',
+ headers: {
+ Accept: 'application/json',
+ 'Content-Type': 'application/json',
+ 'X-CSRF-TOKEN': this.csrfToken,
+ },
+ body: JSON.stringify({ type }),
+ });
+
+ if (!response.ok) {
+ throw new Error('reaction_request_failed');
+ }
+
+ return response.json();
+ },
+
  readCurrentReaction(data) {
  if (data.current_reaction === null || typeof data.current_reaction === 'string') {
  return toStringValue(data.current_reaction);
@@ -2949,20 +3006,20 @@ Alpine.data('feedLiveState', () => ({
  }, 650);
  },
 
- async togglePrimaryReaction() {
- if (this.reactionUrl) {
- return this.setReaction(this.reaction || this.defaultReaction);
+ async togglePrimaryReaction(wire = null) {
+ if (this.reactionUrl || this.usesLivewireReactions) {
+ return this.setReaction(this.reaction || this.defaultReaction, {}, wire);
  }
 
  return this.toggleLikeLegacy();
  },
 
- async toggleLike() {
- return this.togglePrimaryReaction();
+ async toggleLike(wire = null) {
+ return this.togglePrimaryReaction(wire);
  },
 
- async setReaction(type, options = {}) {
- if (!this.reactionUrl) {
+ async setReaction(type, options = {}, wire = null) {
+ if (!this.reactionUrl && !this.usesLivewireReactions) {
  return this.toggleLikeLegacy();
  }
 
@@ -2980,23 +3037,10 @@ Alpine.data('feedLiveState', () => ({
  this.liked = nextReaction !== '';
  this.updateLikesCount(this.likes + (!previousLiked && this.liked ? 1 : (previousLiked && !this.liked ? -1 : 0)));
  this.applyOptimisticReactionCounts(previousReaction, nextReaction);
+ this.syncLivewireReactionState(this.reaction, this.likes, this.reactionCounts, wire);
 
  try {
- const response = await fetch(this.reactionUrl, {
- method: 'POST',
- headers: {
- Accept: 'application/json',
- 'Content-Type': 'application/json',
- 'X-CSRF-TOKEN': this.csrfToken,
- },
- body: JSON.stringify({ type }),
- });
-
- if (!response.ok) {
- throw new Error('reaction_request_failed');
- }
-
- const data = await response.json();
+ const data = await this.persistReaction(type, wire);
  const reaction = this.readCurrentReaction(data);
  const likes = this.readLikesCount(data);
  const reactionCounts = this.readReactionCounts(data);
@@ -3016,6 +3060,8 @@ Alpine.data('feedLiveState', () => ({
  if (reactionCounts !== null) {
  this.updateReactionSummaryFromCounts(reactionCounts);
  }
+
+ this.syncLivewireReactionState(this.reaction, this.likes, this.reactionCounts, wire);
 
  if (this.reaction !== '') {
  this.showReactionBurst(this.reaction);
@@ -3037,6 +3083,7 @@ Alpine.data('feedLiveState', () => ({
  this.liked = previousLiked;
  this.updateLikesCount(previousLikes);
  this.updateReactionSummaryFromCounts(previousReactionCounts);
+ this.syncLivewireReactionState(this.reaction, this.likes, this.reactionCounts, wire);
  } finally {
  this.likeBusy = false;
  this.closeReactionPicker();
@@ -3124,7 +3171,7 @@ Alpine.data('feedLiveState', () => ({
  }, 4000);
  },
 
- undoReaction() {
+ undoReaction(wire = null) {
  const type = this.undoReactionType || this.reaction;
 
  this.undoToastVisible = false;
@@ -3136,7 +3183,7 @@ Alpine.data('feedLiveState', () => ({
  }
 
  if (type && this.reaction === type) {
- return this.setReaction(type, { skipUndoToast: true });
+ return this.setReaction(type, { skipUndoToast: true }, wire);
  }
 
  return Promise.resolve();

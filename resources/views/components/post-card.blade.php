@@ -4,6 +4,7 @@
     'context' => 'feed',
     'instance' => null,
     'livewireComments' => false,
+    'livewireReactions' => false,
 ])
 
 @php
@@ -93,6 +94,7 @@
         'shareUrl' => route('posts.share', $post),
         'showUrl' => route('posts.show', ['post' => $post->uuid ?: $post->getKey()]),
         'postId' => (int) $post->getKey(),
+        'usesLivewireReactions' => (bool) $livewireReactions,
     ];
     $pinIcon = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 17v5" /><path stroke-linecap="round" stroke-linejoin="round" d="M5 17h14l-3.5-4V5.5L17 4V2H7v2l1.5 1.5V13L5 17Z" />';
 
@@ -612,7 +614,7 @@
                         aria-haspopup="listbox"
                         x-bind:aria-expanded="reactionPickerOpen"
                         aria-label="{{ __('React to post by :name', ['name' => $authorName]) }}"
-                        @click="togglePrimaryReaction()"
+                        @click="{{ $livewireReactions ? 'togglePrimaryReaction($wire)' : 'togglePrimaryReaction()' }}"
                         @keydown.enter.prevent="openReactionPicker({ focus: true })"
                         @keydown.space.prevent="openReactionPicker({ focus: true })"
                         x-bind:disabled="likeBusy"
@@ -672,14 +674,14 @@
                                 :aria-label="'React with ' + option.label"
                                 :aria-selected="reaction === option.type"
                                 :tabindex="focusedReactionIndex === index ? 0 : -1"
-                                @click="setReaction(option.type)"
+                                @click="{{ $livewireReactions ? 'setReaction(option.type, {}, $wire)' : 'setReaction(option.type)' }}"
                                 @focus="focusedReactionIndex = index"
                                 @keydown.arrow-right.prevent="focusNextReaction()"
                                 @keydown.arrow-down.prevent="focusNextReaction()"
                                 @keydown.arrow-left.prevent="focusPreviousReaction()"
                                 @keydown.arrow-up.prevent="focusPreviousReaction()"
-                                @keydown.enter.prevent="setReaction(option.type)"
-                                @keydown.space.prevent="setReaction(option.type)"
+                                @keydown.enter.prevent="{{ $livewireReactions ? 'setReaction(option.type, {}, $wire)' : 'setReaction(option.type)' }}"
+                                @keydown.space.prevent="{{ $livewireReactions ? 'setReaction(option.type, {}, $wire)' : 'setReaction(option.type)' }}"
                                 @keydown.escape.prevent="closeReactionPicker({ restoreFocus: true })"
                                 data-ui="post-card-reaction-option"
                                 role="option"
@@ -751,7 +753,7 @@
                     data-ui="post-card-reaction-undo-toast"
                 >
                     <span>Reaction saved.</span>
-                    <button type="button" class="rounded-[var(--radius-soft)] px-2 py-1 text-cream underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream" @click="undoReaction()">
+                    <button type="button" class="rounded-[var(--radius-soft)] px-2 py-1 text-cream underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream" @click="{{ $livewireReactions ? 'undoReaction($wire)' : 'undoReaction()' }}">
                         Undo
                     </button>
                 </div>

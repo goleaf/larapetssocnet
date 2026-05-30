@@ -8,14 +8,17 @@ use App\Models\Content\PostReactionSnapshot;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Notifications\ReactionBatchNotification;
 use App\Services\PetReactionLeaderboardService;
 use App\Services\ReactionSummaryCache;
 use App\Services\ReactionVelocityService;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -91,6 +94,74 @@ it('does not send the delayed reaction notification when the reaction is undone 
     (new SendReactionNotificationJob((int) $post->getKey(), (int) $reactor->getKey(), Reaction::TYPE_LOVE))->handle();
 
     Notification::assertNothingSent();
+});
+
+it('toggles reactions through the Livewire post card action and syncs local reaction state', function (): void {
+    Queue::fake();
+
+    $reactor = User::factory()->create();
+    $author = User::factory()->create();
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Livewire::actingAs($reactor)
+        ->test('posts.card', [
+            'post' => $post,
+            'viewerId' => $reactor->getKey(),
+        ])
+        ->call('react', Reaction::TYPE_LOVE)
+        ->assertReturned(function (array $result): bool {
+            return data_get($result, 'data.current_reaction') === Reaction::TYPE_LOVE
+                && data_get($result, 'data.reactions_count') === 1
+                && data_get($result, 'data.reaction_counts.love') === 1;
+        });
+
+    $this->assertDatabaseHas('reactions', [
+        'reactable_type' => (new Post)->getMorphClass(),
+        'reactable_id' => $post->getKey(),
+        'user_id' => $reactor->getKey(),
+        'type' => Reaction::TYPE_LOVE,
+    ]);
+
+    $this->assertDatabaseHas('posts', [
+        'id' => $post->getKey(),
+        'reactions_count' => 1,
+        'love_count' => 1,
+    ]);
+});
+
+it('batches reaction author notifications with a unique database queued job', function (): void {
+    Notification::fake();
+
+    $author = User::factory()->create();
+    $reactors = User::factory()->count(2)->create();
+    $post = Post::factory()->for($author)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    foreach ($reactors as $reactor) {
+        Reaction::query()->create([
+            'reactable_type' => (new Post)->getMorphClass(),
+            'reactable_id' => $post->getKey(),
+            'user_id' => $reactor->getKey(),
+            'type' => Reaction::TYPE_PAW,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    $job = new SendReactionNotificationJob((int) $post->getKey(), (int) $reactors->first()->getKey(), Reaction::TYPE_PAW);
+
+    expect($job)->toBeInstanceOf(ShouldBeUnique::class)
+        ->and($job->connection)->toBe('database')
+        ->and($job->uniqueId())->toBe('post-reaction-notification:'.$post->getKey());
+
+    $job->handle();
+
+    Notification::assertSentTo($author, ReactionBatchNotification::class, function (ReactionBatchNotification $notification): bool {
+        return $notification->reactionCount === 2;
+    });
 });
 
 it('dispatches daily reaction summary jobs only for opted-in users', function (): void {

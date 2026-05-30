@@ -29,6 +29,8 @@ Aliases:
 - `LikeController` uses `ToggleReactionAction` with the configured default `paw`.
 - `ReactionController` accepts explicit type.
 - Both endpoints should return the total count, current viewer reaction, and per-type counter cache values so Alpine can reconcile optimistic state from the database response.
+- The reusable `posts.card` Livewire island owns the primary post-card reaction action. Alpine may perform the optimistic visual update and picker animation, but it should call the card's Livewire `react` action when the card is rendered as a Livewire island, then reconcile from the returned authoritative counters.
+- Keep the database uniqueness for one active reaction per user on `user_id`, `reactable_type`, and `reactable_id`. Do not include `type` in that unique key because doing so would allow one user to store multiple reaction types for the same post.
 
 ## Comment Reactions
 - `CommentService::toggleReaction()` delegates to `HasReactions::toggleReaction()`.
@@ -38,6 +40,7 @@ Aliases:
 ## Notifications
 - `NewReaction` is queued through `SendReactionNotificationJob` only on first post reaction create and delayed by four seconds to support the UI undo window.
 - The delayed job must re-check that the same reaction row still exists before notifying; an undone reaction is a no-op.
+- `SendReactionNotificationJob` is unique per post and runs on the database queue so bursts of reactions batch into one author notification job instead of many concurrent jobs for the same post.
 - Never notify on type change.
 - Never notify self-reactions.
 - Daily heavy-reactor summaries are opt-in through `notification_preferences.daily_reaction_summary` and dispatched by `reactions:send-daily-summaries` at 8pm in the user's timezone.
