@@ -30,6 +30,7 @@
  <x-ui.confirm-modal />
  @auth
  <livewire:pets.create-wizard />
+ <livewire:posts.mobile-create-button />
  @endauth
 
  <div @class([

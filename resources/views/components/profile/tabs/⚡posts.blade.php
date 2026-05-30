@@ -6,6 +6,7 @@ use App\Models\Identity\User;
 use App\Services\CommentService;
 use App\Services\ProfileVisibilityService;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 new class extends Component
@@ -29,9 +30,42 @@ new class extends Component
 
     public ?int $selectedPostId = null;
 
+    public bool $composerOpen = false;
+
+    public int $composerInstance = 0;
+
     public function mount(int $profileUserId): void
     {
         $this->profileUserId = $profileUserId;
+    }
+
+    public function openComposer(): void
+    {
+        $viewer = $this->viewer();
+        $profileUser = $this->profileUser();
+
+        abort_unless($viewer instanceof User && $viewer->is($profileUser), 403);
+
+        $this->composerOpen = true;
+        $this->composerInstance++;
+    }
+
+    #[On('post-composer-closed')]
+    public function closeComposer(): void
+    {
+        $this->composerOpen = false;
+    }
+
+    #[On('post-created')]
+    public function refreshAfterPostCreated(?int $postId = null, ?string $status = null): void
+    {
+        $this->composerOpen = false;
+
+        if ($status === 'scheduled') {
+            return;
+        }
+
+        $this->resetTimeline();
     }
 
     public function loadMorePosts(): void
@@ -237,23 +271,36 @@ new class extends Component
  <x-ui.card>
  <div class="flex items-center gap-3">
  <x-ui.avatar :src="$data['profileUser']->avatar_url" :name="$data['profileUser']->name" :user="$data['profileUser']" size="md"/>
- <a href="{{ route('posts.create') }}"
- class="flex min-h-11 w-full items-center rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ <button
+ type="button"
+ wire:click="openComposer"
+ class="flex min-h-11 w-full items-center rounded-full border border-whisker/40 bg-cream px-4 py-2 text-left text-sm text-fur transition-colors hover:bg-paw-light/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw"
+ data-ui="profile-open-post-composer"
+ >
  What's on your mind, {{ $data['profileUser']->name }}?
- </a>
+ </button>
  </div>
  <div class="mt-3 grid grid-cols-3 gap-2">
- <a href="{{ route('posts.create') }}"
+ <button type="button" wire:click="openComposer"
  class="flex min-h-11 items-center justify-center rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">📷
- Photo</a>
- <a href="{{ route('posts.create') }}"
+ Photo</button>
+ <button type="button" wire:click="openComposer"
  class="flex min-h-11 items-center justify-center rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">🐾
- Pet update</a>
- <a href="{{ route('posts.create') }}"
+ Pet update</button>
+ <button type="button" wire:click="openComposer"
  class="flex min-h-11 items-center justify-center rounded-lg border border-whisker/30 bg-warm-white px-3 py-2 text-center text-xs font-semibold text-fur transition-colors hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">🎉
- Life event</a>
+ Life event</button>
  </div>
  </x-ui.card>
+
+ @if ($composerOpen)
+ <livewire:posts.composer
+ mode="modal"
+ context-type="profile-posts"
+ :context-id="$profileUserId"
+ :key="'profile-post-composer-'.$profileUserId.'-'.$composerInstance"
+ />
+ @endif
  @endif
 
  @if ($data['pinnedPost'] instanceof Post)

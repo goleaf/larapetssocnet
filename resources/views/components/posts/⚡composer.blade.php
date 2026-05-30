@@ -112,6 +112,15 @@ new class extends Component
 
     public ?string $locationLng = null;
 
+    public string $mentionSearch = '';
+
+    /**
+     * @var list<array{id: int, name: string, username: string, avatar_url: ?string}>
+     */
+    public array $mentionSuggestions = [];
+
+    public bool $mentionSuggestionsOpen = false;
+
     /**
      * @var list<array{label: string, name?: string, region?: string|null, latitude: float, longitude: float}>
      */
@@ -509,6 +518,49 @@ new class extends Component
     public function isPetTagged(int $petId): bool
     {
         return in_array($petId, $this->selectedPetIds, true);
+    }
+
+    public function searchMentionSuggestions(string $query): void
+    {
+        $normalized = Str::of($query)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9-]/', '')
+            ->limit(30, '')
+            ->toString();
+
+        $this->mentionSearch = $normalized;
+
+        if (mb_strlen($normalized) < 1) {
+            $this->mentionSuggestions = [];
+            $this->mentionSuggestionsOpen = false;
+
+            return;
+        }
+
+        $viewerId = (int) ($this->viewer()?->getKey() ?? 0);
+
+        $this->mentionSuggestions = User::query()
+            ->where('username', 'like', $normalized.'%')
+            ->when($viewerId > 0, fn ($query) => $query->where('id', '!=', $viewerId))
+            ->orderBy('username')
+            ->limit(5)
+            ->get(['id', 'name', 'username', 'avatar_path'])
+            ->map(fn (User $user): array => [
+                'id' => (int) $user->getKey(),
+                'name' => (string) $user->name,
+                'username' => (string) $user->username,
+                'avatar_url' => $user->avatar_url,
+            ])
+            ->values()
+            ->all();
+        $this->mentionSuggestionsOpen = $this->mentionSuggestions !== [];
+    }
+
+    public function closeMentionSuggestions(): void
+    {
+        $this->mentionSearch = '';
+        $this->mentionSuggestions = [];
+        $this->mentionSuggestionsOpen = false;
     }
 
     public function updatedLocationSearch(): void
@@ -1566,6 +1618,7 @@ new class extends Component
         $this->locationSuggestions = [];
         $this->locationPickerOpen = false;
         $this->locationSuggestionsOpen = false;
+        $this->closeMentionSuggestions();
         $this->selectedMood = null;
         $this->clearSchedule();
         $this->linkPreviewData = [];
@@ -1935,6 +1988,7 @@ new class extends Component
 
  <div class="space-y-2">
  <label for="{{ $editorId }}" class="text-sm font-semibold text-bark">What would you like to share?</label>
+ <div class="relative">
  <div
  id="{{ $editorId }}"
  x-ref="editor"
@@ -1946,7 +2000,40 @@ new class extends Component
  class="min-h-32 w-full rounded-[var(--radius-soft)] border border-whisker/40 bg-[color:var(--surface-form)] px-4 py-3 text-base leading-7 text-bark outline-none transition empty:before:content-[attr(data-placeholder)] empty:before:text-whisker focus:border-paw focus:ring-2 focus:ring-paw/15"
  x-on:input.debounce.150ms="syncFromEditor"
  x-on:paste="handlePasteForLinkPreview($event)"
+ x-on:keydown.arrow-down="if (mentionSuggestionButtons().length > 0) { $event.preventDefault(); moveMentionFocus(1); }"
+ x-on:keydown.arrow-up="if (mentionSuggestionButtons().length > 0) { $event.preventDefault(); moveMentionFocus(-1); }"
+ x-on:keydown.enter="if (mentionFocusIndex >= 0) { $event.preventDefault(); chooseFocusedMention(); }"
+ x-on:keydown.escape="if (mentionLookupActive || mentionSuggestionButtons().length > 0) { $event.preventDefault(); closeMentionSuggestions(); }"
+ aria-controls="{{ $composerId }}-mention-suggestions"
+ aria-expanded="{{ $mentionSuggestionsOpen ? 'true' : 'false' }}"
 >{{ $textContent }}</div>
+
+ @if ($mentionSuggestionsOpen && $mentionSuggestions !== [])
+ <div
+ id="{{ $composerId }}-mention-suggestions"
+ class="absolute left-3 right-3 top-full z-30 mt-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white shadow-card"
+ role="listbox"
+ aria-label="Mention suggestions"
+ >
+ @foreach ($mentionSuggestions as $index => $suggestion)
+ <button
+ type="button"
+ data-mention-suggestion
+ data-mention-index="{{ $index }}"
+ class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-cream focus:bg-cream focus:outline-none"
+ x-on:click.prevent="insertMention(@js($suggestion['username'])); $wire.closeMentionSuggestions()"
+ role="option"
+ >
+ <x-ui.avatar :src="$suggestion['avatar_url']" :name="$suggestion['name']" size="sm"/>
+ <span class="min-w-0">
+ <span class="block truncate text-sm font-semibold text-bark">{{ $suggestion['name'] }}</span>
+ <span class="block truncate text-xs text-fur">&#64;{{ $suggestion['username'] }}</span>
+ </span>
+ </button>
+ @endforeach
+ </div>
+ @endif
+ </div>
 
  <div class="flex min-h-8 flex-wrap items-center justify-between gap-3">
  @error('body')

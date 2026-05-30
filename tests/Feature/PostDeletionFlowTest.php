@@ -42,7 +42,7 @@ it('opens a deliberate delete confirmation modal with a post preview', function 
         ->assertSee('Cancel');
 });
 
-it('dispatches the queued delete cascade and emits an optimistic removal event', function (): void {
+it('soft deletes immediately queues the cascade and emits an optimistic removal event', function (): void {
     Queue::fake();
 
     $owner = User::factory()->create();
@@ -58,10 +58,7 @@ it('dispatches the queued delete cascade and emits an optimistic removal event',
     Queue::assertPushed(DeletePostCascadeJob::class, fn (DeletePostCascadeJob $job): bool => $job->postId === $post->id
         && $job->actorId === $owner->id);
 
-    $this->assertDatabaseHas('posts', [
-        'id' => $post->id,
-        'deleted_at' => null,
-    ]);
+    $this->assertSoftDeleted('posts', ['id' => $post->id]);
 });
 
 it('runs the queued deletion cascade without silently removing saved placeholders', function (): void {

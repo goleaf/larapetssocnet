@@ -1090,6 +1090,10 @@ document.addEventListener('alpine:init', () => {
  reverseGeocoding: false,
  locationError: '',
  linkPreviewTimer: null,
+ mentionLookupTimer: null,
+ mentionFocusIndex: -1,
+ mentionLookupActive: false,
+ mentionCaretOffset: null,
  autosaveInterval: null,
  draftSavedTimer: null,
  draftSavedVisible: false,
@@ -1130,6 +1134,7 @@ document.addEventListener('alpine:init', () => {
 
  destroy() {
  window.clearTimeout(this.linkPreviewTimer);
+ window.clearTimeout(this.mentionLookupTimer);
  window.clearTimeout(this.draftSavedTimer);
  window.clearTimeout(this.performanceTimer);
  window.clearTimeout(this.altTextEducationTimer);
@@ -1199,8 +1204,107 @@ document.addEventListener('alpine:init', () => {
 
  this.markDraftDirty();
  this.schedulePerformancePrediction();
+ this.scheduleMentionLookup(offset);
  this.renderHighlighted(false);
  this.restoreCaretOffset(offset);
+ },
+
+ scheduleMentionLookup(offset = null) {
+ if (typeof this.$wire?.searchMentionSuggestions !=='function') {
+ return;
+ }
+
+ const caretOffset = Number.isInteger(offset) ? offset : this.saveCaretOffset();
+ const query = this.currentMentionQuery(caretOffset);
+
+ window.clearTimeout(this.mentionLookupTimer);
+
+ if (!query) {
+ this.mentionCaretOffset = null;
+
+ if (!this.mentionLookupActive) {
+ return;
+ }
+
+ this.closeMentionSuggestions();
+
+ return;
+ }
+
+ this.mentionCaretOffset = caretOffset;
+ this.mentionLookupTimer = window.setTimeout(() => {
+ this.mentionLookupActive = true;
+ this.$wire.searchMentionSuggestions(query);
+ this.mentionFocusIndex = -1;
+ }, 250);
+ },
+
+ currentMentionQuery(offset = null) {
+ const caretOffset = Number.isInteger(offset) ? offset : this.saveCaretOffset();
+ const beforeCaret = toStringValue(this.text).slice(0, Math.max(0, caretOffset));
+ const match = beforeCaret.match(/(?:^|\s)@([A-Za-z0-9-]{1,30})$/);
+
+ return match ? match[1] : '';
+ },
+
+ mentionSuggestionButtons() {
+ return Array.from(this.$root?.querySelectorAll('[data-mention-suggestion]') || []);
+ },
+
+ moveMentionFocus(direction) {
+ const buttons = this.mentionSuggestionButtons();
+
+ if (buttons.length === 0) {
+ return;
+ }
+
+ this.mentionFocusIndex = (this.mentionFocusIndex + direction + buttons.length) % buttons.length;
+ buttons[this.mentionFocusIndex]?.focus();
+ },
+
+ chooseFocusedMention() {
+ const buttons = this.mentionSuggestionButtons();
+
+ if (buttons.length === 0 || this.mentionFocusIndex < 0) {
+ return;
+ }
+
+ buttons[this.mentionFocusIndex]?.click();
+ },
+
+ insertMention(username) {
+ const mention = toStringValue(username).replace(/[^A-Za-z0-9-]/g, '');
+
+ if (!mention) {
+ return;
+ }
+
+ const offset = Number.isInteger(this.mentionCaretOffset) ? this.mentionCaretOffset : this.saveCaretOffset();
+ const beforeCaret = toStringValue(this.text).slice(0, Math.max(0, offset));
+ const afterCaret = toStringValue(this.text).slice(Math.max(0, offset));
+ const nextBeforeCaret = beforeCaret.replace(/(^|\s)@[A-Za-z0-9-]{1,30}$/, `$1@${mention} `);
+
+ this.text = `${nextBeforeCaret}${afterCaret}`;
+
+ if (this.$wire?.set) {
+ this.$wire.set('textContent', this.text, false);
+ }
+
+ this.renderHighlighted(false);
+ this.restoreCaretOffset(nextBeforeCaret.length);
+ this.markDraftDirty();
+ this.closeMentionSuggestions();
+ },
+
+ closeMentionSuggestions() {
+ window.clearTimeout(this.mentionLookupTimer);
+ this.mentionFocusIndex = -1;
+ this.mentionLookupActive = false;
+ this.mentionCaretOffset = null;
+
+ if (typeof this.$wire?.closeMentionSuggestions ==='function') {
+ this.$wire.closeMentionSuggestions();
+ }
  },
 
  handlePasteForLinkPreview(event) {

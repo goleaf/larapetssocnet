@@ -7,6 +7,14 @@ Types are auto-detected in `PostService`:
 
 Type is immutable after creation.
 
+## Composer Entry Points
+
+Use the shared Livewire `posts.composer` everywhere a user creates or edits normal post content. The feed may mount it inline, while the owner profile Posts tab and the authenticated mobile floating action button mount it in modal mode without navigating away from the current page. Entry points should pass context props instead of branching into separate form implementations.
+
+## Composer Mentions
+
+The shared composer highlights hashtags and mentions inside the contenteditable editor with Alpine while keeping the raw `textContent` synchronized to Livewire. Active mention text must also call the composer's debounced server-backed `searchMentionSuggestions()` action, query `users.username` by prefix, exclude the current viewer, cap results to five accounts, and insert the selected username back into the editor without trusting client-rendered spans as submission data.
+
 ## Composer Pet Tags
 
 Use the shared Livewire `posts.composer` pet tagging controls instead of raw multi-selects. The normal composer shows a toolbar "Tag a pet" dropdown listing owned/postable pets by name with avatar and species badge, and selected pets render as removable chips below the editor. Pet-profile composer contexts must pass a fixed pet through `contextType=pet-profile` and `contextId` or `fixedPetId` / `lockPetTags`; that hides the tagging dropdown and keeps the pre-tagged pet immutable so the post remains on that pet profile.
@@ -43,9 +51,9 @@ The shared composer also shows an Alpine word count beside the character counter
 
 The shared Livewire `posts.composer` must disable the composer surface during `submit` / `confirmDuplicateAndSubmit`, show spinner text on the submit button, and avoid clearing form state until `CreatePostAction` succeeds. Duplicate-detection results open a modal with Post anyway and Go back actions; Go back keeps the typed content and clears only duplicate state. Validation failures keep the composer open, set field errors on the Livewire error bag, and dispatch `post-submission-failed` so Alpine scrolls to the first `[data-composer-error]`.
 
-Successful submissions dispatch `post-composer-reset`, a rich `post-created` browser event containing `composerId`, `mode`, `status`, `postId`, author/body display data, and toast text, then dispatch `toast-message`. Inline composers collapse after their own matching `post-created` event, modal composers fade out through `modalOpen = false`, and feed surfaces listen for published `post-created` events to prepend a highlighted optimistic post card. Scheduled posts show a scheduled-success toast but should not be prepended to normal feeds until publication.
+Successful submissions dispatch `post-composer-reset`, a rich `post-created` browser event containing `composerId`, `mode`, `status`, `postId`, author/body display data, and toast text, then dispatch `toast-message`. Inline composers collapse after their own matching `post-created` event, modal composers fade out through `modalOpen = false`, profile Posts tab composer shells close themselves, and feed surfaces listen for published `post-created` events to prepend a highlighted optimistic post card. Scheduled posts show a scheduled-success toast but should not be prepended to normal feeds until publication.
 
-Post deletion from the shared post card is a Livewire-confirmed queued flow. The owner menu opens a modal with the first 150 characters and first media preview, then confirmation dispatches `post-delete-requested` for optimistic removal and queues `DeletePostCascadeJob`; saved rows are preserved so saved pages can show deleted placeholders.
+Post deletion from the shared post card is a Livewire-confirmed flow. The owner menu opens a modal with the first 150 characters and first media preview, then confirmation dispatches `post-delete-requested` for optimistic removal, soft-deletes the post immediately in the confirming request, and queues `DeletePostCascadeJob` for counter/feed/media cleanup; saved rows are preserved so saved pages can show deleted placeholders.
 
 ## Reposts and Quote Posts
 

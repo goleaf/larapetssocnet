@@ -4,6 +4,7 @@ use App\Jobs\DeletePostCascadeJob;
 use App\Models\Content\Post;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 new class extends Component
@@ -52,6 +53,12 @@ new class extends Component
 
         $this->open = false;
 
+        DB::transaction(function () use ($post): void {
+            if (! $post->trashed()) {
+                $post->delete();
+            }
+        });
+
         DeletePostCascadeJob::dispatch($this->postId, (int) auth()->id())->afterCommit();
 
         $this->dispatch('post-delete-requested', postId: $this->postId);
@@ -61,6 +68,7 @@ new class extends Component
     {
         return Post::query()
             ->with(['postMedia'])
+            ->withTrashed()
             ->whereKey($this->postId)
             ->firstOrFail();
     }

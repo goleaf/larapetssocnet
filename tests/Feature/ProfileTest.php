@@ -951,6 +951,18 @@ test('profile posts tab shows pinned post highlight and keeps chronological feed
         ->toContain('data-testid="comments-toggle"');
 });
 
+test('profile owner opens the shared post composer from the posts tab without navigation', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('profile.tabs.posts', ['profileUserId' => $user->getKey()])
+        ->assertSee('data-ui="profile-open-post-composer"', false)
+        ->assertDontSee('href="'.route('posts.create').'"', false)
+        ->call('openComposer')
+        ->assertSet('composerOpen', true)
+        ->assertSee('posts.composer');
+});
+
 test('profile pinned post highlight honors viewer visibility', function (): void {
     $owner = User::factory()->create(['is_private' => false]);
     $viewer = User::factory()->create();

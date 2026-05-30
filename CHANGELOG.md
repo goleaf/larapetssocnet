@@ -25,6 +25,8 @@
 - Added toolbar-driven Livewire post composer location tagging with debounced server-side geocoding suggestions, browser coordinate reverse geocoding, and removable location chips.
 - Added the Livewire post composer's toolbar visibility dropdown with radio-card options and an explicit Only me warning.
 - Added pet tagging in the Livewire post composer as a toolbar dropdown with avatar/species rows, selected pet chips, and locked pet-profile context tags.
+- Added shared post composer entry points for the owner profile Posts tab and authenticated mobile floating action button so both open the existing Livewire composer without navigating away.
+- Added server-backed username mention suggestions to the shared contenteditable composer, including keyboard navigation and five-result prefix matching.
 - Added the post composer's attachment strip with click and drag-drop selection, client-side media validation, instant image/video previews, per-attachment Livewire upload progress, alt text controls, removal, and Sortable-backed drag ordering.
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
@@ -38,11 +40,13 @@
 - Updated shared avatar fallbacks to use the same username-hashed profile palette and initial as the public profile header.
 - Updated shared post-card and user-row name renderings to show the verified PetSocial badge for verified accounts.
 - Updated profile media conversions so public profile avatar cards are cropped to 400x400 and cover banners are cropped to 1200x400.
+- Changed profile Posts tab owner composer actions to mount the shared modal composer in place instead of linking away to the standalone create route.
 
 ### Fixed
 - Fixed feed new-post polling Alpine calls inside the full-page Livewire feed shell by resolving the nearest stream component before invoking the polling action.
 - Fixed legacy morph-map aliases for post draft, mention, and pet care/ownership domain models.
 - Fixed post creation from internal services to normalize enum-backed status values before synthetic request validation.
+- Fixed post deletion confirmations to soft-delete the post immediately before the queued cascade handles counters, feed items, saved-post placeholders, and media cleanup.
 - Fixed group invitation acceptance and decline flows when invitation statuses are returned through Laravel enum casts.
 - Fixed pet profile validation so whitespace-only names are rejected after normalization.
 - Fixed blocked pet profile requests to return not found instead of exposing a normal authorization denial.
@@ -88,6 +92,7 @@
 - Added scheduled composer and scheduled publication coverage for picker rendering, UTC state storage, scheduled post creation without immediate fan-out, command job dispatch, command lock skipping, and due-job publication.
 - Added Livewire post composer coverage for selecting and removing moods through the toolbar mood picker.
 - Added Livewire post composer coverage for location picker rendering, server-side autocomplete selection, coordinate persistence, and browser-coordinate reverse geocoding.
+- Added Livewire coverage for composer mention suggestions, the profile Posts tab composer entry point, the mobile composer launcher, and immediate soft deletion from the delete confirmation flow.
 - Added Livewire post composer coverage for toolbar visibility selection, private-post warning copy, and preserving the user's stored visibility preference.
 - Updated ChartService unit coverage for the current `WeightHistorySvg` dependency and smooth-path chart rendering.
 - Added post media coverage for 10-image posts, mixed image/video posts, multiple videos, 10 MB image limits, 100 MB video limits, and ordered temporary media dispatch from the Livewire composer.

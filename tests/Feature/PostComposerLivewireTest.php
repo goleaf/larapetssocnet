@@ -141,6 +141,27 @@ it('keeps text state and exposes the computed character count', function (): voi
         ->assertSeeHtml('x-show="showCharacterCounter"');
 });
 
+it('loads username mention suggestions from the composer', function (): void {
+    $user = User::factory()->create();
+    $match = User::factory()->create([
+        'name' => 'Lina Paws',
+        'username' => 'lina-paws',
+    ]);
+    User::factory()->create(['username' => 'milo-friend']);
+
+    Livewire::actingAs($user)
+        ->test('posts.composer')
+        ->call('searchMentionSuggestions', 'li')
+        ->assertSet('mentionSuggestionsOpen', true)
+        ->assertSet('mentionSuggestions.0.id', $match->id)
+        ->assertSee('Mention suggestions')
+        ->assertSee('lina-paws')
+        ->assertDontSee('@milo-friend')
+        ->call('closeMentionSuggestions')
+        ->assertSet('mentionSuggestionsOpen', false)
+        ->assertSet('mentionSuggestions', []);
+});
+
 it('renders the media attachment strip controls and upload behaviours', function (): void {
     $user = User::factory()->create();
 
@@ -172,6 +193,17 @@ it('renders composer writing assists for word count alt text and image editing',
         ->assertSeeHtml('imageEditorOpen')
         ->assertSee('Edit image')
         ->assertSee('Save edited image');
+});
+
+it('opens the mobile floating composer launcher without leaving the page', function (): void {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('posts.mobile-create-button')
+        ->assertSeeHtml('data-ui="mobile-post-create-fab"')
+        ->call('openComposer')
+        ->assertSet('composerOpen', true)
+        ->assertSee('posts.composer');
 });
 
 it('analyzes post performance for authors with enough published history', function (): void {
