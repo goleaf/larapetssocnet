@@ -151,9 +151,14 @@
 
                 <div class="min-w-0">
                     @if ($author)
-                        <a id="{{ $postAuthorId }}" href="{{ $profileUrl }}" class="block min-h-6 truncate text-sm font-semibold ui-text hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
-                            {{ $author->name }}
-                        </a>
+                        <div class="flex min-w-0 items-center gap-1.5">
+                            <a id="{{ $postAuthorId }}" href="{{ $profileUrl }}" class="block min-h-6 min-w-0 truncate text-sm font-semibold ui-text hover:text-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+                                {{ $author->name }}
+                            </a>
+                            @if ($author->profile_verified)
+                                <x-ui.verified-badge tooltip-id="{{ $postDomId }}-author-verified-tooltip" size="sm"/>
+                            @endif
+                        </div>
                         <p class="truncate text-xs shell-text-muted">&#64;{{ $author->username }}</p>
                     @else
                         <p id="{{ $postAuthorId }}" class="text-sm font-semibold ui-text">Deleted User</p>
@@ -271,9 +276,14 @@
             <div class="mt-3 flex items-start gap-3">
                 <x-ui.avatar :src="$relatedPostAuthor?->avatar_url" :name="$relatedPostAuthor?->name ?? __('Community member')" :user="$relatedPostAuthor" size="sm"/>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold ui-text">
-                        {{ $relatedPostAuthor?->name ?? __('Community member') }}
-                    </p>
+                    <div class="flex min-w-0 items-center gap-1.5">
+                        <p class="min-w-0 truncate text-sm font-semibold ui-text">
+                            {{ $relatedPostAuthor?->name ?? __('Community member') }}
+                        </p>
+                        @if ($relatedPostAuthor?->profile_verified)
+                            <x-ui.verified-badge tooltip-id="{{ $postDomId }}-related-author-verified-tooltip" size="sm"/>
+                        @endif
+                    </div>
                     @if (filled($relatedPost->body))
                         <p class="mt-1 line-clamp-3 text-sm leading-6 shell-text-muted">
                             {{ $relatedPost->body }}

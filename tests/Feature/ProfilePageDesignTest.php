@@ -6,6 +6,7 @@ use App\Models\Pets\Pet;
 use App\Models\Social\Follow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Hash;
 
 uses(RefreshDatabase::class);
@@ -872,6 +873,30 @@ it('renders generated profile initials with the username hash palette when no av
         ->not->toBe($differentUsername->profile_default_avatar_color);
 });
 
+it('uses the username hash palette for shared generated avatar components', function (): void {
+    $profileOwner = User::factory()->create([
+        'name' => 'Shared Avatar Owner',
+        'username' => 'shared_avatar_alpha',
+        'avatar_path' => null,
+        'profile_photo_path' => null,
+    ]);
+    $sameUsername = User::factory()->make(['username' => 'shared_avatar_alpha']);
+    $differentUsername = User::factory()->make(['username' => 'shared_avatar_beta']);
+
+    $html = Blade::render(
+        '<x-ui.avatar :user="$profileOwner" :name="$profileOwner->name" size="md"/>',
+        ['profileOwner' => $profileOwner],
+    );
+
+    expect($html)
+        ->toContain($profileOwner->profile_default_avatar_color)
+        ->toContain('Shared Avatar Owner')
+        ->toContain('S')
+        ->and($profileOwner->profile_default_avatar_color)
+        ->toBe($sameUsername->profile_default_avatar_color)
+        ->not->toBe($differentUsername->profile_default_avatar_color);
+});
+
 it('renders the profile identity stack below the avatar with expandable bio text', function (): void {
     $profileOwner = User::factory()->create([
         'name' => 'Long Bio Owner',
@@ -1020,6 +1045,38 @@ it('renders verified badges beside profile header names with an alpine tooltip',
         ->assertSee('Unverified Owner')
         ->assertDontSee('data-ui="profile-verified-badge"', false)
         ->assertDontSee('Verified PetSocial account');
+});
+
+it('renders verified badges beside shared post-card and user-row names', function (): void {
+    $verifiedOwner = User::factory()->create([
+        'name' => 'Shared Verified Owner',
+        'username' => 'shared_verified_owner',
+        'is_verified' => true,
+        'is_private' => false,
+        'profile_visibility' => 'public',
+    ]);
+    $post = Post::factory()->for($verifiedOwner)->create([
+        'body' => 'Verified author post card surface.',
+        'body_html' => '<p>Verified author post card surface.</p>',
+        'visibility' => 'public',
+        'status' => 'published',
+    ]);
+
+    $this->get(route('profile.show', ['user' => $verifiedOwner, 'tab' => 'posts']))
+        ->assertOk()
+        ->assertSee('Shared Verified Owner')
+        ->assertSee('post-card-'.$post->getKey().'-author-verified-tooltip', false)
+        ->assertSee('Verified PetSocial account');
+
+    $rowHtml = Blade::render(
+        '<x-ui.user-row :user="$verifiedOwner" :href="$verifiedOwner->profile_url"/>',
+        ['verifiedOwner' => $verifiedOwner],
+    );
+
+    expect($rowHtml)
+        ->toContain('Shared Verified Owner')
+        ->toContain('user-row-verified-'.$verifiedOwner->getKey())
+        ->toContain('Verified PetSocial account');
 });
 
 it('renders a clearer private profile lockup for authenticated visitors', function (): void {

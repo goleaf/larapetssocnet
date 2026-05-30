@@ -24,6 +24,9 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Updated profile view tracking to keep one daily row per viewer/profile pair while incrementing a `views_count` aggregate for repeat same-day visits.
+- Updated shared avatar fallbacks to use the same username-hashed profile palette and initial as the public profile header.
+- Updated shared post-card and user-row name renderings to show the verified PetSocial badge for verified accounts.
 - Updated profile media conversions so public profile avatar cards are cropped to 400x400 and cover banners are cropped to 1200x400.
 
 ### Fixed
@@ -55,6 +58,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added profile analytics and design coverage for daily profile-view aggregate counts, shared username-hashed avatar fallbacks, and verified badges on shared user-name surfaces.
 - Updated auth coverage for RateLimiter-backed login lockouts, signed password-reset URLs, login-page reset redirects, verification resend toasts, and expired verification links opened from another browser session.
 - Added post creation architecture coverage for DTO-only action input, hash-based autosave no-op behavior, and duplicate feed fan-out job no-ops.
 - Added Livewire coverage for post composer templates, template scoping and limits, writing-assist UI hooks, and performance prediction output.

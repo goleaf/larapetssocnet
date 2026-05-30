@@ -14,6 +14,15 @@
  $avatarLabel = filled(trim((string) $alt))
      ? trim((string) $alt)
      : (trim((string) $avatarName) !== '' ? (string) $avatarName : 'User');
+ $fallbackClasses = $avatarUser?->profile_default_avatar_color ?? [
+    'bg-paw-light text-paw-dark',
+    'bg-leaf-light text-leaf',
+    'bg-sky-light text-sky',
+    'bg-amber-light text-amber',
+    'bg-rose-light text-rose',
+ ][abs(crc32(trim((string) $avatarName) !== '' ? (string) $avatarName : 'User')) % 5];
+ $fallbackInitial = $avatarUser?->profile_initial
+     ?? (($initials = collect(preg_split('/\s+/', trim((string) $avatarName) !== '' ? (string) $avatarName : 'User', -1, PREG_SPLIT_NO_EMPTY) ?: [])->map(static fn (string $segment): string => mb_substr($segment, 0, 1))->take(2)->join('')) !== '' ? $initials : 'U');
  $showsActiveStatus = $avatarUser instanceof \App\Models\Identity\User
      ? $avatarUser->shouldShowActiveStatus()
      : (bool) $online;
@@ -44,14 +53,8 @@
     'lg'=>'h-14 w-14 text-base',
     'xl'=>'h-20 w-20 text-xl',
     '2xl'=>'h-24 w-24 text-2xl',
-  ][(string) $size] ?? 'h-10 w-10 text-sm' }} {{ [
-    'bg-paw-light text-paw-dark',
-    'bg-leaf-light text-leaf',
-    'bg-sky-light text-sky',
-    'bg-amber-light text-amber',
-    'bg-rose-light text-rose',
-  ][abs(crc32(trim((string) $avatarName) !== '' ? (string) $avatarName : 'User')) % 5] }} flex items-center justify-center rounded-pill border border-whisker/30 font-bold font-display uppercase" role="img" aria-label="{{ $avatarLabel }}">
- {{ ($initials = collect(preg_split('/\s+/', trim((string) $avatarName) !== '' ? (string) $avatarName : 'User', -1, PREG_SPLIT_NO_EMPTY) ?: [])->map(static fn (string $segment): string => mb_substr($segment, 0, 1))->take(2)->join('')) !== '' ? $initials : 'U' }}
+  ][(string) $size] ?? 'h-10 w-10 text-sm' }} {{ $fallbackClasses }} flex items-center justify-center rounded-pill border border-whisker/30 font-bold font-display uppercase" role="img" aria-label="{{ $avatarLabel }}">
+ {{ $fallbackInitial }}
  </div>
  @endif
 

@@ -37,6 +37,7 @@ it('records one authenticated profile view per viewer per day', function (): voi
             'profile_user_id' => $owner->id,
             'viewer_user_id' => $viewer->id,
             'viewed_on' => '2026-05-17',
+            'views_count' => 2,
         ]);
     } finally {
         Carbon::setTestNow();
@@ -76,7 +77,7 @@ it('dispatches a queued profile view recorder for authenticated visitors only', 
     Queue::assertNotPushed(RecordProfileView::class);
 });
 
-it('does not touch an existing daily profile view when the same viewer returns', function (): void {
+it('increments an existing daily profile view aggregate when the same viewer returns', function (): void {
     $owner = User::factory()->create([
         'username' => 'same_day_view_owner',
         'timezone' => 'Europe/Vilnius',
@@ -101,8 +102,9 @@ it('does not touch an existing daily profile view when the same viewer returns',
         /** @var ProfileView $sameView */
         $sameView = ProfileView::query()->firstOrFail();
 
-        expect($sameView->updated_at?->toDateTimeString())->toBe($originalUpdatedAt)
-            ->and($sameView->viewed_on?->toDateString())->toBe('2026-05-17');
+        expect($sameView->updated_at?->toDateTimeString())->not->toBe($originalUpdatedAt)
+            ->and($sameView->viewed_on?->toDateString())->toBe('2026-05-17')
+            ->and($sameView->views_count)->toBe(2);
     } finally {
         Carbon::setTestNow();
     }

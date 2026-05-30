@@ -15,6 +15,9 @@
      ? ($avatarUser->shouldShowActiveStatus() ? 'online' : null)
      : $status;
  $avatarLabel = $alt ?? ($avatarName ? $avatarName.' avatar' : 'Avatar');
+ $fallbackClasses = $avatarUser?->profile_default_avatar_color;
+ $fallbackInitial = $avatarUser?->profile_initial
+     ?? (($initials = collect(preg_split('/\s+/', trim((string) $avatarName), -1, PREG_SPLIT_NO_EMPTY) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr((string) $part, 0, 1)))->implode('')) !== '' ? $initials : 'PA');
 @endphp
 
 <div
@@ -25,8 +28,10 @@
     'lg' => 'h-12 w-12 text-base',
     'xl' => 'h-14 w-14 text-lg',
     '2xl' => 'h-16 w-16 text-xl',
-  ][$size] ?? 'h-10 w-10 text-sm')]) }}
+  ][$size] ?? 'h-10 w-10 text-sm').' '.($avatarSrc || ! $fallbackClasses ? '' : $fallbackClasses)]) }}
+ @if ($avatarSrc || ! $fallbackClasses)
  style="background: color-mix(in srgb, var(--ui-primary) 14%, var(--ui-surface) 86%); color: var(--ui-primary); border-color: color-mix(in srgb, var(--ui-primary) 26%, var(--ui-border) 74%);"
+ @endif
  @if (! $avatarSrc)
  role="img"
  aria-label="{{ $avatarLabel }}"
@@ -35,7 +40,7 @@
  @if ($avatarSrc)
  <img src="{{ $avatarSrc }}" alt="{{ $avatarLabel }}" class="h-full w-full object-cover" loading="lazy">
  @else
- <span class="font-heading font-bold" aria-hidden="true">{{ ($initials = collect(preg_split('/\s+/', trim((string) $avatarName)))->filter()->take(2)->map(fn ($part) => strtoupper(substr($part, 0, 1)))->implode('')) !== '' ? $initials : 'PA' }}</span>
+ <span class="font-heading font-bold" aria-hidden="true">{{ $fallbackInitial }}</span>
  <span class="sr-only">{{ $avatarLabel }}</span>
  @endif
 

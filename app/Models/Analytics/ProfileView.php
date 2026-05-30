@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'profile_user_id',
     'viewer_user_id',
     'viewed_on',
+    'views_count',
 ])]
 class ProfileView extends Model
 {
@@ -23,6 +24,7 @@ class ProfileView extends Model
     {
         return [
             'viewed_on' => 'date',
+            'views_count' => 'integer',
         ];
     }
 
