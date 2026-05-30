@@ -31,6 +31,12 @@ use Illuminate\Support\Str;
     'parent_id',
     'body',
     'body_html',
+    'gif_url',
+    'gif_preview_url',
+    'gif_title',
+    'gif_provider',
+    'language_code',
+    'quality_score',
     'edited_at',
     'replies_count',
     'reactions_count',
@@ -48,6 +54,7 @@ class Comment extends Model
     {
         return [
             'edited_at' => 'datetime',
+            'quality_score' => 'integer',
             'replies_count' => 'integer',
             'reactions_count' => 'integer',
             'paw_count' => 'integer',
@@ -75,6 +82,22 @@ class Comment extends Model
         return $this->hasMany(self::class, 'parent_id');
     }
 
+    /**
+     * @return HasMany<CommentTranslation, $this>
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(CommentTranslation::class);
+    }
+
+    /**
+     * @return HasMany<CommentThreadSubscription, $this>
+     */
+    public function threadSubscriptions(): HasMany
+    {
+        return $this->hasMany(CommentThreadSubscription::class, 'root_comment_id');
+    }
+
     public function commentable(): MorphTo
     {
         return $this->morphTo();
@@ -99,6 +122,12 @@ class Comment extends Model
             'comments.parent_id',
             'comments.body',
             'comments.body_html',
+            'comments.gif_url',
+            'comments.gif_preview_url',
+            'comments.gif_title',
+            'comments.gif_provider',
+            'comments.language_code',
+            'comments.quality_score',
             'comments.edited_at',
             'comments.replies_count',
             'comments.reactions_count',

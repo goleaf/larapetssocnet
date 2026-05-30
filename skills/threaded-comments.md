@@ -28,7 +28,8 @@ Implementation details:
 - Top-level comments: `topLevel()` scope (`parent_id` is null).
 - Replies and reply-to-reply comments are eager loaded through the `replies` relation.
 - `withTrashed()` keeps tombstoned comments visible in-thread.
-- Reaction summaries are hydrated in-memory after pagination.
+- Reaction summaries, current viewer reaction, and up to five Paw/Love reactor avatar faces are hydrated in-memory after pagination.
+- Thread subscription state is hydrated from `comment_thread_subscriptions` for the loaded root comments.
 - Visible Livewire polling should use `CommentService::threadActivity()` and compare the returned fingerprint before dispatching parent card refresh events.
 
 ## Tombstones
@@ -43,8 +44,8 @@ Implementation details:
 - New replies targeting an already third-level comment are flattened onto that third-level parent by `CommentService`.
 
 ## Pagination
-- Inline feed panels show three top-level comments by default, append three more via `loadMoreComments()`, and show two recent replies per top-level comment until that reply thread is expanded.
-- Full post pages mount the same Livewire component with `fullPage=true`, render the loaded thread through `CommentService::threadForPost()`, and support Top/Newest/Oldest sorting without a page reload.
+- Inline feed panels show three quality-weighted top-level comments by default, append three more via `loadMoreComments()`, and show two recent replies per top-level comment until that reply thread is expanded.
+- Full post pages mount the same Livewire component with `fullPage=true`, render the loaded thread through `CommentService::threadForPost()`, and support Top/Newest/Oldest sorting without a page reload. Busy threads expose debounced comment search through `CommentService::searchWithinPost()`.
 - HTTP pagination remains available through `CommentService::paginateThread()` for non-Livewire contexts.
 - Always chain `->withQueryString()`.
 

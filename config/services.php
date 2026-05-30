@@ -63,4 +63,20 @@ return [
         'limit' => env('GEOCODING_LIMIT', 5),
     ],
 
+    'gif' => [
+        'provider' => env('GIF_PROVIDER', 'tenor'),
+        'endpoint' => env('GIF_SEARCH_ENDPOINT', 'https://tenor.googleapis.com/v2/search'),
+        'key' => env('GIF_API_KEY'),
+        'client_key' => env('GIF_CLIENT_KEY', 'petsocial'),
+        'timeout' => env('GIF_SEARCH_TIMEOUT', 3),
+        'limit' => env('GIF_SEARCH_LIMIT', 12),
+    ],
+
+    'translation' => [
+        'provider' => env('TRANSLATION_PROVIDER', 'custom'),
+        'endpoint' => env('TRANSLATION_ENDPOINT'),
+        'key' => env('TRANSLATION_KEY'),
+        'timeout' => env('TRANSLATION_TIMEOUT', 5),
+    ],
+
 ];

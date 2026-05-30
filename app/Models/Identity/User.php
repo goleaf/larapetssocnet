@@ -440,6 +440,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             'post_likes' => true,
             'post_comments' => true,
             'comment_replies' => true,
+            'comment_thread_replies' => true,
             'mentions' => true,
             'follow_requests' => true,
             'new_follower' => true,

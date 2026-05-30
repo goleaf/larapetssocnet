@@ -7,11 +7,12 @@ use App\Http\Requests\Posts\ReactToCommentRequest;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
+use App\Services\CommentQualityService;
 use Illuminate\Http\JsonResponse;
 
 class CommentReactionController extends Controller
 {
-    public function react(ReactToCommentRequest $request, Post $post, Comment $comment): JsonResponse
+    public function react(ReactToCommentRequest $request, Post $post, Comment $comment, CommentQualityService $quality): JsonResponse
     {
         abort_unless((int) $comment->post_id === (int) $post->getKey(), 404);
         abort_unless($post->canBeViewedBy($request->user()), 403);
@@ -21,6 +22,7 @@ class CommentReactionController extends Controller
         $type = Reaction::normalizeType($request->validated('type'));
         $reaction = $comment->toggleReaction($request->user(), $type);
         $comment->refresh();
+        $quality->refresh($comment);
 
         return response()->json([
             'success' => true,
@@ -36,7 +38,7 @@ class CommentReactionController extends Controller
         ]);
     }
 
-    public function reactToComment(ReactToCommentRequest $request, Comment $comment): JsonResponse
+    public function reactToComment(ReactToCommentRequest $request, Comment $comment, CommentQualityService $quality): JsonResponse
     {
         $post = $comment->post;
 
@@ -47,6 +49,7 @@ class CommentReactionController extends Controller
         $type = Reaction::normalizeType($request->validated('type'));
         $reaction = $comment->toggleReaction($request->user(), $type);
         $comment->refresh();
+        $quality->refresh($comment);
 
         return response()->json([
             'success' => true,

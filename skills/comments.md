@@ -13,7 +13,14 @@ Comments table fields include:
 - `id`, `post_id`, `user_id`, `parent_id`
 - `body`, `body_html`, `edited_at`
 - `replies_count`, `reactions_count`
+- `gif_url`, `gif_preview_url`, `gif_title`, `gif_provider`
+- `language_code`, `quality_score`
 - `deleted_at`, timestamps
+
+Comment-adjacent tables:
+- `comment_drafts`: one draft per `(user_id, post_id)` storing draft text and optional GIF payload.
+- `comment_thread_subscriptions`: active thread notification subscriptions keyed by `(user_id, root_comment_id)`.
+- `comment_translations`: cached translations keyed by `(comment_id, target_language)`.
 
 ## Tombstone Soft Delete
 - Keep row for thread integrity.
@@ -21,8 +28,8 @@ Comments table fields include:
 - Do not break reply chains.
 
 ## Ordering
-- Inline feed previews show the three most recent top-level comments, with the two most recent replies under each visible parent.
-- Full post pages default to oldest-first reading order and can switch to Top or Newest through the Livewire thread sort control.
+- Inline feed previews show three quality-weighted top-level comments, with the two most recent replies under each visible parent.
+- Full post pages default to oldest-first reading order and can switch to Top or Newest through the Livewire thread sort control. Top sorts by `quality_score`, then reaction count, then recency.
 - Expanded reply threads load replies oldest first.
 
 ## Counters
@@ -38,6 +45,7 @@ Comment body processing mirrors posts:
 - Top-level comment notifies post author (except self).
 - Reply notifies parent-comment author (except self).
 - Mentions in comments notify mentioned users (except self).
+- Users who post at least two comments in the same root thread are automatically subscribed to later thread replies unless they unsubscribe.
 
 ## Access Rules
 - Guests cannot access post comment pages or create comments.
@@ -52,3 +60,7 @@ Comment body processing mirrors posts:
 - Inline feed panels use `CommentService::previewThread()` and full post pages mount the same component with `fullPage=true`, using `CommentService::threadForPost()`.
 - The component may poll while visible through a lightweight activity fingerprint from `CommentService::threadActivity()`.
 - Top-level comments, replies, edits, inline deletes, pin/unpin actions, reports, commenter blocks, mention suggestions, and emoji insertion submit through Livewire-backed shared actions so the user remains inside the post context.
+- The top-level composer autosaves a draft every 10 seconds when text or a GIF is present, restores the draft on mount, and clears it on submit or explicit discard.
+- Full post pages with more than 50 comments expose a debounced search field that queries within the post and highlights matched text in the rendered comment body.
+- GIF search is server-side only so provider keys stay in configuration. The Livewire component stores only selected GIF metadata on the comment.
+- Inline translation calls the server-side translation service and caches results in `comment_translations`; the original text remains visible.

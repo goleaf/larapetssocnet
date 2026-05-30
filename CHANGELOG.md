@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Added per-post comment drafts with Livewire autosave, automatic restore labels, explicit discard, and successful-submission cleanup.
+- Added comment GIF search through server-side Tenor/Giphy-compatible adapters, selected GIF persistence, and inline GIF rendering in comment threads.
+- Added cached inline comment translation support with stored source/target languages and a server-side translation adapter.
+- Added automatic comment-thread subscriptions for active participants, unsubscribe controls, and database notifications for later replies in followed threads.
+- Added eager-loaded Paw/Love comment reactor avatar faces, hidden comment quality scores, and full-page comment search with highlighted matches for busy post pages.
 - Added full-page Livewire comment threads on post detail pages with Top/Newest/Oldest sorting, shared mention suggestions, emoji insertion, pin/unpin actions, report submission, and commenter blocking.
 - Added inline feed comment preview batching with three recent top-level comments, two recent replies per thread, load-more comments, expandable reply threads, and smooth comment-panel transitions.
 - Added inline Livewire comment editing and spam reporting inside feed post-card comment threads, reusing the shared comment and report actions without leaving the post context.
@@ -39,6 +44,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Changed comment preview and Top sorting to use the stored comment quality score before falling back to reaction count and recency.
 - Moved direct-message sending into the Messaging action namespace and kept message delivery behavior covered by focused tests.
 - Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.
 - Changed comment validation to enforce the current 500-character maximum across HTTP requests, Livewire actions, and `CommentService`.
@@ -89,6 +95,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added comment enhancement coverage for per-post draft restore/cleanup, GIF selection, search highlighting, eager-loaded reaction faces, thread subscription notifications, and translation caching.
 - Added comment-thread coverage for three-level replies, deeper reply flattening, preview loading, expandable reply threads, pinned comments, blocking commenters, full-page sorting, 500-character validation, and one-hour edit-window enforcement.
 - Added Livewire comment-thread coverage for inline comment editing, sanitized rendered output, inline reporting, and self-report authorization blocking.
 - Added explicit comment coverage for guest posting redirects and blocked-user comment visibility filtering.

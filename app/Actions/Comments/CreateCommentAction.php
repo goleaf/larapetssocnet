@@ -12,7 +12,10 @@ class CreateCommentAction
 {
     public function __construct(private readonly CommentService $comments) {}
 
-    public function handle(User $actor, Post $post, string $body, ?int $parentId = null): Comment
+    /**
+     * @param  array{gif_url?: string|null, gif_preview_url?: string|null, gif_title?: string|null, gif_provider?: string|null}|null  $gif
+     */
+    public function handle(User $actor, Post $post, string $body, ?int $parentId = null, ?array $gif = null): Comment
     {
         Gate::forUser($actor)->authorize('create', [Comment::class, $post]);
 
@@ -23,6 +26,6 @@ class CreateCommentAction
             Gate::forUser($actor)->authorize('reply', $parent);
         }
 
-        return $this->comments->create($post, $actor, $body, $parent);
+        return $this->comments->create($post, $actor, $body, $parent, $gif);
     }
 }

@@ -11,10 +11,10 @@ use App\Notifications\NewComment;
 use App\Notifications\NewCommentReply;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CommentService
@@ -31,6 +31,9 @@ class CommentService
         private readonly ContentService $content,
         private readonly MentionService $mentions,
         private readonly VisibilityService $visibility,
+        private readonly CommentLanguageService $languages,
+        private readonly CommentQualityService $quality,
+        private readonly CommentThreadSubscriptionService $threadSubscriptions,
     ) {}
 
     /**
@@ -46,7 +49,7 @@ class CommentService
 
         $comments = $query->paginate($perPage)->withQueryString();
 
-        $comments->setCollection($this->hydrateThreadMetadata($comments->getCollection(), $viewerId));
+        $comments->setCollection($this->hydrateThreadMetadata($comments->getCollection(), $viewerId, $viewer));
 
         return $comments;
     }
@@ -63,11 +66,59 @@ class CommentService
 
         return $this->hydrateThreadMetadata(
             $query->get(),
-            $viewerId
+            $viewerId,
+            $viewer
         );
     }
 
     /**
+     * @return Collection<int, Comment>
+     */
+    public function searchWithinPost(Post $post, ?User $viewer, string $term): Collection
+    {
+        $term = trim($term);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        $viewerId = (int) ($viewer?->getKey() ?? 0);
+        $likeTerm = '%'.addcslashes($term, '%_\\').'%';
+
+        $comments = Comment::query()
+            ->threadColumns()
+            ->where('comments.post_id', $post->getKey())
+            ->where('comments.body', 'like', $likeTerm)
+            ->visibleTo($viewer)
+            ->with([
+                'user' => fn ($userQuery) => $userQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'user.media',
+                'reactions.user' => fn ($reactionUserQuery) => $reactionUserQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'reactions.user.media',
+            ])
+            ->orderByDesc('comments.quality_score')
+            ->latest('comments.created_at')
+            ->limit(50)
+            ->get()
+            ->each(fn (Comment $comment): Comment => $comment->setRelation('replies', collect()));
+
+        return $this->hydrateThreadMetadata($comments, $viewerId, $viewer, $term);
+    }
+
+    /**
+     * @param  array<int, bool|int|string>  $expandedReplyIds
      * @return Collection<int, Comment>
      */
     public function previewThread(
@@ -81,10 +132,12 @@ class CommentService
 
         $comments = $this->hydrateThreadMetadata(
             $this->threadQuery($post, $viewer, replyLimit: $replyLimit, nestedReplyLimit: $replyLimit)
+                ->orderByDesc('comments.quality_score')
                 ->latest('comments.created_at')
                 ->limit($limit)
                 ->get(),
-            $viewerId
+            $viewerId,
+            $viewer
         );
 
         return $this->replaceExpandedReplies($comments, $post, $viewer, $expandedReplyIds, $viewerId);
@@ -110,7 +163,7 @@ class CommentService
             ->visibleTo($viewer)
             ->withTrashed()
             ->with([
-                'user' => fn (BelongsTo $userQuery): BelongsTo => $userQuery->select([
+                'user' => fn ($userQuery) => $userQuery->select([
                     'users.id',
                     'users.name',
                     'users.username',
@@ -118,11 +171,18 @@ class CommentService
                     'users.profile_photo_path',
                 ]),
                 'user.media',
-                'replies' => fn (HasMany $replyQuery): HasMany => $this->replyQuery($replyQuery, $viewer, $replyLimit)
+                'reactions.user' => fn ($reactionUserQuery) => $reactionUserQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'reactions.user.media',
+                'replies' => fn ($replyQuery) => $this->replyQuery($replyQuery, $viewer, $replyLimit)
                     ->with([
-                        'replies' => fn (HasMany $nestedReplyQuery): HasMany => $this->replyQuery($nestedReplyQuery, $viewer, $replyLimit),
+                        'replies' => fn ($nestedReplyQuery) => $this->replyQuery($nestedReplyQuery, $viewer, $replyLimit),
                     ]),
-                'reactions',
             ])
             ->first();
 
@@ -150,11 +210,15 @@ class CommentService
         ];
     }
 
-    public function create(Post $post, User $author, string $body, ?Comment $parent = null): Comment
+    /**
+     * @param  array{gif_url?: string|null, gif_preview_url?: string|null, gif_title?: string|null, gif_provider?: string|null}|null  $gif
+     */
+    public function create(Post $post, User $author, string $body, ?Comment $parent = null, ?array $gif = null): Comment
     {
         $body = $this->normalizeBody($body);
+        $gif = $this->normalizeGifPayload($gif);
 
-        if ($body === '') {
+        if ($body === '' && $gif === null) {
             throw ValidationException::withMessages([
                 'body' => 'Comment cannot be empty.',
             ]);
@@ -162,13 +226,19 @@ class CommentService
 
         $parent = $parent instanceof Comment ? $this->normalizedParentForReply($post, $parent) : null;
 
-        return DB::transaction(function () use ($post, $author, $body, $parent): Comment {
+        return DB::transaction(function () use ($post, $author, $body, $parent, $gif): Comment {
             $comment = Comment::query()->create([
                 'post_id' => $post->getKey(),
                 'user_id' => $author->getKey(),
                 'parent_id' => $parent?->getKey(),
                 'body' => $body,
                 'body_html' => $this->content->process($body),
+                'gif_url' => $gif['gif_url'] ?? null,
+                'gif_preview_url' => $gif['gif_preview_url'] ?? null,
+                'gif_title' => $gif['gif_title'] ?? null,
+                'gif_provider' => $gif['gif_provider'] ?? null,
+                'language_code' => $this->languages->detect($body),
+                'quality_score' => $this->quality->score($body),
             ]);
 
             DB::afterCommit(function () use ($author, $post, $comment, $parent): void {
@@ -196,6 +266,8 @@ class CommentService
         $comment->update([
             'body' => $body,
             'body_html' => $this->content->process($body),
+            'language_code' => $this->languages->detect($body),
+            'quality_score' => $this->quality->score($body, (int) $comment->reactions_count),
             'edited_at' => now(),
         ]);
 
@@ -220,6 +292,7 @@ class CommentService
     {
         $reaction = $comment->toggleReaction($user, $type);
         $comment->refresh();
+        $this->quality->refresh($comment);
 
         return $reaction;
     }
@@ -228,9 +301,11 @@ class CommentService
      * @param  Collection<int, Comment>  $comments
      * @return Collection<int, Comment>
      */
-    private function hydrateThreadMetadata($comments, int $viewerId)
+    private function hydrateThreadMetadata($comments, int $viewerId, ?User $viewer = null, ?string $searchTerm = null)
     {
-        return $comments->map(fn (Comment $comment): Comment => $this->hydrateCommentMetadata($comment, $viewerId, 1));
+        $subscriptionMap = $this->threadSubscriptions->subscribedRootMap($viewer, $comments);
+
+        return $comments->map(fn (Comment $comment): Comment => $this->hydrateCommentMetadata($comment, $viewerId, 1, $subscriptionMap, null, $searchTerm));
     }
 
     /**
@@ -245,7 +320,7 @@ class CommentService
             ->visibleTo($viewer)
             ->withTrashed()
             ->with([
-                'user' => fn (BelongsTo $userQuery): BelongsTo => $userQuery->select([
+                'user' => fn ($userQuery) => $userQuery->select([
                     'users.id',
                     'users.name',
                     'users.username',
@@ -253,14 +328,25 @@ class CommentService
                     'users.profile_photo_path',
                 ]),
                 'user.media',
-                'replies' => fn (HasMany $replyQuery): HasMany => $this->replyQuery($replyQuery, $viewer, $replyLimit)
+                'reactions.user' => fn ($reactionUserQuery) => $reactionUserQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'reactions.user.media',
+                'replies' => fn ($replyQuery) => $this->replyQuery($replyQuery, $viewer, $replyLimit)
                     ->with([
-                        'replies' => fn (HasMany $nestedReplyQuery): HasMany => $this->replyQuery($nestedReplyQuery, $viewer, $nestedReplyLimit),
+                        'replies' => fn ($nestedReplyQuery) => $this->replyQuery($nestedReplyQuery, $viewer, $nestedReplyLimit),
                     ]),
-                'reactions',
             ]);
     }
 
+    /**
+     * @param  HasMany<Comment, Comment>  $replyQuery
+     * @return HasMany<Comment, Comment>
+     */
     private function replyQuery(HasMany $replyQuery, ?User $viewer, ?int $limit): HasMany
     {
         $replyQuery
@@ -275,7 +361,7 @@ class CommentService
         }
 
         $replyQuery->with([
-            'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
+            'user' => fn ($replyUserQuery) => $replyUserQuery->select([
                 'users.id',
                 'users.name',
                 'users.username',
@@ -283,7 +369,14 @@ class CommentService
                 'users.profile_photo_path',
             ]),
             'user.media',
-            'reactions',
+            'reactions.user' => fn ($reactionUserQuery) => $reactionUserQuery->select([
+                'users.id',
+                'users.name',
+                'users.username',
+                'users.avatar_path',
+                'users.profile_photo_path',
+            ]),
+            'reactions.user.media',
         ]);
 
         return $replyQuery;
@@ -296,23 +389,47 @@ class CommentService
     {
         match ($sort) {
             'newest' => $query->latest('comments.created_at'),
-            'top' => $query->orderByDesc('comments.reactions_count')->latest('comments.created_at'),
+            'top' => $query->orderByDesc('comments.quality_score')->orderByDesc('comments.reactions_count')->latest('comments.created_at'),
             default => $query->oldest('comments.created_at'),
         };
     }
 
-    private function hydrateCommentMetadata(Comment $comment, int $viewerId, int $depth): Comment
-    {
+    /**
+     * @param  array<int, bool>  $subscriptionMap
+     */
+    private function hydrateCommentMetadata(
+        Comment $comment,
+        int $viewerId,
+        int $depth,
+        array $subscriptionMap = [],
+        ?int $rootId = null,
+        ?string $searchTerm = null,
+    ): Comment {
+        $rootId ??= $comment->parent_id === null ? (int) $comment->getKey() : null;
+
         $comment->setAttribute('reaction_summary', $this->summarizeReactions($comment));
         $comment->setAttribute('current_viewer_reaction', $this->resolveViewerReaction($comment, $viewerId));
+        $comment->setAttribute('reaction_reactors', $this->reactionReactors($comment));
         $comment->setAttribute('thread_depth', $depth);
+        $comment->setAttribute('thread_root_id', $rootId);
+        $comment->setAttribute('is_thread_subscribed', $rootId !== null && (bool) ($subscriptionMap[$rootId] ?? false));
+        $comment->setAttribute('should_translate', $this->languages->shouldTranslate(
+            filled($comment->language_code) ? (string) $comment->language_code : null,
+            app()->getLocale(),
+        ));
+
+        if (filled($searchTerm)) {
+            $comment->setAttribute('highlighted_body_html', $this->highlightSearchTerm((string) $comment->body, (string) $searchTerm));
+        }
 
         if (! $comment->relationLoaded('replies')) {
             return $comment;
         }
 
         $comment->setRelation('replies', $comment->replies->map(
-            fn (Comment $reply): Comment => $this->hydrateCommentMetadata($reply, $viewerId, $depth + 1)
+            fn ($reply) => $reply instanceof Comment
+                ? $this->hydrateCommentMetadata($reply, $viewerId, $depth + 1, $subscriptionMap, $rootId, $searchTerm)
+                : $reply
         ));
 
         return $comment;
@@ -346,7 +463,7 @@ class CommentService
             ->withTrashed()
             ->oldest('comments.created_at')
             ->with([
-                'user' => fn (BelongsTo $replyUserQuery): BelongsTo => $replyUserQuery->select([
+                'user' => fn ($replyUserQuery) => $replyUserQuery->select([
                     'users.id',
                     'users.name',
                     'users.username',
@@ -354,24 +471,35 @@ class CommentService
                     'users.profile_photo_path',
                 ]),
                 'user.media',
-                'replies' => fn (HasMany $nestedReplyQuery): HasMany => $this->replyQuery($nestedReplyQuery, $viewer, null),
-                'reactions',
+                'reactions.user' => fn ($reactionUserQuery) => $reactionUserQuery->select([
+                    'users.id',
+                    'users.name',
+                    'users.username',
+                    'users.avatar_path',
+                    'users.profile_photo_path',
+                ]),
+                'reactions.user.media',
+                'replies' => fn ($nestedReplyQuery) => $this->replyQuery($nestedReplyQuery, $viewer, null),
             ])
             ->get()
             ->groupBy('parent_id');
 
-        $replace = function (Comment $comment, int $depth) use (&$replace, $fullReplyGroups, $viewerId): Comment {
+        $subscriptionMap = $this->threadSubscriptions->subscribedRootMap($viewer, $comments);
+
+        $replace = function (Comment $comment, int $depth) use (&$replace, $fullReplyGroups, $viewerId, $subscriptionMap): Comment {
+            $rootId = (int) ($comment->thread_root_id ?? ($comment->parent_id === null ? $comment->getKey() : 0));
+
             if ($fullReplyGroups->has($comment->getKey())) {
                 $comment->setRelation(
                     'replies',
                     $fullReplyGroups
                         ->get($comment->getKey())
-                        ->map(fn (Comment $reply): Comment => $this->hydrateCommentMetadata($reply, $viewerId, $depth + 1))
+                        ->map(fn (Comment $reply): Comment => $this->hydrateCommentMetadata($reply, $viewerId, $depth + 1, $subscriptionMap, $rootId > 0 ? $rootId : null))
                 );
             }
 
             if ($comment->relationLoaded('replies')) {
-                $comment->setRelation('replies', $comment->replies->map(fn (Comment $reply): Comment => $replace($reply, $depth + 1)));
+                $comment->setRelation('replies', $comment->replies->map(fn ($reply) => $reply instanceof Comment ? $replace($reply, $depth + 1) : $reply));
             }
 
             return $comment;
@@ -397,15 +525,48 @@ class CommentService
             ->all();
     }
 
+    /**
+     * @return list<array{id: int, name: string, username: string, avatar_url: ?string, type: string}>
+     */
+    private function reactionReactors(Comment $comment): array
+    {
+        if (! $comment->relationLoaded('reactions')) {
+            return [];
+        }
+
+        return $comment->reactions
+            ->filter(fn ($reaction): bool => $reaction instanceof Reaction && in_array(Reaction::normalizeType((string) $reaction->getAttribute('type')), Reaction::commentTypes(), true))
+            ->sortByDesc('created_at')
+            ->take(5)
+            ->map(function ($reaction): ?array {
+                $user = $reaction->user;
+
+                if (! $user instanceof User) {
+                    return null;
+                }
+
+                return [
+                    'id' => (int) $user->getKey(),
+                    'name' => (string) $user->name,
+                    'username' => (string) $user->username,
+                    'avatar_url' => is_string($user->getAttribute('avatar_url')) ? $user->getAttribute('avatar_url') : null,
+                    'type' => Reaction::normalizeType((string) $reaction->getAttribute('type')),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     private function resolveViewerReaction(Comment $comment, int $viewerId): ?string
     {
         if ($viewerId < 1 || ! $comment->relationLoaded('reactions')) {
             return null;
         }
 
-        $reactionType = $comment->reactions
-            ->firstWhere('user_id', $viewerId)
-            ?->type;
+        $reaction = $comment->reactions
+            ->firstWhere('user_id', $viewerId);
+        $reactionType = $reaction instanceof Reaction ? $reaction->getAttribute('type') : null;
 
         return $reactionType ? Reaction::normalizeType((string) $reactionType) : null;
     }
@@ -421,6 +582,46 @@ class CommentService
         }
 
         return $body;
+    }
+
+    /**
+     * @param  array{gif_url?: string|null, gif_preview_url?: string|null, gif_title?: string|null, gif_provider?: string|null}|null  $gif
+     * @return array{gif_url: string, gif_preview_url: string|null, gif_title: string|null, gif_provider: string|null}|null
+     */
+    private function normalizeGifPayload(?array $gif): ?array
+    {
+        $url = trim((string) ($gif['gif_url'] ?? ''));
+
+        if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $previewUrl = trim((string) ($gif['gif_preview_url'] ?? ''));
+
+        return [
+            'gif_url' => $url,
+            'gif_preview_url' => $previewUrl !== '' && filter_var($previewUrl, FILTER_VALIDATE_URL) ? $previewUrl : null,
+            'gif_title' => filled($gif['gif_title'] ?? null) ? Str::limit((string) $gif['gif_title'], 120, '') : null,
+            'gif_provider' => filled($gif['gif_provider'] ?? null) ? Str::limit((string) $gif['gif_provider'], 32, '') : null,
+        ];
+    }
+
+    private function highlightSearchTerm(string $body, string $term): string
+    {
+        $term = trim($term);
+        $escapedBody = e($body);
+
+        if ($term === '') {
+            return nl2br($escapedBody);
+        }
+
+        $highlighted = preg_replace(
+            '/('.preg_quote(e($term), '/').')/iu',
+            '<mark class="rounded-sm bg-amber-light px-0.5 text-bark">$1</mark>',
+            $escapedBody,
+        );
+
+        return nl2br(is_string($highlighted) ? $highlighted : $escapedBody);
     }
 
     private function normalizedParentForReply(Post $post, Comment $parent): Comment
@@ -497,6 +698,9 @@ class CommentService
                 }
             }
         }
+
+        $notifiedUserIds = $this->threadSubscriptions->notifySubscribers($author, $post, $comment, $parent, $notifiedUserIds);
+        $this->threadSubscriptions->syncAuthorSubscription($author, $post, $comment);
 
         $mentions = $this->mentions->extractMentions($comment->body);
 

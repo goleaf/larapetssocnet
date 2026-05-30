@@ -9,7 +9,11 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
 use App\Services\BlockService;
+use App\Services\CommentDraftService;
+use App\Services\CommentGifService;
 use App\Services\CommentService;
+use App\Services\CommentThreadSubscriptionService;
+use App\Services\CommentTranslationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -25,6 +29,29 @@ new class extends Component
     public string $sort = 'oldest';
 
     public string $body = '';
+
+    public string $search = '';
+
+    public bool $draftRestored = false;
+
+    /**
+     * @var array{gif_url: string, gif_preview_url: ?string, gif_title: ?string, gif_provider: ?string}|null
+     */
+    public ?array $selectedGif = null;
+
+    public bool $gifPickerOpen = false;
+
+    public string $gifSearch = '';
+
+    /**
+     * @var list<array{id: string, title: string, gif_url: string, gif_preview_url: ?string, gif_provider: string}>
+     */
+    public array $gifResults = [];
+
+    /**
+     * @var array<int, string>
+     */
+    public array $translations = [];
 
     /**
      * @var array<int, string>
@@ -85,6 +112,7 @@ new class extends Component
         $this->sort = in_array(session('post_comments_sort_'.$post->getKey(), 'oldest'), ['top', 'newest', 'oldest'], true)
             ? (string) session('post_comments_sort_'.$post->getKey(), 'oldest')
             : 'oldest';
+        $this->restoreDraft();
         $this->syncThreadState();
     }
 
@@ -96,9 +124,11 @@ new class extends Component
         $pinnedCommentId = $this->pinnedCommentId;
         $service = app(CommentService::class);
 
-        $comments = $this->fullPage
-            ? $service->threadForPost($this->post, $this->viewer(), $this->sort)
-            : $service->previewThread($this->post, $this->viewer(), $this->visibleTopLevelComments, CommentService::PREVIEW_REPLY_LIMIT, $this->expandedReplyIds);
+        $comments = $this->fullPage && trim($this->search) !== ''
+            ? $service->searchWithinPost($this->post, $this->viewer(), $this->search)
+            : ($this->fullPage
+                ? $service->threadForPost($this->post, $this->viewer(), $this->sort)
+                : $service->previewThread($this->post, $this->viewer(), $this->visibleTopLevelComments, CommentService::PREVIEW_REPLY_LIMIT, $this->expandedReplyIds));
 
         return $comments
             ->when($pinnedCommentId !== null, fn (Collection $comments): Collection => $comments
@@ -121,14 +151,14 @@ new class extends Component
 
         abort_unless($viewer instanceof User, 401);
 
-        $body = $this->validatedInlineBody($this->body, 'body');
+        $body = $this->validatedInlineBody($this->body, 'body', $this->selectedGif);
 
         if ($body === null) {
             return;
         }
 
         try {
-            $action->handle($viewer, $this->post, $body);
+            $action->handle($viewer, $this->post, $body, null, $this->selectedGif);
         } catch (ValidationException $exception) {
             $this->copyValidationErrors($exception, 'body');
 
@@ -136,6 +166,9 @@ new class extends Component
         }
 
         $this->body = '';
+        $this->selectedGif = null;
+        app(CommentDraftService::class)->discard($viewer, $this->post);
+        $this->draftRestored = false;
         $this->statusMessage = 'Comment posted.';
         $this->syncThreadState();
         $this->dispatchThreadUpdated();
@@ -167,6 +200,90 @@ new class extends Component
         $this->statusMessage = 'Reply posted.';
         $this->syncThreadState();
         $this->dispatchThreadUpdated();
+    }
+
+    public function autosaveDraft(CommentDraftService $drafts): void
+    {
+        $viewer = $this->viewer();
+
+        if (! $viewer instanceof User) {
+            return;
+        }
+
+        $drafts->save($viewer, $this->post, $this->body, $this->selectedGif);
+    }
+
+    public function discardDraft(CommentDraftService $drafts): void
+    {
+        $viewer = $this->viewer();
+
+        if (! $viewer instanceof User) {
+            return;
+        }
+
+        $drafts->discard($viewer, $this->post);
+        $this->body = '';
+        $this->selectedGif = null;
+        $this->draftRestored = false;
+        $this->statusMessage = 'Draft discarded.';
+    }
+
+    public function searchGifs(CommentGifService $gifs): void
+    {
+        $query = Str::of($this->gifSearch)->trim()->limit(60, '')->toString();
+        $this->gifSearch = $query;
+        $this->gifResults = mb_strlen($query) >= 2 ? $gifs->search($query) : [];
+    }
+
+    public function selectGif(int $index): void
+    {
+        $gif = $this->gifResults[$index] ?? null;
+
+        if (! is_array($gif)) {
+            return;
+        }
+
+        $this->selectedGif = [
+            'gif_url' => (string) $gif['gif_url'],
+            'gif_preview_url' => $gif['gif_preview_url'] ?? null,
+            'gif_title' => $gif['title'] ?? null,
+            'gif_provider' => $gif['gif_provider'] ?? null,
+        ];
+        $this->gifPickerOpen = false;
+    }
+
+    public function removeGif(): void
+    {
+        $this->selectedGif = null;
+    }
+
+    public function translateComment(int $commentId, CommentTranslationService $translations): void
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $comment = $this->threadComment($commentId);
+        $translation = $translations->translate($comment, app()->getLocale());
+
+        if ($translation === null) {
+            $this->statusMessage = 'Translation is not available for this comment.';
+
+            return;
+        }
+
+        $this->translations[$commentId] = (string) $translation->translated_body;
+    }
+
+    public function unsubscribeFromThread(int $commentId, CommentThreadSubscriptionService $subscriptions): void
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $subscriptions->unsubscribe($viewer, $this->threadComment($commentId));
+        $this->statusMessage = 'Thread notifications muted.';
+        $this->syncThreadState();
     }
 
     public function startReply(int $commentId, string $username): void
@@ -468,6 +585,32 @@ new class extends Component
         return $viewer instanceof User ? $viewer : null;
     }
 
+    private function restoreDraft(): void
+    {
+        $viewer = $this->viewer();
+
+        if (! $viewer instanceof User) {
+            return;
+        }
+
+        $draft = app(CommentDraftService::class)->restore($viewer, $this->post);
+
+        if ($draft === null) {
+            return;
+        }
+
+        $this->body = (string) $draft->body;
+        $this->selectedGif = filled($draft->gif_url)
+            ? [
+                'gif_url' => (string) $draft->gif_url,
+                'gif_preview_url' => $draft->gif_preview_url,
+                'gif_title' => $draft->gif_title,
+                'gif_provider' => $draft->gif_provider,
+            ]
+            : null;
+        $this->draftRestored = true;
+    }
+
     private function threadComment(int $commentId): Comment
     {
         return Comment::query()
@@ -476,13 +619,16 @@ new class extends Component
             ->firstOrFail();
     }
 
-    private function validatedInlineBody(string $body, string $errorKey): ?string
+    /**
+     * @param  array{gif_url?: string|null}|null  $gif
+     */
+    private function validatedInlineBody(string $body, string $errorKey, ?array $gif = null): ?string
     {
         $body = trim($body);
 
         $this->resetErrorBag($errorKey);
 
-        if ($body === '') {
+        if ($body === '' && blank($gif['gif_url'] ?? null)) {
             $this->addError($errorKey, 'Please write something before submitting.');
 
             return null;
@@ -559,7 +705,13 @@ new class extends Component
 };
 ?>
 
-<x-ui.card padding="base" wire:poll.visible.15s="refreshThread" data-ui="comments-thread">
+<x-ui.card
+    padding="base"
+    wire:poll.visible.15s="refreshThread"
+    x-data
+    x-init="setInterval(() => { if ($wire.body || $wire.selectedGif) { $wire.autosaveDraft() } }, 10000)"
+    data-ui="comments-thread"
+>
     @php($comments = $this->comments())
     @php($pinnedComment = $this->pinnedComment())
     @php($remainingTopLevelComments = $fullPage ? 0 : max(0, $topLevelCommentCount - $visibleTopLevelComments))
@@ -582,12 +734,21 @@ new class extends Component
             @enderror
         </div>
         @if ($fullPage)
-            <div class="inline-flex rounded-[var(--radius-pill)] border border-whisker/35 bg-cream/60 p-1 text-xs font-semibold text-fur" aria-label="Sort comments">
-                @foreach(['top' => 'Top', 'newest' => 'Newest', 'oldest' => 'Oldest'] as $sortValue => $sortLabel)
-                    <button type="button" wire:click="setSort('{{ $sortValue }}')" class="rounded-[var(--radius-pill)] px-3 py-1 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $sort === $sortValue ? 'bg-warm-white text-bark shadow-sm' : 'hover:bg-warm-white/70' }}" aria-pressed="{{ $sort === $sortValue ? 'true' : 'false' }}">
-                        {{ $sortLabel }}
-                    </button>
-                @endforeach
+            <div class="flex flex-wrap items-center justify-end gap-2">
+                @if($commentCount > 50)
+                    <label class="relative block">
+                        <span class="sr-only">Search comments</span>
+                        <input type="search" wire:model.live.debounce.400ms="search" class="form-input min-h-9 w-48 rounded-[var(--radius-pill)] py-1.5 pl-8 pr-3 text-xs" placeholder="Search comments">
+                        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-fur">⌕</span>
+                    </label>
+                @endif
+                <div class="inline-flex rounded-[var(--radius-pill)] border border-whisker/35 bg-cream/60 p-1 text-xs font-semibold text-fur" aria-label="Sort comments">
+                    @foreach(['top' => 'Top', 'newest' => 'Newest', 'oldest' => 'Oldest'] as $sortValue => $sortLabel)
+                        <button type="button" wire:click="setSort('{{ $sortValue }}')" class="rounded-[var(--radius-pill)] px-3 py-1 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw {{ $sort === $sortValue ? 'bg-warm-white text-bark shadow-sm' : 'hover:bg-warm-white/70' }}" aria-pressed="{{ $sort === $sortValue ? 'true' : 'false' }}">
+                            {{ $sortLabel }}
+                        </button>
+                    @endforeach
+                </div>
             </div>
         @else
             <a href="{{ route('posts.show', $post) }}#comments" class="text-xs font-semibold text-paw hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
@@ -613,6 +774,8 @@ new class extends Component
                 :mention-suggestions="$mentionSuggestions"
                 :mention-suggestions-open="$mentionSuggestionsOpen"
                 :expanded-reply-ids="$expandedReplyIds"
+                :translations="$translations"
+                :search-query="$search"
             />
         </div>
     @endif
@@ -644,17 +807,21 @@ new class extends Component
                             wire:model.live.debounce.300ms="body"
                             rows="1"
                             maxlength="{{ CommentService::MAX_BODY_LENGTH }}"
-                            class="form-textarea min-h-11 w-full resize-none overflow-hidden py-2.5 pr-12 text-sm"
+                            class="form-textarea min-h-11 w-full resize-none overflow-hidden py-2.5 pr-24 text-sm"
                             placeholder="Write a comment..."
-                            required
                             oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                             x-on:input.debounce.250ms="detectMention($event.target.value, 'body')"
                             x-on:keydown.enter.exact.prevent="$wire.createComment()"
                             x-on:keydown.escape="emojiOpen = false; $wire.closeMentionSuggestions()"
                         ></textarea>
-                        <button type="button" class="absolute bottom-2 right-2 inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-pill)] text-sm text-fur transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="emojiOpen = ! emojiOpen" aria-label="Add emoji">
+                        <div class="absolute bottom-2 right-2 flex items-center gap-1">
+                        <button type="button" class="inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-pill)] text-xs font-bold text-fur transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" wire:click="$toggle('gifPickerOpen')" aria-label="Add GIF">
+                            GIF
+                        </button>
+                        <button type="button" class="inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-pill)] text-sm text-fur transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" x-on:click="emojiOpen = ! emojiOpen" aria-label="Add emoji">
                             😊
                         </button>
+                        </div>
                         <div
                             x-show="emojiOpen"
                             x-cloak
@@ -665,6 +832,25 @@ new class extends Component
                                 <button type="button" wire:click="insertEmoji('{{ $emoji }}', 'body')" x-on:click="emojiOpen = false" class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-pill)] text-lg transition hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">{{ $emoji }}</button>
                             @endforeach
                         </div>
+                        @if ($gifPickerOpen)
+                            <div class="absolute left-0 right-0 top-full z-40 mt-2 rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white p-3 shadow-card" data-ui="comment-gif-picker">
+                                <div class="flex items-center gap-2">
+                                    <input type="search" wire:model.live.debounce.350ms="gifSearch" wire:keydown.debounce.350ms="searchGifs" class="form-input min-h-9 flex-1 text-sm" placeholder="Search GIFs">
+                                    <button type="button" wire:click="searchGifs" class="rounded-[var(--radius-pill)] px-3 py-1.5 text-xs font-bold text-paw hover:bg-paw-light/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Search</button>
+                                </div>
+                                @if($gifResults !== [])
+                                    <div class="mt-3 grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+                                        @foreach($gifResults as $index => $gif)
+                                            <button type="button" wire:click="selectGif({{ $index }})" class="overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-cream transition hover:border-paw focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+                                                <img src="{{ $gif['gif_preview_url'] ?: $gif['gif_url'] }}" alt="{{ $gif['title'] }}" class="h-24 w-full object-cover" loading="lazy">
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @elseif(mb_strlen($gifSearch) >= 2)
+                                    <p class="mt-3 text-xs text-fur">No GIFs found.</p>
+                                @endif
+                            </div>
+                        @endif
                         @if ($mentionSuggestionsOpen && $mentionTarget === 'body' && $mentionSuggestions !== [])
                             <div class="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white shadow-card" role="listbox" aria-label="Mention suggestions">
                                 @foreach ($mentionSuggestions as $suggestion)
@@ -682,6 +868,23 @@ new class extends Component
                     @error('body')
                         <p class="mt-1 text-xs font-semibold text-rose">{{ $message }}</p>
                     @enderror
+                    @if($draftRestored)
+                        <div class="mt-2 inline-flex items-center gap-2 rounded-[var(--radius-pill)] bg-paw-light/45 px-3 py-1 text-xs font-semibold text-paw">
+                            <span>Draft restored</span>
+                            <button type="button" wire:click="discardDraft" class="text-fur hover:text-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Discard</button>
+                        </div>
+                    @endif
+                    @if($selectedGif)
+                        <div class="mt-3 max-w-xs overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-cream/50">
+                            <div class="relative">
+                                <img src="{{ $selectedGif['gif_preview_url'] ?: $selectedGif['gif_url'] }}" alt="{{ $selectedGif['gif_title'] ?: 'Selected GIF' }}" class="max-h-48 w-full object-cover" loading="lazy">
+                                <button type="button" wire:click="removeGif" class="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-bark/70 text-xs font-bold text-warm-white transition hover:bg-bark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw" aria-label="Remove GIF">✕</button>
+                            </div>
+                            @if($selectedGif['gif_title'])
+                                <p class="truncate px-3 py-2 text-xs text-fur">{{ $selectedGif['gif_title'] }}</p>
+                            @endif
+                        </div>
+                    @endif
                     <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
                         <p class="text-xs text-fur" aria-live="polite">
                             <span wire:loading.remove wire:target="createComment">{{ $statusMessage }}</span>
@@ -722,6 +925,8 @@ new class extends Component
                 :mention-suggestions="$mentionSuggestions"
                 :mention-suggestions-open="$mentionSuggestionsOpen"
                 :expanded-reply-ids="$expandedReplyIds"
+                :translations="$translations"
+                :search-query="$search"
             />
         @if ($loop->last)
             </div>

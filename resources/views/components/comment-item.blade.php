@@ -7,6 +7,8 @@
     'mentionSuggestions' => [],
     'mentionSuggestionsOpen' => false,
     'expandedReplyIds' => [],
+    'translations' => [],
+    'searchQuery' => '',
 ])
 
 @php($replyErrorKey = 'replyBodies.'.$comment->id)
@@ -15,6 +17,8 @@
 @php($threadDepth = (int) ($comment->thread_depth ?? ($comment->isReply() ? 2 : 1)))
 @php($loadedReplyCount = $comment->relationLoaded('replies') ? $comment->replies->count() : 0)
 @php($isReplyExpanded = (bool) ($expandedReplyIds[$comment->id] ?? false))
+@php($reactionReactors = $comment->reaction_reactors ?? [])
+@php($translatedBody = $translations[$comment->id] ?? null)
 
 <div class="group/comment py-2 {{ $comment->isReply() ? 'relative ml-8 border-l border-whisker/35 pl-3 mt-1 sm:ml-11' : 'mt-4' }}" id="comment-{{ $comment->id }}">
  <div class="flex items-start gap-2">
@@ -52,34 +56,47 @@
  @if($comment->trashed())
  <div class="text-sm text-gray-500 italic mt-0.5 leading-snug">This comment was removed.</div>
  @else
+ @if(filled($comment->body))
  <div class="text-sm text-gray-800 whitespace-pre-wrap break-words mt-0.5 leading-snug">
- {!! $comment->body_html !!}
+ {!! $comment->highlighted_body_html ?? $comment->body_html !!}
  </div>
+ @endif
+ @if(filled($comment->gif_url))
+ <div class="mt-2 overflow-hidden rounded-[var(--radius-soft)] border border-whisker/35 bg-warm-white">
+ <img src="{{ $comment->gif_preview_url ?: $comment->gif_url }}" data-full-gif="{{ $comment->gif_url }}" alt="{{ $comment->gif_title ?: 'Comment GIF' }}" class="max-h-64 w-full max-w-sm object-cover" loading="lazy">
+ </div>
+ @endif
+ @if($translatedBody)
+ <div class="mt-2 border-l-2 border-paw/40 pl-3 text-sm text-fur">
+ {{ $translatedBody }}
+ </div>
+ @endif
  @if($comment->edited_at)
  <div class="mt-1 text-[0.65rem] uppercase tracking-wide text-gray-400">Edited</div>
  @endif
  @endif
  </div>
 
- @if(!empty($comment->reaction_summary ?? []))
- <div class="flex items-center gap-1 flex-wrap">
- @foreach($comment->reaction_summary as $type => $count)
- <div class="inline-flex items-center justify-center bg-white shadow-sm border border-gray-100/50 rounded-lg px-1.5 py-0.5"
- title="{{ ucfirst($type) }}">
-<span class="text-xs">{{ [
- 'love' => '❤️',
- 'cute' => '🥹',
- 'funny' => '😂',
- 'wow' => '😮',
- 'sad' => '😢',
- 'support' => '🤝',
- ][$type] ?? '👍' }}</span>
- <span class="text-[0.65rem] font-medium text-gray-500 ml-1">{{ $count }}</span>
  </div>
+ @if($reactionReactors !== [])
+ <div class="mt-1 flex items-center gap-2">
+ <div class="flex -space-x-2">
+ @foreach($reactionReactors as $reactor)
+ <a href="{{ route('profile.show', $reactor['username']) }}" class="inline-flex rounded-full ring-2 ring-warm-white" title="{{ $reactor['name'] }} reacted with {{ $reactor['type'] }}">
+ <x-ui.avatar :src="$reactor['avatar_url']" :name="$reactor['name']" size="xs"/>
+ </a>
  @endforeach
  </div>
- @endif
+ <span class="text-[0.7rem] font-semibold text-fur">{{ trans_choice(':count reaction|:count reactions', (int) $comment->reactions_count, ['count' => (int) $comment->reactions_count]) }}</span>
  </div>
+ @endif
+ @if(! $comment->trashed() && ($comment->should_translate ?? false))
+ <div class="mt-1">
+ <button type="button" wire:click="translateComment({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="translateComment({{ (int) $comment->id }})" class="text-xs font-semibold text-paw hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+ {{ $translatedBody ? 'Refresh translation' : 'Translate' }}
+ </button>
+ </div>
+ @endif
  </div>
 
  <!-- Edit Form -->
@@ -219,6 +236,9 @@
 @if($livewire && ! $comment->trashed() && (int) $comment->user_id !== (int) auth()->id())
 <button type="button" wire:click="blockCommenter({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="blockCommenter" class="hover:underline hover:text-rose focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Block user</button>
 @endif
+@if($livewire && ($comment->is_thread_subscribed ?? false))
+<button type="button" wire:click="unsubscribeFromThread({{ (int) $comment->id }})" wire:loading.attr="disabled" wire:target="unsubscribeFromThread" class="hover:underline hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">Unsubscribe from thread</button>
+@endif
 @endauth
  </div>
  </div>
@@ -324,6 +344,8 @@
  :mention-suggestions="$mentionSuggestions"
  :mention-suggestions-open="$mentionSuggestionsOpen"
  :expanded-reply-ids="$expandedReplyIds"
+ :translations="$translations"
+ :search-query="$searchQuery"
  />
  @endforeach
  </div>
