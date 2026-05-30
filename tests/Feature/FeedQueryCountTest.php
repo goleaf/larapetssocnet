@@ -26,7 +26,7 @@ it('loads feed pagination path without n+1 queries for 15 posts', function (): v
         'acceptedFollowing:id',
     ]);
 
-    $this->assertQueryCount(5, function () use ($viewer): void {
+    $this->assertQueryCount(6, function () use ($viewer): void {
         Post::paginateMainFeedResults($viewer, null, 15)->items();
     });
 });

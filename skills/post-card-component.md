@@ -55,7 +55,12 @@
 - Use `diffForHumans()` for recent posts (< 7 days).
 - Use `format('M j, Y')` for older posts.
 - Provide full datetime in `title` attribute.
+- Feed timestamps hydrate through the Alpine `relativeTime` helper and refresh once per minute without a server round trip.
 - When `edited_at` is set, display `Edited` after the original timestamp with a separator and include the exact edit timestamp in the title tooltip.
+
+## Pet Tags
+- Render both the legacy `posts.pet_id` tag and normalized `pet_post` tags as linked badges in the header metadata row.
+- Feed queries must eager-load `pet.media` and `pets` so tagged-pet badges do not introduce per-card queries.
 
 ## Embedded Context
 - Quote posts and reposts should render an embedded original-post block everywhere `x-post-card` appears.

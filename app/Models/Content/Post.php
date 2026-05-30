@@ -1321,7 +1321,7 @@ class Post extends Model implements HasMedia
             ->when($type !== null, fn (Builder $query) => $query->byType($type))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->cursorPaginate($perPage, ['posts.*'], 'feed_cursor', $cursor)
+            ->cursorPaginate($perPage, ['posts.*'], 'cursor', $cursor)
             ->withQueryString();
     }
 
@@ -1481,6 +1481,7 @@ class Post extends Model implements HasMedia
                 'user',
                 'user.media',
                 'pet.media',
+                'pets',
                 'media',
                 'tags',
                 'originalPost.author.media',

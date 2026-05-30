@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added a Livewire feed stream with source/type filters, infinite-scroll cursor loading, new-post polling, relative post timestamps, and richer feed sidebars for owned pets, suggestions, hashtags, groups, and upcoming pet birthdays.
 - Added an Alpine dirty-state logout guard so users with unsaved post drafts confirm before ending their session.
 - Added durable post fan-out idempotency with `posts.is_fanned_out`, processing-state post media placeholders for Livewire temporary uploads, and a `post_media(post_id, order)` index for ordered media hydration.
 - Added `post_drafts.state_hash` autosave no-op detection so unchanged composer autosave ticks skip database writes.
@@ -60,6 +61,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added feed stream coverage for Livewire source filters, infinite-scroll loading, new-post polling, normalized pet-tag feed visibility, and upcoming followed-pet birthday sidebar data.
 - Added pet profile Livewire route coverage for reactive tab activation and per-pet tab memory.
 - Added profile policy and Livewire route coverage for owner-only edit modal access, action-level modal validation, and cover focal-point authorization.
 - Added profile analytics and design coverage for daily profile-view aggregate counts, shared username-hashed avatar fallbacks, and verified badges on shared user-name surfaces.

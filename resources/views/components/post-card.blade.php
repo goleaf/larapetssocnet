@@ -9,11 +9,19 @@
     $author = $post->user ?? $post->author;
     $viewer = $viewer ?? auth()->user();
     $profileUrl = $author ? route('profile.show', $author) : '#';
-    $petUrl = $post->pet ? route('pets.show', $post->pet->slug ?? $post->pet->getKey()) : null;
+    $petTagsForDisplay = collect([$post->pet])
+        ->merge($post->relationLoaded('pets') ? $post->pets : collect())
+        ->filter()
+        ->unique(fn ($pet) => (int) $pet->getKey())
+        ->values();
     $displayedAt = $post->published_at ?? $post->created_at;
     $timeLabel = $displayedAt?->diffForHumans();
     $timeIso = $displayedAt?->toIso8601String();
     $timeTitle = $displayedAt?->format('M j, Y g:i A');
+    $relativeTimeState = [
+        'iso' => $timeIso,
+        'label' => $timeLabel,
+    ];
     $authorAvatar = $author?->avatar_url;
     $authorName = $author?->name ?? __('a community member');
     $postDomSuffix = filled($instance) ? '-'.\Illuminate\Support\Str::slug((string) $instance) : '';
@@ -166,15 +174,22 @@
 
                     <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs shell-text-muted">
                         @if ($timeIso && $timeLabel)
-                            <time datetime="{{ $timeIso }}" title="{{ $timeTitle }}" class="inline-flex min-h-5 items-center">{{ $timeLabel }}</time>
+                            <time
+                                datetime="{{ $timeIso }}"
+                                title="{{ $timeTitle }}"
+                                class="inline-flex min-h-5 items-center"
+                                x-data="relativeTime({{ \Illuminate\Support\Js::from($relativeTimeState) }})"
+                                x-text="label"
+                            >{{ $timeLabel }}</time>
                         @endif
 
-                        @if ($post->pet && $petUrl)
+                        @foreach ($petTagsForDisplay as $taggedPet)
+                            @php($taggedPetUrl = route('pets.show', $taggedPet->slug ?? $taggedPet->getKey()))
                             <span aria-hidden="true">•</span>
-                            <a href="{{ $petUrl }}" class="rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
-                                <x-ui.badge variant="primary" size="sm">🐾 {{ $post->pet->name }}</x-ui.badge>
+                            <a href="{{ $taggedPetUrl }}" class="rounded-[var(--radius-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
+                                <x-ui.badge variant="primary" size="sm">🐾 {{ $taggedPet->name }}</x-ui.badge>
                             </a>
-                        @endif
+                        @endforeach
 
                         @if ($context === 'profile' && $isOwner)
                             <span aria-hidden="true">•</span>

@@ -54,7 +54,7 @@ it('shows followed posts and then an empty feed when user follows nobody', funct
         ->assertSuccessful()
         ->assertDontSee('Followed pet post')
         ->assertDontSee('Discovery pet post')
-        ->assertSee('Follow some pets to see posts');
+        ->assertSee('Your feed is ready when you are');
 });
 
 it('toggles post likes via json endpoint', function (): void {

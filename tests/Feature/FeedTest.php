@@ -3,7 +3,7 @@
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Pagination\CursorPaginator;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -95,28 +95,16 @@ it('paginates feed posts at 15 items per page', function (): void {
     $firstPage->assertSee('feed-page-post-1');
     $firstPage->assertDontSee('feed-page-post-0');
 
-    /** @var CursorPaginator $postsPaginator */
-    $postsPaginator = $firstPage->viewData('posts');
-    $nextCursor = $postsPaginator->nextCursor();
+    $expectedPostIds = $createdPosts
+        ->sortByDesc('id')
+        ->pluck('id')
+        ->values();
 
-    expect($nextCursor)->not->toBeNull();
-    expect($postsPaginator->items())->toHaveCount(15);
-
-    $oldestCreatedPostId = $createdPosts->min('id');
-
-    expect(collect($postsPaginator->items())->pluck('id'))
-        ->not->toContain($oldestCreatedPostId);
-
-    $secondPage = $this->actingAs($viewer)->get(route('feed.index', [
-        'cursor' => $nextCursor?->encode(),
-    ]));
-
-    $secondPage->assertOk();
-
-    /** @var CursorPaginator $secondPostsPaginator */
-    $secondPostsPaginator = $secondPage->viewData('posts');
-
-    expect($secondPostsPaginator->items())->toHaveCount(1);
-    expect(collect($secondPostsPaginator->items())->pluck('id'))
-        ->toContain($oldestCreatedPostId);
+    Livewire::actingAs($viewer)
+        ->test('feed.stream')
+        ->assertSet('postIds', $expectedPostIds->take(15)->all())
+        ->assertSet('hasMorePosts', true)
+        ->call('loadMore')
+        ->assertSet('postIds', $expectedPostIds->all())
+        ->assertSet('hasMorePosts', false);
 });

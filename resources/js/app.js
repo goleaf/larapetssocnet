@@ -2301,6 +2301,113 @@ document.addEventListener('alpine:init', () => {
  },
  }));
 
+ Alpine.data('relativeTime', (config = {}) => ({
+ iso: toStringValue(config.iso),
+ label: toStringValue(config.label, 'Just now'),
+ intervalId: null,
+
+ init() {
+ this.update();
+ this.intervalId = window.setInterval(() => this.update(), 60000);
+ },
+
+ destroy() {
+ if (this.intervalId) {
+ window.clearInterval(this.intervalId);
+ this.intervalId = null;
+ }
+ },
+
+ update() {
+ if (! this.iso) {
+ return;
+ }
+
+ const timestamp = Date.parse(this.iso);
+
+ if (Number.isNaN(timestamp)) {
+ return;
+ }
+
+ const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+
+ if (seconds < 60) {
+ this.label = 'just now';
+ return;
+ }
+
+ const minutes = Math.floor(seconds / 60);
+ if (minutes < 60) {
+ this.label = `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+ return;
+ }
+
+ const hours = Math.floor(minutes / 60);
+ if (hours < 24) {
+ this.label = `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+ return;
+ }
+
+ const days = Math.floor(hours / 24);
+ if (days < 30) {
+ this.label = `${days} ${days === 1 ? 'day' : 'days'} ago`;
+ return;
+ }
+
+ const months = Math.floor(days / 30);
+ if (months < 12) {
+ this.label = `${months} ${months === 1 ? 'month' : 'months'} ago`;
+ return;
+ }
+
+ const years = Math.floor(months / 12);
+ this.label = `${years} ${years === 1 ? 'year' : 'years'} ago`;
+ },
+ }));
+
+ Alpine.data('feedLiveState', () => ({
+ wire: null,
+ intervalId: null,
+
+ start(wire) {
+ this.wire = wire;
+ this.stop();
+
+ this.visibilityHandler = () => {
+ if (! document.hidden) {
+ this.checkForNewPosts();
+ }
+ };
+
+ document.addEventListener('visibilitychange', this.visibilityHandler);
+ this.intervalId = window.setInterval(() => this.checkForNewPosts(), 30000);
+ },
+
+ stop() {
+ if (this.intervalId) {
+ window.clearInterval(this.intervalId);
+ this.intervalId = null;
+ }
+
+ if (this.visibilityHandler) {
+ document.removeEventListener('visibilitychange', this.visibilityHandler);
+ this.visibilityHandler = null;
+ }
+ },
+
+ destroy() {
+ this.stop();
+ },
+
+ checkForNewPosts() {
+ if (! this.wire || document.hidden) {
+ return;
+ }
+
+ this.wire.checkForNewPosts();
+ },
+ }));
+
  Alpine.data('feedPostList', () => ({
  pendingPosts: [],
 

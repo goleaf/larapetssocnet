@@ -137,6 +137,28 @@ it('filters posts by pet id', function (): void {
         ->not->toContain($otherPetPost->getKey());
 });
 
+it('returns followed pet posts linked through normalized pet tags', function (): void {
+    $viewer = User::factory()->create();
+    $petOwner = User::factory()->create();
+    $followedPet = Pet::factory()->for($petOwner)->create();
+
+    $viewer->followedPets()->attach($followedPet->getKey());
+
+    $taggedPetPost = Post::factory()->create([
+        'user_id' => $petOwner->getKey(),
+        'pet_id' => null,
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'status' => 'published',
+    ]);
+    $taggedPetPost->pets()->attach($followedPet->getKey());
+
+    $postIds = Post::query()
+        ->forFeed($viewer->getKey())
+        ->pluck('posts.id');
+
+    expect($postIds)->toContain($taggedPetPost->getKey());
+});
+
 it('returns only posts that have media', function (): void {
     $postWithMedia = Post::factory()->create();
     $postWithoutMedia = Post::factory()->create();

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Feed;
 
 use App\Enums\GroupMemberStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Content\Post;
 use App\Services\FeedService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -18,6 +17,10 @@ class FeedController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+        $user->setAttribute('feed_followers_count', $user->acceptedFollowers()->count());
+        $user->setAttribute('feed_following_count', $user->acceptedFollowing()->count());
+        $user->setAttribute('feed_pets_count', $user->pets()->count());
+
         $onboardingCompletedAt = $user->onboarding_completed_at;
         $showWelcomeBanner = $onboardingCompletedAt !== null
             && Carbon::parse((string) $onboardingCompletedAt)->greaterThanOrEqualTo(now()->subDay())
@@ -33,7 +36,7 @@ class FeedController extends Controller
 
         $ownedPets = $user->pets()
             ->without(['user', 'species', 'breed', 'media', 'tags'])
-            ->select(['pets.id', 'pets.user_id', 'pets.name', 'pets.species', 'pets.breed'])
+            ->select(['pets.id', 'pets.user_id', 'pets.name', 'pets.slug', 'pets.species', 'pets.breed'])
             ->orderBy('pets.name')
             ->get();
 
@@ -44,8 +47,6 @@ class FeedController extends Controller
         $source = in_array($request->string('source')->toString(), ['people', 'pets'], true)
             ? $request->string('source')->toString()
             : null;
-
-        $posts = Post::paginateMainFeedResults($user, $type, 15, $source);
 
         $sidebarData = $this->feed->getSidebarData($user);
 
@@ -60,7 +61,7 @@ class FeedController extends Controller
             ->get();
 
         return view('feed.index', array_merge(
-            ['posts' => $posts, 'yourGroups' => $yourGroups, 'ownedPets' => $ownedPets],
+            ['yourGroups' => $yourGroups, 'ownedPets' => $ownedPets],
             $sidebarData,
             [
                 'user' => $user,
