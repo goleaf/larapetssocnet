@@ -7,7 +7,7 @@ use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwner;
 use App\Models\Pets\PetOwnerInvitation;
-use App\Notifications\PetOwnerInvitationReceived;
+use App\Notifications\Database\Pets\PetOwnerInvitationReceived;
 use App\Services\PetOwnershipService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;

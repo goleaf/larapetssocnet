@@ -1,6 +1,6 @@
 <?php
 
-use App\Notifications\QueueBusyAlert;
+use App\Notifications\Mail\Operations\QueueBusyAlert;
 use Illuminate\Notifications\AnonymousNotifiable;
 
 it('builds queue busy alert mail message with queue details', function (): void {

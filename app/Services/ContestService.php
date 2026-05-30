@@ -6,7 +6,7 @@ use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\ContestVote;
 use App\Models\Identity\User;
-use App\Notifications\ContestWinner;
+use App\Notifications\Database\Contests\ContestWinner;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

@@ -8,9 +8,9 @@ use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwner;
 use App\Models\Pets\PetOwnerInvitation;
 use App\Models\Pets\PetOwnershipTransfer;
-use App\Notifications\PetOwnerInvitationReceived;
-use App\Notifications\PetOwnershipTransferRequested;
-use App\Notifications\PetOwnershipTransferResolved;
+use App\Notifications\Database\Pets\PetOwnerInvitationReceived;
+use App\Notifications\Database\Pets\PetOwnershipTransferRequested;
+use App\Notifications\Database\Pets\PetOwnershipTransferResolved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 

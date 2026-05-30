@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use App\Models\Identity\User;
-use App\Notifications\ContestWinner;
+use App\Notifications\Database\Contests\ContestWinner;
 use App\Services\ContestService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;

@@ -6,7 +6,7 @@ use App\Models\Content\Comment;
 use App\Models\Content\CommentThreadSubscription;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
-use App\Notifications\NewCommentThreadReply;
+use App\Notifications\Database\Comments\NewCommentThreadReply;
 use Illuminate\Support\Collection;
 
 class CommentThreadSubscriptionService

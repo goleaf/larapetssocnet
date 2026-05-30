@@ -44,6 +44,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Reorganized notification classes under provider and domain folders in `app/Notifications`.
 - Changed comment preview and Top sorting to use the stored comment quality score before falling back to reaction count and recency.
 - Moved direct-message sending into the Messaging action namespace and kept message delivery behavior covered by focused tests.
 - Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.

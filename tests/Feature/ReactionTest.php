@@ -4,7 +4,7 @@ use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use App\Notifications\NewReaction;
+use App\Notifications\Database\Posts\NewReaction;
 use App\Services\SyncReactionCountsService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;

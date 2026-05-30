@@ -2,7 +2,7 @@
 
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
-use App\Notifications\ProfileReportSubmitted;
+use App\Notifications\Database\Moderation\ProfileReportSubmitted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;

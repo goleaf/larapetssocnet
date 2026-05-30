@@ -6,7 +6,7 @@ use App\Models\Content\PostReactionSnapshot;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use App\Notifications\ReactionBatchNotification;
+use App\Notifications\Database\Posts\ReactionBatchNotification;
 use App\Services\DailyReactionSummaryService;
 use App\Services\PetReactionLeaderboardService;
 use App\Services\ReactionNotificationService;

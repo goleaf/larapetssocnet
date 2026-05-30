@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Identity\User;
 use App\Models\Social\Follow;
-use App\Notifications\FollowRequestApproved;
+use App\Notifications\Database\Social\FollowRequestApproved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;

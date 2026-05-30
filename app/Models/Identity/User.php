@@ -31,7 +31,7 @@ use App\Models\Pets\PhotoGallery;
 use App\Models\Social\Block;
 use App\Models\Social\FeedMute;
 use App\Models\Social\Follow;
-use App\Notifications\FollowRequestApproved;
+use App\Notifications\Database\Social\FollowRequestApproved;
 use App\Services\Auth\AuthMailDispatcher;
 use App\Services\BlockService;
 use App\Services\FollowService;

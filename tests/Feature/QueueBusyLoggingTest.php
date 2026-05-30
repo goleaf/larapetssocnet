@@ -1,6 +1,6 @@
 <?php
 
-use App\Notifications\QueueBusyAlert;
+use App\Notifications\Mail\Operations\QueueBusyAlert;
 use Illuminate\Queue\Events\QueueBusy;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;

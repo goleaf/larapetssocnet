@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
-use App\Notifications\NewReaction;
-use App\Notifications\ReactionBatchNotification;
+use App\Notifications\Database\Posts\NewReaction;
+use App\Notifications\Database\Posts\ReactionBatchNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 

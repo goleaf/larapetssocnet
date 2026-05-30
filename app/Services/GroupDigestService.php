@@ -6,7 +6,7 @@ use App\Models\Content\Post;
 use App\Models\Groups\Group;
 use App\Models\Groups\GroupMember;
 use App\Models\Identity\User;
-use App\Notifications\GroupDigestReady;
+use App\Notifications\Database\Groups\GroupDigestReady;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Notification;

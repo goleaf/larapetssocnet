@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Gamification\Badge;
 use App\Models\Identity\User;
-use App\Notifications\BadgeAwarded;
+use App\Notifications\Database\Achievements\BadgeAwarded;
 use Illuminate\Support\Facades\DB;
 
 class BadgeService

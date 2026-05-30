@@ -5,7 +5,7 @@ namespace App\Services\Pets;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetHealthReminder;
-use App\Notifications\PetHealthReminderDue;
+use App\Notifications\Database\Pets\PetHealthReminderDue;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;

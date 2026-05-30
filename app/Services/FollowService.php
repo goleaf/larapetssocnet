@@ -7,9 +7,9 @@ use App\Exceptions\UserBannedException;
 use App\Exceptions\UserBlockedException;
 use App\Models\Identity\User;
 use App\Models\Social\Follow;
-use App\Notifications\FollowRequestApproved;
-use App\Notifications\NewFollower;
-use App\Notifications\NewFollowRequest;
+use App\Notifications\Database\Social\FollowRequestApproved;
+use App\Notifications\Database\Social\NewFollower;
+use App\Notifications\Database\Social\NewFollowRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 

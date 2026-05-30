@@ -8,7 +8,7 @@ use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Social\FeedItem;
-use App\Notifications\MentionedInPost;
+use App\Notifications\Database\Posts\MentionedInPost;
 use App\Services\LocationAutocompleteService;
 use App\Services\PostLinkPreviewService;
 use App\Services\PostMentionService;

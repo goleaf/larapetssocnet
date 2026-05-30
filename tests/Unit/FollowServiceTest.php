@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Identity\User;
-use App\Notifications\NewFollower;
+use App\Notifications\Database\Social\NewFollower;
 use App\Services\FollowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;

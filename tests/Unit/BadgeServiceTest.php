@@ -4,7 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Gamification\Badge;
 use App\Models\Identity\User;
-use App\Notifications\BadgeAwarded;
+use App\Notifications\Database\Achievements\BadgeAwarded;
 use App\Services\BadgeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;

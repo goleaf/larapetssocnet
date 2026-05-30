@@ -6,7 +6,7 @@ use App\Models\Pets\Pet;
 use App\Models\Pets\PetHealthReminder;
 use App\Models\Pets\PetOwner;
 use App\Models\Pets\PetRelationship;
-use App\Notifications\PetHealthReminderDue;
+use App\Notifications\Database\Pets\PetHealthReminderDue;
 use App\Services\Pets\PetHealthReminderService;
 use App\Services\Pets\PetRelationshipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

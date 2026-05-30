@@ -1,8 +1,14 @@
 # Notifications
 
-Laravel database-notifications only.
+Notification classes are grouped first by delivery provider, then by domain logic:
+
+- `app/Notifications/Database/{Domain}` for in-app database notifications.
+- `app/Notifications/Mail/{Domain}` for mail-only operational notifications.
+
+Most product notifications are Laravel database notifications.
 
 - Notification classes should return `['database']` from `via()`.
+- Mail-only exceptions should live under `app/Notifications/Mail/*` and return `['mail']` from `via()`.
 - `toDatabase()` should return structured payloads (`type`, actor fields, message, action URL).
 - Render unread badge with `auth()->user()->unreadNotifications()->count()`.
 - Group notifications by date in views when needed.

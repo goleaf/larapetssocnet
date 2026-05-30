@@ -2,7 +2,7 @@
 
 use App\Enums\ProfileTheme;
 use App\Models\Identity\User;
-use App\Notifications\UsernameChanged;
+use App\Notifications\Database\Account\UsernameChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;

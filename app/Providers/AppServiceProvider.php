@@ -15,7 +15,7 @@ use App\Models\Identity\User;
 use App\Models\Marketplace\MarketplaceListing;
 use App\Models\Messaging\Message;
 use App\Models\Pets\Pet;
-use App\Notifications\QueueBusyAlert;
+use App\Notifications\Mail\Operations\QueueBusyAlert;
 use App\Observers\CommentObserver;
 use App\Observers\MessageObserver;
 use App\Observers\PetObserver;

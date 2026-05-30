@@ -8,7 +8,7 @@ use App\Exceptions\UsernameReservedException;
 use App\Models\Identity\ReservedUsername;
 use App\Models\Identity\User;
 use App\Models\Identity\UsernameRedirect;
-use App\Notifications\UsernameChanged;
+use App\Notifications\Database\Account\UsernameChanged;
 use App\Support\Usernames\UsernameNormalizer;
 use App\Support\Usernames\UsernameRules;
 use Illuminate\Support\Facades\DB;

@@ -4,7 +4,7 @@ use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
-use App\Notifications\NewCommentThreadReply;
+use App\Notifications\Database\Comments\NewCommentThreadReply;
 use App\Services\CommentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;

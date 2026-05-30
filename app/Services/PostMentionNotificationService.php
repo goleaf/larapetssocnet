@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Identity\User;
-use App\Notifications\MentionedInPost;
+use App\Notifications\Database\Posts\MentionedInPost;
 
 class PostMentionNotificationService
 {
