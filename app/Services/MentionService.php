@@ -25,14 +25,22 @@ class MentionService
     /**
      * @return list<string>
      */
-    public function extractMentions(string $text): array
+    public function extractUsernames(string $text): array
     {
         preg_match_all('/@([A-Za-z0-9_-]{3,30})/', $text, $matches);
 
-        $usernames = array_values(array_unique(array_map(
+        return array_values(array_unique(array_map(
             static fn (string $value): string => strtolower($value),
             $matches[1] ?? []
         )));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function extractMentions(string $text): array
+    {
+        $usernames = $this->extractUsernames($text);
 
         return User::query()
             ->whereIn('username', $usernames)

@@ -12,7 +12,8 @@ it('documents the project design, architecture, skills, hooks, and controller te
         'skills/design.md' => ['Warm Editorial', 'Playwright'],
         'skills/hooks.md' => ['.githooks/pre-commit', 'SKIP_PROJECT_HOOKS=1'],
         'skills/controller-testing.md' => ['Success path', 'scripts/controller-test-map.php'],
-        'skills/skill-map.md' => ['UI And Design', 'Workflow And Quality'],
+        'skills/skill-map.md' => ['UI And Design', 'Workflow And Quality', 'livewire-performance.md'],
+        'skills/livewire-performance.md' => ['Livewire Performance', 'wire:key'],
     ];
 
     foreach ($requiredDocs as $path => $needles) {

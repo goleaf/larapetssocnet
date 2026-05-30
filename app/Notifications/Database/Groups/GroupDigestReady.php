@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Groups;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Groups\Group;
 use Carbon\CarbonInterface;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class GroupDigestReady extends Notification implements ShouldQueue
+class GroupDigestReady extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Group $group,
         public readonly int $postCount,
         public readonly CarbonInterface $windowStart,
         public readonly CarbonInterface $windowEnd,
-    ) {
-        $this->afterCommit();
-    }
+    ) {}
 
     /**
      * @return list<string>

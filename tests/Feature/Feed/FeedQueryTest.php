@@ -50,6 +50,11 @@ it('loads the main feed pagination query in five queries or fewer', function ():
 
     $loadedLikedPost = collect($posts?->items())->firstWhere('id', $likedPost->getKey());
 
+    collect($posts?->items())->each(function (Post $post): void {
+        expect($post->relationLoaded('author'))->toBeTrue();
+        expect($post->author?->relationLoaded('media'))->toBeTrue();
+    });
+
     expect($loadedLikedPost)->not->toBeNull();
     expect((bool) ($loadedLikedPost->liked_by_viewer ?? false))->toBeTrue();
     expect($loadedLikedPost->getAttribute('current_user_reaction_type'))->toBe(Reaction::TYPE_HAHA);

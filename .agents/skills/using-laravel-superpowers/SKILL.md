@@ -9,7 +9,7 @@ This plugin adds Laravel-aware guidance while staying platform-agnostic. It work
 
 ## Laravel 13 Baseline
 
-Use these skills for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Laravel Boost, `AGENTS.md`, and local `skills/*.md` guides override generic upstream examples.
+Use these skills for this app as Laravel 13.12.0 guidance on PHP 8.4+ with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4.3, SQLite, and the repository-root shared-hosting web surface. Laravel Boost, `AGENTS.md`, and local `skills/*.md` guides override generic upstream examples.
 
 ## Installed Project Pack
 
@@ -42,6 +42,7 @@ Use the project guide files under `skills/` for deeper workflow notes when a tas
 
 - Test-Driven Development first: use `pest-testing`, read `skills/testing.md`, and use `.claude/skills/tdd-with-pest/SKILL.md` for upstream workflow details when useful.
 - Database changes: read `skills/sqlite.md`, `skills/eloquent-patterns.md`, and `.claude/skills/migrations-and-factories/SKILL.md` before changing schema or queries.
+- Performance-sensitive Laravel and Livewire work: read `skills/livewire-performance.md`, `skills/query-optimization.md`, `skills/eager-loading-patterns.md`, `skills/pagination-patterns.md`, and `skills/testing.md`.
 - Quality gates: run the smallest relevant tests first, then project Pint/build checks; use `.claude/skills/quality-checks/SKILL.md` only after reconciling it with `composer quality`.
 - Queues and architecture patterns: prefer existing services, actions, and project guide files, then consult matching `.claude/skills/*/SKILL.md` files for broader Laravel patterns.
 - Keep complexity low: choose the narrowest implementation that fits existing Laravel conventions.

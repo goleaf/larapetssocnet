@@ -2,6 +2,18 @@
 
 Definitive guide to eager loading for feed pages.
 
+## List Query Contract
+Every list query must explicitly define:
+
+- parent selected columns,
+- eager-loaded relations and their selected columns,
+- pagination strategy,
+- deterministic sort order,
+- aggregate counts or existence flags required by the UI,
+- viewer-specific state batched outside item loops.
+
+Keep `Model::preventLazyLoading(! app()->isProduction())` enabled so violations fail in local and test environments. Do not rely on Laravel automatic eager loading for critical feed, profile, search, or modal surfaces because it is beta.
+
 ## Feed Eager Load Set
 Always use this set unless there is measured justification to change it:
 
@@ -29,6 +41,7 @@ Post::with([
 - `reactions`: type and user_id for reaction state.
 
 Do not add extra eager loads without a measured reason.
+When narrowing columns, always keep the parent key, relation key, and foreign key columns required by Eloquent hydration.
 
 ## Passing Data To Components
 - Pass eager-loaded `$post` into `x-post-card`.

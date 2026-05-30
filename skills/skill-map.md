@@ -38,6 +38,7 @@ Start every Laravel task with `using-laravel-superpowers`, then use this map to 
 
 ## Performance And Persistence
 
+- `livewire-performance.md`
 - `query-optimization.md`
 - `eager-loading-patterns.md`
 - `pagination-patterns.md`

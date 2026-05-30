@@ -45,6 +45,7 @@ use App\Http\Controllers\Pets\PetOwnershipTransferController;
 use App\Http\Controllers\Pets\PetPostController;
 use App\Http\Controllers\Pets\PetQrCodeController;
 use App\Http\Controllers\Posts\CommentController;
+use App\Http\Controllers\Posts\CommentGifController;
 use App\Http\Controllers\Posts\CommentReactionController;
 use App\Http\Controllers\Posts\LikeController;
 use App\Http\Controllers\Posts\PostCommentController;
@@ -189,6 +190,9 @@ Route::middleware(['auth.verified', 'banned', 'active_account', 'two_factor', 't
         ->middleware('throttle:60,1')
         ->name('posts.share');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('posts.comments.store');
+    Route::get('/comments/gifs/search', CommentGifController::class)
+        ->middleware('throttle:30,1')
+        ->name('comments.gifs.search');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{post}', [PostCommentController::class, 'store'])->name('comments.legacy.store');
     Route::post('/posts/{post}/comments/{comment}/react', [CommentReactionController::class, 'react'])->name('posts.comments.react');

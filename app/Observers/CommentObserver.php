@@ -2,10 +2,13 @@
 
 namespace App\Observers;
 
+use App\Actions\Comments\FinalizeDeletedComment;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Services\CommentThreadSubscriptionService;
 use App\Services\CounterCacheService;
+use Illuminate\Support\Facades\Cache;
 
 class CommentObserver
 {
@@ -22,6 +25,7 @@ class CommentObserver
         if ($post) {
             app(CounterCacheService::class)->safeIncrement($post, 'comments_count');
             $this->incrementPostOwnerCommentsReceived($post);
+            Cache::forget('posts:'.$post->getKey().':comment-insights');
         }
 
         if ($comment->parent_id !== null) {
@@ -31,6 +35,15 @@ class CommentObserver
                 ->first();
 
             $parent?->incrementCounter('replies_count');
+        }
+
+        $author = User::query()
+            ->select(['id'])
+            ->whereKey($comment->user_id)
+            ->first();
+
+        if ($post instanceof Post && $author instanceof User) {
+            app(CommentThreadSubscriptionService::class)->syncAuthorSubscription($author, $post, $comment);
         }
     }
 
@@ -48,15 +61,8 @@ class CommentObserver
             return;
         }
 
-        $post = Post::query()
-            ->select(['id', 'user_id', 'comments_count'])
-            ->whereKey($comment->post_id)
-            ->first();
-
-        if ($post) {
-            app(CounterCacheService::class)->safeDecrement($post, 'comments_count');
-            $this->decrementPostOwnerCommentsReceived($post);
-        }
+        FinalizeDeletedComment::dispatch((int) $comment->getKey())->afterCommit();
+        Cache::forget('posts:'.$comment->post_id.':comment-insights');
 
         if ($comment->parent_id !== null) {
             $parent = Comment::query()
@@ -81,6 +87,7 @@ class CommentObserver
         if ($post) {
             app(CounterCacheService::class)->safeIncrement($post, 'comments_count');
             $this->incrementPostOwnerCommentsReceived($post);
+            Cache::forget('posts:'.$post->getKey().':comment-insights');
         }
 
         if ($comment->parent_id !== null) {
@@ -105,14 +112,5 @@ class CommentObserver
             ->whereKey($post->getAttribute('user_id'))
             ->first()
             ?->incrementCounter('post_comments_received_count');
-    }
-
-    private function decrementPostOwnerCommentsReceived(Post $post): void
-    {
-        User::query()
-            ->select(['id'])
-            ->whereKey($post->getAttribute('user_id'))
-            ->first()
-            ?->decrementCounter('post_comments_received_count');
     }
 }

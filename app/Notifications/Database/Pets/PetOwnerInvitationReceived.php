@@ -2,25 +2,24 @@
 
 namespace App\Notifications\Database\Pets;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwnerInvitation;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class PetOwnerInvitationReceived extends Notification implements ShouldQueue
+class PetOwnerInvitationReceived extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Pet $pet,
         public readonly PetOwnerInvitation $invitation,
         public readonly User $inviter,
-    ) {
-        $this->afterCommit();
-    }
+    ) {}
 
     /**
      * Get the notification's delivery channels.

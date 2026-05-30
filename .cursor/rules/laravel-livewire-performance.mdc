@@ -1,0 +1,16 @@
+---
+description: Laravel 13 and Livewire 4 performance rules for PetSocial
+globs:
+  - "**/*.php"
+  - "**/*.blade.php"
+  - "**/*.md"
+alwaysApply: true
+---
+
+Use Laravel 13.12.0, Livewire 4.3, PHP 8.4 locally, and Laravel 13's PHP >= 8.3 support floor. Verify Laravel and Livewire guidance with Laravel Boost `application_info` and `search-docs` before changing framework behavior.
+
+Every Eloquent list query must explicitly define eager loads, selected columns, pagination, deterministic sorting, and aggregate counts or existence flags. Keep `Model::preventLazyLoading(! app()->isProduction())` enabled unless a documented and tested exception exists.
+
+Livewire components must avoid heavy queries in `render()`, avoid large public properties, use `#[Computed]`, `#[Locked]`, `#[Url]`, `#[Session]`, lazy/defer loading, islands, async actions, and renderless actions where appropriate, and include stable `wire:key` values in loops.
+
+Performance-sensitive changes need focused Pest coverage for query bounds, cache invalidation, visibility states, lazy-loading prevention, and Livewire payload/state behavior.

@@ -2,17 +2,19 @@
 
 namespace App\Notifications\Database\Comments;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
-class NewCommentReply extends Notification
+class NewCommentReply extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly User $commenter,

@@ -4036,199 +4036,199 @@ parameters:
 			message: '#^Method App\\Notifications\\EventAttendee\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/EventAttendee.php
+			path: app/Notifications/Database/Events/EventAttendee.php
 
 		-
 			message: '#^Method App\\Notifications\\EventAttendee\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/EventAttendee.php
+			path: app/Notifications/Database/Events/EventAttendee.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Identity\\User\:\:\$avatar_thumb\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Notifications/FollowRequestApproved.php
+			path: app/Notifications/Database/Social/FollowRequestApproved.php
 
 		-
 			message: '#^Method App\\Notifications\\FollowRequestApproved\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/FollowRequestApproved.php
+			path: app/Notifications/Database/Social/FollowRequestApproved.php
 
 		-
 			message: '#^Method App\\Notifications\\FollowRequestApproved\:\:toDatabase\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/FollowRequestApproved.php
+			path: app/Notifications/Database/Social/FollowRequestApproved.php
 
 		-
 			message: '#^Method App\\Notifications\\FollowRequestApproved\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/FollowRequestApproved.php
+			path: app/Notifications/Database/Social/FollowRequestApproved.php
 
 		-
 			message: '#^Method App\\Notifications\\GroupJoinApproved\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/GroupJoinApproved.php
+			path: app/Notifications/Database/Groups/GroupJoinApproved.php
 
 		-
 			message: '#^Method App\\Notifications\\GroupJoinApproved\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/GroupJoinApproved.php
+			path: app/Notifications/Database/Groups/GroupJoinApproved.php
 
 		-
 			message: '#^Method App\\Notifications\\GroupJoinRequest\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/GroupJoinRequest.php
+			path: app/Notifications/Database/Groups/GroupJoinRequest.php
 
 		-
 			message: '#^Method App\\Notifications\\GroupJoinRequest\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/GroupJoinRequest.php
+			path: app/Notifications/Database/Groups/GroupJoinRequest.php
 
 		-
 			message: '#^Method App\\Notifications\\ListingInterest\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/ListingInterest.php
+			path: app/Notifications/Database/Marketplace/ListingInterest.php
 
 		-
 			message: '#^Method App\\Notifications\\ListingInterest\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/ListingInterest.php
+			path: app/Notifications/Database/Marketplace/ListingInterest.php
 
 		-
 			message: '#^Method App\\Notifications\\MentionedInComment\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/MentionedInComment.php
+			path: app/Notifications/Database/Comments/MentionedInComment.php
 
 		-
 			message: '#^Method App\\Notifications\\MentionedInComment\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/MentionedInComment.php
+			path: app/Notifications/Database/Comments/MentionedInComment.php
 
 		-
 			message: '#^Method App\\Notifications\\NewComment\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewComment.php
+			path: app/Notifications/Database/Comments/NewComment.php
 
 		-
 			message: '#^Method App\\Notifications\\NewComment\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewComment.php
+			path: app/Notifications/Database/Comments/NewComment.php
 
 		-
 			message: '#^Method App\\Notifications\\NewCommentReply\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewCommentReply.php
+			path: app/Notifications/Database/Comments/NewCommentReply.php
 
 		-
 			message: '#^Method App\\Notifications\\NewCommentReply\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewCommentReply.php
+			path: app/Notifications/Database/Comments/NewCommentReply.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Identity\\User\:\:\$avatar_thumb\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Notifications/NewFollowRequest.php
+			path: app/Notifications/Database/Social/NewFollowRequest.php
 
 		-
 			message: '#^Method App\\Notifications\\NewFollowRequest\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewFollowRequest.php
+			path: app/Notifications/Database/Social/NewFollowRequest.php
 
 		-
 			message: '#^Method App\\Notifications\\NewFollowRequest\:\:toDatabase\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewFollowRequest.php
+			path: app/Notifications/Database/Social/NewFollowRequest.php
 
 		-
 			message: '#^Method App\\Notifications\\NewFollowRequest\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewFollowRequest.php
+			path: app/Notifications/Database/Social/NewFollowRequest.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Identity\\User\:\:\$avatar_thumb\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Notifications/NewFollower.php
+			path: app/Notifications/Database/Social/NewFollower.php
 
 		-
 			message: '#^Method App\\Notifications\\NewFollower\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewFollower.php
+			path: app/Notifications/Database/Social/NewFollower.php
 
 		-
 			message: '#^Method App\\Notifications\\NewFollower\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewFollower.php
+			path: app/Notifications/Database/Social/NewFollower.php
 
 		-
 			message: '#^Method App\\Notifications\\NewMessage\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewMessage.php
+			path: app/Notifications/Database/Messaging/NewMessage.php
 
 		-
 			message: '#^Method App\\Notifications\\NewMessage\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewMessage.php
+			path: app/Notifications/Database/Messaging/NewMessage.php
 
 		-
 			message: '#^Method App\\Notifications\\NewReaction\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewReaction.php
+			path: app/Notifications/Database/Posts/NewReaction.php
 
 		-
 			message: '#^Method App\\Notifications\\NewReaction\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/NewReaction.php
+			path: app/Notifications/Database/Posts/NewReaction.php
 
 		-
 			message: '#^Method App\\Notifications\\PetFollowed\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/PetFollowed.php
+			path: app/Notifications/Database/Pets/PetFollowed.php
 
 		-
 			message: '#^Method App\\Notifications\\PetFollowed\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/PetFollowed.php
+			path: app/Notifications/Database/Pets/PetFollowed.php
 
 		-
 			message: '#^Method App\\Notifications\\ReportThresholdReached\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/ReportThresholdReached.php
+			path: app/Notifications/Database/Moderation/ReportThresholdReached.php
 
 		-
 			message: '#^Method App\\Notifications\\ReportThresholdReached\:\:via\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: app/Notifications/ReportThresholdReached.php
+			path: app/Notifications/Database/Moderation/ReportThresholdReached.php
 
 		-
 			message: '#^Call to function method_exists\(\) with App\\Models\\Content\\Comment and ''isForceDeleting'' will always evaluate to true\.$#'

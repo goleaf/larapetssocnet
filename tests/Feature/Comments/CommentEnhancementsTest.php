@@ -4,6 +4,7 @@ use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
+use App\Notifications\Database\Comments\MentionedInComment;
 use App\Notifications\Database\Comments\NewCommentThreadReply;
 use App\Services\CommentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -191,6 +192,26 @@ it('subscribes active thread participants and notifies them about later replies'
         ->call('createReply', $branch->id);
 
     Notification::assertSentTo($participant, NewCommentThreadReply::class);
+});
+
+it('dispatches comment mention notifications through the queued mention pipeline', function (): void {
+    Notification::fake();
+
+    $author = User::factory()->create();
+    $mentioned = User::factory()->create([
+        'username' => 'mention-target',
+    ]);
+    $post = Post::factory()->for(User::factory())->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+
+    Livewire::actingAs($author)
+        ->test('posts.comments-thread', ['post' => $post])
+        ->set('body', 'This should notify @mention-target from the queue.')
+        ->call('createComment')
+        ->assertHasNoErrors();
+
+    Notification::assertSentTo($mentioned, MentionedInComment::class);
 });
 
 it('translates comments through the server side translation adapter and caches the result', function (): void {

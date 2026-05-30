@@ -6,8 +6,16 @@ Prevent N+1 in social-network pages.
 - Use Debugbar in local.
 - Use `DB::listen()` in local/dev.
 - Assert query counts in tests for critical endpoints.
+- Keep `Model::preventLazyLoading(! app()->isProduction())` enabled so local and test runs catch accidental relation access.
+- Treat Laravel automatic eager loading as beta; it may help exploratory development, but explicit eager loading remains mandatory for production-critical list surfaces.
 
 ## Rules
+- Every Eloquent list query must define its relation graph, selected columns, pagination strategy, deterministic sort order, and aggregate counts/existence flags before rendering.
+- Select only the parent columns and relation columns the view needs. When constraining eager-load columns, include `id` and every foreign key required by the relationship.
+- Use `withCount()`, `withExists()`, `withSum()`, batched `pluck()->flip()`, or precomputed counter caches instead of per-row `count()`, `exists()`, reaction, saved, follow, or policy-adjacent lookups.
+- Queue dispatchers that fan out notifications must batch eligibility checks (blocks, follows, roles, visibility, notification preferences) before creating jobs; do not call relationship/policy helpers inside per-recipient loops. Bursty fan-out dispatchers must also be unique, overlap-protected, debounced, or idempotent before they create duplicate user-visible notifications.
+- Use `cursorPaginate()` for feeds and infinite scroll, ordered by stable unique columns. Use `paginate()` only when totals are required.
+- Cache expensive read models with explicit keys and invalidation paths. Use cache tags only with a fallback for cache stores that do not support tags.
 - Feed pages should eager load all required relations in one `with([...])` chain.
 - Main feed reads should keep source membership in SQL through the unioned `Post::forFeed($viewerId, $source)` candidate ID subquery, then hydrate posts through the outer Eloquent query for ordering, eager loading, and cursor pagination. Apply `feed_mutes(user_id, mutable_type, mutable_id)` exclusions through indexed `NOT EXISTS` subqueries instead of filtering muted posts in PHP.
 - Best-ranked feed reads may order by a raw database score expression, but the base candidate set must still use existing published/group/feed indexes and cursor pagination.
@@ -28,6 +36,7 @@ Prevent N+1 in social-network pages.
 - Login anomaly checks should scan `auth_audit_logs(user_id, created_at)` for the last 90 days, avoid full-table history scans, and deduplicate unresolved `login_security_alerts` by user, country, and recent creation window.
 - Onboarding follow suggestions should select only display/avatar/count columns, exclude already-followed and pending users at the query layer, use the onboarding suggestions users index for top-account ordering, and batch follow-status lookups through the existing follows composite index.
 - Never access relation properties inside loops unless eager loaded.
+- Do not use raw queries for performance unless the model/query-builder alternative is inadequate and the exception is documented with test coverage.
 
 ## Correct patterns
 ```php

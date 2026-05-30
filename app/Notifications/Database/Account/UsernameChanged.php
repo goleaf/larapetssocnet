@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Account;
 
-use Illuminate\Bus\Queueable;
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Notification;
 
-class UsernameChanged extends Notification
+class UsernameChanged extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     /**
      * Create a new notification instance.

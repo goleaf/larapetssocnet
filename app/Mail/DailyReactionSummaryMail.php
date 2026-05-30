@@ -2,18 +2,23 @@
 
 namespace App\Mail;
 
+use App\Enums\Support\Queue\QueueName;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Support\Queue\HasDefaultQueueRuntime;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class DailyReactionSummaryMail extends Mailable
+class DailyReactionSummaryMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use HasDefaultQueueRuntime;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * @param  Collection<int, Post>  $posts
@@ -22,7 +27,10 @@ class DailyReactionSummaryMail extends Mailable
         public readonly User $user,
         public readonly Collection $posts,
         public readonly string $summaryDate,
-    ) {}
+    ) {
+        $this->onQueue(QueueName::Mail->routingName());
+        $this->afterCommit();
+    }
 
     public function envelope(): Envelope
     {

@@ -31,6 +31,7 @@ Implementation details:
 - Reaction summaries, current viewer reaction, and up to five Paw/Love reactor avatar faces are hydrated in-memory after pagination.
 - Thread subscription state is hydrated from `comment_thread_subscriptions` for the loaded root comments.
 - Visible Livewire polling should use `CommentService::threadActivity()` and compare the returned fingerprint before dispatching parent card refresh events.
+- The feed card mounts one `posts.comments-thread` Livewire component only after comments open; individual comments stay recursive Blade partials.
 
 ## Tombstones
 - Soft-deleted comments remain in the thread.
@@ -40,6 +41,7 @@ Implementation details:
 ## Reply UX
 - Replies are created by posting `parent_id` to `POST /posts/{post}/comments`.
 - Feed inline replies are created through `posts.comments-thread`, which calls the same comment actions as the HTTP route.
+- Comment Paw/Love reactions are handled by a parent `posts.comments-thread` action accepting the comment ID and reaction type.
 - Three visual levels are allowed: top-level, direct reply, and reply-to-reply.
 - New replies targeting an already third-level comment are flattened onto that third-level parent by `CommentService`.
 

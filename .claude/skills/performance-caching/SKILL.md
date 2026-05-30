@@ -7,17 +7,15 @@ description: Use framework caches and value/query caching to reduce work; add ta
 
 ## Laravel 13 Baseline
 
-Use this skill for this app as Laravel 13.9 guidance on PHP 8.4 with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
+Use this skill for this app as Laravel 13.12.0 guidance on PHP 8.4+ with Pest 4, PHPUnit 12, Tailwind CSS 4, Livewire 4.3, SQLite, and the repository-root shared-hosting web surface. Project rules in `AGENTS.md`, Laravel Boost, and local `skills/*.md` guides override generic examples.
 
 ## Framework caches
 
 ```
-php artisan route:cache
-php artisan config:cache
-php artisan view:cache
+php artisan optimize
 ```
 
-Clear with the corresponding `clear` commands when needed in deployments.
+Use `php artisan optimize` during production deployments to cache framework files together. Clear generated caches with `php artisan optimize:clear` when needed.
 
 ## Values and queries
 
@@ -48,6 +46,7 @@ Cache::lock('reports:daily', 30)->block(5, function () {
 
 - Use stable, namespaced keys; include any scoping dimension
 - Prefer `remember()` to prevent thundering herds
-- Use cache tags (if supported) to invalidate related entries together
+- Use cache tags only when the active store supports them; provide a plain-key fallback for SQLite/database/local stores that do not
 - Avoid caching highly dynamic or user-specific data without a plan
 - Document invalidation triggers next to cached code
+- Test cache-hit behavior and invalidation after writes or counter updates

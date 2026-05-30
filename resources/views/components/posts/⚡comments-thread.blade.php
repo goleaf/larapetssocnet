@@ -6,6 +6,7 @@ use App\Actions\Comments\UpdateCommentAction;
 use App\Actions\Engagement\CreateReportAction;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
+use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
 use App\Services\BlockService;
@@ -83,6 +84,8 @@ new class extends Component
     public bool $mentionSuggestionsOpen = false;
 
     public ?string $emojiTarget = null;
+
+    public ?int $activeReplyCommentId = null;
 
     /**
      * @var array<int, bool>
@@ -197,6 +200,7 @@ new class extends Component
 
         unset($this->replyBodies[$parentId]);
 
+        $this->activeReplyCommentId = null;
         $this->statusMessage = 'Reply posted.';
         $this->syncThreadState();
         $this->dispatchThreadUpdated();
@@ -286,9 +290,42 @@ new class extends Component
         $this->syncThreadState();
     }
 
+    /**
+     * @return array{success: true, data: array{comment_id: int, current_reaction: ?string, reactions_count: int, reaction_counts: array<string, int>}}
+     */
+    public function reactToComment(int $commentId, string $type, CommentService $comments): array
+    {
+        $viewer = $this->viewer();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $comment = $this->threadComment($commentId);
+
+        abort_if($comment->trashed(), 404);
+        Gate::forUser($viewer)->authorize('react', $comment);
+
+        $type = Reaction::normalizeType($type);
+
+        if (! in_array($type, Reaction::commentTypes(), true)) {
+            throw ValidationException::withMessages([
+                'reaction' => 'Choose a valid comment reaction.',
+            ]);
+        }
+
+        $reaction = $comments->toggleReaction($comment, $viewer, $type);
+        $comment->refresh();
+        $this->syncThreadState();
+
+        return [
+            'success' => true,
+            'data' => $this->commentReactionPayload($comment, $reaction),
+        ];
+    }
+
     public function startReply(int $commentId, string $username): void
     {
         $this->threadComment($commentId);
+        $this->activeReplyCommentId = $commentId;
 
         if (blank($this->replyBodies[$commentId] ?? '')) {
             $this->replyBodies[$commentId] = '@'.Str::of($username)->lower()->replaceMatches('/[^a-z0-9-]/', '').toString().' ';
@@ -664,6 +701,23 @@ new class extends Component
             $commentId = (int) Str::after($target, 'edit:');
             $this->editBodies[$commentId] = ltrim(rtrim((string) ($this->editBodies[$commentId] ?? '')).' '.$text);
         }
+    }
+
+    /**
+     * @return array{comment_id: int, current_reaction: ?string, reactions_count: int, reaction_counts: array<string, int>}
+     */
+    private function commentReactionPayload(Comment $comment, ?Reaction $reaction): array
+    {
+        return [
+            'comment_id' => (int) $comment->getKey(),
+            'current_reaction' => $reaction instanceof Reaction ? Reaction::normalizeType((string) $reaction->type) : null,
+            'reactions_count' => (int) $comment->reactions_count,
+            'reaction_counts' => collect(Reaction::commentTypes())
+                ->mapWithKeys(fn (string $reactionType): array => [
+                    $reactionType => (int) $comment->getAttribute(Reaction::counterColumn($reactionType)),
+                ])
+                ->all(),
+        ];
     }
 
     private function copyValidationErrors(ValidationException $exception, string $fallbackKey): void

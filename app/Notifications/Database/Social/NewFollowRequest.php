@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Social;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class NewFollowRequest extends Notification
+class NewFollowRequest extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(public readonly User $requester) {}
 

@@ -9,6 +9,7 @@ use App\Exceptions\UserBlockedException;
 use App\Http\Middleware\BannedUserMiddleware;
 use App\Http\Middleware\EnsureAccountCanAccessApplication;
 use App\Http\Middleware\EnsureTwoFactorChallengeSatisfied;
+use App\Http\Middleware\LogRequestMemoryUsage;
 use App\Http\Middleware\RedirectIfOnboardingComplete;
 use App\Http\Middleware\RunRealtimeMaintenance;
 use App\Http\Middleware\TrackLastSeen;
@@ -33,6 +34,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             RunRealtimeMaintenance::class,
+            LogRequestMemoryUsage::class,
         ]);
 
         $middleware->group('auth.verified', [

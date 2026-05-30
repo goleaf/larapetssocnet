@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Moderation;
 
-use Illuminate\Bus\Queueable;
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 
-class ReportThresholdReached extends Notification
+class ReportThresholdReached extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Model $reportable,

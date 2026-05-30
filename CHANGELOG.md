@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Added Hermes project operating rules and a global `/laravel-team` skill bundle for Laravel subagent orchestration, MCP safety, N+1 audits, Livewire performance checks, testing, deployment, and security/performance review.
 - Added per-post comment drafts with Livewire autosave, automatic restore labels, explicit discard, and successful-submission cleanup.
 - Added comment GIF search through server-side Tenor/Giphy-compatible adapters, selected GIF persistence, and inline GIF rendering in comment threads.
 - Added cached inline comment translation support with stored source/target languages and a server-side translation adapter.
@@ -44,7 +45,16 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Documented that Horizon is not installed for the current queue runtime, and added guardrails for any future Horizon adoption to require Redis-backed queues, `QueueName::workerOrder()` supervisor priority, dashboard authorization, and `horizon:terminate` deploy restarts.
+- Changed queued application work to share structured failure handling: every app `ShouldQueue` class using the queue runtime trait now logs job class, connection, queue, unique ID, retry runtime, and exception metadata when Laravel marks the job failed.
+- Changed queue naming to encode explicit priorities: `mail` first for latency-sensitive auth/security mail, `notifications` second for user-visible notification work, `comments` third for comment fan-out/counter maintenance, and `default` last for framework/package fallback jobs.
+- Changed queued mailables, database notifications, and comment jobs to route onto explicit `mail`, `notifications`, and `comments` queues, with queue monitor defaults covering those class-routed queues plus `default`.
+- Changed queued comment mention fan-out so duplicate burst dispatches are unique by comment and per-recipient notification jobs are unique, overlap-protected, and idempotent against existing database notifications.
+- Changed queued mailables, notifications, and comment action jobs to share explicit retry, backoff, timeout, and fail-on-timeout controls.
+- Changed queued comment mention dispatch to batch recipient block, follow, pet-visibility, and role checks before creating notification jobs, avoiding per-mentioned-user visibility queries.
+- Changed Livewire comment threads so comment reactions call the parent thread component, mention notifications dispatch through queued batch jobs, thread subscription creation runs from the comment observer, and deleted-comment post counters finalize in a queued job.
 - Reorganized notification classes under provider and domain folders in `app/Notifications`.
+- Updated AI/rules guidance, Boost agent configuration, and local skills for Laravel 13.12.0, Livewire 4.3, PHP 8.4+ lock compatibility, explicit Eloquent list-query contracts, Livewire payload minimization, production optimization, and performance-sensitive testing.
 - Changed comment preview and Top sorting to use the stored comment quality score before falling back to reaction count and recency.
 - Moved direct-message sending into the Messaging action namespace and kept message delivery behavior covered by focused tests.
 - Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.
@@ -68,6 +78,7 @@
 - Removed the `app/Jobs` application folder and moved its behavior into services and commands.
 
 ### Fixed
+- Fixed main feed post hydration to eager-load the `author` relation used by Livewire feed cards while keeping lazy-loading prevention enabled.
 - Fixed feed new-post polling Alpine calls inside the full-page Livewire feed shell by resolving the nearest stream component before invoking the polling action.
 - Fixed legacy morph-map aliases for post draft, mention, and pet care/ownership domain models.
 - Fixed post creation from internal services to normalize enum-backed status values before synthetic request validation.
@@ -98,6 +109,7 @@
 - Restored pet shell visibility checks for owner pets-visibility settings and legacy morph aliases for current domain models.
 
 ### Tests
+- Added feed query assertions that main feed posts hydrate author media relations without lazy loading.
 - Added comment enhancement coverage for per-post draft restore/cleanup, GIF selection, search highlighting, eager-loaded reaction faces, thread subscription notifications, and translation caching.
 - Added comment-thread coverage for three-level replies, deeper reply flattening, preview loading, expandable reply threads, pinned comments, blocking commenters, full-page sorting, 500-character validation, and one-hour edit-window enforcement.
 - Added Livewire comment-thread coverage for inline comment editing, sanitized rendered output, inline reporting, and self-report authorization blocking.
@@ -228,7 +240,7 @@
 - Added first-class pet profile ownership extensions with scoped co-owner permissions, pet milestones with optional automatic post sharing, authenticated breed autocomplete, server-generated QR SVGs, and daily pet birthday notifications.
 - Added normalized pet profile schema extensions for species/breed references, pet-post tags, weight entries, co-owner invitations, ownership transfers, pet relationships, health reminders, adoption inquiries, and spotlight history.
 - Added owner-only Profile Wrapped annual summaries, generated during the first week of January with yearly post, reaction, follower, pet, activity-month, and top-post metrics plus queued PNG share-card generation.
-- Added Laravel 13.9 HTML `passwordrules` attributes to new-password inputs so browsers and password managers can generate passwords that match the app policy.
+- Added Laravel 13 HTML `passwordrules` attributes to new-password inputs so browsers and password managers can generate passwords that match the app policy.
 - Added a configurable server-side geocoding service for profile location suggestions.
 - Added a nested Livewire edit profile modal that mounts from the owner profile page, saves profile fields in place, and renders as a centered desktop overlay or full-screen mobile sheet without navigating away.
 - Added an authenticated non-follower "Also followed by" recommendation section to the profile About tab, using the mutual connection SQL intersection capped to five people for social proof.
@@ -324,7 +336,7 @@
 - Updated profile rendering to load the profile owner surface with media and counts, reuse pet-tab data for featured pet previews, compute owner completeness from a narrow summary query, record profile views with insert-or-ignore writes against the daily unique key, and resolve mutual follower previews with indexed SQL joins instead of PHP collection intersections.
 - Tightened login/logout security so identifiers are normalized before lookup/throttling, banned users with valid credentials are redirected to a restricted notice, soft-deleted users are denied, pending-deletion/deactivated/suspended users cannot reach app pages, unsafe intended redirects are dropped, dashboard access uses the same account-state/session tracking middleware as other app pages, and logout behavior is covered for sensitive session cleanup.
 - Tightened profile visibility so public profile rendering, tabs, counts, location, message actions, search results, photo galleries, post visibility, pet visibility, and username redirects all reject unavailable owners, restricted viewers, and blocked relationships before loading private content.
-- Updated all project-installed Laravel Superpowers skills with the Laravel 13.9 / PHP 8.4 baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
+- Updated all project-installed Laravel Superpowers skills with the Laravel 13.12.0 / PHP 8.4+ baseline and replaced stale scheduling, casting, docs-link, and PHP requirement examples.
 - Clarified agent and project skill guidance so every Laravel task starts with `using-laravel-superpowers` and then activates every matching project/router skill.
 - Updated the pet profile page to remove the page-local width cap and align the profile summary, tabs, and tab content with the app header block.
 - Migrated shared UI primitives, Tailwind theme aliases, app shell, guest shell, forms, buttons, cards, alerts, badges, and component-library examples to the Warm Editorial visual system.

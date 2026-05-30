@@ -35,6 +35,7 @@ Aliases:
 ## Comment Reactions
 - `CommentService::toggleReaction()` delegates to `HasReactions::toggleReaction()`.
 - Comment reactions are limited to `paw` and `love` and update `comments.reactions_count`, `comments.paw_count`, and `comments.love_count` via the trait.
+- When comments are rendered inside `posts.comments-thread`, Alpine optimistic UI must call the parent Livewire `reactToComment(commentId, type)` action and reconcile from its returned counters instead of mounting one reaction component per comment.
 - No notification side effects for comment reactions in current code.
 
 ## Notifications

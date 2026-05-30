@@ -2,24 +2,23 @@
 
 namespace App\Notifications\Database\Pets;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class PetOwnershipTransferResolved extends Notification implements ShouldQueue
+class PetOwnershipTransferResolved extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Pet $pet,
         public readonly string $status,
         public readonly ?User $respondingUser = null,
-    ) {
-        $this->afterCommit();
-    }
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -62,9 +61,13 @@ class PetOwnershipTransferResolved extends Notification implements ShouldQueue
 
     protected function message(): string
     {
+        $respondingName = $this->respondingUser instanceof User
+            ? $this->respondingUser->name
+            : 'The co-owner';
+
         return match ($this->status) {
-            'accepted' => ($this->respondingUser?->name ?? 'The co-owner').' accepted ownership of '.$this->pet->name.'.',
-            'declined' => ($this->respondingUser?->name ?? 'The co-owner').' declined ownership of '.$this->pet->name.'.',
+            'accepted' => $respondingName.' accepted ownership of '.$this->pet->name.'.',
+            'declined' => $respondingName.' declined ownership of '.$this->pet->name.'.',
             'expired' => 'The ownership transfer for '.$this->pet->name.' expired.',
             default => 'The ownership transfer for '.$this->pet->name.' was updated.',
         };

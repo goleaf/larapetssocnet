@@ -2,16 +2,18 @@
 
 namespace App\Notifications\Database\Posts;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
-class MentionedInPost extends Notification
+class MentionedInPost extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly User $author,

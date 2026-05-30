@@ -35,7 +35,7 @@ Keep the feed query centralized and cursor-paginated.
 - The feed stream loads immediately as the page center column. Left and right sidebars are lazy child components with skeleton placeholders.
 
 ## Eager Loading & Engagement
-- `with(['user', 'user.media', 'pet.media', 'pets', 'media', 'tags'])`.
+- `with(['author', 'author.media', 'pet.media', 'pets', 'media', 'tags'])`.
 - `withCount(['likes', 'comments'])`.
 - `withExists(['likes as liked_by_viewer' => ...])`.
 

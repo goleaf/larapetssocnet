@@ -87,6 +87,45 @@ it('creates the birthday post and notifies followers and co owners', function ()
     Carbon::setTestNow();
 });
 
+it('batches co owner birthday follower checks without per-user exists queries', function (): void {
+    Notification::fake();
+    Carbon::setTestNow(Carbon::parse('2026-05-23 08:00:00'));
+
+    $owner = User::factory()->create();
+    $pet = Pet::factory()->for($owner)->create([
+        'name' => 'Birthday Buddy',
+        'birth_date' => null,
+        'date_of_birth' => '2020-05-23',
+    ]);
+    $coOwners = User::factory()->count(6)->create();
+
+    $coOwners->each(function (User $coOwner) use ($owner, $pet): void {
+        $coOwner->followPet($pet);
+
+        PetOwner::factory()->for($pet)->for($coOwner, 'user')->create([
+            'invited_by_user_id' => $owner->id,
+            'role' => PetOwner::ROLE_POSTER,
+            'accepted_at' => now(),
+        ]);
+    });
+
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    app(PetBirthdayService::class)->process($pet->id);
+
+    $perUserFollowerExistsQueries = collect($queries)
+        ->filter(fn (string $sql): bool => preg_match('/select\s+exists\s*\(.*pet_followers/is', $sql) === 1)
+        ->values();
+
+    expect($perUserFollowerExistsQueries)->toBeEmpty('Per-user pet follower exists queries: '.json_encode($perUserFollowerExistsQueries->all()));
+    Notification::assertSentTo($coOwners->all(), PetBirthdayCoOwnerNotification::class);
+
+    Carbon::setTestNow();
+});
+
 it('stores and uses an indexed birthday lookup key', function (): void {
     $pet = Pet::factory()->create([
         'birth_date' => '2020-05-23',

@@ -2,24 +2,26 @@
 
 namespace App\Notifications\Database\Groups;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class GroupJoinRequest extends Notification implements ShouldQueue
+class GroupJoinRequest extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly User $requester,
         public readonly Group $group,
-    ) {
-        $this->afterCommit();
-    }
+    ) {}
 
+    /**
+     * @return list<string>
+     */
     public function via(object $notifiable): array
     {
         return ['database'];
@@ -42,6 +44,9 @@ class GroupJoinRequest extends Notification implements ShouldQueue
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(object $notifiable): array
     {
         return $this->toDatabase($notifiable);

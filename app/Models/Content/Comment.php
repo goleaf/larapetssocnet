@@ -37,6 +37,9 @@ use Illuminate\Support\Str;
     'gif_provider',
     'language_code',
     'quality_score',
+    'depth',
+    'is_pinned',
+    'edit_count',
     'edited_at',
     'replies_count',
     'reactions_count',
@@ -55,6 +58,9 @@ class Comment extends Model
         return [
             'edited_at' => 'datetime',
             'quality_score' => 'integer',
+            'depth' => 'integer',
+            'is_pinned' => 'boolean',
+            'edit_count' => 'integer',
             'replies_count' => 'integer',
             'reactions_count' => 'integer',
             'paw_count' => 'integer',
@@ -113,6 +119,11 @@ class Comment extends Model
         return $query->whereNull('parent_id');
     }
 
+    public function scopePinned(Builder $query): Builder
+    {
+        return $query->where('comments.is_pinned', true);
+    }
+
     public function scopeThreadColumns(Builder $query): Builder
     {
         return $query->select([
@@ -128,6 +139,9 @@ class Comment extends Model
             'comments.gif_provider',
             'comments.language_code',
             'comments.quality_score',
+            'comments.depth',
+            'comments.is_pinned',
+            'comments.edit_count',
             'comments.edited_at',
             'comments.replies_count',
             'comments.reactions_count',

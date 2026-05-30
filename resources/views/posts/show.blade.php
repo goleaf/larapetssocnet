@@ -20,7 +20,7 @@
  @endif
 
  <div id="comments">
- <livewire:posts.comments-thread :post="$post" :full-page="true" :key="'post-page-comments-'.$post->getKey()" />
+ <livewire:comments.comment-section :post-id="$post->getKey()" :key="'post-page-comments-'.$post->getKey()" />
  </div>
  </div>
 </x-app-layout>

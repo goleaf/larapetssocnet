@@ -62,7 +62,7 @@ Pet profiles are user-owned sub-entities.
 ## Sharing and Notifications
 - Pet profile QR codes are generated server-side as SVGs through the pet QR routes. Do not add a QR package unless the in-house SVG service stops meeting requirements.
 - Pet birthday reminders are sent by `pets:send-birthday-notifications`, scheduled daily at `config('pets.birthday.notification_time')`, and process each pet whose indexed `birthday_month_day` key, derived from `birth_date` or `date_of_birth`, matches today through `PetBirthdayService`.
-- Birthday processing creates a system-generated post tagged to the pet, notifies eligible pet followers in batches, and sends co-owner-specific notifications to co-owners who follow the pet.
+- Birthday processing creates a system-generated post tagged to the pet, notifies eligible pet followers in batches, and sends co-owner-specific notifications to co-owners who follow the pet using batched follower lookups instead of per-co-owner `exists()` checks.
 - Pet health reminders are scheduled daily at `config('pets.health_reminders.notification_time')` and advance each reminder's next due date after notifications are queued.
 
 ## Creation UI

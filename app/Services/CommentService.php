@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Actions\Comments\DispatchCommentMentionNotifications;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
-use App\Notifications\Database\Comments\MentionedInComment;
 use App\Notifications\Database\Comments\NewComment;
 use App\Notifications\Database\Comments\NewCommentReply;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,6 +26,8 @@ class CommentService
     public const PREVIEW_REPLY_LIMIT = 2;
 
     public const MAX_THREAD_DEPTH = 3;
+
+    public const MAX_STORED_DEPTH = 2;
 
     public function __construct(
         private readonly ContentService $content,
@@ -224,13 +226,14 @@ class CommentService
             ]);
         }
 
-        $parent = $parent instanceof Comment ? $this->normalizedParentForReply($post, $parent) : null;
+        [$parent, $depth] = $this->resolveParentAndDepth($post, $parent);
 
-        return DB::transaction(function () use ($post, $author, $body, $parent, $gif): Comment {
+        return DB::transaction(function () use ($post, $author, $body, $parent, $gif, $depth): Comment {
             $comment = Comment::query()->create([
                 'post_id' => $post->getKey(),
                 'user_id' => $author->getKey(),
                 'parent_id' => $parent?->getKey(),
+                'depth' => $depth,
                 'body' => $body,
                 'body_html' => $this->content->process($body),
                 'gif_url' => $gif['gif_url'] ?? null,
@@ -240,6 +243,8 @@ class CommentService
                 'language_code' => $this->languages->detect($body),
                 'quality_score' => $this->quality->score($body),
             ]);
+
+            $this->syncMentionRecords($comment, $author);
 
             DB::afterCommit(function () use ($author, $post, $comment, $parent): void {
                 $this->notifyOnCreate($author, $post, $comment, $parent);
@@ -269,7 +274,10 @@ class CommentService
             'language_code' => $this->languages->detect($body),
             'quality_score' => $this->quality->score($body, (int) $comment->reactions_count),
             'edited_at' => now(),
+            'edit_count' => (int) $comment->edit_count + 1,
         ]);
+
+        $this->syncMentionRecords($comment->refresh(), $comment->user);
 
         return $comment->refresh();
     }
@@ -573,7 +581,7 @@ class CommentService
 
     private function normalizeBody(string $body): string
     {
-        $body = trim($body);
+        $body = $this->content->plainText($body) ?? '';
 
         if (mb_strlen($body) > self::MAX_BODY_LENGTH) {
             throw ValidationException::withMessages([
@@ -624,8 +632,15 @@ class CommentService
         return nl2br(is_string($highlighted) ? $highlighted : $escapedBody);
     }
 
-    private function normalizedParentForReply(Post $post, Comment $parent): Comment
+    /**
+     * @return array{0: Comment|null, 1: int}
+     */
+    private function resolveParentAndDepth(Post $post, ?Comment $parent): array
     {
+        if (! $parent instanceof Comment) {
+            return [null, 0];
+        }
+
         if ((int) $parent->post_id !== (int) $post->getKey()) {
             throw ValidationException::withMessages([
                 'parent_id' => 'Reply target must belong to the same post.',
@@ -638,30 +653,59 @@ class CommentService
             ]);
         }
 
-        while ($this->commentDepth($parent) >= self::MAX_THREAD_DEPTH - 1 && $parent->parent_id !== null) {
+        if ((int) $parent->depth >= self::MAX_STORED_DEPTH && $parent->parent_id !== null) {
             $parent = Comment::query()
                 ->where('comments.post_id', $post->getKey())
                 ->whereKey($parent->parent_id)
                 ->firstOrFail();
         }
 
-        return $parent;
+        return [$parent, min(self::MAX_STORED_DEPTH, (int) $parent->depth + 1)];
     }
 
-    private function commentDepth(Comment $comment): int
+    private function syncMentionRecords(Comment $comment, User $author): void
     {
-        $depth = 0;
-        $current = $comment;
+        $usernames = $this->mentions->extractUsernames((string) $comment->body);
 
-        while ($current->parent_id !== null && $depth < self::MAX_THREAD_DEPTH + 5) {
-            $depth++;
-            $current = Comment::query()
-                ->select(['comments.id', 'comments.parent_id', 'comments.post_id', 'comments.user_id', 'comments.body', 'comments.body_html', 'comments.deleted_at'])
-                ->whereKey($current->parent_id)
-                ->firstOrFail();
+        if ($usernames === []) {
+            DB::table('comment_mentions')
+                ->where('comment_id', $comment->getKey())
+                ->delete();
+
+            return;
         }
 
-        return $depth;
+        $mentionedUserIds = User::query()
+            ->whereIn('username', $usernames)
+            ->whereKeyNot($author->getKey())
+            ->pluck('id')
+            ->map(fn (int|string $id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        DB::table('comment_mentions')
+            ->where('comment_id', $comment->getKey())
+            ->whereNotIn('mentioned_user_id', $mentionedUserIds->all())
+            ->delete();
+
+        if ($mentionedUserIds->isEmpty()) {
+            return;
+        }
+
+        $now = now();
+
+        DB::table('comment_mentions')->upsert(
+            $mentionedUserIds
+                ->map(fn (int $userId): array => [
+                    'comment_id' => $comment->getKey(),
+                    'mentioned_user_id' => $userId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])
+                ->all(),
+            ['comment_id', 'mentioned_user_id'],
+            ['updated_at']
+        );
     }
 
     private function notifyOnCreate(User $author, Post $post, Comment $comment, ?Comment $parent): void
@@ -700,40 +744,19 @@ class CommentService
         }
 
         $notifiedUserIds = $this->threadSubscriptions->notifySubscribers($author, $post, $comment, $parent, $notifiedUserIds);
-        $this->threadSubscriptions->syncAuthorSubscription($author, $post, $comment);
 
-        $mentions = $this->mentions->extractMentions($comment->body);
+        $mentions = $this->mentions->extractUsernames($comment->body);
 
         if ($mentions === []) {
             return;
         }
 
-        $mentionRecipients = User::query()
-            ->whereIn('username', $mentions)
-            ->get(['id', 'username', 'name', 'notification_preferences']);
-
-        foreach ($mentionRecipients as $recipient) {
-            if ((int) $recipient->getKey() === (int) $author->getKey()) {
-                continue;
-            }
-
-            if (in_array((int) $recipient->getKey(), $notifiedUserIds, true)) {
-                continue;
-            }
-
-            if (! $recipient->notificationEnabled('mentions')) {
-                continue;
-            }
-
-            if ($recipient->hasBlockingRelationshipWith($author)) {
-                continue;
-            }
-
-            if (! $this->visibility->canView($recipient, $post)) {
-                continue;
-            }
-
-            $recipient->notify(new MentionedInComment($author, $post, $comment));
-        }
+        DispatchCommentMentionNotifications::dispatch(
+            (int) $author->getKey(),
+            (int) $post->getKey(),
+            (int) $comment->getKey(),
+            $mentions,
+            $notifiedUserIds,
+        )->afterCommit();
     }
 }

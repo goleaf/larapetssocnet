@@ -163,7 +163,7 @@
 @if(! $comment->trashed())
 <!-- Like Button / Reactions -->
 @can('react', $comment)
-<x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="$comment->current_viewer_reaction"/>
+<x-comment-reaction-bar :post="$post" :comment="$comment" :currentReaction="$comment->current_viewer_reaction" :livewire="$livewire"/>
 @endcan
 @endif
 

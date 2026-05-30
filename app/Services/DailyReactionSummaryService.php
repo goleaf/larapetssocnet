@@ -60,7 +60,7 @@ class DailyReactionSummaryService
             return false;
         }
 
-        Mail::to($user->email)->send(new DailyReactionSummaryMail($user, $posts, $localDay->toDateString()));
+        Mail::to($user->email)->queue(new DailyReactionSummaryMail($user, $posts, $localDay->toDateString()));
 
         return true;
     }

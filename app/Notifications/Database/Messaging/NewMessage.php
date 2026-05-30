@@ -2,16 +2,18 @@
 
 namespace App\Notifications\Database\Messaging;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
 use App\Models\Messaging\Message;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
-class NewMessage extends Notification
+class NewMessage extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly User $sender,

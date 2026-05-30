@@ -8,7 +8,9 @@
 ])
 
 @php
-    $author = $post->user ?? $post->author;
+    $author = $post->relationLoaded('author')
+        ? $post->author
+        : ($post->relationLoaded('user') ? $post->user : null);
     $viewer = $viewer ?? auth()->user();
     $profileUrl = $author ? route('profile.show', $author) : '#';
     $petTagsForDisplay = collect([$post->pet])
@@ -132,7 +134,13 @@
     $quotePost = $post->relationLoaded('quotePost') ? $post->quotePost : null;
     $originalPost = $post->relationLoaded('originalPost') ? $post->originalPost : null;
     $relatedPost = $quotePost ?? $originalPost;
-    $relatedPostAuthor = $relatedPost?->user ?? ($relatedPost?->relationLoaded('author') ? $relatedPost?->author : null);
+    $relatedPostAuthor = null;
+
+    if ($relatedPost) {
+        $relatedPostAuthor = $relatedPost->relationLoaded('author')
+            ? $relatedPost->author
+            : ($relatedPost->relationLoaded('user') ? $relatedPost->user : null);
+    }
     $relatedPostMedia = $relatedPost?->mediaItemsForDisplay()->first();
     $relatedPostMediaUrl = $relatedPostMedia ? $relatedPost::mediaItemUrl($relatedPostMedia) : null;
     $relatedPostMediaIsVideo = $relatedPostMedia ? $relatedPost::mediaItemIsVideo($relatedPostMedia) : false;

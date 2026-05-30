@@ -10,7 +10,9 @@ class CommentPolicy
 {
     public function view(?User $user, Comment $comment): bool
     {
-        return app(PostPolicy::class)->view($user, $comment->post);
+        $post = $this->postFor($comment);
+
+        return $post instanceof Post && app(PostPolicy::class)->view($user, $post);
     }
 
     public function create(User $user, Post $post): bool
@@ -32,11 +34,15 @@ class CommentPolicy
             return false;
         }
 
-        if (! app(PostPolicy::class)->view($user, $comment->post)) {
+        $post = $this->postFor($comment);
+
+        if (! $post instanceof Post || ! app(PostPolicy::class)->view($user, $post)) {
             return false;
         }
 
-        return ! $user->hasBlockingRelationshipWith($comment->user);
+        $commentAuthor = $this->authorFor($comment);
+
+        return $commentAuthor instanceof User && ! $user->hasBlockingRelationshipWith($commentAuthor);
     }
 
     public function update(User $user, Comment $comment): bool
@@ -75,11 +81,15 @@ class CommentPolicy
             return false;
         }
 
-        if (! app(PostPolicy::class)->view($user, $comment->post)) {
+        $post = $this->postFor($comment);
+
+        if (! $post instanceof Post || ! app(PostPolicy::class)->view($user, $post)) {
             return false;
         }
 
-        return ! $user->hasBlockingRelationshipWith($comment->user);
+        $commentAuthor = $this->authorFor($comment);
+
+        return $commentAuthor instanceof User && ! $user->hasBlockingRelationshipWith($commentAuthor);
     }
 
     public function report(User $user, Comment $comment): bool
@@ -88,13 +98,54 @@ class CommentPolicy
             return false;
         }
 
-        return app(PostPolicy::class)->view($user, $comment->post);
+        $post = $this->postFor($comment);
+
+        return $post instanceof Post && app(PostPolicy::class)->view($user, $post);
+    }
+
+    public function pin(User $user, Comment $comment): bool
+    {
+        if ($comment->trashed()) {
+            return false;
+        }
+
+        $post = $this->postFor($comment);
+
+        return $post instanceof Post
+            && (int) $post->user_id === (int) $user->getKey()
+            && app(PostPolicy::class)->view($user, $post);
     }
 
     private function belongsToArchivedGroup(Comment $comment): bool
     {
-        $post = $comment->post;
+        $post = $this->postFor($comment);
 
         return $post instanceof Post && $post->belongsToArchivedGroup();
+    }
+
+    private function postFor(Comment $comment): ?Post
+    {
+        if ($comment->relationLoaded('post')) {
+            $post = $comment->getRelation('post');
+
+            return $post instanceof Post ? $post : null;
+        }
+
+        return Post::query()
+            ->whereKey($comment->post_id)
+            ->first();
+    }
+
+    private function authorFor(Comment $comment): ?User
+    {
+        if ($comment->relationLoaded('user')) {
+            $author = $comment->getRelation('user');
+
+            return $author instanceof User ? $author : null;
+        }
+
+        return User::query()
+            ->whereKey($comment->user_id)
+            ->first();
     }
 }

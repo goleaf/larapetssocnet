@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Achievements;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Gamification\Badge;
 use Illuminate\Notifications\Notification;
 
-class BadgeAwarded extends Notification
+class BadgeAwarded extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
+    use QueuesDatabaseNotification;
     public function __construct(
         public readonly Badge $badge,
     ) {}

@@ -1725,8 +1725,8 @@ class Post extends Model implements HasMedia
     {
         return $query
             ->with([
-                'user',
-                'user.media',
+                'author',
+                'author.media',
                 'pet.media',
                 'pets',
                 'media',

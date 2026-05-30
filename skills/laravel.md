@@ -1,10 +1,20 @@
 # Laravel
 
-- Use Laravel 13 conventions with thin controllers and service-layer business logic.
+- Use Laravel 13.12.0 conventions on the local PHP 8.4 runtime, while keeping code compatible with Laravel 13's PHP >= 8.3 requirement.
+- Use Laravel Boost `application_info` and `search-docs` before changing framework-sensitive Laravel or Livewire behavior.
+- Use thin controllers and service-layer business logic.
+- Prefer PHP 8 constructor property promotion, explicit return types, typed parameters, backed enums, readonly value objects, and Laravel/PHP attributes when they make configuration, authorization, queue behavior, validation, or Livewire state clearer.
+- Every application class implementing `ShouldQueue` must define retry, backoff, timeout, fail-on-timeout, and failed-job logging behavior directly or by using `App\Support\Queue\HasDefaultQueueRuntime`; queued work must be idempotent so retries are safe. Keep failed jobs on Laravel's `database-uuids` failed-job store, triage with `queue:failed`, retry deliberately with `queue:retry`, and prune old failed records after review with `queue:prune-failed`.
+- Every application class implementing `ShouldQueue` must route itself to an explicit named queue through `QueueName` and `onQueue()` / `viaQueues()`. Queue priorities are encoded in `QueueName::priority()` and worker order: `mail` (10) for latency-sensitive auth/security mail, `notifications` (20) for user-visible database/user notifications, `comments` (30) for comment fan-out/counter jobs, and `default` (100) for framework/package fallback jobs. Keep workers/monitors on `mail,notifications,comments,default` unless a new queue is documented, prioritized, and tested.
+- Do not add or publish `config/horizon.php` unless `laravel/horizon` is installed. If Horizon is introduced later, use Redis-backed queues, restrict the dashboard by policy/gate, generate supervisor queue order from `QueueName::workerOrder()`, preserve the same priority order, and restart workers with `php artisan horizon:terminate` during deploys.
+- Bursty queued work must be explicitly unique, overlap-protected, debounced, or idempotent with a durable duplicate check. Do not rely on queue retries or batches alone to prevent duplicate user-visible notifications.
 - Prefer Form Requests for validation and authorization.
 - Keep model methods focused on relationships/scopes and small helpers.
 - Use DB transactions for multi-step writes.
 - Use policies/gates for all protected actions.
+- Keep `Model::preventLazyLoading(! app()->isProduction())` enabled unless a documented and tested exception exists.
+- Treat Laravel automatic eager loading as beta. Critical read paths must still define explicit eager loads, selected columns, sorting, pagination, and aggregate counts/existence flags.
+- Use production deploy optimization: optimized Composer autoloads, built Vite assets, `php artisan optimize`, queue worker restart when workers are active, OPcache reset on shared hosting, and `APP_DEBUG=false`.
 - This project uses the repository root as the shared-hosting public path; keep root `.htaccess` protections aligned with that layout.
 - Shared-hosting deploys should keep the one-archive FTP flow with server-side cleanup/extract, remote SQLite/runtime preservation, and OPcache reset instead of returning to per-folder FTP creation or mirror uploads.
 - Production shared-hosting mail should default to `MAIL_MAILER=phpmail` unless SMTP credentials are verified; do not use Symfony sendmail on hosts that disable `proc_open()`.

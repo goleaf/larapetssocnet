@@ -515,7 +515,7 @@ new class extends Component
                 <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-pill border-2 border-dashed border-paw-light bg-paw-light/30 text-xl font-bold text-paw">+</span>
                 <span class="mt-2 block max-w-20 truncate text-xs font-semibold text-bark">{{ __('feed.moments_your_story') }}</span>
             </a>
-            @foreach ($data['posts']->pluck('user')->filter()->unique('id')->take(10) as $momentUser)
+            @foreach ($data['posts']->pluck('author')->filter()->unique('id')->take(10) as $momentUser)
                 <a href="{{ route('profile.show', $momentUser) }}" class="snap-start rounded-[var(--radius-soft)] text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paw">
                     <span class="mx-auto inline-flex rounded-pill bg-gradient-to-br from-paw-light via-cream to-leaf-light p-0.5">
                         <x-ui.avatar :src="$momentUser->avatar_url" :name="$momentUser->name" :user="$momentUser" size="lg"/>

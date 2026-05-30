@@ -32,7 +32,19 @@ The upstream `jpcaparas/superpowers-laravel` skills are installed project-locall
 - `.claude/commands/superpowers-laravel/`: 39 command wrappers for Claude Code slash-command workflows.
 - `.agents/skills/using-laravel-superpowers`: the compact Codex router that points to the installed pack without exposing every upstream guide at once.
 
-Every Laravel Superpowers skill carries this app's Laravel 13.9 / PHP 8.4 baseline. Use project rules, Laravel Boost guidance, and `skills/*.md` before applying generic upstream examples. Open the matching `.claude/skills/<skill>/SKILL.md` only when a task needs deeper Superpowers detail.
+Every Laravel Superpowers skill carries this app's Laravel 13.12.0 / PHP 8.4+ baseline. Use project rules, Laravel Boost guidance, and `skills/*.md` before applying generic upstream examples. Open the matching `.claude/skills/<skill>/SKILL.md` only when a task needs deeper Superpowers detail.
+
+## Hermes Agent Team
+
+Hermes-specific operating rules live in `HERMES.md` and `.hermes.md`. The global Hermes setup includes the `/laravel-team` bundle plus reusable Laravel skills under `~/.hermes/skills/laravel/` for orchestration, N+1 audits, Livewire performance, database indexes, testing, deployment performance, and security/performance review.
+
+Use `delegate_task` for complex Hermes work. Keep subagents scoped, give them full context, require structured summaries, and let the parent agent synthesize results and run final verification.
+
+## Performance-First Rule Updates
+
+Rules, AI instructions, and skills must stay aligned with the installed Laravel 13.12.0, Livewire 4.3.0, and PHP 8.4+ runtime. Laravel 13 supports PHP >= 8.3, but this lock currently requires PHP 8.4+ because of Symfony 8.1 and `spatie/laravel-activitylog` 5. For Laravel or Livewire behavior, use Laravel Boost `application_info` and `search-docs` before editing.
+
+Use `skills/livewire-performance.md`, `skills/query-optimization.md`, `skills/eager-loading-patterns.md`, `skills/pagination-patterns.md`, and `skills/testing.md` for performance-sensitive work. Every Eloquent list query must explicitly define eager loads, selected columns, pagination, sorting, and aggregate counts or existence flags. Every Livewire component must avoid heavy `render()` queries, large public properties, unstable loop keys, and unnecessary re-renders.
 
 ## Adding A New Skill
 

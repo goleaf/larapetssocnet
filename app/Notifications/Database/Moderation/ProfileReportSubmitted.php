@@ -2,14 +2,16 @@
 
 namespace App\Notifications\Database\Moderation;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class ProfileReportSubmitted extends Notification
+class ProfileReportSubmitted extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Report $report,

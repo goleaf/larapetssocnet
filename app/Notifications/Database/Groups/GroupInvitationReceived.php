@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Groups;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Groups\Group;
 use App\Models\Groups\GroupInvitation;
 use App\Models\Identity\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class GroupInvitationReceived extends Notification implements ShouldQueue
+class GroupInvitationReceived extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Group $group,
         public readonly GroupInvitation $invitation,
         public readonly User $inviter,
-    ) {
-        $this->afterCommit();
-    }
+    ) {}
 
     /**
      * @return list<string>

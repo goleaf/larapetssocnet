@@ -4,13 +4,20 @@ PetSocial is a Laravel 13 application with feature-oriented domain folders and a
 
 ## Runtime Shape
 
-- PHP 8.4, Laravel 13, Breeze auth, Pest 4, PHPUnit 12.
+- PHP 8.4, Laravel 13.12.0, Livewire 4.3, Breeze auth, Pest 4, PHPUnit 12; keep implementation compatible with Laravel 13's PHP >= 8.3 requirement.
 - SQLite is the local/default deployment database.
 - Tailwind 4 runs after Sass through PostCSS.
 - Vite builds public assets into root `build/`.
 - The repository root is the deployed document surface; root `.htaccess` keeps Laravel internals private.
 - Shared-hosting deployment uploads one archive over FTP, then runs a token-protected server-side cleanup/extract step that preserves remote SQLite/runtime state on normal deploys.
 - Production auth mail defaults to the app's `phpmail` transport so registration, verification, password reset, magic-link, and security emails can use PHP `mail()` on hosts where `proc_open()` is disabled.
+
+## Performance Baseline
+
+- Keep `Model::preventLazyLoading(! app()->isProduction())` enabled outside production unless a documented, tested exception exists.
+- Every Eloquent list query must declare selected columns, eager loads, aggregate counts/existence flags, deterministic sorting, and pagination before rendering.
+- Livewire components must keep public state small, avoid heavy `render()` queries, use stable `wire:key` values in loops, and use `#[Computed]`, lazy/defer loading, islands, async actions, and renderless actions when they reduce payload or query cost.
+- Production deploys should run optimized Composer autoloads, built assets, `php artisan optimize`, queue worker restarts when queues are active, OPcache reset on shared hosting, and `APP_DEBUG=false`.
 
 ## Layers
 

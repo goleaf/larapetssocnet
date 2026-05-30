@@ -2,25 +2,26 @@
 
 namespace App\Notifications\Database\Pets;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwnershipTransfer;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
-class PetOwnershipTransferRequested extends Notification implements ShouldQueue
+class PetOwnershipTransferRequested extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
     public function __construct(
         public readonly Pet $pet,
         public readonly PetOwnershipTransfer $transfer,
         public readonly User $currentOwner,
-    ) {
-        $this->afterCommit();
-    }
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -50,7 +51,7 @@ class PetOwnershipTransferRequested extends Notification implements ShouldQueue
             'pet_name' => $this->pet->name,
             'pet_slug' => $this->pet->slug,
             'transfer_id' => $this->transfer->id,
-            'expires_at' => $this->transfer->expires_at?->toISOString(),
+            'expires_at' => $this->expiresAtIso(),
         ];
     }
 
@@ -69,5 +70,20 @@ class PetOwnershipTransferRequested extends Notification implements ShouldQueue
         }
 
         return route('pets.show', ['pet' => $this->pet]);
+    }
+
+    private function expiresAtIso(): ?string
+    {
+        $expiresAt = $this->transfer->getAttribute('expires_at');
+
+        if ($expiresAt instanceof CarbonInterface) {
+            return $expiresAt->toISOString();
+        }
+
+        if (is_string($expiresAt) && $expiresAt !== '') {
+            return CarbonImmutable::parse($expiresAt)->toISOString();
+        }
+
+        return null;
     }
 }

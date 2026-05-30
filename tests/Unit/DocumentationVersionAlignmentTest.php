@@ -12,7 +12,7 @@ it('keeps markdown guidance aligned with the current toolchain versions', functi
             }
 
             preg_match_all(
-                '/docs\/(?:10|11|12)\.x|Laravel\s+(?:8|9|10|11|12)(?:\.x)?|laravel\/framework \(LARAVEL\) - v(?:8|9|10|11|12)|PHP\s+8\.(?:1|2|3)\+?|Pest\s+3|pestphp\/pest \(PEST\) - v3|PHPUnit\s+11|phpunit\/phpunit \(PHPUNIT\) - v11|Tailwind CSS v3|tailwindcss \(TAILWINDCSS\) - v3|app\/Console\/Kernel\.php|protected\s+\$casts/',
+                '/docs\/(?:10|11|12)\.x|Laravel\s+(?:8|9|10|11|12)(?:\.x)?|laravel\/framework \(LARAVEL\) - v(?:8|9|10|11|12)|PHP\s+8\.(?:1|2)\+?|Pest\s+3|pestphp\/pest \(PEST\) - v3|PHPUnit\s+11|phpunit\/phpunit \(PHPUNIT\) - v11|Tailwind CSS v3|tailwindcss \(TAILWINDCSS\) - v3|app\/Console\/Kernel\.php|protected\s+\$casts/',
                 $contents,
                 $matches
             );
@@ -33,12 +33,12 @@ it('keeps installed Laravel Superpowers skills pinned to the current project bas
 
     $requiredNeedles = [
         '## Laravel 13 Baseline',
-        'Laravel 13.9',
-        'PHP 8.4',
+        'Laravel 13.12.0',
+        'PHP 8.4+',
         'Pest 4',
         'PHPUnit 12',
         'Tailwind CSS 4',
-        'Livewire 4',
+        'Livewire 4.3',
     ];
 
     $skillsWithoutBaseline = $skillFiles

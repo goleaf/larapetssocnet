@@ -2,21 +2,19 @@
 
 namespace App\Notifications\Database\Pets;
 
-use App\Models\Pets\PetHealthReminder;
-use Illuminate\Bus\Queueable;
+use App\Notifications\Database\QueuesDatabaseNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
+use App\Models\Pets\PetHealthReminder;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 
-class PetHealthReminderDue extends Notification implements ShouldQueue
+class PetHealthReminderDue extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
-    use Queueable;
+    use QueuesDatabaseNotification;
 
-    public function __construct(public readonly PetHealthReminder $reminder)
-    {
-        $this->afterCommit();
-    }
+    public function __construct(public readonly PetHealthReminder $reminder) {}
 
     /**
      * Get the notification's delivery channels.

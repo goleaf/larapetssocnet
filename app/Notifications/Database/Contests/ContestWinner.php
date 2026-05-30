@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Notifications\Database\Contests;
 
+use App\Notifications\Database\QueuesDatabaseNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use Illuminate\Notifications\Notification;
 
-class ContestWinner extends Notification
+class ContestWinner extends Notification implements ShouldQueue, ShouldQueueAfterCommit
 {
+    use QueuesDatabaseNotification;
     public function __construct(
         public readonly Contest $contest,
         public readonly ContestEntry $entry,

@@ -35,7 +35,10 @@ use App\Support\Auth\PasswordPolicy;
 use App\Support\Models\LegacyModelMorphMap;
 use App\Support\Usernames\UsernameNormalizer;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Database\LazyLoadingViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\QueueBusy;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +75,39 @@ class AppServiceProvider extends ServiceProvider
 
         LegacyModelMorphMap::register();
 
+        Model::preventLazyLoading(! $this->app->isProduction());
+        Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation): void {
+            $route = request()->route();
+            $componentNames = collect((array) request()->input('components', []))
+                ->map(fn (mixed $component): ?string => is_array($component) ? data_get($component, 'name') : null)
+                ->filter()
+                ->values()
+                ->all();
+
+            Log::warning('Eloquent lazy-loading violation detected.', [
+                'model' => $model::class,
+                'relation' => $relation,
+                'route' => $route?->getName(),
+                'route_action' => $route?->getActionName(),
+                'livewire_components' => $componentNames,
+                'url' => request()->fullUrl(),
+                'trace' => $this->app->environment(['local', 'testing'])
+                    ? collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15))
+                        ->map(fn (array $frame): array => [
+                            'file' => $frame['file'] ?? null,
+                            'line' => $frame['line'] ?? null,
+                            'function' => $frame['function'],
+                            'class' => $frame['class'] ?? null,
+                        ])
+                        ->all()
+                    : null,
+            ]);
+
+            if (! $this->app->isProduction()) {
+                throw new LazyLoadingViolationException($model, $relation);
+            }
+        });
+
         Livewire::listen('mount', function (): void {
             $user = auth()->user();
 
@@ -80,7 +116,7 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        if ($this->app->environment('local')) {
+        if ($this->app->environment(['local', 'staging'])) {
             DB::listen(function (QueryExecuted $query): void {
                 if ($query->time > 100) {
                     Log::warning('Slow query detected', [
@@ -88,6 +124,14 @@ class AppServiceProvider extends ServiceProvider
                         'time_ms' => $query->time,
                     ]);
                 }
+            });
+
+            DB::whenQueryingForLongerThan(500, function (Connection $connection, QueryExecuted $event): void {
+                Log::warning('Cumulative query time threshold exceeded', [
+                    'connection' => $connection->getName(),
+                    'sql' => $event->toRawSql(),
+                    'last_query_ms' => $event->time,
+                ]);
             });
         }
 

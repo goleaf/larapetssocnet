@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PostStatus;
+use App\Enums\Support\Queue\QueueName;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Services\Maintenance\MaintenanceTaskService;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
@@ -18,6 +20,32 @@ it('marks realtime maintenance tasks without a console scheduler', function (): 
     expect($tasks['publish-scheduled-posts']['realtime'])->toBeTrue()
         ->and($tasks['prune-deleted-accounts']['realtime'])->toBeTrue()
         ->and($tasks['prune-old-notifications']['realtime'])->toBeTrue();
+});
+
+it('monitors class routed queues by default', function (): void {
+    expect(QueueName::workerOrder())->toBe([
+        QueueName::Mail->value,
+        QueueName::Notifications->value,
+        QueueName::Comments->value,
+        QueueName::Default->value,
+    ])
+        ->and(array_map(fn (QueueName $queue): int => $queue->priority(), QueueName::prioritized()))->toBe([10, 20, 30, 100])
+        ->and(QueueName::workerQueueOption())->toBe('mail,notifications,comments,default')
+        ->and(config('queue.monitor.queues'))->toBe(QueueName::monitorQueueOption());
+});
+
+it('stores failed jobs in the database with uuid-backed records', function (): void {
+    expect(config('queue.failed.driver'))->toBe('database-uuids')
+        ->and(config('queue.failed.table'))->toBe('failed_jobs')
+        ->and(Schema::hasTable('failed_jobs'))->toBeTrue()
+        ->and(Schema::hasColumns('failed_jobs', [
+            'uuid',
+            'connection',
+            'queue',
+            'payload',
+            'exception',
+            'failed_at',
+        ]))->toBeTrue();
 });
 
 it('reports oldest pending job in queue monitor json output', function (): void {

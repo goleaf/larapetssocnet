@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 it('keeps application code free of debugging output helpers', function (): void {
@@ -14,6 +15,10 @@ it('keeps application code free of debugging output helpers', function (): void 
         ->all();
 
     expect($violations)->toBeEmpty();
+});
+
+it('prevents accidental lazy loading outside production', function (): void {
+    expect(Model::preventsLazyLoading())->toBeTrue();
 });
 
 it('keeps environment access in configuration files', function (): void {
@@ -88,12 +93,72 @@ it('keeps application console command classes in the commands folder', function 
     expect($commandFileViolations)->toBeEmpty();
 });
 
+it('keeps application background side effects out of an app jobs folder', function (): void {
+    expect(app_path('Jobs'))->not->toBeDirectory();
+});
+
+it('requires queued application classes to define retry timeout and backoff controls', function (): void {
+    $runtimeSource = qualitySource(app_path('Support/Queue/HasDefaultQueueRuntime.php'));
+
+    expect($runtimeSource)
+        ->toContain('public int $tries')
+        ->toContain('public int $timeout')
+        ->toContain('public bool $failOnTimeout')
+        ->toContain('function backoff')
+        ->toContain('function failed')
+        ->toContain('Queued job failed after all retry attempts.');
+
+    $violations = qualityPhpFiles([app_path()])
+        ->filter(fn (string $path): bool => str_contains(qualitySource($path), 'ShouldQueue'))
+        ->filter(function (string $path): bool {
+            $source = qualitySource($path);
+
+            if (str_contains($source, 'HasDefaultQueueRuntime')) {
+                return false;
+            }
+
+            return ! str_contains($source, '$tries')
+                || ! str_contains($source, '$timeout')
+                || ! str_contains($source, '$failOnTimeout')
+                || ! (str_contains($source, '$backoff') || str_contains($source, 'function backoff'));
+        })
+        ->values()
+        ->all();
+
+    expect($violations)->toBeEmpty();
+});
+
+it('routes queued application classes onto explicit named queues', function (): void {
+    $queueNameSource = qualitySource(app_path('Enums/Support/Queue/QueueName.php'));
+
+    expect($queueNameSource)
+        ->toContain("case Mail = 'mail'")
+        ->toContain("case Notifications = 'notifications'")
+        ->toContain("case Comments = 'comments'")
+        ->toContain("case Default = 'default'")
+        ->toContain('function priority')
+        ->toContain('function workerOrder');
+
+    $violations = qualityPhpFiles([app_path()])
+        ->filter(fn (string $path): bool => str_contains(qualitySource($path), 'ShouldQueue'))
+        ->filter(function (string $path): bool {
+            $source = qualitySource($path);
+
+            return ! str_contains($source, 'QueueName::')
+                || ! (str_contains($source, 'onQueue(') || str_contains($source, 'viaQueues('));
+        })
+        ->values()
+        ->all();
+
+    expect($violations)->toBeEmpty();
+});
+
 it('keeps controllers requests and models in domain folders', function (): void {
     $rootControllerFiles = glob(app_path('Http/Controllers/*.php')) ?: [];
     $rootRequestFiles = glob(app_path('Http/Requests/*.php')) ?: [];
     $rootModelFiles = glob(app_path('Models/*.php')) ?: [];
 
-    expect(array_values($rootControllerFiles))->toBe([app_path('Http/Controllers/Controller.php')]);
+    expect($rootControllerFiles)->toBe([app_path('Http/Controllers/Controller.php')]);
     expect($rootRequestFiles)->toBeEmpty();
     expect($rootModelFiles)->toBeEmpty();
 });

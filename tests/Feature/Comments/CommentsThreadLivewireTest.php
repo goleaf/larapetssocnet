@@ -1,10 +1,15 @@
 <?php
 
+use App\Actions\Comments\FinalizeDeletedComment;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
+use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
+use App\Services\CommentService;
+use App\Services\CounterCacheService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -72,6 +77,96 @@ it('creates replies from the Livewire thread and keeps deleted parents visible a
     ]);
 });
 
+it('toggles comment reactions through the parent Livewire thread component', function (): void {
+    $viewer = User::factory()->create();
+    $post = Post::factory()->for(User::factory())->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+    ]);
+    $comment = Comment::factory()->for($post)->for(User::factory(), 'user')->create([
+        'body' => 'Reactable comment',
+        'body_html' => 'Reactable comment',
+    ]);
+
+    $component = Livewire::actingAs($viewer)
+        ->test('posts.comments-thread', ['post' => $post])
+        ->call('reactToComment', $comment->id, Reaction::TYPE_LOVE)
+        ->assertHasNoErrors();
+
+    $comment->refresh();
+
+    expect((int) $comment->reactions_count)->toBe(1)
+        ->and((int) $comment->love_count)->toBe(1)
+        ->and((int) $comment->paw_count)->toBe(0);
+
+    $this->assertDatabaseHas('reactions', [
+        'user_id' => $viewer->id,
+        'reactable_type' => (new Comment)->getMorphClass(),
+        'reactable_id' => $comment->id,
+        'type' => Reaction::TYPE_LOVE,
+    ]);
+
+    $component->call('reactToComment', $comment->id, Reaction::TYPE_PAW)
+        ->assertHasNoErrors();
+
+    $comment->refresh();
+
+    expect((int) $comment->reactions_count)->toBe(1)
+        ->and((int) $comment->love_count)->toBe(0)
+        ->and((int) $comment->paw_count)->toBe(1);
+
+    $component->call('reactToComment', $comment->id, Reaction::TYPE_PAW)
+        ->assertHasNoErrors();
+
+    $comment->refresh();
+
+    expect((int) $comment->reactions_count)->toBe(0)
+        ->and((int) $comment->love_count)->toBe(0)
+        ->and((int) $comment->paw_count)->toBe(0);
+});
+
+it('queues deleted comment counter finalization after the soft delete is confirmed', function (): void {
+    Queue::fake([FinalizeDeletedComment::class]);
+
+    $post = Post::factory()->for(User::factory())->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'comments_count' => 1,
+    ]);
+    $comment = Comment::factory()->for($post)->for(User::factory(), 'user')->create([
+        'body' => 'Queued deletion comment',
+        'body_html' => 'Queued deletion comment',
+    ]);
+    Post::query()->whereKey($post)->update(['comments_count' => 1]);
+
+    app(CommentService::class)->delete($comment);
+
+    Queue::assertPushed(FinalizeDeletedComment::class, fn (FinalizeDeletedComment $job): bool => $job->commentId === (int) $comment->getKey());
+
+    expect((int) $post->fresh()->comments_count)->toBe(1);
+});
+
+it('finalizes deleted comment counters from the queued job', function (): void {
+    $owner = User::factory()->create([
+        'post_comments_received_count' => 1,
+    ]);
+    $post = Post::factory()->for($owner)->create([
+        'visibility' => Post::VISIBILITY_PUBLIC,
+        'comments_count' => 1,
+    ]);
+    $comment = Comment::factory()->for($post)->for(User::factory(), 'user')->create([
+        'body' => 'Counter finalization comment',
+        'body_html' => 'Counter finalization comment',
+    ]);
+    Post::query()->whereKey($post)->update(['comments_count' => 1]);
+    User::query()->whereKey($owner)->update(['post_comments_received_count' => 1]);
+
+    Comment::withoutEvents(fn (): ?bool => $comment->delete());
+
+    (new FinalizeDeletedComment((int) $comment->getKey()))->handle(app(CounterCacheService::class));
+
+    expect((int) $post->fresh()->comments_count)->toBe(0)
+        ->and((int) $owner->fresh()->post_comments_received_count)->toBe(0);
+});
+
 it('allows reply to reply comments and flattens deeper replies in the Livewire thread', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
@@ -84,6 +179,7 @@ it('allows reply to reply comments and flattens deeper replies in the Livewire t
     ]);
     $reply = Comment::factory()->for($post)->for($viewer, 'user')->create([
         'parent_id' => $parent->id,
+        'depth' => 1,
         'body' => 'First-level reply',
         'body_html' => 'First-level reply',
     ]);
@@ -141,7 +237,7 @@ it('edits comments inline from the Livewire thread and keeps sanitized output in
 
     $comment->refresh();
 
-    expect($comment->body)->toBe('<script>alert("x")</script> Edited with 🐾')
+    expect($comment->body)->toBe('alert("x") Edited with 🐾')
         ->and($comment->body_html)->not->toContain('<script')
         ->and($comment->edited_at)->not->toBeNull();
 });

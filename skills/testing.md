@@ -24,6 +24,13 @@
 - Prefer semantic response assertions such as `assertOk()`, `assertForbidden()`, `assertNotFound()`, and `assertInvalid()` over raw common status codes.
 - Keep `only()`, `skip()`, and `todo()` out of committed tests unless the team explicitly accepts a temporary disabled test.
 
+## Performance-sensitive code
+- Add focused tests for read-heavy Laravel and Livewire changes that assert bounded query counts, eager-loaded relation availability, cache invalidation, pagination/cursor behavior, and visibility-denied branches.
+- Keep a unit or architecture guard proving `Model::preventLazyLoading(! app()->isProduction())` remains enabled in non-production.
+- For Livewire components, test that lazy/deferred components can be rendered with `Livewire::withoutLazyLoading()` when assertions need final content instead of placeholders.
+- For cache-backed reads, assert both cache-hit behavior and invalidation after writes or counter updates.
+- For list queries, test at least one high-volume setup where rendered items do not increase queries linearly per item.
+
 ## Controller coverage and local hooks
 - Every changed concrete controller should have at least one related feature test unless the change is purely unreachable cleanup.
 - Prefer route-level assertions that prove the user-visible behavior, authorization boundary, validation branch, and persistence effect.

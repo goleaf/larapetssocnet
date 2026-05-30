@@ -1,4 +1,4 @@
-@props(['post', 'comment', 'currentReaction' => null])
+@props(['post', 'comment', 'currentReaction' => null, 'livewire' => false])
 
 @php
     $options = collect(\App\Models\Content\Reaction::options())
@@ -43,7 +43,24 @@
             }
 
             try {
-                const response = await fetch(@js(route('comments.react', $comment)), {
+                const data = @js((bool) $livewire)
+                    ? await $wire.reactToComment(@js((int) $comment->id), type)
+                    : await this.reactViaFetch(type)
+
+                if (!data?.success) {
+                    throw new Error('reaction_failed')
+                }
+
+                this.reconcile(data.data || {})
+            } catch {
+                this.current = previousCurrent
+                this.counts = previousCounts
+            } finally {
+                this.loading = false
+            }
+        },
+        async reactViaFetch(type) {
+            const response = await fetch(@js(route('comments.react', $comment)), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -52,27 +69,24 @@
                     },
                     body: JSON.stringify({ type }),
                 })
-                const data = await response.json()
+            const data = await response.json()
 
-                if (!response.ok || !data.success) {
-                    throw new Error('reaction_failed')
-                }
+            if (!response.ok || !data.success) {
+                throw new Error('reaction_failed')
+            }
 
-                if (data.data?.current_reaction === null || typeof data.data?.current_reaction === 'string') {
-                    this.current = data.data.current_reaction
-                }
+            return data
+        },
+        reconcile(data) {
+            if (data?.current_reaction === null || typeof data?.current_reaction === 'string') {
+                this.current = data.current_reaction
+            }
 
-                if (data.data?.reaction_counts) {
-                    this.counts = {
-                        paw: Number(data.data.reaction_counts.paw || 0),
-                        love: Number(data.data.reaction_counts.love || 0),
-                    }
+            if (data?.reaction_counts) {
+                this.counts = {
+                    paw: Number(data.reaction_counts.paw || 0),
+                    love: Number(data.reaction_counts.love || 0),
                 }
-            } catch {
-                this.current = previousCurrent
-                this.counts = previousCounts
-            } finally {
-                this.loading = false
             }
         },
     }"
