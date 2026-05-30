@@ -2,22 +2,21 @@
 
 use App\Actions\Posts\ProcessTagsAction;
 use App\Enums\PostStatus;
-use App\Jobs\FeedFanOutJob;
-use App\Jobs\FetchLinkPreviewMetadataJob;
-use App\Jobs\MediaProcessingJob;
-use App\Jobs\MentionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
 use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Social\FeedItem;
+use App\Notifications\MentionedInPost;
 use App\Services\LocationAutocompleteService;
+use App\Services\PostLinkPreviewService;
 use App\Services\PostMentionService;
 use App\Support\Posts\PostContentHasher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -93,8 +92,6 @@ it('loads the composer in edit mode with existing post state', function (): void
 });
 
 it('loads a quoted post preview and creates a quote post', function (): void {
-    Queue::fake([FeedFanOutJob::class]);
-
     $author = User::factory()->create(['name' => 'Original Author']);
     $viewer = User::factory()->create();
     $original = Post::factory()->for($author)->create([
@@ -126,7 +123,12 @@ it('loads a quoted post preview and creates a quote post', function (): void {
     expect($quote->body)->toBe('Adding my own experience from the park.')
         ->and($quote->original_post_id)->toBeNull();
 
-    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $quote->id);
+    $this->assertDatabaseHas('feed_items', [
+        'user_id' => $viewer->id,
+        'post_id' => $quote->id,
+        'source_type' => FeedItem::SOURCE_SELF,
+        'source_id' => $viewer->id,
+    ]);
 });
 
 it('keeps text state and exposes the computed character count', function (): void {
@@ -301,34 +303,39 @@ it('renders the scheduled posting picker controls', function (): void {
         ->assertSee('Apply schedule');
 });
 
-it('queues pasted link previews and hydrates the preview card from cached job results', function (): void {
-    Queue::fake([FetchLinkPreviewMetadataJob::class]);
-
+it('fetches pasted link previews and hydrates the preview card from cached results', function (): void {
     $user = User::factory()->create();
+
+    $this->instance(PostLinkPreviewService::class, new class extends PostLinkPreviewService
+    {
+        public function __construct() {}
+
+        public function fetch(string $url, ?int $postId = null, ?string $cacheKey = null): void
+        {
+            if ($cacheKey === null) {
+                return;
+            }
+
+            Cache::put($cacheKey, [
+                'status' => 'ready',
+                'url' => $url,
+                'preview' => [
+                    'url' => $url,
+                    'title' => 'Luna at the park',
+                    'description' => 'A sunny afternoon walk',
+                    'image' => 'https://example.com/luna.jpg',
+                    'domain' => 'example.com',
+                ],
+            ], now()->addMinutes(10));
+        }
+    });
+
     $component = Livewire::actingAs($user)
         ->test('posts.composer')
         ->call('queueLinkPreviewFetch', 'https://example.com/luna')
         ->assertSet('isLinkPreviewLoading', true)
         ->assertSet('detectedLinkPreviewUrl', 'https://example.com/luna')
         ->assertSeeHtml('wire:poll.2s="pollLinkPreviewResult"');
-
-    Queue::assertPushed(FetchLinkPreviewMetadataJob::class, fn (FetchLinkPreviewMetadataJob $job): bool => $job->url === 'https://example.com/luna'
-        && $job->postId === null
-        && is_string($job->cacheKey));
-
-    $requestKey = $component->get('linkPreviewRequestKey');
-
-    Cache::put("posts:link-preview:{$user->id}:{$requestKey}", [
-        'status' => 'ready',
-        'url' => 'https://example.com/luna',
-        'preview' => [
-            'url' => 'https://example.com/luna',
-            'title' => 'Luna at the park',
-            'description' => 'A sunny afternoon walk',
-            'image' => 'https://example.com/luna.jpg',
-            'domain' => 'example.com',
-        ],
-    ], now()->addMinutes(10));
 
     $component
         ->call('pollLinkPreviewResult')
@@ -592,8 +599,6 @@ it('tracks uploaded attachment metadata, alt text, removal, and ordering by clie
 });
 
 it('creates a post through the action pipeline', function (): void {
-    Queue::fake();
-
     $user = User::factory()->create();
     $pet = Pet::factory()->for($user)->create();
 
@@ -615,13 +620,19 @@ it('creates a post through the action pipeline', function (): void {
         ->and($post->location_display_text)->toBe('Neighborhood park')
         ->and($post->pets()->whereKey($pet->getKey())->exists())->toBeTrue();
 
-    Queue::assertPushed(FeedFanOutJob::class);
+    $this->assertDatabaseHas('feed_items', [
+        'user_id' => $user->id,
+        'post_id' => $post->id,
+        'source_type' => FeedItem::SOURCE_SELF,
+        'source_id' => $user->id,
+    ]);
 });
 
 it('updates an existing post through the edit composer and notifies only new mentions', function (): void {
     $user = User::factory()->create();
     $previousMention = User::factory()->create(['username' => 'old_friend']);
     $newMention = User::factory()->create(['username' => 'new_friend']);
+    $newMention->following()->attach($user->getKey(), ['status' => 'accepted']);
     $oldPet = Pet::factory()->for($user)->create(['name' => 'Old Pet', 'posts_count' => 1]);
     $newPet = Pet::factory()->for($user)->create(['name' => 'New Pet', 'posts_count' => 0]);
     $post = Post::factory()->for($user)->create([
@@ -639,7 +650,7 @@ it('updates an existing post through the edit composer and notifies only new men
     app(ProcessTagsAction::class)->handle($post);
     app(PostMentionService::class)->sync($post, $user, false);
 
-    Queue::fake([MentionNotificationJob::class]);
+    Notification::fake();
 
     Livewire::actingAs($user)
         ->test('posts.composer', ['mode' => 'modal', 'editPostId' => $post->id])
@@ -683,14 +694,11 @@ it('updates an existing post through the edit composer and notifies only new men
     $this->assertDatabaseHas('hashtags', ['normalized_name' => 'newtag']);
     $this->assertDatabaseHas('hashtags', ['normalized_name' => 'oldtag', 'posts_count' => 0]);
 
-    Queue::assertPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->mentionedUserId === $newMention->id
-        && $job->postId === $post->id);
-    Queue::assertNotPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->mentionedUserId === $previousMention->id);
+    Notification::assertSentTo($newMention, MentionedInPost::class);
+    Notification::assertNotSentTo($previousMention, MentionedInPost::class);
 });
 
 it('creates scheduled posts without immediate feed fanout', function (): void {
-    Queue::fake([FeedFanOutJob::class]);
-
     $user = User::factory()->create();
     $future = now('UTC')->addDay()->setTime(10, 15, 0);
 
@@ -716,12 +724,11 @@ it('creates scheduled posts without immediate feed fanout', function (): void {
         ->and($post->status)->toBe(PostStatus::Scheduled)
         ->and($post->scheduled_publish_at?->toIso8601String())->toBe($future->toIso8601String());
 
-    Queue::assertNotPushed(FeedFanOutJob::class);
+    expect(FeedItem::query()->where('post_id', $post->id)->exists())->toBeFalse()
+        ->and((bool) $post->fresh()->is_fanned_out)->toBeFalse();
 });
 
 it('passes ordered temporary media attachments to the creation pipeline', function (): void {
-    Queue::fake();
-
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
@@ -761,9 +768,19 @@ it('passes ordered temporary media attachments to the creation pipeline', functi
     $post = Post::query()->firstOrFail();
 
     expect($post->type)->toBe(Post::TYPE_VIDEO);
-
-    Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->temporaryPath === 'livewire-tmp/video' && $job->order === 0);
-    Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->temporaryPath === 'livewire-tmp/image' && $job->altText === 'A good image' && $job->order === 1);
+    $this->assertDatabaseHas('post_media', [
+        'post_id' => $post->id,
+        'file_path' => 'livewire-tmp/video',
+        'processing_status' => 'failed',
+        'order' => 0,
+    ]);
+    $this->assertDatabaseHas('post_media', [
+        'post_id' => $post->id,
+        'file_path' => 'livewire-tmp/image',
+        'alt_text' => 'A good image',
+        'processing_status' => 'failed',
+        'order' => 1,
+    ]);
 });
 
 it('returns a duplicate warning without creating another post', function (): void {
@@ -796,8 +813,6 @@ it('returns a duplicate warning without creating another post', function (): voi
 });
 
 it('posts anyway after duplicate confirmation and closes modal composer with success feedback', function (): void {
-    Queue::fake();
-
     $user = User::factory()->create();
 
     Post::factory()->for($user)->create([

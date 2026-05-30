@@ -1,15 +1,14 @@
 <?php
 
 use App\Http\Controllers\Profile\PublicProfileController;
-use App\Jobs\RecordProfileView;
 use App\Models\Analytics\ProfileView;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Services\ProfileViewRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\View\View;
 
 uses(RefreshDatabase::class);
@@ -44,11 +43,9 @@ it('records one authenticated profile view per viewer per day', function (): voi
     }
 });
 
-it('dispatches a queued profile view recorder for authenticated visitors only', function (): void {
-    Queue::fake();
-
+it('records profile views for authenticated visitors only', function (): void {
     $owner = User::factory()->create([
-        'username' => 'queued_view_owner',
+        'username' => 'recorded_view_owner',
         'is_private' => false,
         'profile_visibility' => 'public',
     ]);
@@ -57,24 +54,27 @@ it('dispatches a queued profile view recorder for authenticated visitors only', 
     $this->get(route('profile.show', ['user' => $owner]))
         ->assertOk();
 
-    Queue::assertNotPushed(RecordProfileView::class);
-
-    Queue::fake();
+    $this->assertDatabaseMissing('profile_views', [
+        'profile_user_id' => $owner->id,
+    ]);
 
     $this->actingAs($viewer)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk();
 
-    Queue::assertPushed(RecordProfileView::class, fn (RecordProfileView $job): bool => $job->profileUserId === $owner->id
-        && $job->viewerUserId === $viewer->id);
-
-    Queue::fake();
+    $this->assertDatabaseHas('profile_views', [
+        'profile_user_id' => $owner->id,
+        'viewer_user_id' => $viewer->id,
+    ]);
 
     $this->actingAs($owner)
         ->get(route('profile.show', ['user' => $owner]))
         ->assertOk();
 
-    Queue::assertNotPushed(RecordProfileView::class);
+    $this->assertDatabaseMissing('profile_views', [
+        'profile_user_id' => $owner->id,
+        'viewer_user_id' => $owner->id,
+    ]);
 });
 
 it('increments an existing daily profile view aggregate when the same viewer returns', function (): void {
@@ -87,7 +87,7 @@ it('increments an existing daily profile view aggregate when the same viewer ret
     Carbon::setTestNow(Carbon::parse('2026-05-17 09:00:00'));
 
     try {
-        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+        app(ProfileViewRecorder::class)->record((int) $owner->id, (int) $viewer->id);
 
         /** @var ProfileView $firstView */
         $firstView = ProfileView::query()->firstOrFail();
@@ -95,7 +95,7 @@ it('increments an existing daily profile view aggregate when the same viewer ret
 
         Carbon::setTestNow(Carbon::parse('2026-05-17 18:00:00'));
 
-        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+        app(ProfileViewRecorder::class)->record((int) $owner->id, (int) $viewer->id);
 
         $this->assertDatabaseCount('profile_views', 1);
 
@@ -119,10 +119,10 @@ it('uses the profile owner timezone to determine the daily view boundary', funct
 
     try {
         Carbon::setTestNow(Carbon::parse('2026-05-18 06:30:00', 'UTC'));
-        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+        app(ProfileViewRecorder::class)->record((int) $owner->id, (int) $viewer->id);
 
         Carbon::setTestNow(Carbon::parse('2026-05-18 08:30:00', 'UTC'));
-        (new RecordProfileView((int) $owner->id, (int) $viewer->id))->handle();
+        app(ProfileViewRecorder::class)->record((int) $owner->id, (int) $viewer->id);
 
         $this->assertDatabaseCount('profile_views', 2);
         $this->assertDatabaseHas('profile_views', [
@@ -189,8 +189,6 @@ it('shows profile view analytics only to the profile owner', function (): void {
 });
 
 it('does not fetch owner profile view analytics for visitor renders', function (): void {
-    Queue::fake([RecordProfileView::class]);
-
     $owner = User::factory()->create(['username' => 'visitor_analytics_owner']);
     $viewer = User::factory()->create();
 
@@ -226,8 +224,10 @@ it('does not fetch owner profile view analytics for visitor renders', function (
 
     expect($profileViewAggregateQueries)->toBeEmpty();
 
-    Queue::assertPushed(RecordProfileView::class, fn (RecordProfileView $job): bool => $job->profileUserId === $owner->id
-        && $job->viewerUserId === $viewer->id);
+    $this->assertDatabaseHas('profile_views', [
+        'profile_user_id' => $owner->id,
+        'viewer_user_id' => $viewer->id,
+    ]);
 });
 
 it('counts unique profile viewers across the owner local last 30 days', function (): void {

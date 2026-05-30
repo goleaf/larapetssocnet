@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Groups\Group;
@@ -9,34 +9,20 @@ use App\Models\Identity\User;
 use App\Notifications\GroupDigestReady;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Notification;
 
-class SendGroupDigest implements ShouldQueue
+class GroupDigestService
 {
-    use Queueable;
-
-    public int $tries = 3;
-
-    public function __construct(
-        public readonly int $groupId,
-        public readonly CarbonInterface|string $windowStart,
-        public readonly CarbonInterface|string $windowEnd,
-    ) {
-        $this->afterCommit();
-    }
-
-    public function handle(): void
+    public function send(int $groupId, CarbonInterface|string $windowStart, CarbonInterface|string $windowEnd): bool
     {
-        $group = Group::query()->find($this->groupId);
+        $group = Group::query()->find($groupId);
 
         if (! $group instanceof Group) {
-            return;
+            return false;
         }
 
-        $windowStart = $this->asCarbon($this->windowStart);
-        $windowEnd = $this->asCarbon($this->windowEnd);
+        $windowStart = $this->asCarbon($windowStart);
+        $windowEnd = $this->asCarbon($windowEnd);
 
         $postCount = Post::query()
             ->where('group_id', $group->getKey())
@@ -44,7 +30,7 @@ class SendGroupDigest implements ShouldQueue
             ->count();
 
         if ($postCount === 0) {
-            return;
+            return false;
         }
 
         $recipientIds = GroupMember::query()
@@ -55,7 +41,7 @@ class SendGroupDigest implements ShouldQueue
             ->values();
 
         if ($recipientIds->isEmpty()) {
-            return;
+            return false;
         }
 
         $recipients = User::query()
@@ -63,6 +49,8 @@ class SendGroupDigest implements ShouldQueue
             ->get(['id', 'name', 'username']);
 
         Notification::send($recipients, new GroupDigestReady($group, $postCount, $windowStart, $windowEnd));
+
+        return true;
     }
 
     private function asCarbon(CarbonInterface|string $value): CarbonImmutable

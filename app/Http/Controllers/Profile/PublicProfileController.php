@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\RecordProfileView;
 use App\Models\Activities\Contest;
 use App\Models\Activities\ContestEntry;
 use App\Models\Activities\Event;
@@ -13,6 +12,7 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\PetVisibilityService;
+use App\Services\ProfileViewRecorder;
 use App\Services\ProfileVisibilityService;
 use App\Services\ProfileWrappedService;
 use Carbon\CarbonImmutable;
@@ -27,6 +27,7 @@ class PublicProfileController extends Controller
         private readonly PetVisibilityService $petVisibilityService,
         private readonly ProfileVisibilityService $profileVisibilityService,
         private readonly ProfileWrappedService $profileWrappedService,
+        private readonly ProfileViewRecorder $profileViews,
     ) {}
 
     public function show(Request $request, User $user): View|RedirectResponse
@@ -97,7 +98,7 @@ class PublicProfileController extends Controller
         }
 
         if ($viewer && ! $isOwner) {
-            RecordProfileView::dispatch((int) $user->getKey(), (int) $viewer->getKey());
+            $this->profileViews->record((int) $user->getKey(), (int) $viewer->getKey());
         }
 
         $canViewPets = $this->petVisibilityService->canViewPetsForOwner($viewer, $user);

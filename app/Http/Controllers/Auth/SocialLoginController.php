@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\Auth\GeoIpLookupService;
+use App\Services\Auth\LoginAnomalyDetectionService;
 use App\Services\Auth\SocialLoginService;
 use App\Services\Auth\UserAgentDetailsService;
 use Carbon\CarbonInterface;
@@ -42,7 +42,8 @@ class SocialLoginController extends Controller
         SocialLoginService $socialLogins,
         AuthAuditLogger $auditLogger,
         GeoIpLookupService $geoIp,
-        UserAgentDetailsService $userAgents
+        UserAgentDetailsService $userAgents,
+        LoginAnomalyDetectionService $loginAnomalies,
     ): RedirectResponse {
         $expectedState = $request->session()->pull("oauth.{$provider}.state");
 
@@ -109,7 +110,7 @@ class SocialLoginController extends Controller
             return redirect()->route('two-factor.challenge');
         }
 
-        DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
+        $loginAnomalies->detectForRequest($user, $request, $loginAt);
 
         if (! $user->hasVerifiedEmail()) {
             return redirect()->route('verification.notice');

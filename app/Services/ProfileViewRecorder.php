@@ -1,47 +1,37 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Analytics\ProfileView;
 use App\Models\Identity\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 
-class RecordProfileView implements ShouldQueue
+class ProfileViewRecorder
 {
-    use Queueable;
-
-    public function __construct(
-        public int $profileUserId,
-        public int $viewerUserId,
-        public ?string $viewedOn = null,
-    ) {}
-
-    public function handle(): void
+    public function record(int $profileUserId, int $viewerUserId, ?string $viewedOn = null): void
     {
-        if ($this->profileUserId === $this->viewerUserId) {
+        if ($profileUserId === $viewerUserId) {
             return;
         }
 
         $profileUser = User::query()
             ->select(['id', 'timezone'])
-            ->find($this->profileUserId);
+            ->find($profileUserId);
 
         if (! $profileUser instanceof User) {
             return;
         }
 
         $timezone = $profileUser->timezone ?: config('app.timezone');
-        $viewedOn = $this->viewedOn !== null
-            ? CarbonImmutable::parse($this->viewedOn, $timezone)->toDateString()
+        $viewedOn = $viewedOn !== null
+            ? CarbonImmutable::parse($viewedOn, $timezone)->toDateString()
             : CarbonImmutable::now($timezone)->toDateString();
 
         $recordedAt = now();
         $inserted = ProfileView::query()->insertOrIgnore([
             [
-                'profile_user_id' => $this->profileUserId,
-                'viewer_user_id' => $this->viewerUserId,
+                'profile_user_id' => $profileUserId,
+                'viewer_user_id' => $viewerUserId,
                 'viewed_on' => $viewedOn,
                 'views_count' => 1,
                 'created_at' => $recordedAt,
@@ -51,8 +41,8 @@ class RecordProfileView implements ShouldQueue
 
         if ($inserted === 0) {
             ProfileView::query()
-                ->where('profile_user_id', $this->profileUserId)
-                ->where('viewer_user_id', $this->viewerUserId)
+                ->where('profile_user_id', $profileUserId)
+                ->where('viewer_user_id', $viewerUserId)
                 ->where('viewed_on', $viewedOn)
                 ->increment('views_count', 1, ['updated_at' => $recordedAt]);
         }

@@ -5,7 +5,7 @@ Keep the feed query centralized and cursor-paginated.
 
 ## Source of Truth
 - Query scope: `Post::scopeForFeed(int $viewerId, ?string $source = null)` in `app/Models/Content/Post.php`.
-- Precomputed delivery table: `feed_items`, written by `FeedFanOutJob` and `FeedFanOutChunkJob`.
+- Precomputed delivery table: `feed_items`, written by `FeedFanOutService`.
 - Page shell: full-page Livewire `pages.feed.index` in `resources/views/components/pages/feed/⚡index.blade.php`.
 - Stream UI: eager Livewire `feed.stream` in `resources/views/components/feed/⚡stream.blade.php`.
 - Sidebars: lazy Livewire `feed.left-sidebar` and `feed.right-sidebar`.
@@ -43,11 +43,11 @@ Keep the feed query centralized and cursor-paginated.
 - Trending hashtags are cached through `FeedService::trendingHashtags()` using cache tags when the store supports them and a plain key fallback when it does not.
 - Hashtag usage changes must call `FeedService::flushTrendingHashtagsCache()` through `HashtagService` so sidebars refresh within the next request.
 
-## Fan-Out Jobs
-- `FeedFanOutJob` is idempotent per post. It must acquire `posts:fanout:{postId}`, return immediately when `posts.is_fanned_out` is already true, and dispatch `FeedFanOutChunkJob` batches of up to 500 precomputed feed rows for the post author, accepted user followers, and pet followers.
+## Fan-Out Service
+- `FeedFanOutService` is idempotent per post. It must acquire `posts:fanout:{postId}`, return immediately when `posts.is_fanned_out` is already true, and insert batches of up to 500 precomputed feed rows for the post author, accepted user followers, and pet followers.
 - `feed_items` uses `user_id` as the recipient, `post_id`, `source_type` (`self`, `user`, `pet`), `source_id`, and `post_created_at`; the unique user/post/source key makes chunk retries safe.
 - Keep `feed_items(user_id, post_created_at, post_id)` and `feed_items(user_id, source_type, post_created_at, post_id)` indexes aligned with feed reads and source-filtered reads.
-- Scheduled publication and normal post creation may dispatch fan-out more than once during retries; the `is_fanned_out` flag is the durable guard that prevents duplicate delivery.
+- Scheduled publication and normal post creation may run fan-out more than once during retries; the `is_fanned_out` flag is the durable guard that prevents duplicate delivery.
 
 ## Pinning
 - Pinning only affects profile timelines, not feed ordering.

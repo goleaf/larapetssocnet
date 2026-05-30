@@ -1,11 +1,10 @@
 <?php
 
-use App\Jobs\FeedFanOutJob;
 use App\Models\Content\Post;
 use App\Models\Content\Share;
 use App\Models\Identity\User;
+use App\Models\Social\FeedItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -65,8 +64,6 @@ it('prevents sharing posts the viewer cannot access', function (): void {
 });
 
 it('creates a repost and increments the original share count', function (): void {
-    Queue::fake([FeedFanOutJob::class]);
-
     $author = User::factory()->create();
     $reposter = User::factory()->create([
         'profile_visibility' => 'followers_only',
@@ -92,12 +89,14 @@ it('creates a repost and increments the original share count', function (): void
         ->and($repost->visibility)->toBe(Post::VISIBILITY_FOLLOWERS)
         ->and($original->fresh()->shares_count)->toBe(1);
 
-    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $repost->id);
+    $this->assertDatabaseHas('feed_items', [
+        'user_id' => $reposter->id,
+        'post_id' => $repost->id,
+        'source_type' => FeedItem::SOURCE_SELF,
+    ]);
 });
 
 it('counts reposts even when the user previously copied the link', function (): void {
-    Queue::fake([FeedFanOutJob::class]);
-
     $author = User::factory()->create();
     $reposter = User::factory()->create();
     $original = Post::factory()->for($author)->create([

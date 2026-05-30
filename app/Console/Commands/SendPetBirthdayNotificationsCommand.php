@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\ProcessPetBirthday;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Services\PetBirthdayService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
 #[Description('Send owner notifications for pets whose birthday is today.')]
 class SendPetBirthdayNotificationsCommand extends Command
 {
-    public function handle(): int
+    public function handle(PetBirthdayService $birthdays): int
     {
         $lock = Cache::lock('pets:birthday-notifications:'.now()->toDateString(), 3600);
 
@@ -32,7 +32,7 @@ class SendPetBirthdayNotificationsCommand extends Command
 
         try {
             $today = now();
-            $dispatched = 0;
+            $processed = 0;
 
             $pets = Pet::query()
                 ->select(['id', 'user_id', 'birth_date', 'date_of_birth', 'birthday_month_day'])
@@ -60,14 +60,14 @@ class SendPetBirthdayNotificationsCommand extends Command
                 ->whereHas('owner', function (Builder $ownerQuery): void {
                     User::applyAvailableForProfiles($ownerQuery);
                 })
-                ->chunkById(100, function ($pets) use (&$dispatched): void {
+                ->chunkById(100, function ($pets) use ($birthdays, &$processed): void {
                     foreach ($pets as $pet) {
-                        ProcessPetBirthday::dispatch((int) $pet->getKey());
-                        $dispatched++;
+                        $birthdays->process((int) $pet->getKey());
+                        $processed++;
                     }
                 });
 
-            $this->components->info("Dispatched {$dispatched} pet birthday jobs.");
+            $this->components->info("Processed {$processed} pet birthday reminder(s).");
 
             return self::SUCCESS;
         } finally {

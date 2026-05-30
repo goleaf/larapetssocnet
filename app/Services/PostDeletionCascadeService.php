@@ -1,39 +1,27 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Pets\Pet;
-use App\Services\HashtagService;
 use Closure;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\Attributes\Backoff;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
-#[Backoff(1, 5, 10)]
-class DeletePostCascadeJob implements ShouldBeUnique, ShouldQueue
+class PostDeletionCascadeService
 {
-    use Queueable;
+    private int $postId = 0;
 
-    public int $tries = 3;
+    private ?int $actorId = null;
 
-    public function __construct(
-        public int $postId,
-        public ?int $actorId = null,
-    ) {}
+    public function __construct(private readonly HashtagService $hashtags) {}
 
-    public function uniqueId(): string
+    public function cascade(int $postId, ?int $actorId = null): void
     {
-        return (string) $this->postId;
-    }
-
-    public function handle(HashtagService $hashtags): void
-    {
+        $this->postId = $postId;
+        $this->actorId = $actorId;
         $lock = Cache::lock($this->lockKey(), 120);
 
         if (! $lock->get()) {
@@ -59,7 +47,7 @@ class DeletePostCascadeJob implements ShouldBeUnique, ShouldQueue
                 ->pluck('pets.id')
                 ->map(fn (mixed $petId): int => (int) $petId)
                 ->all();
-            $wasHashtagEligible = $hashtags->isEligibleForUsageState(
+            $wasHashtagEligible = $this->hashtags->isEligibleForUsageState(
                 (string) ($post->getRawOriginal('status') ?? $post->status?->value ?? $post->status),
                 $post->getRawOriginal('published_at') ?? $post->published_at,
                 null,
@@ -87,12 +75,12 @@ class DeletePostCascadeJob implements ShouldBeUnique, ShouldQueue
                     ->decrement('posts_count');
             });
 
-            $this->runStep('decrement_hashtag_counters', function () use ($post, $hashtags, $wasHashtagEligible): void {
+            $this->runStep('decrement_hashtag_counters', function () use ($post, $wasHashtagEligible): void {
                 if (! $post->hashtags()->exists()) {
                     return;
                 }
 
-                $hashtags->detachAll($post, $wasHashtagEligible);
+                $this->hashtags->detachAll($post, $wasHashtagEligible);
             });
 
             $this->runStep('remove_feed_items', function (): void {

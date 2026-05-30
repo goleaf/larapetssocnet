@@ -29,9 +29,9 @@ Use the shared Livewire `posts.composer` mood controls instead of raw select fie
 
 ## Composer Scheduled Posting
 
-Use the shared Livewire `posts.composer` scheduled-post controls instead of raw `datetime-local` fields. The toolbar clock opens an inline month calendar plus hour/minute selectors in 15-minute increments, disables past dates/times in the browser, and calls `setScheduledPost()` with a UTC ISO timestamp generated from the viewer's local selection. Scheduled posts render a removable "Scheduled for ..." indicator below the editor, change the submit button to "Schedule", persist as `PostStatus::Scheduled`, and must not dispatch feed fan-out or mention notifications until `PublishScheduledPostJob` publishes them.
+Use the shared Livewire `posts.composer` scheduled-post controls instead of raw `datetime-local` fields. The toolbar clock opens an inline month calendar plus hour/minute selectors in 15-minute increments, disables past dates/times in the browser, and calls `setScheduledPost()` with a UTC ISO timestamp generated from the viewer's local selection. Scheduled posts render a removable "Scheduled for ..." indicator below the editor, change the submit button to "Schedule", persist as `PostStatus::Scheduled`, and must not run feed fan-out or mention notifications until `ScheduledPostPublisherService` publishes them.
 
-The `posts:publish-scheduled` command runs every minute, uses the database cache lock `posts:publish-scheduled-command`, selects at most 100 due posts through the `posts_status_scheduled_publish_at_index`, and dispatches one queued job per post. Keep the per-post job guarded by `posts:publish-scheduled:{postId}` and idempotent by returning early unless the post is still scheduled and due. `FeedFanOutJob` must also check `posts.is_fanned_out` under its fan-out lock and set it after successful fan-out so duplicate scheduled-publication dispatches are no-ops.
+The `posts:publish-scheduled` command runs every minute, uses the database cache lock `posts:publish-scheduled-command`, selects at most 100 due posts through the `posts_status_scheduled_publish_at_index`, and publishes each due post through `ScheduledPostPublisherService`. Keep the per-post publication guarded by `posts:publish-scheduled:{postId}` and idempotent by returning early unless the post is still scheduled and due. `FeedFanOutService` must also check `posts.is_fanned_out` under its fan-out lock and set it after successful fan-out so duplicate scheduled-publication attempts are no-ops.
 
 ## Composer Draft Autosave
 
@@ -39,7 +39,7 @@ Use the shared Livewire `posts.composer` draft lifecycle instead of page-local d
 
 ## Post Creation Action
 
-`CreatePostAction` accepts only a `PostCreationInput` DTO and returns `PostCreationResult`; it must not accept arrays, `Request` objects, or Livewire component state directly. Controllers, Livewire components, jobs, and services build the DTO from server-validated input before calling the action. Keep synchronous writes inside the action transaction: post row, processing-state temporary media placeholders, pet tags, hashtag sync, and mention sync. Dispatch temporary media jobs, link-preview jobs, and feed fan-out after the transaction has committed; published posts fan out only through `FeedFanOutJob`.
+`CreatePostAction` accepts only a `PostCreationInput` DTO and returns `PostCreationResult`; it must not accept arrays, `Request` objects, or Livewire component state directly. Controllers, Livewire components, and services build the DTO from server-validated input before calling the action. Keep transactional writes inside the action transaction: post row, processing-state temporary media placeholders, pet tags, hashtag sync, and mention sync. After the transaction commits, run temporary media processing, link-preview fetching, and feed fan-out through services; published posts fan out only through `FeedFanOutService`.
 
 ## Composer Templates and Writing Assists
 
@@ -53,7 +53,7 @@ The shared Livewire `posts.composer` must disable the composer surface during `s
 
 Successful submissions dispatch `post-composer-reset`, a rich `post-created` browser event containing `composerId`, `mode`, `status`, `postId`, author/body display data, and toast text, then dispatch `toast-message`. Inline composers collapse after their own matching `post-created` event, modal composers fade out through `modalOpen = false`, profile Posts tab composer shells close themselves, and feed surfaces listen for published `post-created` events to prepend a highlighted optimistic post card. Scheduled posts show a scheduled-success toast but should not be prepended to normal feeds until publication.
 
-Post deletion from the shared post card is a Livewire-confirmed flow. The owner menu opens a modal with the first 150 characters and first media preview, then confirmation dispatches `post-delete-requested` for optimistic removal, soft-deletes the post immediately in the confirming request, and queues `DeletePostCascadeJob` for counter/feed/media cleanup; saved rows are preserved so saved pages can show deleted placeholders.
+Post deletion from the shared post card is a Livewire-confirmed flow. The owner menu opens a modal with the first 150 characters and first media preview, then confirmation dispatches `post-delete-requested` for optimistic removal, soft-deletes the post immediately in the confirming request, and runs `PostDeletionCascadeService` for counter/feed/media cleanup; saved rows are preserved so saved pages can show deleted placeholders.
 
 ## Reposts and Quote Posts
 
@@ -71,9 +71,9 @@ Use the shared Livewire `posts.composer` for editing by mounting it in modal mod
 
 ## Composer Link Previews
 
-The shared Livewire `posts.composer` detects pasted HTTP(S) URLs in the contenteditable editor and calls `queueLinkPreviewFetch()` after a one-second debounce. The Livewire action must dispatch `FetchLinkPreviewMetadataJob` instead of fetching Open Graph metadata inline. While the job runs, render the composer skeleton with `wire:poll.2s="pollLinkPreviewResult"` against the short-lived cache result; successful results populate `linkPreviewData`, failed results stop loading without blocking submission, and dismissing a preview stores the dismissed URL so it does not immediately reappear.
+The shared Livewire `posts.composer` detects pasted HTTP(S) URLs in the contenteditable editor and calls `queueLinkPreviewFetch()` after a one-second debounce. The Livewire action must call `PostLinkPreviewService` to fetch Open Graph metadata server-side. While the fetch runs, render the composer skeleton with `wire:poll.2s="pollLinkPreviewResult"` against the short-lived cache result; successful results populate `linkPreviewData`, failed results stop loading without blocking submission, and dismissing a preview stores the dismissed URL so it does not immediately reappear.
 
-`FetchLinkPreviewMetadataJob` uses `PostMetadataService` with Guzzle timeout and redirect tracking, rejects localhost/private preview targets, parses Open Graph/canonical metadata server-side, and either caches composer preview results or updates `posts.link_preview` after a post has been created. Posts with an unfetched URL must still be created immediately; the queued job is responsible for filling the JSON preview later. Shared post cards render the preview image when present, capped at 200px high with object-cover.
+`PostLinkPreviewService` uses `PostMetadataService` with Guzzle timeout and redirect tracking, rejects localhost/private preview targets, parses Open Graph/canonical metadata server-side, and either caches composer preview results or updates `posts.link_preview` after a post has been created. Posts with an unfetched URL must still be created immediately; the service is responsible for filling the JSON preview. Shared post cards render the preview image when present, capped at 200px high with object-cover.
 
 ## Composer Visibility
 

@@ -1,36 +1,23 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Analytics\ProfileWrappedSummary;
 use App\Models\Identity\User;
-use App\Services\ProfileWrappedService;
 use GdImage;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-#[UniqueFor(3600)]
-class GenerateProfileWrappedImage implements ShouldBeUnique, ShouldQueue
+class ProfileWrappedImageService
 {
-    use Queueable;
-
     private const WIDTH = 1200;
 
     private const HEIGHT = 630;
 
-    public function __construct(public int $summaryId) {}
+    public function __construct(private readonly ProfileWrappedService $wrapped) {}
 
-    public function uniqueId(): string
-    {
-        return (string) $this->summaryId;
-    }
-
-    public function handle(ProfileWrappedService $wrapped): void
+    public function generate(int $summaryId): void
     {
         if (! extension_loaded('gd')) {
             throw new RuntimeException('The GD extension is required to generate profile wrapped images.');
@@ -41,7 +28,7 @@ class GenerateProfileWrappedImage implements ShouldBeUnique, ShouldQueue
                 'user:id,name,display_name,username,email',
                 'mostEngagedPost:id,body',
             ])
-            ->find($this->summaryId);
+            ->find($summaryId);
 
         if (! $summary instanceof ProfileWrappedSummary || ! $summary->user instanceof User) {
             return;
@@ -57,7 +44,7 @@ class GenerateProfileWrappedImage implements ShouldBeUnique, ShouldQueue
         imagesavealpha($image, true);
         imageantialias($image, true);
 
-        $palette = $wrapped->identityGradientPalette($summary->user);
+        $palette = $this->wrapped->identityGradientPalette($summary->user);
         $this->fillGradient($image, $palette['from'], $palette['via'], $palette['to']);
 
         $panel = imagecolorallocatealpha($image, 255, 253, 248, 18);

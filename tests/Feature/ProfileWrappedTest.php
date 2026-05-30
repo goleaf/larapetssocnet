@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\GenerateProfileWrappedImage;
 use App\Models\Analytics\ProfileWrappedSummary;
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
@@ -8,10 +7,10 @@ use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Social\Follow;
+use App\Services\ProfileWrappedImageService;
 use App\Services\ProfileWrappedService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -111,8 +110,12 @@ it('generates annual wrapped metrics from profile activity', function (): void {
         ->and($summary->most_engaged_post_score)->toBe(6);
 });
 
-it('queues share image generation when the wrapped command runs', function (): void {
-    Queue::fake();
+it('generates share images when the wrapped command runs', function (): void {
+    if (! extension_loaded('gd')) {
+        $this->markTestSkipped('GD extension is required to generate profile wrapped images.');
+    }
+
+    Storage::fake('public');
 
     $owner = User::factory()->create(['username' => 'wrapped_command_owner']);
     Post::factory()->for($owner)->create([
@@ -129,11 +132,13 @@ it('queues share image generation when the wrapped command runs', function (): v
         'total_posts_published' => 1,
     ]);
 
-    Queue::assertPushed(GenerateProfileWrappedImage::class, function (GenerateProfileWrappedImage $job) use ($owner): bool {
-        $summary = ProfileWrappedSummary::query()->find($job->summaryId);
+    $summary = ProfileWrappedSummary::query()
+        ->where('user_id', $owner->id)
+        ->where('year', 2025)
+        ->firstOrFail();
 
-        return $summary instanceof ProfileWrappedSummary && (int) $summary->user_id === (int) $owner->id;
-    });
+    expect($summary->share_image_path)->toBe('profile-wrapped/2025/user-'.$owner->id.'.png');
+    Storage::disk('public')->assertExists($summary->share_image_path);
 });
 
 it('writes a public png for a wrapped summary', function (): void {
@@ -157,7 +162,7 @@ it('writes a public png for a wrapped summary', function (): void {
         'most_engaged_post_score' => 18,
     ]);
 
-    (new GenerateProfileWrappedImage((int) $summary->id))->handle(app(ProfileWrappedService::class));
+    app(ProfileWrappedImageService::class)->generate((int) $summary->id);
 
     $summary->refresh();
 

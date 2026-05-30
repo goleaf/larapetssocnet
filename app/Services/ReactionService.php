@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\SendReactionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
@@ -14,6 +13,7 @@ class ReactionService
     public function __construct(
         private readonly ReactionSummaryCache $summaryCache,
         private readonly ReactionVelocityService $velocity,
+        private readonly ReactionNotificationService $notifications,
     ) {}
 
     /**
@@ -77,11 +77,11 @@ class ReactionService
         $topReactionsAfter = Reaction::topCountsForModel($postForSummary, 3);
 
         if ($result['action'] === 'added' && $user->id !== $post->user_id) {
-            SendReactionNotificationJob::dispatch(
+            $this->notifications->send(
                 (int) $postForSummary->getKey(),
                 (int) $user->getKey(),
                 (string) $result['current_reaction'],
-            )->delay(now()->addSeconds(4));
+            );
         }
 
         $this->summaryCache->forgetIfCompositionChanged($postForSummary, $topReactionsBefore, $topReactionsAfter);

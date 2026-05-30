@@ -1,7 +1,5 @@
 <?php
 
-use App\Jobs\SendDailyReactionSummaryJob;
-use App\Jobs\SendReactionNotificationJob;
 use App\Mail\DailyReactionSummaryMail;
 use App\Models\Content\Post;
 use App\Models\Content\PostReactionSnapshot;
@@ -9,15 +7,15 @@ use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Notifications\ReactionBatchNotification;
+use App\Services\DailyReactionSummaryService;
 use App\Services\PetReactionLeaderboardService;
+use App\Services\ReactionNotificationService;
 use App\Services\ReactionSummaryCache;
 use App\Services\ReactionVelocityService;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -73,7 +71,7 @@ it('marks posts as trending when reaction velocity exceeds ten per minute', func
     expect(app(ReactionVelocityService::class)->isTrending($post->refresh()))->toBeFalse();
 });
 
-it('does not send the delayed reaction notification when the reaction is undone before the window closes', function (): void {
+it('does not send the reaction notification when the reaction no longer exists', function (): void {
     Notification::fake();
 
     $reactor = User::factory()->create();
@@ -91,14 +89,12 @@ it('does not send the delayed reaction notification when the reaction is undone 
 
     $reaction->delete();
 
-    (new SendReactionNotificationJob((int) $post->getKey(), (int) $reactor->getKey(), Reaction::TYPE_LOVE))->handle();
+    app(ReactionNotificationService::class)->send((int) $post->getKey(), (int) $reactor->getKey(), Reaction::TYPE_LOVE);
 
     Notification::assertNothingSent();
 });
 
 it('toggles reactions through the Livewire post card action and syncs local reaction state', function (): void {
-    Queue::fake();
-
     $reactor = User::factory()->create();
     $author = User::factory()->create();
     $post = Post::factory()->for($author)->create([
@@ -131,7 +127,7 @@ it('toggles reactions through the Livewire post card action and syncs local reac
     ]);
 });
 
-it('batches reaction author notifications with a unique database queued job', function (): void {
+it('batches reaction author notifications with a per-post notification guard', function (): void {
     Notification::fake();
 
     $author = User::factory()->create();
@@ -151,21 +147,16 @@ it('batches reaction author notifications with a unique database queued job', fu
         ]);
     }
 
-    $job = new SendReactionNotificationJob((int) $post->getKey(), (int) $reactors->first()->getKey(), Reaction::TYPE_PAW);
-
-    expect($job)->toBeInstanceOf(ShouldBeUnique::class)
-        ->and($job->connection)->toBe('database')
-        ->and($job->uniqueId())->toBe('post-reaction-notification:'.$post->getKey());
-
-    $job->handle();
+    expect(app(ReactionNotificationService::class)->send((int) $post->getKey(), (int) $reactors->first()->getKey(), Reaction::TYPE_PAW))->toBeTrue()
+        ->and(Cache::has('post-reaction-notification:'.$post->getKey()))->toBeTrue();
 
     Notification::assertSentTo($author, ReactionBatchNotification::class, function (ReactionBatchNotification $notification): bool {
         return $notification->reactionCount === 2;
     });
 });
 
-it('dispatches daily reaction summary jobs only for opted-in users', function (): void {
-    Queue::fake();
+it('sends daily reaction summaries only for opted-in users', function (): void {
+    Mail::fake();
 
     $optedIn = User::factory()->create([
         'notification_preferences' => [
@@ -181,17 +172,29 @@ it('dispatches daily reaction summary jobs only for opted-in users', function ()
         'timezone' => 'UTC',
     ]);
 
+    foreach (range(1, 21) as $index) {
+        $post = Post::factory()->create([
+            'reactions_count' => $index,
+        ]);
+
+        Reaction::query()->create([
+            'reactable_type' => (new Post)->getMorphClass(),
+            'reactable_id' => $post->getKey(),
+            'user_id' => $optedIn->getKey(),
+            'type' => Reaction::TYPE_PAW,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     $this->artisan('reactions:send-daily-summaries', ['--force' => true])
         ->assertSuccessful();
 
-    Queue::assertPushed(SendDailyReactionSummaryJob::class, function (SendDailyReactionSummaryJob $job) use ($optedIn): bool {
-        return $job->userId === (int) $optedIn->getKey();
-    });
-
-    Queue::assertPushed(SendDailyReactionSummaryJob::class, 1);
+    Mail::assertSent(DailyReactionSummaryMail::class, 1);
+    Mail::assertSent(DailyReactionSummaryMail::class, fn (DailyReactionSummaryMail $mail): bool => $mail->hasTo($optedIn->email));
 });
 
-it('queues the daily reaction summary email for heavy reactors', function (): void {
+it('sends the daily reaction summary email for heavy reactors', function (): void {
     Mail::fake();
 
     $user = User::factory()->create([
@@ -218,9 +221,9 @@ it('queues the daily reaction summary email for heavy reactors', function (): vo
         ]);
     }
 
-    (new SendDailyReactionSummaryJob((int) $user->getKey(), now('UTC')->toDateString()))->handle();
+    app(DailyReactionSummaryService::class)->send((int) $user->getKey(), now('UTC')->toDateString());
 
-    Mail::assertQueued(DailyReactionSummaryMail::class, function (DailyReactionSummaryMail $mail) use ($user): bool {
+    Mail::assertSent(DailyReactionSummaryMail::class, function (DailyReactionSummaryMail $mail) use ($user): bool {
         return $mail->hasTo($user->email)
             && $mail->posts->count() === 5;
     });

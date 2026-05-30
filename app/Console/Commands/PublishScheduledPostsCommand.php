@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\PublishScheduledPostJob;
 use App\Models\Content\Post;
+use App\Services\ScheduledPostPublisherService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 #[Description('Publish due scheduled posts.')]
 class PublishScheduledPostsCommand extends Command
 {
-    public function handle(): int
+    public function handle(ScheduledPostPublisherService $publisher): int
     {
         $lock = Cache::store('database')->lock('posts:publish-scheduled-command', 70);
 
@@ -35,11 +35,15 @@ class PublishScheduledPostsCommand extends Command
                 ->limit(100)
                 ->pluck('posts.id');
 
+            $published = 0;
+
             foreach ($postIds as $postId) {
-                PublishScheduledPostJob::dispatch((int) $postId);
+                if ($publisher->publish((int) $postId)) {
+                    $published++;
+                }
             }
 
-            $this->components->info("Dispatched {$postIds->count()} scheduled post publication job(s).");
+            $this->components->info("Published {$published} scheduled post(s).");
 
             return self::SUCCESS;
         } finally {

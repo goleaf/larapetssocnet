@@ -38,9 +38,9 @@ Aliases:
 - No notification side effects for comment reactions in current code.
 
 ## Notifications
-- `NewReaction` is queued through `SendReactionNotificationJob` only on first post reaction create and delayed by four seconds to support the UI undo window.
-- The delayed job must re-check that the same reaction row still exists before notifying; an undone reaction is a no-op.
-- `SendReactionNotificationJob` is unique per post and runs on the database queue so bursts of reactions batch into one author notification job instead of many concurrent jobs for the same post.
+- `NewReaction` is sent through `ReactionNotificationService` only on first post reaction create, with a per-post cache guard so bursts of reactions batch into one author notification.
+- The notification service must re-check that the same reaction row still exists before notifying; an undone reaction is a no-op.
+- The service batches recent reactions for the post and sends `ReactionBatchNotification` when several actors reacted in the same window.
 - Never notify on type change.
 - Never notify self-reactions.
 - Daily heavy-reactor summaries are opt-in through `notification_preferences.daily_reaction_summary` and dispatched by `reactions:send-daily-summaries` at 8pm in the user's timezone.

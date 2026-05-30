@@ -1,9 +1,9 @@
 <?php
 
 use App\Events\PostLinkPreviewFetched;
-use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Services\PostLinkPreviewService;
 use App\Services\PostMetadataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -33,7 +33,7 @@ it('stores fetched link metadata on a post and dispatches the fetched event', fu
         }
     };
 
-    (new FetchLinkPreviewMetadataJob('https://example.com/luna', (int) $post->getKey()))->handle($service);
+    (new PostLinkPreviewService($service))->fetch('https://example.com/luna', (int) $post->getKey());
 
     expect($post->fresh()->link_preview)->toMatchArray([
         'url' => 'https://example.com/luna',
@@ -60,10 +60,10 @@ it('caches composer preview results without requiring a post id', function (): v
         }
     };
 
-    (new FetchLinkPreviewMetadataJob(
+    (new PostLinkPreviewService($service))->fetch(
         url: 'https://example.com/adoption',
         cacheKey: 'tests:link-preview',
-    ))->handle($service);
+    );
 
     $cached = Cache::get('tests:link-preview');
 

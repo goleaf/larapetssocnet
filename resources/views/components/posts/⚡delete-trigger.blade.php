@@ -1,7 +1,7 @@
 <?php
 
-use App\Jobs\DeletePostCascadeJob;
 use App\Models\Content\Post;
+use App\Services\PostDeletionCascadeService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +45,7 @@ new class extends Component
         $this->open = false;
     }
 
-    public function confirm(): void
+    public function confirm(PostDeletionCascadeService $cascade): void
     {
         $post = $this->findPostForDeletion();
 
@@ -59,7 +59,7 @@ new class extends Component
             }
         });
 
-        DeletePostCascadeJob::dispatch($this->postId, (int) auth()->id())->afterCommit();
+        $cascade->cascade($this->postId, (int) auth()->id());
 
         $this->dispatch('post-delete-requested', postId: $this->postId);
     }

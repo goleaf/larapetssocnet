@@ -3,10 +3,10 @@
 namespace App\Actions\Auth;
 
 use App\Enums\AccountStatus;
-use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\Auth\GeoIpLookupService;
+use App\Services\Auth\LoginAnomalyDetectionService;
 use App\Services\Auth\UserAgentDetailsService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
@@ -29,6 +29,7 @@ class AuthenticateUserAction
         private readonly AuthAuditLogger $auditLogger,
         private readonly GeoIpLookupService $geoIp,
         private readonly UserAgentDetailsService $userAgents,
+        private readonly LoginAnomalyDetectionService $loginAnomalies,
     ) {}
 
     public function handle(string $credential, string $password, bool $remember, Request $request): AuthenticationResult
@@ -139,7 +140,7 @@ class AuthenticateUserAction
         $this->auditLogger->record($user, 'login_success', $request, $metadata);
 
         if (! $requiresTwoFactor) {
-            DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
+            $this->loginAnomalies->detectForRequest($user, $request, $loginAt);
         }
 
         return AuthenticationResult::success($user, $requiresTwoFactor);

@@ -2,27 +2,27 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\SendDailyReactionSummaryJob;
 use App\Models\Identity\User;
+use App\Services\DailyReactionSummaryService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
 #[Signature('reactions:send-daily-summaries {--force : Dispatch for every opted-in user regardless of local hour}')]
-#[Description('Dispatch optional daily reaction summary emails for heavy reactors at 8pm local time.')]
+#[Description('Send optional daily reaction summary emails for heavy reactors at 8pm local time.')]
 class SendDailyReactionSummariesCommand extends Command
 {
-    public function handle(): int
+    public function handle(DailyReactionSummaryService $summaries): int
     {
         $force = (bool) $this->option('force');
-        $dispatched = 0;
+        $sent = 0;
 
         User::query()
             ->whereNotNull('notification_preferences')
             ->select(['id', 'timezone', 'notification_preferences'])
             ->orderBy('id')
-            ->chunkById(200, function ($users) use ($force, &$dispatched): void {
+            ->chunkById(200, function ($users) use ($force, $summaries, &$sent): void {
                 foreach ($users as $user) {
                     if (! $user instanceof User || ! $user->notificationPreference('daily_reaction_summary', false)) {
                         continue;
@@ -35,12 +35,13 @@ class SendDailyReactionSummariesCommand extends Command
                         continue;
                     }
 
-                    SendDailyReactionSummaryJob::dispatch((int) $user->getKey(), $now->toDateString());
-                    $dispatched++;
+                    if ($summaries->send((int) $user->getKey(), $now->toDateString())) {
+                        $sent++;
+                    }
                 }
             });
 
-        $this->components->info("Dispatched {$dispatched} daily reaction summary job(s).");
+        $this->components->info("Sent {$sent} daily reaction summar".($sent === 1 ? 'y' : 'ies').'.');
 
         return self::SUCCESS;
     }

@@ -1,37 +1,24 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Notifications\MentionedInPost;
-use App\Services\VisibilityService;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 
-class MentionNotificationJob implements ShouldQueue
+class PostMentionNotificationService
 {
-    use Queueable;
+    public function __construct(private readonly VisibilityService $visibility) {}
 
-    public int $tries = 3;
-
-    public function __construct(
-        public readonly int $postId,
-        public readonly int $mentionedUserId,
-        public readonly int $authorId,
-    ) {
-        $this->afterCommit();
-    }
-
-    public function handle(VisibilityService $visibility): void
+    public function send(int $postId, int $mentionedUserId, int $authorId): void
     {
-        $post = Post::query()->with('author')->find($this->postId);
+        $post = Post::query()->with('author')->find($postId);
         $mentionedUser = User::query()
             ->select(['id', 'name', 'username', 'notification_preferences'])
-            ->find($this->mentionedUserId);
+            ->find($mentionedUserId);
         $author = User::query()
             ->select(['id', 'name', 'username'])
-            ->find($this->authorId);
+            ->find($authorId);
 
         if (! $post instanceof Post || ! $mentionedUser instanceof User || ! $author instanceof User) {
             return;
@@ -49,7 +36,7 @@ class MentionNotificationJob implements ShouldQueue
             return;
         }
 
-        if (! $visibility->canView($mentionedUser, $post)) {
+        if (! $this->visibility->canView($mentionedUser, $post)) {
             return;
         }
 

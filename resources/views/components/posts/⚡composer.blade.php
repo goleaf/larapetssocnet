@@ -3,7 +3,6 @@
 use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\UpdatePostAction;
 use App\Enums\PostStatus;
-use App\Jobs\FetchLinkPreviewMetadataJob;
 use App\Models\Content\Post;
 use App\Models\Content\PostDraft;
 use App\Models\Content\PostTemplate;
@@ -12,6 +11,7 @@ use App\Models\Pets\Pet;
 use App\Models\Pets\Species;
 use App\Services\LocationAutocompleteService;
 use App\Services\PostDraftService;
+use App\Services\PostLinkPreviewService;
 use App\Services\PostPerformancePredictionService;
 use App\Services\PostMetadataService;
 use App\Support\Posts\PostCreationInput;
@@ -640,7 +640,7 @@ new class extends Component
         $this->markDraftDirty();
     }
 
-    public function queueLinkPreviewFetch(string $url, PostMetadataService $metadata): void
+    public function queueLinkPreviewFetch(string $url, PostMetadataService $metadata, PostLinkPreviewService $linkPreviews): void
     {
         $detectedUrl = $metadata->extractFirstUrl($url);
 
@@ -659,10 +659,10 @@ new class extends Component
 
         Cache::forget($this->linkPreviewCacheKey($this->linkPreviewRequestKey));
 
-        FetchLinkPreviewMetadataJob::dispatch(
+        $linkPreviews->fetch(
             url: $detectedUrl,
             cacheKey: $this->linkPreviewCacheKey($this->linkPreviewRequestKey),
-        )->afterCommit();
+        );
 
         $this->dispatch('post-link-preview-queued', url: $detectedUrl);
     }

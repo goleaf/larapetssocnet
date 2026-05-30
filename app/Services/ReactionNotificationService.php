@@ -1,61 +1,43 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use App\Notifications\NewReaction;
 use App\Notifications\ReactionBatchNotification;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
-class SendReactionNotificationJob implements ShouldBeUnique, ShouldQueue
+class ReactionNotificationService
 {
-    use Queueable;
-
-    public int $tries = 3;
-
-    public int $uniqueFor = 60;
-
-    public function __construct(
-        public readonly int $postId,
-        public readonly int $reactorId,
-        public readonly string $reactionType,
-    ) {
-        $this->afterCommit();
-        $this->onConnection('database');
-    }
-
-    public function uniqueId(): string
+    public function send(int $postId, int $reactorId, string $reactionType): bool
     {
-        return 'post-reaction-notification:'.$this->postId;
-    }
+        if (! Cache::add($this->cacheKey($postId), true, now()->addMinute())) {
+            return false;
+        }
 
-    public function handle(): void
-    {
         $post = Post::query()
             ->select(['id', 'user_id', 'body', 'uuid'])
             ->with(['author:id,name,username,notification_preferences'])
-            ->find($this->postId);
+            ->find($postId);
 
         $reactor = User::query()
             ->select(['id', 'name', 'username'])
-            ->find($this->reactorId);
+            ->find($reactorId);
 
         $author = $post?->author;
 
         if (! $post instanceof Post || ! $reactor instanceof User || ! $author instanceof User) {
-            return;
+            return false;
         }
 
         if ((int) $post->user_id === (int) $reactor->getKey()) {
-            return;
+            return false;
         }
 
-        $normalizedType = Reaction::normalizeType($this->reactionType);
+        $normalizedType = Reaction::normalizeType($reactionType);
 
         $reactionStillExists = Reaction::query()
             ->where('reactable_type', $post->getMorphClass())
@@ -65,17 +47,17 @@ class SendReactionNotificationJob implements ShouldBeUnique, ShouldQueue
             ->exists();
 
         if (! $reactionStillExists) {
-            return;
+            return false;
         }
 
         $recentReactions = $this->recentReactions($post);
 
         if ($recentReactions->isEmpty()) {
-            return;
+            return false;
         }
 
         if (! $author->notificationEnabled('post_likes')) {
-            return;
+            return false;
         }
 
         $notificationPost = $post->withoutRelation('author');
@@ -86,7 +68,7 @@ class SendReactionNotificationJob implements ShouldBeUnique, ShouldQueue
 
             $author->notify(new NewReaction($notificationUser, $notificationPost, (string) ($reaction?->type ?? $normalizedType)));
 
-            return;
+            return true;
         }
 
         $author->notify(new ReactionBatchNotification(
@@ -94,6 +76,13 @@ class SendReactionNotificationJob implements ShouldBeUnique, ShouldQueue
             $notificationPost,
             $recentReactions->count(),
         ));
+
+        return true;
+    }
+
+    private function cacheKey(int $postId): string
+    {
+        return 'post-reaction-notification:'.$postId;
     }
 
     /**

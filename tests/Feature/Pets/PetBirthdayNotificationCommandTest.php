@@ -1,22 +1,21 @@
 <?php
 
-use App\Jobs\ProcessPetBirthday;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Models\Pets\PetOwner;
 use App\Notifications\PetBirthdayCoOwnerNotification;
 use App\Notifications\PetBirthdayFollowerNotification;
+use App\Services\PetBirthdayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
-it('dispatches birthday jobs for pets with todays birthday', function (): void {
-    Queue::fake();
+it('processes pets with todays birthday', function (): void {
+    Notification::fake();
     Carbon::setTestNow(Carbon::parse('2026-05-23 08:00:00'));
 
     $birthdayOwner = User::factory()->create();
@@ -37,8 +36,10 @@ it('dispatches birthday jobs for pets with todays birthday', function (): void {
     $this->artisan('pets:send-birthday-notifications')
         ->assertSuccessful();
 
-    Queue::assertPushed(ProcessPetBirthday::class, fn (ProcessPetBirthday $job): bool => $job->petId === $birthdayPet->id);
-    Queue::assertPushed(ProcessPetBirthday::class, 1);
+    expect(Post::query()
+        ->where('pet_id', $birthdayPet->id)
+        ->where('system_source', 'pet_birthday')
+        ->exists())->toBeTrue();
 
     Carbon::setTestNow();
 });
@@ -69,7 +70,7 @@ it('creates the birthday post and notifies followers and co owners', function ()
         'accepted_at' => now(),
     ]);
 
-    app()->call([new ProcessPetBirthday($pet->id), 'handle']);
+    app(PetBirthdayService::class)->process($pet->id);
 
     expect(Post::query()
         ->where('user_id', $owner->id)

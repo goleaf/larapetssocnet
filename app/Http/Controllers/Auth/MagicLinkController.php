@@ -6,10 +6,10 @@ use App\Actions\Auth\RequestMagicLoginLinkAction;
 use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\StoreMagicLinkRequest;
-use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Models\Identity\User;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\Auth\GeoIpLookupService;
+use App\Services\Auth\LoginAnomalyDetectionService;
 use App\Services\Auth\MagicLinkConsumptionResult;
 use App\Services\Auth\MagicLinkService;
 use App\Services\Auth\UserAgentDetailsService;
@@ -36,6 +36,7 @@ class MagicLinkController extends Controller
         AuthAuditLogger $auditLogger,
         GeoIpLookupService $geoIp,
         UserAgentDetailsService $userAgents,
+        LoginAnomalyDetectionService $loginAnomalies,
     ): RedirectResponse {
         $result = $magicLinks->consume($token);
         $tokenHash = hash('sha256', trim($token));
@@ -147,7 +148,7 @@ class MagicLinkController extends Controller
             return redirect()->route('two-factor.challenge');
         }
 
-        DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
+        $loginAnomalies->detectForRequest($user, $request, $loginAt);
 
         return $user->hasCompletedOnboarding()
             ? redirect()->route('feed.index')

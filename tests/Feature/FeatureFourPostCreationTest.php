@@ -1,35 +1,28 @@
 <?php
 
 use App\Actions\Posts\CreatePostAction;
-use App\Actions\Posts\PublishPostAction;
 use App\Actions\Posts\UpdatePostAction;
 use App\Enums\PostStatus;
-use App\Jobs\FeedFanOutJob;
-use App\Jobs\FetchLinkPreviewMetadataJob;
-use App\Jobs\MediaProcessingJob;
-use App\Jobs\MentionNotificationJob;
-use App\Jobs\PublishScheduledPostJob;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Models\Social\FeedItem;
+use App\Notifications\MentionedInPost;
 use App\Services\CanonicalContentUrlService;
-use App\Services\PostMentionService;
+use App\Services\PostLinkPreviewService;
+use App\Services\ScheduledPostPublisherService;
 use App\Support\Posts\PostCreationInput;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
 it('creates a rich post with pet tags hashtags mentions mood location and link preview', function (): void {
-    Queue::fake([
-        FeedFanOutJob::class,
-        MentionNotificationJob::class,
-        MediaProcessingJob::class,
-    ]);
+    Notification::fake();
 
     $author = User::factory()->create();
     $mentioned = User::factory()->create(['username' => 'luna_friend']);
@@ -80,10 +73,13 @@ it('creates a rich post with pet tags hashtags mentions mood location and link p
         'mentioned_username' => 'luna_friend',
     ]);
 
-    Queue::assertPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->postId === $post->id
-        && $job->mentionedUserId === $mentioned->id
-        && $job->authorId === $author->id);
-    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $post->id);
+    Notification::assertSentTo($mentioned, MentionedInPost::class);
+    $this->assertDatabaseHas('feed_items', [
+        'user_id' => $author->id,
+        'post_id' => $post->id,
+        'source_type' => FeedItem::SOURCE_SELF,
+        'source_id' => $author->id,
+    ]);
 });
 
 it('validates post creation input before writing records', function (): void {
@@ -98,13 +94,7 @@ it('validates post creation input before writing records', function (): void {
     expect(Post::query()->count())->toBe(0);
 });
 
-it('queues temporary media processing jobs after creating the post placeholder state', function (): void {
-    Queue::fake([
-        FeedFanOutJob::class,
-        MentionNotificationJob::class,
-        MediaProcessingJob::class,
-    ]);
-
+it('processes temporary media after creating the post placeholder state', function (): void {
     $author = User::factory()->create();
 
     $post = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
@@ -125,25 +115,34 @@ it('queues temporary media processing jobs after creating the post placeholder s
         'file_path' => 'livewire-tmp/photo.webp',
         'media_type' => 'image',
         'alt_text' => 'A dog waiting at the park gate',
-        'processing_status' => 'processing',
+        'processing_status' => 'failed',
         'order' => 0,
     ]);
-
-    Queue::assertPushed(MediaProcessingJob::class, fn (MediaProcessingJob $job): bool => $job->postId === $post->id
-        && $job->temporaryPath === 'livewire-tmp/photo.webp'
-        && $job->mediaType === 'image'
-        && $job->altText === 'A dog waiting at the park gate'
-        && $job->postMediaId !== null);
 });
 
-it('creates posts immediately and queues link preview fetching when metadata is not preloaded', function (): void {
-    Queue::fake([
-        FeedFanOutJob::class,
-        FetchLinkPreviewMetadataJob::class,
-        MentionNotificationJob::class,
-    ]);
-
+it('creates posts immediately and fetches link preview metadata when it is not preloaded', function (): void {
     $author = User::factory()->create();
+    $this->instance(PostLinkPreviewService::class, new class extends PostLinkPreviewService
+    {
+        public function __construct() {}
+
+        public function fetch(string $url, ?int $postId = null, ?string $cacheKey = null): void
+        {
+            if ($postId === null) {
+                return;
+            }
+
+            Post::query()
+                ->whereKey($postId)
+                ->update([
+                    'link_preview' => [
+                        'url' => $url,
+                        'title' => 'Adoption update',
+                        'domain' => 'example.com',
+                    ],
+                ]);
+        }
+    });
 
     $post = app(CreatePostAction::class)->handle($author, PostCreationInput::fromUserInput($author, [
         'body' => 'Read this adoption update https://example.com/adoption',
@@ -151,11 +150,15 @@ it('creates posts immediately and queues link preview fetching when metadata is 
         'link_preview_url' => 'https://example.com/adoption',
     ]))->createdPost();
 
-    expect($post->fresh()->link_preview)->toBeNull();
-
-    Queue::assertPushed(FetchLinkPreviewMetadataJob::class, fn (FetchLinkPreviewMetadataJob $job): bool => $job->postId === $post->id
-        && $job->url === 'https://example.com/adoption');
-    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $post->id);
+    expect($post->fresh()->link_preview)->toMatchArray([
+        'url' => 'https://example.com/adoption',
+        'title' => 'Adoption update',
+    ]);
+    $this->assertDatabaseHas('feed_items', [
+        'user_id' => $author->id,
+        'post_id' => $post->id,
+        'source_type' => FeedItem::SOURCE_SELF,
+    ]);
 });
 
 it('uses uuid post URLs for sharing while still resolving legacy integer post routes', function (): void {
@@ -197,9 +200,7 @@ it('prevents duplicate non-draft submissions with identical text inside twenty f
         ->and(Post::query()->count())->toBe(2);
 });
 
-it('dispatches due scheduled post publication jobs through the artisan command', function (): void {
-    Queue::fake([PublishScheduledPostJob::class]);
-
+it('publishes due scheduled posts through the artisan command', function (): void {
     $author = User::factory()->create();
     $due = Post::factory()->for($author)->create([
         'status' => PostStatus::Scheduled->value,
@@ -214,18 +215,13 @@ it('dispatches due scheduled post publication jobs through the artisan command',
 
     $this->artisan('posts:publish-scheduled')->assertSuccessful();
 
-    Queue::assertPushed(PublishScheduledPostJob::class, fn (PublishScheduledPostJob $job): bool => $job->postId === $due->id);
-    Queue::assertNotPushed(PublishScheduledPostJob::class, fn (PublishScheduledPostJob $job): bool => $job->postId === $future->id);
-
-    expect($due->refresh()->status)->toBe(PostStatus::Scheduled)
+    expect($due->refresh()->status)->toBe(PostStatus::Published)
         ->and($future->refresh()->status)->toBe(PostStatus::Scheduled);
 });
 
-it('skips scheduled post dispatch when the command lock is already held', function (): void {
-    Queue::fake([PublishScheduledPostJob::class]);
-
+it('skips scheduled post publication when the command lock is already held', function (): void {
     $author = User::factory()->create();
-    Post::factory()->for($author)->create([
+    $post = Post::factory()->for($author)->create([
         'status' => PostStatus::Scheduled->value,
         'scheduled_publish_at' => now()->subMinute(),
     ]);
@@ -235,19 +231,14 @@ it('skips scheduled post dispatch when the command lock is already held', functi
 
     try {
         $this->artisan('posts:publish-scheduled')->assertSuccessful();
-
-        Queue::assertNotPushed(PublishScheduledPostJob::class);
+        expect($post->refresh()->status)->toBe(PostStatus::Scheduled);
     } finally {
         $lock->release();
     }
 });
 
-it('publishes a scheduled post job and dispatches fanout and mention notifications once due', function (): void {
-    Queue::fake([
-        FeedFanOutJob::class,
-        MentionNotificationJob::class,
-    ]);
-
+it('publishes a scheduled post and runs fanout and mention notifications once due', function (): void {
+    Notification::fake();
     $author = User::factory()->create();
     $mentioned = User::factory()->create(['username' => 'future_friend']);
     $futureSchedule = now('UTC')->addDay();
@@ -264,23 +255,23 @@ it('publishes a scheduled post job and dispatches fanout and mention notificatio
     expect($post->fresh()->status)->toBe(PostStatus::Scheduled)
         ->and($hashtag->fresh()->posts_count)->toBe(0);
 
-    Queue::assertNotPushed(FeedFanOutJob::class);
-    Queue::assertNotPushed(MentionNotificationJob::class);
+    expect(FeedItem::query()->where('post_id', $post->id)->exists())->toBeFalse();
+    Notification::assertNothingSent();
 
     $post->forceFill(['scheduled_publish_at' => now()->subMinute()])->saveQuietly();
 
-    (new PublishScheduledPostJob($post->id))->handle(
-        app(PublishPostAction::class),
-        app(PostMentionService::class),
-    );
+    app(ScheduledPostPublisherService::class)->publish($post->id);
 
     expect($post->refresh()->status)->toBe(PostStatus::Published)
         ->and($post->scheduled_publish_at)->toBeNull()
         ->and($hashtag->fresh()->posts_count)->toBe(1);
 
-    Queue::assertPushed(FeedFanOutJob::class, fn (FeedFanOutJob $job): bool => $job->postId === $post->id);
-    Queue::assertPushed(MentionNotificationJob::class, fn (MentionNotificationJob $job): bool => $job->postId === $post->id
-        && $job->mentionedUserId === $mentioned->id);
+    $this->assertDatabaseHas('feed_items', [
+        'post_id' => $post->id,
+        'user_id' => $author->id,
+        'source_type' => FeedItem::SOURCE_SELF,
+    ]);
+    Notification::assertSentTo($mentioned, MentionedInPost::class);
 });
 
 it('blocks editing published posts after the twenty four hour edit window', function (): void {

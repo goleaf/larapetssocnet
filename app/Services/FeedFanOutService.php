@@ -1,28 +1,20 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Models\Content\Post;
 use App\Models\Social\FeedItem;
 use App\Models\Social\Follow;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
-class FeedFanOutJob implements ShouldQueue
+class FeedFanOutService
 {
-    use Queueable;
+    private int $postId = 0;
 
-    public int $tries = 3;
-
-    public function __construct(public readonly int $postId)
+    public function fanOutPost(int $postId): void
     {
-        $this->afterCommit();
-    }
-
-    public function handle(): void
-    {
+        $this->postId = $postId;
         $lock = Cache::lock("posts:fanout:{$this->postId}", 300);
 
         if (! $lock->get()) {
@@ -50,11 +42,11 @@ class FeedFanOutJob implements ShouldQueue
                 $batchCount++;
                 $feedItemCount += count($items);
 
-                FeedFanOutChunkJob::dispatch(
+                $this->insertFeedItems(
                     (int) $post->getKey(),
                     $items,
                     $post->created_at?->toDateTimeString(),
-                )->afterCommit();
+                );
             };
 
             $dispatchChunk([[
@@ -150,5 +142,60 @@ class FeedFanOutJob implements ShouldQueue
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * @param  list<array{user_id:int, source_type:string, source_id:int}>  $items
+     */
+    private function insertFeedItems(int $postId, array $items, ?string $postCreatedAt = null): void
+    {
+        $post = Post::query()
+            ->select(['id', 'status', 'created_at'])
+            ->find($postId);
+
+        if (! $post instanceof Post || ! $post->status->isPubliclyReachable()) {
+            return;
+        }
+
+        $now = now()->toDateTimeString();
+        $postCreatedAt = $postCreatedAt ?? $post->created_at?->toDateTimeString() ?? $now;
+        $rows = [];
+
+        foreach ($items as $item) {
+            if (! $this->isValidItem($item)) {
+                continue;
+            }
+
+            $rows[] = [
+                'user_id' => (int) $item['user_id'],
+                'post_id' => $postId,
+                'source_type' => $item['source_type'],
+                'source_id' => (int) $item['source_id'],
+                'post_created_at' => $postCreatedAt,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if ($rows === []) {
+            return;
+        }
+
+        DB::table('feed_items')->insertOrIgnore($rows);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function isValidItem(array $item): bool
+    {
+        return isset($item['user_id'], $item['source_type'], $item['source_id'])
+            && (int) $item['user_id'] > 0
+            && (int) $item['source_id'] > 0
+            && in_array($item['source_type'], [
+                FeedItem::SOURCE_SELF,
+                FeedItem::SOURCE_USER,
+                FeedItem::SOURCE_PET,
+            ], true);
     }
 }

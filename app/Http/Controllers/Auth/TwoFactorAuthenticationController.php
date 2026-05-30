@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Requests\Auth\TwoFactorEnableRequest;
-use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\Auth\GeoIpLookupService;
+use App\Services\Auth\LoginAnomalyDetectionService;
 use App\Services\Auth\TwoFactorAuthenticator;
 use App\Services\Auth\UserAgentDetailsService;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +31,8 @@ class TwoFactorAuthenticationController extends Controller
         TwoFactorAuthenticator $authenticator,
         AuthAuditLogger $auditLogger,
         GeoIpLookupService $geoIp,
-        UserAgentDetailsService $userAgents
+        UserAgentDetailsService $userAgents,
+        LoginAnomalyDetectionService $loginAnomalies,
     ): RedirectResponse {
         $user = $request->user();
 
@@ -66,7 +67,7 @@ class TwoFactorAuthenticationController extends Controller
             'method' => $validRecoveryCode ? 'recovery_code' : 'totp',
         ], $this->loginContextMetadata($request, $geoIp, $userAgents)));
 
-        DetectLoginAnomaly::dispatchForRequest($user, $request, $loginAt);
+        $loginAnomalies->detectForRequest($user, $request, $loginAt);
 
         return $user->hasVerifiedEmail()
             ? redirect()->intended(route('dashboard'))

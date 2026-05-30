@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\MentionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -10,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 class PostMentionService
 {
+    public function __construct(private readonly PostMentionNotificationService $notifications) {}
+
     /**
      * @return list<string>
      */
@@ -66,11 +67,11 @@ class PostMentionService
                     continue;
                 }
 
-                MentionNotificationJob::dispatch(
-                    postId: (int) $post->getKey(),
-                    mentionedUserId: (int) $mentionedUser->getKey(),
-                    authorId: (int) $author->getKey(),
-                )->afterCommit();
+                $this->notifications->send(
+                    (int) $post->getKey(),
+                    (int) $mentionedUser->getKey(),
+                    (int) $author->getKey(),
+                );
             }
         });
     }

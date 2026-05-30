@@ -1,42 +1,29 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Mail\DailyReactionSummaryMail;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
-class SendDailyReactionSummaryJob implements ShouldQueue
+class DailyReactionSummaryService
 {
-    use Queueable;
-
-    public int $tries = 3;
-
-    public function __construct(
-        public readonly int $userId,
-        public readonly string $localDate,
-    ) {
-        $this->afterCommit();
-    }
-
-    public function handle(): void
+    public function send(int $userId, string $localDate): bool
     {
         $user = User::query()
             ->select(['id', 'name', 'email', 'timezone', 'notification_preferences'])
-            ->find($this->userId);
+            ->find($userId);
 
         if (! $user instanceof User || ! $user->notificationPreference('daily_reaction_summary', false)) {
-            return;
+            return false;
         }
 
         $timezone = filled($user->timezone) ? (string) $user->timezone : (string) config('app.timezone', 'UTC');
-        $localDay = CarbonImmutable::parse($this->localDate, $timezone);
+        $localDay = CarbonImmutable::parse($localDate, $timezone);
         $start = $localDay->startOfDay()->utc();
         $end = $localDay->endOfDay()->utc();
 
@@ -51,13 +38,13 @@ class SendDailyReactionSummaryJob implements ShouldQueue
             ->values();
 
         if ($postIds->count() <= 20) {
-            return;
+            return false;
         }
 
         $cacheKey = sprintf('users:%d:daily-reaction-summary:%s', $user->getKey(), $localDay->toDateString());
 
         if (! Cache::add($cacheKey, true, now()->addHours(26))) {
-            return;
+            return false;
         }
 
         $posts = Post::query()
@@ -70,9 +57,11 @@ class SendDailyReactionSummaryJob implements ShouldQueue
             ->get();
 
         if ($posts->isEmpty()) {
-            return;
+            return false;
         }
 
-        Mail::to($user->email)->queue(new DailyReactionSummaryMail($user, $posts, $localDay->toDateString()));
+        Mail::to($user->email)->send(new DailyReactionSummaryMail($user, $posts, $localDay->toDateString()));
+
+        return true;
     }
 }

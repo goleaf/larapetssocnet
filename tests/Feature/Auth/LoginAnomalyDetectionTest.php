@@ -1,33 +1,30 @@
 <?php
 
-use App\Jobs\Auth\DetectLoginAnomaly;
 use App\Mail\Auth\LoginAnomalySecurityAlertMail;
 use App\Models\Identity\User;
 use App\Models\Moderation\Report;
 use App\Models\Security\LoginSecurityAlert;
-use App\Services\Auth\GeoIpLookupService;
-use App\Services\Auth\UserAgentDetailsService;
+use App\Services\Auth\LoginAnomalyDetectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 
 uses(RefreshDatabase::class);
 
-it('dispatches anomaly detection after a successful credential login', function (): void {
-    Queue::fake();
-
+it('runs anomaly detection after a successful credential login', function (): void {
     $user = User::factory()->create([
         'email' => 'anomaly-login@example.com',
     ]);
+
+    $this->mock(LoginAnomalyDetectionService::class)
+        ->shouldReceive('detectForRequest')
+        ->once();
 
     $this->post(route('login'), [
         'credential' => $user->email,
         'password' => 'password',
     ])->assertRedirect(route('feed.index', absolute: false));
-
-    Queue::assertPushed(DetectLoginAnomaly::class);
 });
 
 it('does not alert when the current login country was seen in the last ninety days', function (): void {
@@ -49,12 +46,12 @@ it('does not alert when the current login country was seen in the last ninety da
         'created_at' => $loginAt->copy()->subDay(),
     ]);
 
-    (new DetectLoginAnomaly(
-        userId: $user->id,
-        ipAddress: '203.0.113.10',
-        userAgent: anomalySafariUserAgent(),
-        loginAt: $loginAt->toIso8601String(),
-    ))->handle(app(GeoIpLookupService::class), app(UserAgentDetailsService::class));
+    app(LoginAnomalyDetectionService::class)->detect(
+        $user->id,
+        '203.0.113.10',
+        anomalySafariUserAgent(),
+        $loginAt->toIso8601String(),
+    );
 
     expect(LoginSecurityAlert::query()->count())->toBe(0);
     Mail::assertNothingQueued();
@@ -79,12 +76,12 @@ it('treats accepted magic links as recent login history for anomaly detection', 
         'created_at' => $loginAt->copy()->subDay(),
     ]);
 
-    (new DetectLoginAnomaly(
-        userId: $user->id,
-        ipAddress: '203.0.113.10',
-        userAgent: anomalySafariUserAgent(),
-        loginAt: $loginAt->toIso8601String(),
-    ))->handle(app(GeoIpLookupService::class), app(UserAgentDetailsService::class));
+    app(LoginAnomalyDetectionService::class)->detect(
+        $user->id,
+        '203.0.113.10',
+        anomalySafariUserAgent(),
+        $loginAt->toIso8601String(),
+    );
 
     expect(LoginSecurityAlert::query()->count())->toBe(0);
     Mail::assertNothingQueued();
@@ -97,12 +94,12 @@ it('queues a security alert when the login country is new to recent history', fu
         'email' => 'new-country@example.com',
     ]);
 
-    (new DetectLoginAnomaly(
-        userId: $user->id,
-        ipAddress: '198.51.100.24',
-        userAgent: anomalySafariUserAgent(),
-        loginAt: now()->toIso8601String(),
-    ))->handle(app(GeoIpLookupService::class), app(UserAgentDetailsService::class));
+    app(LoginAnomalyDetectionService::class)->detect(
+        $user->id,
+        '198.51.100.24',
+        anomalySafariUserAgent(),
+        now()->toIso8601String(),
+    );
 
     $alert = LoginSecurityAlert::query()->first();
 

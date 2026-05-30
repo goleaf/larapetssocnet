@@ -2,19 +2,19 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\GenerateProfileWrappedImage;
 use App\Models\Identity\User;
+use App\Services\ProfileWrappedImageService;
 use App\Services\ProfileWrappedService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 
-#[Signature('profiles:wrapped-generate {--year= : Review year to generate} {--user= : Generate for one active user ID or username} {--sync-images : Generate share images synchronously instead of queueing them}')]
+#[Signature('profiles:wrapped-generate {--year= : Review year to generate} {--user= : Generate for one active user ID or username}')]
 #[Description('Generate annual profile wrapped summaries and share images.')]
 class GenerateProfileWrappedCommand extends Command
 {
-    public function handle(ProfileWrappedService $wrapped): int
+    public function handle(ProfileWrappedService $wrapped, ProfileWrappedImageService $images): int
     {
         $year = $this->yearOption($wrapped);
 
@@ -28,14 +28,9 @@ class GenerateProfileWrappedCommand extends Command
         $query = User::query()->active();
         $this->applyUserOption($query);
 
-        $query->lazyById(100)->each(function (User $user) use ($wrapped, $year, &$generated): void {
+        $query->lazyById(100)->each(function (User $user) use ($wrapped, $images, $year, &$generated): void {
             $summary = $wrapped->generateForUser($user, $year);
-
-            if ((bool) $this->option('sync-images')) {
-                GenerateProfileWrappedImage::dispatchSync((int) $summary->getKey());
-            } else {
-                GenerateProfileWrappedImage::dispatch((int) $summary->getKey());
-            }
+            $images->generate((int) $summary->getKey());
 
             $generated++;
         });

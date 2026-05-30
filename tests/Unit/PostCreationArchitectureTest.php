@@ -1,17 +1,15 @@
 <?php
 
 use App\Actions\Posts\CreatePostAction;
-use App\Jobs\FeedFanOutChunkJob;
-use App\Jobs\FeedFanOutJob;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Social\FeedItem;
 use App\Models\Social\Follow;
+use App\Services\FeedFanOutService;
 use App\Services\PostDraftService;
 use App\Support\Posts\PostCreationInput;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -44,9 +42,7 @@ it('skips identical autosave writes by comparing the serialized draft state hash
         ->and($second->updated_at?->toISOString())->toBe($firstUpdatedAt);
 });
 
-it('marks feed fanout complete and treats duplicate fanout jobs as no ops', function (): void {
-    Queue::fake([FeedFanOutChunkJob::class]);
-
+it('marks feed fanout complete and treats duplicate fanout requests as no ops', function (): void {
     $author = User::factory()->create();
     $follower = User::factory()->create();
     Follow::factory()->create([
@@ -58,48 +54,46 @@ it('marks feed fanout complete and treats duplicate fanout jobs as no ops', func
         'is_fanned_out' => false,
     ]);
 
-    (new FeedFanOutJob((int) $post->getKey()))->handle();
+    app(FeedFanOutService::class)->fanOutPost((int) $post->getKey());
 
     expect($post->refresh()->is_fanned_out)->toBeTrue()
         ->and(Cache::get('posts:fanout:last:'.$post->getKey())['recipient_count'] ?? null)->toBe(1)
         ->and(Cache::get('posts:fanout:last:'.$post->getKey())['feed_item_count'] ?? null)->toBe(2);
 
-    Queue::assertPushed(FeedFanOutChunkJob::class, 2);
-    Queue::assertPushed(
-        FeedFanOutChunkJob::class,
-        fn (FeedFanOutChunkJob $job): bool => $job->postId === $post->id
-            && $job->items[0]['user_id'] === $follower->id
-            && $job->items[0]['source_type'] === FeedItem::SOURCE_USER
-    );
+    $this->assertDatabaseHas('feed_items', [
+        'post_id' => $post->id,
+        'user_id' => $follower->id,
+        'source_type' => FeedItem::SOURCE_USER,
+    ]);
 
     Cache::put('posts:fanout:last:'.$post->getKey(), [
         'post_id' => (int) $post->getKey(),
         'recipient_count' => 999,
     ], now()->addDay());
 
-    (new FeedFanOutJob((int) $post->getKey()))->handle();
+    app(FeedFanOutService::class)->fanOutPost((int) $post->getKey());
 
     expect(Cache::get('posts:fanout:last:'.$post->getKey())['recipient_count'] ?? null)->toBe(999);
-    Queue::assertPushed(FeedFanOutChunkJob::class, 2);
 });
 
-it('writes precomputed feed items idempotently from fanout chunks', function (): void {
+it('writes precomputed feed items idempotently from fanout service', function (): void {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
+    Follow::factory()->create([
+        'follower_id' => $viewer->getKey(),
+        'following_id' => $author->getKey(),
+        'status' => 'accepted',
+    ]);
     $post = Post::factory()->for($author)->create([
         'status' => 'published',
+        'is_fanned_out' => false,
     ]);
 
-    $job = new FeedFanOutChunkJob((int) $post->getKey(), [[
-        'user_id' => (int) $viewer->getKey(),
-        'source_type' => FeedItem::SOURCE_USER,
-        'source_id' => (int) $author->getKey(),
-    ]], $post->created_at?->toDateTimeString());
+    app(FeedFanOutService::class)->fanOutPost((int) $post->getKey());
+    $post->forceFill(['is_fanned_out' => false])->saveQuietly();
+    app(FeedFanOutService::class)->fanOutPost((int) $post->getKey());
 
-    $job->handle();
-    $job->handle();
-
-    expect(FeedItem::query()->where('post_id', $post->getKey())->count())->toBe(1);
+    expect(FeedItem::query()->where('post_id', $post->getKey())->count())->toBe(2);
 
     $this->assertDatabaseHas('feed_items', [
         'user_id' => $viewer->getKey(),

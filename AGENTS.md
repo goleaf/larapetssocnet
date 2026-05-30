@@ -14,6 +14,7 @@ This is an active Laravel 13 PetSocial application. Keep changes aligned with th
 - root `design.md`, `architecture.md`, `skills.md`, `hooks.md`, and `controller-testing.md` for project-wide AI guidance
 
 Use existing domain subfolders before creating new base folders.
+Do not create or use `app/Jobs`; keep background-style application side effects in services, actions, commands, observers, notifications, or other existing domain folders instead.
 
 ## Build, Test, and Development Commands
 Use Composer and Artisan as the primary workflow:

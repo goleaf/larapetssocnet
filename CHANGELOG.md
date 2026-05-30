@@ -12,9 +12,9 @@
 - Added inline feed comment preview batching with three recent top-level comments, two recent replies per thread, load-more comments, expandable reply threads, and smooth comment-panel transitions.
 - Added inline Livewire comment editing and spam reporting inside feed post-card comment threads, reusing the shared comment and report actions without leaving the post context.
 - Added Livewire inline comment-thread actions for feed post cards, including top-level comments, replies, soft-delete tombstone refreshes, visible polling, and parent post-card counter refresh events.
-- Added animated reaction count roll-up/down feedback, keyboard-accessible reaction picker controls, Livewire post-card reaction actions with Alpine optimistic reconciliation, four-second Undo toasts, cached reaction-summary emoji stacks, reaction velocity snapshots with Trending badges, pet About "Most loved posts" leaderboards, delayed unique per-post reaction notification jobs, reaction batch notifications, and opt-in daily reaction summary emails.
+- Added animated reaction count roll-up/down feedback, keyboard-accessible reaction picker controls, Livewire post-card reaction actions with Alpine optimistic reconciliation, four-second Undo toasts, cached reaction-summary emoji stacks, reaction velocity snapshots with Trending badges, pet About "Most loved posts" leaderboards, service-backed reaction notification batching, reaction batch notifications, and opt-in daily reaction summary emails.
 - Added config-backed Paw, Love, Haha, Wow, Sad, and Angry post reactions with legacy alias normalization, Paw as the default reaction, new post/comment reaction counter columns, a paginated reactions-list modal, and simplified Paw/Love comment reactions.
-- Added precomputed `feed_items` delivery rows for the news feed, written by queued 500-row fan-out chunks with recipient/source uniqueness for retry safety.
+- Added precomputed `feed_items` delivery rows for the news feed, written by `FeedFanOutService` in 500-row chunks with recipient/source uniqueness.
 - Added a post-specific Spatie media path generator so finalized post media is stored under `posts/YYYY/MM/DD/{media_id}/`.
 - Added a full-page Livewire feed shell with lazy left/right sidebar child components and reusable Livewire post-card islands for feed post cards.
 - Added tagged-cache trending hashtag reads with a SQLite-safe fallback and invalidation when hashtag usage changes.
@@ -28,11 +28,11 @@
 - Added post composer writing assists for real-time word counts, non-blocking missing-alt-text reminders, one-time alt-text education, personal performance predictions, and client-side Canvas image editing before upload.
 - Added owner-only post analytics from shared post cards, with a compact Livewire modal for views, reaction breakdowns, comments, shares, estimated reach, and a server-rendered comparison chart.
 - Added a Livewire post share menu with mobile bottom-sheet and desktop popover layouts for reposting, quote posting, and copying canonical post links.
-- Added a deliberate Livewire post deletion confirmation flow with post previews, optimistic card removal, and a queued deletion cascade for soft deletes, pet tag counters, hashtag counts, and saved-post placeholders.
+- Added a deliberate Livewire post deletion confirmation flow with post previews, optimistic card removal, and a deletion cascade service for soft deletes, pet tag counters, hashtag counts, and saved-post placeholders.
 - Added modal post editing through the shared Livewire composer, including stored post hydration, edit success events, and owner post-card menu access.
 - Added polished post-composer submission feedback with whole-composer loading states, duplicate confirmation modal actions, success toasts, and optimistic feed prepending for newly published posts.
 - Added background post-composer draft autosave with one serialized draft per user, resume/discard banners, and confirmed cancellation cleanup.
-- Added async Open Graph link previews for pasted post-composer URLs, with queued Guzzle fetching, composer skeleton/polling state, dismissible preview cards, and image rendering on shared post cards.
+- Added Open Graph link previews for pasted post-composer URLs, with server-side Guzzle fetching, composer skeleton/polling state, dismissible preview cards, and image rendering on shared post cards.
 - Added a toolbar scheduled-post picker to the Livewire post composer with a future-date calendar, 15-minute local time selectors, UTC storage, schedule indicator, and Schedule submit state.
 - Added a compact emoji mood picker to the Livewire post composer toolbar with the selected "feeling" indicator and remove action below the editor.
 - Added toolbar-driven Livewire post composer location tagging with debounced server-side geocoding suggestions, browser coordinate reverse geocoding, and removable location chips.
@@ -48,8 +48,7 @@
 - Moved direct-message sending into the Messaging action namespace and kept message delivery behavior covered by focused tests.
 - Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.
 - Changed comment validation to enforce the current 500-character maximum across HTTP requests, Livewire actions, and `CommentService`.
-- Changed post reaction notifications to dispatch after a four-second undo window and re-check the persisted reaction row before notifying authors.
-- Changed reaction notification dispatch to batch recent reactions through a unique database-queued job per post.
+- Changed post reaction notifications to run through `ReactionNotificationService`, re-check persisted reactions, and batch recent reactions per post before notifying authors.
 - Changed the shared post-card reaction picker to use the configured pet-themed reaction set, delayed desktop hover, mobile long-press behavior, top-reaction breakdown icons, and Paw-backed legacy like toggles.
 - Changed post reaction responses and feed/list post queries to expose the current viewer reaction plus per-type counter-cache values without per-card reaction lookups.
 - Changed the main feed candidate query to read `feed_items` first, while retaining relationship fallback branches and outer query-level visibility, block, and mute enforcement.
@@ -64,11 +63,14 @@
 - Updated profile media conversions so public profile avatar cards are cropped to 400x400 and cover banners are cropped to 1200x400.
 - Changed profile Posts tab owner composer actions to mount the shared modal composer in place instead of linking away to the standalone create route.
 
+### Removed
+- Removed the `app/Jobs` application folder and moved its behavior into services and commands.
+
 ### Fixed
 - Fixed feed new-post polling Alpine calls inside the full-page Livewire feed shell by resolving the nearest stream component before invoking the polling action.
 - Fixed legacy morph-map aliases for post draft, mention, and pet care/ownership domain models.
 - Fixed post creation from internal services to normalize enum-backed status values before synthetic request validation.
-- Fixed post deletion confirmations to soft-delete the post immediately before the queued cascade handles counters, feed items, saved-post placeholders, and media cleanup.
+- Fixed post deletion confirmations to soft-delete the post immediately before the cascade service handles counters, feed items, saved-post placeholders, and media cleanup.
 - Fixed group invitation acceptance and decline flows when invitation statuses are returned through Laravel enum casts.
 - Fixed pet profile validation so whitespace-only names are rejected after normalization.
 - Fixed blocked pet profile requests to return not found instead of exposing a normal authorization denial.
@@ -100,10 +102,10 @@
 - Added Livewire comment-thread coverage for inline comment editing, sanitized rendered output, inline reporting, and self-report authorization blocking.
 - Added explicit comment coverage for guest posting redirects and blocked-user comment visibility filtering.
 - Added Livewire comment-thread coverage for creating comments, replying, deleting parent comments into tombstones, depth-limit rejection, and visible refresh polling.
-- Added reaction enhancement coverage for summary-cache invalidation, velocity badges, Livewire card reaction actions, unique reaction batching jobs, undo-safe delayed notifications, daily digest dispatch/mail, pet reaction leaderboards, and notification preference persistence.
+- Added reaction enhancement coverage for summary-cache invalidation, velocity badges, Livewire card reaction actions, reaction batching, undo-safe notifications, daily digest dispatch/mail, pet reaction leaderboards, and notification preference persistence.
 - Added reaction coverage for configured reaction definitions, legacy alias normalization, Paw/Haha/Angry counter caches, and simplified comment Paw reaction counts.
 - Added reaction coverage for guest blocking, pet-tagged posts, database uniqueness, bulk counter sync, current reaction hydration, and picker transition markup.
-- Added feed fan-out chunk coverage for idempotent `feed_items` writes, source-filtered feed reads, stale private-row filtering, and date-partitioned post media paths.
+- Added feed fan-out service coverage for idempotent `feed_items` writes, source-filtered feed reads, stale private-row filtering, and date-partitioned post media paths.
 - Added feed architecture coverage for the full-page Livewire shell, lazy sidebars, post-card islands, precomputed feed SQL with relationship fallback, and trending hashtag cache invalidation.
 - Added feed enhancement coverage for ranking persistence/order, session read-position restore, user and pet muting, contextual empty suggestions, long-post hover preview markup, muted settings unmute flow, and feed-source deduplication.
 - Added feed stream coverage for Livewire source filters, infinite-scroll loading, new-post polling, normalized pet-tag feed visibility, and upcoming followed-pet birthday sidebar data.
@@ -111,30 +113,30 @@
 - Added profile policy and Livewire route coverage for owner-only edit modal access, action-level modal validation, and cover focal-point authorization.
 - Added profile analytics and design coverage for daily profile-view aggregate counts, shared username-hashed avatar fallbacks, and verified badges on shared user-name surfaces.
 - Updated auth coverage for RateLimiter-backed login lockouts, signed password-reset URLs, login-page reset redirects, verification resend toasts, and expired verification links opened from another browser session.
-- Added post creation architecture coverage for DTO-only action input, hash-based autosave no-op behavior, and duplicate feed fan-out job no-ops.
+- Added post creation architecture coverage for DTO-only action input, hash-based autosave no-op behavior, and duplicate feed fan-out service no-ops.
 - Added Livewire coverage for post composer templates, template scoping and limits, writing-assist UI hooks, and performance prediction output.
 - Added post analytics coverage for author-only trigger rendering, direct authorization, non-author view counting, reaction counter breakdowns, estimated reach, and SVG chart rendering.
 - Added coverage for repost creation and share counters, quote-post composer submission, share-menu rendering, and shared post-card quote/repost embeds.
-- Added post deletion coverage for the confirmation modal, optimistic removal event, queued cascade side effects, and deleted saved-post placeholders.
+- Added post deletion coverage for the confirmation modal, optimistic removal event, cascade service side effects, and deleted saved-post placeholders.
 - Added Livewire and action coverage for edit-mode composer hydration, post updates, edit-window errors, post-card edit menu states, edited labels, and newly added mention notifications.
 - Added Livewire post composer coverage for success toasts, duplicate confirmation, validation-error preservation, and feed listener rendering for optimistic post prepending.
 - Added Livewire and service coverage for one-user post drafts, non-automatic draft restore, resume/discard actions, and cancellation cleanup.
-- Added link preview coverage for Open Graph parsing, local-network URL rejection, queued post updates, composer polling/dismissal, and action-level async fetch dispatch.
-- Added scheduled composer and scheduled publication coverage for picker rendering, UTC state storage, scheduled post creation without immediate fan-out, command job dispatch, command lock skipping, and due-job publication.
+- Added link preview coverage for Open Graph parsing, local-network URL rejection, service-backed post updates, composer polling/dismissal, and action-level preview fetching.
+- Added scheduled composer and scheduled publication coverage for picker rendering, UTC state storage, scheduled post creation without immediate fan-out, command publication, command lock skipping, and due-post publication.
 - Added Livewire post composer coverage for selecting and removing moods through the toolbar mood picker.
 - Added Livewire post composer coverage for location picker rendering, server-side autocomplete selection, coordinate persistence, and browser-coordinate reverse geocoding.
 - Added Livewire coverage for composer mention suggestions, the profile Posts tab composer entry point, the mobile composer launcher, and immediate soft deletion from the delete confirmation flow.
 - Added Livewire post composer coverage for toolbar visibility selection, private-post warning copy, and preserving the user's stored visibility preference.
 - Updated ChartService unit coverage for the current `WeightHistorySvg` dependency and smooth-path chart rendering.
-- Added post media coverage for 10-image posts, mixed image/video posts, multiple videos, 10 MB image limits, 100 MB video limits, and ordered temporary media dispatch from the Livewire composer.
+- Added post media coverage for 10-image posts, mixed image/video posts, multiple videos, 10 MB image limits, 100 MB video limits, and ordered temporary media processing from the Livewire composer.
 - Added Livewire post composer coverage for inline and modal rendering, contenteditable state, character count feedback, draft restore/autosave, duplicate warnings, and action-backed post creation with pet tags, mood, location, and feed fan-out.
-- Added post creation action coverage for structured duplicate-detection results, confirmed duplicate submission, invalid link preview validation, queued temporary media processing, content hashes, pet tag counter increments, queued mentions, and after-commit feed fan-out.
+- Added post creation action coverage for structured duplicate-detection results, confirmed duplicate submission, invalid link preview validation, service-backed temporary media processing, content hashes, pet tag counter increments, mention notifications, and after-commit feed fan-out.
 - Added post creation coverage for rich posts with pet tags, hashtags, mentions, mood, location, link previews, duplicate-submission blocking, scheduled publication, edit-window authorization, quote/repost references, private visibility filtering, and draft autosave restore/clear behavior.
 - Added pet family relationship and health reminder coverage for bidirectional links, private-pet link blocking, due notifications, invalid custom reminders, and archived-pet skips.
 - Added pet co-owner invitation and ownership transfer coverage for acceptance, decline, expiry, role storage, and owner capability preservation before transfer acceptance.
 - Added pet profile coverage for avatar upload validation, guest follow redirects, follower-only timeline access, blocked-viewer not-found responses, milestone edits preserving shared posts, and chronological weight trend data.
 - Added pet coverage for randomized slug format and the indexed birthday notification query plan.
-- Added pet lifecycle coverage for role-based co-ownership, follower counters, tagged feed lookup, milestone sharing, adoption listing preservation, tagged-post deletion cleanup, and birthday job behavior.
+- Added pet lifecycle coverage for role-based co-ownership, follower counters, tagged feed lookup, milestone sharing, adoption listing preservation, tagged-post deletion cleanup, and birthday service behavior.
 - Added Livewire onboarding coverage for route middleware, profile data retention, social avatar suggestions, first-pet creation, immediate follow persistence, batched follow-all, completion flags, welcome banner dismissal, and one-time skipped-pet reminders.
 - Added magic-link login coverage for the inline Livewire request panel, queued Mailable delivery, hashed token storage, one-time acceptance, and expired/invalid/used-link responses.
 - Added device-session and login-anomaly coverage for current-session labeling, scoped session deletion, password-confirmed logout-other-devices, local GeoIP/user-agent enrichment, signed alert dismissal, emergency account securing, remember-token cleanup, moderation reports, and audit events.
@@ -155,7 +157,7 @@
 - Changed post editing to enforce the 24-hour window in the post-card UI, post policy, and `UpdatePostAction`, while re-syncing hashtags, mentions, pet tags, location, mood, visibility, and link preview state.
 - Changed post-created browser events to include composer identity, status, author, body, and toast metadata so page-level listeners can react without guessing at component state.
 - Documented the current shared-hosting FTP archive deploy, OPcache reset, production smoke diagnostics, and `phpmail` auth mail defaults across the project guides.
-- Changed scheduled post publication to dispatch one queued `PublishScheduledPostJob` per due post from the lock-protected every-minute command, with per-post job locks plus feed fan-out and mention notifications delayed until the post actually publishes.
+- Changed scheduled post publication to publish due posts through `ScheduledPostPublisherService` from the lock-protected every-minute command, with per-post locks plus feed fan-out and mention notifications delayed until the post actually publishes.
 - Changed post media validation and storage to allow up to 10 mixed image/video attachments while preserving explicit media ordering.
 - Updated the feed and create-post surfaces to render through the shared Livewire post composer instead of maintaining separate form implementations.
 - Updated the post composer and shared post card to enforce the 1000-character plain-text content model and surface mood, scheduled publish timestamps, normalized location labels, link preview cards, edited labels, UUID share URLs, and quote/repost context.
@@ -164,11 +166,11 @@
 - Changed pet profile routing to use canonical authenticated `/pets/@{pet:slug}` URLs while keeping legacy slug URLs as redirects.
 - Changed pet ownership to store canonical Owner/Admin/Poster/Viewer roles with a policy capability matrix while keeping legacy scoped booleans synchronized.
 - Changed breed autocomplete to use normalized `species_id` / `normalized_name` prefix lookups and always prepend Mixed/Unknown pseudo-options.
-- Changed pet birthday processing to dispatch one queued job per birthday pet, create a system-generated tagged post, and notify eligible pet followers and co-owners.
+- Changed pet birthday processing to run through `PetBirthdayService`, create a system-generated tagged post, and notify eligible pet followers and co-owners.
 - Replaced the old controller-based onboarding steps with a full-page Livewire `/onboarding` flow that keeps multi-step state in public properties, saves optional profile details, creates the first pet through the existing action, redirects completed users away through middleware, and routes newly verified/social users into onboarding before the feed.
 - Reworked magic-link login into a login-page inline panel with non-enumerating responses, queued branded mailables, 64-character raw email tokens, SHA-256 database lookup hashes, and atomic single-use token consumption before redirecting accepted users to the feed.
 - Reworked account security device-session management into a Livewire section backed by indexed database-session queries, parsed device/browser/OS details, local GeoIP location labels, individual session logout popovers, password-confirmed logout-other-devices, remember-token cleanup, and audit logging.
-- Extended successful login handling to dispatch queued country-anomaly detection using local GeoIP and recent auth audit history, with signed single-use security-alert actions for dismissing known logins or securing the account through session invalidation and a high-priority moderation report.
+- Extended successful login handling to run country-anomaly detection through `LoginAnomalyDetectionService` using local GeoIP and recent auth audit history, with signed single-use security-alert actions for dismissing known logins or securing the account through session invalidation and a high-priority moderation report.
 - Replaced the controller-rendered forgot-password and reset-password pages with full-page Livewire components, backed reset-link delivery with queued branded mailables and deterministic token-hash lookups, and redirected successful resets to the feed after signing the user in with a fresh session.
 - Replaced the controller-rendered login page with a full-page Livewire login component at `/login`, backed by a dedicated authentication action, database progressive lockout countdowns, 30-day remember-me sessions, explicit remember-token cleanup on logout, and an inline password-reset panel.
 - Replaced the email verification pending view with a full-page Livewire component, queued branded verification mail through a Mailable, moved resend throttling to a per-user server-side limiter, and bundled `auth` plus `verified` into the Bootstrap-defined `auth.verified` middleware group for protected application routes.

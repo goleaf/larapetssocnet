@@ -1,34 +1,42 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Events\MediaUploaded;
 use App\Models\Content\Post;
 use App\Models\Content\PostMedia;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
-class MediaProcessingJob implements ShouldQueue
+class PostMediaProcessingService
 {
-    use Queueable;
+    private string $temporaryPath = '';
 
-    public int $tries = 3;
+    private int $postId = 0;
 
-    public function __construct(
-        public readonly string $temporaryPath,
-        public readonly int $postId,
-        public readonly string $mediaType,
-        public readonly ?string $altText = null,
-        public readonly int $order = 0,
-        public readonly ?int $postMediaId = null,
-    ) {
-        $this->afterCommit();
-    }
+    private string $mediaType = 'image';
 
-    public function handle(): void
-    {
+    private ?string $altText = null;
+
+    private int $order = 0;
+
+    private ?int $postMediaId = null;
+
+    public function process(
+        string $temporaryPath,
+        int $postId,
+        string $mediaType,
+        ?string $altText = null,
+        int $order = 0,
+        ?int $postMediaId = null,
+    ): void {
+        $this->temporaryPath = $temporaryPath;
+        $this->postId = $postId;
+        $this->mediaType = $mediaType;
+        $this->altText = $altText;
+        $this->order = $order;
+        $this->postMediaId = $postMediaId;
+
         $post = Post::query()->find($this->postId);
 
         if (! $post instanceof Post) {

@@ -1,25 +1,18 @@
 <?php
 
-namespace App\Jobs\Auth;
+namespace App\Services\Auth;
 
 use App\Models\Identity\User;
 use App\Models\Security\AuthAuditLog;
 use App\Models\Security\LoginSecurityAlert;
-use App\Services\Auth\AuthMailDispatcher;
-use App\Services\Auth\GeoIpLookupService;
-use App\Services\Auth\UserAgentDetailsService;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
-class DetectLoginAnomaly implements ShouldQueue
+class LoginAnomalyDetectionService
 {
-    use Queueable;
-
     private const array HISTORY_EVENTS = [
         'login_success',
         'magic_link_accepted',
@@ -28,42 +21,43 @@ class DetectLoginAnomaly implements ShouldQueue
     ];
 
     public function __construct(
-        public readonly int $userId,
-        public readonly string $ipAddress,
-        public readonly string $userAgent,
-        public readonly string $loginAt,
+        private readonly GeoIpLookupService $geoIp,
+        private readonly UserAgentDetailsService $userAgents,
+        private readonly AuthMailDispatcher $mail,
     ) {}
 
-    public static function dispatchForRequest(User $user, Request $request, CarbonInterface $loginAt): void
+    public function detectForRequest(User $user, Request $request, CarbonInterface $loginAt): void
     {
-        self::dispatch(
-            userId: (int) $user->getKey(),
-            ipAddress: (string) $request->ip(),
-            userAgent: (string) $request->userAgent(),
-            loginAt: $loginAt->toIso8601String(),
-        )->afterCommit();
+        $this->detect(
+            (int) $user->getKey(),
+            (string) $request->ip(),
+            (string) $request->userAgent(),
+            $loginAt,
+        );
     }
 
-    public function handle(GeoIpLookupService $geoIp, UserAgentDetailsService $userAgents): void
+    public function detect(int $userId, string $ipAddress, string $userAgent, CarbonInterface|string $loginAt): void
     {
         $user = User::query()
             ->select(['id', 'name', 'email', 'remember_token'])
-            ->whereKey($this->userId)
+            ->whereKey($userId)
             ->first();
 
         if (! $user instanceof User) {
             return;
         }
 
-        $loginAt = CarbonImmutable::parse($this->loginAt);
-        $location = $geoIp->lookup($this->ipAddress);
+        $resolvedLoginAt = $loginAt instanceof CarbonInterface
+            ? CarbonImmutable::instance($loginAt)
+            : CarbonImmutable::parse($loginAt);
+        $location = $this->geoIp->lookup($ipAddress);
         $countryCode = $location['country_code'];
 
         if (! is_string($countryCode) || in_array($countryCode, ['LOCAL', 'PRIVATE'], true)) {
             return;
         }
 
-        if ($this->countrySeenRecently($user, $countryCode, $location['country'], $loginAt)) {
+        if ($this->countrySeenRecently($user, $countryCode, $location['country'], $resolvedLoginAt)) {
             return;
         }
 
@@ -71,7 +65,7 @@ class DetectLoginAnomaly implements ShouldQueue
             return;
         }
 
-        $device = $userAgents->parse($this->userAgent);
+        $device = $this->userAgents->parse($userAgent);
         $plainToken = Str::random(64);
 
         $alert = LoginSecurityAlert::query()->create([
@@ -80,14 +74,14 @@ class DetectLoginAnomaly implements ShouldQueue
             'country_code' => $countryCode,
             'country' => $location['country'],
             'city' => $location['city'],
-            'ip_address' => $this->ipAddress,
-            'user_agent' => $this->userAgent,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
             'device_type' => $device['device_type'],
             'browser_name' => $device['browser_name'],
             'browser_version' => $device['browser_version'],
             'os_name' => $device['os_name'],
             'os_version' => $device['os_version'],
-            'login_at' => $loginAt,
+            'login_at' => $resolvedLoginAt,
         ]);
 
         $dismissUrl = URL::signedRoute('login-security-alert.dismiss', [
@@ -100,7 +94,7 @@ class DetectLoginAnomaly implements ShouldQueue
             'token' => $plainToken,
         ]);
 
-        app(AuthMailDispatcher::class)->queueLoginAnomalySecurityAlert($user, $alert, $dismissUrl, $secureUrl);
+        $this->mail->queueLoginAnomalySecurityAlert($user, $alert, $dismissUrl, $secureUrl);
     }
 
     private function countrySeenRecently(User $user, string $countryCode, string $country, CarbonImmutable $loginAt): bool

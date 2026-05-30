@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Actions\Posts\CreatePostAction;
 use App\Enums\PostStatus;
@@ -10,23 +10,19 @@ use App\Models\Pets\Pet;
 use App\Notifications\PetBirthdayCoOwnerNotification;
 use App\Notifications\PetBirthdayFollowerNotification;
 use App\Support\Posts\PostCreationInput;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Notification;
 
-class ProcessPetBirthday implements ShouldQueue
+class PetBirthdayService
 {
-    use Queueable;
+    public function __construct(private readonly CreatePostAction $createPost) {}
 
-    public function __construct(public readonly int $petId) {}
-
-    public function handle(CreatePostAction $createPost): void
+    public function process(int $petId): void
     {
         $pet = Pet::query()
             ->with(['owner', 'ownerships.user'])
             ->select(['id', 'user_id', 'name', 'slug', 'visibility', 'is_public', 'birth_date', 'date_of_birth', 'birth_year', 'is_archived'])
-            ->whereKey($this->petId)
+            ->whereKey($petId)
             ->whereNull('deleted_at')
             ->first();
 
@@ -44,7 +40,7 @@ class ProcessPetBirthday implements ShouldQueue
             ]))
         );
 
-        $createPost->handle($pet->owner, PostCreationInput::fromUserInput($pet->owner, [
+        $this->createPost->handle($pet->owner, PostCreationInput::fromUserInput($pet->owner, [
             'body' => $message,
             'pet_id' => $pet->getKey(),
             'tagged_pets' => [$pet->getKey()],

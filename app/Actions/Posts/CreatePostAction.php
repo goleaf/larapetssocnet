@@ -3,14 +3,14 @@
 namespace App\Actions\Posts;
 
 use App\Enums\PostStatus;
-use App\Jobs\FeedFanOutJob;
-use App\Jobs\FetchLinkPreviewMetadataJob;
-use App\Jobs\MediaProcessingJob;
 use App\Models\Content\Post;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use App\Services\ContentService;
+use App\Services\FeedFanOutService;
 use App\Services\PostDuplicateSubmissionGuard;
+use App\Services\PostLinkPreviewService;
+use App\Services\PostMediaProcessingService;
 use App\Services\PostMentionService;
 use App\Services\PostMetadataService;
 use App\Support\Posts\PostCreationInput;
@@ -32,6 +32,9 @@ class CreatePostAction
         private readonly PostMetadataService $metadata,
         private readonly PostMentionService $mentions,
         private readonly PostDuplicateSubmissionGuard $duplicates,
+        private readonly PostMediaProcessingService $mediaProcessing,
+        private readonly FeedFanOutService $feedFanOut,
+        private readonly PostLinkPreviewService $linkPreviews,
     ) {}
 
     public function handle(User $user, PostCreationInput $input): PostCreationResult
@@ -52,11 +55,11 @@ class CreatePostAction
             }
         }
 
-        $mediaProcessingJobs = [];
+        $mediaProcessingTasks = [];
         $fanOutPostId = null;
-        $linkPreviewJob = null;
+        $linkPreviewTask = null;
 
-        $result = DB::transaction(function () use ($user, $data, $body, $contentHash, &$mediaProcessingJobs, &$fanOutPostId, &$linkPreviewJob): PostCreationResult {
+        $result = DB::transaction(function () use ($user, $data, $body, $contentHash, &$mediaProcessingTasks, &$fanOutPostId, &$linkPreviewTask): PostCreationResult {
             $mediaFiles = $this->normalizeMediaFiles($data['media_files'] ?? []);
             $temporaryMedia = $this->normalizeTemporaryMedia($data['media_attachments'] ?? []);
             $scheduledPublishAt = $this->resolveScheduledPublishAt($data['scheduled_publish_at'] ?? null);
@@ -110,7 +113,7 @@ class CreatePostAction
                     'order' => $media['order'],
                 ]);
 
-                $mediaProcessingJobs[] = [
+                $mediaProcessingTasks[] = [
                     'temporary_path' => $media['temporary_path'],
                     'post_id' => (int) $post->getKey(),
                     'post_media_id' => (int) $postMedia->getKey(),
@@ -129,7 +132,7 @@ class CreatePostAction
             }
 
             if ($linkPreview === null && $linkPreviewUrl !== null && $status !== PostStatus::Draft) {
-                $linkPreviewJob = [
+                $linkPreviewTask = [
                     'url' => $linkPreviewUrl,
                     'post_id' => (int) $post->getKey(),
                 ];
@@ -138,26 +141,26 @@ class CreatePostAction
             return PostCreationResult::created($post, $contentHash);
         });
 
-        foreach ($mediaProcessingJobs as $job) {
-            MediaProcessingJob::dispatch(
-                temporaryPath: $job['temporary_path'],
-                postId: $job['post_id'],
-                mediaType: $job['media_type'],
-                altText: $job['alt_text'],
-                order: $job['order'],
-                postMediaId: $job['post_media_id'],
-            )->afterCommit();
+        foreach ($mediaProcessingTasks as $task) {
+            $this->mediaProcessing->process(
+                temporaryPath: $task['temporary_path'],
+                postId: $task['post_id'],
+                mediaType: $task['media_type'],
+                altText: $task['alt_text'],
+                order: $task['order'],
+                postMediaId: $task['post_media_id'],
+            );
         }
 
         if ($fanOutPostId !== null) {
-            FeedFanOutJob::dispatch($fanOutPostId)->afterCommit();
+            $this->feedFanOut->fanOutPost($fanOutPostId);
         }
 
-        if ($linkPreviewJob !== null) {
-            FetchLinkPreviewMetadataJob::dispatch(
-                url: $linkPreviewJob['url'],
-                postId: $linkPreviewJob['post_id'],
-            )->afterCommit();
+        if ($linkPreviewTask !== null) {
+            $this->linkPreviews->fetch(
+                url: $linkPreviewTask['url'],
+                postId: $linkPreviewTask['post_id'],
+            );
         }
 
         return $result;

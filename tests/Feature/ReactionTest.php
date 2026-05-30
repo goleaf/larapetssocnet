@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\SendReactionNotificationJob;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
@@ -9,8 +8,8 @@ use App\Notifications\NewReaction;
 use App\Services\SyncReactionCountsService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -226,8 +225,8 @@ it('loads reaction definitions from configuration', function (): void {
 });
 
 it('sends reaction notification with relation-light models', function (): void {
+    Cache::flush();
     Notification::fake();
-    Queue::fake();
 
     $actor = User::factory()->create();
     $author = User::factory()->create();
@@ -251,16 +250,6 @@ it('sends reaction notification with relation-light models', function (): void {
     expect($actor->relationLoaded('media'))->toBeTrue();
     expect($actor->relationLoaded('posts'))->toBeTrue();
     expect($post->relationLoaded('author'))->toBeTrue();
-
-    Notification::assertNothingSent();
-
-    Queue::assertPushed(SendReactionNotificationJob::class, function (SendReactionNotificationJob $job) use ($post, $actor): bool {
-        $job->handle();
-
-        return $job->postId === (int) $post->getKey()
-            && $job->reactorId === (int) $actor->getKey()
-            && $job->reactionType === 'love';
-    });
 
     Notification::assertSentTo($author, NewReaction::class, function (NewReaction $notification): bool {
         return ! $notification->post->relationLoaded('author')

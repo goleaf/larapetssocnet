@@ -1,16 +1,14 @@
 <?php
 
-use App\Jobs\DeletePostCascadeJob;
 use App\Models\Content\Comment;
 use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Content\PostMedia;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
-use App\Services\HashtagService;
+use App\Services\PostDeletionCascadeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -42,9 +40,7 @@ it('opens a deliberate delete confirmation modal with a post preview', function 
         ->assertSee('Cancel');
 });
 
-it('soft deletes immediately queues the cascade and emits an optimistic removal event', function (): void {
-    Queue::fake();
-
+it('soft deletes immediately runs the cascade and emits an optimistic removal event', function (): void {
     $owner = User::factory()->create();
     $post = Post::factory()->for($owner)->create();
 
@@ -55,13 +51,10 @@ it('soft deletes immediately queues the cascade and emits an optimistic removal 
         ->assertSet('open', false)
         ->assertDispatched('post-delete-requested', postId: $post->id);
 
-    Queue::assertPushed(DeletePostCascadeJob::class, fn (DeletePostCascadeJob $job): bool => $job->postId === $post->id
-        && $job->actorId === $owner->id);
-
     $this->assertSoftDeleted('posts', ['id' => $post->id]);
 });
 
-it('runs the queued deletion cascade without silently removing saved placeholders', function (): void {
+it('runs the deletion cascade without silently removing saved placeholders', function (): void {
     $owner = User::factory()->create();
     $saver = User::factory()->create();
     $primaryPet = Pet::factory()->for($owner)->create(['posts_count' => 1]);
@@ -84,7 +77,7 @@ it('runs the queued deletion cascade without silently removing saved placeholder
     $comment = Comment::factory()->for($post, 'post')->create();
     $media = PostMedia::factory()->for($post, 'post')->create();
 
-    (new DeletePostCascadeJob($post->id, $owner->id))->handle(app(HashtagService::class));
+    app(PostDeletionCascadeService::class)->cascade($post->id, $owner->id);
 
     $this->assertSoftDeleted('posts', ['id' => $post->id]);
     $this->assertSoftDeleted('comments', ['id' => $comment->id]);

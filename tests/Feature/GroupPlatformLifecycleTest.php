@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\SendGroupDigest;
 use App\Models\Content\Post;
 use App\Models\Groups\Group;
 use App\Models\Groups\GroupInvitation;
@@ -11,6 +10,7 @@ use App\Models\Identity\User;
 use App\Notifications\GroupDigestReady;
 use App\Notifications\GroupInvitationReceived;
 use App\Notifications\GroupModerationAlert;
+use App\Services\GroupDigestService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -273,7 +273,7 @@ class GroupPlatformLifecycleTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_group_digest_notifications_are_queued_for_active_members_only(): void
+    public function test_group_digest_notifications_are_sent_for_active_members_only(): void
     {
         Notification::fake();
 
@@ -292,12 +292,9 @@ class GroupPlatformLifecycleTest extends TestCase
             'created_at' => now()->subHour(),
         ]);
 
-        $job = new SendGroupDigest($group->getKey(), now()->subDay(), now());
-
-        $this->assertInstanceOf(ShouldQueue::class, $job);
         $this->assertInstanceOf(ShouldQueue::class, new GroupDigestReady($group, 1, now()->subDay(), now()));
 
-        $job->handle();
+        app(GroupDigestService::class)->send($group->getKey(), now()->subDay(), now());
 
         Notification::assertSentTo($owner, GroupDigestReady::class);
         Notification::assertSentTo($activeMember, GroupDigestReady::class);
