@@ -202,6 +202,12 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
 
+    public const PROFILE_AVATAR_CONVERSION_SIZE = 400;
+
+    public const PROFILE_COVER_CONVERSION_WIDTH = 1200;
+
+    public const PROFILE_COVER_CONVERSION_HEIGHT = 400;
+
     public const DEFAULT_COVER_PHOTO_POSITION = 50.0;
 
     public const MIN_COVER_PHOTO_POSITION = 0.0;
@@ -530,11 +536,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
             ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_CARD)
-            ->fit(Fit::Crop, 256, 256)
+            ->fit(Fit::Crop, self::PROFILE_AVATAR_CONVERSION_SIZE, self::PROFILE_AVATAR_CONVERSION_SIZE)
             ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_COVER_BANNER)
-            ->fit(Fit::Crop, 1600, 480)
+            ->fit(Fit::Crop, self::PROFILE_COVER_CONVERSION_WIDTH, self::PROFILE_COVER_CONVERSION_HEIGHT)
             ->performOnCollections(self::MEDIA_COLLECTION_COVER);
     }
 

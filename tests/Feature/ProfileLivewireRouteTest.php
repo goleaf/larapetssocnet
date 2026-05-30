@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Livewire\LivewireServiceProvider;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\Conversions\Jobs\PerformConversionsJob;
 
 uses(RefreshDatabase::class);
@@ -495,6 +496,34 @@ it('moves nested modal media uploads into permanent media storage and queues con
         ->and((float) $profileOwner->cover_photo_position)->toBe(64.5);
 
     Queue::assertPushed(PerformConversionsJob::class);
+});
+
+it('registers profile media conversions at the public profile display dimensions', function (): void {
+    $profileOwner = User::factory()->make();
+
+    $profileOwner->registerMediaConversions();
+
+    $conversions = collect($profileOwner->mediaConversions)
+        ->keyBy(fn ($conversion): string => $conversion->getName());
+
+    $avatarManipulations = $conversions
+        ->get(User::MEDIA_CONVERSION_AVATAR_CARD)
+        ?->getManipulations()
+        ->toArray() ?? [];
+    $coverManipulations = $conversions
+        ->get(User::MEDIA_CONVERSION_COVER_BANNER)
+        ?->getManipulations()
+        ->toArray() ?? [];
+
+    expect($avatarManipulations['fit'] ?? null)->toBe([
+        Fit::Crop,
+        User::PROFILE_AVATAR_CONVERSION_SIZE,
+        User::PROFILE_AVATAR_CONVERSION_SIZE,
+    ])->and($coverManipulations['fit'] ?? null)->toBe([
+        Fit::Crop,
+        User::PROFILE_COVER_CONVERSION_WIDTH,
+        User::PROFILE_COVER_CONVERSION_HEIGHT,
+    ]);
 });
 
 it('dispatches the first invalid field target when nested edit profile validation fails', function (): void {
