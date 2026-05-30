@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Messaging;
 
 use App\Enums\MessageStatus;
 use App\Events\MessageSent;
@@ -17,6 +17,20 @@ class SendMessageAction
      * @param  array{body?: string}  $data
      */
     public function handle(User $sender, User $receiver, array $data): Message
+    {
+        $this->ensureCanSend($sender, $receiver);
+        $body = $this->normalizeBody($data);
+
+        $message = DB::transaction(fn (): Message => $this->createMessage($sender, $receiver, $body));
+
+        MessageSent::dispatch($message, $sender, $receiver);
+
+        Cache::forget($this->unreadCacheKey($receiver));
+
+        return $this->loadMessageRelations($message);
+    }
+
+    private function ensureCanSend(User $sender, User $receiver): void
     {
         if ((int) $sender->getKey() === (int) $receiver->getKey()) {
             throw ValidationException::withMessages([
@@ -35,7 +49,13 @@ class SendMessageAction
                 'receiver_id' => ['Messaging is available only when both users follow each other.'],
             ]);
         }
+    }
 
+    /**
+     * @param  array{body?: string}  $data
+     */
+    private function normalizeBody(array $data): string
+    {
         $body = trim((string) ($data['body'] ?? ''));
 
         if ($body === '') {
@@ -44,34 +64,33 @@ class SendMessageAction
             ]);
         }
 
-        $message = DB::transaction(function () use ($sender, $receiver, $body): Message {
-            $conversation = $this->resolveConversation($sender, $receiver);
+        return $body;
+    }
 
-            Message::query()
-                ->where('sender_id', $receiver->getKey())
-                ->where('receiver_id', $sender->getKey())
-                ->whereNull('read_at')
-                ->update([
-                    'status' => MessageStatus::Delivered->value,
-                ]);
+    private function createMessage(User $sender, User $receiver, string $body): Message
+    {
+        $conversation = $this->resolveConversation($sender, $receiver);
 
-            return Message::query()->create([
-                'conversation_id' => $conversation->getKey(),
-                'sender_id' => $sender->getKey(),
-                'receiver_id' => $receiver->getKey(),
-                'body' => $body,
-                'status' => MessageStatus::Sent->value,
-            ]);
-        });
+        $this->markIncomingMessagesDelivered($sender, $receiver);
 
-        MessageSent::dispatch($message, $sender, $receiver);
-
-        Cache::forget($this->unreadCacheKey($receiver));
-
-        return $message->load([
-            'sender:id,name,username,avatar_path',
-            'receiver:id,name,username,avatar_path',
+        return Message::query()->create([
+            'conversation_id' => $conversation->getKey(),
+            'sender_id' => $sender->getKey(),
+            'receiver_id' => $receiver->getKey(),
+            'body' => $body,
+            'status' => MessageStatus::Sent->value,
         ]);
+    }
+
+    private function markIncomingMessagesDelivered(User $sender, User $receiver): void
+    {
+        Message::query()
+            ->where('sender_id', $receiver->getKey())
+            ->where('receiver_id', $sender->getKey())
+            ->whereNull('read_at')
+            ->update([
+                'status' => MessageStatus::Delivered->value,
+            ]);
     }
 
     private function resolveConversation(User $sender, User $receiver): Conversation
@@ -85,6 +104,14 @@ class SendMessageAction
         ], [
             'user_one_unread_count' => 0,
             'user_two_unread_count' => 0,
+        ]);
+    }
+
+    private function loadMessageRelations(Message $message): Message
+    {
+        return $message->load([
+            'sender:id,name,username,avatar_path',
+            'receiver:id,name,username,avatar_path',
         ]);
     }
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Messaging;
 
-use App\Actions\SendMessageAction;
+use App\Actions\Messaging\SendMessageAction;
 use App\Enums\MessageStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Messaging\SendMessageRequest;

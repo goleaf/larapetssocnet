@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\SendMessageAction;
+use App\Actions\Messaging\SendMessageAction;
 use App\Events\MessageSent;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

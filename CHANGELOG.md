@@ -39,6 +39,7 @@
 - Added a reusable Livewire post composer component that supports inline and modal rendering modes, contenteditable hashtag and mention highlighting, persistent attachment/pet/location/mood/schedule state, draft autosave/restore, duplicate warning handling, and the 1000-character circular progress indicator.
 
 ### Changed
+- Moved direct-message sending into the Messaging action namespace and kept message delivery behavior covered by focused tests.
 - Changed comment threading from the older single-reply level to a three-level visual model that flattens replies beyond the third level while preserving readable thread context.
 - Changed comment validation to enforce the current 500-character maximum across HTTP requests, Livewire actions, and `CommentService`.
 - Changed post reaction notifications to dispatch after a four-second undo window and re-check the persisted reaction row before notifying authors.
