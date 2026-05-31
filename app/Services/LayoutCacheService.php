@@ -9,8 +9,8 @@ use App\Models\Content\Hashtag;
 use App\Models\Content\Post;
 use App\Models\Groups\Group;
 use App\Models\Identity\User;
+use App\Models\Pets\Pet;
 use App\Support\Caching\CacheCatalog;
-use Illuminate\Cache\TaggableStore;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -234,7 +234,7 @@ class PetQuery
 {
     public static function countVisible(): int
     {
-        return (int) (\App\Models\Pets\Pet::query()
+        return (int) (Pet::query()
             ->select(['id'])
             ->selectRaw(new Expression('COUNT(*)'))
             ->limit(1)

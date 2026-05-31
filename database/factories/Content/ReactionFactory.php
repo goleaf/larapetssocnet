@@ -2,10 +2,10 @@
 
 namespace Database\Factories\Content;
 
+use App\Models\Content\Comment;
 use App\Models\Content\Post;
 use App\Models\Content\Reaction;
 use App\Models\Identity\User;
-use App\Models\Content\Comment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

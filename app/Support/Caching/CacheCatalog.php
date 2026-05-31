@@ -5,7 +5,6 @@ namespace App\Support\Caching;
 use BadMethodCallException;
 use DateTimeInterface;
 use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 final class CacheCatalog
