@@ -199,11 +199,34 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public const MEDIA_COLLECTION_PHOTOS = 'photos';
 
+    public const MEDIA_COLLECTION_ATTACHMENTS = 'attachments';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
     public const MEDIA_CONVERSION_AVATAR_THUMB = 'avatar_thumb';
 
     public const MEDIA_CONVERSION_AVATAR_CARD = 'avatar_card';
 
     public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
+
+    public const MEDIA_CONVERSION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
+
+    public const MEDIA_CONVERSION_ALLOWLIST_ATTACHMENT = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+    ];
 
     public const PROFILE_AVATAR_CONVERSION_SIZE = 400;
 
@@ -544,24 +567,68 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)->singleFile();
-        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)->singleFile();
-        $this->addMediaCollection(self::MEDIA_COLLECTION_PROFILE)->singleFile();
-        $this->addMediaCollection(self::MEDIA_COLLECTION_PHOTOS);
+        $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_CONVERSION_ALLOWLIST_IMAGE)
+            ->useDisk('public');
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_CONVERSION_ALLOWLIST_IMAGE)
+            ->useDisk('public');
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_PROFILE)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_CONVERSION_ALLOWLIST_IMAGE)
+            ->useDisk('public');
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_PHOTOS)
+            ->acceptsMimeTypes(self::MEDIA_CONVERSION_ALLOWLIST_IMAGE)
+            ->useDisk('public');
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_ATTACHMENTS)
+            ->acceptsMimeTypes(self::MEDIA_CONVERSION_ALLOWLIST_ATTACHMENT)
+            ->useDisk('public');
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_THUMB)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
             ->fit(Fit::Crop, 96, 96)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 180, 180)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->fit(Fit::Crop, 320, 320)
+            ->format('webp')
+            ->quality(82)
             ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
-        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_CARD)
-            ->fit(Fit::Crop, self::PROFILE_AVATAR_CONVERSION_SIZE, self::PROFILE_AVATAR_CONVERSION_SIZE)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->fit(Fit::Crop, 640, 640)
+            ->format('webp')
+            ->quality(82)
             ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
-        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER_BANNER)
-            ->fit(Fit::Crop, self::PROFILE_COVER_CONVERSION_WIDTH, self::PROFILE_COVER_CONVERSION_HEIGHT)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1400)
+            ->format('webp')
+            ->quality(86)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->fit(Fit::Crop, 1400, 450)
+            ->format('webp')
+            ->quality(82)
             ->performOnCollections(self::MEDIA_COLLECTION_COVER);
     }
 
@@ -1658,7 +1725,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
 
     public function coverImageUrl(): ?string
     {
-        $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER_BANNER);
+        $mediaUrl = $this->getFirstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER);
 
         if ($mediaUrl !== '') {
             return $mediaUrl;
@@ -1759,7 +1826,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     protected function avatarUrl(): Attribute
     {
         return Attribute::get(function (): ?string {
-            $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_CONVERSION_AVATAR_CARD);
+            $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_CONVERSION_CARD);
 
             if ($mediaUrl !== '') {
                 return $mediaUrl;
@@ -1780,7 +1847,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     protected function coverPhotoUrl(): Attribute
     {
         return Attribute::get(function (): ?string {
-            $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER_BANNER);
+            $mediaUrl = $this->firstMediaUrl(self::MEDIA_COLLECTION_COVER, self::MEDIA_CONVERSION_COVER);
 
             if ($mediaUrl !== '') {
                 return $mediaUrl;

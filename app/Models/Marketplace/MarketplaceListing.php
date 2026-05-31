@@ -22,8 +22,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[UseFactory(MarketplaceListingFactory::class)]
 #[Appends([
@@ -59,6 +61,28 @@ class MarketplaceListing extends Model implements HasMedia
 
     public const STATUS_ARCHIVED = 'archived';
 
+    public const MEDIA_COLLECTION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_GALLERY = 'gallery';
+
+    public const MEDIA_COLLECTION_LISTING_IMAGES = 'listing-images';
+
+    public const MEDIA_COLLECTION_IMAGES = 'images';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
+
     protected function casts(): array
     {
         return [
@@ -69,9 +93,58 @@ class MarketplaceListing extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('gallery');
-        $this->addMediaCollection('images');
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_LISTING_IMAGES)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_GALLERY)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_IMAGES)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
+            ->fit(Fit::Crop, 140, 140)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_LISTING_IMAGES, self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_IMAGES)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 320, 320)
+            ->format('webp')
+            ->quality(82)
+            ->performOnCollections(self::MEDIA_COLLECTION_LISTING_IMAGES, self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_IMAGES);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->width(600)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_LISTING_IMAGES, self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_IMAGES);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->width(1000)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_LISTING_IMAGES, self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_IMAGES);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1600)
+            ->format('webp')
+            ->quality(88)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_LISTING_IMAGES, self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_IMAGES);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->fit(Fit::Crop, 1400, 520)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_LISTING_IMAGES, self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_IMAGES);
     }
 
     public function seller(): BelongsTo

@@ -6,6 +6,7 @@ namespace Database\Factories;
 
 use App\Models\Content\Comment;
 use App\Models\Content\Post;
+use App\Models\Content\Reaction;
 use App\Models\Identity\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -45,5 +46,63 @@ class CommentFactory extends Factory
             'paw_count' => 0,
             'love_count' => 0,
         ];
+    }
+
+    /**
+     * Create a top-level comment state.
+     */
+    public function topLevel(): static
+    {
+        return $this->state(fn (): array => [
+            'parent_id' => null,
+            'depth' => 0,
+        ]);
+    }
+
+    /**
+     * Create a reply comment tied to a parent row.
+     */
+    public function reply(): static
+    {
+        return $this->afterCreating(function (Comment $comment): void {
+            $parent = Comment::factory()->create([
+                'post_id' => $comment->post_id,
+                'user_id' => $comment->user_id,
+                'parent_id' => null,
+                'depth' => 0,
+            ]);
+
+            $comment->forceFill([
+                'parent_id' => $parent->getKey(),
+                'depth' => 1,
+            ])->save();
+        });
+    }
+
+    /**
+     * Attach reaction rows to this comment.
+     */
+    public function withReactions(int $count = 2): static
+    {
+        return $this->afterCreating(function (Comment $comment) use ($count): void {
+            Reaction::factory()
+                ->count($count)
+                ->forComment()
+                ->create([
+                    'reactable_id' => $comment->getKey(),
+                    'type' => Reaction::TYPE_PAW,
+                    'user_id' => $comment->user_id,
+                ]);
+        });
+    }
+
+    /**
+     * Mark the comment as pinned.
+     */
+    public function pinned(): static
+    {
+        return $this->state(fn (): array => [
+            'is_pinned' => true,
+        ]);
     }
 }

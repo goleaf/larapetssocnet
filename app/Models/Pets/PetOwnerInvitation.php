@@ -7,6 +7,7 @@ use App\Models\Identity\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -22,6 +23,8 @@ use Illuminate\Support\Carbon;
 ])]
 class PetOwnerInvitation extends Model
 {
+    use HasFactory;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_ACCEPTED = 'accepted';

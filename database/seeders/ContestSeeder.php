@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Activities\Contest;
+use App\Models\Activities\ContestEntry;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -26,30 +28,37 @@ class ContestSeeder extends Seeder
         $contestIds = [];
 
         for ($i = 0; $i < 5; $i++) {
+            $slug = 'pet-contest-'.($i + 1);
             $startsAt = Carbon::instance($faker->dateTimeBetween('-20 days', '+20 days'));
             $endsAt = (clone $startsAt)->addDays(random_int(3, 12));
             $status = $faker->randomElement(['active', 'voting', 'closed']);
 
-            $contestIds[] = DB::table('contests')->insertGetId([
-                'organizer_user_id' => $userIds[array_rand($userIds)],
-                'title' => 'Pet Contest '.($i + 1),
-                'slug' => 'pet-contest-'.($i + 1),
-                'description' => $faker->sentence(),
-                'prize' => '$'.number_format(random_int(50, 500), 0),
-                'species' => $faker->randomElement(['dog', 'cat', 'bird', null]),
-                'starts_at' => $startsAt,
-                'ends_at' => $endsAt,
-                'max_entries' => random_int(8, 30),
-                'entries_count' => 0,
-                'winner_entry_id' => null,
-                'status' => $status,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $contest = Contest::query()->updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'organizer_user_id' => $userIds[array_rand($userIds)],
+                    'title' => 'Pet Contest '.($i + 1),
+                    'slug' => $slug,
+                    'description' => $faker->sentence(),
+                    'prize' => '$'.number_format(random_int(50, 500), 0),
+                    'species' => $faker->randomElement(['dog', 'cat', 'bird', null]),
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'max_entries' => random_int(8, 30),
+                    'entries_count' => 0,
+                    'winner_entry_id' => null,
+                    'status' => $status,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+
+            $contestIds[] = (int) $contest->getKey();
         }
 
         foreach ($contestIds as $contestId) {
-            $entryUsers = $this->pickRandomUnique($userIds, random_int(5, min(20, count($userIds))));
+            $entryUserCount = random_int(0, min(5, count($userIds)));
+            $entryUsers = $this->pickRandomUnique($userIds, $entryUserCount);
             $entryIds = [];
 
             foreach ($entryUsers as $entryUserId) {
@@ -58,16 +67,22 @@ class ContestSeeder extends Seeder
                     continue;
                 }
 
-                $entryIds[] = DB::table('contest_entries')->insertGetId([
-                    'contest_id' => $contestId,
-                    'user_id' => $entryUserId,
-                    'pet_id' => $petIds[array_rand($petIds)],
-                    'post_id' => null,
-                    'caption' => $faker->sentence(),
-                    'votes_count' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $entry = ContestEntry::query()->updateOrCreate(
+                    [
+                        'contest_id' => $contestId,
+                        'user_id' => $entryUserId,
+                    ],
+                    [
+                        'pet_id' => $petIds[array_rand($petIds)],
+                        'post_id' => null,
+                        'caption' => $faker->sentence(),
+                        'votes_count' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $entryIds[] = (int) $entry->getKey();
             }
 
             $votes = [];

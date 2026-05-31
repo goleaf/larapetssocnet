@@ -5,6 +5,7 @@ namespace App\Models\Pets;
 use App\Models\Identity\User;
 use App\Models\Marketplace\MarketplaceListing;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class PetAdoptionInquiry extends Model
 {
+    use HasFactory;
+
     public const STATUS_SENT = 'sent';
 
     /**

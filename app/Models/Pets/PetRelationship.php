@@ -3,6 +3,7 @@
 namespace App\Models\Pets;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class PetRelationship extends Model
 {
+    use HasFactory;
+
     public const TYPE_PARENT = 'parent';
 
     public const TYPE_OFFSPRING = 'offspring';

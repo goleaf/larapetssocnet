@@ -112,7 +112,7 @@ class MarketplaceSeeder extends Seeder
 
         if ($reports !== []) {
             foreach (array_chunk($reports, 300) as $chunk) {
-                DB::table('reports')->insert($chunk);
+                DB::table('reports')->insertOrIgnore($chunk);
             }
         }
     }

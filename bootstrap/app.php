@@ -31,6 +31,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands()
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             RunRealtimeMaintenance::class,

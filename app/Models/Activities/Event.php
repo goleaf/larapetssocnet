@@ -24,8 +24,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[UseFactory(EventFactory::class)]
 #[Appends([
@@ -52,6 +54,26 @@ class Event extends Model implements HasMedia
     use InteractsWithMedia;
     use SoftDeletes;
 
+    public const MEDIA_COLLECTION_GALLERY = 'gallery';
+
+    public const MEDIA_COLLECTION_EVENT_COVER = 'event-cover';
+
+    public const MEDIA_COLLECTION_COVER = 'cover';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_PUBLISHED = 'published';
@@ -73,8 +95,56 @@ class Event extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('cover')->singleFile();
-        $this->addMediaCollection('gallery');
+        $this->addMediaCollection(self::MEDIA_COLLECTION_EVENT_COVER)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_GALLERY)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
+            ->fit(Fit::Crop, 160, 160)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_EVENT_COVER, self::MEDIA_COLLECTION_COVER)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 320, 320)
+            ->format('webp')
+            ->quality(82)
+            ->performOnCollections(self::MEDIA_COLLECTION_EVENT_COVER, self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->width(500)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_EVENT_COVER, self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->width(1200)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_EVENT_COVER, self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1600)
+            ->format('webp')
+            ->quality(88)
+            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY, self::MEDIA_COLLECTION_EVENT_COVER, self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->fit(Fit::Crop, 1400, 500)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_EVENT_COVER, self::MEDIA_COLLECTION_COVER);
     }
 
     public function group(): BelongsTo

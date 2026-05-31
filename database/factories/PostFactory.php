@@ -4,7 +4,10 @@ namespace Database\Factories;
 
 use App\Enums\PostStatus;
 use App\Models\Content\Post;
+use App\Models\Content\Reaction;
 use App\Models\Identity\User;
+use App\Models\Content\Comment;
+use App\Models\Content\PostMedia;
 use App\Support\Posts\PostContentHasher;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
@@ -64,7 +67,7 @@ class PostFactory extends Factory
             'content_hash' => app(PostContentHasher::class)->hash($body),
             'body_html' => '<p>'.e($body).'</p>',
             'type' => 'text',
-            'status' => 'published',
+            'status' => PostStatus::Published->value,
             'published_at' => now(),
             'scheduled_publish_at' => null,
             'visibility' => Post::VISIBILITY_PUBLIC,
@@ -95,5 +98,132 @@ class PostFactory extends Factory
             'original_post_id' => null,
             'quote_post_id' => null,
         ];
+    }
+
+    /**
+     * Draft content stays hidden and unscheduled.
+     */
+    public function draft(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => PostStatus::Draft->value,
+            'published_at' => null,
+            'scheduled_publish_at' => null,
+        ]);
+    }
+
+    /**
+     * Schedule a post to be published in the future.
+     */
+    public function scheduled(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => PostStatus::Scheduled->value,
+            'published_at' => now(),
+            'scheduled_publish_at' => now()->addHour(),
+        ]);
+    }
+
+    /**
+     * Ensure published status and visibility semantics are explicit.
+     */
+    public function published(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => PostStatus::Published->value,
+            'published_at' => now(),
+            'scheduled_publish_at' => null,
+        ]);
+    }
+
+    /**
+     * Archive a visible post for historical retention.
+     */
+    public function archived(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => PostStatus::Archived->value,
+            'published_at' => now(),
+            'scheduled_publish_at' => null,
+        ]);
+    }
+
+    /**
+     * Scope a post to public visibility.
+     */
+    public function public(): static
+    {
+        return $this->state(fn (): array => [
+            'visibility' => Post::VISIBILITY_PUBLIC,
+        ]);
+    }
+
+    /**
+     * Scope a post to friends visibility.
+     */
+    public function friends(): static
+    {
+        return $this->state(fn (): array => [
+            'visibility' => Post::VISIBILITY_FRIENDS,
+        ]);
+    }
+
+    /**
+     * Scope a post to private visibility.
+     */
+    public function privateVisibility(): static
+    {
+        return $this->state(fn (): array => [
+            'visibility' => Post::VISIBILITY_PRIVATE,
+        ]);
+    }
+
+    /**
+     * Attach comment rows for post-specific coverage.
+     */
+    public function withComments(int $count = 2): static
+    {
+        return $this->afterCreating(function (Post $post) use ($count): void {
+            Comment::factory()
+                ->count($count)
+                ->create(['post_id' => $post->getKey(), 'user_id' => $post->user_id]);
+        });
+    }
+
+    /**
+     * Attach reaction rows for post-specific coverage.
+     */
+    public function withReactions(int $count = 2): static
+    {
+        return $this->afterCreating(function (Post $post) use ($count): void {
+            Reaction::factory()
+                ->count($count)
+                ->forPost()
+                ->create([
+                    'reactable_id' => $post->getKey(),
+                    'type' => Reaction::TYPE_PAW,
+                    'user_id' => $post->user_id,
+                ]);
+        });
+    }
+
+    /**
+     * Attach media records for post-specific coverage.
+     */
+    public function withImages(int $count = 2): static
+    {
+        return $this->afterCreating(function (Post $post) use ($count): void {
+            PostMedia::factory()
+                ->count($count)
+                ->create(['post_id' => $post->getKey()]);
+        });
+    }
+
+    /**
+     * Alias for explicitness where callers expect media helper.
+     */
+    public function withMedia(int $count = 2): static
+    {
+        return $this->withImages($count);
     }
 }

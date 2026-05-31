@@ -114,6 +114,41 @@ class Post extends Model implements HasMedia
 
     public const FEED_RANKING_BEST = User::FEED_RANKING_BEST;
 
+    public const MEDIA_COLLECTION_POST_MEDIA = 'post-media';
+
+    public const MEDIA_COLLECTION_PHOTOS = 'photos';
+
+    public const MEDIA_COLLECTION_VIDEOS = 'videos';
+
+    public const MEDIA_COLLECTION_ATTACHMENTS = 'attachments';
+
+    public const MEDIA_COLLECTION_IMAGES = 'images';
+
+    public const MEDIA_COLLECTION_VIDEO = 'video';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
+
+    public const MEDIA_COLLECTION_ALLOWLIST_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime', 'application/octet-stream', 'application/x-empty'];
+
+    public const MEDIA_COLLECTION_ALLOWLIST_ATTACHMENT = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+    ];
+
     /**
      * @return list<string>
      */
@@ -168,34 +203,69 @@ class Post extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('photos')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        $this->addMediaCollection(self::MEDIA_COLLECTION_POST_MEDIA)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE)
+            ->useDisk('public');
 
-        $this->addMediaCollection('videos')
-            ->acceptsMimeTypes(['video/mp4', 'video/quicktime', 'video/webm', 'application/octet-stream', 'application/x-empty']);
+        $this->addMediaCollection(self::MEDIA_COLLECTION_PHOTOS)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE)
+            ->useDisk('public');
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_VIDEOS)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_VIDEO)
+            ->useDisk('public');
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_ATTACHMENTS)
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_ATTACHMENT)
+            ->useDisk('public');
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumb')
-            ->performOnCollections('photos')
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
             ->fit(Fit::Crop, 150, 150)
             ->format('webp')
             ->quality(80)
             ->nonQueued();
 
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
+            ->fit(Fit::Crop, 320, 320)
+            ->format('webp')
+            ->quality(82)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
+            ->fit(Fit::Crop, 500, 500)
+            ->format('webp')
+            ->quality(84)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
+            ->width(800)
+            ->format('webp')
+            ->quality(85);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
+            ->width(1200)
+            ->format('webp')
+            ->quality(90);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
+            ->fit(Fit::Crop, 1400, 500)
+            ->format('webp')
+            ->quality(84);
+
         $this->addMediaConversion('medium')
-            ->performOnCollections('photos')
+            ->performOnCollections(self::MEDIA_COLLECTION_POST_MEDIA, self::MEDIA_COLLECTION_PHOTOS)
             ->width(800)
             ->format('webp')
             ->quality(85)
-            ->nonQueued();
-
-        $this->addMediaConversion('large')
-            ->performOnCollections('photos')
-            ->width(1200)
-            ->format('webp')
-            ->quality(90)
             ->nonQueued();
     }
 

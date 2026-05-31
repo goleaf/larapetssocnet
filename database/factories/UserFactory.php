@@ -4,7 +4,12 @@ namespace Database\Factories;
 
 use App\Enums\AccountStatus;
 use App\Enums\ProfileTheme;
+use App\Enums\ProfileVisibility;
+use App\Models\Content\Post;
 use App\Models\Identity\User;
+use App\Models\Messaging\Notification;
+use App\Models\Moderation\Follow;
+use App\Models\Pets\Pet;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -134,6 +139,207 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
+            'is_verified' => false,
+        ]);
+    }
+
+    /**
+     * Mark the account as fully verified.
+     */
+    public function verified(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'email_verified_at' => now(),
+            'is_verified' => true,
+        ]);
+    }
+
+    /**
+     * Mirror a non-active lifecycle for users that are still account-valid but hidden.
+     */
+    public function inactive(): static
+    {
+        return $this->deactivated();
+    }
+
+    /**
+     * Active account that can interact with normal product flows.
+     */
+    public function active(): static
+    {
+        return $this->state(fn (): array => [
+            'account_status' => AccountStatus::Active->value,
+            'is_banned' => false,
+            'ban_reason' => null,
+            'deactivated_at' => null,
+            'deactivation_reason' => null,
+            'suspended_until' => null,
+            'suspension_reason' => null,
+            'scheduled_deletion_at' => null,
+        ]);
+    }
+
+    /**
+     * Mark user as account-level banned.
+     */
+    public function banned(): static
+    {
+        return $this->state(fn (): array => [
+            'is_banned' => true,
+            'ban_reason' => 'policy violation',
+            'account_status' => AccountStatus::Active->value,
+            'deactivated_at' => null,
+            'suspended_until' => null,
+            'scheduled_deletion_at' => null,
+        ]);
+    }
+
+    /**
+     * Deactivated account requiring explicit reactivation flow.
+     */
+    public function deactivated(): static
+    {
+        return $this->state(fn (): array => [
+            'account_status' => AccountStatus::Deactivated->value,
+            'deactivated_at' => now()->subHour(),
+            'deactivation_reason' => 'suspended by test',
+            'scheduled_deletion_at' => null,
+            'suspended_until' => null,
+            'suspension_reason' => null,
+        ]);
+    }
+
+    /**
+     * Suspended account with a bounded suspension window.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn (): array => [
+            'account_status' => AccountStatus::Suspended->value,
+            'suspended_until' => now()->addDays(14),
+            'suspension_reason' => 'policy review',
+            'deactivated_at' => null,
+            'deactivation_reason' => null,
+            'is_banned' => false,
+        ]);
+    }
+
+    /**
+     * Pending-deletion account that has a scheduled hard-delete timestamp.
+     */
+    public function pendingDeletion(): static
+    {
+        return $this->state(fn (): array => [
+            'account_status' => AccountStatus::PendingDeletion->value,
+            'scheduled_deletion_at' => now()->addDays(14),
+            'is_banned' => false,
+            'ban_reason' => null,
+            'deactivated_at' => null,
+            'deactivation_reason' => null,
+            'suspended_until' => null,
+            'suspension_reason' => null,
+        ]);
+    }
+
+    /**
+     * Add a persisted avatar path for UI-oriented test coverage.
+     */
+    public function withAvatar(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'avatar_path' => 'users/'.Str::uuid().'.jpg',
+        ]);
+    }
+
+    /**
+     * Add a persisted cover image path for UI-oriented test coverage.
+     */
+    public function withCover(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'cover_photo_path' => 'covers/'.Str::uuid().'.jpg',
+            'cover_photo_position' => User::DEFAULT_COVER_PHOTO_POSITION,
+        ]);
+    }
+
+    /**
+     * Apply explicit public profile visibility profile settings.
+     */
+    public function publicProfile(): static
+    {
+        return $this->state(fn (): array => [
+            'profile_visibility' => ProfileVisibility::Public->value,
+            'is_private' => false,
+        ]);
+    }
+
+    /**
+     * Apply explicit followers-only profile visibility profile settings.
+     */
+    public function followersOnlyProfile(): static
+    {
+        return $this->state(fn (): array => [
+            'profile_visibility' => ProfileVisibility::FollowersOnly->value,
+            'is_private' => false,
+        ]);
+    }
+
+    /**
+     * Create follower rows for the user (keeps base factories lightweight).
+     */
+    public function withFollowers(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            Follow::factory()
+                ->for($user, 'following')
+                ->count(2)
+                ->active()
+                ->create();
+        });
+    }
+
+    /**
+     * Add user-owned posts without forcing heavy default load.
+     */
+    public function withPosts(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            Post::factory()->count(2)->create(['user_id' => $user->getKey()]);
+        });
+    }
+
+    /**
+     * Add user-owned pets without forcing heavy default load.
+     */
+    public function withPets(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            Pet::factory()->count(2)->create(['user_id' => $user->getKey()]);
+        });
+    }
+
+    /**
+     * Add unread notifications tied to the user (opt-in relationship-heavy state).
+     */
+    public function withNotifications(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            Notification::factory()->count(2)->create([
+                'notifiable_type' => $user->getMorphClass(),
+                'notifiable_id' => $user->getKey(),
+                'read_at' => null,
+            ]);
+        });
+    }
+
+    /**
+     * Apply compact profile visibility.
+     */
+    public function privateProfile(): static
+    {
+        return $this->state(fn (): array => [
+            'profile_visibility' => ProfileVisibility::Private->value,
+            'is_private' => true,
         ]);
     }
 

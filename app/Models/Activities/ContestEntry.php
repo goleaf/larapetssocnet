@@ -11,8 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[Fillable([
     'contest_id',
@@ -29,6 +31,24 @@ class ContestEntry extends Model implements HasMedia
     use InteractsWithMedia;
     use SoftDeletes;
 
+    public const MEDIA_COLLECTION_ENTRY_PHOTO = 'entry-photo';
+
+    public const MEDIA_COLLECTION_ENTRY = 'entry-photo';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
+
     protected function casts(): array
     {
         return [
@@ -39,9 +59,49 @@ class ContestEntry extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('entry-photo')
+        $this->addMediaCollection(self::MEDIA_COLLECTION_ENTRY_PHOTO)
             ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
+            ->fit(Fit::Crop, 150, 150)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_ENTRY_PHOTO)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 320, 320)
+            ->format('webp')
+            ->quality(82)
+            ->performOnCollections(self::MEDIA_COLLECTION_ENTRY_PHOTO);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->width(600)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_ENTRY_PHOTO);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->width(900)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_ENTRY_PHOTO);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1200)
+            ->format('webp')
+            ->quality(88)
+            ->performOnCollections(self::MEDIA_COLLECTION_ENTRY_PHOTO);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->fit(Fit::Crop, 1200, 500)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_ENTRY_PHOTO);
     }
 
     public function contest(): BelongsTo

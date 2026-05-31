@@ -11,8 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[Fillable([
     'organizer_user_id',
@@ -44,6 +46,22 @@ class Contest extends Model implements HasMedia
         'voting' => ['ended', 'cancelled'],
     ];
 
+    public const MEDIA_COLLECTION_COVER = 'cover';
+
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
+
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
+
     protected function casts(): array
     {
         return [
@@ -57,7 +75,49 @@ class Contest extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('cover')->singleFile();
+        $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
+            ->singleFile()
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
+            ->fit(Fit::Crop, 150, 150)
+            ->format('webp')
+            ->quality(80)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
+            ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 240, 240)
+            ->format('webp')
+            ->quality(82)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->width(520)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->width(900)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1400)
+            ->format('webp')
+            ->quality(88)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->fit(Fit::Crop, 1400, 500)
+            ->format('webp')
+            ->quality(84)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER);
     }
 
     protected static function booted(): void

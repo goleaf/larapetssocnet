@@ -70,11 +70,23 @@ class Group extends Model implements HasMedia
 
     public const MEDIA_COLLECTION_COVER = 'cover';
 
+    public const MEDIA_COLLECTION_GROUP_COVER = 'group-cover';
+
     public const MEDIA_CONVERSION_THUMB = 'thumb';
 
-    public const MEDIA_CONVERSION_MEDIUM = 'medium';
+    public const MEDIA_CONVERSION_CARD = 'card';
+
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
 
     public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_CONVERSION_MEDIUM = self::MEDIA_CONVERSION_CARD;
+
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
 
     protected function casts(): array
     {
@@ -127,12 +139,17 @@ class Group extends Model implements HasMedia
         $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)
             ->singleFile()
             ->useDisk('public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
 
         $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
             ->singleFile()
             ->useDisk('public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
+
+        $this->addMediaCollection(self::MEDIA_COLLECTION_GROUP_COVER)
+            ->singleFile()
+            ->useDisk('public')
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
     }
 
     public function registerMediaConversions(?Media $media = null): void
@@ -141,22 +158,45 @@ class Group extends Model implements HasMedia
             ->fit(Fit::Crop, 150, 150)
             ->format('webp')
             ->quality(80)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_COVER)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER)
             ->nonQueued();
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 240, 240)
+            ->format('webp')
+            ->quality(82)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
+            ->width(500)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->width(900)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER);
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_MEDIUM)
             ->width(800)
             ->format('webp')
             ->quality(85)
-            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER)
             ->nonQueued();
 
         $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
-            ->width(1200)
+            ->width(1400)
             ->format('webp')
-            ->quality(90)
-            ->performOnCollections(self::MEDIA_COLLECTION_COVER)
-            ->nonQueued();
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
+            ->fit(Fit::Crop, 1400, 500)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_COVER, self::MEDIA_COLLECTION_GROUP_COVER);
     }
 
     public function owner(): BelongsTo

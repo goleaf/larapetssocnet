@@ -124,17 +124,31 @@ class Pet extends Model implements HasMedia
 
     public const MEDIA_COLLECTION_GALLERY = 'gallery';
 
-    public const MEDIA_CONVERSION_AVATAR_THUMB = 'avatar_thumb';
+    public const MEDIA_COLLECTION_ALLOWLIST_IMAGE = ['image/jpeg', 'image/png', 'image/webp'];
 
-    public const MEDIA_CONVERSION_AVATAR_SMALL = 'avatar_small';
+    public const MEDIA_CONVERSION_THUMB = 'thumb';
 
-    public const MEDIA_CONVERSION_AVATAR_MEDIUM = 'avatar_medium';
+    public const MEDIA_CONVERSION_AVATAR = 'avatar';
 
-    public const MEDIA_CONVERSION_COVER_BANNER = 'cover_banner';
+    public const MEDIA_CONVERSION_CARD = 'card';
 
-    public const MEDIA_CONVERSION_GALLERY_THUMB = 'gallery_thumb';
+    public const MEDIA_CONVERSION_PREVIEW = 'preview';
 
-    public const MEDIA_CONVERSION_GALLERY_MEDIUM = 'gallery_medium';
+    public const MEDIA_CONVERSION_LARGE = 'large';
+
+    public const MEDIA_CONVERSION_COVER = 'cover';
+
+    public const MEDIA_CONVERSION_AVATAR_THUMB = self::MEDIA_CONVERSION_THUMB;
+
+    public const MEDIA_CONVERSION_AVATAR_SMALL = self::MEDIA_CONVERSION_PREVIEW;
+
+    public const MEDIA_CONVERSION_AVATAR_MEDIUM = self::MEDIA_CONVERSION_CARD;
+
+    public const MEDIA_CONVERSION_COVER_BANNER = self::MEDIA_CONVERSION_COVER;
+
+    public const MEDIA_CONVERSION_GALLERY_THUMB = self::MEDIA_CONVERSION_THUMB;
+
+    public const MEDIA_CONVERSION_GALLERY_MEDIUM = self::MEDIA_CONVERSION_PREVIEW;
 
     public const SPECIES_EMOJI = [
         'dog' => '🐕',
@@ -263,55 +277,55 @@ class Pet extends Model implements HasMedia
         $this->addMediaCollection(self::MEDIA_COLLECTION_AVATAR)
             ->singleFile()
             ->useDisk('public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
         $this->addMediaCollection(self::MEDIA_COLLECTION_COVER)
             ->singleFile()
             ->useDisk('public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
         $this->addMediaCollection(self::MEDIA_COLLECTION_GALLERY)
             ->useDisk('public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes(self::MEDIA_COLLECTION_ALLOWLIST_IMAGE);
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_THUMB)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_THUMB)
             ->fit(Fit::Crop, 80, 80)
             ->format('webp')
             ->quality(80)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_GALLERY)
+            ->nonQueued();
 
-        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_SMALL)
-            ->fit(Fit::Crop, 150, 150)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR)
+            ->fit(Fit::Crop, 180, 180)
             ->format('webp')
             ->quality(80)
             ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
 
-        $this->addMediaConversion(self::MEDIA_CONVERSION_AVATAR_MEDIUM)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_CARD)
             ->fit(Fit::Crop, 400, 400)
             ->format('webp')
             ->quality(85)
-            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR);
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR)
+            ->nonQueued();
 
-        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER_BANNER)
+        $this->addMediaConversion(self::MEDIA_CONVERSION_PREVIEW)
+            ->width(900)
+            ->format('webp')
+            ->quality(85)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_LARGE)
+            ->width(1400)
+            ->format('webp')
+            ->quality(90)
+            ->performOnCollections(self::MEDIA_COLLECTION_AVATAR, self::MEDIA_COLLECTION_COVER);
+
+        $this->addMediaConversion(self::MEDIA_CONVERSION_COVER)
             ->width(1200)
             ->format('webp')
             ->quality(85)
             ->performOnCollections(self::MEDIA_COLLECTION_COVER);
-
-        $this->addMediaConversion(self::MEDIA_CONVERSION_GALLERY_THUMB)
-            ->fit(Fit::Crop, 150, 150)
-            ->format('webp')
-            ->quality(80)
-            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY)
-            ->nonQueued();
-
-        $this->addMediaConversion(self::MEDIA_CONVERSION_GALLERY_MEDIUM)
-            ->width(800)
-            ->format('webp')
-            ->quality(85)
-            ->performOnCollections(self::MEDIA_COLLECTION_GALLERY)
-            ->nonQueued();
     }
 
     public function galleryMedia(): MorphMany

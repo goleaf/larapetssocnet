@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
+use App\Support\Seeding\SeedProfile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
@@ -11,6 +12,14 @@ class AdoptablePetSeeder extends Seeder
 {
     public function run(): void
     {
+        $profile = SeedProfile::fromConfig();
+
+        $target = $profile ? $profile->adoptablePets() : 6;
+
+        if ($target < 1) {
+            return;
+        }
+
         $owners = User::query()->orderBy('id')->limit(4)->get();
 
         if ($owners->isEmpty()) {
@@ -74,13 +83,13 @@ class AdoptablePetSeeder extends Seeder
             ],
         ];
 
-        foreach ($profiles as $index => $profile) {
+        foreach (array_slice($profiles, 0, $target) as $index => $profileData) {
             $attributes = [
-                'name' => $profile['name'],
-                'species' => $profile['species'],
-                'breed' => $profile['breed'],
-                'sex' => $profile['sex'],
-                'bio' => $profile['bio'],
+                'name' => $profileData['name'],
+                'species' => $profileData['species'],
+                'breed' => $profileData['breed'],
+                'sex' => $profileData['sex'],
+                'bio' => $profileData['bio'],
                 'is_public' => true,
                 'followers_count' => 0,
                 'posts_count' => 0,
@@ -96,11 +105,11 @@ class AdoptablePetSeeder extends Seeder
             }
 
             if (Schema::hasColumn('pets', 'adoption_fee')) {
-                $attributes['adoption_fee'] = $profile['adoption_fee'];
+                $attributes['adoption_fee'] = $profileData['adoption_fee'];
             }
 
             if (Schema::hasColumn('pets', 'adoption_notes')) {
-                $attributes['adoption_notes'] = $profile['adoption_notes'];
+                $attributes['adoption_notes'] = $profileData['adoption_notes'];
             }
 
             if (Schema::hasColumn('pets', 'adoption_contact')) {
@@ -111,9 +120,16 @@ class AdoptablePetSeeder extends Seeder
                 $attributes['adoption_listed_at'] = now()->subDays($index + 1);
             }
 
-            Pet::factory()
-                ->for($owners[$index % $owners->count()])
-                ->create($attributes);
+            $owner = $owners[$index % $owners->count()];
+
+            Pet::query()->updateOrCreate(
+                [
+                    'user_id' => $owner->getKey(),
+                    'name' => $profileData['name'],
+                    'species' => $profileData['species'],
+                ],
+                $attributes
+            );
         }
     }
 }

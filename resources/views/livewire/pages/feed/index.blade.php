@@ -21,7 +21,7 @@
                     <div class="flex items-start gap-3">
                         <x-ui.avatar :src="$this->user->avatar_url" :name="$this->user->name" :user="$this->user" size="lg"/>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-bold text-bark">Welcome to PetSocial, {{ \Illuminate\Support\Str::before((string) $this->user->name, ' ') }}!</p>
+                            <p class="text-sm font-bold text-bark">Welcome to PetSocial, {{ $this->firstName }}!</p>
                             <p class="mt-1 text-sm leading-6 text-fur">Start exploring by reacting to posts, following more pets, or creating your first post.</p>
                         </div>
                         <form method="POST" action="{{ route('onboarding.welcome-banner.dismiss') }}">

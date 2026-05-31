@@ -30,6 +30,7 @@ use App\Policies\PetPolicy;
 use App\Policies\PostPolicy;
 use App\Policies\UserPolicy;
 use App\Services\ActiveStatusService;
+use App\Services\Performance\DatabaseQueryPerformanceService;
 use App\Services\UsernameRedirectResolver;
 use App\Support\Auth\PasswordPolicy;
 use App\Support\Models\LegacyModelMorphMap;
@@ -61,7 +62,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            DatabaseQueryPerformanceService::class,
+            fn (): DatabaseQueryPerformanceService => new DatabaseQueryPerformanceService,
+        );
     }
 
     /**
@@ -116,23 +120,11 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        if ($this->app->environment(['local', 'staging'])) {
-            DB::listen(function (QueryExecuted $query): void {
-                if ($query->time > 100) {
-                    Log::warning('Slow query detected', [
-                        'sql' => $query->toRawSql(),
-                        'time_ms' => $query->time,
-                    ]);
-                }
-            });
-
-            DB::whenQueryingForLongerThan(500, function (Connection $connection, QueryExecuted $event): void {
-                Log::warning('Cumulative query time threshold exceeded', [
-                    'connection' => $connection->getName(),
-                    'sql' => $event->toRawSql(),
-                    'last_query_ms' => $event->time,
-                ]);
-            });
+        if (
+            $this->app->environment(['local', 'testing'])
+            && (bool) config('database-performance.enabled', true)
+        ) {
+            $this->configureDatabasePerformanceMonitoring();
         }
 
         Gate::policy(Post::class, PostPolicy::class);
@@ -258,5 +250,218 @@ class AppServiceProvider extends ServiceProvider
         return back()
             ->with('error', $message)
             ->withHeaders($headers);
+    }
+
+    private function configureDatabasePerformanceMonitoring(): void
+    {
+        $auditor = $this->app->make(DatabaseQueryPerformanceService::class);
+        $logChannel = (string) config('database-performance.log_channel', 'performance');
+        $logAllQueries = (bool) config('database-performance.listener.log_all_queries', false);
+        $slowQueryMs = (float) config('database-performance.listener.slow_query_ms', 100);
+        $collectBacktrace = (bool) config('database-performance.audit.collect_backtrace', true);
+
+        DB::listen(function (QueryExecuted $query) use ($auditor, $logChannel, $logAllQueries, $slowQueryMs, $collectBacktrace): void {
+            $request = request();
+
+            if (! $request instanceof Request) {
+                return;
+            }
+
+            $route = $request->route();
+            $routeName = $route?->getName();
+            $routeAction = $route?->getActionName();
+            $routeLivewireComponent = (string) ($route?->getAction('livewire_component') ?? '');
+            $livewireComponent = $routeLivewireComponent !== ''
+                ? $routeLivewireComponent
+                : $this->resolveLivewireComponentFromBacktrace($collectBacktrace);
+
+            $queryContext = $collectBacktrace ? $this->queryContextFromBacktrace() : [];
+
+            if ($this->isDatabaseAuditingEnabled()) {
+                $auditor->captureQuery($query, [
+                    'in_blade' => $this->isBladeExecution($queryContext),
+                    'in_livewire_render' => $this->isLivewireRenderExecution($queryContext),
+                    'location_signature' => (string) ($queryContext['location_signature'] ?? ''),
+                ]);
+            }
+
+            if ($logAllQueries || $query->time >= $slowQueryMs) {
+                $message = $logAllQueries ? 'Database query executed' : 'Slow query threshold exceeded';
+                $payload = [
+                    'request_id' => $this->requestIdForLog($request),
+                    'sql' => (string) $query->sql,
+                    'time_ms' => (float) $query->time,
+                    'connection' => (string) $query->connectionName,
+                    'route' => $routeName,
+                    'route_action' => $routeAction,
+                    'livewire_component' => $livewireComponent,
+                    'path' => $request->path(),
+                    'binding_types' => $this->bindingTypesForLog($query->bindings),
+                    'bindings_count' => is_array($query->bindings) ? count($query->bindings) : 0,
+                ];
+
+                if ($logAllQueries && $slowQueryMs > 0.0) {
+                    $payload['slow_query_threshold_ms'] = $slowQueryMs;
+                }
+
+                if ($query->time >= $slowQueryMs) {
+                    Log::channel($logChannel)->warning($message, $payload);
+                } else {
+                    Log::channel($logChannel)->info($message, $payload);
+                }
+            }
+        });
+
+        if (! (bool) config('database-performance.cumulative.enabled', true)) {
+            return;
+        }
+
+        $maxTotalMs = (int) config('database-performance.cumulative.slow_total_ms', 500);
+
+        DB::whenQueryingForLongerThan($maxTotalMs, function (Connection $connection, QueryExecuted $event) use ($logChannel): void {
+            $request = request();
+
+            Log::channel($logChannel)->warning('Cumulative query time threshold exceeded', [
+                'request_id' => $request instanceof Request ? $this->requestIdForLog($request) : '',
+                'connection' => $connection->getName(),
+                'route' => $request instanceof Request ? $request->route()?->getName() : null,
+                'path' => $request instanceof Request ? $request->path() : null,
+                'livewire_component' => $request instanceof Request
+                    ? (string) ($request->route()?->getAction('livewire_component') ?? '')
+                    : '',
+                'last_query_ms' => (float) $event->time,
+            ]);
+        });
+    }
+
+    private function requestIdForLog(Request $request): string
+    {
+        if (! method_exists($request, 'id')) {
+            return '';
+        }
+
+        return (string) $request->id();
+    }
+
+    private function isDatabaseAuditingEnabled(): bool
+    {
+        return app()->environment(['local', 'testing'])
+            && (bool) config('database-performance.enabled', true)
+            && (bool) config('database-performance.listener.enabled', true)
+            && (bool) config('database-performance.audit.enabled', true);
+    }
+
+    /**
+     * @param  array<mixed>  $bindings
+     * @return list<string>
+     */
+    private function bindingTypesForLog(array $bindings): array
+    {
+        return array_map(
+            function (mixed $binding): string {
+                if ($binding === null) {
+                    return 'null';
+                }
+
+                if (is_bool($binding)) {
+                    return 'bool';
+                }
+
+                if (is_int($binding)) {
+                    return 'int';
+                }
+
+                if (is_float($binding)) {
+                    return 'float';
+                }
+
+                if (is_string($binding)) {
+                    return 'string';
+                }
+
+                if (is_array($binding)) {
+                    return 'array';
+                }
+
+                if (is_object($binding)) {
+                    return 'object:'.$binding::class;
+                }
+
+                return gettype($binding);
+            },
+            $bindings,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function queryContextFromBacktrace(): array
+    {
+        if (! (bool) config('database-performance.audit.collect_backtrace', true)) {
+            return [];
+        }
+
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30);
+
+        $signature = '';
+        $inBlade = false;
+        $inLivewireRender = false;
+
+        foreach ($trace as $frame) {
+            $file = (string) ($frame['file'] ?? '');
+            if ($file === '') {
+                continue;
+            }
+
+            if ($signature === '') {
+                $signature = $file.':'.((string) ($frame['line'] ?? '0'));
+            }
+
+            if (
+                str_contains($file, '/resources/views/')
+                || str_contains($file, 'vendor/laravel/framework/src/Illuminate/View')
+            ) {
+                $inBlade = true;
+            }
+
+            if (str_contains($file, 'Livewire') && str_contains((string) ($frame['function'] ?? ''), 'render')) {
+                $inLivewireRender = true;
+            }
+        }
+
+        return [
+            'location_signature' => $signature,
+            'in_blade' => $inBlade,
+            'in_livewire_render' => $inLivewireRender,
+        ];
+    }
+
+    private function isBladeExecution(array $queryContext): bool
+    {
+        return (bool) ($queryContext['in_blade'] ?? false);
+    }
+
+    private function isLivewireRenderExecution(array $queryContext): bool
+    {
+        return (bool) ($queryContext['in_livewire_render'] ?? false);
+    }
+
+    private function resolveLivewireComponentFromBacktrace(bool $collectBacktrace): string
+    {
+        if (! $collectBacktrace) {
+            return '';
+        }
+
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 40);
+
+        foreach ($trace as $frame) {
+            $class = (string) ($frame['class'] ?? '');
+            if (str_starts_with($class, 'App\\Livewire\\')) {
+                return $class;
+            }
+        }
+
+        return '';
     }
 }

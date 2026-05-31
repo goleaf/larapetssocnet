@@ -4,6 +4,8 @@ use App\Models\Content\Post;
 use App\Models\Identity\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -23,6 +25,25 @@ it('keeps the migrated feed page blade template free of inline livewire php', fu
     expect($source)->toBeString()
         ->and((string) $source)->not->toContain('<?php')
         ->and((string) $source)->not->toContain('new class extends Component');
+});
+
+it('renders the feed page component with minimal locked public state', function (): void {
+    $viewer = User::factory()->create();
+
+    Livewire::actingAs($viewer)
+        ->test('pages.feed.index')
+        ->assertSet('source', '')
+        ->assertSet('type', '')
+        ->assertSee('data-ui="feed-livewire-page"', false);
+});
+
+it('rejects feed page filter tampering outside the child stream component', function (): void {
+    $viewer = User::factory()->create();
+
+    expect(fn () => Livewire::actingAs($viewer)
+        ->test('pages.feed.index')
+        ->set('source', 'people'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
 });
 
 it('renders the feed as a full-page livewire shell with bundled lazy sidebars and eager center stream', function (): void {

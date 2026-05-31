@@ -6,6 +6,7 @@ use App\Actions\Onboarding\MarkPetReminderShownAction;
 use App\Models\Identity\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -52,6 +53,14 @@ class Index extends Component
         abort_unless($viewer instanceof User, 403);
 
         return $viewer;
+    }
+
+    #[Computed]
+    public function firstName(): string
+    {
+        $name = trim((string) $this->user->name);
+
+        return $name !== '' ? (string) Str::of($name)->before(' ') : (string) __('friend');
     }
 
     public function render(): View
