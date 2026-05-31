@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Enums\AccountStatus;
 use App\Models\Identity\User;
 use App\Models\Pets\Pet;
 use Illuminate\Database\Eloquent\Factories\Factory;
